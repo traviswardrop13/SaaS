@@ -569,9 +569,19 @@ for (const [label, cfg, expect] of [["muted", { volume: 0, soundOn: false, voice
 }
 
 // ── Feed Echo: the mic opens after Echo asks, closes before every chime ──
+// Since 1 Oct 2026 the word comes first (Travis: "we need to get the kid to
+// have to say it!"): "Let's play" starts the round, the pictures wait locked
+// until a voice of the right kind is heard, and a tap before then feeds
+// nothing. Every turn here is spoken, then picked.
+const feedStart = async (page) => { await page.locator("#startBtn").click(); };
+const feedWord = (page) => page.evaluate(() => (document.getElementById("bMain").textContent.match(/Where's the (.+)\?/) || [])[1] || "");
+const feedPick = (page) => page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); const b = m && [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]); if (b) b.click(); return !!b; });
 await scenario("feed", async () => {
   const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
   try {
+    await page.waitForTimeout(300);
+    ok("feed: nothing speaks or listens before Let's play", (await page.evaluate(() => __quiet.speech.length)) === 0 && (await page.evaluate(() => __quiet.requests)) === 0);
+    await feedStart(page);
     const ask = () => page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent));
     await ask();
     await page.waitForFunction(() => __quiet.speaking > 0);
@@ -579,9 +589,10 @@ await scenario("feed", async () => {
     await page.waitForFunction(() => __quiet.live() === 1);
     const asked = await page.evaluate(() => __quiet.speech[0]);
     ok("feed: Echo's ask ends calmly, on a period, with the word unchanged", /^Where is the (.+)\? Say\.\.\. \1\.$/.test(asked) && !/!/.test(asked), asked);
-    // a wrong tap while listening is answered by the wobble, not a sound over the mic
-    const wrong = await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); const b = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent !== m[1]); if (b) b.click(); return !!b; });
-    if (wrong) { await page.waitForTimeout(200); ok("feed: a wrong tap while listening wobbles silently and keeps listening", (await live(page)) === 1 && /Almost/.test(await page.locator("#bSub").innerText())); }
+    // a tap while listening, before the word, is answered by the wobble, not a sound over the mic, and feeds nothing
+    await feedPick(page);
+    await page.waitForTimeout(200);
+    ok("feed: a tap before the word wobbles silently, keeps listening and feeds nothing", (await live(page)) === 1 && /first/.test(await page.locator("#bSub").innerText()) && /0\/5/.test(await page.evaluate(() => document.getElementById("plate").dataset.fed)));
     await page.waitForTimeout(400);   // past calibration
     ok("feed: taps and silence have not unlocked a picture hint",await page.locator(".speechHint").count()===0);
     await voice(page, 300);
@@ -594,11 +605,11 @@ await scenario("feed", async () => {
     let l = await log(page);
     const tap = l.sfx.find((c) => c.name === "tap" && c.at > l.mics[0].end);
     ok("feed: heard once, the mic closes, then the little chime", (await live(page)) === 0 && !!tap && tap.live === 0, { tap, mics: l.mics });
-    // the other four turns: pick right while the mic is still open
+    // five turns: say it, then pick it
     for (let i = 0; i < 5; i++) {
-      if (i > 0) { await ask(); await page.waitForFunction(() => __quiet.live() === 1); }
-      await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]).click(); });
-      if (i > 0) ok("feed turn " + (i + 1) + ": a right pick closes the mic before the chime", (await live(page)) === 0);
+      if (i > 0) { await ask(); await page.waitForFunction(() => __quiet.live() === 1); await page.waitForTimeout(400); await voice(page, 300); await page.waitForFunction((n) => window.__heard === n, i + 1); }
+      await feedPick(page);
+      ok("feed turn " + (i + 1) + ": the word closed the mic, so the pick's chime plays into none", (await live(page)) === 0);
       await page.waitForTimeout(i < 4 ? 400 : 1600);
     }
     await page.locator("#endOvl.show").waitFor();
@@ -613,7 +624,7 @@ await scenario("feed", async () => {
     const attacks = gains.filter((s) => s.length >= 3 && s[0][0] === "set" && s[0][1] === 0.0001 && s[1][0] === "exp" && s[1][1] >= 0.5).map((s) => s[1][2] - s[0][2]);
     ok("feed: every pluck fades in over 3–5 ms instead of starting as a raw noise burst", attacks.length === plucks.length && attacks.every((a) => a >= 0.003 - 1e-9 && a <= 0.005 + 1e-9), { attacks: attacks.slice(0, 4), n: attacks.length, plucks: plucks.length });
     noOverlap("feed", l);
-    ok("feed: only the child's one burst was ever heard", (await page.evaluate(() => window.__heard)) === 1);
+    ok("feed: each turn heard exactly one burst, the child's word", (await page.evaluate(() => window.__heard)) === 5);
     clean("feed", errors);
   } finally { await context.close(); }
 });
@@ -626,6 +637,7 @@ await scenario("feed", async () => {
 await scenario("feed eager", async () => {
   const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
   try {
+    await feedStart(page);
     await page.waitForFunction(() => __quiet.speaking > 0);
     await page.waitForFunction(() => __quiet.speaking === 0);
     await page.waitForTimeout(100);
@@ -642,75 +654,66 @@ await scenario("feed eager", async () => {
   } finally { await context.close(); }
 });
 
-// ── Feed Echo: a right pick while the phone is still answering the mic
-// request keeps its chime, and a round finished then keeps its concert
-// (24 Sep 2026). The mic request goes out 250 ms after Echo's ask; sfx() and
-// the concert used to be DROPPED while it was pending, where every other game
-// waits for it. ──
+// ── Feed Echo on a slow phone: the mic request takes a while to answer
+// (24 Sep 2026). A tap while it is pending makes no sound and feeds nothing;
+// the child who waits out the slow mic is still heard; every pick's chime
+// plays into no mic; and the round still ends on its chime and concert. ──
 await scenario("feed slow mic", async () => {
   const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6, gumDelay: 400 });
   try {
+    await feedStart(page);
     for (let i = 0; i < 5; i++) {
-      // the last turn's request is still pending when the round finishes
-      if (i === 4) await page.evaluate(() => { __quiet.gumPlan.push({ delay: 1500 }); });
       await page.waitForFunction((n) => __quiet.speech.length === n && __quiet.speaking === 0, i + 1);
       await page.waitForTimeout(350);
       const asking = await page.evaluate(() => __quiet.inflight === 1 && __quiet.live() === 0);
+      if (i === 0) {
+        const before = await page.evaluate(() => __quiet.sfx.length);
+        await feedPick(page);
+        await page.waitForTimeout(150);
+        ok("feed slow mic: a tap while the phone is still answering the mic request feeds nothing and plays nothing", asking && /0\/5/.test(await page.evaluate(() => document.getElementById("plate").dataset.fed)) && (await page.evaluate((b) => __quiet.sfx.slice(b).every((c) => c.live === 0), before)), await page.evaluate(() => __quiet.sfx.slice(-3)));
+      }
+      const opened = await until(page, () => __quiet.live() === 1, 3000);
+      await page.waitForTimeout(400);
+      await voice(page, 300);
+      const heard = await until(page, (n) => window.__heard === n, 1500, i + 1);
       const before = await page.evaluate(() => __quiet.sfx.filter((c) => c.name === "correct").length);
-      await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]).click(); });
+      await feedPick(page);
       const chimed = await until(page, (b) => __quiet.sfx.filter((c) => c.name === "correct").length > b, 2500, before);
       const c = (await log(page)).sfx.filter((x) => x.name === "correct")[before];
-      ok("feed slow mic turn " + (i + 1) + ": a right tap 350 ms after the ask, while the mic request is still pending, still plays the chime, with no mic open", asking && chimed && c && c.live === 0, { asking, chimed, c });
+      ok("feed slow mic turn " + (i + 1) + ": the child who waits out the slow mic is heard, and the pick's chime plays into no mic", asking && opened && heard && chimed && c && c.live === 0, { asking, opened, heard, chimed, c });
     }
     await page.locator("#endOvl.show").waitFor();
     await page.waitForTimeout(3500);
     const l = await log(page);
     const complete = l.sfx.find((c) => c.name === "complete");
     const plucks = l.sounds.filter((s) => s.kind === "buf" && s.len > 1000);
-    ok("feed slow mic: a round that finishes while the mic request is still pending keeps its chime and its concert", !!complete && complete.live === 0 && plucks.length >= 20, { complete, plucks: plucks.length });
+    ok("feed slow mic: the round keeps its chime and its concert", !!complete && complete.live === 0 && plucks.length >= 20, { complete, plucks: plucks.length });
     ok("feed slow mic: the concert still waits ~0.5 s after the chime", !!complete && plucks.length > 0 && Math.min(...plucks.map((p) => p.start)) - complete.at >= 0.45);
     noOverlap("feed slow mic", l);
     clean("feed slow mic", errors);
   } finally { await context.close(); }
 });
 
-// ── Feed Echo: the next ask waits for a mic request the phone has not yet
-// answered (24 Sep 2026). The mic is asked for 250 ms after Echo's ask; a
-// right pick at 350 ms ends the turn, and the next ask is due 900 ms later.
-// With a phone that takes 1.5 s to answer, that ask used to start ~0.5 s
-// BEFORE the request landed: on an iPhone the mic is already recording by
-// then, so Echo asked through call audio. It now waits for the answer, closes
-// it, settles SETTLE_MS, and lets the pick's chime (which waited on the same
-// answer) finish first. A child who then waits out the slow mic is still
-// heard. ──
-await scenario("feed slow mic next ask", async () => {
-  const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6, gumDelay: 1500 });
+// ── Feed Echo: a quiet turn (no voice in the listening window) closes the mic
+// and waits on the mic button; its tap says the word again, then listens, and
+// nothing plays over the mic on the way. ──
+await scenario("feed quiet turn", async () => {
+  const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
   try {
-    for (let i = 0; i < 3; i++) {
-      const label = "feed slow mic next ask, turn " + (i + 1);
-      await page.waitForFunction((n) => __quiet.speech.length === n && __quiet.speaking === 0, i + 1, { timeout: 6000 });
-      await page.waitForTimeout(350);
-      const asking = await page.evaluate(() => __quiet.inflight === 1 && __quiet.live() === 0);
-      await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]).click(); });
-      const next = await until(page, (n) => __quiet.speech.length > n, 5000, i + 1);
-      const l = await log(page);
-      const ask = l.sounds.filter((x) => x.kind === "speech")[i + 1];
-      const req = ask ? l.mics.filter((m) => m.start < ask.start).pop() : null;
-      const chime = l.sfx.filter((c) => c.name === "correct")[i];
-      ok(label + ": a right pick while the request is pending, then Echo's next ask starts only after that request has landed, been closed and settled",
-        asking && next && !!req && req.end <= ask.start && ask.start - req.end >= 0.15,
-        { asking, next, ask: ask && +ask.start.toFixed(3), req: req && [+req.start.toFixed(3), req.landed == null ? null : +req.landed.toFixed(3), +req.end.toFixed(3)] });
-      ok(label + ": the pick's chime still plays, into no mic, and has finished before Echo asks",
-        !!chime && chime.live === 0 && !!ask && ask.start - chime.at >= 0.3, { chime, ask: ask && ask.start });
-    }
-    const opened = await until(page, () => __quiet.live() === 1, 4000);
+    await feedStart(page);
+    await page.waitForFunction(() => __quiet.live() === 1);
+    const closed = await until(page, () => __quiet.live() === 0 && !document.getElementById("micBtn").hidden, 10000);
+    ok("feed quiet turn: silence closes the mic after the listening window, and the mic button waits", closed && /Tap the mic/.test(await page.locator("#bSub").innerText()) && (await page.evaluate(() => document.getElementById("grid").classList.contains("locked"))));
+    const spoken = await page.evaluate(() => __quiet.speech.length);
+    await page.evaluate(() => document.getElementById("micBtn").click());
+    await page.waitForFunction((n) => __quiet.speech.length > n, spoken);
+    ok("feed quiet turn: the mic button says the word again with no mic open", (await live(page)) === 0 && /^Say\.\.\. [a-z]+\.$/i.test(await page.evaluate(() => __quiet.speech[__quiet.speech.length - 1])));
+    await page.waitForFunction(() => __quiet.live() === 1);
     await page.waitForTimeout(400);
     await voice(page, 300);
-    ok("feed slow mic next ask: the child who waits out the slow mic is still heard", opened && (await until(page, () => window.__heard === 1, 1500)),
-      await page.evaluate(() => ({ heard: window.__heard, live: __quiet.live() })));
-    await page.waitForTimeout(400);
-    noOverlap("feed slow mic next ask", await log(page));
-    clean("feed slow mic next ask", errors);
+    ok("feed quiet turn: …then listens, and the word still unlocks the pictures", await until(page, () => window.__heard === 1 && !document.getElementById("grid").classList.contains("locked"), 1500));
+    noOverlap("feed quiet turn", await log(page));
+    clean("feed quiet turn", errors);
   } finally { await context.close(); }
 });
 

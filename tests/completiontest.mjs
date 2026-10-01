@@ -33,7 +33,7 @@ const games = ["slice", "stack", "tiles", "run", "glide"];
 // Default completion fixtures hold grandfathered access in either pricing
 // state. `paid: true` uses the paid-state seam for a post-era family, keeping
 // the parent handoff covered while the production family app remains free.
-async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false } = {}) {
+async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false, voicedMic = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const u = new URL(route.request().url());
@@ -46,7 +46,18 @@ async function fresh({ paid = false, replay = false, sound = "R", width = 390, h
     body:readFileSync(path.join(publicRoot,"sona.js"),"utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false"),
   }));
   // These scenarios finish recorded runs; none should request a real mic.
-  await context.addInitScript(() => {
+  // Feed Echo needs the word said before Echo eats (1 Oct 2026), so a run
+  // that plays it gets a stand-in mic instead: window.__mic.voice is the
+  // child talking, and it is all the page can hear.
+  if (voicedMic) await context.addInitScript(() => {
+    const h = window.__mic = { voice: false, live: 0 };
+    navigator.mediaDevices.getUserMedia = () => { h.live++; const t = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; h.live--; } } }; return Promise.resolve({ getTracks: () => [t], getAudioTracks: () => [t] }); };
+    const AC = window.AudioContext || window.webkitAudioContext;
+    AC.prototype.createMediaStreamSource = function () { return { connect() {}, disconnect() {} }; };
+    const real = AC.prototype.createAnalyser;
+    AC.prototype.createAnalyser = function () { const an = real.call(this); an.getByteTimeDomainData = (d) => { for (let i = 0; i < d.length; i++) d[i] = h.voice ? (i % 2 ? 200 : 56) : 128; }; an.getByteFrequencyData = (d) => { d.fill(0); if (h.voice) for (let i = 1; i <= 10 && i < d.length; i++) d[i] = 220; }; return an; };
+  });
+  else await context.addInitScript(() => {
     if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => new Promise(() => {});
   });
   const page = await context.newPage();
@@ -159,10 +170,10 @@ await scenario("replays and empty sessions never add practice",async()=>{
 });
 
 await scenario("retained parked-game fixture completes the younger-child adventure",async()=>{
-  const {context,page,errors}=await fresh({width:375,height:812,parkedEngineFixture:true});
+  const {context,page,errors}=await fresh({width:375,height:812,parkedEngineFixture:true,voicedMic:true});
   try{
     await page.evaluate(()=>{
-      sessionStorage.removeItem("sona.run.v1");
+      sessionStorage.removeItem("sona.run.v1");localStorage.setItem("sona.micok","1");
       var p=JSON.parse(localStorage.getItem("sona.profile.v1"));p.childAge="3";p.focusSounds=["M"];localStorage.setItem("sona.profile.v1",JSON.stringify(p));
     });
     await page.goto(origin+"/charge.html?daily=1&first=feed");
@@ -171,10 +182,16 @@ await scenario("retained parked-game fixture completes the younger-child adventu
       await page.waitForURL(/arcade-(feed|bubbles|peekaboo)\.html/, {timeout:7000});
       const game=new URL(page.url()).pathname.match(/arcade-(.+)\.html/)[1];seen.push(game);
       if(game==="feed"){
+        await page.locator("#startBtn").click();   // the round starts on Let's play (1 Oct 2026)
         for(let turn=0;turn<5;turn++){
           await page.waitForFunction(()=>window.turnLive===true);
           const label=await page.locator("#bMain").innerText();
           const word=label.match(/Where's the (.+)\?/)[1];
+          // the child says it, then feeds the picture
+          await page.waitForFunction(()=>window.__mic.live===1);await page.waitForTimeout(450);
+          await page.evaluate(()=>{window.__mic.voice=true;});
+          await page.waitForFunction(()=>!document.getElementById("grid").classList.contains("locked"));
+          await page.evaluate(()=>{window.__mic.voice=false;});
           await page.locator("#grid .cardBtn").filter({has:page.locator(".w",{hasText:word})}).first().click();
         }
         await page.locator("#endOvl.show").waitFor();

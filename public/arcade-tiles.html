@@ -514,8 +514,10 @@
         .then(function(bytes){if(bytes&&slowTurn===t&&!t.finishing&&!document.hidden){url=URL.createObjectURL(S.pcmWave(bytes));return slowAudio(url,t);}})
         .catch(function(){})
         .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
-          // Use the existing recorded sound, never ask TTS to guess a phoneme.
-          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0)return slowAudio("/coach/say-echo/"+SND+"-demo.mp3",t);
+          // Use the existing recorded sound, never ask TTS to guess a phoneme:
+          // ONE take of it (tools/soundclips.mjs), as every other game plays.
+          // The demo held three re-voiced takes, and its R drifted toward W.
+          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0)return slowAudio("/coach/say-echo/"+SND+"-sound.wav",t);
         });
     }
     function stopSlowRecognition(t){

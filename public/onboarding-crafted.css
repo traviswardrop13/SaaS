@@ -6,7 +6,7 @@ body[data-setup-screen="welcome"] {
 body[data-setup-screen="welcome"] .ob {
   max-width: 480px;
   padding-top: max(22px, env(safe-area-inset-top));
-  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
 }
 body[data-setup-screen="welcome"] .mascot { display: none; }
 body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: column; min-height: 0; }
@@ -14,25 +14,34 @@ body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: colu
 .welcome-brand span { display: block; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 800; margin-top: 7px; letter-spacing: .035em; }
 .welcome-copy { margin: 22px auto 0; padding: 22px 18px 18px; width: 100%; max-width: 350px; background: #fffaf0; border: 1px solid rgba(128, 85, 40, .13); border-radius: 28px; box-shadow: 0 6px 0 rgba(131, 94, 46, .1), 0 12px 24px rgba(77, 55, 28, .1); }
 body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: clamp(28px, 8.6vw, 36px); line-height: 1.05; margin: 0; color: #48280f; }
-.welcome-copy .muted { font-size: 15px; line-height: 1.35; color: #77553b; margin: 12px 0 0; }
-.welcome-copy #howLong { font-size: 12px; margin: 8px 0 0; color: #77553b; font-weight: 700; }
+/* Who's setting this up: the first screen's two answers, each one tap.
+   Parents come first, so theirs is the teal action and the clinician's the
+   cream second choice. */
+.who { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+.who-pick { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding: 14px 16px; border-radius: 22px; cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; transition: transform .12s; }
+.who-pick b { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.1; }
+.who-pick span { font-family: Nunito, sans-serif; font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+.who-pick[data-role="parent"] { background: linear-gradient(#23b5bd, #069ca8); color: #fff; border: 1px solid #07959f; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 rgba(255,255,255,.45); }
+.who-pick[data-role="slp"] { background: #f7ebd6; color: #5b3a20; border: 1px solid #e3cfae; box-shadow: 0 4px 0 #dcc49e; }
+.who-pick:active { transform: translateY(3px); }
+.who-pick[data-role="parent"]:active { box-shadow: 0 2px 0 #087e89; }
+.who-pick[data-role="slp"]:active { box-shadow: 0 1px 0 #dcc49e; }
+.who-pick:focus-visible { outline: 3px solid #0b6f78; outline-offset: 3px; }
 body[data-setup-screen="welcome"] .world-scene { flex: 1; min-height: 60px; max-height: none; margin: 0; }
 body[data-setup-screen="welcome"] .world-scene img, body[data-setup-screen="welcome"] .world-scene:before { display: none; }
 body[data-setup-screen="welcome"] #moveRow { margin: 0 !important; }
 body[data-setup-screen="welcome"] #moveLink { padding: 10px 14px; border-radius: 20px; background: rgba(255, 250, 240, .94); color: #67462e; font-size: 12px; line-height: 24px; }
-body[data-setup-screen="welcome"] #slpRow { order: 5; background: rgba(255, 250, 240, .94); border-radius: 16px; margin: 5px 0 0 !important; padding: 5px; font-size: 11px !important; }
-body[data-setup-screen="welcome"] .obfoot { background: linear-gradient(transparent, rgba(255, 246, 233, .96) 35%); padding-top: 15px; }
-body[data-setup-screen="welcome"] .obfoot .inner { max-width: 350px; }
-body[data-setup-screen="welcome"] #nextBtn { background: linear-gradient(#23b5bd, #069ca8); color: white; border: 1px solid #07959f; border-radius: 22px; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 rgba(255,255,255,.45); font-size: 22px; min-height: 58px; }
-body[data-setup-screen="welcome"] #nextBtn:active { box-shadow: 0 2px 0 #087e89; }
+/* the answers are the buttons here, so the footer's Continue steps aside */
+body[data-setup-screen="welcome"] .obfoot { display: none; }
 @media (max-height: 680px) {
   body[data-setup-screen="welcome"] .ob { padding-top: max(12px, env(safe-area-inset-top)); }
   .welcome-brand { font-size: 29px; }
   .welcome-brand span { font-size: 10px; margin-top: 3px; }
   .welcome-copy { margin-top: 12px; padding: 14px 12px; border-radius: 22px; }
   body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: 28px; }
-  .welcome-copy .muted { font-size: 13px; margin-top: 7px; }
-  .welcome-copy #howLong { font-size: 11px; margin-top: 5px; }
+  .who { gap: 10px; margin-top: 14px; }
+  .who-pick { padding: 11px 14px; }
+  .who-pick b { font-size: 20px; }
 }
 @media (min-width: 600px) {
   body[data-setup-screen="welcome"] { background-size: auto 100%; background-color: #fff6e9; }
@@ -164,6 +173,8 @@ body[data-setup-screen="rachel"] .ob .mascot { display: none; }
 .rachel-kicker { margin: 22px 0 6px; color: #087d87; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .ob .step[data-step="rachel"] .qh { margin: 0 auto; }
 .ob .step[data-step="rachel"] .qh span { font-family: inherit; white-space: nowrap; }
+.rachel-line { margin: 10px auto 0; max-width: 280px; color: #77553b; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.rachel-line .nobr { white-space: nowrap; }
 @media (max-height: 700px) {
   .ob .step[data-step="rachel"].on { padding: 20px 16px; }
   .rachel-photo { width: 136px; height: 136px; }

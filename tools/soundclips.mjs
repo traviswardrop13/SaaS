@@ -8,7 +8,13 @@
 // the files it writes.
 //
 // WHERE EACH TAKE COMES FROM, measured (29 Sep 2026), not assumed:
-// - VOICED sounds (B D G J M N V Z L R THV) are Rachel's re-voiced demos
+// - R is Rachel's OWN voice: take 1 of her raw demo (/coach/say/R-demo.mp3),
+//   picked by ear by Travis on 1 Oct 2026 ("use number 4"). The voice
+//   changer moved her R's third formant from about 1,430 Hz to about 2,900
+//   (LPC medians, measured 1 Oct 2026) — toward /w/, the "wabbit" the child is
+//   here to fix — and a gentler setting (stability 0.85, similarity 0.25)
+//   still left it near 1,850.
+// - The other VOICED sounds (B D G J M N V Z L THV) are Rachel's re-voiced demos
 //   (/coach/say-echo/<S>-demo.mp3, tools/revoice.mjs). The voice changer keeps
 //   a voiced sound voiced, and her production is the clinical model. Each take
 //   is picked BY HAND from the burst map below, never "the first burst": for
@@ -40,8 +46,10 @@ const RATE = 24000;
 const DEMO = {
   B: [0.05, 0.34], D: [0.07, 0.35], G: [0.07, 0.43], J: [0.08, 0.47],
   M: [0.05, 1.23], N: [0.08, 1.09], V: [0.08, 1.30], Z: [0.08, 1.04],
-  L: [0.00, 0.57], R: [0.00, 1.18], THV: [0.09, 0.98],
+  L: [0.00, 0.57], THV: [0.09, 0.98],
 };
+// Rachel's own (raw) demos, same burst map: the sounds the voice changer bends.
+const OWN = { R: [0.00, 1.24] };
 // v4 Turbo: what it is sent, and which burst of the render to keep.
 const V4 = {
   P: ["p... p... p", 0], T: ["t... t... t", 0], K: ["k... k... k", 0], CH: ["ch... ch... ch", 0],
@@ -123,7 +131,8 @@ try {
   console.log(`reference "${REFERENCE}" at the route's level: ${targetA.toFixed(1)} dB A-weighted`);
   for (const s of ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"]) {
     let take, from;
-    if (DEMO[s]) { const x = decode(DIR + s + "-demo.mp3"), [a, z] = DEMO[s]; take = x.slice(Math.round(a * RATE), Math.round(z * RATE)); from = `Rachel's demo ${a.toFixed(2)}–${z.toFixed(2)} s`; }
+    if (OWN[s]) { const x = decode(ROOT + "public/coach/say/" + s + "-demo.mp3"), [a, z] = OWN[s]; take = x.slice(Math.round(a * RATE), Math.round(z * RATE)); from = `Rachel's own demo ${a.toFixed(2)}–${z.toFixed(2)} s`; }
+    else if (DEMO[s]) { const x = decode(DIR + s + "-demo.mp3"), [a, z] = DEMO[s]; take = x.slice(Math.round(a * RATE), Math.round(z * RATE)); from = `Rachel's demo ${a.toFixed(2)}–${z.toFixed(2)} s`; }
     else { const [text, pick] = V4[s]; take = v4Take(await tts(text), pick); from = `v4 Turbo "${text}" (burst ${pick})`; }
     const out = finish(take, targetA);
     writeFileSync(DIR + s + "-sound.wav", wav(out));
