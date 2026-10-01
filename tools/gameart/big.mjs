@@ -1,9 +1,9 @@
-// Eight of the ten Say & Play games for ages 5-8: eight words a game and a goal
+// Seven of the ten Say & Play games for ages 5-8: eight words a game and a goal
 // to reach (the finish line, the treasure, the last planet). No timer, no score
 // to lose, and nothing to aim at: every word the child says moves them on. The
-// other two, Hoops and Soccer Goal, are played rather than built, so they are
-// written by hand (public/arcade-hoops.html and hoops.js, public/arcade-soccer.html
-// and soccer.js) and have no scene here.
+// other three, Hoops, Soccer Goal and Dino Dig, are played rather than built,
+// so they are written by hand (public/arcade-<key>.html with hoops.js,
+// soccer.js and dino.js) and have no scene here.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, star, heart, sparkle, note, face } from "../bookart/kit.mjs";
 import { meadowBg, starsList } from "../bookart/scene.mjs";
 import * as cast from "../bookart/cast.mjs";
@@ -149,40 +149,6 @@ const castleGame = {
   done: { title: "What a castle!", sub: "Eight words built it, tower to tower." },
 };
 
-// ── 7. Dino Dig: every word brushes the sand off a bone; then the dinosaur wakes up ──
-const DIG = [[67, 337, 38], [122, 318, 40], [166, 350, 36], [199, 274, 50], [254, 350, 36], [256, 286, 42], [287, 210, 40], [318, 150, 44]];
-const dinoGame = {
-  key: "dino", title: "Dino Dig", group: "arcade", top: "#fff3e0", bottom: "#f3d9a8",
-  sub: "Say it to dig up a dinosaur", playDescription: "Every word brushes the sand off a dinosaur bone.",
-  how: "Say each word to dig up a dinosaur.", blurb: "Every word brushes the sand off another bone, and at the end the dinosaur wakes up.",
-  alt: "A sandy cliff with a dinosaur skeleton hidden in the sand.",
-  bg: sky("#ffe2b8") + sun(380, 56, 24) + cloud(90, 50, 0.6)
-    + P("M0 130 L60 120 L90 96 L150 100 L180 124 L260 118 L300 92 L360 96 L400 122 L440 116 V400 H0 Z", "#e8a868")
-    + P("M0 170 Q220 150 440 168 V400 H0 Z", "#f0c890") + L("M0 220 Q220 204 440 220 M0 270 Q220 256 440 272 M0 330 Q220 318 440 334", "#e6b87a", 4)
-    + C(60, 200, 4, "#d9a060") + C(400, 250, 5, "#d9a060") + C(380, 360, 4, "#d9a060") + C(30, 300, 3, "#d9a060")
-    + R(0, 382, W, 18, 0, "#d9a868")
-    // the dig: a darker patch of cliff, so the pale bones show against it
-    + P("M24 392 Q14 300 74 276 Q140 250 196 222 Q236 160 276 104 Q324 70 368 110 Q396 150 352 214 Q320 260 346 312 Q372 360 356 392 Z", "#c68b4a", { opacity: 0.55 }),
-  parts: [
-    { id: "bones", x: 210, y: 376, svg: G("scale(1.1)", A.bones()) },
-    { id: "dino", x: 210, y: 376, hid: true, svg: G("scale(1.1)", A.dino()) },
-    ...DIG.map(([x, y, r], i) => ({ id: "sand" + (i + 1), x, y, svg: A.sandClump(r) })),
-    ...DIG.map(([x, y, r], i) => ({ id: "dust" + (i + 1), x, y, hid: true, svg: A.dustPuff() })),
-    { id: "brush", x: 390, y: 330, svg: A.dustBrush() },
-    { id: "roar", x: 366, y: 142, hid: true, svg: A.roar() },
-  ],
-  steps: DIG.map(([x, y], i) => [
-    { a: "move", id: "brush", x: x - 390 + 14, y: y - 330 + 10 }, { a: "fx", id: "brush", fx: "shake", at: 300 },
-    { a: "hide", id: "sand" + (i + 1), at: 450 }, { a: "show", id: "dust" + (i + 1), fx: "puff", at: 450 }, { a: "hide", id: "dust" + (i + 1), at: 1300 },
-  ]),
-  finale: [
-    { a: "move", id: "brush", x: 0, y: 0 }, { a: "hide", id: "bones", at: 200 }, { a: "show", id: "dino", fx: "pop", at: 300 },
-    { a: "fx", id: "dino", fx: "wiggle", at: 1000 }, { a: "show", id: "roar", fx: "fade", at: 1000 },
-  ],
-  done: { title: "The dinosaur woke up!", sub: "Eight words dug up a whole dinosaur." },
-  card: { finale: true },
-};
-
 // ── 8. Space Trip: every word flies to the next planet and picks up its star ──
 const PLANETS = [[104, 312, 22, "#ff8f8f"], [200, 346, 18, "#8fd4f2"], [298, 306, 24, "#ffd21c", "#ff9d3d"], [390, 336, 17, "#b9d98a"],
   [374, 216, 22, "#c49cff", null, "#ffd21c"], [262, 200, 20, "#ff9d3d"], [146, 188, 24, "#4db3f2", "#6ac3f2"], [340, 110, 30, "#58cc02", "#8fd4f2"]];
@@ -288,4 +254,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [raceGame, mapGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [raceGame, mapGame, robotGame, castleGame, spaceGame, pizzaGame, monsterGame];

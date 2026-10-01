@@ -106,8 +106,8 @@ when the launch lock lifts (see "The family app is locked until launch day").
 **The free version:** daily practice, **two games for each age group**
 (Travis, 30 Sep 2026: "the two free games for older kids, the two free games
 for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
-turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Hoops and
-Soccer Goal are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
+turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Hoops, Soccer
+Goal and Dino Dig are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
@@ -758,9 +758,8 @@ checks every parked page sends a typed address home before any mic or sound.
 aren't finished ... label them ... coming October 8th or whatever", then "a
 few games/books per week w new ones each monday dropping"). Every parked game
 carries `comingOn`, a Monday: one game for ages 3-4 and one for 5-8 a week,
-from 12 Oct (Peekaboo and Dino Dig first) to 21 Dec. Bubble Pop and Soccer
-Goal came back early, so each shelf moved up a week, and Dino Dig went to the
-front of the big kids' line because it is the next one rebuilt. Home says "Coming
+from 12 Oct (Peekaboo and Race Car first) to 21 Dec. Bubble Pop, Soccer Goal
+and Dino Dig came back early, so each shelf's games moved up. Home says "Coming
 Oct 12" until that day on the family's calendar, then "Coming soon" again if
 the game still isn't ready, and each shelf's parked games sit soonest first.
 **The date is a label, never a switch:** `gameAccess` never reads it, and
@@ -815,8 +814,28 @@ Its cards are frames of the pitch: `public/assets/games/soccer.webp` (the
 sticker and the website, through `PLAYED`) and
 `public/assets/crafted/home-soccer.webp` (Home's wide card). The painted art
 drops in at those names, and Bo's own picture by setting `KEEPER_PIC` in
-`soccer.js`. On Home it sits beside Flappy Glide, which is no longer a
-full-width banner. `sayplaytest` plays a whole game.
+`soccer.js`. On Home the eight big-kid games fill four even rows of two, so
+neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
+whole game.
+
+**Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
+on the same hook: `public/dino.js` draws a cliff with a dinosaur skeleton's
+outline and a sand pit below it; `public/arcade-dino.html` is written by hand.
+Say the word and a brush comes out; rub the sand in the pit with a finger to
+uncover the bone; once most of it shows it pops out and flies onto the
+skeleton. Eight words, eight bones, then the dinosaur's body fills in and it
+roars. What it keeps:
+- **The word earns the brush; the finger digs.** Rubbing before the word moves
+  no sand, a tap alone digs up nothing, and the step counts when the bone lands.
+- **Every bone comes out.** The brush is wide; after about four seconds the
+  bone's spot glows, and after about eight, rubbing anywhere in the pit wears
+  the sand over the bone away. It never digs by itself: the help needs a
+  rubbing finger.
+- **Its sounds** (brush, pop, whoosh, clack, roar) go through the engine, and
+  **nothing is practice data**.
+Its cards are frames of the woken dinosaur: `public/assets/games/dino.webp` and
+`public/assets/crafted/home-dino.webp`, replaced by painted art at the same
+names. `sayplaytest` plays a whole dig.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is

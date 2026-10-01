@@ -19,7 +19,7 @@ export const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5
 
 // Every page this generator writes says so, in its head comment, in these
 // words. build.mjs overwrites a page only if it carries them, so a page written
-// by hand (arcade-hoops.html, arcade-soccer.html, and the older arcade pages)
+// by hand (arcade-hoops.html, -soccer, -dino, and the older arcade pages)
 // can't be clobbered by a game that reuses its key; tests/arttooltest.mjs reads
 // the same string.
 export const MARK = "Written by tools/gameart/build.mjs";

@@ -234,8 +234,8 @@
       }
       var library=S.activityLibrary(),lockedGame=null;
       // Home art is presentation only: the catalog still owns access and routes.
-      // Soccer Goal's card is a frame of its own pitch until its painted card lands at the same name.
-      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops",soccer:"soccer"};
+      // Soccer Goal's and Dino Dig's cards are frames of their own games until their painted cards land at the same names.
+      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops",soccer:"soccer",dino:"dino"};
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}

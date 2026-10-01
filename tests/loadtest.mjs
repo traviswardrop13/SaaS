@@ -209,12 +209,12 @@ for (const [game, title, art] of SKIES) {
   const ARCADE = ["slice", "run", "stack", "tiles", "glide"].map((g) => `arcade-${g}.html`);
   const CRAFTED_CSS = readdirSync(ROOT).filter((f) => /^crafted-.*\.css$/.test(f)).concat(["onboarding-crafted.css", "arcade-speech-help.css"]);
   const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
-    "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "sayplay.css", "simple-play.css", ...CRAFTED_CSS];
+    "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "sayplay.css", "simple-play.css", ...CRAFTED_CSS];
   // the pages whose buttons have moved to teal; check.html and join.html are
   // grown-up pages (join's buttons are the crafted family teal on screen,
   // checked in the browser below), coach-call.html is orphaned
   const TEAL_KID = ["today.html", "charge.html", "story.html", "chapter.html", "library.html", ...ARCADE, "arcade-feed.html",
-    "arcade-hoops.html", "arcade-soccer.html", "sayplay.css", "simple-play.css", "sona.css", ...CRAFTED_CSS];
+    "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "sayplay.css", "simple-play.css", "sona.css", ...CRAFTED_CSS];
   const srcOf = (f) => readFileSync(ROOT + "/" + f, "utf8");
   const craftedPage = (f) => /\.html$/.test(f) && /<body\b[^>]*\bdata-crafted=/.test(srcOf(f));
   // CSS only: a page's <style> blocks, or the whole sheet, comments stripped
@@ -317,7 +317,7 @@ for (const [game, title, art] of SKIES) {
   // every kid page gets its button colours from a shared sheet: /action.css
   // (linked, or through sona.css), or the crafted layer it opts into
   const links = (f, href) => [...srcOf(f).replace(/<!--[\s\S]*?-->/g, "").matchAll(/<link\b[^>]*>/gi)].some((m) => m[0].includes('href="' + href + '"') && /rel="stylesheet"/.test(m[0]));
-  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html"]
+  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html"]
     .filter((f) => !links(f, "/action.css") && !links(f, "/sona.css") && !(craftedPage(f) && links(f, "/crafted-games.css")));
   ok("every kid page takes its action colour from a shared sheet: action.css, or the crafted layer it opts into", noSheet.length === 0, noSheet.join(" | "));
 
@@ -332,6 +332,7 @@ for (const [game, title, art] of SKIES) {
     ["arcade-feed.html", ["#again", "#startBtn", "#primerYes"]],
     ["arcade-hoops.html", ["#startBtn", "#primerYes", "#resume", "#again", "#micBtn"]],
     ["arcade-soccer.html", ["#startBtn", "#primerYes", "#resume", "#again", "#micBtn"]],
+    ["arcade-dino.html", ["#startBtn", "#primerYes", "#resume", "#again", "#micBtn"]],
     ["arcade-balloon.html", ["#startBtn", "#micBtn"]],
     ["arcade-bubbles.html", [".primary"]],
     ["chapter.html", ["#next", "#doneBtn"]],
@@ -344,7 +345,7 @@ for (const [game, title, art] of SKIES) {
   const notTeal = [];
   for (const [f, sels] of PRIMARY) for (const r of await look(f, sels)) if (r.missing || !isTeal(r.bg) || ORANGE_RGB.test(r.bg) || GREEN_RGB.test(r.bg)) notTeal.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("the buttons and mics a child taps are the action teal, in the browser", notTeal.length === 0, notTeal.join(" | "));
-  const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]]];
+  const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-dino.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]]];
   const notCream = [];
   for (const [f, sels] of SECOND) for (const r of await look(f, sels)) if (r.missing || !isCream(r.bg)) notCream.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("…and the second choice is the cream pill", notCream.length === 0, notCream.join(" | "));
