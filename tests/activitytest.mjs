@@ -75,6 +75,11 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
       localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
+      // Home asks a grandfathered family for an idea on every third visit,
+      // 0.9 s after it opens. The launch loop visits Home once per game, so a
+      // slow machine met that sheet over a card (Soccer, 1 Oct 2026). It is
+      // not this suite's subject: it starts already answered.
+      localStorage.setItem("sona.pulse.v1", JSON.stringify({ cool: Date.now() + 365 * 24 * 3600 * 1000 }));
       const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
       if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
@@ -291,21 +296,24 @@ if (present && hasContract) {
       try {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          const firstParked = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game)   // one Coming soon section since 1 Oct 2026;
-          return { peekaboo: tag("peekaboo"), soccer: tag("soccer"), racecar: tag("racecar"), firstParked, access: Sona.gameAccess("peekaboo") };
+          const firstParked = [...document.querySelectorAll("#activityGroups .coming-shelf")]   /* one Coming soon section since 1 Oct 2026 */.map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game);
+          return { peekaboo: tag("peekaboo"), racecar: tag("racecar"), treasure: tag("treasure"), soccer: tag("soccer"), dino: tag("dino"), firstParked, access: Sona.gameAccess("peekaboo") };
         });
         return { got, errors };
       } finally { await ctx.close(); }
     };
     let r = await cardsAt(Date.UTC(2026, 9, 1, 12));
-    ok("before its Monday a parked game says the day: Peekaboo and Soccer Goal \"Coming Oct 12\", Race Car \"Coming Oct 19\"",
-      r.got.peekaboo.label === "Coming Oct 12" && r.got.soccer.label === "Coming Oct 12" && r.got.racecar.label === "Coming Oct 19"
+    // Soccer Goal and Dino Dig were rebuilt early (1 Oct 2026), so the big
+    // kids' games moved up: Race Car is first
+    ok("before its Monday a parked game says the day: Peekaboo and Race Car \"Coming Oct 12\", Treasure Map \"Coming Oct 19\"",
+      r.got.peekaboo.label === "Coming Oct 12" && r.got.racecar.label === "Coming Oct 12" && r.got.treasure.label === "Coming Oct 19"
         && r.got.peekaboo.disabled && /Coming Oct 12/.test(r.got.peekaboo.aria), JSON.stringify(r.got));
-    ok("…each shelf's parked games soonest first", same(sorted(r.got.firstParked), ["peekaboo", "soccer"]), r.got.firstParked);
+    ok("…each shelf's parked games soonest first", same(sorted(r.got.firstParked), ["peekaboo", "racecar"]), r.got.firstParked);
+    ok("…and Soccer Goal and Dino Dig, rebuilt, are open on Home with no Monday on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
     ok("…with no page errors", r.errors.length === 0, r.errors);
     r = await cardsAt(Date.UTC(2026, 9, 13, 12));
     ok("past its Monday and still unfinished, a game goes back to \"Coming soon\", while the next one keeps its day",
-      r.got.peekaboo.label === "Coming soon" && r.got.soccer.label === "Coming soon" && r.got.racecar.label === "Coming Oct 19", JSON.stringify(r.got));
+      r.got.peekaboo.label === "Coming soon" && r.got.racecar.label === "Coming soon" && r.got.treasure.label === "Coming Oct 19", JSON.stringify(r.got));
     ok("…and the date never opens it", r.got.peekaboo.disabled && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got));
   });
 

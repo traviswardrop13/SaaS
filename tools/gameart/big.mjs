@@ -1,8 +1,9 @@
-// Nine of the ten Say & Play games for ages 5-8: eight words a game and a goal
+// Seven of the ten Say & Play games for ages 5-8: eight words a game and a goal
 // to reach (the finish line, the treasure, the last planet). No timer, no score
 // to lose, and nothing to aim at: every word the child says moves them on. The
-// tenth, Hoops, is played rather than built, so it is written by hand
-// (public/arcade-hoops.html, public/hoops.js) and has no scene here.
+// other three, Hoops, Soccer Goal and Dino Dig, are played rather than built,
+// so they are written by hand (public/arcade-<key>.html with hoops.js,
+// soccer.js and dino.js) and have no scene here.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, star, heart, sparkle, note, face } from "../bookart/kit.mjs";
 import { meadowBg, starsList } from "../bookart/scene.mjs";
 import * as cast from "../bookart/cast.mjs";
@@ -77,42 +78,6 @@ const mapGame = {
   done: { title: "You found the treasure!", sub: "Eight words sailed you all the way to the X." },
 };
 
-// ── 3. Soccer Goal: every word kicks a goal past Bo the goalie ──
-const KICK = [140, 340];
-const NET = [[306, 252], [394, 264], [316, 286], [398, 228], [302, 218], [384, 290], [328, 196], [372, 198]];
-const soccerGame = {
-  key: "soccer", title: "Soccer Goal", group: "arcade", top: "#e6f6ff", bottom: "#cfeec0",
-  sub: "Say it to kick a goal", playDescription: "Every word kicks the ball into the net.",
-  how: "Say each word to kick a goal.", blurb: "Every word kicks a ball past Bo the goalie, who always dives the wrong way.",
-  alt: "A soccer field with a goal, Bo the bear in goal and a player with a ball.",
-  bg: sky("#bfe8fb") + cloud(70, 40, 0.7) + cloud(250, 30, 0.5)
-    + R(0, 58, W, 88, 0, "#4f6b8a") + range(3).map((r) => range(22).map((i) => C(12 + i * 20 + (r % 2) * 10, 76 + r * 24, 7, ["#ff5c5c", "#ffd21c", "#ffffff", "#4db3f2", "#ff9d3d"][(i + r) % 5])).join("")).join("")
-    + R(0, 146, W, 254, 0, "#6fbf4a") + range(6).map((i) => R(i * 80, 146, 40, 254, 0, "#7cc95c")).join("")
-    + L("M0 330 Q220 300 440 330", "#ffffff", 3, { opacity: 0.7 }) + E(KICK[0], KICK[1] + 12, 24, 5, "#4f9a3a", { opacity: 0.35 })
-    + R(116, 12, 208, 34, 17, "#2d3642") + range(8).map((i) => G(`translate(${136 + i * 24} 29)`, A.scoreDot(false))).join(""),
-  parts: [
-    { id: "goal", x: 350, y: 304, svg: A.goal() },
-    { id: "goalie", x: 350, y: 300, o: "50% 100%", svg: G("scale(0.85)", cast.bear({ pose: "shrug", face: "o" })) },
-    ...NET.map((n, i) => ({ id: "b" + (i + 1), x: KICK[0], y: KICK[1], hid: true, svg: A.soccerBall(15) })),
-    { id: "kicker", x: 92, y: 366, svg: G("scale(1.1)", cast.kid({ pose: "run", face: "grin", top: "#ff5c5c", bottom: "#ffffff", shoes: "#2d3642" })) },
-    { id: "kb", x: KICK[0], y: KICK[1], svg: A.soccerBall(15) },
-    ...range(8).map((i) => ({ id: "sc" + (i + 1), x: 136 + i * 24, y: 29, hid: true, svg: A.scoreDot(true) })),
-    { id: "cup", x: 220, y: 250, hid: true, svg: A.trophy() },
-  ],
-  steps: NET.map(([x, y], i) => [
-    { a: "hide", id: "kb" }, { a: "show", id: "b" + (i + 1), fx: "fade" }, { a: "move", id: "b" + (i + 1), x: x - KICK[0], y: y - KICK[1] },
-    { a: "fx", id: "kicker", fx: "bounce" },
-    { a: "move", id: "goalie", x: i % 2 ? 36 : -36, y: 0, r: i % 2 ? 28 : -28 }, { a: "fx", id: "goal", fx: "shake", at: 500 },
-    { a: "show", id: "sc" + (i + 1), fx: "pop", at: 600 },
-    { a: "move", id: "goalie", x: 0, y: 0, r: 0, at: 1000 }, ...(i < 7 ? [{ a: "show", id: "kb", fx: "pop", at: 1100 }] : []),
-  ]),
-  finale: [
-    { a: "fx", id: "kicker", fx: "hop" }, { a: "fx", id: "goalie", fx: "wiggle", at: 300 },
-    ...range(8).map((i) => ({ a: "fx", id: "sc" + (i + 1), fx: "twinkle", at: i * 90 })), { a: "show", id: "cup", fx: "drop", at: 400 },
-  ],
-  done: { title: "Goal! Eight goals!", sub: "Your words kicked every ball in." },
-};
-
 // ── 5. Robot Builder: every word adds a part; then the robot dances ──
 const ROBOT = ["legs", "body", "armL", "armR", "head", "eyes", "antenna", "heart"];
 const robotGame = {
@@ -182,40 +147,6 @@ const castleGame = {
     { a: "fx", id: "fw1", fx: "twinkle", at: 700 }, { a: "fx", id: "fw2", fx: "twinkle", at: 1200 }, { a: "fx", id: "flags", fx: "wiggle", at: 300 },
   ],
   done: { title: "What a castle!", sub: "Eight words built it, tower to tower." },
-};
-
-// ── 7. Dino Dig: every word brushes the sand off a bone; then the dinosaur wakes up ──
-const DIG = [[67, 337, 38], [122, 318, 40], [166, 350, 36], [199, 274, 50], [254, 350, 36], [256, 286, 42], [287, 210, 40], [318, 150, 44]];
-const dinoGame = {
-  key: "dino", title: "Dino Dig", group: "arcade", top: "#fff3e0", bottom: "#f3d9a8",
-  sub: "Say it to dig up a dinosaur", playDescription: "Every word brushes the sand off a dinosaur bone.",
-  how: "Say each word to dig up a dinosaur.", blurb: "Every word brushes the sand off another bone, and at the end the dinosaur wakes up.",
-  alt: "A sandy cliff with a dinosaur skeleton hidden in the sand.",
-  bg: sky("#ffe2b8") + sun(380, 56, 24) + cloud(90, 50, 0.6)
-    + P("M0 130 L60 120 L90 96 L150 100 L180 124 L260 118 L300 92 L360 96 L400 122 L440 116 V400 H0 Z", "#e8a868")
-    + P("M0 170 Q220 150 440 168 V400 H0 Z", "#f0c890") + L("M0 220 Q220 204 440 220 M0 270 Q220 256 440 272 M0 330 Q220 318 440 334", "#e6b87a", 4)
-    + C(60, 200, 4, "#d9a060") + C(400, 250, 5, "#d9a060") + C(380, 360, 4, "#d9a060") + C(30, 300, 3, "#d9a060")
-    + R(0, 382, W, 18, 0, "#d9a868")
-    // the dig: a darker patch of cliff, so the pale bones show against it
-    + P("M24 392 Q14 300 74 276 Q140 250 196 222 Q236 160 276 104 Q324 70 368 110 Q396 150 352 214 Q320 260 346 312 Q372 360 356 392 Z", "#c68b4a", { opacity: 0.55 }),
-  parts: [
-    { id: "bones", x: 210, y: 376, svg: G("scale(1.1)", A.bones()) },
-    { id: "dino", x: 210, y: 376, hid: true, svg: G("scale(1.1)", A.dino()) },
-    ...DIG.map(([x, y, r], i) => ({ id: "sand" + (i + 1), x, y, svg: A.sandClump(r) })),
-    ...DIG.map(([x, y, r], i) => ({ id: "dust" + (i + 1), x, y, hid: true, svg: A.dustPuff() })),
-    { id: "brush", x: 390, y: 330, svg: A.dustBrush() },
-    { id: "roar", x: 366, y: 142, hid: true, svg: A.roar() },
-  ],
-  steps: DIG.map(([x, y], i) => [
-    { a: "move", id: "brush", x: x - 390 + 14, y: y - 330 + 10 }, { a: "fx", id: "brush", fx: "shake", at: 300 },
-    { a: "hide", id: "sand" + (i + 1), at: 450 }, { a: "show", id: "dust" + (i + 1), fx: "puff", at: 450 }, { a: "hide", id: "dust" + (i + 1), at: 1300 },
-  ]),
-  finale: [
-    { a: "move", id: "brush", x: 0, y: 0 }, { a: "hide", id: "bones", at: 200 }, { a: "show", id: "dino", fx: "pop", at: 300 },
-    { a: "fx", id: "dino", fx: "wiggle", at: 1000 }, { a: "show", id: "roar", fx: "fade", at: 1000 },
-  ],
-  done: { title: "The dinosaur woke up!", sub: "Eight words dug up a whole dinosaur." },
-  card: { finale: true },
 };
 
 // ── 8. Space Trip: every word flies to the next planet and picks up its star ──
@@ -323,4 +254,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [raceGame, mapGame, soccerGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [raceGame, mapGame, robotGame, castleGame, spaceGame, pizzaGame, monsterGame];

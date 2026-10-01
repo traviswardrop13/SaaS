@@ -274,8 +274,10 @@ ok("primer shows before the mic prompt", mp.shown);
 // the sound goes), and the games/practice distinction — so those are what is
 // pinned now, in the form that is currently true. mictest.mjs guards the other
 // direction: no sending claim may come back without the mechanism.
+// Shortened on 1 Oct 2026 (Travis: "way too many words here"): when the mic
+// listens, that nothing is uploaded, and the one try kept on the phone.
 ok("primer explains listening honestly",
-  /practice and optional voice-enabled games/.test(mp.txt) && /checked on this phone/.test(mp.txt) && /never uploads recordings/.test(mp.txt));
+  /listens only after asking your child to talk/.test(mp.txt) && /never uploaded/.test(mp.txt) && /one try a day may stay on this device/.test(mp.txt));
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);

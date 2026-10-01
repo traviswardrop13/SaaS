@@ -149,7 +149,7 @@ try {
       const{context,page,errors}=await fresh({voiceOn:true});try{
         await page.locator('#slowKeys').click();await ready(page);
         const h=await page.evaluate(()=>({audio:__slowTest.sounds.filter(s=>s.kind==='voice'),opened:__slowTest.openedAt}));
-        ok('Echo speaks the instruction and then models the recorded target sound',h.audio.length===2&&/^blob:/.test(h.audio[0].url)&&/\/coach\/say-echo\/R-demo\.mp3$/.test(h.audio[1].url),h);
+        ok('Echo speaks the instruction and then models one take of the recorded target sound',h.audio.length===2&&/^blob:/.test(h.audio[0].url)&&/\/coach\/say-echo\/R-sound\.wav$/.test(h.audio[1].url),h);
         ok('the microphone waits for the recorded sound and its quiet tail',h.audio.length===2&&h.audio[1].end!==null&&h.opened-h.audio[1].end>=850,h);
         await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);await clean('spoken prompt',page,errors);
       }finally{await context.close();}

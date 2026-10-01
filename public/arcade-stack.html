@@ -287,6 +287,10 @@
 
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},520); }
     function tableY(){ return H*0.80; }
+    // How far above its landing spot the next block slides, and where the
+    // camera keeps the tower's top (a share of the screen's height).
+    var TOWER_TOP=0.5;
+    function dropGap(){ return Math.min(60,H*.075); }
     function blockY(i){ return tableY()-(i+1)*BH+camY; }
 
     // ── the game's own sounds, made on the phone (27 Sep 2026) ──
@@ -558,7 +562,10 @@
       // parallax stars
       ctx.globalAlpha=0.22; ctx.fillStyle="#bfe0ff"; for(i=0;i<24;i++){ ctx.fillRect(((i*89)%W),(((i*173)+camY*0.3)%H+H)%H,2,2); } ctx.globalAlpha=1;
       var towerTopY=tableY()-stack.length*BH+camY;
-      var want= towerTopY<H*0.42 ? camY+(H*0.42-towerTopY) : camY;
+      // The tower's top stays at or below the middle of the screen, so the
+      // sliding block has room under the sound chip and the HUD (Travis, 1 Oct
+      // 2026: "the words above the blocks are way too close to the blocks").
+      var want= towerTopY<H*TOWER_TOP ? camY+(H*TOWER_TOP-towerTopY) : camY;
       camY+=(want-camY)*0.08;
       // The painting's table and cheering characters stay fixed. Only the
       // tower's visual stage narrows to fit between them; physics stays unchanged.
@@ -579,7 +586,7 @@
       if(playing&&phase==="floor"&&cur){
         cur.x+=cur.dir*speed*slowFactor();
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
-        var landingY=blockY(stack.length), gap=Math.min(76,H*.095), y=landingY-gap;
+        var landingY=blockY(stack.length), gap=dropGap(), y=landingY-gap;
         // A dotted plumb line and warm landing glow show exactly where a tap
         // will drop the current block. They never change the snap window.
         var cx=cur.x+cur.w/2, topBlock=stack[stack.length-1];
