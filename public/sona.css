@@ -9,7 +9,7 @@
 :root{
   --blue:#1cb0f6; --blue-d:#1597d4; --orange:#ff8a3d; --orange-d:#ef6f23;
   --ink:#4a2c14; --muted:#8a6f52; --line:#f0e4d2; --card:#ffffff;
-  --bg1:#fffdf8; --bg2:#fff2df; --good:#58cc02;
+  --bg1:#fffdf8; --bg2:#fff2df; --good:#1f98a6;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;
   font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}

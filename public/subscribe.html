@@ -57,7 +57,7 @@
     .tld{position:absolute;left:-40px;top:-1px;width:32px;height:32px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;font-size:15px;
       background:#fff;border:2px solid var(--line);box-shadow:0 4px 10px rgba(15,39,66,.08);}
-    .tli.now .tld{background:linear-gradient(160deg,#8ae05c,#58cc02);border-color:transparent;box-shadow:0 4px 0 0 #46a302;}
+    .tli.now .tld{background:linear-gradient(160deg,var(--act-hi),var(--act));border-color:transparent;box-shadow:0 4px 0 0 var(--act-d);}
     .tli.mail .tld{background:linear-gradient(160deg,#56b4ff,var(--blue));border-color:transparent;box-shadow:0 4px 0 0 var(--blue-d);}
     .tli.lock .tld{background:linear-gradient(160deg,#ffb072,var(--orange));border-color:transparent;box-shadow:0 4px 0 0 var(--orange-d);}
     .tli b{font-family:"Baloo 2";font-weight:800;font-size:16px;display:block;color:var(--ink);}
@@ -300,7 +300,7 @@
              button enables, so the price a parent sees is the price Stripe
              charges. The native card above is untouched: App Store Connect
              owns that figure. -->
-        <span class="reassure" id="charterLine" style="display:none;font-weight:800;color:#46a302;"></span>
+        <span class="reassure" id="charterLine" style="display:none;font-weight:800;color:var(--act-d);"></span>
         <span class="save">Under $5 a month, billed once a year.</span>
         <span class="sub">Every game in the library, both age groups, and every new game as it ships. Nothing is charged for the first 3 days.</span>
         <button class="btn go" id="buyLife">Start 3 days free</button>

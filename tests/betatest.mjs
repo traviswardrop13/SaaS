@@ -178,7 +178,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   ok("the extra practice-direction page has been removed",
     !/data-step="path"/.test(ob));
   ok("the picked age chip uses the app's one selection colour",
-    /\.schips \.sound\.on\{[^}]*border-color:#58cc02/.test(ob),
+    /\.schips \.sound\.on\{[^}]*border-color:var\(--act\)/.test(ob),   // teal since 1 Oct 2026: no green anywhere
     "cream on white is not a selection anyone can see");
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
