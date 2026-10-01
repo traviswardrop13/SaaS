@@ -158,6 +158,17 @@ t = await page.evaluate(() => ({
 }));
 ok("concert scene: Echo strums with floating notes", t.uke && t.notes >= 2);
 ok("the ukulele actually plays (plucks scheduled)", t.played);
+// Echo hops under the win sentence, and his box has to hold the whole hop: at
+// 120px he covered the middle of "discoveries" (1 Oct 2026). Measured at rest,
+// plus the hop's own reach.
+const hop = /@keyframes echoHop\{[^@]*?translateY\(-(\d+)px\) rotate\(-(\d+)deg\)/.exec(src) || [];
+const gap = await page.evaluate(([px, deg]) => {
+  const img = document.querySelector("#endOvl .echoWin img"), above = img.parentNode.previousElementSibling, was = img.style.animation;
+  img.style.animation = "none"; const r = img.getBoundingClientRect(); img.style.animation = was;
+  const a = deg * Math.PI / 180, reach = px + r.height / 2 * (Math.cos(a) + Math.sin(a) - 1), line = above.getBoundingClientRect();
+  return { above: above.id, shown: line.height > 0, reach, clear: r.top - reach - line.bottom };
+}, [+hop[1], +hop[2]]);
+ok("at the top of his hop, Echo stays clear of the sentence above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, JSON.stringify(gap));
 t = await page.evaluate(() => ({
   fedStore: JSON.parse(localStorage.getItem("sona.feed.v1") || "{}").fed || 0,
   rot: window.Sona.rotRound(),
