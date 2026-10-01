@@ -102,9 +102,18 @@
       crowd.push({ r: r, u: (i + (r % 2 ? 0.5 : 0) + 0.2 * Math.sin(i * 7.3 + r)) / per, skin: SKIN[(i * 3 + r * 5) % SKIN.length], shirt: SHIRT[(i * 7 + r * 2) % SHIRT.length], ph: Math.random() * 6 });
     }
   }
+  var GYM_ART = new Image(); GYM_ART.src = "/assets/crafted/game/hoops-gym.webp";
   function drawGym() {
     var floorY = project(0, 0, WALL_Z).y;
-    var g = ctx.createLinearGradient(0, 0, 0, floorY);
+    var g;
+    // the crafted gym wall (Travis, 1 Oct 2026: "new wall"): one painted picture
+    // in place of the drawn wall, bleachers, crowd and bunting; the drawn wall
+    // until it loads. The floor below stays drawn: it carries the court lines.
+    if (GYM_ART.complete && GYM_ART.naturalWidth) {
+      var sc = Math.max(W / GYM_ART.naturalWidth, floorY / GYM_ART.naturalHeight), gw = GYM_ART.naturalWidth * sc, gh = GYM_ART.naturalHeight * sc;
+      ctx.drawImage(GYM_ART, (W - gw) / 2, floorY - gh, gw, gh);
+    } else {
+    g = ctx.createLinearGradient(0, 0, 0, floorY);
     g.addColorStop(0, "#FFF8E9"); g.addColorStop(1, "#EEDDC0");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, floorY + 1);
     timber(0, 0, W, floorY, "#f2e4cd", 0.18);
@@ -146,6 +155,7 @@
     for (var i = 0; i < 12; i++) {
       var t = (i + 0.5) / 12, x = -10 + (W + 20) * t, y = by + sag * 4 * t * (1 - t), s = Math.max(6, W * 0.026);
       ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s * 1.6); ctx.closePath(); ctx.fill();
+    }
     }
     // the floor: wood running toward the hoop, a teal key, white lines
     var near = 1.0, wallP = project(0, 0, WALL_Z);
@@ -235,12 +245,15 @@
     ctx.lineCap = "butt";
   }
 
+  var BALL_ART = new Image(); BALL_ART.src = "/assets/crafted/game/ball.webp";
   function drawBall(b) {
     var p = project(b.x, b.y, b.z), r = BALL_R * p.s;
     if (r <= 0.5) return;
     var sh = project(b.x, 0.001, b.z);
     if (sh.y < H + r && b.z > 0.9) { ctx.fillStyle = "rgba(90,50,15," + Math.max(0, 0.26 - b.y * 0.05).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, r * 1.05, r * 0.3, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.save(); ctx.translate(p.x, p.y);
+    // the crafted ball (1 Oct 2026), turning with the spin; the drawn one until it loads
+    if (BALL_ART.complete && BALL_ART.naturalWidth) { ctx.rotate(b.spin || 0); ctx.drawImage(BALL_ART, -r, -r, r * 2, r * 2); ctx.restore(); return; }
     var g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
     g.addColorStop(0, "#ffbb63"); g.addColorStop(0.5, "#eb8935"); g.addColorStop(0.85, "#c25d25"); g.addColorStop(1, "#8e3e20");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();

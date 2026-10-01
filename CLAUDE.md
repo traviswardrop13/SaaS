@@ -596,24 +596,26 @@ nowhere else in the book (not mid-word, not at the end, not in a blend).
 Spelling can't check that, so `readtest` checks every line against
 `tests/booklex.json` (pronouncing-dictionary entries); a new word needs its
 entry there. The reader tints only the start of each book's listed `words`.
-Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
-Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
-built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
-in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
-**The builder never draws over hand-made art** (the family's redesign brief,
-28 Sep 2026: new pictures are coming from a designer, a book at a time). Every
-SVG it writes opens with its marker comment straight after the `<svg>` tag
-(`MARK` and `builtHere()` in `tools/bookart/book.mjs`). It plans every file
-first and writes nothing at all if a target folder holds anything it did not
-write: a .webp or .png, or an .svg that doesn't open with the marker (an old
-page redrawn in an editor that kept the comment counts as hand-made). It also
-refuses a book name it doesn't build (it used to print "built 0 books" and
-exit 0). Hand-made books are listed in `tools/bookart/handmade.mjs` (today
-only `rory-rainbow`). When a book's redrawn art lands: add its slug there,
-delete it from `books1.mjs`/`books2.mjs`, delete its old SVGs, and point its
-paths in `library.html` and `parents.html` at the new files, in one commit.
-`tests/arttooltest.mjs` pins the two lists against the shelf, the generated
-bytes on disk, every book-picture path any page uses, and the refusals.
+Every page is a picture in the crafted style: **all 19 fuller books were
+redrawn on 1 Oct 2026** (Travis: "every design done by claude we will be done
+with") as `cover.webp` + `p01..p12.webp` in `public/assets/books/<slug>/`.
+They are made by `tools/art/` (README in each script's header):
+`book-prompts.json` holds each book's character bible and one description per
+page, built around that page's key word; `gen-books.mjs` draws a cover, a
+character lineup, then every page as its own picture with the cover and lineup
+attached (six pages on one sheet put 5-9 of 12 in the wrong place);
+`cut-books.py` trims and sizes them; `wire-books.mjs` swaps a book in.
+Every page was checked by eye against its line and key word; the pages the
+check still questioned are listed on the review page (`tools/art/review/`)
+for Travis and Rachel. **What a picture shows the child is Rachel's call**:
+redraw a page through `gen-books.mjs --redo <slug>:pNN`, never by hand-editing
+a prompt into a different word.
+`tools/bookart/` (the old SVG builder) now builds no book — `handmade.mjs`
+lists all 19 and `books1.mjs`/`books2.mjs` are empty — but stays because
+`tools/gameart/` draws the parked games from its kit. The builder still never
+draws over hand-made art and refuses a book name it doesn't build;
+`tests/arttooltest.mjs` pins the lists against the shelf and every
+book-picture path any page uses.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"), and **one is
 free** (30 Sep 2026: "one book uh so like the letter r book ... to be free and
 the rest is grayed out"). Home's Books card always opens `library.html` and

@@ -1,0 +1,1541 @@
+[
+ {
+  "slug": "rory-rainbow",
+  "title": "Rory and the Rainbow",
+  "sound": "R",
+  "opens": null,
+  "coverAlt": "Rory the rabbit cheers on a green hill under a big rainbow",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Rain taps on the roof. Rory the rabbit looks up.",
+    "key": "rabbit",
+    "alt": "Rain falls on a little house with a red roof. Rory the rabbit stands in a puddle and looks up."
+   },
+   {
+    "n": 2,
+    "text": "The rain stops. Look, a rainbow!",
+    "key": "rain",
+    "alt": "The rain has stopped. A big rainbow shines over the hills, and Rory points up at it."
+   },
+   {
+    "n": 3,
+    "text": "Rory runs down the road to reach it.",
+    "key": "reach",
+    "alt": "Rory runs down a winding road toward the rainbow far away."
+   },
+   {
+    "n": 4,
+    "text": "The road ends at a rushing river.",
+    "key": "rushing",
+    "alt": "The road stops at a wide, rushing river. Rory stands at the edge and says whoa."
+   },
+   {
+    "n": 5,
+    "text": "Rory ties reeds into a raft.",
+    "key": "reeds",
+    "alt": "By the river, Rory ties a bundle of tall reeds with rope. A raft made of reeds lies on the grass."
+   },
+   {
+    "n": 6,
+    "text": "He rows the raft on the river.",
+    "key": "river",
+    "alt": "Rory sits on his reed raft and rows across the river with a wooden paddle."
+   },
+   {
+    "n": 7,
+    "text": "Remy the raccoon waves. \"Room on the raft?\"",
+    "key": "raccoon",
+    "alt": "Remy the raccoon stands on a rock in the river and waves. Rory, on the raft, holds out a paw to welcome him."
+   },
+   {
+    "n": 8,
+    "text": "Then they see a robot, stuck in the mud.",
+    "key": "robot",
+    "alt": "From the raft, Rory and Remy see a blue robot stuck up to its middle in brown mud, waving its arms for help."
+   },
+   {
+    "n": 9,
+    "text": "Rory and Remy pull him out with a red ribbon.",
+    "key": "ribbon",
+    "alt": "Rory and Remy lean back and pull a long red ribbon. The robot pops out of the mud with a happy face."
+   },
+   {
+    "n": 10,
+    "text": "\"Thank you! Ride in my rocket!\" says the robot.",
+    "key": "rocket",
+    "alt": "The happy robot points to its red and white rocket. Rory and Remy cheer."
+   },
+   {
+    "n": 11,
+    "text": "They land by the rainbow, in a field of roses.",
+    "key": "rainbow",
+    "alt": "The rocket has landed in a field of red and pink roses, right where the rainbow touches the ground. Rory, Remy and the robot smile."
+   },
+   {
+    "n": 12,
+    "text": "Rory, Remy, and the robot run and play!",
+    "key": "robot",
+    "alt": "Under the rainbow, Rory jumps for a red ball, Remy runs and the robot hops, with confetti everywhere."
+   }
+  ]
+ },
+ {
+  "slug": "sid-the-seagull",
+  "title": "Sid the Seagull",
+  "sound": "S",
+  "opens": null,
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Sid the seagull lives by the sea.",
+    "key": "seagull",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "The sun is up. The sand is warm.",
+    "key": "sand",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Sid sees a sandwich on a seat.",
+    "key": "sandwich",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "\"Sadie, may I have some?\" says Sid.",
+    "key": "sadie",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Sadie gives Sid a bite.",
+    "key": "sid",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Thank you, Sadie!\" Sid sings a song.",
+    "key": "sings",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Sadie and Sid sit in the sand.",
+    "key": "sand",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "They dig a big sand hill.",
+    "key": "sand",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Sid adds a seashell on top.",
+    "key": "seashell",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Oh no! The sea rolls in.",
+    "key": "sea",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "The sand hill is gone. Sid is sad.",
+    "key": "sad",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"Silly Sid! We can make one more!\" says Sadie.",
+    "key": "silly",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "shay-the-shy-shark",
+  "title": "Shay the Shy Shark",
+  "sound": "SH",
+  "opens": null,
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Shay the shark is shy.",
+    "key": "shark",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Shay hides in the shadow of a ship.",
+    "key": "ship",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "\"Come and see the show!\" shout the crabs.",
+    "key": "shout",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Shay shakes her head.",
+    "key": "shakes",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Shimmer the seahorse swims by.",
+    "key": "shimmer",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Shay, come with me to the show!\" says Shimmer.",
+    "key": "shay",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Shay is not sure.",
+    "key": "sure",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Shimmer shows Shay a shiny shell.",
+    "key": "shell",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "\"Shake it in the show!\" says Shimmer.",
+    "key": "shake",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Shay shakes the shell. Shh, shh, shh!",
+    "key": "shell",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "The crabs cheer. \"Shay, you are a star!\"",
+    "key": "shay",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Shay is not shy now. She shines!",
+    "key": "shines",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "leo-lucky-leaf",
+  "title": "Leo's Lucky Leaf",
+  "sound": "L",
+  "opens": null,
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Leo the lamb likes to leap.",
+    "key": "lamb",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Leo leaps by the lake.",
+    "key": "leaps",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "A leaf lands on Leo's head.",
+    "key": "leaf",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "\"A lucky leaf!\" Leo laughs.",
+    "key": "leaf",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Leo takes the leaf to Lucy.",
+    "key": "leaf",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Lucy is a lazy lizard on a log.",
+    "key": "lizard",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "\"Look, Lucy! A lucky leaf!\" says Leo.",
+    "key": "lucky",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Lucy licks her lips. \"Is it lunch?\"",
+    "key": "licks",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "\"No, Lucy! Let's make a leaf boat!\"",
+    "key": "lucy",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "They lay the leaf on the lake.",
+    "key": "lake",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "A ladybug rides the leaf boat.",
+    "key": "ladybug",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Leo and Lucy wave. What luck!",
+    "key": "luck",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "theo-thunder-day",
+  "title": "Theo's Thunder Day",
+  "sound": "TH",
+  "opens": null,
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Theo thinks it is a fun day.",
+    "key": "theo",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Theo is thirsty. He sips a big drink.",
+    "key": "thirsty",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Thump! Thud! What is it?",
+    "key": "thump",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "It is thunder! Theo hides his head.",
+    "key": "thunder",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Theo feels a bit scared.",
+    "key": "theo",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Theo's pal Thea comes over.",
+    "key": "thea",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "\"Theo, think of a fun thing!\" says Thea.",
+    "key": "think",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Theo thinks of a thick, warm blanket.",
+    "key": "thick",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Theo and Thea sit under a thick blanket.",
+    "key": "thick",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Thea hums a tune. Theo taps his thumb.",
+    "key": "thumb",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Soon, no more thunder.",
+    "key": "thunder",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"Thanks, Thea!\" Theo gives a big thumbs up.",
+    "key": "thumbs",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "kip-kite",
+  "title": "Kip's Kite",
+  "sound": "K",
+  "opens": "2026-10-05",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Kip the kangaroo has a kite.",
+    "key": "kangaroo",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "The kite has a long tail.",
+    "key": "kite",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Kip hops up the hill.",
+    "key": "kip",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Whoosh! The wind catches the kite.",
+    "key": "kite",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Up, up, up goes Kip's kite!",
+    "key": "kite",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Cody the cow comes to see.",
+    "key": "cow",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "\"Can I hold it?\" says Cody.",
+    "key": "cody",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Cody holds the kite. The wind gets strong!",
+    "key": "kite",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "The kite carries Cody up in the air!",
+    "key": "carries",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "\"Come down, Cody!\" calls Kip.",
+    "key": "come",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Cody comes down in the corn.",
+    "key": "corn",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Kip gives Cody a carrot. What a day!",
+    "key": "carrot",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "zoe-and-the-zipper",
+  "title": "Zoe and the Zipper",
+  "sound": "Z",
+  "opens": "2026-10-05",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Zoe the zebra woke up at the zoo.",
+    "key": "zebra",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "It felt cold. Zoe got her coat.",
+    "key": "zoe",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Zoe pulled the zipper. Zip!",
+    "key": "zipper",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Oh no! The zipper got stuck.",
+    "key": "zipper",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Zoe called Zack the zookeeper.",
+    "key": "zookeeper",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Zack tugged the zipper. Zip, zip!",
+    "key": "zip",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Zap! The zipper went up.",
+    "key": "zipper",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "\"Thank you, Zack!\" said Zoe.",
+    "key": "zack",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Zoe zoomed out to play.",
+    "key": "zoomed",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Zoom, zoom, all around the zoo!",
+    "key": "zoo",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Zack gave Zoe a zucchini for lunch.",
+    "key": "zucchini",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Zoe the zebra felt warm and happy.",
+    "key": "zebra",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "chip-the-chipmunk",
+  "title": "Chip the Chipmunk",
+  "sound": "CH",
+  "opens": "2026-10-05",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Chip the chipmunk has chubby cheeks.",
+    "key": "chipmunk",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Chip chews on chestnuts.",
+    "key": "chestnuts",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "It is chilly. Chip needs a cozy spot.",
+    "key": "chilly",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Chip checks the old chimney.",
+    "key": "chimney",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "A chick is in the chimney!",
+    "key": "chick",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Cheep, cheep!\" says the chick.",
+    "key": "cheep",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "The chick is chilly too.",
+    "key": "chilly",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Chip shares his chestnuts.",
+    "key": "chip",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Chip and the chick chat and chew.",
+    "key": "chat",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "They find a comfy chair.",
+    "key": "chair",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Chip and the chick cuddle up in the chair.",
+    "key": "chair",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"Cheers for a new pal!\" chirps the chick.",
+    "key": "chirps",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "goldie-guitar",
+  "title": "Goldie's Guitar",
+  "sound": "G",
+  "opens": "2026-10-12",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Goldie the goose gets a gift.",
+    "key": "goose",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "The gift is a guitar!",
+    "key": "guitar",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Goldie goes to the garden.",
+    "key": "garden",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Goldie plays a happy tune.",
+    "key": "goldie",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Gus the goat comes to the gate.",
+    "key": "goat",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Goldie, can I have a go?\" asks Gus.",
+    "key": "gus",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Gus gets the guitar.",
+    "key": "guitar",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Gus is no good at it!",
+    "key": "good",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Goldie shows Gus how.",
+    "key": "goldie",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Gus gets better and better.",
+    "key": "gets",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "The garden gophers come to hear.",
+    "key": "gophers",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Goldie and Gus give a garden show!",
+    "key": "garden",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "jax-and-the-jam-jar",
+  "title": "Jax and the Jam Jar",
+  "sound": "J",
+  "opens": "2026-10-12",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Jax the jaguar lives in the jungle.",
+    "key": "jaguar",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Jax likes to jump and jog.",
+    "key": "jump",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "One day, Jax finds a jar of jam.",
+    "key": "jar",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "\"Yum, jam!\" Jax jumps for joy.",
+    "key": "jam",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Jax cannot get the lid off the jar.",
+    "key": "jar",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Along comes Jill the giraffe.",
+    "key": "giraffe",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Jill gives the jar a twist.",
+    "key": "jar",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Pop! The jar is open.",
+    "key": "jar",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "\"Join me for jam!\" says Jax.",
+    "key": "jam",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Jax and Jill eat jam and drink juice.",
+    "key": "juice",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Jill tells a joke. Jax giggles.",
+    "key": "joke",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "What a jolly day in the jungle!",
+    "key": "jungle",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "this-bear-that-bee",
+  "title": "This Bear, That Bee",
+  "sound": "THV",
+  "opens": "2026-10-12",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "This is a big bear. That is a little bee.",
+    "key": "this",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "They are pals. They like to play.",
+    "key": "they",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "\"Let's go there!\" says the bear.",
+    "key": "there",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "There is a pond by the hill.",
+    "key": "the",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Then they see the ducks.",
+    "key": "then",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Look at those ducks!\" says the bee.",
+    "key": "those",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "The ducks swim in a line.",
+    "key": "the",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "\"These seeds are for them,\" says the bee.",
+    "key": "these",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "They toss the seeds to the ducks.",
+    "key": "they",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "The ducks quack, \"Yum, yum!\"",
+    "key": "the",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Then the sun sets.",
+    "key": "then",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"That was the best day!\" say the pals.",
+    "key": "that",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "toby-tiny-tuba",
+  "title": "Toby's Tiny Tuba",
+  "sound": "T",
+  "opens": "2026-10-19",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Toby the tiger has a tiny tuba.",
+    "key": "tiger",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Toby taps his toes.",
+    "key": "taps",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "\"Too, too, too!\" goes the tuba.",
+    "key": "tuba",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Tia the toucan comes by.",
+    "key": "toucan",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Tia likes the tune. She taps along.",
+    "key": "tune",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Toby and Tia play for the town.",
+    "key": "town",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Ten turkeys come to hear.",
+    "key": "ten",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "The turkeys tap their toes too.",
+    "key": "turkeys",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "A tiny toad jumps on the tuba.",
+    "key": "toad",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "The toad sings a tune.",
+    "key": "toad",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Everyone claps. Toby takes a bow.",
+    "key": "toby",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"Time for tea!\" says Toby.",
+    "key": "tea",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "finn-finds-a-feather",
+  "title": "Finn Finds a Feather",
+  "sound": "F",
+  "opens": "2026-10-19",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Finn the fish lives by a big rock.",
+    "key": "fish",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Finn has fast fins.",
+    "key": "fins",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "One day, Finn finds a feather.",
+    "key": "feather",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "\"Whose feather?\" asks Finn.",
+    "key": "finn",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Finn swims far and fast.",
+    "key": "fast",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Finn meets Fay the fox by the shore.",
+    "key": "fox",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "\"Not my feather,\" says Fay.",
+    "key": "fay",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Finn meets a family of ducks.",
+    "key": "family",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "\"Not our feather,\" they say.",
+    "key": "feather",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Then a gull swoops down. It has no tail feather!",
+    "key": "feather",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Finn gives the feather back. \"Thank you!\" says the gull.",
+    "key": "finn",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Finn feels fine. What a fun day!",
+    "key": "fine",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "val-the-van",
+  "title": "Val the Van",
+  "sound": "V",
+  "opens": "2026-10-19",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Val the van is in a valley.",
+    "key": "van",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Val goes to the village.",
+    "key": "village",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "\"Beep, beep!\" goes Val.",
+    "key": "val",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Val takes a vase to Vicky.",
+    "key": "vase",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Vicky puts a violet in the vase.",
+    "key": "vase",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Val takes vegetables to the vet.",
+    "key": "vegetables",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "The vet shares them with the animals.",
+    "key": "vet",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Val takes a violin to Vince.",
+    "key": "violin",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Vince plays a very sweet tune.",
+    "key": "vince",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "The village comes to hear.",
+    "key": "village",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Vicky washes Val. Val looks very shiny.",
+    "key": "vicky",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "\"Thank you, Val!\" says the village.",
+    "key": "val",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "penny-pebble-party",
+  "title": "Penny's Pebble Party",
+  "sound": "P",
+  "opens": "2026-10-26",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Penny the penguin has a pink pail.",
+    "key": "penguin",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Penny waddles down to the pond.",
+    "key": "pond",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Penny finds a pebble. Then another pebble!",
+    "key": "pebble",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Penny puts the pebbles in the pail.",
+    "key": "pebbles",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Pat the pig peeks in. \"Can I paint them?\"",
+    "key": "paint",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Penny and Pat paint the pebbles.",
+    "key": "paint",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Pink pebbles! Peach pebbles!",
+    "key": "pink",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Polly the parrot lands on a pole.",
+    "key": "parrot",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "\"Polly! Come to our party!\" says Penny.",
+    "key": "party",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Polly brings a pie to the party.",
+    "key": "pie",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "They put the pebbles in a row by the pond.",
+    "key": "pebbles",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Penny, Pat, and Polly have a pebble party!",
+    "key": "penny",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "ned-needs-a-net",
+  "title": "Ned Needs a Net",
+  "sound": "N",
+  "opens": "2026-10-26",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Nora the newt has a nice, neat nest.",
+    "key": "nest",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Nora takes a nap.",
+    "key": "nap",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Knock, knock! A noise wakes Nora.",
+    "key": "knock",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "It is Ned the newt. \"My net is lost!\"",
+    "key": "net",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Nora looks near the nest.",
+    "key": "nest",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Ned looks by the old log.",
+    "key": "ned",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "\"No net here,\" says Ned.",
+    "key": "net",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Nora spots a net up a tree.",
+    "key": "net",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Nora nudges it with her nose.",
+    "key": "nose",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "The net drops. \"Neat!\" says Ned.",
+    "key": "neat",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Night falls. Nora makes noodles.",
+    "key": "noodles",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Ned eats noodles with Nora. What a nice night!",
+    "key": "night",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "dot-digs-a-pool",
+  "title": "Dot Digs a Pool",
+  "sound": "D",
+  "opens": "2026-10-26",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Dot the duck wants a pool to dive in.",
+    "key": "duck",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Dot digs a hole. Dig, dig, dig!",
+    "key": "digs",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Dan the dog comes to help.",
+    "key": "dog",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Dan digs too. Dust flies!",
+    "key": "dust",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "The hole gets deep.",
+    "key": "deep",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Down comes the rain.",
+    "key": "down",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "The rain fills the hole all day.",
+    "key": "day",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "Now Dot has a deep pool!",
+    "key": "dot",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Dot dips her toes.",
+    "key": "dips",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "\"Dan, let's dive!\" says Dot.",
+    "key": "dive",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Dot dives. Dan dives. Splash!",
+    "key": "dives",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Dot is a happy duck. Dan is a happy dog!",
+    "key": "duck",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "bo-beach-day",
+  "title": "Bo's Beach Day",
+  "sound": "B",
+  "opens": "2026-11-02",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Bo the bear has a big boat.",
+    "key": "bear",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Bo puts a basket in the boat.",
+    "key": "boat",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "In the basket: berries, buns, and a banana.",
+    "key": "banana",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Bo rows the boat to the beach.",
+    "key": "boat",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "A bee buzzes by. Buzz, buzz!",
+    "key": "bee",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "\"Can I come?\" asks Bella the bee.",
+    "key": "bee",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "Bo and Bella sit on the beach.",
+    "key": "beach",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "A ball bounces by the boat.",
+    "key": "ball",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Ben the bunny wants the ball back.",
+    "key": "ball",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "Bo bumps the ball to Ben.",
+    "key": "bumps",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Ben and Bella and Bo eat berries and buns.",
+    "key": "berries",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "What a fun day at the beach, Bo!",
+    "key": "bo",
+    "alt": ""
+   }
+  ]
+ },
+ {
+  "slug": "mia-makes-muffins",
+  "title": "Mia Makes Muffins",
+  "sound": "M",
+  "opens": "2026-11-02",
+  "coverAlt": "",
+  "pages": [
+   {
+    "n": 1,
+    "text": "Mia the mouse wants to make muffins.",
+    "key": "mouse",
+    "alt": ""
+   },
+   {
+    "n": 2,
+    "text": "Mia gets milk and a mixing bowl.",
+    "key": "milk",
+    "alt": ""
+   },
+   {
+    "n": 3,
+    "text": "Mia mixes and mixes. What a mess!",
+    "key": "mixes",
+    "alt": ""
+   },
+   {
+    "n": 4,
+    "text": "Max the mole peeks in. \"More milk?\"",
+    "key": "milk",
+    "alt": ""
+   },
+   {
+    "n": 5,
+    "text": "Max adds melon. Mia adds maple syrup.",
+    "key": "melon",
+    "alt": ""
+   },
+   {
+    "n": 6,
+    "text": "Mia puts the muffins in the oven.",
+    "key": "muffins",
+    "alt": ""
+   },
+   {
+    "n": 7,
+    "text": "The moon rises over the meadow.",
+    "key": "moon",
+    "alt": ""
+   },
+   {
+    "n": 8,
+    "text": "The muffins are ready at last!",
+    "key": "muffins",
+    "alt": ""
+   },
+   {
+    "n": 9,
+    "text": "Max and Mia munch muffins.",
+    "key": "munch",
+    "alt": ""
+   },
+   {
+    "n": 10,
+    "text": "\"Mia, may I take one to Molly?\" asks Max.",
+    "key": "molly",
+    "alt": ""
+   },
+   {
+    "n": 11,
+    "text": "Molly the moose says, \"Many thanks!\"",
+    "key": "moose",
+    "alt": ""
+   },
+   {
+    "n": 12,
+    "text": "Mia, Max, and Molly share a meal under the moon.",
+    "key": "moon",
+    "alt": ""
+   }
+  ]
+ }
+]

@@ -113,7 +113,7 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><img src="/assets/crafted/game/star.webp" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:contain"></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
       <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
@@ -356,6 +356,8 @@
       if(h>8){ctx.lineWidth=1.4;ctx.strokeStyle="rgba(255,252,227,.72)";rr(x+2,y+2,w-4,h-4,Math.max(2,r-2));ctx.stroke();}
       ctx.restore();
     }
+    var TILE_ART=["coral","purple","green","blue"].map(function(c){var im=new Image();im.src="/assets/crafted/game/tile-"+c+".webp";return im;});
+    TILE_ART.gold=new Image(); TILE_ART.gold.src="/assets/crafted/game/tile-gold.webp";
     function musicMark(x,y,size,col,pair){
       ctx.save();ctx.translate(x,y);ctx.scale(size/64,size/64);ctx.fillStyle=col;
       if(pair){
@@ -423,13 +425,16 @@
         }
         var x=t.lane*lw+6+sh, w=lw-12;
         ctx.globalAlpha=t.gone?Math.max(0,t.fade)*0.45:1;
-        paintedFace(x,t.y,w,t.h,13,t.hit?"#fff4d3":t.gold?"#f1c54d":LCOL[t.lane],5,t.gold?"#b07a26":["#b44d48","#76539f","#5f8141","#ad7b2a"][t.lane]);
+        // the crafted tiles (1 Oct 2026); a played tile and the not-yet-loaded fall back to the painted face
+        var art=!t.hit&&(t.gold?TILE_ART.gold:TILE_ART[t.lane]), artOk=art&&art.complete&&art.naturalWidth;
+        if(artOk) ctx.drawImage(art,x,t.y,w,t.h);
+        else paintedFace(x,t.y,w,t.h,13,t.hit?"#fff4d3":t.gold?"#f1c54d":LCOL[t.lane],5,t.gold?"#b07a26":["#b44d48","#76539f","#5f8141","#ad7b2a"][t.lane]);
         if(!t.hit&&t.wait&&!t.gone&&t.y>=hitY-t.h+39){
           keyHalo(x+w/2,hitY-5,w,.65+.2*Math.sin(now/180),now);
           ctx.strokeStyle="rgba(255,237,169,"+(.7+.2*Math.sin(now/180))+")";ctx.lineWidth=3;rr(x-2,t.y-2,w+4,t.h+4,15);ctx.stroke();
           ctx.fillStyle="#fff6db";ctx.font="800 17px 'Baloo 2',sans-serif";ctx.textAlign="center";ctx.fillText("Tap!",x+w/2,t.y-12);
         }
-        if(!t.hit){
+        if(!t.hit&&!artOk){
           musicMark(x+w/2,t.y+t.h/2,Math.min(w*.62,t.h*.69),t.gold?"#996216":["#a74248","#674595","#4d7a39","#a26a1c"][t.lane],t.lane%2===1);
           if(t.gold){ctx.fillStyle="#fff3ac";ctx.beginPath();for(var starI=0;starI<10;starI++){var a=-Math.PI/2+starI*Math.PI/5,rad=starI%2?3:7;starI?ctx.lineTo(x+w-12+Math.cos(a)*rad,t.y+13+Math.sin(a)*rad):ctx.moveTo(x+w-12+Math.cos(a)*rad,t.y+13+Math.sin(a)*rad);}ctx.closePath();ctx.fill();}
         }

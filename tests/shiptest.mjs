@@ -128,9 +128,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const acts = sona.slice(sona.indexOf("const GAME_ACTS = {"), sona.indexOf("\n  };", sona.indexOf("const GAME_ACTS = {")));
   const all = [...acts.matchAll(/^\s{4}(\w+):\s*\{ name: "([^"]+)"([^\n]*)/gm)];
   const games = all.filter((m) => !/comingSoon: true/.test(m[3])), parkedGames = all.filter((m) => /comingSoon: true/.test(m[3]));
-  // A drawn book is a folder with a cover.svg. /assets/books/painted/ holds the
+  // A drawn book is a folder with a cover.svg, or cover.webp once redrawn. /assets/books/painted/ holds the
   // six-page books' painted pictures (29 Sep 2026), and is not a book.
-  const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\/cover\.svg/g) || []).filter((v, i, a) => a.indexOf(v) === i);
+  const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\/cover\.(?:svg|webp)/g) || []).filter((v, i, a) => a.indexOf(v) === i);
   const sounds = JSON.parse((sona.match(/const ALL_SOUNDS = (\[[^\]]*\]);/) || [, "[]"])[1]);
   ok("the parent page's game count is the catalog's", games.length >= 6 && new RegExp('<span class="n">' + games.length + "</span> games\\.").test(parents), games.length);
   ok("…and its game strip shows every one of them", (parents.match(/<li class="tile g">/g) || []).length === games.length &&
@@ -144,8 +144,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // on the phone from those days (landingtest plays it), so it is never
   // ahead of the shelf.
   const lib = readFileSync(APP + "/public/library.html", "utf8");
-  const shelfDays = [...lib.matchAll(/\{ sound: "\w+", emoji: "[^"]*", (?:opens: "([\d-]+)", )?title: "[^"]+"[^\n]*\n\s*cover: "\/assets\/books\/([a-z-]+)\/cover\.svg"/g)].map((m) => ({ slug: m[2], opens: m[1] || "" }));
-  const tileDay = (slug) => (parents.match(new RegExp('<li class="tile b"(?: data-opens="([\\d-]+)")?><img src="/assets/books/' + slug + '/cover\\.svg"')) || [null, null]);
+  const shelfDays = [...lib.matchAll(/\{ sound: "\w+", emoji: "[^"]*", (?:opens: "([\d-]+)", )?title: "[^"]+"[^\n]*\n\s*cover: "\/assets\/books\/([a-z-]+)\/cover\.(?:svg|webp)"/g)].map((m) => ({ slug: m[2], opens: m[1] || "" }));
+  const tileDay = (slug) => (parents.match(new RegExp('<li class="tile b"(?: data-opens="([\\d-]+)")?><img src="/assets/books/' + slug + '/cover\\.(?:svg|webp)"')) || [null, null]);
   ok("its book strip is the bookshelf's, one book for every sound, each tile with the day the shelf opens it",
     books.length === sounds.length && shelfDays.length === books.length && (parents.match(/<li class="tile b"/g) || []).length === books.length &&
     shelfDays.every((b) => tileDay(b.slug)[0] && (tileDay(b.slug)[1] || "") === b.opens),
