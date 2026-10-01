@@ -84,7 +84,7 @@
   "kind": "svg-file",
   "count": 19,
   "live": "coming-soon",
-  "evidence": "All 19 have comingSoon:true with a Friday comingOn (9 or 16 Oct) (sona.js:2642-2663); the cards are disabled. Screenshot shows them flat. Hoops is excluded correctly: it uses crafted/home-hoops.webp and sp-hoops points at games/hoops.webp.",
+  "evidence": "When inventoried all 19 had comingSoon:true (sona.js:2642-2663) and their cards were disabled. Since 1 Oct 2026 Soccer Goal and Dino Dig are rebuilt and open; the other 17 carry a Friday comingOn (9 or 16 Oct). Screenshot shows them flat. Hoops is excluded correctly: it uses crafted/home-hoops.webp and sp-hoops points at games/hoops.webp.",
   "area": "home"
  },
  {
@@ -1001,14 +1001,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Grow a Flower's card on Home: a smiling pink flower in bloom by a picket fence, a watering can and a bee (greyed out, \"Coming Oct 16\")",
+  "sees": "Grow a Flower's card on Home: a smiling pink flower in bloom by a picket fence, a watering can and a bee (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/flower.svg (sp-flower)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.flower comingSoon:true, comingOn 2026-10-16 (sona.js:2643). Disabled card at today.html:262.",
+  "evidence": "GAME_ACTS.flower comingSoon:true, comingOn 2026-10-09 (sona.js:2643). Disabled card at today.html:262.",
   "area": "games-parked"
  },
  {
@@ -1243,14 +1243,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Soccer Goal's card on Home: a child kicking balls past Bo the bear in goal, in front of a stadium crowd and a scoreboard (greyed out, \"Coming Oct 9\", among the first ten to drop)",
+  "sees": "Soccer Goal's card on Home: a child kicking balls past Bo the bear in goal, in front of a stadium crowd and a scoreboard (greyed out when this was inventoried; rebuilt and open since 1 Oct 2026, with no \"Coming\" day)",
   "file": "public/assets/games/soccer.svg (sp-soccer)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.soccer comingSoon:true, comingOn 2026-10-09 (sona.js:2654).",
+  "evidence": "When inventoried, GAME_ACTS.soccer had comingSoon:true. Since 1 Oct 2026 it is rebuilt and open: no comingSoon and no comingOn.",
   "area": "games-parked"
  },
  {
@@ -1309,14 +1309,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Dino Dig's card on Home: a green long-necked dinosaur awake on a sandy cliff, with a brush and 'roar' lines (greyed out, \"Coming Oct 9\")",
+  "sees": "Dino Dig's card on Home: a green long-necked dinosaur awake on a sandy cliff, with a brush and 'roar' lines (greyed out when this was inventoried; rebuilt and open since 1 Oct 2026, with no \"Coming\" day)",
   "file": "public/assets/games/dino.svg (sp-dino, drawn with the finale per tools/gameart/big.mjs:218)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.dino comingSoon:true, comingOn 2026-10-09 (sona.js:2660).",
+  "evidence": "When inventoried, GAME_ACTS.dino had comingSoon:true. Since 1 Oct 2026 it is rebuilt and open: no comingSoon and no comingOn.",
   "area": "games-parked"
  },
  {
@@ -1569,7 +1569,7 @@
   "kind": "svg-file",
   "count": 19,
   "live": "coming-soon",
-  "evidence": "All 19 have comingSoon:true with Friday dates (9 Oct and 16 Oct). They are not in craftedCards, so today.html:268 paints sp-<key>. These svg files are used nowhere else (the only other assets/games reference is hoops.webp). Rendered three: flat vector. If the games audit also lists assets/games/*.svg, count them once.",
+  "evidence": "When inventoried all 19 had comingSoon:true. Since 1 Oct 2026 Soccer Goal and Dino Dig are rebuilt and open; the other 17 carry Friday dates (9 Oct and 16 Oct). They are not in craftedCards, so today.html:268 paints sp-<key>. These svg files are used nowhere else (the only other assets/games reference is hoops.webp). Rendered three: flat vector. If the games audit also lists assets/games/*.svg, count them once.",
   "area": "grownups"
  },
  {

@@ -14,7 +14,7 @@ body[data-crafted] .ovl p{color:#806446;}
 body[data-crafted] .ovl h2{color:#44270f;}
 body[data-crafted] .ovl h2 b{color:#bf5d24;}
 body[data-crafted] .ovlEcho{object-fit:contain;width:132px;height:132px;top:-75px;filter:drop-shadow(0 9px 8px #70492130);}
-body[data-crafted] .btn,body[data-crafted] .btn.blue,body[data-crafted] #launchBar{background:linear-gradient(#19b6bb,#078e9d);box-shadow:inset 0 2px 0 #ffffff88,0 5px 0 #056c7c,0 8px 15px #16565720;border:1px solid #068a98;color:#fff;text-transform:none;letter-spacing:0;min-height:48px;}
+body[data-crafted] .btn,body[data-crafted] .btn.blue{background:linear-gradient(#19b6bb,#078e9d);box-shadow:inset 0 2px 0 #ffffff88,0 5px 0 #056c7c,0 8px 15px #16565720;border:1px solid #068a98;color:#fff;text-transform:none;letter-spacing:0;min-height:48px;}
 body[data-crafted] .btn:active,body[data-crafted] .btn.blue:active{box-shadow:inset 0 2px 0 #ffffff88,0 2px 0 #056c7c;}
 body[data-crafted] .btn.ghost,body[data-crafted] button.ghost{background:#f5e9d0;color:#6a4829;border:1px solid #ead9bd;box-shadow:0 3px 0 #c5ac8640;min-height:44px;border-radius:22px;padding:10px 20px;text-transform:none;}
 body[data-crafted] .echoWin{height:120px;overflow:visible;}
@@ -72,7 +72,20 @@ body[data-crafted="practice"] #stackCol .plat{height:12px;}
 body[data-crafted="practice"] #roadCol{gap:5px;}
 body[data-crafted="practice"] #roadCol .slab{height:22px;}
 body[data-crafted="practice"] #balloonBox{width:125px;}
-body[data-crafted="practice"] #launchBar{padding:12px 18px;font-size:18px;}
+/* UP NEXT: the game's own painted card on a cream stub (Travis, 1 Oct 2026:
+   "these green buttons below feel cheapo"). It was a teal button with a flat
+   sticker, and it is not a button: the game opens by itself once Echo has
+   cheered, so it says what comes next and fills a thin line while it waits. */
+body[data-crafted="practice"] #launchBar.show{display:flex;align-items:center;gap:14px;width:min(100%,360px);margin:0 auto;min-height:0;padding:8px 18px 10px 8px;border-radius:22px;background:linear-gradient(#fffdf6,#fbf0dc);border:1px solid #f0dfc0;box-shadow:0 5px 0 #c9a77455,0 12px 24px #4a2c1424;color:#44270f;text-transform:none;letter-spacing:0;position:relative;overflow:hidden;text-align:left;}
+body[data-crafted="practice"] #launchArt{width:96px;height:60px;border-radius:14px;background:#efe2c9 center/cover no-repeat;box-shadow:inset 0 0 0 2px #ffffffa8,0 2px 5px #4a2c1430;}
+body[data-crafted="practice"] .launch-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
+body[data-crafted="practice"] .launch-up{font:800 12px Nunito,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#a07d55;}
+body[data-crafted="practice"] .launch-name{font:800 23px/1.1 "Baloo 2",sans-serif;color:#44270f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body[data-crafted="practice"] .launch-go{position:absolute;left:0;right:0;bottom:0;height:4px;background:#0ba5ae;transform-origin:left;transform:scaleX(0);animation:launchFill 2.4s linear forwards;}
+@keyframes launchFill{to{transform:scaleX(1);}}
+@media (prefers-reduced-motion: reduce){body[data-crafted="practice"] .launch-go{animation:none;transform:scaleX(1);opacity:.5;}}
+/* The finished build glows warm instead of a green box drawn round it. */
+body[data-crafted="practice"] #reveals .ringed{outline:none;filter:drop-shadow(0 0 9px #ffe6a3) drop-shadow(0 0 3px #fff7dc);}
 body[data-crafted="practice"] #runOvl{background:linear-gradient(#e9f3e7,#fff4dd);}
 /* Feed Echo's four choices stay large and visible. The picnic is scenery;
    the live plate and word pictures remain the actual game controls. */

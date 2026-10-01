@@ -26,6 +26,47 @@
     tag(36,"data");v.setUint32(40,data.byteLength,true);
     return new Blob([h,data],{type:"audio/wav"});
   }
+  // ECHO'S VOICE IS MEDIA IN THE IPHONE APP (1 Oct 2026: "Sounds not working
+  // again on books", with the phone-call volume slider on screen). The pages
+  // that listen used to play the voice through Web Audio. An iPhone keeps a
+  // page that just had the mic open in its call audio while Web Audio plays
+  // into it, so the voice came out quiet and the volume buttons moved CALL
+  // volume; and Web Audio alone is silenced by the ring/silent switch. A media
+  // element plays the same bytes the way Rachel's recordings do. The browser
+  // keeps Web Audio, where a tap unlocks it and an <audio> started later would
+  // be refused. Returns { done, stop }: done settles "ended", "failed" (never
+  // started: the caller falls back to the browser voice) or "stopped".
+  function voiceAsMedia() { return isNativeApp(); }
+  function mediaPCM(bytes, opts) {
+    opts = opts || {};
+    var url = null, a = null, over = false, started = false, timer = 0, settle;
+    var done = new Promise(function (r) { settle = r; });
+    function finish(how) {
+      if (over) return; over = true; clearTimeout(timer);
+      try { if (a) { a.onended = null; a.onerror = null; a.onplaying = null; a.pause(); a.removeAttribute("src"); a.load(); } } catch (e) {}
+      try { if (url) URL.revokeObjectURL(url); } catch (e) {}
+      settle(how);
+    }
+    try {
+      var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), rate = Number(opts.rate) || 1;
+      if (!data.byteLength) { finish("failed"); return { done: done, stop: function () {} }; }
+      // a line's own length plus a beat ends it if "ended" never comes
+      var ms = Math.ceil(data.byteLength / 48 / rate) + 1500;
+      url = URL.createObjectURL(pcmWave(data)); a = new Audio(url);
+      var v = Number(opts.volume == null ? 0.8 : opts.volume);
+      try { a.volume = isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8; } catch (e) {}
+      if (rate !== 1) { try { a.playbackRate = rate; a.preservesPitch = a.webkitPreservesPitch = a.mozPreservesPitch = false; } catch (e) {} }
+      function go() { if (started || over) return; started = true; clearTimeout(timer); timer = setTimeout(function () { finish("ended"); }, ms); }
+      a.onplaying = go;
+      a.onended = function () { finish("ended"); };
+      a.onerror = function () { finish(started ? "ended" : "failed"); };
+      // an element that never starts must not hold the page's quiet forever
+      timer = setTimeout(function () { finish(started ? "ended" : "failed"); }, 4000);
+      var p = a.play();
+      if (p && p.then) p.then(go, function () { finish(started ? "ended" : "failed"); }); else go();
+    } catch (e) { finish("failed"); }
+    return { done: done, stop: function () { finish("stopped"); } };
+  }
   function soundLabel(s) { return SOUND_LABELS[s] || s; }
   // Approximate developmental norms: the age (in years) by which most children
   // typically produce the sound. Used to show "usually by age X" and gently flag
@@ -1246,7 +1287,10 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games and books. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
+  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"):
+  // when the mic listens, that nothing is uploaded, and the one try kept on
+  // the phone. The privacy page and /support keep the long version.
+  const MIC_PROMISE = "Grown-ups: Echo listens only after asking your child to talk. Recordings are never uploaded; one try a day may stay on this device so you can listen back.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -2714,13 +2758,16 @@
     // games to have different dates ... everything that is currently in queue
     // to just say for next Friday ... split them and have like seven or eight
     // for next Friday and then seven or eight for the following Friday").
-    // Each parked game carries `comingOn`, one of exactly two days: the ten
-    // that were soonest on the old Monday list say 9 Oct, the other ten
-    // 16 Oct. It is a LABEL, never a switch: Home says "Coming Oct 9" until
-    // that day, then "Coming soon" again if the game still isn't ready, and
-    // only taking comingSoon off opens a game. Move a date by editing it.
+    // Each parked game carries `comingOn`, one of exactly two days: nine say
+    // 9 Oct (Peekaboo above, Balloon Party, Race Car, Puppy Bath, Rocket
+    // Blast, Treasure Map, Build a Snowman, Space Trip, Grow a Flower) and
+    // the other nine 16 Oct. Soccer Goal and Dino Dig came back early (1 Oct
+    // 2026), so they carry no day. It is a LABEL, never a switch: Home says
+    // "Coming Oct 9" until that day, then "Coming soon" again if the game
+    // still isn't ready, and only taking comingSoon off opens a game. Move a
+    // date by editing it.
     balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word you say blows the balloon bigger." },
-    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Water the seed with your words and watch it grow." },
+    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Water the seed with your words and watch it grow." },
     rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word lights the countdown. Then blast off!" },
     snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word you say builds the snowman." },
     train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word helps a friend climb aboard the train." },
@@ -2731,13 +2778,18 @@
     fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word brings a new fish to the tank." },
     racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word zooms your race car closer to the finish line." },
     treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word sails your boat to the next stop on the map." },
-    soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word kicks the ball into the net." },
+    // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
+    // ball and the child swipes it past a goalie who slides along the goal
+    // line (public/soccer.js).
+    soccer: { name: "Soccer Goal", sub: "Say it, then kick!", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to kick it past the goalie." },
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
     robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word adds a new part to your robot." },
     castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word builds another part of your castle." },
-    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word brushes the sand off a dinosaur bone." },
+    // REBUILT (Travis, 1 Oct 2026: "go to the next game"): the word earns a
+    // brush and the child rubs the sand off a bone (public/dino.js).
+    dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
     space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word flies your rocket to the next planet." },
     pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word adds something to your pizza." },
     monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word gives the monster a silly new look." },
@@ -4630,5 +4682,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

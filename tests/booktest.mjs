@@ -234,7 +234,7 @@ await scenario("primer", async () => {
   const st = await page.evaluate(() => ({ requests: __quiet.requests, promise: document.getElementById("bkMicPromise").textContent, title: document.getElementById("bkPrimerTitle").textContent,
     mic: !document.getElementById("bkMicWrap").hidden, next: !document.getElementById("bkNext").hidden, want: Sona.MIC_PROMISE }));
   ok("a new family meets a grown-ups' question inside the book once Echo has read the page", asked && /Echo wants to hear the words/.test(st.title), st);
-  ok("…it carries the one shared mic promise", st.promise === st.want && /never uploads recordings/.test(st.promise), st.promise);
+  ok("…it carries the one shared mic promise", st.promise === st.want && /never uploaded/.test(st.promise), st.promise);
   ok("…and the phone was never asked for the mic before that tap", st.requests === 0, st);
   await click(page, "bkPrimerNo");
   await page.waitForTimeout(200);

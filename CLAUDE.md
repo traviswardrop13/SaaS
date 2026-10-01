@@ -79,7 +79,10 @@ Rachel and "SLP" or "speech-language pathologist" in one sentence without
 pages that introduce her (parents, subscribe, trial, progress, talk, slp)
 missing it.
 One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
-her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP". She still is a
+her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
+"She is a licensed pediatric speech-language pathologist." Since 1 Oct 2026
+it is the last screen before the first game, after the microphone (Travis:
+"add the rachel slide right before it goes to the game"). She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -103,8 +106,8 @@ when the launch lock lifts (see "The family app is locked until launch day").
 **The free version:** daily practice, **two games for each age group**
 (Travis, 30 Sep 2026: "the two free games for older kids, the two free games
 for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
-turned free that day; Block Stacker, Sound Sprint, Flappy Glide and Hoops are
-Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
+turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Hoops, Soccer
+Goal and Dino Dig are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
@@ -402,9 +405,13 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is back on the first setup screen — it is
-the only entrance to `ORDER_SLP`, so removing it again makes that whole
-branch dead code — `for-slps.html` is indexable and linked from the landing
+is now reversed: the clinician door is on the first setup screen — since 1 Oct
+2026 that screen IS the question, "Who's setting up Sona?", with two answers,
+"Parent or caregiver" and "SLP or SLPA" (Travis: "have the very first step in
+onboarding ask"). In a browser the SLP answer is the only entrance to
+`ORDER_SLP`, so removing it makes that whole branch dead code; in the iPhone
+app, which never opens clinician screens, it sets the app up for a child and
+says the dashboard is on the web (no link, no price) — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys their own Premium and adds their
@@ -764,7 +771,7 @@ pass rate, no clinician sees it), but each heard word is one rep on the
 week's count (Travis, 29 Sep 2026; see "The week's reps"). They open straight
 from Home and never join the daily adventure.
 
-**All twenty are parked as Coming soon** (Travis, 26 Sep 2026: "these games
+**All twenty were parked as Coming soon** (Travis, 26 Sep 2026: "these games
 are not good. they are essentially all the exact same but with a different
 look ... if its basketball, we want them shooting a hoop", then "put the 20
 games as coming soon. so show them but greyed out. except for old ones like
@@ -773,7 +780,9 @@ talked and watched; nothing let them *play*. Each comes back **one at a
 time**, rebuilt as a real game — what the child sees, what their finger does
 and what saying the word does, agreed with Travis in plain words first, then
 played by him on his phone — by taking `comingSoon` off its own line in
-`GAME_ACTS`. Home lists playable games before parked ones. `sayplaytest`
+`GAME_ACTS`. Hoops, Soccer Goal and Dino Dig are back; seventeen are still
+parked, and with Peekaboo that is the eighteen in the queue below. Home lists
+playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
@@ -782,17 +791,19 @@ aren't finished ... label them ... coming October 8th or whatever"; then 1 Oct
 2026: "everything that is currently in queue to just say for next Friday ...
 split them and have like seven or eight for next Friday and then seven or
 eight for the following Friday"). Every parked game carries `comingOn`, one
-of exactly two days, ten games each: **9 Oct** for Peekaboo, Soccer Goal,
-Balloon Party, Race Car, Puppy Bath, Dino Dig, Rocket Blast, Treasure Map,
-Build a Snowman and Space Trip (the ten that were soonest on the old Monday
-list), **16 Oct** for the other ten. Home says "Coming Oct 9" or "Coming
-Oct 16" until that day on the family's calendar, then "Coming soon" again if
-the game still isn't ready; each shelf's parked games sit soonest first, in
-catalog order within a day. **The date is a label, never a switch:**
-`gameAccess` never reads it, and only taking `comingSoon` off (after Travis
-has played the rebuilt game) opens one. Keeping those dates means finishing
-ten games a week; move a date by editing it. `activitytest` pins the two
-days, the ten-and-ten split, the labels and the order.
+of exactly two days, nine games each: **9 Oct** for Peekaboo, Balloon Party,
+Race Car, Puppy Bath, Rocket Blast, Treasure Map, Build a Snowman, Space Trip
+and Grow a Flower; **16 Oct** for Robot Builder, Choo-Choo Train, Pizza Chef,
+Birthday Cake, Castle Builder, Surprise Boxes, Monster Makeover, Fish Tank
+and Bedtime Stars. Bubble Pop, Soccer Goal and Dino Dig came back early, so
+they are open and carry no day. Home says "Coming Oct 9" or "Coming Oct 16"
+until that day on the family's calendar, then "Coming soon" again if the game
+still isn't ready; each shelf's parked games sit soonest first, in catalog
+order within a day. **The date is a label, never a switch:** `gameAccess`
+never reads it, and only taking `comingSoon` off (after Travis has played the
+rebuilt game) opens one. Keeping those dates means finishing nine games a
+week; move a date by editing it. `activitytest` pins the two days, the
+nine-and-nine lists, the labels and the order.
 
 **Hoops is the first one back, rebuilt to be played** (Travis, 26 Sep 2026:
 "yes build hoops", to the plan: the hoop slides slowly side to side; say the
@@ -819,6 +830,51 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
 `tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
+
+**Soccer Goal is the second one back** (Travis, 1 Oct 2026: "go finish
+soccer"), on the same play-game hook: `public/soccer.js` draws a little
+stadium and flies the ball; `public/arcade-soccer.html` is written by hand.
+Say the word and a ball rolls to the spot; swipe up to kick it past Bo, the
+bear in goal, who slides along the goal line. Where the swipe points is where
+the ball goes. What it keeps, as Hoops does:
+- **The word earns the ball; the finger kicks it.** No ball before the word,
+  a tap is not a kick, and a save or a wide kick never costs a word: the ball
+  rolls back. The step counts on the goal.
+- **Every ball ends in a goal.** Bo stands to one side for the first two
+  balls (straight up scores), then slides from post to post. A kick just
+  past a post is pulled in. After one miss he slows and reaches less, and the
+  pull reaches further; after two he dozes off by one post, the open side glows and an arrow points
+  to it; from the third, any swipe up goes in while he dives the wrong way.
+  A really hard flick can go over the bar; a soft one still rolls in.
+- **Its sounds** (kick, net, save, bounce, whoosh, roll) go through the
+  engine, and **nothing is practice data**.
+Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
+from main's covers, 1 Oct 2026); the sticker and the website tile are still a
+frame of the pitch (`public/assets/games/soccer.webp`, through `PLAYED`), and
+painted art drops in at that name. Bo's own picture drops in by setting
+`KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
+neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
+whole game.
+
+**Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
+on the same hook: `public/dino.js` draws a cliff with a dinosaur skeleton's
+outline and a sand pit below it; `public/arcade-dino.html` is written by hand.
+Say the word and a brush comes out; rub the sand in the pit with a finger to
+uncover the bone; once most of it shows it pops out and flies onto the
+skeleton. Eight words, eight bones, then the dinosaur's body fills in and it
+roars. What it keeps:
+- **The word earns the brush; the finger digs.** Rubbing before the word moves
+  no sand, a tap alone digs up nothing, and the step counts when the bone lands.
+- **Every bone comes out.** The brush is wide; after about four seconds the
+  bone's spot glows, and after about eight, rubbing anywhere in the pit wears
+  the sand over the bone away. It never digs by itself: the help needs a
+  rubbing finger.
+- **Its sounds** (brush, pop, whoosh, clack, roar) go through the engine, and
+  **nothing is practice data**.
+Home's wide card is the painted one (`public/assets/crafted/home-dino.webp`,
+from main's covers); the sticker and the website tile are still a frame of the
+woken dinosaur (`public/assets/games/dino.webp`), replaced by painted art at
+that name. `sayplaytest` plays a whole dig.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
@@ -860,9 +916,21 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
 `tests/tilestest.mjs` plays a whole round.
 
+**The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
+her July demo by ear: "use number 4"). Every game's one-take sound
+(`/coach/say-echo/<S>-sound.wav`, cut by `tools/soundclips.mjs`) was her take
+re-voiced into Echo's voice, and for R the voice changer moved her third
+formant from about 1,430 Hz to about 2,900, toward /w/: the "wabbit" error the
+child is here to fix. A gentler setting still left it near 1,850. So R alone
+plays her own take (`OWN` in the tool), at the same loudness as the rest; the
+other voiced sounds stay re-voiced until a listen says otherwise. Piano Tiles
+plays the same one take now (it played the three-take re-voiced demo).
+
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
-**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Feed Echo now reveals the matching picture after a voice burst with a compatible broad sound family; it remains a participation hint, not a pronunciation grade. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers; `micquietgamestest` covers the Feed hint. Books and parked games are outside this change.
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
+
+**Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask: it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
 
 **Super Slice: Fruit Slice's sound power** (Travis, 29 Sep 2026: "give them an
 option to say the sound to slow the game down ... they go into some frenzy
@@ -898,7 +966,7 @@ Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
-between rounds, Echo's sound powers, a Hoops word, Feed Echo's picture hint.
+between rounds, Echo's sound powers, a Hoops or Soccer word, Feed Echo's heard word.
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
@@ -1143,5 +1211,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   in `PER_KID` that bypasses them is a promise the code doesn't keep.
 - Entitlement is never granted from a URL parameter or an unverified page
   load. If a link unlocks something, a server verified it first.
+- **In the iPhone app, Echo's voice plays as media, never Web Audio**
+  (Travis, 1 Oct 2026: "Sounds not working again on books", with the
+  phone-call volume slider on screen). After a page has had the mic open, an
+  iPhone plays Web Audio as a call: quiet, and the volume buttons move call
+  volume. Web Audio is also silenced by the ring/silent switch. So a voice line
+  goes through `Sona.mediaPCM(bytes, {volume})` when `Sona.voiceAsMedia()`
+  says so (the app), and falls back to the browser voice when it reports
+  "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
+  Play games and Bubble Pop all do; a new page that speaks does too. The
+  browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
+  The chimes are still Web Audio.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.

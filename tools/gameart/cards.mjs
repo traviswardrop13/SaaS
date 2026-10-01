@@ -5,7 +5,7 @@
 // sheet (public/assets/sona-stickers.svg), which Home paints like every other
 // game card (Sona.gameSticker). The prefix is sp- (Say & Play), not the
 // scene stickers' st-: Flappy Glide already wears st-balloon. A card is an
-// <image> of its file rather than the scene pasted into the sheet: nineteen
+// <image> of its file rather than the scene pasted into the sheet: seventeen
 // scenes would triple the sheet every page loads, and a card file is fetched
 // only where a card is shown.
 //
