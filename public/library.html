@@ -381,6 +381,22 @@
         { e: "💍", t: "\"Is this ring lost?\" asks the raccoon.", art: "/assets/books/ray-lost-ring/p10.webp", alt: "The raccoon holds out the ring toward Ray the robin with a kind, questioning face." },
         { e: "💍", t: "\"Yes! Thank you!\" sings Ray.", art: "/assets/books/ray-lost-ring/p11.webp", alt: "Ray the robin sings happily with his beak open, the ring back with him, little music notes shapes around him." },
         { e: "💍", t: "Ray gives the raccoon a ribbon to say thank you.", art: "/assets/books/ray-lost-ring/p12.webp", alt: "Ray the robin gives the raccoon a red ribbon as a gift, both smiling." } ] },
+      { sound: "B", emoji: "🦇", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" }, title: "Boo the Bat on Halloween", colors: ["#9a7fd6", "#6f55b0"],
+        cover: "/assets/books/boo-bat-halloween/cover.webp", coverAlt: "Boo the purple bat flies under a big glowing moon holding an orange candy bucket, happy pumpkins below in a cozy village.",
+        keys: ["bat", "bucket", "big", "boo", "boo", "boo", "boo", "bucket", "boo", "boo", "boo", "bed"],
+        words: ["bat", "bed", "big", "boo", "bucket"], pages: [
+        { e: "🦇", t: "Boo the bat wakes up at night.", art: "/assets/books/boo-bat-halloween/p01.webp", alt: "Boo the bat hangs upside down from a branch and opens his eyes, waking up under a starry night sky." },
+        { e: "🦇", t: "It is Halloween! Boo gets his bucket.", art: "/assets/books/boo-bat-halloween/p02.webp", alt: "Boo the bat holds up a small orange candy bucket, excited, happy pumpkins glowing nearby." },
+        { e: "🦇", t: "Boo puts on a big hat.", art: "/assets/books/boo-bat-halloween/p03.webp", alt: "Boo the bat wears a big tall purple witch hat, smiling proudly." },
+        { e: "🦇", t: "Boo flies past the moon.", art: "/assets/books/boo-bat-halloween/p04.webp", alt: "Boo the bat flies across a big glowing full moon." },
+        { e: "🦇", t: "Boo sees a pumpkin with a happy face.", art: "/assets/books/boo-bat-halloween/p05.webp", alt: "Boo the bat looks at a carved pumpkin with a big happy face glowing on a doorstep." },
+        { e: "🦇", t: "A cat in a cape waves at Boo.", art: "/assets/books/boo-bat-halloween/p06.webp", alt: "A small black kitten in a red cape waves at Boo the bat on a village path." },
+        { e: "🦇", t: "\"Trick or treat!\" says Boo.", art: "/assets/books/boo-bat-halloween/p07.webp", alt: "Boo the bat at a front door with his orange candy bucket held out, cheerful." },
+        { e: "🦇", t: "A candy drops in his bucket.", art: "/assets/books/boo-bat-halloween/p08.webp", alt: "A wrapped candy drops into Boo's orange bucket, Boo smiling." },
+        { e: "🦇", t: "Then a little ghost says, \"Boo!\"", art: "/assets/books/boo-bat-halloween/p09.webp", alt: "A small round smiling white ghost pops out from behind a pumpkin and surprises Boo the bat." },
+        { e: "🦇", t: "Boo jumps. Then he laughs.", art: "/assets/books/boo-bat-halloween/p10.webp", alt: "Boo the bat jumps in surprise, then laughs with the little ghost." },
+        { e: "🦇", t: "Boo and the ghost share the candy.", art: "/assets/books/boo-bat-halloween/p11.webp", alt: "Boo the bat and the little ghost sit together sharing candy from the bucket." },
+        { e: "🦇", t: "Boo goes to bed. Happy Halloween!", art: "/assets/books/boo-bat-halloween/p12.webp", alt: "Boo the bat tucked into a tiny cozy bed under a window with the moon outside, sleepy and happy." } ] },
       { sound: "P", emoji: "🐧", opens: "2026-10-09", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
         cover: "/assets/books/penny-pebble-party/cover.webp", coverAlt: "",
         keys: ["penguin", "pond", "pebble", "pebbles", "paint", "paint", "pink", "parrot", "party", "pie", "pebbles", "penny"],
@@ -1038,10 +1054,16 @@
     //     readable book first (for a family without Premium, the free one),
     //     then the child's own, Premium or coming (a shelf of grey is worse
     //     than either)
+    // A limited-time book (season: {startsOn, endsOn}, Travis, 1 Oct 2026:
+    // "put a halloween book in limited time") is on every child's shelf for
+    // its window, whatever their sound, and on nobody's outside it.
+    function inSeason(st){ var d = todayLocal(); return !st.season || (st.season.startsOn <= d && d <= st.season.endsOn); }
+    STORIES = STORIES.filter(inSeason);
+    var ALL_STORIES = STORIES.slice();
     var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
     if (!playMode && focusOrder.length) {
-      var mine = STORIES.filter(function (st) { return focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
+      var mine = STORIES.filter(function (st) { return st.season || focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
       if (mine.some(readable)) STORIES = mine;
       else if (mine.length) STORIES = STORIES.filter(readable).concat(mine);
     }
@@ -1681,7 +1703,7 @@
     (function () {
       var want = ""; try { want = new URLSearchParams(location.search).get("book") || ""; } catch (e) {}
       if (!/^[a-z0-9-]+$/.test(want)) return;
-      var st = STORIES.filter(function (b) { return (b.cover || "").split("/")[3] === want; })[0];
+      var st = ALL_STORIES.filter(function (b) { return (b.cover || "").split("/")[3] === want; })[0];
       if (!st || !bookOpen(st)) return;
       if (bookLocked(st)) { showLocked(st); return; }
       openBook(st);
