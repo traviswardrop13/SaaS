@@ -212,7 +212,9 @@ await scenario('native generated voice matches recorded playback',async()=>{
  const {context,page,errors}=await fresh({server:true,native:true});try{
   await page.waitForFunction(()=>__pacing.media.some(a=>a.active));
   ok('native generated voice uses the same media route as human models',await page.evaluate(()=>__pacing.media.some(a=>a.active)&&!__pacing.pcm.some(a=>a.active)));
-  ok('native generated voice preserves the family volume',await page.evaluate(()=>__pacing.media.find(a=>a.active).volume===0.4));
+  // The seed's saved 40% plays as sound on, at the one normal level (30 Sep
+  // 2026: the phone's side buttons set the level, and the slider is gone).
+  ok('native generated voice plays at the profile\'s level (the normal 0.8), not a fixed 1',await page.evaluate(()=>{const v=__pacing.media.find(a=>a.active).volume;return v===Sona.getProfile().volume&&v===0.8;}));
   ok('native model keeps microphone closed until playback finishes',await page.evaluate(()=>!__pacing.micLive())&&/Listen to Echo/.test(await status(page)));
   await page.evaluate(()=>__pacing.media.find(a=>a.active).end());await childTurn(page);
   ok('native generated model hands over to child after completion',await page.evaluate(()=>__pacing.micLive()));

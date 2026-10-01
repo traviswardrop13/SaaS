@@ -37,7 +37,7 @@ try{
  ok('media wrapper preserves samples and mono 24kHz format',wav?.type==='audio/wav'&&wav.rate===24000&&wav.channels===1&&JSON.stringify(wav.samples)==='[0,128,0,0,255,127]');
  await page.goto(base+'/arcade-feed.html');
  await page.waitForFunction(()=>h.media.length>0,{},{timeout:2500}).catch(()=>{});
- ok('Feed Echo generated voice uses native media playback at the selected volume',await page.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6));
+ ok('Feed Echo generated voice uses native media playback at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await page.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.media[0].volume===Sona.getProfile().volume));
  await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});
  ok('Feed Echo stops its native voice when backgrounded',await page.evaluate(()=>h.media.length>0&&h.media[0].paused));
  ok('no runtime errors',errors.length===0);await context.close();

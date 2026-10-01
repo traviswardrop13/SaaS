@@ -117,10 +117,8 @@
     .modal{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 50px rgba(74,44,20,.35);}
     .modal h3{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
     .modal p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:4px;}
-    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin:10px 0 2px;}
-    /* the spelled-out challenge needs room for four words, so it sets its own
-       size rather than fighting the 30px the PIN lock glyph wants */
-    #gateQ.words{font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;margin:10px auto 2px;}
+    /* four spelled-out number words, sized to fit the modal on a small phone */
+    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;color:var(--orange-d);margin:10px auto 2px;}
     #gateIn{font-family:"Baloo 2";font-weight:800;font-size:26px;letter-spacing:8px;min-height:36px;color:var(--ink);}
     .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
     .pad button{border:none;border-radius:14px;padding:13px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);}
@@ -309,14 +307,18 @@
         S.caseRefresh().then(function(){if(S.premium()!==wasPremium)location.reload();},function(){});
       }
     }catch(e){}
-    // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
+    // ── parent gate: four spelled-out digits, for every family ──
     // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
     // knows their times tables walks straight through it, and there are only
     // about thirty plausible products to guess. Four number WORDS have to be
     // read to be answered — which is precisely what the child this gate exists
     // to stop cannot do — and there are ten thousand of them.
+    // The optional parent code is gone (Travis, 30 Sep 2026: "get rid of the
+    // parent code"); a code saved before then is simply never asked for. The
+    // words stay: purchases sit behind this door, and Apple wants a grown-up
+    // check before a buy screen.
     var NUMWORD=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"];
-    var gateAns="", gateNeed="", gateMode="math", gateNext=null;
+    var gateAns="", gateNeed="", gateNext=null;
     // Where the right code goes when nothing more particular asked: straight
     // to Settings (Travis, 30 Sep 2026: "go straight to settings not have them
     // choose what they wanna go to"). It used to open a Grown-ups pop-up of
@@ -324,20 +326,12 @@
     function toSettings(){ location.href="/settings.html"; }
     function openGate(next){
       gateNext=next||toSettings; // a callback sends the grown-up somewhere else
-      var pin=(P.parentPin||"").trim();
       gateAns="";
-      var q=$("gateQ");
-      if(pin){
-        gateMode="pin"; gateNeed=pin; q.className=""; q.innerHTML=S.icon?S.icon("lock",30):"Parent code";
-        $("gateHint").textContent="Enter your parent code";
-      } else {
-        gateMode="words"; var d=[];
-        for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
-        gateNeed=d.join("");
-        q.className="words";
-        q.textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
-        $("gateHint").textContent="Tap these numbers in order (set a code in Settings)";
-      }
+      var d=[];
+      for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
+      gateNeed=d.join("");
+      $("gateQ").textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
+      $("gateHint").textContent="Tap these numbers in order";
       $("gateIn").textContent="";
       $("gateOvl").classList.add("show");
     }
@@ -370,9 +364,8 @@
             if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); var fn=gateNext||toSettings; gateNext=null; fn(); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
-          else { if(gateAns.length<6) gateAns+=String(kk); }
-          $("gateIn").textContent=gateAns.replace(/./g, gateMode==="pin"?"•":"$&");
-          if(gateMode==="pin"){ $("gateIn").textContent="•".repeat(gateAns.length); }
+          else { if(gateAns.length<gateNeed.length) gateAns+=String(kk); }
+          $("gateIn").textContent=gateAns;
         };
         pad.appendChild(b);
       });

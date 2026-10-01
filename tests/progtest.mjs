@@ -553,6 +553,48 @@ ok("proof strip: named SLP credential above the plan",
   await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
 }
 
+// ── the word step asks for the position being practised (30 Sep 2026) ──
+// It passed no position, so whatever Settings' Word position or an SLP's
+// homework said, the word step asked for start-of-word words: End-of-word
+// homework still got "rabbit". Travis: the position must actually drive the
+// practice page — homework's first, then the family's setting. A position
+// with no words for that sound falls back to start-of-word words rather than
+// an empty round. (hwtest holds the sentence step to the same rule.)
+{
+  const HW = (pos) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "hwpos", title: "R at the end", note: "", sounds: ["R"], pos: "${pos}", repsPerDay: 20, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, at: Date.now() }))`;
+  const pw = await page.evaluate((hw) => {
+    const bank = (s, p) => Sona.WORDS[s].filter((w) => (w.pos || "i") === p).map((w) => w.w).join();
+    const step = (s) => (Sona.ladderContent(s, 2) || []).map((x) => x.word).join();
+    const out = { iR: bank("R", "i"), fR: bank("R", "f"), mR: bank("R", "m"), iK: bank("K", "i") };
+    out.none = { pos: Sona.practicePos(), words: step("R") };
+    eval(hw);                                          // homework: R at End
+    Sona.saveProfile({ practicePosition: "m" });       // …while the family picked Middle
+    out.hw = { pos: Sona.practicePos(), words: step("R") };
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    out.fam = { pos: Sona.practicePos(), words: step("R") };
+    Sona.saveProfile({ practicePosition: "v" });       // Vocalic R, for a sound with none
+    out.noneForK = step("K");
+    Sona.saveProfile({ practicePosition: "i" });
+    return out;
+  }, HW("f"));
+  ok("with no homework and no setting, the word step asks for start-of-word words", pw.none.pos === "i" && pw.none.words === pw.iR, JSON.stringify(pw.none));
+  ok("homework at End: every word at the word step is an End word, over the family's Middle", pw.hw.pos === "f" && pw.hw.words === pw.fR, JSON.stringify(pw.hw));
+  ok("no homework, family on Middle: every word at the word step is a Middle word", pw.fam.pos === "m" && pw.fam.words === pw.mR, JSON.stringify(pw.fam));
+  ok("a position with no words for the sound falls back to start-of-word words", pw.noneForK === pw.iK, pw.noneForK);
+
+  // …and on the real page: round 3 of a child with words earned, homework at End
+  await page.evaluate((hw) => {
+    eval(hw);
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 2 }));
+    const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;
+    localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  }, HW("f"));
+  await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+  const onPage = await page.evaluate(() => document.getElementById("bTarget").textContent.trim());
+  ok("the practice page's word step shows an End word for End-of-word homework", pw.fR.split(",").includes(onPage), onPage);
+  await page.evaluate(() => { localStorage.removeItem(Sona.kkey("sona.homework.v1")); localStorage.removeItem(Sona.kkey("sona.today.v1")); });
+}
+
 // ── earned rung feeds the climb: stage.R=2 (words earned) stretches to the
 //    rung above, which is now SENTENCES — the phrase rung in between is gone ──
 // Pin the round index instead of inheriting whatever the rotation left behind,

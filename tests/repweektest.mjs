@@ -210,16 +210,8 @@ await scenario("a tap on the corner", async () => {
   await page.waitForURL(/\/settings\.html#reps$/);
   await page.waitForFunction(() => window.Sona && document.getElementById("rwThis").textContent === "28");
   ok("the right answer lands on the week-by-week card", /\/settings\.html#reps$/.test(page.url()), page.url());
-  // A family with a parent code: the pill asks for the code, and lands in the same place.
-  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.parentPin = "2468"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-  await home(page); await page.click("#repPill");
-  for (const d of "1111") await page.locator("#pad button", { hasText: new RegExp("^" + d + "$") }).click();
-  await page.locator("#pad button", { hasText: "✓" }).click(); await page.waitForTimeout(200);
-  ok("a wrong parent code keeps the child on Home", await page.evaluate(() => location.pathname === "/today.html" && document.getElementById("gateOvl").classList.contains("show")));
-  for (const d of "2468") await page.locator("#pad button", { hasText: new RegExp("^" + d + "$") }).click();
-  await page.locator("#pad button", { hasText: "✓" }).click();
-  await page.waitForURL(/\/settings\.html#reps$/);
-  ok("the parent code opens the same card", /\/settings\.html#reps$/.test(page.url()), page.url());
+  // (The parent code that could stand in for the words went on 30 Sep 2026;
+  // gatecheck pins that a code saved before then is never asked for.)
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -236,7 +228,7 @@ await scenario("the Settings card", async () => {
       bestNew: document.getElementById("rwBest").classList.contains("new"),
       list: document.getElementById("rwBars").getAttribute("role"), items: [...document.querySelectorAll("#rwBars li")].every((li) => li.getAttribute("role") === "listitem" && !li.hasAttribute("aria-label") && li.lastElementChild.getAttribute("aria-hidden") === "true"),
       days: [...document.querySelectorAll("#rwDays span")].map((d) => d.innerText.replace(/\n/g, " ")),
-      text: card.innerText,
+      text: card.innerText, note: card.querySelector(".rw-note").innerText.trim(),
       reds: [...card.querySelectorAll("*")].filter((el) => { const c = getComputedStyle(el).color.match(/\d+/g).map(Number); return c[0] > 180 && c[1] < 90 && c[2] < 90; }).length,
     };
   });
@@ -251,7 +243,9 @@ await scenario("the Settings card", async () => {
   ok("a week with no counted reps is a stub, never a gap in the list", c.bars[1].val === "0" && c.bars[1].h <= 3 && c.bars[1].sr === "Week of Sep 28: 0 reps", c.bars[1]);
   ok("bars scale to the tallest week", c.bars[3].h > c.bars[2].h && c.bars[2].h > c.bars[0].h, c.bars.map((b) => b.h));
   ok("a screen reader hears each week in words, from inside the item", s.list === "list" && s.items, s);
-  ok("the card says what a rep is, that it is not a verdict, and that silence never counts", /says the practice sound or word out loud/.test(s.text) && /each time a game asks for it and hears it/.test(s.text) && /whether or not it sounded right yet/.test(s.text) && /Silence never counts/.test(s.text) && /Monday to Sunday/.test(s.text), s.text);
+  // One short line (Travis, 30 Sep 2026): out loud, in practice or a game,
+  // and never silence.
+  ok("the card says what a rep is, in one line, and that silence never counts", /^A rep is one time Milo says their sound or word out loud, in practice or in a game\. Silence never counts\.$/.test(s.note) && /Silence never counts/.test(s.text), s.note);
   ok("no percentages, scores or grades on the card", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
   ok("nothing on the card is red", s.reds === 0, s.reds);
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -351,7 +345,7 @@ await scenario("sounds said in games are reps too", async () => {
   ok("…and never touches the practice records (pass rates, the clinician's view)", r.outcomes === before);
   await settings(page);
   const card = await page.evaluate(() => ({ now: document.getElementById("rwThis").textContent, note: document.querySelector(".rw-note").innerText }));
-  ok("Settings counts them, and says a game counts the sound it asks for and hears", card.now === "35" && /each time a game asks for it and hears it/.test(card.note) && !/add none/.test(card.note), card);
+  ok("Settings counts them, and says a game counts too", card.now === "35" && /in practice or in a game/.test(card.note) && !/add none/.test(card.note), card);
   await page.evaluate(() => Sona.addKid("Ana", 4));
   ok("a second child's game reps start at 0", await page.evaluate(() => Sona.weekReps(0) === 0));
   await page.evaluate(() => Sona.gameRep("R"));

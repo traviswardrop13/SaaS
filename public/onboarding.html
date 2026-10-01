@@ -317,8 +317,9 @@
          A parent who read this and later wiped their phone lost everything
          while believing it was saved.
          What IS true and worth saying: the email is how they get their
-         subscription back on a new phone, and Backup & restore in Settings is
-         the one real way to move a child's practice. The weekly nudge is
+         subscription back on a new phone, and Backup & restore in Settings
+         (behind "Moving to a new phone?" since 30 Sep 2026) is the one real
+         way to move a child's practice. The weekly nudge is
          deliberately NOT promised here — it is a Vercel cron that fails
          closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
          promise that depends on environment variables is not a promise. -->
@@ -331,7 +332,7 @@
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
       <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>

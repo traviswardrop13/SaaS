@@ -277,6 +277,10 @@ for (const file of ["today.html", "onboarding.html", "activities.html"]) {
 // each note is 3 dB down (0.16 -> 0.113 at full volume) and swells in over
 // 25 ms instead of snapping in over 15. Durations are unchanged — pages time
 // the mic's quiet window after them.
+// Peaks are read relative to the level the profile plays at. Since 30 Sep 2026
+// sound on is one normal level (0.8) and the phone's buttons do the rest, so a
+// saved full volume plays at 0.8; read raw, the 3 dB pin below would have
+// found no note over 0.1 and passed on nothing.
 const chimes = await (async () => {
   const c2 = await browser.newContext();
   const p2 = await c2.newPage();
@@ -293,15 +297,16 @@ const chimes = await (async () => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Demo", onboarded: true, volume: 1, soundOn: true, voiceOn: true }));
   });
   await p2.goto("http://localhost:8123/sfx-harness");
-  const read = (name) => p2.evaluate((n) => { window.__notes.length = 0; Sona.sfx[n](); return window.__notes.map((x) => ({ start: x.start, peak: x.ramps[0] && x.ramps[0][0], attack: x.ramps[0] && +(x.ramps[0][1] - x.start).toFixed(4), end: x.ramps[1] && +(x.ramps[1][1] - x.start).toFixed(4), stop: x.stop })); }, name);
-  const out = { correct: await read("correct"), complete: await read("complete"), tap: await read("tap") };
+  const read = (name) => p2.evaluate((n) => { const lvl = Sona.getProfile().volume; window.__notes.length = 0; Sona.sfx[n](); return window.__notes.map((x) => ({ start: x.start, peak: x.ramps[0] && x.ramps[0][0] / lvl, attack: x.ramps[0] && +(x.ramps[0][1] - x.start).toFixed(4), end: x.ramps[1] && +(x.ramps[1][1] - x.start).toFixed(4), stop: x.stop })); }, name);
+  const out = { level: await p2.evaluate(() => Sona.getProfile().volume), correct: await read("correct"), complete: await read("complete"), tap: await read("tap") };
   await c2.close();
   return out;
 })();
+ok("a full volume saved by the old slider plays at the normal level", chimes.level, 0.8);
 for (const name of ["correct", "complete"]) {
   const notes = chimes[name];
   ok(name + ": every note is at or under 0.113 of full volume (3 dB under the old 0.16)", notes.length > 0 && notes.every((n) => n.peak <= 0.1131), true);
-  ok(name + ": the main notes are exactly 3 dB down", notes.filter((n) => n.peak > 0.1).every((n) => Math.abs(20 * Math.log10(n.peak / 0.16) + 3) < 0.05), true);
+  ok(name + ": the main notes are exactly 3 dB down", notes.some((n) => n.peak > 0.1) && notes.filter((n) => n.peak > 0.1).every((n) => Math.abs(20 * Math.log10(n.peak / 0.16) + 3) < 0.05), true);
   ok(name + ": every note swells in over 25 ms", notes.every((n) => n.attack === 0.025), true);
 }
 ok("correct keeps its length (last note ends 0.34 s in)", Math.max(...chimes.correct.map((n) => n.start + n.end)).toFixed(2), "0.34");

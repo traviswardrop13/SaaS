@@ -50,6 +50,13 @@ await new Promise((r) => srv.listen(8191, r));
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
+// A "this must NOT appear" assertion has to read CODE, not prose. Twice now a
+// comment explaining why something was removed has tripped the check guarding
+// its removal — the tombstone is not the corpse. Strip comments first.
+const noComments = (src) => src
+  .replace(/<!--[\s\S]*?-->/g, " ")      // html
+  .replace(/\/\*[\s\S]*?\*\//g, " ")     // block
+  .replace(/(^|[^:])\/\/[^\n]*/g, "$1"); // line, without eating https://
 
 async function page() {
   const ctx = await browser.newContext();
@@ -82,6 +89,50 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   ok("…the word position", after.pos === "f", JSON.stringify(after));
   ok("…and the daily rep goal the jar fills to", after.goal === 40, JSON.stringify(after));
   await ctx.close();
+}
+
+// ── 1b. …and the position reaches the words the practice page asks for ──
+// practicePos() returning "f" proved only the reader. The practice page's word
+// step (ladderContent's word rung) and sentence step (gamecontent.js) each
+// chose a position of their own, and neither was this one: End-of-word
+// homework still asked for "rabbit" and "I see a rabbit." Travis, 30 Sep 2026:
+// the position must actually drive the practice page, homework first, then the
+// family's setting. The games keep start-of-word words on purpose.
+{
+  const { ctx, pg } = await page();
+  await pg.addScriptTag({ url: "/gamecontent.js" });   // charge.html loads it; today.html does not
+  const st = await pg.evaluate((c) => {
+    const at = (sound, rung) => {
+      const pos = {}; Sona.WORDS[sound].forEach((w) => { pos[w.w] = w.pos || "i"; });
+      return Sona.ladderContent(sound, Sona.LADDER.indexOf(rung)).map((x) => ({ t: x.t, word: x.word, pos: pos[x.word] }));
+    };
+    const read = (sound) => ({ pos: Sona.practicePos(), word: at(sound, "word"), sent: at(sound, "sentence") });
+    const out = { sc: !!(window.SonaContent && SonaContent.sentences) };
+    eval(c);                                         // homework: S at End; the family is on Beginning
+    out.hw = read("S");
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    Sona.saveProfile({ practicePosition: "m" });     // no homework; the family picks Middle
+    out.fam = read("R");
+    return out;
+  }, CACHE());
+  const all = (xs, p) => xs.length > 0 && xs.every((x) => x.pos === p);
+  const show = (xs) => JSON.stringify(xs.map((x) => x.t + " [" + x.pos + "]"));
+  // a sentence built by gamecontent.js is a frame around the word; the bare
+  // word is ladderContent's fallback for a page without it, which this is not
+  const framed = (xs) => xs.every((x) => x.t !== x.word && x.t.indexOf(x.word) >= 0);
+  ok("the sentence step is gamecontent.js's, not the bare-word fallback", st.sc && framed(st.hw.sent) && framed(st.fam.sent), show(st.hw.sent));
+  ok("homework at End: every sentence is built on an End word", st.hw.pos === "f" && all(st.hw.sent, "f"), show(st.hw.sent));
+  ok("…and so is every word at the word step", all(st.hw.word, "f"), show(st.hw.word));
+  ok("no homework, family on Middle: every sentence is built on a Middle word", st.fam.pos === "m" && all(st.fam.sent, "m"), show(st.fam.sent));
+  ok("…and so is every word at the word step", all(st.fam.word, "m"), show(st.fam.word));
+  await ctx.close();
+
+  // Feed Echo, Bubble Pop and the Say & Play games (Hoops) ask for
+  // start-of-word words whatever the setting says (Travis, 30 Sep 2026): which
+  // positions suit a three-year-old's game is a separate call, Rachel's.
+  const gameSrc = { "arcade-feed.html": /S\.wordsFor\(sound,\s*"i"\)/, "simple-play.js": /S\.wordsFor\(sound,\s*"i"\)/, "sayplay.js": /S\.wordsFor\(sound,\s*"i"\)/ };
+  const drifted = Object.keys(gameSrc).filter((f) => !gameSrc[f].test(noComments(readFileSync(ROOT + "/" + f, "utf8"))));
+  ok("the games keep start-of-word words", drifted.length === 0, "now reading another position: " + drifted.join(", "));
 }
 
 // ── 2. the date window is real in both directions ──
@@ -165,13 +216,7 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
 }
 
 // ── 6. server-side contracts ──
-// A "this must NOT appear" assertion has to read CODE, not prose. Twice now a
-// comment explaining why something was removed has tripped the check guarding
-// its removal — the tombstone is not the corpse. Strip comments first.
-const noComments = (src) => src
-  .replace(/<!--[\s\S]*?-->/g, " ")      // html
-  .replace(/\/\*[\s\S]*?\*\//g, " ")     // block
-  .replace(/(^|[^:])\/\/[^\n]*/g, "$1"); // line, without eating https://
+// (noComments, defined at the top, keeps these reading code, not prose.)
 {
   const hwLib = readFileSync(ROOT + "/../lib/homework.ts", "utf8");
   const devApi = readFileSync(ROOT + "/../app/api/homework/route.ts", "utf8");

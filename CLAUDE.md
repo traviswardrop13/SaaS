@@ -823,7 +823,7 @@ keys, so it ends in a win. A tile that slips by fades and the song plays on
 (after two in a row the next tiles slow and wait); the first three tiles wait
 on the keys until tapped; and a tile takes the song's fall time on every
 screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
-note: `micquietgamestest` pins its loudness to the Sound setting.
+note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
 `tests/tilestest.mjs` plays a whole round.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
@@ -1067,6 +1067,35 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Grown-ups button opens the grown-up check, then Settings, whose tab bar is
   Progress · Settings · Talk to us. The old three-door pop-up is gone; its plan
   and trial lines now live in Settings > Account.
+
+- **Settings is short** (Travis, 30 Sep 2026).
+  - Reps in one line: "A rep is one time <name> says their sound or word out
+    loud, in practice or in a game. Silence never counts." (`repweektest`.)
+  - No volume slider: the phone's side buttons set the level ("why can't we
+    just use our phones to adjust volume on the side of our iphone?").
+    `getProfile()` plays any saved level above zero at the one normal level,
+    0.8; a volume of 0 stays muted, and only then Settings shows "Sound is off
+    in Sona." with "Turn sound on". Never bring back a level control: a saved
+    level nobody can change is how families got stuck at 30% once.
+  - No parent code: the grown-ups check is always four number words (it stays:
+    the paywall is on, and Apple wants a check before a buy screen).
+  - Focus-sound buttons show a grey "by ~Ny" and nothing else. Nothing in the
+    code gates a sound by age, despite "Developmental order is real" below;
+    building a real gate is Rachel's call.
+  - Backup & restore sits behind a closed "Moving to a new phone?" link at the
+    foot of Settings (`#moveBox`, same ids inside). It is still the only way
+    practice, and a clinician's link, reaches a new phone or the iPhone app.
+- **Practice syllables never spell "gay" or "poo"** (Travis, 30 Sep 2026):
+  `syllables()` in `gamecontent.js` swaps them for "guy" and "pie". `soundmap`
+  checks a NEVER_SAY list; add to it, never drop a syllable.
+- **The word position drives the practice page** (Travis, 30 Sep 2026): the
+  word step, the sentence step and the step-down read `Sona.practicePos()`
+  (homework position first, then the family's setting); a position with no
+  words for that sound falls back to start-of-word words. The games keep
+  start-of-word words until Rachel says otherwise (`progtest`, `hwtest`).
+- **Child slots are never reused, and a removed child takes their saved tries**
+  (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
+  leaves right after either waits on `Sona.clipsSettled()`).
 
 ## Code conventions
 - `public/` is static ES5 — no build step, no framework, no bundler. It ships

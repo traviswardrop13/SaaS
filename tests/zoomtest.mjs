@@ -182,7 +182,10 @@ try {
     } finally { await context.close(); }
   });
 
-  await scenario('Settings: buttons, the volume slider and plain text', async () => {
+  // The volume slider went on 30 Sep 2026; what a parent taps in its place is
+  // "Turn sound on" (this seed is muted, so it shows) and, at the foot of the
+  // page, "Moving to a new phone?".
+  await scenario('Settings: buttons, Turn sound on, the moving link and plain text', async () => {
     const { context, page, open } = await fresh();
     try {
       await open('settings.html');
@@ -190,10 +193,12 @@ try {
         const effective = new Function('return ' + fn)();
         const button = document.querySelector('main button') || document.querySelector('button');
         const text = document.querySelector('main h1, main h2, main p') || document.querySelector('h1, h2, p');
-        return { button: effective(button), slider: effective('#volume'), text: effective(text) };
+        const on = document.getElementById('soundOnBtn');
+        return { button: effective(button), soundOn: effective(on), shown: !!on && on.getClientRects().length > 0, move: effective('#moveBox > summary'), text: effective(text) };
       }, [effective.toString()]);
       ok('Settings: a button never zooms on a double tap', m.button === 'manipulation', m);
-      ok('Settings: the volume slider never zooms on a double tap', m.slider === 'manipulation', m);
+      ok('Settings: Turn sound on shows for a muted child, and never zooms on a double tap', m.shown && m.soundOn === 'manipulation', m);
+      ok('Settings: the moving-phones link never zooms on a double tap', m.move === 'manipulation', m);
       ok('Settings: plain text never zooms on a double tap', m.text === 'manipulation', m);
     } finally { await context.close(); }
   });

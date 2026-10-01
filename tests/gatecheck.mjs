@@ -147,11 +147,50 @@ for (const f of ["settings.html", "progress.html", "subscribe.html", "talk.html"
   await pg.close();
 }
 
-// the settings page describes the gate that actually exists: four number
-// words to read, not the arithmetic it replaced (a seven-year-old with their
-// times tables walked through the old one; the copy still advertised it)
-chk("settings describes the gate that exists, not the one it replaced",
-  /four number words/.test(readFileSync(ROOT + "/settings.html", "utf8")) && !/math question/.test(readFileSync(ROOT + "/settings.html", "utf8")));
+// ── no parent code (Travis, 30 Sep 2026: "get rid of the parent code") ──
+// It was an optional PIN set in Settings that replaced the number words. With
+// its box gone, a code saved before then must not be asked for: a parent who
+// forgot it would have no way left to change it, and no way in. The number
+// words stay for everyone, because purchases sit behind this door.
+{
+  const set = readFileSync(ROOT + "/settings.html", "utf8");
+  const setCode = set.replace(/<!--[\s\S]*?-->/g, "");
+  chk("Settings has no parent code to set", !/parentPin|id="pinCard"/.test(set) && !/Parent code/.test(setCode));
+  // (the arithmetic it replaced was still advertised in Settings once)
+  chk("…and never advertises the old math question", !/math question/i.test(setCode));
+  chk("Home's gate never reads a saved code", !/parentPin/.test(readFileSync(ROOT + "/today.html", "utf8")));
+
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    sessionStorage.removeItem("sona.gate.v1");
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, parentPin: "2468" });
+  });
+  await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(800);
+  await pg.evaluate(() => document.getElementById("parentBtn").click());
+  await pg.waitForTimeout(350);
+  const q = await pg.evaluate(() => document.getElementById("gateQ").textContent);
+  const words = q.split(" · ").map((w) => ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"].indexOf(w));
+  chk("a family who saved a code before gets the four number words, not the code", words.length === 4 && words.every((d) => d >= 0));
+  await pg.evaluate((seq) => {
+    const btns = [...document.querySelectorAll("#pad button")];
+    seq.forEach((d) => btns.find((b) => b.textContent === String(d)).click());
+    btns.find((b) => b.textContent === "✓").click();
+  }, "2468".split("").map(Number));
+  await pg.waitForTimeout(350);
+  // (one challenge in ten thousand IS 2468; that one rightly opens)
+  chk("…and the old code no longer opens anything", words.join("") === "2468" ||
+    await pg.evaluate(() => location.pathname === "/today.html" && !sessionStorage.getItem("sona.gate.v1")));
+  // a wrong try leaves the same challenge up, so the words read above still answer it
+  if (new URL(pg.url()).pathname === "/today.html") await Promise.all([pg.waitForURL(/\/settings\.html$/), pg.evaluate((seq) => {
+    const btns = [...document.querySelectorAll("#pad button")];
+    seq.forEach((d) => btns.find((b) => b.textContent === String(d)).click());
+    btns.find((b) => b.textContent === "✓").click();
+  }, words)]);
+  chk("…while the words open Settings as for everyone", new URL(pg.url()).pathname === "/settings.html");
+  await pg.close();
+}
 
 await browser.close(); srv.close();
 console.log(bad ? bad + " FAILURES" : "GATE ALL GREEN");
