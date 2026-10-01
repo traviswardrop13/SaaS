@@ -2328,6 +2328,17 @@
         var key = gameKey(query.get("game"));
         return path + (key ? "?game=" + key : "");
       }
+      // The plan screen opened from a locked game names that game (30 Sep
+      // 2026), so ?from= rides the bounce too — but only as a key the catalog
+      // knows, or "library" (a locked book, "See Premium"). Anything else is
+      // dropped, the same as every other query key.
+      if (path === "/subscribe.html") {
+        var q = new URLSearchParams(s.split("?")[1] || "");
+        if (q.get("first") === "1") return path + "?first=1";
+        var from = q.get("from");
+        from = from === "library" ? from : gameKey(from);
+        return path + (from ? "?from=" + from : "");
+      }
       return path + (/[?&]first=1(&|$)/.test(s) ? "?first=1" : "");
     } catch (e) { return ""; }
   }
@@ -3680,11 +3691,19 @@
   // ── the first game, straight from setup (Travis, 27 Sep 2026) ──
   // "upon completing the few steps inside the onboarding ... it will choose
   // feed echo for the littles and fruit slice for ages five and up ... it'll
-  // literally go straight to the game ... And then when they finish the game,
-  // that is when I want the paywall to come up". Setup marks which game is the
-  // first (this tab only); that game's end card asks firstGameEnd() once where
-  // to go next: the plan screen while planEligible() says so (never while Sona
-  // is free, never for a family that already has every game), else Home.
+  // literally go straight to the game". Setup marks which game is the first
+  // (this tab only); that game's end card asks firstGameEnd() once where to go
+  // next, and the answer is always Home.
+  //
+  // It used to be the plan screen while planEligible() said so. Travis played
+  // it on 30 Sep 2026 and turned it round: "after they play their first game
+  // after onboarding lets maybe have the second option be 'Go to Home' so the
+  // top stays as play again but then when they see home they see the other
+  // games they can play and that there are premium ones ... the flow was not
+  // good". A child who has just won one game wants another go, not a price.
+  // The offer now waits for the two moments a grown-up is actually there: the
+  // end of the first full practice run (charge.html's "Show a grown-up"), and
+  // a tap on a locked game.
   const FIRSTKEY = "sona.firstgame.v1";
   function firstGameKey() { return playStyle() === "simple" ? "feed" : "slice"; }
   function firstGameStart() {
@@ -3696,8 +3715,13 @@
     let mine = false;
     try { mine = sessionStorage.getItem(FIRSTKEY) === gameKey(key); if (mine) sessionStorage.removeItem(FIRSTKEY); } catch (e) {}
     if (!mine) return null;
-    return planEligible() ? "/subscribe.html?first=1" : "/today.html";
+    return "/today.html";
   }
+
+  // The crafted picture each game wears on Home's card, and on the plan
+  // screen's hero (30 Sep 2026): the plan screen sells these games, so it
+  // shows them, in the same art Home does. One map, read by both pages.
+  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", peekaboo: "peekaboo", balloon: "balloon", flower: "flower", rocket: "rocket", snowman: "snowman", train: "train", puppy: "puppy", stars: "stars", cake: "cake", gifts: "gifts", fishtank: "fishtank", racecar: "racecar", treasure: "treasure", soccer: "soccer", robot: "robot", castle: "castle", dino: "dino", space: "space", pizza: "pizza", monster: "monster" };
 
 
   // The button path: stop whatever is talking and say THIS, now.
@@ -4505,5 +4529,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
 })(window);
