@@ -116,7 +116,7 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><img src="/assets/crafted/game/star.webp" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:contain"></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
       <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
@@ -329,8 +329,14 @@
     var COLW=74;
     var ECHO=new Image(); ECHO.src="/assets/crafted/echo-welcome.webp";
     var lastT=performance.now();
-    function cloudShape(x,y,w){ ctx.beginPath(); ctx.ellipse(x,y,w*0.5,w*0.16,0,0,7); ctx.ellipse(x-w*0.22,y-w*0.08,w*0.2,w*0.14,0,0,7); ctx.ellipse(x+w*0.12,y-w*0.12,w*0.24,w*0.17,0,0,7); ctx.fill(); }
-    function star5(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
+    // the crafted cloud and star (1 Oct 2026); the drawn shapes until they load
+    var CLOUD_ART=new Image(); CLOUD_ART.src="/assets/crafted/game/cloud.webp";
+    var STAR_ART=new Image(); STAR_ART.src="/assets/crafted/game/star.webp";
+    function loaded(im){ return im.complete&&im.naturalWidth; }
+    function cloudShape(x,y,w){ if(loaded(CLOUD_ART)){ var h=w*CLOUD_ART.naturalHeight/CLOUD_ART.naturalWidth; ctx.drawImage(CLOUD_ART,x-w/2,y-h*0.6,w,h); return; } cloudShape0(x,y,w); }
+    function cloudShape0(x,y,w){ ctx.beginPath(); ctx.ellipse(x,y,w*0.5,w*0.16,0,0,7); ctx.ellipse(x-w*0.22,y-w*0.08,w*0.2,w*0.14,0,0,7); ctx.ellipse(x+w*0.12,y-w*0.12,w*0.24,w*0.17,0,0,7); ctx.fill(); }
+    function star5(x,y,r){ if(loaded(STAR_ART)){ ctx.drawImage(STAR_ART,x-r*1.25,y-r*1.25,r*2.5,r*2.5); return; } star50(x,y,r); }
+    function star50(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
     function draw(){
       var now=performance.now(), dt=document.hidden?0:Math.min(100,now-lastT), i; lastT=now;
       if(playing&&phase==="fly"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the hedges";}

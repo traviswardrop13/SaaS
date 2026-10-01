@@ -235,12 +235,15 @@
     ctx.lineCap = "butt";
   }
 
+  var BALL_ART = new Image(); BALL_ART.src = "/assets/crafted/game/ball.webp";
   function drawBall(b) {
     var p = project(b.x, b.y, b.z), r = BALL_R * p.s;
     if (r <= 0.5) return;
     var sh = project(b.x, 0.001, b.z);
     if (sh.y < H + r && b.z > 0.9) { ctx.fillStyle = "rgba(90,50,15," + Math.max(0, 0.26 - b.y * 0.05).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, r * 1.05, r * 0.3, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.save(); ctx.translate(p.x, p.y);
+    // the crafted ball (1 Oct 2026), turning with the spin; the drawn one until it loads
+    if (BALL_ART.complete && BALL_ART.naturalWidth) { ctx.rotate(b.spin || 0); ctx.drawImage(BALL_ART, -r, -r, r * 2, r * 2); ctx.restore(); return; }
     var g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
     g.addColorStop(0, "#ffbb63"); g.addColorStop(0.5, "#eb8935"); g.addColorStop(0.85, "#c25d25"); g.addColorStop(1, "#8e3e20");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
