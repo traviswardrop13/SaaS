@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Play library</title>
   <link href="/fonts.css" rel="stylesheet" />
   <link href="/sona.css" rel="stylesheet" />
@@ -117,32 +117,24 @@
     .pulse-echo{display:block;width:84px;height:84px;margin:-6px auto 2px;object-fit:contain;}
     .pulseChip.on{background:linear-gradient(180deg,var(--act-hi),var(--act))!important;color:#fff!important;border-color:var(--act-d)!important;}
 
-    /* parent gate + sheet (warm) */
+    /* parent gate + beta pulse (warm) */
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(74,44,20,.5);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
     .modal{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 50px rgba(74,44,20,.35);}
     .modal h3{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
     .modal p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:4px;}
-    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin:10px 0 2px;}
-    /* the spelled-out challenge needs room for four words, so it sets its own
-       size rather than fighting the 30px the PIN lock glyph wants */
-    #gateQ.words{font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;margin:10px auto 2px;}
+    /* four spelled-out number words, sized to fit the modal on a small phone */
+    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;color:var(--orange-d);margin:10px auto 2px;}
     #gateIn{font-family:"Baloo 2";font-weight:800;font-size:26px;letter-spacing:8px;min-height:36px;color:var(--ink);}
     .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
     .pad button{border:none;border-radius:14px;padding:13px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);}
     .pad button:active{transform:translateY(2px);box-shadow:none;}
     .modal.shake{animation:shake .35s;}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+    /* The beta pulse's Send button. The class is older than the pulse: it was
+       the Grown-ups pop-up's, and that pop-up is gone (30 Sep 2026). */
     .sheetBtn{display:flex;align-items:center;gap:12px;width:100%;border:none;border-radius:16px;padding:15px 16px;margin-top:10px;background:var(--cream);font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);text-align:left;}
     .sheetBtn:active{transform:translateY(2px);box-shadow:none;}
-    /* The pop-up's three doors are the grown-ups bar's three tabs — same order,
-       same words, same pictures — so a parent who learns one has learned the
-       other (tests/familynavtest.mjs pins the order against the bar). */
-    .sheetGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;}
-    .sheetGrid .sheetBtn{flex-direction:column;justify-content:center;gap:6px;margin-top:0;min-height:78px;padding:12px 4px;font-size:14px;line-height:1.1;text-align:center;}
-    .sheetGrid .sheetBtn svg{width:26px;height:26px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--orange-d);}
-    /* A 320px phone leaves each tile ~69px: "Talk to us" broke onto two lines. */
-    @media (max-width:360px){ .sheetGrid{gap:8px;} .sheetGrid .sheetBtn{padding:10px 2px;font-size:13px;white-space:nowrap;} }
     .ghost{border:none;background:none;color:var(--label);font-weight:800;font-size:13px;margin-top:12px;cursor:pointer;}
     #toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;border-radius:99px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 8px 22px rgba(74,44,20,.3);opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;white-space:nowrap;}
     #toast.show{opacity:1;}
@@ -190,24 +182,12 @@
     </div>
   </div>
 
-  <!-- parent sheet -->
-  <div class="ovl" id="sheetOvl">
-    <div class="modal">
-      <h3>Grown-ups</h3>
-      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide. Choose any available game that fits.</p>
-      <!-- 29 Sep 2026 (Travis): the pop-up no longer carries the week. The
-           Monday–Sunday dots, the wins line, "Share this week" and the
-           "In plain words" card all left; Progress shows the week in full and
-           Home's reps counter opens the week-by-week card in Settings. -->
-      <div id="planNote" style="display:none;background:var(--cream);border-radius:16px;padding:12px 16px;margin-top:10px;text-align:left;font-weight:800;font-size:12.5px;color:var(--muted);"></div>
-      <nav class="sheetGrid" aria-label="Grown-ups">
-        <button class="sheetBtn" id="goProgress" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="m5 15 4-4.5 3.5 3L19 6.5"/><path d="M14.5 6.5H19V11"/></svg>Progress</button>
-        <button class="sheetBtn" id="goSettings" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</button>
-        <button class="sheetBtn" id="goTalk" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</button>
-      </nav>
-      <button class="ghost" id="sheetClose">Close</button>
-    </div>
-  </div>
+  <!-- NO GROWN-UPS POP-UP (Travis, 30 Sep 2026: "when they click parents and
+       put in code i want it to go straight to settings not have them choose
+       what they wanna go to"). The right code goes straight to Settings,
+       whose tab bar is the same three places the pop-up offered (Progress ·
+       Settings · Talk to us) and whose Account line says the plan the
+       pop-up's note used to. -->
 
   <!-- beta pulse — chip-first ask for founding families; X always works -->
   <div class="ovl" id="pulseOvl">
@@ -256,14 +236,19 @@
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       // Home stays quiet. Practice begins only after a child picks a game.
+      // a book card (What's new / Limited time) opens it on the bookshelf,
+      // whose own rules decide free, Premium or not out yet
+      function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name));return {allowed:ok,tier:game.tier,reason:ok?"book":"premium"};}
       function launch(game){
+        if(game.kind==="book"){clearMessage();location.href=game.go;return;}
         if(!access(game).allowed){showLocked(game);return;}
         clearMessage();
         location.href=game.go;
       }
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
-        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        var grant=game.kind==="book"?bookAccess(game):access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        if(game.kind==="book")button.classList.add("book-card");
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
         // a parked game says its Monday ("Coming Oct 12"), then "Coming soon"
         var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
@@ -271,7 +256,9 @@
         button.dataset.locked=grant.allowed?"false":"true";
         button.setAttribute("aria-label",comingSoon?game.name+". "+label+".":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");
-        if(craftedCards[game.key]){
+        if(game.kind==="book"){
+          var cover=node("img","crafted-card-image");cover.src=game.cover;cover.alt="";cover.decoding="async";cover.loading="lazy";art.appendChild(cover);
+        }else if(craftedCards[game.key]){
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
         }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
         button.appendChild(art);
@@ -283,9 +270,12 @@
       (library.featured || []).forEach(function(collection){
         var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
         var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
-        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"This season"));section.appendChild(top);
+        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"Here for a little while"));section.appendChild(top);
         var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
       });
+      // every game still being built goes in one Coming soon section after the
+      // age groups, a few across and going down (Travis, 1 Oct 2026)
+      var comingShelves=[];
       library.groups.forEach(function(group){
         var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
         var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
@@ -293,9 +283,10 @@
         if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
         var grid=node("div","game-grid"),parked=node("div","coming-grid");
         group.games.forEach(function(game){(game.comingSoon?parked:grid).appendChild(gameCard(game));});section.appendChild(grid);
-        if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading","More to discover soon"));waiting.appendChild(parked);section.appendChild(waiting);}
+        if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading",group.name+" · "+group.ageLabel.replace(/^Suggested a/,"A")));waiting.appendChild(parked);comingShelves.push(waiting);}
         host.appendChild(section);
       });
+      if(comingShelves.length){var soon=node("section","coming-all");soon.id="comingGroups";var head=node("div","shelf-heading");head.appendChild(node("h2","","Coming soon"));head.appendChild(node("span","shelf-tag","New ones every week"));soon.appendChild(head);comingShelves.forEach(function(w){soon.appendChild(w);});host.appendChild(soon);}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
@@ -336,30 +327,31 @@
         S.caseRefresh().then(function(){if(S.premium()!==wasPremium)location.reload();},function(){});
       }
     }catch(e){}
-    // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
+    // ── parent gate: four spelled-out digits, for every family ──
     // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
     // knows their times tables walks straight through it, and there are only
     // about thirty plausible products to guess. Four number WORDS have to be
     // read to be answered — which is precisely what the child this gate exists
     // to stop cannot do — and there are ten thousand of them.
+    // The optional parent code is gone (Travis, 30 Sep 2026: "get rid of the
+    // parent code"); a code saved before then is simply never asked for. The
+    // words stay: purchases sit behind this door, and Apple wants a grown-up
+    // check before a buy screen.
     var NUMWORD=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"];
-    var gateAns="", gateNeed="", gateMode="math", gateNext=null;
+    var gateAns="", gateNeed="", gateNext=null;
+    // Where the right code goes when nothing more particular asked: straight
+    // to Settings (Travis, 30 Sep 2026: "go straight to settings not have them
+    // choose what they wanna go to"). It used to open a Grown-ups pop-up of
+    // three doors, and Settings' tab bar already is those three doors.
+    function toSettings(){ location.href="/settings.html"; }
     function openGate(next){
-      gateNext=next||null; // pass a callback to run instead of the parent sheet
-      var pin=(P.parentPin||"").trim();
+      gateNext=next||toSettings; // a callback sends the grown-up somewhere else
       gateAns="";
-      var q=$("gateQ");
-      if(pin){
-        gateMode="pin"; gateNeed=pin; q.className=""; q.innerHTML=S.icon?S.icon("lock",30):"Parent code";
-        $("gateHint").textContent="Enter your parent code";
-      } else {
-        gateMode="words"; var d=[];
-        for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
-        gateNeed=d.join("");
-        q.className="words";
-        q.textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
-        $("gateHint").textContent="Tap these numbers in order (set a code in Settings)";
-      }
+      var d=[];
+      for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
+      gateNeed=d.join("");
+      $("gateQ").textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
+      $("gateHint").textContent="Tap these numbers in order";
       $("gateIn").textContent="";
       $("gateOvl").classList.add("show");
     }
@@ -389,12 +381,11 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { $("sheetOvl").classList.add("show"); } }
+            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); var fn=gateNext||toSettings; gateNext=null; fn(); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
-          else { if(gateAns.length<6) gateAns+=String(kk); }
-          $("gateIn").textContent=gateAns.replace(/./g, gateMode==="pin"?"•":"$&");
-          if(gateMode==="pin"){ $("gateIn").textContent="•".repeat(gateAns.length); }
+          else { if(gateAns.length<gateNeed.length) gateAns+=String(kk); }
+          $("gateIn").textContent=gateAns;
         };
         pad.appendChild(b);
       });
@@ -405,66 +396,27 @@
     // Without this the parent solves a number puzzle and lands on the kid's
     // home screen, with no sign of the plan screen (or progress page) that
     // bounced them. Sona.gateDest re-checks the allowlist HERE too: this reads
-    // a URL, and a URL is never trusted because it arrived.
+    // a URL, and a URL is never trusted because it arrived. A bounce with no
+    // allowed destination goes to Settings, as the Grown-ups button does;
+    // replace(), so a back-swipe from there doesn't reopen this gate.
     try{
       if(/[?&]gate=1/.test(location.search)){
         var _raw=""; try{ _raw=decodeURIComponent((location.search.match(/[?&]to=([^&]*)/)||[])[1]||""); }catch(e){}
         var _to=""; try{ _to=(S&&S.gateDest)?S.gateDest(_raw):""; }catch(e){}
-        openGate(_to?function(){ location.replace(_to); }:null);
+        openGate(function(){ location.replace(_to||"/settings.html"); });
       }
     }catch(e){}
     try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); document.querySelectorAll("[data-ic]").forEach(function(n){ var m=S.icon(n.dataset.ic,18); if(m) n.innerHTML=m; }); }catch(e){}
-    $("goProgress").onclick=function(){ location.href="/progress.html"; };
-    $("goSettings").onclick=function(){ location.href="/settings.html"; };
-    $("goTalk").onclick=function(){ location.href="/talk.html"; };
-    $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
 
-    // ── plan status (web only; the native app has no payments) ──
-    // Hard rule: the kid home shows zero prices, trials, or countdowns.
-    // Trial status lives in the parent corner (#planNote), behind the gate.
-    // Founding families keep a kid-safe banner that opens the feedback pulse.
+    // ── founding banner (web only) ──
+    // Hard rule: the kid home shows zero prices, trials, or countdowns. The
+    // plan and any trial are said in Settings → Account, behind the gate (the
+    // Grown-ups pop-up's plan note moved there on 30 Sep 2026, with the pop-up
+    // gone). Founding families keep a kid-safe banner that opens the feedback
+    // pulse.
     (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return;
-      var b=$("trialBanner"),m=$("trialMsg"),note=$("planNote");
-      if(P.earlyAdopter){
-        if(b&&m){ m.textContent="Founding family: you're building Sona with us!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
-        if(note){ note.textContent="Your family has founding access while we build Sona together — thank you."; note.style.display="block"; }
-        return;
-      }
-      if(!note)return;
-      // Free mode: no trial, no plan, nothing to say in the parent corner. The
-      // trial key still sits on every device that met the paywall before the
-      // flip, and without this they'd read "Your free trial has ended — see
-      // plans" inside an app that is free.
-      if(S.isFree&&S.isFree())return;
-      if(S.isSubscribed&&S.isSubscribed())return;
-      // Premium through a clinician's caseload plan: say where it came from,
-      // so a parent who never bought anything is not left wondering why every
-      // game is open — or surprised if it closes when the plan ends.
-      if(S.caseCovered&&S.caseCovered()){
-        note.textContent="Sona Premium is included through your child's speech therapist — every available game is open.";
-        note.style.display="block"; return;
-      }
-      if(S.premium&&S.premium())return;
-      // Opening the home screen used to START a trial (ensureTrial), so the
-      // clock began because a parent looked at the app. It reports one now,
-      // and only if one already exists — an existing family's unexpired days
-      // are honored to the end, and nobody new is issued any.
-      var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      // The family is on the free version and has seen what Sona does. This is
-      // the ONE place that says what that means — the kid screen never will —
-      // and it is where a parent who never saw the hand-off (a window that
-      // closed, a run never finished) learns what stays free and where Premium
-      // is. It asked gated("practice") until 24 Sep 2026; practice is never
-      // gated now, so the question is the one that is actually true: has this
-      // family got every game?
-      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.premium&&!S.premium()); }catch(e){}
-      var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
-      if(sessionOver&&!_tActive&&!_tExpired){
-        note.innerHTML='Free games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
-        note.style.display="block"; return;
-      }
-      if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Free games stay free."+link+"See plans →</a>"; note.style.display="block"; }
+      var b=$("trialBanner"),m=$("trialMsg");
+      if(P.earlyAdopter&&b&&m){ m.textContent="Founding family: you're building Sona with us!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

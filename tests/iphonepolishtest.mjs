@@ -40,7 +40,7 @@ try{
  await page.goto(base+'/arcade-feed.html');
  await page.locator('#startBtn').click();
  await page.waitForFunction(()=>h.media.length>0,{},{timeout:2500}).catch(()=>{});
- ok('Feed Echo generated voice uses native media playback at the selected volume',await page.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6));
+ ok('Feed Echo generated voice uses native media playback at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await page.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.media[0].volume===Sona.getProfile().volume));
  await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});
  ok('Feed Echo stops its native voice when backgrounded',await page.evaluate(()=>h.media.length>0&&h.media[0].paused));
  ok('no runtime errors',errors.length===0);await context.close();
@@ -66,7 +66,7 @@ try{
   await pg.evaluate(()=>[...document.querySelectorAll('#shelf .bookBtn')].find(b=>b.querySelector('.bt').textContent==='Rory and the Rainbow').click());
   await pg.waitForTimeout(150);await pg.evaluate(()=>document.getElementById('bkNext').click());
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:4000}).catch(()=>{});
-  ok('the book reads its page as native media at the selected volume, never through Web Audio',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6&&h.pcm===0));
+  ok('the book reads its page as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026), never through Web Audio',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0));
   await pg.evaluate(()=>document.getElementById('bkNext').click());
   ok('turning the page stops the line in flight',await pg.evaluate(()=>h.media.length>0&&h.media[0].paused));
   await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
@@ -78,12 +78,12 @@ try{
   await pg.goto(base+'/arcade-hoops.html');await pg.waitForFunction(()=>!!document.getElementById('startBtn'));
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
-  ok('a word game (Hoops) says its word as native media at the selected volume',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
+  ok('a word game (Hoops) says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
   await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startGame'));
   await pg.evaluate(()=>{h.media=[];document.getElementById('startGame').click();});await pg.waitForTimeout(200);
   await pg.evaluate(()=>document.getElementById('revealButton').click());
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
-  ok('Bubble Pop says its word as native media at the selected volume',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
+  ok('Bubble Pop says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

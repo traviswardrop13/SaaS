@@ -443,5 +443,42 @@ try{
       ok('a sibling gets one separate daily recording',result.other===true&&result.otherCount===1&&result.originalCount===1,result);
     }finally{await close(context,page);}
   });
+  // A removed child's saved tries never reach a child added later (30 Sep
+  // 2026). removeKid left the clips in the device's one table, and addKid gave
+  // the next child the lowest free slot — the removed child's — so the new
+  // sibling's Progress page played, and could share, the removed child's voice.
+  if(process.env.REPGUARD_ONLY!=='positive')await scenario('a removed child takes their saved tries',async()=>{
+    const{page,context}=await fresh({shared:true});
+    try{
+      const result=await page.evaluate(async()=>{
+        const rows=()=>new Promise(res=>{const o=indexedDB.open('sona',1);o.onupgradeneeded=()=>o.result.createObjectStore('recordings',{keyPath:'id',autoIncrement:true});o.onsuccess=()=>{const g=o.result.transaction('recordings','readonly').objectStore('recordings').getAll();g.onsuccess=()=>{o.result.close();res(g.result.map(r=>r.kid||''));};};o.onerror=()=>res(null);});
+        const settle=async(slot)=>{for(let i=0;i<20;i++){const r=await rows();if(r&&!r.includes(slot))return r;await new Promise(t=>setTimeout(t,50));}return rows();};
+        const first=await Sona.saveRecording({sound:'R',word:'rabbit',blob:new Blob(['milo'],{type:'audio/webm'})});
+        const ana=Sona.addKid('Ana','5');
+        const anaSaved=await Sona.saveRecording({sound:'S',word:'sun',blob:new Blob(['ana'],{type:'audio/webm'})});
+        const anaListed=(await Sona.listRecordings()).length;
+        const removed=Sona.removeKid(ana);
+        const left=await settle(ana);
+        const ben=Sona.addKid('Ben','6');
+        const benListed=(await Sona.listRecordings()).length;
+        Sona.switchKid('');const firstListed=(await Sona.listRecordings()).length;
+        // A device that removed a child BEFORE this build: the record has no
+        // high-water mark and the clips were left behind under the removed
+        // slot, which is the next one the list itself would give out.
+        localStorage.setItem('sona.kids.v1',JSON.stringify({active:'',list:[{slot:'',name:'Milo'}]}));
+        await new Promise(res=>{const o=indexedDB.open('sona',1);o.onsuccess=()=>{const tx=o.result.transaction('recordings','readwrite');tx.objectStore('recordings').add({sound:'S',word:'sun',date:new Date().toISOString(),kid:'k2',blob:new Blob(['orphan'],{type:'audio/webm'})});tx.oncomplete=()=>{o.result.close();res();};};});
+        const cy=Sona.addKid('Cy','4');
+        const cyListed=(await Sona.listRecordings()).length;
+        const orphan=await settle(cy);
+        return{first,ana,anaSaved,anaListed,removed,left,ben,benListed,firstListed,cy,cyListed,orphan};
+      });
+      ok('the removed child had a saved try of their own',result.first===true&&result.anaSaved===true&&result.anaListed===1,result);
+      ok('removing a child deletes their saved tries from the phone',result.removed===true&&Array.isArray(result.left)&&!result.left.includes(result.ana),result);
+      ok('…and only theirs: the first child keeps their own',result.firstListed===1&&result.left.filter(k=>k==='').length===1,result);
+      ok('a child added after a removal gets a new slot, never the removed one',result.ana==='k2'&&result.ben==='k3',result);
+      ok('…and lists no saved tries',result.benListed===0,result);
+      ok('a slot an older build left clips under is cleared before its new child sees them',result.cyListed===0&&Array.isArray(result.orphan)&&!result.orphan.includes(result.cy),result);
+    }finally{await close(context,page);}
+  });
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 console.log(`Rep guard: ${checks-failures}/${checks} passed`);process.exitCode=failures?1:0;

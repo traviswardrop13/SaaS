@@ -447,7 +447,9 @@ ok("today no pageerrors", errs.length === 0);
 // no starter guide in the product, and the weekly email carries COHORT stats
 // plus a link BECAUSE per-child practice never leaves the device. A parent who
 // believed it and wiped their phone lost everything. The real mechanism is
-// Backup & restore in Settings, and this asserts the screen points there.
+// Backup & restore in Settings, and this asserts the screen points there:
+// since 30 Sep 2026 by the link a parent actually sees, "Moving to a new
+// phone?" at the bottom of Settings, which opens it.
 {
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
   const step = (ob.match(/<div class="step" data-step="email">[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
@@ -457,7 +459,7 @@ ok("today no pageerrors", errs.length === 0);
       !lie.test(step), step.slice(0, 200));
   }
   ok("…and says where the practice actually lives",
-    /stays on this device/i.test(step) && /Backup &amp; restore/i.test(step),
+    /stays on this device/i.test(step) && /Moving to a new phone\?<\/b> at the bottom of Settings/.test(step),
     "a parent who is not told will find out by losing it: " + step.slice(0, 300));
   // THIS STEP IS THE CLINICIAN'S. It is in ORDER_SLP and not in ORDER_PARENT,
   // so the parent-flavoured copy that used to sit here — "your email is how
@@ -469,8 +471,8 @@ ok("today no pageerrors", errs.length === 0);
     step.slice(0, 300));
   // Settings must still carry the mechanism the screen now points at
   const set = readFileSync(ROOT + "/settings.html", "utf8");
-  ok("Settings still has Backup & restore to point at",
-    /Backup &amp; restore/i.test(set) && /id="backupCopy"/.test(set) && /id="restoreBk"/.test(set));
+  ok("Settings still has Backup & restore to point at, behind that link",
+    /Backup &amp; restore/i.test(set) && /id="backupCopy"/.test(set) && /id="restoreBk"/.test(set) && /<summary>Moving to a new phone\?<\/summary>/.test(set));
   // …and it must not overclaim either: copying to a clipboard is not a backup
   ok("…and copying a code is reported as a copy, not a completed backup",
     !/backed up ✓|backup complete/i.test(set), "an attempted clipboard write is not a remote backup");
@@ -509,8 +511,21 @@ ok("today no pageerrors", errs.length === 0);
     (await pg.evaluate(() => Sona.getCoins())) === 100);
 
   await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(800);
-  // The restore box sits inside a collapsed <details> (the "More settings"
-  // fold around it went on 29 Sep 2026) — a parent has
+  // TUCKED AWAY (Travis, 30 Sep 2026): the whole Backup & restore card sits
+  // behind one quiet "Moving to a new phone?" link at the foot of Settings,
+  // closed until a parent opens it, with the same tools inside.
+  const tucked = await pg.evaluate(() => {
+    const box = document.getElementById("moveBox");
+    return { closed: !!box && box.tagName === "DETAILS" && !box.open, label: box ? box.querySelector("summary").textContent.trim() : "",
+      inside: ["backupCopy", "backupDl", "restoreIn", "restoreBk", "undoRestore"].every((id) => box && box.contains(document.getElementById(id))),
+      // nothing a parent can see comes after it (a screen-reader-only status may)
+      last: !!box && (!box.nextElementSibling || box.nextElementSibling.classList.contains("sr")),
+      // (a closed <details> keeps its content's boxes in Chrome, so ask the browser)
+      hidden: !document.getElementById("backupCopy").checkVisibility() };
+  });
+  ok("Backup & restore is tucked behind a closed 'Moving to a new phone?' link at the foot of Settings",
+    tucked.closed && tucked.label === "Moving to a new phone?" && tucked.inside && tucked.last && tucked.hidden, JSON.stringify(tucked));
+  // The restore box sits inside a collapsed <details> too — a parent has
   // to go looking for it, which is the right default for a destructive
   // control. Drive it from script rather than fighting the disclosure widget:
   // what is under test is the restore and its safety net, not the accordion.
@@ -525,10 +540,18 @@ ok("today no pageerrors", errs.length === 0);
     coins: Sona.getCoins(),
     snap: !!localStorage.getItem("_sonaPreRestore"),
     undo: document.getElementById("undoRow").style.display,
+    open: document.getElementById("moveBox").open,
   }));
   ok("the backup lands", done.coins === 40);
   ok("…and the device it overwrote was snapshotted first", done.snap === true);
   ok("…and Undo is offered, not hidden in a support email", done.undo === "block");
+  ok("…with the fold it lives in already open after the reload", done.open === true);
+  // …but only then: the snapshot never expires, so a family who moved phones
+  // must not find the card open at the foot of Settings on every later visit
+  await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(300);
+  await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(800);
+  const later = await pg.evaluate(() => ({ open: document.getElementById("moveBox").open, undo: document.getElementById("undoRow").style.display }));
+  ok("…and tucked away again on a later visit, with Undo still inside it", later.open === false && later.undo === "block", JSON.stringify(later));
 
   await pg.evaluate(() => {
     let e = document.getElementById("undoRestore"); while (e) { if (e.tagName === "DETAILS") e.open = true; e = e.parentElement; }
@@ -539,9 +562,54 @@ ok("today no pageerrors", errs.length === 0);
     coins: Sona.getCoins(),
     snap: !!localStorage.getItem("_sonaPreRestore"),
     undo: document.getElementById("undoRow").style.display,
+    open: document.getElementById("moveBox").open,
   }));
   ok("Undo puts the practice back", back.coins === 100);
   ok("…and spends the snapshot, so it cannot undo twice", back.snap === false && back.undo === "none");
+  ok("…and the fold is tucked away again", back.open === false);
+  await ctx.close();
+}
+
+// ── SET30: Settings, shorter (Travis, 30 Sep 2026) ─────────────────────
+// No volume slider ("why can't we just use our phones to adjust volume on the
+// side of our iphone?"): the phone's buttons set the level. Sona's own mute
+// is the one thing they can't undo, so a line names it only while it is on,
+// and its button writes the normal level back. And the focus-sound chips
+// lose the ⚠ and the red for a sound a child is young for: every chip keeps
+// the same grey "by ~Ny".
+{
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  const pg = await ctx.newPage();
+  const pe = []; pg.on("pageerror", (e) => pe.push(e.message));
+  await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(400);
+  await pg.evaluate(() => {
+    localStorage.clear();
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    Sona.saveProfile({ childName: "Ada", childAge: "4", focusSounds: ["R", "P"], onboarded: true, volume: 0, voiceOn: false, soundOn: false });
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  });
+  await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(700);
+  const muted = await pg.evaluate(() => {
+    const line = document.getElementById("soundOff");
+    return { slider: !!document.querySelector('input[type="range"], #volume, #soundCard'), shown: !line.hidden && line.getClientRects().length > 0, text: line.innerText.replace(/\s+/g, " ").trim(),
+      chips: [...document.querySelectorAll("#sounds .sound")].map((b) => ({ s: b.dataset.s, hint: (b.querySelector(".hint") || {}).textContent || "", early: !!b.querySelector(".early"), color: b.querySelector(".hint") ? getComputedStyle(b.querySelector(".hint")).color : "" })) };
+  });
+  ok("Settings has no volume slider", muted.slider === false);
+  ok("a muted child's Settings says so, with one button to undo it", muted.shown && muted.text === "Sound is off in Sona. Turn sound on");
+  const r = muted.chips.find((c) => c.s === "R");
+  ok("a sound a 4-year-old is young for keeps its grey age line, with no warning sign and no red",
+    !!r && /^by ~\d+y$/.test(r.hint) && muted.chips.every((c) => !/⚠/.test(c.hint) && !c.early) && new Set(muted.chips.map((c) => c.color)).size === 1);
+  await pg.click("#soundOnBtn"); await pg.waitForTimeout(150);
+  const on = await pg.evaluate(() => { const q = JSON.parse(localStorage.getItem("sona.profile.v1")); return { hidden: document.getElementById("soundOff").hidden, said: document.getElementById("soundSaid").textContent, volume: q.volume, voiceOn: q.voiceOn, soundOn: q.soundOn, name: q.childName }; });
+  ok("Turn sound on saves the normal level with voice and effects on, and the line goes",
+    on.hidden && on.said === "Sound is on." && on.volume === 0.8 && on.voiceOn === true && on.soundOn === true && on.name === "Ada");
+  await pg.reload(); await pg.waitForTimeout(600);
+  ok("…and stays gone", await pg.evaluate(() => document.getElementById("soundOff").hidden));
+  // a save from any other control never writes sound, either way
+  await pg.evaluate(() => { const n = document.getElementById("childName"); n.value = "Ada "; n.dispatchEvent(new Event("change")); });
+  await pg.waitForTimeout(100);
+  ok("saving a name leaves sound alone", await pg.evaluate(() => { const q = JSON.parse(localStorage.getItem("sona.profile.v1")); return q.volume === 0.8 && q.voiceOn === true && q.childName === "Ada"; }));
+  ok("Settings: no page errors", pe.length === 0);
   await ctx.close();
 }
 

@@ -45,6 +45,7 @@ const SUITES = [
   "talktest.mjs",  // Talk to us: feedback only (no calls), reply-only email, nothing about the child
   "familyfeedbackapi.mjs", // the family feedback route: same-origin, capped, stored or delivered, never the lead/pilot hooks
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
+  "zoomtest.mjs",  // ZOOM1: a double tap never zooms the app; grown-up pages keep pinch, game boards keep none
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit

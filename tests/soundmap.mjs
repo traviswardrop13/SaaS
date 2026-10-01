@@ -6,10 +6,11 @@
 // The cloud scorer is gone, but the bug CLASS is not: every map that has to
 // know about a sound is cross-checked here against the roster.
 //
-// Pure source parsing — no browser needed.
+// Pure source parsing (and one sandboxed run of gamecontent.js) — no browser needed.
 import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
+import vm from "vm";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sona = readFileSync(ROOT + "/public/sona.js", "utf8");
@@ -110,6 +111,38 @@ ok("the consent copy states it plainly",
     !/if\(fed===\d+\)\s*say\(/.test(feed),
     "an every-Nth-answer line talks over a child who is about to go again",
   );
+}
+
+// ---- 7b. no prompt asks a child to say a word we never ask them to say ----
+// syllables() is onset + vowel, so nobody chose its output: G spelled "gay"
+// and P spelled "poo", shown in big letters and spoken "Ready? Say gay, five
+// times." (Travis, 30 Sep 2026). They are swapped, not dropped, so every sound
+// still has five. The list is checked against what the generator really
+// returns (run, not read) and against every word in the bank.
+{
+  const NEVER_SAY = ["gay", "poo"];
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(ROOT + "/public/gamecontent.js", "utf8"), box);
+  const SC = box.window.SonaContent;
+  ok("gamecontent.js runs on its own and exports syllables()", !!(SC && SC.syllables));
+  const bad = [], short = [];
+  for (const s of ALL) {
+    const sy = SC ? SC.syllables(s).map((x) => String(x.t).toLowerCase()) : [];
+    if (new Set(sy).size !== 5) short.push(`${s}: ${sy.join(", ")}`);
+    sy.forEach((t) => { if (NEVER_SAY.includes(t)) bad.push(`${s}: ${t}`); });
+    if (SC) SC.syllables(s).forEach((x) => { if (x.say !== x.t) bad.push(`${s}: shows ${x.t}, says ${x.say}`); });
+  }
+  ok("no sound's syllables include a never-say word", bad.length === 0,
+    `a child would be asked to say: ${bad.join("; ")}`);
+  ok("…and every sound still has five different syllables", short.length === 0,
+    `swapped must not mean dropped: ${short.join("; ")}`);
+  const g = SC ? SC.syllables("G").map((x) => x.t).join() : "", p = SC ? SC.syllables("P").map((x) => x.t).join() : "";
+  ok("G says guy and P says pie, and nothing else moved",
+    g === "gah,gee,goo,goh,guy" && p === "pah,pee,pie,poh,pay", `G: ${g} · P: ${p}`);
+  const bankWords = [...(mWords ? mWords[1] : "").matchAll(/\bw:\s*"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+  ok("the word bank was read", bankWords.length > 100, `got ${bankWords.length}`);
+  const badBank = bankWords.filter((w) => w.split(/\s+/).some((x) => NEVER_SAY.includes(x)));
+  ok("no word in Sona.WORDS is a never-say word", badBank.length === 0, badBank.join(", "));
 }
 
 

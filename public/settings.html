@@ -97,11 +97,12 @@
     .family-settings #playNote b{color:var(--ink);}
     .family-settings #playNote a{font-weight:800;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
-    .family-settings .sound .hint.early{color:#c0392b;}
-    /* sound */
-    .family-settings .vol-row{display:flex;align-items:center;gap:12px;margin-top:2px;color:var(--muted);}
-    .family-settings .vol-row input{flex:1;min-width:0;}
-    .family-settings #volLbl{margin-top:2px;font-size:12.5px;font-weight:800;}
+    /* sound: one slim line, and only while Sona itself is muted. A .card, so
+       the cards on either side keep their gap whether it shows or not. */
+    .family-settings .set-soundoff{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px 10px 16px;}
+    .family-settings .set-soundoff[hidden]{display:none;}
+    .family-settings .set-soundoff span{font-weight:800;font-size:14px;color:var(--ink);}
+    .family-settings .set-soundoff .btn{width:auto;min-height:44px;padding:9px 16px;font-size:14px;}
     /* a row that opens another page */
     .family-settings .set-row{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;min-height:64px;border:1px solid var(--line);border-radius:16px;background:#fffdf8;color:var(--ink);text-decoration:none;box-shadow:0 3px 0 #e8d9c54d;}
     .family-settings .set-row:active{transform:translateY(1px);box-shadow:0 1px 0 #e8d9c54d;}
@@ -118,6 +119,13 @@
     .family-settings .set-msg{font-size:13px;font-weight:800;}
     .family-settings .set-links{margin-top:12px;font-size:14px;}
     .family-settings #restoreBox{margin-top:10px;}
+    /* moving phones: a quiet link at the foot of the page that opens the
+       backup tools in place */
+    .family-settings .set-move{margin-top:22px;}
+    .family-settings .set-move>summary{display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer;list-style:none;font-size:14px;font-weight:800;color:var(--family-teal-dark);text-decoration:underline;text-underline-offset:3px;}
+    .family-settings .set-move>summary::-webkit-details-marker{display:none;}
+    .family-settings .set-move[open]>summary{text-decoration:none;}
+    .family-settings .set-move>.card{margin-top:6px;}
     .family-settings .set-details{margin-top:12px;}
     .family-settings .set-details summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:800;color:var(--family-teal-dark);}
     .family-settings #restoreIn{min-height:80px;font:600 12px/1.4 ui-monospace,Menlo,monospace;}
@@ -180,7 +188,10 @@
            and VoiceOver reads the text inside an item, not a label on it. -->
       <ol id="rwBars" class="rw-bars" role="list" aria-label="Reps each week"></ol>
       <div id="rwDays" class="rw-days" aria-hidden="true"></div>
-      <p class="muted rw-note">A rep is each time <span id="rwWho">your child</span> says the practice sound or word out loud in the practice before a game, whether or not it sounded right yet, and each time a game asks for it and hears it. Silence never counts. Weeks run Monday to Sunday, counted on this device.</p>
+      <!-- One short line (Travis, 30 Sep 2026). It stays true: practice counts
+           every voiced try, right or not yet; a game counts only when it asked
+           and heard; silence counts nowhere. Never a %, a score or a verdict. -->
+      <p class="muted rw-note">A rep is one time <span id="rwWho">your child</span> says their sound or word out loud, in practice or in a game. Silence never counts.</p>
     </div>
 
     <section class="card" id="aboutCard" aria-labelledby="aboutTitle">
@@ -192,7 +203,12 @@
         <label class="field" for="childAge">Age</label>
         <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
       </div></div>
-      <p class="muted set-lead">Age helps pick developmentally-right sounds.</p>
+      <!-- It said "Age helps pick developmentally-right sounds." That was the
+           ⚠ on a sound chip a child was young for, which went on 30 Sep 2026;
+           nothing picks sounds by age. What age does: suggests games (Simple
+           play or Arcade, and the first game) and holds back a book's say-it
+           moment from a child younger than its sound. -->
+      <p class="muted set-lead">Age helps suggest games that fit.</p>
     </section>
 
     <section class="card" id="practiceCard" aria-labelledby="practiceTitle">
@@ -217,24 +233,18 @@
       </select>
     </section>
 
-    <section class="card" id="soundCard" aria-labelledby="soundTitle">
-      <div class="set-head"><h2 id="soundTitle">Sound</h2></div>
-      <!-- ONE sound control. There used to be three checkboxes (voice, effects,
-           music) and no way to set the actual level — while 22 pages were
-           already reading profile.volume, which nothing exposed. So a parent
-           could silence Echo but never turn Sona *down*. Slider to zero mutes
-           everything; anything above zero turns voice and effects back on, so
-           the flags the game pages read can never contradict what a parent set. -->
-      <label class="field" for="volume">Volume</label>
-      <div class="vol-row">
-        <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5Z"/></svg>
-        <input id="volume" type="range" min="0" max="100" step="5" />
-        <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg>
-      </div>
-      <p class="muted" id="volLbl"></p>
-      <!-- No coach-voice row: every family hears the one coach voice
-           (Travis, 29 Sep 2026), so there is nothing here to choose. -->
-    </section>
+    <!-- NO VOLUME SLIDER (Travis, 30 Sep 2026: "why can't we just use our
+         phones to adjust volume on the side of our iphone?"). The phone's own
+         buttons set the level. What they cannot undo is Sona's own mute: a
+         family who once slid the old slider to zero, or whose saved profile
+         has voice or sound off, would be silent with nothing to press. So this
+         one line shows only then, and its button undoes exactly that.
+         No coach-voice row either: every family hears the one coach voice
+         (Travis, 29 Sep 2026), so there is nothing to choose. -->
+    <div class="card set-soundoff" id="soundOff" hidden>
+      <span>Sound is off in Sona.</span>
+      <button type="button" class="btn" id="soundOnBtn">Turn sound on</button>
+    </div>
 
     <section class="card" id="buddyCard" aria-labelledby="buddyTitle">
       <div class="set-head"><h2 id="buddyTitle">Buddy &amp; world</h2></div>
@@ -245,11 +255,9 @@
       </a>
     </section>
 
-    <section class="card" id="pinCard" aria-labelledby="pinTitle">
-      <div class="set-head"><h2 id="pinTitle">Parent code</h2></div>
-      <label class="field" for="parentPin">Your code <span class="muted">Unlocks the grown-ups area from the home screen. Up to six digits. Leave it blank and you'll read four number words instead.</span></label>
-      <input id="parentPin" type="text" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="e.g. 2468" />
-    </section>
+    <!-- No Parent code (Travis, 30 Sep 2026). The grown-ups check on Home is
+         always the four number words now; it stays, because the paywall is
+         on and a child must not reach a buy button with one tap. -->
 
     <p class="set-divider">Your account &amp; this device</p>
 
@@ -301,36 +309,47 @@
       <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.5;">Families only appear here after their grown-up taps <b>Yes, share progress</b> when they open your link. Sona never sends you audio — counts and accuracy only.</p>
     </div>
 
-    <section class="card" id="backupCard" aria-labelledby="backupTitle">
-      <div class="set-head"><h2 id="backupTitle">Backup &amp; restore</h2></div>
-      <p class="muted set-lead">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
-      <div class="set-actions">
-        <button class="btn ghost" id="backupCopy">Copy backup code</button>
-        <button class="btn ghost" id="backupDl">Download file</button>
-        <span id="backupMsg" class="muted set-msg"></span>
-      </div>
-      <!-- Undo sits OUTSIDE the fold: restoring reloads the page, and an Undo
-           hidden behind a collapsed "Restore from a backup code" was an Undo
-           the parent who needed it most would never see. -->
-      <div id="undoRow" style="display:none;margin-top:12px;">
-        <button class="btn ghost" id="undoRestore" style="width:auto;">Undo last restore</button>
-        <p class="muted">Puts this device back the way it was before.</p>
-      </div>
-      <details class="set-details">
-        <summary>Restore from a backup code →</summary>
-        <textarea id="restoreIn" placeholder="Paste your backup code here"></textarea>
-        <div class="set-actions">
-          <button class="btn" id="restoreBk">Restore</button>
-          <span id="restoreBkMsg" class="muted set-msg"></span>
-        </div>
-      </details>
-    </section>
-
     <section class="card set-danger" id="resetCard" aria-labelledby="resetTitle">
       <div class="set-head"><h2 id="resetTitle">Reset</h2></div>
       <p class="muted set-lead">Clear <span class="kid-poss">your child's</span> saved progress on this device.</p>
       <button class="btn ghost" id="reset">Reset progress</button>
     </section>
+
+    <!-- MOVING PHONES, TUCKED AWAY (Travis, 30 Sep 2026). Backup & restore was
+         a big card most families never need. It is still the only way practice
+         moves to a new phone, or from Safari into the iPhone app (and the only
+         way a clinician's link reaches the app), so it stays, one quiet link at
+         the foot of the page that opens the same tools in place. Same ids, so
+         the code below and its tests did not move. -->
+    <details class="set-move" id="moveBox">
+      <summary>Moving to a new phone?</summary>
+      <section class="card" id="backupCard" aria-labelledby="backupTitle">
+        <div class="set-head"><h2 id="backupTitle">Backup &amp; restore</h2></div>
+        <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code or file somewhere safe. It does not expire. Saved voice clips never go in a backup: they stay on this phone.</p>
+        <div class="set-actions">
+          <button class="btn ghost" id="backupCopy">Copy backup code</button>
+          <button class="btn ghost" id="backupDl">Download file</button>
+          <span id="backupMsg" class="muted set-msg"></span>
+        </div>
+        <!-- Undo sits OUTSIDE the inner fold, and a saved Undo opens the outer
+             one on load: restoring reloads the page, and an Undo hidden behind
+             a collapsed fold was an Undo the parent who needed it most would
+             never see. -->
+        <div id="undoRow" style="display:none;margin-top:12px;">
+          <button class="btn ghost" id="undoRestore" style="width:auto;">Undo last restore</button>
+          <p class="muted">Puts this device back the way it was before.</p>
+        </div>
+        <details class="set-details">
+          <summary>Restore from a backup code →</summary>
+          <textarea id="restoreIn" placeholder="Paste your backup code here"></textarea>
+          <div class="set-actions">
+            <button class="btn" id="restoreBk">Restore</button>
+            <span id="restoreBkMsg" class="muted set-msg"></span>
+          </div>
+        </details>
+      </section>
+    </details>
+    <span id="soundSaid" class="sr" role="status" aria-live="polite"></span>
   </div>
 
   <script src="/sona.js"></script>
@@ -345,8 +364,6 @@
     var p = Sona.getProfile();
     var childEl = document.getElementById("childName"),
         ageEl = document.getElementById("childAge"),
-        pinEl = document.getElementById("parentPin"),
-        volEl = document.getElementById("volume"),
         posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
 
@@ -354,7 +371,7 @@
     // when the page loaded, and now that every control saves on its own, a
     // stale copy of it is a way to write one child's settings onto another:
     // "+ Add a kid" → back-swipe to this page (restored from the bfcache with
-    // the first child's values) → nudge the volume. So if the active child is
+    // the first child's values) → tap a sound. So if the active child is
     // no longer the one painted here, repaint by reloading instead of saving.
     function activeSlot() { try { var k = Sona.activeKid && Sona.activeKid(); return k ? k.slot : ""; } catch (e) { return ""; } }
     var loadSlot = activeSlot();
@@ -362,18 +379,23 @@
 
     childEl.value = p.childName || "";
     ageEl.value = p.childAge || "";
-    pinEl.value = p.parentPin || "";
-    // profile.volume is a 0-1 gain that 22 pages already multiply into their
-    // audio; the slider is just the missing UI for it.
-    volEl.value = String(Math.round((p.volume != null ? p.volume : 0.6) * 100));
-    function volLabel() {
-      var v = parseInt(volEl.value, 10) || 0;
-      document.getElementById("volLbl").textContent = v === 0
-        ? "Muted — Echo won't speak and the games are silent."
-        : "Echo and the games play at " + v + "%.";
-    }
-    volEl.oninput = volLabel; volLabel();
     posEl.value = p.practicePosition || "i";
+
+    // Sound: the phone's own buttons set the level now. Sona's mute is the one
+    // thing they can't undo (a volume of 0, or voice or effects off: every page
+    // that plays audio reads these three), so the line shows only while it is
+    // on, and its button writes back the normal level and both flags.
+    (function () {
+      var line = document.getElementById("soundOff"), btn = document.getElementById("soundOnBtn");
+      line.hidden = !(p.volume === 0 || p.voiceOn === false || p.soundOn === false);
+      btn.onclick = function () {
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        Sona.saveProfile({ volume: 0.8, voiceOn: true, soundOn: true });
+        line.hidden = true;
+        // the button just vanished under the parent's finger; say what it did
+        document.getElementById("soundSaid").textContent = "Sound is on.";
+      };
+    })();
 
     // The child's name, wherever the page names them. textContent only: a
     // name is typed by a grown-up and never parsed as markup.
@@ -417,35 +439,30 @@
         var stillAll = sel.size === Sona.PLAY_ORDER.length;
         if (!stillAll) pickedMode = "speech";
       }
-      // ONE control, honoured everywhere. voiceOn/soundOn are still read by a
-      // dozen game pages, so they're derived from the slider rather than left
-      // to drift — a parent who drags to zero must not find Echo still talking
-      // because some page checks a different flag.
-      var vol = (parseInt(volEl.value, 10) || 0) / 100;
-      var name = childEl.value.trim(), pin = (pinEl.value || "").replace(/\D/g, "").slice(0, 6);
+      // Sound is not written here: only "Turn sound on" changes it, so saving
+      // a name can never un-mute or re-mute anybody.
+      var name = childEl.value.trim();
       Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
-        parentPin: pin,
-        volume: vol, voiceOn: vol > 0, soundOn: vol > 0, musicOn: false,
         focusArea: "articulation",
         practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
-      // show what was kept, so a typed "24a6" doesn't read as saved as typed
-      childEl.value = name; pinEl.value = pin;
+      // show what was kept, so a name typed with stray spaces reads as saved
+      childEl.value = name;
       paintName();
       if (typeof repaintKids === "function") repaintKids();
       showSaved(from);
     }
 
     // Focus sounds. every sound is selectable (SLP caseloads work letters
-    // beyond R); the age-norm hint stays so parents target developmentally-
-    // right sounds, and it follows the age field as it changes.
+    // beyond R). Each chip carries the same grey "by ~Ny" age line. No warning
+    // sign and no red for a child younger than that (Travis, 30 Sep 2026): on
+    // a phone the ⚠ read as an error, and the tooltip that explained it only
+    // ever showed to a mouse.
     function chipInner(s) {
       var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
-      var kidAge = parseInt(ageEl.value, 10) || 0;
-      var early = !!(norm && kidAge && kidAge < norm);
       return {
         html: (Sona.soundLabel ? Sona.soundLabel(s) : s) +
-          (norm ? '<span class="hint' + (early ? " early" : "") + '">' + (early ? "⚠ " : "") + "by ~" + norm + "y</span>" : ""),
-        title: norm ? "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".") : ""
+          (norm ? '<span class="hint">by ~' + norm + "y</span>" : ""),
+        title: norm ? "Most children produce this sound by about age " + norm + "." : ""
       };
     }
     function paintHints() {
@@ -493,24 +510,23 @@
     // "change" fires. Hiding the page commits what was typed (only if this
     // page still belongs to the child it was painted for).
     var textDirty = false;
-    [childEl, ageEl, pinEl].forEach(function (el) {
+    [childEl, ageEl].forEach(function (el) {
       el.addEventListener("input", function () { textDirty = true; });
-      el.addEventListener("change", function () { if (el === ageEl) paintHints(); textDirty = false; saveAll(el); });
+      el.addEventListener("change", function () { textDirty = false; saveAll(el); });
       el.addEventListener("keydown", function (e) { if (e.key === "Enter") el.blur(); });
     });
     function flushText() {
       if (!textDirty || activeSlot() !== loadSlot) return;
       textDirty = false;
       var a = document.activeElement;
-      saveAll(a === childEl || a === ageEl || a === pinEl ? a : childEl);
+      saveAll(a === childEl || a === ageEl ? a : childEl);
     }
     window.addEventListener("pagehide", flushText);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushText(); });
-    volEl.addEventListener("change", function () { saveAll(volEl); });
     posEl.addEventListener("change", function () { saveAll(posEl); });
 
-    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home, the
-    // parent corner and Progress read too. A week behind is said as how many
+    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home and
+    // Progress read too. A week behind is said as how many
     // more reps pass it, never as a drop, and nothing here is ever red.
     (function () {
       if (!Sona.repWeeks) { document.getElementById("reps").style.display = "none"; return; }
@@ -568,7 +584,8 @@
       Sona.resetProgress(); alert("Progress reset.");
     };
 
-    // Backup & restore — the data-loss safety net.
+    // Backup & restore — the data-loss safety net, behind "Moving to a new
+    // phone?" at the foot of the page.
     (function () {
       var bmsg = document.getElementById("backupMsg");
       var copyB = document.getElementById("backupCopy"), dlB = document.getElementById("backupDl"), rBtn = document.getElementById("restoreBk");
@@ -582,11 +599,19 @@
       // purpose: exportData only collects "sona." keys and importData only
       // writes them, so the safety net can never end up nested inside a backup
       // of itself, and restoring one can never clobber it.
-      var SNAP = "_sonaPreRestore";
+      var SNAP = "_sonaPreRestore", JUST = "_sonaJustRestored";
       function paintUndo() {
         var row = document.getElementById("undoRow"); if (!row) return;
         var has = false; try { has = !!localStorage.getItem(SNAP); } catch (e) {}
         row.style.display = has ? "block" : "none";
+        // A restore just reloaded the page: open the fold so Undo is in view
+        // of anyone who scrolls down, not one more tap away. Only then: the
+        // snapshot never expires, so opening on "an Undo exists" left the
+        // card open at the foot of Settings on every visit, for good, for
+        // exactly the families who moved phones. Later, Undo is one tap on
+        // "Moving to a new phone?" away.
+        var just = false; try { just = !!sessionStorage.getItem(JUST); sessionStorage.removeItem(JUST); } catch (e) {}
+        if (has && just) { var box = document.getElementById("moveBox"); if (box) box.open = true; }
       }
       paintUndo();
       if (rBtn) rBtn.onclick = function () {
@@ -606,7 +631,7 @@
         // answers; and a grant this device already held is kept.)
         try { localStorage.setItem(SNAP, Sona.exportString()); } catch (e) {}
         var r = Sona.importData(v);
-        if (r.ok) { m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
+        if (r.ok) { try { sessionStorage.setItem(JUST, "1"); } catch (e) {} m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
         else {
           // nothing was written, so the net is noise — drop it rather than
           // leave an Undo that would undo something that never happened
@@ -727,9 +752,19 @@
         // daily practice and free games, for good. "No plan
         // yet" told a family who was never going to pay that they were
         // missing something they needed.
-        ac.innerHTML = (Sona.isFree && Sona.isFree())
+        // A no-card trial an older device was promised (nothing starts one
+        // now) opens every game until its last day, so it is named here with
+        // its days left, and its end is named too. Those two lines were the
+        // Grown-ups pop-up's plan note on Home; the pop-up went on 30 Sep 2026
+        // and the code now lands here, so here is where they are said.
+        var isFreeNow = !!(Sona.isFree && Sona.isFree());
+        var trialLeft = (!isFreeNow && Sona.trialActive && Sona.trialActive()) ? (Sona.trialDaysLeft ? Sona.trialDaysLeft() : 1) : 0;
+        var trialEnded = !isFreeNow && !trialLeft && !!(Sona.trialExpired && Sona.trialExpired());
+        ac.innerHTML = isFreeNow
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
-          : 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
+          : trialLeft
+            ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
+            : (trialEnded ? 'Your free trial has ended. ' : '') + 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }
@@ -752,6 +787,15 @@
     (function(){
       var listEl=document.getElementById("kidList");
       if(!listEl||!(Sona.kids)) return;
+      // Leave only once the saved-tries clean-up is done: leaving a page aborts
+      // an IndexedDB delete still in flight, so Remove used to reload before a
+      // removed child's clips were deleted, every time. Capped, so a stuck
+      // database never strands the grown-up on this page.
+      function afterClips(go){
+        var gone=false, fin=function(){ if(!gone){ gone=true; go(); } };
+        try{ var w=Sona.clipsSettled&&Sona.clipsSettled(); if(w&&w.then){ w.then(fin,fin); setTimeout(fin,2000); return; } }catch(e){}
+        fin();
+      }
       function paintKids(){
         var ks=Sona.kids();
         listEl.innerHTML="";
@@ -779,7 +823,7 @@
             rm.textContent="Remove"; rm.dataset.remove=k.slot;
             rm.onclick=function(){
               if(!confirm("Remove "+(k.name||"this child")+"? Their practice history is deleted from this device and can't be undone.")) return;
-              if(Sona.removeKid(k.slot)) location.reload();
+              if(Sona.removeKid(k.slot)){ rm.disabled=true; afterClips(function(){ location.reload(); }); }
             };
             row.appendChild(rm);
           }
@@ -795,11 +839,13 @@
         var nm=(document.getElementById("newKidName").value||"").trim();
         var ag=(document.getElementById("newKidAge").value||"").trim();
         if(!nm){ document.getElementById("newKidName").focus(); return; }
+        // one child per tap, while the page waits on the clean-up below
+        this.disabled=true;
         Sona.addKid(nm,ag);
         try{ if(window.SonaAnalytics)SonaAnalytics.track("kid added"); }catch(e){}
         // the new child has no focus sounds yet, so send the parent through the
         // real plan-builder instead of dropping a blank profile into the app
-        location.href="/onboarding.html";
+        afterClips(function(){ location.href="/onboarding.html"; });
       };
     })();
   </script>

@@ -277,11 +277,20 @@
   }
   function addKid(name, age) {
     const v = _kids();
-    // slots are never reused — a removed kid's leftover keys must not become a
-    // new child's history
-    let n = 2; const taken = new Set(v.list.map((k) => k.slot));
-    while (taken.has("k" + n)) n++;
-    const slot = "k" + n;
+    // Slots are never reused — a removed kid's leftover keys and saved voice
+    // clips must not become a new child's history. It used to take the lowest
+    // free slot, so the child added after a removal was handed the removed
+    // child's slot, and their Progress page played the removed child's saved
+    // tries. Now the record keeps the highest slot ever given (`hi`); a record
+    // from before that starts from the highest slot still on the list.
+    let hi = Math.max(1, parseInt(v.hi, 10) || 1);
+    v.list.forEach((k) => { const n = parseInt(String(k.slot).slice(1), 10); if (n > hi) hi = n; });
+    const slot = "k" + (hi + 1);
+    v.hi = hi + 1;
+    // A device that removed a child before this build may still hold that
+    // child's clips under this very slot (removing used to leave them). A new
+    // slot can own none, so clear whatever is stamped with it.
+    _dropRecordings(slot);
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
@@ -316,14 +325,18 @@
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
     if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
+    // …and their saved tries, whichever slot they had: the clips are theirs,
+    // and no child is ever given slot "" again.
+    _dropRecordings(slot);
     return true;
   }
 
-  // SET1 replaced three audio checkboxes with one volume slider, but a profile
-  // saved BEFORE that can still carry voiceOn:false — and there is no longer a
-  // control anywhere that can set it back to true. Echo goes silent forever and
-  // the parent has nothing to press. Reconcile the legacy flags with the volume
-  // that now owns them: audible volume means audible Echo.
+  // SET1 replaced three audio checkboxes with one volume slider (gone too now,
+  // see getProfile), but a profile saved BEFORE that can still carry
+  // voiceOn:false — and there is no longer a control anywhere that can set it
+  // back to true. Echo goes silent forever and the parent has nothing to
+  // press. Reconcile the legacy flags with the volume that now owns them:
+  // audible volume means audible Echo.
   function _healAudioFlags(p) {
     if (!p || typeof p !== "object") return p;
     const vol = (p.volume != null ? p.volume : 0.6);
@@ -423,11 +436,23 @@
     // so the next save of any setting replaces it with the default. Harmless —
     // nothing reads the saved field any more, and there is no picker to undo.
     p.voiceId = DEFAULT_PROFILE.voiceId;
-    // one-time repair: the default used to be 0.3 and the Settings slider that
-    // could change it was removed, so families were stuck at 30% volume with
-    // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
-    // today, and anything else the family chose is left alone.
-    if (p.volume === 0.3) { p.volume = 0.8; try { save(PKEY, Object.assign({}, load(PKEY, {}), { volume: 0.8 })); } catch (e) {} }
+    // The optional parent code is gone (Travis, 30 Sep 2026: "get rid of the
+    // parent code"): Home always asks for four number words, so a code saved
+    // before then opens nothing. Dropped here, so the next save of any setting
+    // stops carrying it in the profile and into backups.
+    delete p.parentPin;
+    // SOUND IS ON OR OFF; THE PHONE'S SIDE BUTTONS DO THE REST (Travis, 30 Sep
+    // 2026: "why can't we just use our phones to adjust volume on the side of
+    // our iphone?"). The Settings slider is gone, so a level saved from it —
+    // 30%, 100% — would be a level nobody can change again. That happened
+    // once already: the old default was 30% and families were stuck there
+    // after the first slider went. So every level above zero plays at the one
+    // normal level. Zero is kept exactly: a muted child stays silent until a
+    // grown-up taps Turn sound on in Settings, which writes the normal level
+    // back. Read-time, not written back: every page reads volume through
+    // here, and the next save of any setting stores the result.
+    const vol = p.volume == null ? NaN : Number(p.volume);
+    p.volume = (isFinite(vol) && vol <= 0) ? 0 : DEFAULT_PROFILE.volume;
     return _healAudioFlags(p);
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
@@ -1421,7 +1446,14 @@
   function ladderContent(sound, rung) {
     const SC = (typeof window !== "undefined") ? window.SonaContent : null;
     const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
-    const ws = () => wordsFor(sound) || [];
+    // The word step asks for the position being practised: homework's, then
+    // the family's setting (practicePos). It passed no position and so always
+    // asked for start-of-word words, whatever Settings or the SLP said (Travis,
+    // 30 Sep 2026: the position must actually drive the practice page). A
+    // position with no words for this sound falls back to start-of-word ones
+    // inside wordsFor. The games keep start-of-word words on purpose and call
+    // wordsFor(sound, "i") themselves.
+    const ws = () => wordsFor(sound, practicePos()) || [];
     if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
     if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
     if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
@@ -1961,7 +1993,8 @@
   // Where a GATED KID PAGE sends the child. It used to be /trial.html — a price
   // screen, with the child's name on it, reached by a child tapping a game.
   // Home tells them to ask a grown-up; the grown-up finds the price behind the
-  // gate, in the parent corner, which is the only place a price belongs.
+  // gate, on the grown-ups' pages (Settings, the plan screen), which is the
+  // only place a price belongs.
   function gateBounce() {
     try { location.replace("/today.html?locked=1"); } catch (e) {}
   }
@@ -2312,7 +2345,7 @@
   function offerCode() { try { return localStorage.getItem("sona.offer.v1") || ""; } catch (e) { return ""; } }
 
   // ── parent gate: adults-only pages ─────────────────────────────────────
-  // The home screen's grown-ups gate (PIN or math, in today.html) calls
+  // The home screen's grown-ups gate (four number words, in today.html) calls
   // gateVerify() when the adult passes it. Parent-only pages (progress,
   // settings, talk, subscribe) call requireGate() on load so a child can't
   // reach them by direct URL or back-swipe: without a fresh pass they're sent
@@ -2460,6 +2493,41 @@
       });
     } catch (e) { return []; }
   }
+  // Delete every clip stamped with one child's slot (removeKid, and addKid for
+  // a slot an older build may have left clips under). Without it a removed
+  // child's voice stayed in the device's one table, and the next child handed
+  // that slot heard it — and could share it — on Progress. Best-effort like
+  // every clip call: resolves to how many went, never throws.
+  // Both callers are followed at once by a reload or a new page, and leaving
+  // a page aborts an IndexedDB delete that has not finished: Settings' Remove
+  // reloaded first, so the removed child's clips stayed on the phone every
+  // time. clipsSettled() resolves once every clean-up started so far is done;
+  // a page that leaves right after addKid or removeKid waits on it.
+  let _clipWork = Promise.resolve();
+  function clipsSettled() { return _clipWork; }
+  function _dropRecordings(slot) {
+    const p = _dropRecordingsNow(slot);
+    _clipWork = Promise.all([_clipWork, p]).then(() => {}, () => {});
+    return p;
+  }
+  function _dropRecordingsNow(slot) {
+    slot = slot || "";
+    return idb().then((db) => new Promise((res) => {
+      let n = 0;
+      try {
+        const tx = db.transaction("recordings", "readwrite");
+        const cur = tx.objectStore("recordings").openCursor();
+        cur.onsuccess = () => {
+          const c = cur.result;
+          if (!c) return;
+          if ((c.value.kid || "") === slot) { c.delete(); n++; }
+          c.continue();
+        };
+        tx.oncomplete = () => res(n);
+        tx.onerror = tx.onabort = () => res(0);
+      } catch (e) { res(0); }
+    })).catch(() => 0);
+  }
 
   // ── juice: tiny sound effects + confetti (Web Audio + canvas, no assets) ──
   // What gives the app its Duolingo "feel": a satisfying chime on success, a
@@ -2471,7 +2539,7 @@
     try { if (!_ac) { _ac = new (window.AudioContext || window.webkitAudioContext)(); _master = _ac.createGain(); _master.gain.value = 0.9; _master.connect(_ac.destination); } if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
     return _ac;
   }
-  // master volume from the profile (so the volume slider also controls SFX); 0 = muted
+  // master volume from the profile (so Sound off silences SFX too); 0 = muted
   function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.6); } catch (e) { return 0.6; } }
   // attack: seconds to reach the peak (default 15 ms). The win chimes pass a
   // slower one so they swell in rather than snap.
@@ -2839,6 +2907,16 @@
     { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
     { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
+  // The books Home's top rows can show. releasedOn: the day it came out (it
+  // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
+  // under Limited time for that window instead. Folder = public/assets/books/<slug>.
+  const HOME_BOOKS = [
+    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", releasedOn: "2026-10-01" },
+    { slug: "sam-sailboat", title: "Sam's Sailboat", releasedOn: "2026-10-01" },
+    { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
+    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
+    { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+  ];
   function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
@@ -2898,9 +2976,19 @@
       var act = GAME_ACTS[key], season = act.season;
       return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
     }).map(entry);
+    // Books join the two top rows (Travis, 1 Oct 2026: "at the top ... what's
+    // new ... the next section like limited time where we have books and
+    // games"). HOME_BOOKS names each book's day out and, for a limited-time
+    // one, its window; a book is still opened (or not) by the shelf's rules.
+    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
+    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
+      .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
+    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); }).map(bookEntry);
+    // At most five across, so a row never becomes a long side-scroll.
+    var ROW = 5, newRow = fresh.concat(freshBooks).slice(0, ROW), limitedRow = seasonal.concat(limitedBooks).slice(0, ROW);
     var featured = [];
-    if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
-    if (seasonal.length) featured.push({ id: "seasonal", name: "Seasonal favorites", games: seasonal });
+    if (newRow.length) featured.push({ id: "new", name: "What's new", games: newRow });
+    if (limitedRow.length) featured.push({ id: "seasonal", name: "Limited time", games: limitedRow });
     return { recommended: recommended, groups: groups, featured: featured };
   }
   // Home previews the same adventure that practice launches. Feed Echo has
@@ -3415,10 +3503,10 @@
     return y + "-W" + String(wk).padStart(2, "0");
   }
   // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
-  // week by week in Settings). ONE bucketing of the day ledger feeds Home, the
-  // parent corner, Progress and Settings, so no two surfaces can disagree about
-  // "this week" — the parent corner used to sum sound checks while Progress
-  // summed tries, and showed two different numbers for the same week.
+  // week by week in Settings). ONE bucketing of the day ledger feeds Home,
+  // Progress and Settings, so no two surfaces can disagree about "this week" —
+  // Home's old Grown-ups pop-up summed sound checks while Progress summed
+  // tries, and showed two different numbers for the same week.
   //
   // A rep is a voiced try the practice screen counted: days[day].tries. Days
   // logged before tries were counted (22 Sep 2026) hold only .a, one per sound
@@ -4502,6 +4590,37 @@
     }
   } catch (e) {}
 
+  // ── No double-tap zoom (Travis, 30 Sep 2026: "i double tapped the screen
+  // and it zoomed in"). A child taps fast (a bubble, a fruit, the same game
+  // card twice) and two quick taps are Safari's "zoom in", leaving the game
+  // half off the screen until a grown-up pinches it back. The kid pages'
+  // viewport lock (user-scalable=no) holds in the iOS app's web view, but
+  // Safari has ignored it since iOS 10, for accessibility. Both honour
+  // touch-action:manipulation, which drops double-tap zoom and nothing else:
+  // lists still scroll, and the grown-up pages, which carry no viewport lock
+  // on purpose, still pinch-zoom for a parent who needs bigger text.
+  // On EVERY element, not just html: touch-action is not inherited, and
+  // WebKit intersects it only up to the nearest scroll container, so a root
+  // rule misses every tap inside a scrolling row or pop-up. `*` weighs
+  // nothing and this sheet goes FIRST in <head>, so a page's own
+  // touch-action (Hoops' court and Fruit Slice's board say none) still wins;
+  // and since every element's default is auto, it only ever narrows.
+  // Injected here, not in a stylesheet, because no one sheet reaches every
+  // app page without also reaching the marketing pages: charge.html and the
+  // crafted games skip action.css, and check/pilot load only fonts.css,
+  // which parents.html and for-slps.html load too. The clinician dashboard
+  // (/slps) loads sona.js only for its sound labels; it is left out on
+  // purpose and keeps its own touch rules. tests/zoomtest.mjs pins all this.
+  try {
+    if (!/^\/slp(s|\.html)$/.test(location.pathname) && !document.getElementById("sonaNoZoom")) {
+      const _nz = document.createElement("style");
+      _nz.id = "sonaNoZoom";
+      _nz.textContent = "*{touch-action:manipulation}";
+      const _nzAt = document.head || document.documentElement;
+      _nzAt.insertBefore(_nz, _nzAt.firstChild);
+    }
+  } catch (e) {}
+
   // ── Portrait-only guard: every kid surface loads sona.js, so one injected
   // overlay covers the whole app. Small-height landscape = a rotated phone
   // (desktop windows are taller); the cover asks for a turn back. The native
@@ -4578,5 +4697,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

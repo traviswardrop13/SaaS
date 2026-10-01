@@ -4,8 +4,10 @@
 // page carries the SAME header and three tabs, in the same place, with no
 // bottom bar of its own — so this suite pins the markup byte-for-byte (apart
 // from which tab is lit), measures where the bar lands on a phone, and checks
-// that the Grown-ups pop-up on Home offers the same three places in the same
-// order. A new grown-up page belongs in PAGES below.
+// that Home's Grown-ups button, after the code, lands on Settings and its bar
+// (Travis, 30 Sep 2026: "go straight to settings not have them choose what
+// they wanna go to") — the bar is the one menu; Home has no pop-up of its
+// own to drift from it. A new grown-up page belongs in PAGES below.
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -25,9 +27,9 @@ const PAGES = [
   { file: 'subscribe.html', tab: 'settings', current: 'true' },
 ];
 const TABS = [
-  { tab: 'progress', href: '/progress.html', label: 'Progress', sheet: 'goProgress' },
-  { tab: 'settings', href: '/settings.html', label: 'Settings', sheet: 'goSettings' },
-  { tab: 'talk', href: '/talk.html', label: 'Talk to us', sheet: 'goTalk' },
+  { tab: 'progress', href: '/progress.html', label: 'Progress' },
+  { tab: 'settings', href: '/settings.html', label: 'Settings' },
+  { tab: 'talk', href: '/talk.html', label: 'Talk to us' },
 ];
 
 const read = f => readFileSync(path.join(ROOT, f), 'utf8');
@@ -56,11 +58,12 @@ for (const p of PAGES) {
 const tabsInOrder = [...reference.matchAll(/<a href="([^"]+)" data-tab="([a-z]+)"[^>]*>(?:<svg[\s\S]*?<\/svg>)?([^<]+)<\/a>/g)].map(m => ({ href: m[1], tab: m[2], label: m[3].trim() }));
 ok('the bar has the three tabs in order', JSON.stringify(tabsInOrder) === JSON.stringify(TABS.map(({ tab, href, label }) => ({ href, tab, label }))), tabsInOrder);
 
-// ── the Grown-ups pop-up on Home offers the same three places ───────────
-const today = read('today.html');
-const sheetStart = today.indexOf('id="sheetOvl"'), sheetEnd = today.indexOf('id="pulseOvl"', sheetStart);
-const sheetIds = sheetStart < 0 ? [] : [...today.slice(sheetStart, sheetEnd < 0 ? undefined : sheetEnd).matchAll(/<button\b[^>]*\bid="(go[A-Z][A-Za-z]+)"/g)].map(m => m[1]);
-ok('Home pop-up lists the same three places in the same order', JSON.stringify(sheetIds) === JSON.stringify(TABS.map(t => t.sheet)), sheetIds);
+// ── Home has no second menu: the bar is the only list of the three ─────
+// The Grown-ups pop-up (Progress · Settings · Talk to us) went on 30 Sep
+// 2026. A copy of the bar on Home is a second menu to keep in step, and the
+// parent had to choose before getting anywhere.
+const today = read('today.html').replace(/<!--[\s\S]*?-->/g, '');
+ok('Home has no Grown-ups pop-up of its own', !/id="sheetOvl"/.test(today) && !/id="go(Progress|Settings|Talk)"/.test(today));
 
 // ── browser: the bar lands in the same place on a phone ─────────────────
 const MIME = { html: 'text/html', js: 'text/javascript', svg: 'image/svg+xml', css: 'text/css', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2', json: 'application/json', webmanifest: 'application/manifest+json' };
@@ -130,17 +133,41 @@ try {
     });
   }
 
-  await scenario('Home pop-up opens the tab pages', async () => {
-    const { page, context } = await fresh({ width: 375, height: 812 });
+  // The Grown-ups button: the code, then Settings with the bar lit on it, and
+  // the bar's other two tabs one tap away. A bounce to Home's gate with no
+  // allowed destination ends in the same place.
+  const passGate = async page => {
+    const need = await page.evaluate(() => window.gateNeed);
+    for (const d of need) await page.locator('#pad button', { hasText: new RegExp('^' + d + '$') }).click();
+    await page.locator('#pad button', { hasText: '✓' }).click();
+  };
+  await scenario('the Grown-ups button goes straight to Settings', async () => {
+    const { page, context, errors } = await fresh({ width: 375, height: 812 });
     try {
-      for (const t of TABS) {
-        await page.goto(origin + '/today.html');
-        await page.waitForFunction(() => window.Sona && document.getElementById('sheetOvl'));
-        const label = await page.evaluate(id => { document.getElementById('sheetOvl').classList.add('show'); return document.getElementById(id).textContent.trim(); }, t.sheet);
-        ok(`pop-up button ${t.sheet} is labelled like its tab`, label === t.label, label);
-        await Promise.all([page.waitForURL(u => new URL(u).pathname === t.href), page.click('#' + t.sheet)]);
-        ok(`pop-up button ${t.sheet} opens ${t.href}`, new URL(page.url()).pathname === t.href, page.url());
+      await page.goto(origin + '/today.html');
+      await page.waitForFunction(() => window.Sona && document.getElementById('parentBtn'));
+      await page.click('#parentBtn');
+      ok('the Grown-ups button asks for the code first, and goes nowhere yet', await page.evaluate(() => document.getElementById('gateOvl').classList.contains('show') && location.pathname === '/today.html'));
+      await Promise.all([page.waitForURL(u => new URL(u).pathname === '/settings.html'), passGate(page)]);
+      ok('the right code lands on Settings, with no menu in between', new URL(page.url()).pathname === '/settings.html' && !new URL(page.url()).hash, page.url());
+      await page.waitForFunction(() => window.Sona && document.querySelector('nav.family-tabs'));
+      const bar = await page.evaluate(() => ({
+        lit: [...document.querySelectorAll('nav.family-tabs a[aria-current]')].map(a => a.dataset.tab + ':' + a.getAttribute('aria-current')),
+        tabs: [...document.querySelectorAll('nav.family-tabs a')].map(a => ({ href: a.getAttribute('href'), label: a.textContent.trim() })),
+      }));
+      ok('Settings opens with its own tab lit', JSON.stringify(bar.lit) === JSON.stringify(['settings:page']), bar.lit);
+      ok('…and the bar offers the three places, in order', JSON.stringify(bar.tabs) === JSON.stringify(TABS.map(t => ({ href: t.href, label: t.label }))), bar.tabs);
+      for (const t of TABS.filter(t => t.tab !== 'settings')) {
+        await page.goto(origin + '/settings.html');
+        await page.waitForFunction(() => window.Sona && document.querySelector('nav.family-tabs'));
+        await Promise.all([page.waitForURL(u => new URL(u).pathname === t.href), page.click('nav.family-tabs a[data-tab="' + t.tab + '"]')]);
+        ok(`from Settings, the ${t.label} tab opens ${t.href}`, new URL(page.url()).pathname === t.href, page.url());
       }
+      await page.goto(origin + '/today.html?gate=1');
+      await page.waitForFunction(() => window.Sona && document.getElementById('gateOvl').classList.contains('show'));
+      await Promise.all([page.waitForURL(u => new URL(u).pathname === '/settings.html'), passGate(page)]);
+      ok('a bounce to the gate with nowhere to go also lands on Settings', new URL(page.url()).pathname === '/settings.html', page.url());
+      ok('no page errors on the way', errors.length === 0, errors);
     } finally { await context.close(); }
   });
 } finally {

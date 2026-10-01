@@ -31,7 +31,7 @@ let errs = [];
 page.on("pageerror", (e) => errs.push(e.message));
 await page.addInitScript(() => {
   // an EXISTING family, already on the un-suffixed keys
-  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, parentPin: "2468" }));
+  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, practicePosition: "f" }));
   localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "apple" }));
   localStorage.setItem("sona.micok", "1");
 });
@@ -93,7 +93,7 @@ st = await page.evaluate(() => {
   return {
     name: Sona.getProfile().childName,
     focus: Sona.getProfile().focusSounds,
-    pin: Sona.getProfile().parentPin,
+    pos: Sona.getProfile().practicePosition,
     reps: Sona.repsToday(),
     stageS: (Sona.getProgress().stage || {}).S,
     runRestored: sessionStorage.getItem("sona.run.v1") === window.__kidRunA,
@@ -102,7 +102,7 @@ st = await page.evaluate(() => {
 ok("switching back restores the first child's exact unfinished adventure", st.runRestored, JSON.stringify(st));
 ok("switching back restores the first child's profile", st.name === "Milo", st.name);
 ok("their focus sound was never overwritten", JSON.stringify(st.focus) === '["R"]', JSON.stringify(st.focus));
-ok("their parent code survived", st.pin === "2468", st.pin);
+ok("their word position survived", st.pos === "f", st.pos);
 ok("the sibling's reps did not leak in", st.reps === 0, String(st.reps));
 ok("the sibling's earned rung did not leak in", st.stageS === undefined, JSON.stringify(st.stageS));
 
@@ -210,6 +210,51 @@ ok("it lists every child", ui.rows >= 1, "rows=" + ui.rows);
 ok("exactly one child is marked as practicing now", ui.active === 1, "active=" + ui.active);
 ok("it offers adding a kid", ui.addBtn);
 ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
+
+// ── Remove and Add leave the page only once the saved tries are dealt with ──
+// (30 Sep 2026) Both reload or move on at once, and leaving a page aborts an
+// IndexedDB delete still in flight: Settings' Remove reloaded before the
+// removed child's clips were deleted, every time, while repguardtest (which
+// calls removeKid without leaving) passed. So this goes through the buttons.
+{
+  const c2 = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const p2 = await c2.newPage();
+  const e2 = []; p2.on("pageerror", (e) => e2.push(e.message));
+  p2.on("dialog", (d) => d.accept());
+  const rows = () => p2.evaluate(() => new Promise((res) => {
+    const o = indexedDB.open("sona", 1);
+    o.onupgradeneeded = () => o.result.createObjectStore("recordings", { keyPath: "id", autoIncrement: true });
+    o.onsuccess = () => { const g = o.result.transaction("recordings", "readonly").objectStore("recordings").getAll(); g.onsuccess = () => { o.result.close(); res(g.result.map((r) => r.kid || "")); }; };
+    o.onerror = () => res(null);
+  }));
+  await p2.goto("http://localhost:8153/onboarding.html"); await p2.waitForTimeout(300);
+  await p2.evaluate(async () => {
+    localStorage.clear();
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true });
+    Sona.gateVerify();
+    Sona.addKid("Ana", "5");
+    await Sona.saveRecording({ sound: "S", word: "sun", blob: new Blob(["ana"], { type: "audio/webm" }) });
+    Sona.switchKid("");
+  });
+  await p2.goto("http://localhost:8153/settings.html"); await p2.waitForTimeout(700);
+  ok("the sibling has a saved try before the removal", (await rows() || []).includes("k2"));
+  await Promise.all([p2.waitForNavigation({ timeout: 5000 }).catch(() => {}), p2.click('#kidList button[data-remove="k2"]')]);
+  await p2.waitForTimeout(500);
+  const left = await rows();
+  ok("Settings' Remove deletes the removed child's saved tries from the phone", Array.isArray(left) && !left.includes("k2"), JSON.stringify(left));
+  // A device that removed a child before this build left clips behind under
+  // the slot the next child is given; Add must clear them before moving on.
+  await p2.evaluate(() => new Promise((res) => { const o = indexedDB.open("sona", 1); o.onsuccess = () => { const tx = o.result.transaction("recordings", "readwrite"); tx.objectStore("recordings").add({ sound: "S", word: "sun", date: new Date().toISOString(), kid: "k3", blob: new Blob(["orphan"], { type: "audio/webm" }) }); tx.oncomplete = () => { o.result.close(); res(); }; }; }));
+  await p2.click("#addKidBtn"); await p2.fill("#newKidName", "Ben"); await p2.fill("#newKidAge", "6");
+  await Promise.all([p2.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).catch(() => {}), p2.click("#newKidSave")]);
+  await p2.waitForTimeout(300);
+  const after = await rows();
+  const slot = await p2.evaluate(() => (Sona.activeKid() || {}).slot);
+  ok("Add gives the next child a fresh slot and clears what an older build left under it", slot === "k3" && Array.isArray(after) && !after.includes("k3"), JSON.stringify({ slot, after }));
+  ok("no pageerrors (remove/add)", e2.length === 0, e2.join(" | "));
+  await c2.close();
+}
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

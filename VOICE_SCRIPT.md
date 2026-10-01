@@ -313,18 +313,18 @@ repeats on a tap. {n} as in C1. **Best left to TTS in the cloned voice** — the
 blank is a word, and words render fine; only bare sounds do not. Listed so nothing
 is hidden.
 
-**{target} = a syllable** — the sound's onset plus ah / ee / oo / oh / ay (public/gamecontent.js:30); 19 × 5 = 95 (TH and THV share the same five):
+**{target} = a syllable** — the sound's onset plus ah / ee / oo / oh / ay (public/gamecontent.js:40), except G's "gay" is "guy" and P's "poo" is "pie": two words a child is never asked to say (Travis, 30 Sep 2026); 19 × 5 = 95 (TH and THV share the same five):
 
 | Sound | Syllables |
 |---|---|
-| P | pah, pee, poo, poh, pay |
+| P | pah, pee, pie, poh, pay |
 | B | bah, bee, boo, boh, bay |
 | M | mah, mee, moo, moh, may |
 | N | nah, nee, noo, noh, nay |
 | T | tah, tee, too, toh, tay |
 | D | dah, dee, doo, doh, day |
 | K | kah, kee, koo, koh, kay |
-| G | gah, gee, goo, goh, gay |
+| G | gah, gee, goo, goh, guy |
 | F | fah, fee, foo, foh, fay |
 | V | vah, vee, voo, voh, vay |
 | S | sah, see, soo, soh, say |
@@ -337,9 +337,9 @@ is hidden.
 | TH (as in 'thumb') | thah, thee, thoo, thoh, thay |
 | TH (voiced, as in 'the') | thah, thee, thoo, thoh, thay |
 
-**{target} = a word** — by default the sound's Beginning-position words (THV has none, so all ten); any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (public/sona.js:1416).
+**{target} = a word** — the sound's words at the practice position: an SLP's homework position first, then the one chosen in Settings (`Sona.practicePos()`; default Beginning, and THV has no Beginning words, so all ten); any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (public/sona.js:1416).
 
-**{target} = a sentence** — one of 5 frames with a bank word dropped in (public/gamecontent.js:34): "I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___.". The word comes from the position chosen in Settings (default Beginning; "Mixed" opens the whole bank), so 5 × 356 = 1780 sentences are possible; not expanded here.
+**{target} = a sentence** — one of 5 frames with a bank word dropped in (public/gamecontent.js:44): "I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___.". The word comes from the same practice position as the word round (homework first, then Settings; default Beginning; "Mixed" opens the whole bank), so 5 × 356 = 1780 sentences are possible; not expanded here.
 
 Two things for Rachel here: the frames are applied blindly, so "I have a rain" and "Here is a bathe" are reachable — the same carrier-phrase problem the word bank once had; and the sentence's own full stop survives into the prompt ("Ready? Say I see a robot., five times." — `display` keeps it), harmless for TTS, but a recording should drop it.
 
@@ -352,7 +352,7 @@ Not a separate recording. The turtle pill replays the current line slowed to 0.7
 `I have an idea. Let's try this one. Say {target}.` (public/charge.html:2005)
 
 The step-down after two misses on a word or sentence round: {target} is a syllable
-(C3 list) or a Beginning-position word (Part D) from one rung down. (Rarely — the
+(C3 list) or a word at the practice position (Part D) from one rung down. (Rarely — the
 fifth round for a child who has already mastered sentences — it can be a sentence.)
 The sound-alone form is fixed and sits in B3. Best left to TTS.
 
@@ -397,8 +397,8 @@ eight Beginning-position words with a picture (public/arcade-feed.html:221). The
 Every practice word, by sound and by where the sound sits in the word (public/sona.js:1416).
 **Best left to TTS in the cloned voice** — words render fine; only bare sounds do
 not. Listed so nothing is hidden, and because a word can reach the child three ways:
-the word rung of a practice round (Beginning words by default; any word an SLP's
-homework names), the sentence rung (the position chosen in Settings), and Feed Echo
+the word rung and the sentence rung of a practice round (both at the practice position:
+homework's, else Settings', Beginning by default; any word an SLP's homework names), and Feed Echo
 (the shortest eight Beginning words with a picture).
 
 **P (18)** — Beginning (7): pig, pizza, pen, paint, pumpkin, pie, pan · Middle (5): apple, puppy, happy, zipper, paper · End (6): cup, map, soap, sheep, rope, top
@@ -758,7 +758,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 
 ### E2 — Your Adventure (`story.html`, parked)
 
-Reachable only from the parked books page and gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:236) and on "Hear it" (public/story.html:291); then "Now you! Say... {word}!" (public/story.html:238); a heard try gets one of the five praise lines (public/story.html:262); a missed one gets the bare word again (public/story.html:271). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:41): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
+Reachable only from the parked books page and gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:236) and on "Hear it" (public/story.html:291); then "Now you! Say... {word}!" (public/story.html:238); a heard try gets one of the five praise lines (public/story.html:262); a missed one gets the bare word again (public/story.html:271). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:51): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
 
 ### E3 — Books (`library.html`, parked): 13 books, 78 pages
 
@@ -953,7 +953,7 @@ one of the five praise lines.
 - **"Let's try our {sound} sound again"** (public/charge.html:1980): fallback coaching only for a sound with no tip — all 19 have one.
 - **"Listen to Echo, then copy the sound!"** (public/sona.js:2832): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
 - **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:2896, public/sona.js:2901, public/sona.js:2912): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
-- **The conversation rung** (public/gamecontent.js:47): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
+- **The conversation rung** (public/gamecontent.js:57): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
 - **The sound models as text** (public/sona.js:2888): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
 
 ### E8 — Shown on screen, never spoken (so nobody records them by mistake)

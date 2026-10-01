@@ -14,11 +14,17 @@
     var out = re ? ws.filter(function (w) { return re.test(w.w.toLowerCase()); }) : [];
     return out.length ? out : ws; // fallback to all if none match
   }
-  // Words at the position the parent/SLP chose (Beginning/Middle/End/Vocalic R/Blends/Mixed),
+  // Words at the position to practise (Beginning/Middle/End/Vocalic R/Blends/Mixed),
   // read from window.Sona.WORDS. Falls back to initial-position words if Sona isn't loaded.
+  // The position is Sona.practicePos(): an SLP's homework first, then the
+  // family's setting, the same reader the word step uses (30 Sep 2026). This
+  // read the setting alone, so End-of-word homework still got "I see a rabbit."
   function targetWords(sound) {
     var pos = "";
-    try { pos = (window.Sona && Sona.getProfile) ? (Sona.getProfile().practicePosition || "") : ""; } catch (e) {}
+    try {
+      if (window.Sona && Sona.practicePos) pos = Sona.practicePos() || "";
+      else if (window.Sona && Sona.getProfile) pos = Sona.getProfile().practicePosition || "";
+    } catch (e) {}
     if (window.Sona && Sona.wordsFor) {
       var sel = Sona.wordsFor(sound, pos);
       if (sel && sel.length) return sel;
@@ -27,9 +33,13 @@
   }
   function take(a, n) { a = a.slice(); var out = []; for (var i = 0; i < n && a.length; i++) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]); return out; }
 
+  // Onset + vowel spells two words a child is never asked to say: "gay" for G
+  // and "poo" for P (Travis, 30 Sep 2026). Swapped, not dropped, so every sound
+  // keeps five. tests/soundmap.mjs holds the never-say list against this.
+  var SWAP = { gay: "guy", poo: "pie" };
   function syllables(sound) {
     var on = ONSET[sound] || sound.toLowerCase();
-    return ["ah", "ee", "oo", "oh", "ay"].map(function (v) { return { t: on + v, say: on + v }; });
+    return ["ah", "ee", "oo", "oh", "ay"].map(function (v) { var t = SWAP[on + v] || (on + v); return { t: t, say: t }; });
   }
   function sentences(sound) {
     var frames = ["I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___."];

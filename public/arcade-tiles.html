@@ -182,7 +182,9 @@
     // Sep 2026). They ignored the slider and mute, so Settings' "Muted — the
     // games are silent" was false here, and at 0.22 they rang ~6 dB over every
     // chime. Same rule as sfxVol() in sona.js (not exported, so mirrored):
-    // sound off is silent, otherwise the slider, 0.6 when never set.
+    // sound off is silent, otherwise the profile's level, 0.6 when never set.
+    // (The slider went on 30 Sep 2026: getProfile() now plays any level above
+    // zero at the one normal 0.8, and the phone's buttons do the rest.)
     var actx=null;
     function noteVol(){ try{ var p=(S&&S.getProfile)?S.getProfile():{}; if(p.soundOn===false)return 0; var v=p.volume!=null?Number(p.volume):0.6; return isFinite(v)?Math.max(0,Math.min(1,v)):0.6; }catch(e){ return 0.6; } }
     function tone(f,dur,gain){

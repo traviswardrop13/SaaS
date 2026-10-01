@@ -11,7 +11,9 @@
 //   - STAR MODE (the always-on boost mic in the five arcade games) is gone;
 //     only the "say your sound to keep playing" card listens, and only while it
 //     shows;
-//   - Piano Tiles' notes follow the Sound setting and are silent when muted;
+//   - Piano Tiles' notes play at Sona's one normal level with sound on, and
+//     are silent when muted (30 Sep 2026: the phone's side buttons set the
+//     level now, so a level saved by the old slider plays as sound on);
 //   - (24 Sep 2026) a child's try counts as reliably as it did with the mic
 //     always open: a child who answers the instant the mic opens is heard
 //     (the room's level is the page's quietest stretch, never the first
@@ -542,7 +544,7 @@ await scenario("slice: no microphone", async () => {
   } finally { await context.close(); }
 });
 
-// ── Piano Tiles: the notes follow the Sound setting ──
+// ── Piano Tiles: the notes follow Sona's sound on/off ──
 async function tapTile(page) {
   return page.evaluate(() => {
     __quiet.gains.length = 0; const n = __quiet.sounds.length;
@@ -553,16 +555,21 @@ async function tapTile(page) {
     return { sounds: __quiet.sounds.length - n, peak: peaks.length ? Math.max(...peaks) : 0, hit: tiles.some((t) => t.hit) };
   });
 }
-// "muted" is what Settings' Sound slider writes at zero (volume 0, voice and
-// sounds off) — the state its "Muted — the games are silent" line describes
-for (const [label, cfg, expect] of [["muted", { volume: 0, soundOn: false, voiceOn: false }, 0], ["volume 0.6", { volume: 0.6 }, 0.06], ["volume 1", { volume: 1 }, 0.10]]) {
+// "muted" is what the old Sound slider wrote at zero (volume 0, voice and
+// sounds off): it stays silent until a grown-up taps Turn sound on. The slider
+// is gone (Travis, 30 Sep 2026: "why can't we just use our phones to adjust
+// volume on the side of our iphone?"), so a level it saved — 60%, 100% — is
+// sound on, at the one normal level (0.8): the note peaks at 0.10 × 0.8 and
+// the phone's own buttons do the rest. A saved 60% that still played at 60%
+// would be a level nobody can change any more.
+for (const [label, cfg, expect] of [["muted", { volume: 0, soundOn: false, voiceOn: false }, 0], ["saved at 60%", { volume: 0.6 }, 0.08], ["saved at 100%", { volume: 1 }, 0.08]]) {
   await scenario("tiles " + label, async () => {
     const { context, page, errors } = await fresh("arcade-tiles.html?from=charge", { token: "arcade-tiles.html", ...cfg });
     try {
       await page.waitForFunction(() => window.gameEntryAllowed === true && typeof tone === "function");
       const t = await tapTile(page);
       if (expect === 0) ok("tiles " + label + ": a tapped note makes no sound at all", t.hit && t.sounds === 0, t);
-      else ok("tiles " + label + ": a tapped note peaks at 0.10 × the Sound slider (" + expect + "), not the old fixed 0.24", t.hit && t.sounds === 1 && Math.abs(t.peak - expect) < 1e-6, t);
+      else ok("tiles " + label + ": a tapped note peaks at 0.10 × the normal level (" + expect + "), not the old fixed 0.24 and not the old saved level", t.hit && t.sounds === 1 && Math.abs(t.peak - expect) < 1e-6, t);
       clean("tiles " + label, errors);
     } finally { await context.close(); }
   });
@@ -620,7 +627,8 @@ await scenario("feed", async () => {
     ok("feed: the concert plays", !!complete && plucks.length >= 20, { complete, plucks: plucks.length });
     ok("feed: the ukulele waits ~0.5 s after the chime instead of landing on it", !!complete && plucks.length > 0 && Math.min(...plucks.map((p) => p.start)) - complete.at >= 0.45, { chime: complete && complete.at, first: plucks.length && Math.min(...plucks.map((p) => p.start)) });
     const gains = await page.evaluate(() => __quiet.gains.map((g) => g.gain.sets));
-    ok("feed: the ukulele's master is 0.2 × the Sound slider (0.12), ~9 dB under the old min(0.5, volume × 0.55)", gains.some((s) => s.some((x) => x[0] === "value" && Math.abs(x[1] - 0.12) < 1e-9)));
+    // seeded at a saved 60%, which plays as sound on: the normal level, 0.8
+    ok("feed: the ukulele's master is 0.2 × the normal level (0.16), ~9 dB under the old min(0.5, volume × 0.55)", gains.some((s) => s.some((x) => x[0] === "value" && Math.abs(x[1] - 0.16) < 1e-9)));
     const attacks = gains.filter((s) => s.length >= 3 && s[0][0] === "set" && s[0][1] === 0.0001 && s[1][0] === "exp" && s[1][1] >= 0.5).map((s) => s[1][2] - s[0][2]);
     ok("feed: every pluck fades in over 3–5 ms instead of starting as a raw noise burst", attacks.length === plucks.length && attacks.every((a) => a >= 0.003 - 1e-9 && a <= 0.005 + 1e-9), { attacks: attacks.slice(0, 4), n: attacks.length, plucks: plucks.length });
     noOverlap("feed", l);
