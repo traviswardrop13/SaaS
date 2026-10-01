@@ -293,7 +293,7 @@
         <div id="micBtn" role="img" aria-label="Microphone off"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
       </div>
       <div id="replayLabel">Tap Echo to hear it again</div>
-      <button id="launchBar"></button>
+      <div id="launchBar" role="status"></div>
     </div>
 
   </div>
@@ -2274,7 +2274,13 @@
       // flat SVG, and in the crafted layout it shrank him at the win.
       try{ echoPose(); }catch(e){}
       try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
-      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
+      // Up next: the game's painted Home card, else its sticker (crafted-games.css)
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"),_card=(S.CRAFTED_CARDS||{})[GAME.replace(/^arcade-|\.html$/g,"")];
+        _lb.innerHTML='<span id="launchArt" aria-hidden="true"></span><span class="launch-text"><span class="launch-up">Up next</span><span class="launch-name"></span></span><i class="launch-go" aria-hidden="true"></i>';
+        _lb.querySelector(".launch-name").textContent=GMETA.n;
+        if(_card)$("launchArt").style.backgroundImage='url("/assets/crafted/home-'+_card+'.webp")';
+        else{var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]);}
+        _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
