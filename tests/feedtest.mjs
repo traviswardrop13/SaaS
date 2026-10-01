@@ -205,9 +205,9 @@ ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test
 // Home suggests an age shelf, but never starts a game for the child.
 async function readLibrary(){return page.evaluate(()=>({
   group:document.querySelector('.activity-group').dataset.group,
-  games:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
-  playable:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
-  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
+  games:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
+  playable:[...document.querySelectorAll('#activityGroups .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
+  comingSoon:[...document.querySelectorAll('#activityGroups .game-card')].filter(card=>card.disabled&&/coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
   hero:!!document.getElementById('goBtn'),
   trio:Sona.dailyGames()
 }));}

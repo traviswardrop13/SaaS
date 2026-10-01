@@ -66,7 +66,7 @@ ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 const DECK = () => ({
   ps: Sona.pathState(),
   games: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => card.dataset.game),
-  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)).concat(g.flatMap(group => group.games.filter(game => game.comingSoon).map(game => game.key))))(Sona.activityLibrary().groups), // playable first, then the one Coming soon section (1 Oct 2026)
   library: !document.getElementById("libraryApp").hidden,
 });
 let pp = await page.evaluate(DECK);
