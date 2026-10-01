@@ -901,6 +901,16 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins its loudness to the Sound setting.
 `tests/tilestest.mjs` plays a whole round.
 
+**The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
+her July demo by ear: "use number 4"). Every game's one-take sound
+(`/coach/say-echo/<S>-sound.wav`, cut by `tools/soundclips.mjs`) was her take
+re-voiced into Echo's voice, and for R the voice changer moved her third
+formant from about 1,430 Hz to about 2,900, toward /w/: the "wabbit" error the
+child is here to fix. A gentler setting still left it near 1,850. So R alone
+plays her own take (`OWN` in the tool), at the same loudness as the rest; the
+other voiced sounds stay re-voiced until a listen says otherwise. Piano Tiles
+plays the same one take now (it played the three-take re-voiced demo).
+
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
 **Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
