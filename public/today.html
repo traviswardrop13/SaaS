@@ -237,14 +237,19 @@
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       // Home stays quiet. Practice begins only after a child picks a game.
+      // a book card (What's new / Limited time) opens it on the bookshelf,
+      // whose own rules decide free, Premium or not out yet
+      function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name));return {allowed:ok,tier:game.tier,reason:ok?"book":"premium"};}
       function launch(game){
+        if(game.kind==="book"){clearMessage();location.href=game.go;return;}
         if(!access(game).allowed){showLocked(game);return;}
         clearMessage();
         location.href=game.go;
       }
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
-        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        var grant=game.kind==="book"?bookAccess(game):access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        if(game.kind==="book")button.classList.add("book-card");
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
         // a parked game says its day ("Coming Oct 9"), then "Coming soon"
         var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
@@ -252,7 +257,9 @@
         button.dataset.locked=grant.allowed?"false":"true";
         button.setAttribute("aria-label",comingSoon?game.name+". "+label+".":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");
-        if(craftedCards[game.key]){
+        if(game.kind==="book"){
+          var cover=node("img","crafted-card-image");cover.src=game.cover;cover.alt="";cover.decoding="async";cover.loading="lazy";art.appendChild(cover);
+        }else if(craftedCards[game.key]){
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
         }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
         button.appendChild(art);
@@ -264,9 +271,12 @@
       (library.featured || []).forEach(function(collection){
         var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
         var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
-        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"This season"));section.appendChild(top);
+        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"Here for a little while"));section.appendChild(top);
         var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
       });
+      // every game still being built goes in one Coming soon section after the
+      // age groups, a few across and going down (Travis, 1 Oct 2026)
+      var comingShelves=[];
       library.groups.forEach(function(group){
         var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
         var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
@@ -274,9 +284,10 @@
         if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
         var grid=node("div","game-grid"),parked=node("div","coming-grid");
         group.games.forEach(function(game){(game.comingSoon?parked:grid).appendChild(gameCard(game));});section.appendChild(grid);
-        if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading","More to discover soon"));waiting.appendChild(parked);section.appendChild(waiting);}
+        if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading",group.name+" · "+group.ageLabel.replace(/^Suggested a/,"A")));waiting.appendChild(parked);comingShelves.push(waiting);}
         host.appendChild(section);
       });
+      if(comingShelves.length){var soon=node("section","coming-all");soon.id="comingGroups";var head=node("div","shelf-heading");head.appendChild(node("h2","","Coming soon"));head.appendChild(node("span","shelf-tag","New ones every week"));soon.appendChild(head);comingShelves.forEach(function(w){soon.appendChild(w);});host.appendChild(soon);}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without

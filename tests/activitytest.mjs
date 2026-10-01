@@ -308,7 +308,8 @@ if (present && hasContract) {
       try {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          const shelves = [...document.querySelectorAll("#activityGroups .activity-group")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => Sona.GAME_ACTS[b.dataset.game].comingOn));
+          // one Coming soon section since 1 Oct 2026: its games in day order
+          const shelves = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => Sona.GAME_ACTS[b.dataset.game].comingOn));
           return { peekaboo: tag("peekaboo"), racecar: tag("racecar"), flower: tag("flower"), robot: tag("robot"), train: tag("train"), soccer: tag("soccer"), dino: tag("dino"), shelves, access: Sona.gameAccess("peekaboo") };
         });
         return { got, errors };
@@ -318,7 +319,7 @@ if (present && hasContract) {
     ok("on launch day a parked game says its Friday: Peekaboo, Race Car and Grow a Flower \"Coming Oct 9\", Robot Builder and Choo-Choo Train \"Coming Oct 16\"",
       ["peekaboo", "racecar", "flower"].every((k) => r.got[k].label === "Coming Oct 9") && ["robot", "train"].every((k) => r.got[k].label === "Coming Oct 16")
         && r.got.peekaboo.disabled && /Coming Oct 9/.test(r.got.peekaboo.aria), JSON.stringify(r.got));
-    ok("…each shelf's parked games the 9 Oct ones first", r.got.shelves.length === 2 && r.got.shelves.every((days) => days.length > 0 && days[0] === "2026-10-09" && days.every((d, i) => i === 0 || days[i - 1] <= d)), r.got.shelves);
+    ok("…and each Coming soon row lists the 9 Oct games first, all 18 between them", r.got.shelves.length >= 1 && r.got.shelves.reduce((n, days) => n + days.length, 0) === 18 && r.got.shelves.every((days) => days.length > 0 && days[0] === "2026-10-09" && days.every((d, i) => i === 0 || days[i - 1] <= d)), r.got.shelves);
     ok("…and Soccer Goal and Dino Dig, rebuilt, are open on Home with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
     ok("…with no page errors", r.errors.length === 0, r.errors);
     r = await cardsAt(Date.UTC(2026, 9, 10, 12));

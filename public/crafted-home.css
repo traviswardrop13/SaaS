@@ -43,8 +43,10 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .game-grid [data-game="feed"] .game-access,.game-grid [data-game="bubbles"] .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 .coming-shelf{margin-top:17px;}
 .coming-heading{color:#947e66;font-size:10px;font-weight:800;margin-bottom:8px;letter-spacing:.02em;}
-.coming-grid{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:1px 1px 7px;scrollbar-width:thin;scrollbar-color:#ddccb3 transparent;}
-.coming-grid .game-card{flex:0 0 150px;min-height:0;overflow:hidden;border-radius:13px;box-shadow:0 2px 0 #e9dfd1;background:#f5f0e7;scroll-snap-align:start;border-color:#e9e0d1;}
+/* Coming soon goes down the page, two across, never a long side-scroll
+   (Travis, 1 Oct 2026: "I don't want more than like four to five options ... side by side"). */
+.coming-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:1px 1px 7px;}
+.coming-grid .game-card{min-height:0;overflow:hidden;border-radius:13px;box-shadow:0 2px 0 #e9dfd1;background:#f5f0e7;scroll-snap-align:start;border-color:#e9e0d1;}
 .coming-grid .game-art{width:100%;height:auto;aspect-ratio:16/10;margin:0;background:#efe6d8;border-radius:0;overflow:hidden;}
 .coming-grid .crafted-card-image{filter:saturate(.75);opacity:.9;}
 .coming-grid .game-art>.stk{background:none!important;}
@@ -68,10 +70,16 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #libraryMessageClose{width:44px;height:44px;background:#f0e3cd;}
 #gateQ,#wkStreak{color:#15808a;}
 #shareWeek{background:linear-gradient(#239ca2,#14858d)!important;box-shadow:0 4px 0 #0c656b!important;}
-@media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}.coming-grid .game-card{flex-basis:180px;}.coming-grid .game-name{font-size:12px;}.coming-grid .game-access{font-size:10px;}}
+@media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}.coming-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.coming-grid .game-name{font-size:12px;}.coming-grid .game-access{font-size:10px;}}
 @media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid [data-game="feed"] .game-name,.game-grid [data-game="bubbles"] .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
 @media(prefers-reduced-motion:reduce){.game-card,.crafted-card-image{transition:none;}.game-card:not(:disabled):hover .crafted-card-image{transform:none;}}
 
 /* Keyboard and switch access receive the same clear focus as touch. */
 .library-wrap :is(button,a):focus-visible,.ovl :is(button,a):focus-visible{outline:3px solid #14858d;outline-offset:4px;}
 .game-card:focus-visible{outline-offset:4px;box-shadow:0 3px 0 #dcc5a1;}
+
+/* book covers in the top rows are square */
+.featured-grid .book-card .game-art{aspect-ratio:1;}
+.featured-grid .book-card .crafted-card-image{object-fit:cover;}
+.coming-all{margin:26px 0 8px;}
+.coming-all .coming-heading{margin-top:12px;}

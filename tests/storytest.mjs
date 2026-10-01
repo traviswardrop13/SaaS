@@ -88,7 +88,7 @@ await page.waitForTimeout(800);
 const deck = await page.evaluate(() => ({
   title: document.querySelector(".library-intro h1").textContent,
   cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ k: card.dataset.game, n: card.querySelector(".game-name").textContent })),
-  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)).concat(g.flatMap(group => group.games.filter(game => game.comingSoon).map(game => game.key))))(Sona.activityLibrary().groups), // playable first, then the one Coming soon section (1 Oct 2026)
   chapPill: !!document.getElementById("chapPill"),
   bookLinks: [...document.querySelectorAll('a[href]')].filter(a => /\/(chapter|story|library)\.html/.test(a.getAttribute('href'))).length,
 }));
