@@ -2916,6 +2916,7 @@
     { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
     { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
     { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+    { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
   ];
   function activityLibrary(options) {
     var age = Number(getProfile().childAge);
