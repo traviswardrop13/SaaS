@@ -276,6 +276,11 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   ok("the dig never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(dug));
 }
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
+// The played games (Hoops, Soccer Goal, Dino Dig) run as their own suite,
+// tests/playgamestest.mjs, which sets SAYPLAY_PART=play and imports this file:
+// with every rebuilt game added, one file outgrew run-all's five minutes a suite.
+const PART = process.env.SAYPLAY_PART || "engine";
+if (PART === "engine") {
 for (const g of GAMES) {
   const file = ROOT + "/arcade-" + g.key + ".html";
   ok(g.key + ": the page is exactly what tools/gameart/build.mjs writes (edit the game there, then rebuild)", existsSync(file) && readFileSync(file, "utf8") === pageFor(g));
@@ -442,6 +447,8 @@ for (const g of GAMES) {
   });
 }
 
+}
+if (PART === "play") {
 // ── HOOPS: the first game rebuilt to be played (Travis, 26 Sep 2026: "if its
 // basketball, we want them shooting a hoop"). The word earns the ball; the
 // child swipes it into a hoop that glides side to side; a miss comes back to
@@ -729,6 +736,8 @@ await scenario("dino dug up", async () => {
   } finally { await context.close(); }
 });
 
+}
+if (PART === "engine") {
 // ── the first time: a grown-up says yes before any mic prompt ──
 await scenario("primer: not now", async () => {
   const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
@@ -818,6 +827,7 @@ await scenario("locked", async () => {
   } finally { await context.close(); }
 });
 
+}
 await browser.close(); await new Promise((resolve) => server.close(resolve));
 console.log(failures ? failures + " FAILURES / " + assertions + " assertions" : "ALL GREEN — " + assertions + " assertions");
 process.exit(failures ? 1 : 0);
