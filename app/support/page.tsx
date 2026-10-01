@@ -16,7 +16,7 @@ export default function SupportPage() {
       <h1 className="text-3xl font-extrabold text-[#0e9add]">Sona Support</h1>
       <p className="mt-4 leading-relaxed">
         Sona is a friendly, game-style way for kids to practice tricky speech
-        sounds — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. We&apos;re
+        sounds — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. We&apos;re
         happy to help.
       </p>
 

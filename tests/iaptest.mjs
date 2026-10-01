@@ -296,10 +296,11 @@ await web.close();
 }
 
 // ── the credential on the paywall says only what is verified ──
-// Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
-// true and is used. She is a Clinical Fellow — master's complete, supervised
-// fellowship year in progress — and does NOT hold ASHA's CCC. Since 29 Sep 2026
-// (Travis) her name carries exactly that: "Rachel, MS, CF-SLP". What is pinned
+// Rachel holds an Idaho CF licence (confirmed 1 Sep 2026). She is a Clinical
+// Fellow — master's complete, supervised fellowship year in progress — and does
+// NOT hold ASHA's CCC. Since 29 Sep 2026 (Travis) her name carries exactly that,
+// "Rachel, MS, CF-SLP", and since 1 Oct 2026 the line says it in plain words:
+// "a pediatric speech-language pathologist in her clinical fellowship". What is pinned
 // is that the credential is there and that nothing claims MORE. The CCC is the
 // claim to get right: it is a trademarked certification, it is checkable, and
 // "board-certified (CCC-SLP)" shipped once on the page that takes money.
@@ -309,13 +310,13 @@ await web.close();
   ok("no CCC or board-certified claim anywhere on the paywall",
     !/\bCCC\b|board.certified|ASHA.certified/i.test(sub),
     "she does not hold ASHA's CCC — this shipped once and must never return");
-  ok("the verified licence claim is the one that is made",
-    /licen[sc]ed pediatric speech-language pathologist/i.test(sub),
-    "an Idaho CF licence makes this true — under-claiming is not a virtue when it is checkable");
+  ok("the settled line is the one that is made",
+    /a pediatric speech-language pathologist in her clinical fellowship/.test(sub),
+    "Travis, 1 Oct 2026: Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship");
   // 29 Sep 2026: Travis reversed "leave the fellowship unsaid" — every Rachel byline on the paywall now reads "Rachel, MS, CF-SLP".
   ok("…her name carries her credentials, MS, CF-SLP, on every Rachel byline",
     (sub.match(/Built with Rachel/g) || []).length > 0 &&
-    (sub.match(/Built with Rachel/g) || []).length === (sub.match(/Built with Rachel, MS, CF-SLP —/g) || []).length,
+    (sub.match(/Built with Rachel/g) || []).length === (sub.match(/Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/g) || []).length,
     "she is in her fellowship year — CF-SLP says so, beside the plain words");
   ok("…and nothing dresses it up as more than a licence",
     !/fully licen[sc]ed|\bcertified\b/i.test(sub),

@@ -79,10 +79,10 @@ const TRACKER = `document.addEventListener("click",function(e){var a=e.target&&e
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE
-    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
+    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free right now: every game, every sound, no card."
     // No figure here: metadata is fixed at build, and the price moves with the
     // charter count. The page body prints it, per request, from that count.
-    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.",
+    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Daily practice is free; Premium adds every game.",
 };
 
 /* ---------- shared bits ---------- */
@@ -408,14 +408,14 @@ export default async function Landing() {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026) and a
-                  master's, and is in her supervised Clinical Fellowship year, so
-                  "licensed pediatric speech-language pathologist" is TRUE, and since
-                  29 Sep 2026 (Travis) her name carries "MS, CF-SLP". What must NEVER
+                  master's, and is in her supervised Clinical Fellowship year. Since 1 Oct
+                  2026 (Travis) the line says exactly that: "Rachel, MS, CF-SLP, a pediatric
+                  speech-language pathologist in her clinical fellowship". What must NEVER
                   come back is the CCC: that is ASHA's certification, she does not hold
                   it, and "board-certified (CCC-SLP)" shipped once on this very page as a
                   checkable false claim about a trademarked credential. Pinned in
                   iaptest.mjs and shiptest.mjs. */}
-              {["Rachel, MS, CF-SLP — licensed pediatric speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {["Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>

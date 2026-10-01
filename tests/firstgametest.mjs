@@ -183,7 +183,7 @@ await scenario("a locked game opens the plan screen on that game", async () => {
     ok("the offer sheds the Settings furniture: tabs, page head and summary box", s.tabs === "none" && s.head === "none" && s.summary === "none", s);
     ok("the button is on the first screen of an iPhone", s.buy > 0 && s.buy <= 844, s.buy);
     ok("a stated way out, saying the free games are still there", s.decline !== "none" && s.note === "Your free games are still ready to play.", s);
-    ok("Rachel's credential is still on the page, word for word", /Built with Rachel, MS, CF-SLP — licensed pediatric speech-language pathologist/.test(s.rachel), s.rachel);
+    ok("Rachel's credential is still on the page, word for word", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(s.rachel), s.rachel);
     ok("locked game → plan screen: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });

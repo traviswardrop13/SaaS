@@ -55,7 +55,7 @@ export default function TermsPage() {
             (Travis, 29 Sep 2026, CLAUDE.md). She is in her fellowship year, and
             nothing here says otherwise. */}
         Sona is an at-home <strong>speech practice and coaching</strong> tool
-        designed with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. It is{" "}
+        designed with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. It is{" "}
         <strong>not therapy, not a medical device, not a diagnosis, and not a
         substitute for professional speech-language services</strong>. If you have
         concerns about your child&apos;s speech or development, please consult a
