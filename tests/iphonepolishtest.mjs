@@ -35,7 +35,10 @@ try{
  }
  const wav=await page.evaluate(async()=>{if(!Sona.pcmWave)return null;var bytes=new Uint8Array([0,128,0,0,255,127]),blob=Sona.pcmWave(bytes),data=new Uint8Array(await blob.arrayBuffer()),v=new DataView(data.buffer);return {type:blob.type,rate:v.getUint32(24,true),channels:v.getUint16(22,true),samples:Array.from(data.slice(44))};});
  ok('media wrapper preserves samples and mono 24kHz format',wav?.type==='audio/wav'&&wav.rate===24000&&wav.channels===1&&JSON.stringify(wav.samples)==='[0,128,0,0,255,127]');
+ // Feed Echo starts on its Let's play card, after a grown-up's yes to the mic (here, given in setup)
+ await page.evaluate(()=>localStorage.setItem('sona.micok','1'));
  await page.goto(base+'/arcade-feed.html');
+ await page.locator('#startBtn').click();
  await page.waitForFunction(()=>h.media.length>0,{},{timeout:2500}).catch(()=>{});
  ok('Feed Echo generated voice uses native media playback at the selected volume',await page.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.6));
  await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});

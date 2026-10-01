@@ -329,7 +329,7 @@ for (const [game, title, art] of SKIES) {
     // the say-it card's mic is a disc, not a button, and its own markup is
     // still orange: the crafted sheet paints it teal
     ...ARCADE.map((f) => [f, ["#goCharge", "#endCharge", "#revOvl .ovlCard>div[style]"]]),
-    ["arcade-feed.html", ["#again"]],
+    ["arcade-feed.html", ["#again", "#startBtn", "#primerYes"]],
     ["arcade-hoops.html", ["#startBtn", "#primerYes", "#resume", "#again", "#micBtn"]],
     ["arcade-soccer.html", ["#startBtn", "#primerYes", "#resume", "#again", "#micBtn"]],
     ["arcade-balloon.html", ["#startBtn", "#micBtn"]],
@@ -344,7 +344,7 @@ for (const [game, title, art] of SKIES) {
   const notTeal = [];
   for (const [f, sels] of PRIMARY) for (const r of await look(f, sels)) if (r.missing || !isTeal(r.bg) || ORANGE_RGB.test(r.bg) || GREEN_RGB.test(r.bg)) notTeal.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("the buttons and mics a child taps are the action teal, in the browser", notTeal.length === 0, notTeal.join(" | "));
-  const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]]];
+  const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]]];
   const notCream = [];
   for (const [f, sels] of SECOND) for (const r of await look(f, sels)) if (r.missing || !isCream(r.bg)) notCream.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("…and the second choice is the cream pill", notCream.length === 0, notCream.join(" | "));

@@ -14,8 +14,11 @@ try{
  const context=await browser.newContext({viewport:{width:320,height:568},reducedMotion:'reduce'});
  await context.route('**/*',r=>new URL(r.request().url()).origin===base?r.continue():r.abort());
  await context.addInitScript(()=>{localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,childAge:4,focusSounds:['R'],voiceOn:false,soundOn:false}));localStorage.setItem('sona.micok','1');});
+ // Feed Echo hears the word before it feeds (1 Oct 2026): a stand-in mic, where __mic.voice is the child talking
+ await context.addInitScript(()=>{const h=window.__mic={voice:false,live:0};navigator.mediaDevices.getUserMedia=()=>{h.live++;const t={kind:'audio',readyState:'live',stop(){if(this.readyState!=='ended'){this.readyState='ended';h.live--;}}};return Promise.resolve({getTracks:()=>[t],getAudioTracks:()=>[t]});};const AC=window.AudioContext||window.webkitAudioContext;AC.prototype.createMediaStreamSource=function(){return{connect(){},disconnect(){}};};const real=AC.prototype.createAnalyser;AC.prototype.createAnalyser=function(){const an=real.call(this);an.getByteTimeDomainData=d=>{for(let i=0;i<d.length;i++)d[i]=h.voice?(i%2?200:56):128;};an.getByteFrequencyData=d=>{d.fill(0);if(h.voice)for(let i=1;i<=10&&i<d.length;i++)d[i]=220;};return an;};});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/arcade-feed.html');
+ await page.locator('#startBtn').click();await page.waitForFunction(()=>document.querySelectorAll('#grid .cardBtn').length>0);
  const art=await page.evaluate(async()=>{
   if(!window.SonaCraftedWords)return{present:false};
   const words=[...new Set(Object.values(Sona.WORDS).flat().map(w=>w.w))];
@@ -38,6 +41,9 @@ try{
   ok('All four choices render artwork in usable buttons on the smallest phone',art.cards.length===4&&art.cards.every(c=>c.art&&c.width>=100&&c.height>=80),art.cards);
   ok('Word artwork does not widen the screen',art.overflow<=1,art.overflow);
   const before=await page.locator('#bMain b').innerText();
+  // the child says it first; then the picture can be fed
+  await page.waitForFunction(()=>window.__mic.live===1);await page.waitForTimeout(450);
+  await page.evaluate(()=>{window.__mic.voice=true;});await page.waitForFunction(()=>!document.getElementById('grid').classList.contains('locked'));await page.evaluate(()=>{window.__mic.voice=false;});
   await page.locator('#grid .cardBtn').filter({hasText:new RegExp('^'+before+'$')}).click();
   await page.waitForTimeout(1100);
   ok('A correct illustrated choice is still fed to Echo',await page.locator('#plate .crafted-word').count()===1);
