@@ -1,0 +1,214 @@
+<title>Sona Book Art</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: a bookshelf. A sticky strip of book chips, then one section per
+   book: its cover beside its title and notes, and its twelve pages in a grid. */
+:root {
+  --paper: #fbf6ec;
+  --card: #ffffff;
+  --ink: #4a2c14;
+  --muted: #86684c;
+  --line: #ecdfc9;
+  --teal: #13837e;
+  --teal-soft: #d8f0ee;
+  --flag: #d9472f;
+  --flag-soft: #fde4de;
+  --display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #1d1612; --card: #2a201a; --ink: #f3e8da; --muted: #c0a68b; --line: #3a2d24;
+  --teal: #4fc6be; --teal-soft: #173a38; --flag: #ff7d66; --flag-soft: #46211a; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper: #1d1612; --card: #2a201a; --ink: #f3e8da; --muted: #c0a68b; --line: #3a2d24;
+  --teal: #4fc6be; --teal-soft: #173a38; --flag: #ff7d66; --flag-soft: #46211a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 16px/1.5 var(--body); padding-inline: 16px; padding-block: 0 48px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1, h2 { font-family: var(--display); font-weight: 700; line-height: 1.1; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); }
+h2 { font-size: 1.6rem; }
+.top { padding-block: 28px 12px; display: grid; gap: 8px; }
+.top p { margin: 0; max-width: 62ch; color: var(--muted); }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-weight: 700; }
+.count { font-variant-numeric: tabular-nums; }
+.count b { color: var(--flag); }
+.note-signin { color: var(--muted); font-weight: 600; }
+label.only { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.shelf { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--paper); border-bottom: 1px solid var(--line);
+  display: flex; gap: 8px; overflow-x: auto; padding-block: 10px; scrollbar-width: thin; }
+.chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 6px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; font-weight: 700; font-size: .9rem; white-space: nowrap; }
+.chip .snd { font-family: var(--display); background: var(--teal-soft); color: var(--teal); border-radius: 999px; min-width: 30px; text-align: center; padding: 0 6px; }
+.chip .n { background: var(--flag); color: var(--card); border-radius: 999px; padding: 0 7px; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.chip:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+section.book { padding-block: 36px 8px; border-bottom: 1px solid var(--line); scroll-margin-top: 64px; }
+.head { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; align-items: start; }
+.head .cover { width: 100%; aspect-ratio: 1; border-radius: 14px; display: block; background: var(--line); }
+.meta { display: grid; gap: 8px; min-width: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; font-size: .85rem; font-weight: 700; letter-spacing: .02em; }
+.tag { padding: 2px 10px; border-radius: 999px; background: var(--teal-soft); color: var(--teal); }
+.tag.later { background: var(--line); color: var(--muted); }
+details { color: var(--muted); max-width: 70ch; }
+details summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+details p { white-space: pre-line; margin: 6px 0 0; }
+.pages { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.page { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.page.flagged { border-color: var(--flag); box-shadow: 0 0 0 2px var(--flag-soft); }
+.page img { width: 100%; aspect-ratio: 1; display: block; object-fit: cover; background: var(--line); }
+.cap { padding: 10px 12px 12px; display: grid; gap: 8px; align-content: start; }
+.pn { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.line { margin: 0; font-weight: 600; }
+mark { background: var(--teal-soft); color: var(--teal); border-radius: 4px; padding: 0 3px; font-weight: 700; }
+.flagbtn { justify-self: start; font: 700 .9rem var(--body); border-radius: 999px; padding: 6px 14px; cursor: pointer; border: 1.5px solid var(--line); background: transparent; color: var(--ink); }
+.flagbtn[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: var(--card); }
+.flagbtn:disabled { opacity: .5; cursor: default; }
+.why { display: grid; gap: 6px; }
+.why textarea { width: 100%; min-height: 60px; resize: vertical; font: 15px/1.4 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.why .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+.why button { font: 700 .85rem var(--body); border-radius: 999px; padding: 4px 12px; border: 0; background: var(--teal); color: var(--card); cursor: pointer; }
+.err { color: var(--flag); font-weight: 700; font-size: .85rem; }
+body.only-flagged .page:not(.flagged), body.only-flagged section.book:not(.has-flags) { display: none; }
+@media (max-width: 560px) {
+  .head { grid-template-columns: 110px minmax(0, 1fr); gap: 14px; }
+  .pages { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+}
+@media (prefers-reduced-motion: no-preference) { .page { transition: border-color .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Sona Book Art</h1>
+    <p>The new pictures for the twelve-page books, each page beside the line under it and the key word the child is asked to say. Flag any picture that should be redrawn and say why. Claude reads the flags and redraws those pages.</p>
+    <div class="status">
+      <span class="count" id="count">Loading flags…</span>
+      <label class="only"><input type="checkbox" id="onlyFlagged"> Show flagged pages only</label>
+      <span class="note-signin" id="signin" hidden>Sign in to claude.ai to flag pages.</span>
+    </div>
+  </header>
+  <nav class="shelf" id="shelf" aria-label="Books"></nav>
+  <main id="books"></main>
+</div>
+
+<script>
+var BOOKS = /*DATA*/[];
+var PARTS = ["cover", "p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08", "p09", "p10", "p11", "p12"];
+var flags = {};          // "slug--part" -> {note, by, at}
+var db = null, me = null, canWrite = true;
+
+function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function when(b) {
+  if (!b.opens) return "Out now";
+  var d = new Date(b.opens + "T12:00:00");
+  return "Opens " + d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+// the page's line, with its key word picked out
+function lineWithKey(text, key) {
+  var p = el("p", "line");
+  var i = key ? text.toLowerCase().indexOf(key.toLowerCase()) : -1;
+  if (i < 0) { p.textContent = text; return p; }
+  p.appendChild(document.createTextNode(text.slice(0, i)));
+  p.appendChild(el("mark", null, text.slice(i, i + key.length)));
+  p.appendChild(document.createTextNode(text.slice(i + key.length)));
+  return p;
+}
+
+function card(b, part, idx) {
+  var li = el("li", "page"); li.dataset.id = b.slug + "--" + part;
+  var img = el("img"); img.src = "img/" + b.slug + "-" + part + ".webp"; img.loading = "lazy"; img.decoding = "async";
+  img.alt = part === "cover" ? b.title + " cover" : "Page " + idx + " of " + b.title;
+  li.appendChild(img);
+  var cap = el("div", "cap");
+  var pg = part === "cover" ? null : b.pages[idx - 1];
+  var pn = el("div", "pn"); pn.appendChild(el("span", null, part === "cover" ? "Cover" : "Page " + idx));
+  if (pg && pg.key) pn.appendChild(el("span", null, "Key: " + pg.key));
+  cap.appendChild(pn);
+  if (pg) cap.appendChild(lineWithKey(pg.text, pg.key)); else cap.appendChild(el("p", "line", b.title));
+  var btn = el("button", "flagbtn", "Flag"); btn.type = "button"; btn.setAttribute("aria-pressed", "false");
+  btn.id = "flag-" + li.dataset.id;
+  var why = el("div", "why"); why.hidden = true;
+  var ta = el("textarea"); ta.id = "note-" + li.dataset.id; ta.placeholder = "What's wrong? (e.g. the sandwich should be on the bench)";
+  ta.setAttribute("aria-label", "Why this picture should be redrawn");
+  var row = el("div", "row"); var save = el("button", null, "Save note"); save.type = "button"; var msg = el("span");
+  row.appendChild(save); row.appendChild(msg); why.appendChild(ta); why.appendChild(row);
+  cap.appendChild(btn); cap.appendChild(why);
+  li.appendChild(cap);
+  btn.onclick = function () { toggle(b, part, li, btn, why, ta, msg); };
+  save.onclick = function () { writeFlag(b.slug, part, ta.value, msg); };
+  return li;
+}
+
+function render() {
+  var shelf = document.getElementById("shelf"), host = document.getElementById("books");
+  BOOKS.forEach(function (b) {
+    var a = el("a", "chip"); a.href = "#" + b.slug; a.dataset.slug = b.slug;
+    a.appendChild(el("span", "snd", b.sound)); a.appendChild(el("span", null, b.title));
+    var n = el("span", "n"); n.hidden = true; a.appendChild(n); shelf.appendChild(a);
+    var s = el("section", "book"); s.id = b.slug;
+    var head = el("div", "head");
+    var cov = el("img", "cover"); cov.src = "img/" + b.slug + "-cover.webp"; cov.alt = b.title + " cover"; head.appendChild(cov);
+    var meta = el("div", "meta"); meta.appendChild(el("h2", null, b.title));
+    var tags = el("div", "tags"); tags.appendChild(el("span", "tag", "Sound: " + b.sound)); tags.appendChild(el("span", "tag" + (b.opens ? " later" : ""), when(b)));
+    meta.appendChild(tags);
+    if (b.notes) { var d = el("details"); d.appendChild(el("summary", null, "Notes for Rachel")); d.appendChild(el("p", null, b.notes)); meta.appendChild(d); }
+    head.appendChild(meta); s.appendChild(head);
+    var ul = el("ul", "pages");
+    PARTS.forEach(function (part, i) { ul.appendChild(card(b, part, i)); });
+    s.appendChild(ul); host.appendChild(s);
+  });
+}
+
+function paint() {
+  var total = 0, per = {};
+  document.querySelectorAll(".page").forEach(function (li) {
+    var f = flags[li.dataset.id], btn = li.querySelector(".flagbtn"), why = li.querySelector(".why"), ta = li.querySelector("textarea");
+    li.classList.toggle("flagged", !!f); btn.setAttribute("aria-pressed", f ? "true" : "false"); btn.textContent = f ? "Flagged" : "Flag";
+    why.hidden = !f;
+    if (f && document.activeElement !== ta) ta.value = f.note || "";
+    if (f) { total++; var slug = li.dataset.id.split("--")[0]; per[slug] = (per[slug] || 0) + 1; }
+  });
+  document.querySelectorAll(".chip").forEach(function (c) { var n = c.querySelector(".n"), k = per[c.dataset.slug] || 0; n.hidden = !k; n.textContent = k; });
+  document.querySelectorAll("section.book").forEach(function (s) { s.classList.toggle("has-flags", !!per[s.id]); });
+  var c = document.getElementById("count");
+  c.innerHTML = ""; c.appendChild(document.createTextNode(""));
+  if (!db) { c.textContent = "247 pictures"; return; }
+  var b = el("b", null, String(total)); c.appendChild(b); c.appendChild(document.createTextNode(total === 1 ? " page flagged" : " pages flagged"));
+}
+
+function writeFlag(slug, part, note, msg) {
+  if (!db) return;
+  msg.className = ""; msg.textContent = "Saving…";
+  db.doc("flags/" + slug + "--" + part).set({ slug: slug, part: part, note: note || "", by: me || "", at: Date.now() })
+    .then(function () { msg.textContent = "Saved"; })
+    .catch(function (e) { msg.className = "err"; msg.textContent = e && e.code === "permission_denied" ? "You can view this page but not flag. Ask Travis for Contributor access." : "Couldn't save. Try again."; });
+}
+function toggle(b, part, li, btn, why, ta, msg) {
+  if (!db) { document.getElementById("signin").hidden = false; return; }
+  var id = b.slug + "--" + part;
+  if (flags[id]) {
+    db.doc("flags/" + id).delete().catch(function () { msg.className = "err"; msg.textContent = "Couldn't remove the flag. Try again."; });
+  } else {
+    why.hidden = false; ta.focus();
+    writeFlag(b.slug, part, ta.value, msg);
+  }
+}
+
+render(); paint();
+document.getElementById("onlyFlagged").onchange = function (e) { document.body.classList.toggle("only-flagged", e.target.checked); };
+
+(async function () {
+  if (!window.claude || !claude.use) { document.getElementById("signin").hidden = false; return; }
+  db = await claude.use("db");
+  if (!db) { document.getElementById("signin").hidden = false; paint(); return; }
+  var user = await claude.use("user");
+  try { me = user ? await user.id() : null; } catch (e) { me = null; }
+  db.collection("flags").onSnapshot(function (snap) {
+    flags = {};
+    snap.docs.forEach(function (d) { var v = d.data(); if (v) flags[d.id] = v; });
+    paint();
+  }, function () { document.getElementById("count").textContent = "Flags couldn't load. Reload the page."; });
+})();
+</script>
