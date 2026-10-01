@@ -18,6 +18,10 @@
 //     before the word, a tap is not a shot, a miss never costs a word, the
 //     help grows until every ball goes in, a pause holds the same ball, eight
 //     baskets win, and the court's own sounds keep the quiet rules;
+//   - SOCCER GOAL (1 Oct 2026), the second, holds the same promises: no ball
+//     before the word, a tap is not a kick, a save or a wide kick never costs
+//     a word, the goalie dozes off until every ball goes in, a pause holds the
+//     same ball, and eight goals win;
 //   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
 //     a parked game's card is greyed out, and its page sends a typed address
 //     back to Home before any mic or sound. The engine is still played through
@@ -243,14 +247,22 @@ async function sayIt(page) {
 const { GAMES } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
 const KEYS = GAMES.map((g) => g.key);
-// Hoops is rebuilt by hand (public/hoops.js), so the generator writes nineteen
-ok("nineteen scene games and Hoops: ten for each age group", GAMES.length === 19 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 9 && !GAMES.some((g) => g.key === "hoops"));
+// Hoops and Soccer Goal are rebuilt by hand (public/hoops.js, public/soccer.js),
+// so the generator writes eighteen
+ok("eighteen scene games, Hoops and Soccer Goal: ten for each age group", GAMES.length === 18 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 8 && !GAMES.some((g) => g.key === "hoops" || g.key === "soccer"));
 {
   const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
   ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));
   ok("…and its Home card is a frame of the court", existsSync(ROOT + "/assets/games/hoops.webp") && readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8").includes('<g id="sp-hoops"><image href="/assets/games/hoops.webp"'));
   const court = readFileSync(ROOT + "/hoops.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   ok("the court never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(court));
+}
+{
+  const sp = readFileSync(ROOT + "/arcade-soccer.html", "utf8");
+  ok("Soccer Goal is its own page: the engine for the word, the pitch for the kick", /<script src="\/sayplay\.js"><\/script>/.test(sp) && /<script src="\/soccer\.js"><\/script>/.test(sp) && /<canvas id="pitch"/.test(sp) && /play: window\.Soccer/.test(sp));
+  ok("…and its Home card is a frame of the pitch", existsSync(ROOT + "/assets/games/soccer.webp") && readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8").includes('<g id="sp-soccer"><image href="/assets/games/soccer.webp"'));
+  const pitch = readFileSync(ROOT + "/soccer.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("the pitch never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(pitch));
 }
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
 for (const g of GAMES) {
@@ -513,6 +525,104 @@ await scenario("hoops played through", async () => {
     await page.locator("#again").click();
     ok("hoops: Play again starts over: no baskets, no ball", (await game(page)).step === 0 && (await hoops(page)).baskets === 0 && (await page.locator("#dots i.on").count()) === 0);
     clean("hoops", errors);
+  } finally { await context.close(); }
+});
+
+// ── SOCCER GOAL: the second game rebuilt to be played (Travis, 1 Oct 2026:
+// "go finish soccer"). The word earns the ball; the child swipes it past a
+// goalie who slides along the goal line; a save or a wide kick comes back to
+// kick again and never costs a word; eight goals win. ──
+const pitchBox = async (page) => page.locator("#pitch").boundingBox();
+const soccer = (page) => page.evaluate(() => window.__soccer || {});
+// a swipe up from the ball that carries on to `x` metres along the goal line
+// (the pitch publishes how far a sideways swipe reaches there: aimScale)
+async function kickAt(page, box, x, up = 240) {
+  const s = await soccer(page);
+  await swipe(page, box, (x / s.aimScale) * up / box.width, up);
+}
+async function sayForKick(page) {
+  if (!(await sayIt(page))) return false;
+  return until(page, () => window.__soccer && window.__soccer.state === "ready", 5000);
+}
+await scenario("soccer played through", async () => {
+  const { context, page, errors } = await fresh("arcade-soccer.html", { age: "7", micok: true, permission: "granted" });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    ok("soccer: it is open on Home, with no Monday on it", await page.evaluate(() => { const a = Sona.GAME_ACTS.soccer; return !a.comingSoon && !a.comingOn && a.say === true && a.group === "arcade" && a.go === "/arcade-soccer.html" && Sona.gameAccess("soccer").allowed; }));
+    ok("soccer: the start card says how to play: say the word, then swipe up to kick it past the goalie", /Say the word to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to kick it past the goalie/i.test(await page.locator("#startOvl").innerText()));
+    const before = await practiceState(page);
+    await page.locator("#startBtn").click();
+    const box = await pitchBox(page);
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    // NO WORD, NO BALL: a swipe before the word does nothing
+    await swipe(page, box, 0, 240);
+    await page.waitForTimeout(300);
+    let s = await soccer(page);
+    ok("soccer: before the word there is no ball, and a swipe kicks nothing", s.state === "idle" && s.kicks === 0, s);
+    await page.waitForTimeout(1500);
+    ok("soccer: silence brings no ball", (await soccer(page)).state === "idle" && (await game(page)).step === 0);
+    ok("soccer: the child's word brings the ball, and the mic closes", await sayForKick(page) && (await live(page)) === 0);
+    ok("soccer: the word alone is not a goal: the step waits for the kick", (await game(page)).step === 0 && (await game(page)).phase === "play");
+    ok("soccer: it says how to kick", /Swipe up to kick/.test(await page.locator("#micState").innerText()));
+    // a tap is not a kick
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
+    await page.waitForTimeout(250);
+    ok("soccer: a tap is not a kick", (await soccer(page)).kicks === 0 && (await soccer(page)).state === "ready");
+    // the first two balls: the goalie stands to one side, so straight up scores
+    ok("soccer: for the first ball the goalie stands to one side", Math.abs((await soccer(page)).keeperX) > 0.8, await soccer(page));
+    await swipe(page, box, 0, 240);
+    ok("soccer: a swipe up past the goalie scores", await until(page, () => window.__soccer.goals === 1, 4000), await soccer(page));
+    ok("soccer: the goal moves the game one step and fills a dot", await until(page, () => window.__sayplay.step === 1, 3000) && (await page.locator("#dots i.on").count()) === 1);
+    ok("soccer: then the next word is asked for", await until(page, () => window.__sayplay.listening === true, 8000));
+    // A SAVE NEVER COSTS A WORD: the ball comes back, no word is asked
+    await sayForKick(page);
+    const turnsBefore = (await log(page)).speech.length;
+    await kickAt(page, box, (await soccer(page)).keeperX);
+    ok("soccer: a kick straight at the goalie is saved", await until(page, () => window.__soccer.misses === 1, 4000) && (await soccer(page)).swipe.result === "save", await soccer(page));
+    ok("soccer: …and the ball comes back to kick again", await until(page, () => window.__soccer.state === "ready", 5000));
+    ok("soccer: a save moves nothing and asks for no new word", (await game(page)).step === 1 && (await game(page)).phase === "play" && (await log(page)).speech.length === turnsBefore && (await live(page)) === 0);
+    await kickAt(page, box, 4.5);
+    ok("soccer: a kick far past the post goes wide, and comes back too", await until(page, () => window.__soccer.misses === 2 && window.__soccer.state === "ready", 7000) && (await soccer(page)).swipe.result === "wide", await soccer(page));
+    // EVERY BALL ENDS IN A GOAL: after two misses the goalie dozes off by a
+    // post and the page points to the open side; from the third, any swipe up scores
+    s = await soccer(page);
+    ok("soccer: after two misses the goalie dozes off, and the page points to the open side", s.napping === true && s.openSide != null && Math.sign(s.openSide) !== Math.sign(s.keeperX) && /open side/.test(await page.locator("#micState").innerText()), s);
+    await kickAt(page, box, s.keeperX);
+    ok("soccer: …he can still stop one kicked right at him", await until(page, () => window.__soccer.misses === 3 && window.__soccer.state === "ready", 7000), await soccer(page));
+    await swipe(page, box, 0.45, 200);
+    ok("soccer: from the third miss on, any swipe up goes in", await until(page, () => window.__soccer.goals === 2, 4000), await soccer(page));
+    ok("soccer: …and a goal wakes him: the help is gone for the next ball", await until(page, () => window.__sayplay.step === 2, 3000) && (await soccer(page)).misses === 0 && (await soccer(page)).napping === false);
+    // PAUSE with the ball on the spot: the same ball waits
+    await until(page, () => window.__sayplay.listening === true, 8000);
+    await sayForKick(page);
+    await page.evaluate(() => __quiet.background());
+    await page.waitForTimeout(200);
+    ok("soccer: hiding the page pauses the pitch", (await page.locator("#pauseOvl.show").count()) === 1 && (await soccer(page)).frozen === true);
+    await page.evaluate(() => __quiet.foreground());
+    await page.locator("#resume").click();
+    ok("soccer: Keep playing gives the same ball back, with no new word", (await soccer(page)).state === "ready" && (await game(page)).phase === "play" && (await game(page)).step === 2);
+    // the rest of the game: kick to the side the goalie isn't on
+    for (let n = 3; n <= 8; n++) {
+      if (n > 3) { await until(page, () => window.__sayplay.listening === true, 8000); await sayForKick(page); }
+      for (let t = 0; t < 5 && (await soccer(page)).goals < n; t++) {
+        await until(page, () => window.__soccer.state === "ready", 6000);
+        await kickAt(page, box, (await soccer(page)).keeperX >= 0 ? -1.6 : 1.6);
+        await until(page, (k) => window.__soccer.goals >= k || window.__soccer.state === "back", 5000, n);
+      }
+      ok("soccer goal " + n + ": in", (await soccer(page)).goals === n, await soccer(page));
+    }
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    ok("soccer: eight goals end the game on a win", (await game(page)).phase === "end" && (await game(page)).step === 8 && /Goal star/.test(await page.locator("#endTitle").innerText()));
+    await page.waitForTimeout(300);
+    const l = await log(page);
+    noOverlap("soccer", l);
+    ok("soccer: every chime and pitch sound waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
+    ok("soccer: the pitch made its own sounds (kick, net) through the engine", l.sounds.some((x) => x.kind === "buf" && x.len > 1000), l.sounds.length);
+    ok("soccer: Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("soccer: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
+    await page.locator("#again").click();
+    ok("soccer: Play again starts over: no goals, no ball", (await game(page)).step === 0 && (await soccer(page)).goals === 0 && (await soccer(page)).state === "idle" && (await page.locator("#dots i.on").count()) === 0);
+    clean("soccer", errors);
   } finally { await context.close(); }
 });
 

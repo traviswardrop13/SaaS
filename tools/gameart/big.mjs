@@ -1,8 +1,9 @@
-// Nine of the ten Say & Play games for ages 5-8: eight words a game and a goal
+// Eight of the ten Say & Play games for ages 5-8: eight words a game and a goal
 // to reach (the finish line, the treasure, the last planet). No timer, no score
 // to lose, and nothing to aim at: every word the child says moves them on. The
-// tenth, Hoops, is played rather than built, so it is written by hand
-// (public/arcade-hoops.html, public/hoops.js) and has no scene here.
+// other two, Hoops and Soccer Goal, are played rather than built, so they are
+// written by hand (public/arcade-hoops.html and hoops.js, public/arcade-soccer.html
+// and soccer.js) and have no scene here.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, star, heart, sparkle, note, face } from "../bookart/kit.mjs";
 import { meadowBg, starsList } from "../bookart/scene.mjs";
 import * as cast from "../bookart/cast.mjs";
@@ -75,42 +76,6 @@ const mapGame = {
     { a: "show", id: "glow", fx: "twinkle", at: 600 }, { a: "fx", id: "boat", fx: "bounce", at: 400 },
   ],
   done: { title: "You found the treasure!", sub: "Eight words sailed you all the way to the X." },
-};
-
-// ── 3. Soccer Goal: every word kicks a goal past Bo the goalie ──
-const KICK = [140, 340];
-const NET = [[306, 252], [394, 264], [316, 286], [398, 228], [302, 218], [384, 290], [328, 196], [372, 198]];
-const soccerGame = {
-  key: "soccer", title: "Soccer Goal", group: "arcade", top: "#e6f6ff", bottom: "#cfeec0",
-  sub: "Say it to kick a goal", playDescription: "Every word kicks the ball into the net.",
-  how: "Say each word to kick a goal.", blurb: "Every word kicks a ball past Bo the goalie, who always dives the wrong way.",
-  alt: "A soccer field with a goal, Bo the bear in goal and a player with a ball.",
-  bg: sky("#bfe8fb") + cloud(70, 40, 0.7) + cloud(250, 30, 0.5)
-    + R(0, 58, W, 88, 0, "#4f6b8a") + range(3).map((r) => range(22).map((i) => C(12 + i * 20 + (r % 2) * 10, 76 + r * 24, 7, ["#ff5c5c", "#ffd21c", "#ffffff", "#4db3f2", "#ff9d3d"][(i + r) % 5])).join("")).join("")
-    + R(0, 146, W, 254, 0, "#6fbf4a") + range(6).map((i) => R(i * 80, 146, 40, 254, 0, "#7cc95c")).join("")
-    + L("M0 330 Q220 300 440 330", "#ffffff", 3, { opacity: 0.7 }) + E(KICK[0], KICK[1] + 12, 24, 5, "#4f9a3a", { opacity: 0.35 })
-    + R(116, 12, 208, 34, 17, "#2d3642") + range(8).map((i) => G(`translate(${136 + i * 24} 29)`, A.scoreDot(false))).join(""),
-  parts: [
-    { id: "goal", x: 350, y: 304, svg: A.goal() },
-    { id: "goalie", x: 350, y: 300, o: "50% 100%", svg: G("scale(0.85)", cast.bear({ pose: "shrug", face: "o" })) },
-    ...NET.map((n, i) => ({ id: "b" + (i + 1), x: KICK[0], y: KICK[1], hid: true, svg: A.soccerBall(15) })),
-    { id: "kicker", x: 92, y: 366, svg: G("scale(1.1)", cast.kid({ pose: "run", face: "grin", top: "#ff5c5c", bottom: "#ffffff", shoes: "#2d3642" })) },
-    { id: "kb", x: KICK[0], y: KICK[1], svg: A.soccerBall(15) },
-    ...range(8).map((i) => ({ id: "sc" + (i + 1), x: 136 + i * 24, y: 29, hid: true, svg: A.scoreDot(true) })),
-    { id: "cup", x: 220, y: 250, hid: true, svg: A.trophy() },
-  ],
-  steps: NET.map(([x, y], i) => [
-    { a: "hide", id: "kb" }, { a: "show", id: "b" + (i + 1), fx: "fade" }, { a: "move", id: "b" + (i + 1), x: x - KICK[0], y: y - KICK[1] },
-    { a: "fx", id: "kicker", fx: "bounce" },
-    { a: "move", id: "goalie", x: i % 2 ? 36 : -36, y: 0, r: i % 2 ? 28 : -28 }, { a: "fx", id: "goal", fx: "shake", at: 500 },
-    { a: "show", id: "sc" + (i + 1), fx: "pop", at: 600 },
-    { a: "move", id: "goalie", x: 0, y: 0, r: 0, at: 1000 }, ...(i < 7 ? [{ a: "show", id: "kb", fx: "pop", at: 1100 }] : []),
-  ]),
-  finale: [
-    { a: "fx", id: "kicker", fx: "hop" }, { a: "fx", id: "goalie", fx: "wiggle", at: 300 },
-    ...range(8).map((i) => ({ a: "fx", id: "sc" + (i + 1), fx: "twinkle", at: i * 90 })), { a: "show", id: "cup", fx: "drop", at: 400 },
-  ],
-  done: { title: "Goal! Eight goals!", sub: "Your words kicked every ball in." },
 };
 
 // ── 5. Robot Builder: every word adds a part; then the robot dances ──
@@ -323,4 +288,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [raceGame, mapGame, soccerGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [raceGame, mapGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];

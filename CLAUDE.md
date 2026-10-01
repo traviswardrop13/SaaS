@@ -103,8 +103,8 @@ when the launch lock lifts (see "The family app is locked until launch day").
 **The free version:** daily practice, **two games for each age group**
 (Travis, 30 Sep 2026: "the two free games for older kids, the two free games
 for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
-turned free that day; Block Stacker, Sound Sprint, Flappy Glide and Hoops are
-Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
+turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Hoops and
+Soccer Goal are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
@@ -751,8 +751,9 @@ checks every parked page sends a typed address home before any mic or sound.
 aren't finished ... label them ... coming October 8th or whatever", then "a
 few games/books per week w new ones each monday dropping"). Every parked game
 carries `comingOn`, a Monday: one game for ages 3-4 and one for 5-8 a week,
-from 12 Oct (Peekaboo and Soccer Goal first; Bubble Pop came back early, so
-the little kids' games moved up a week) to 21 Dec. Home says "Coming
+from 12 Oct (Peekaboo and Dino Dig first) to 21 Dec. Bubble Pop and Soccer
+Goal came back early, so each shelf moved up a week, and Dino Dig went to the
+front of the big kids' line because it is the next one rebuilt. Home says "Coming
 Oct 12" until that day on the family's calendar, then "Coming soon" again if
 the game still isn't ready, and each shelf's parked games sit soonest first.
 **The date is a label, never a switch:** `gameAccess` never reads it, and
@@ -785,6 +786,30 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
 `tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
+
+**Soccer Goal is the second one back** (Travis, 1 Oct 2026: "go finish
+soccer"), on the same play-game hook: `public/soccer.js` draws a little
+stadium and flies the ball; `public/arcade-soccer.html` is written by hand.
+Say the word and a ball rolls to the spot; swipe up to kick it past Bo, the
+bear in goal, who slides along the goal line. Where the swipe points is where
+the ball goes. What it keeps, as Hoops does:
+- **The word earns the ball; the finger kicks it.** No ball before the word,
+  a tap is not a kick, and a save or a wide kick never costs a word: the ball
+  rolls back. The step counts on the goal.
+- **Every ball ends in a goal.** Bo stands to one side for the first two
+  balls (straight up scores), then slides from post to post. A kick just
+  past a post is pulled in. After one miss he slows and reaches less, and the
+  pull reaches further; after two he dozes off by one post, the open side glows and an arrow points
+  to it; from the third, any swipe up goes in while he dives the wrong way.
+  A really hard flick can go over the bar; a soft one still rolls in.
+- **Its sounds** (kick, net, save, bounce, whoosh, roll) go through the
+  engine, and **nothing is practice data**.
+Its cards are frames of the pitch: `public/assets/games/soccer.webp` (the
+sticker and the website, through `PLAYED`) and
+`public/assets/crafted/home-soccer.webp` (Home's wide card). The painted art
+drops in at those names, and Bo's own picture by setting `KEEPER_PIC` in
+`soccer.js`. On Home it sits beside Flappy Glide, which is no longer a
+full-width banner. `sayplaytest` plays a whole game.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is

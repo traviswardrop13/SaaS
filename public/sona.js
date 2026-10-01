@@ -2635,8 +2635,9 @@
     // label them ... coming October 8th or whatever", then "a few games/books
     // per week w new ones each monday dropping"). Each parked game carries
     // `comingOn`, a Monday: one for little kids and one for big kids a week
-    // from 12 Oct (Bubble Pop came back early, so the little kids' games moved
-    // up a week). It is a LABEL, never a switch: Home says "Coming Oct 12"
+    // from 12 Oct (Bubble Pop and Soccer Goal came back early, so each shelf's
+    // games moved up a week, Dino Dig first for the big kids because it is
+    // being rebuilt next). It is a LABEL, never a switch: Home says "Coming Oct 12"
     // until that day, then "Coming soon" again if the game still isn't ready,
     // and only taking comingSoon off opens a game. Move a date by editing it.
     balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-19", playDescription: "Every word you say blows the balloon bigger." },
@@ -2650,17 +2651,20 @@
     gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word opens a present. Who is inside?" },
     fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-14", playDescription: "Every word brings a new fish to the tank." },
     racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-19", playDescription: "Every word zooms your race car closer to the finish line." },
-    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word sails your boat to the next stop on the map." },
-    soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-12", playDescription: "Every word kicks the ball into the net." },
+    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word sails your boat to the next stop on the map." },
+    // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
+    // ball and the child swipes it past a goalie who slides along the goal
+    // line (public/soccer.js).
+    soccer: { name: "Soccer Goal", sub: "Say it, then kick!", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to kick it past the goalie." },
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
-    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Every word adds a new part to your robot." },
-    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word builds another part of your castle." },
-    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word brushes the sand off a dinosaur bone." },
-    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word flies your rocket to the next planet." },
-    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Every word adds something to your pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word gives the monster a silly new look." },
+    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word adds a new part to your robot." },
+    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Every word builds another part of your castle." },
+    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-12", playDescription: "Every word brushes the sand off a dinosaur bone." },
+    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word flies your rocket to the next planet." },
+    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Every word adds something to your pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word gives the monster a silly new look." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.

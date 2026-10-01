@@ -136,7 +136,7 @@ const KEYS = new Set(GAMES.map((g) => g.key));
   });
   ok("every arcade page is exactly the game builder's output for one of its games, or is written by hand and doesn't claim otherwise", pages.length >= GAMES.length && bad.length === 0, bad.join(", "));
   ok("…every generated game has its page", GAMES.every((g) => pages.includes("arcade-" + g.key + ".html")));
-  ok("Hoops is written by hand, and the builder has no game by its name", !KEYS.has("hoops") && existsSync(PUB + "/arcade-hoops.html") && !readFileSync(PUB + "/arcade-hoops.html", "utf8").includes(PAGE_MARK));
+  ok("Hoops and Soccer Goal are written by hand, and the builder has no game by either name", ["hoops", "soccer"].every((k) => !KEYS.has(k) && existsSync(PUB + "/arcade-" + k + ".html") && !readFileSync(PUB + "/arcade-" + k + ".html", "utf8").includes(PAGE_MARK)));
 }
 ok("every generated game's start card says \"Let's play\" on a teal pill, beside the play triangle for a child who can't read yet",
   GAMES.every((g) => { const h = pageFor(g); return /<link href="\/action\.css" rel="stylesheet">/.test(h) && /<button id="startBtn" class="act-pill"><svg [^>]*aria-hidden="true">[\s\S]*?<\/svg><span>Let's play<\/span><\/button>/.test(h) && !/id="startBtn"[^>]*aria-label/.test(h); }));
@@ -172,7 +172,7 @@ ok("every generated game's start card says \"Let's play\" on a teal pill, beside
     r.status === 0 && readdirSync(d + "/public").sort().join() === GAMES.map((g) => "arcade-" + g.key + ".html").sort().join()
     && GAMES.every((g) => readFileSync(d + "/public/arcade-" + g.key + ".html", "utf8") === pageFor(g)), r.stderr);
   const again = run(GAME_TOOL, d);
-  ok("…and runs again over its own pages", again.status === 0 && /built 19 games/.test(again.stdout), again.stderr);
+  ok("…and runs again over its own pages", again.status === 0 && /built 18 games/.test(again.stdout), again.stderr);
 }
 function gameRefusal(label, seeds, args, expect) {
   const d = scratch();
@@ -190,6 +190,7 @@ gameRefusal("the game builder refuses to overwrite a page written by hand (arcad
 gameRefusal("…checking every page before writing any, so a hand page last in the list still stops the first",
   { "public/arcade-balloon.html": "<!-- " + PAGE_MARK + " -->an older build\n", "public/arcade-monster.html": handPage }, [], /arcade-monster\.html was written by hand/);
 gameRefusal("…and a game it doesn't build, such as Hoops", {}, ["hoops"], /no game called hoops/);
+gameRefusal("…or Soccer Goal", {}, ["soccer"], /no game called soccer/);
 
 for (const d of temps) rmSync(d, { recursive: true, force: true });
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
