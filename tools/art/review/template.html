@@ -26,6 +26,7 @@
   --teal: #4fc6be; --teal-soft: #173a38; --flag: #ff7d66; --flag-soft: #46211a; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--paper); color: var(--ink); font: 16px/1.5 var(--body); padding-inline: 16px; padding-block: 0 48px; }
 .wrap { max-width: 1180px; margin: 0 auto; }
 h1, h2 { font-family: var(--display); font-weight: 700; line-height: 1.1; text-wrap: balance; margin: 0; }
@@ -97,6 +98,8 @@ body.only-flagged .page:not(.flagged), body.only-flagged section.book:not(.has-f
 
 <script>
 var BOOKS = /*DATA*/[];
+var IMG = /*IMG*/{};
+function src(slug, part) { return IMG[slug + "-" + part] || ""; }
 var PARTS = ["cover", "p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08", "p09", "p10", "p11", "p12"];
 var flags = {};          // "slug--part" -> {note, by, at}
 var db = null, me = null, canWrite = true;
@@ -120,7 +123,7 @@ function lineWithKey(text, key) {
 
 function card(b, part, idx) {
   var li = el("li", "page"); li.dataset.id = b.slug + "--" + part;
-  var img = el("img"); img.src = "img/" + b.slug + "-" + part + ".webp"; img.loading = "lazy"; img.decoding = "async";
+  var img = el("img"); img.src = src(b.slug, part); img.loading = "lazy"; img.decoding = "async";
   img.alt = part === "cover" ? b.title + " cover" : "Page " + idx + " of " + b.title;
   li.appendChild(img);
   var cap = el("div", "cap");
@@ -154,7 +157,7 @@ function render() {
     var n = el("span", "n"); n.hidden = true; a.appendChild(n); shelf.appendChild(a);
     var s = el("section", "book"); s.id = b.slug;
     var head = el("div", "head");
-    var cov = el("img", "cover"); cov.src = "img/" + b.slug + "-cover.webp"; cov.alt = b.title + " cover"; head.appendChild(cov);
+    var cov = el("img", "cover"); cov.src = src(b.slug, "cover"); cov.alt = b.title + " cover"; head.appendChild(cov);
     var meta = el("div", "meta"); meta.appendChild(el("h2", null, b.title));
     var tags = el("div", "tags"); tags.appendChild(el("span", "tag", "Sound: " + b.sound)); tags.appendChild(el("span", "tag" + (b.opens ? " later" : ""), when(b)));
     meta.appendChild(tags);

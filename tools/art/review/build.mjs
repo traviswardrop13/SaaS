@@ -17,7 +17,7 @@ const r = spawnSync("python3", ["-c", `
 import json,sys
 from PIL import Image
 for a,b in json.loads(sys.argv[1]):
-    im=Image.open(a).convert("RGB"); im.thumbnail((480,480)); im.save(b,"WEBP",quality=74,method=6)`, JSON.stringify(py)]);
+    im=Image.open(a).convert("RGB"); im.thumbnail((360,360)); im.save(b,"WEBP",quality=70,method=6)`, JSON.stringify(py)]);
 if (r.status) { console.error(String(r.stderr)); process.exit(1); }
 const data = books.map((b) => ({
   slug: b.slug, title: b.title, sound: b.sound, opens: b.opens,
@@ -25,6 +25,9 @@ const data = books.map((b) => ({
   check: checks[b.slug] || null,
   pages: b.pages.map((p) => ({ n: p.n, text: p.text, key: p.key })),
 }));
+// The pictures ride inside the page as data: URLs, so it publishes as one file.
+const IMG = {};
+for (const [, b] of py) IMG[path.basename(b, ".webp")] = "data:image/webp;base64," + fs.readFileSync(b).toString("base64");
 const tpl = fs.readFileSync(path.join(here, "template.html"), "utf8");
-fs.writeFileSync(path.join(out, "index.html"), tpl.replace("/*DATA*/[]", JSON.stringify(data)));
+fs.writeFileSync(path.join(out, "index.html"), tpl.replace("/*DATA*/[]", JSON.stringify(data)).replace("/*IMG*/{}", JSON.stringify(IMG)));
 console.log(`review page: ${data.length} books, ${py.length} pictures -> ${out}`);
