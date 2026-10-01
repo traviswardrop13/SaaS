@@ -1,0 +1,295 @@
+key,word,emoji,sounds,priority,status
+ball,ball,⚽,L B,1-first,done
+banana,banana,🍌,B N,1-first,done
+bear,bear,🐻,R B,1-first,done
+bed,bed,🛏️,B D,1-first,done
+bee,bee,🐝,B,1-first,done
+boat,boat,⛵,B T,1-first,done
+book,book,📖,K B,1-first,done
+bus,bus,🚌,S B,1-first,done
+cake,cake,🍰,K,1-first,done
+cat,cat,🐱,K T,1-first,done
+chair,chair,🪑,R CH,1-first,todo
+cheese,cheese,🧀,CH Z,1-first,todo
+cherry,cherry,🍒,CH,1-first,todo
+chicken,chicken,🐔,CH,1-first,todo
+chips,chips,🍟,CH,1-first,todo
+chocolate,chocolate,🍫,CH,1-first,todo
+cookie,cookie,🍪,K,1-first,todo
+cow,cow,🐮,K,1-first,todo
+dad,dad,👨,D,1-first,todo
+deer,deer,🦌,D,1-first,todo
+desk,desk,🪑,D,1-first,todo
+dinosaur,dinosaur,🦕,S D,1-first,todo
+dog,dog,🐶,G D,1-first,todo
+doll,doll,🪆,L D,1-first,todo
+door,door,🚪,R D,1-first,todo
+duck,duck,🦆,K D,1-first,todo
+fan,fan,🪭,F,1-first,todo
+farm,farm,🚜,F,1-first,todo
+fire,fire,🔥,F,1-first,todo
+fish,fish,🐟,F SH,1-first,todo
+foot,foot,🦶,F T,1-first,todo
+fork,fork,🍴,R F,1-first,todo
+fox,fox,🦊,F,1-first,todo
+game,game,🎮,G,1-first,todo
+gate,gate,🚪,G T,1-first,todo
+gift,gift,🎁,G,1-first,todo
+giraffe,giraffe,🦒,F J,1-first,todo
+girl,girl,👧,R G,1-first,todo
+goat,goat,🐐,G,1-first,todo
+goose,goose,🪿,G,1-first,todo
+guitar,guitar,🎸,G T,1-first,todo
+jacket,jacket,🧥,K J,1-first,todo
+jam,jam,🍓,M J,1-first,todo
+jar,jar,🫙,J,1-first,todo
+jeep,jeep,🚙,J,1-first,todo
+jet,jet,✈️,J,1-first,todo
+juice,juice,🧃,J,1-first,todo
+key,key,🔑,K,1-first,todo
+king,king,👑,K,1-first,todo
+kite,kite,🪁,K T,1-first,todo
+ladder,ladder,🪜,L D,1-first,todo
+lamp,lamp,💡,L,1-first,todo
+leaf,leaf,🍃,L F,1-first,todo
+lemon,lemon,🍋,L M,1-first,todo
+lion,lion,🦁,L N,1-first,todo
+lock,lock,🔒,L,1-first,todo
+lollipop,lollipop,🍭,L,1-first,todo
+milk,milk,🥛,K M,1-first,todo
+mom,mom,👩,M,1-first,todo
+monkey,monkey,🐵,K M,1-first,todo
+moon,moon,🌙,M,1-first,todo
+mountain,mountain,⛰️,M,1-first,todo
+mouse,mouse,🐭,S M,1-first,todo
+mug,mug,☕,M,1-first,todo
+nail,nail,💅,N,1-first,todo
+nest,nest,🪺,N,1-first,todo
+net,net,🥅,N,1-first,todo
+nine,nine,9️⃣,N,1-first,todo
+noodle,noodle,🍜,N,1-first,todo
+nose,nose,👃,N Z,1-first,todo
+nut,nut,🥜,N,1-first,todo
+paint,paint,🎨,P,1-first,todo
+pan,pan,🍳,P,1-first,todo
+pen,pen,🖊️,P,1-first,todo
+pie,pie,🥧,P,1-first,todo
+pig,pig,🐷,G P,1-first,todo
+pizza,pizza,🍕,P,1-first,todo
+pumpkin,pumpkin,🎃,K P,1-first,todo
+rabbit,rabbit,🐰,R B,1-first,todo
+rain,rain,🌧️,R,1-first,todo
+ring,ring,💍,R,1-first,todo
+robot,robot,🤖,R B,1-first,todo
+rock,rock,🪨,R,1-first,todo
+rocket,rocket,🚀,R K,1-first,todo
+rose,rose,🌹,R Z,1-first,todo
+sand,sand,🏖️,S,1-first,todo
+sandwich,sandwich,🥪,S CH,1-first,todo
+seal,seal,🦭,S,1-first,todo
+shark,shark,🦈,R SH,1-first,todo
+sheep,sheep,🐑,SH P,1-first,todo
+shell,shell,🐚,SH,1-first,todo
+ship,ship,🚢,SH,1-first,todo
+shirt,shirt,👕,SH,1-first,todo
+shoe,shoe,👟,SH,1-first,todo
+shower,shower,🚿,SH,1-first,todo
+soap,soap,🧼,S P,1-first,todo
+sock,sock,🧦,S K,1-first,todo
+soup,soup,🍲,S,1-first,todo
+sun,sun,☀️,S N,1-first,todo
+table,table,🪑,B T,1-first,todo
+ten,ten,🔟,T,1-first,todo
+think,think,💭,TH,1-first,todo
+thirty,thirty,🔢,TH,1-first,todo
+thorn,thorn,🌹,TH,1-first,todo
+thread,thread,🧵,TH,1-first,todo
+three,three,3️⃣,TH,1-first,todo
+thumb,thumb,👍,TH,1-first,todo
+tiger,tiger,🐯,R G T,1-first,todo
+toe,toe,🦶,T,1-first,todo
+tooth,tooth,🦷,TH T,1-first,todo
+top,top,🔝,P T,1-first,todo
+toy,toy,🧸,T,1-first,todo
+turtle,turtle,🐢,T,1-first,todo
+van,van,🚐,V,1-first,todo
+vase,vase,🏺,V,1-first,todo
+vegetable,vegetable,🥦,V,1-first,todo
+vest,vest,🦺,V,1-first,todo
+video,video,📹,V,1-first,todo
+violin,violin,🎻,V,1-first,todo
+volcano,volcano,🌋,V,1-first,todo
+zebra,zebra,🦓,Z,1-first,todo
+zero,zero,0️⃣,R Z,1-first,todo
+zigzag,zigzag,➰,Z,1-first,todo
+zip,zip,🧥,Z,1-first,todo
+zipper,zipper,🤐,P Z,1-first,todo
+zoo,zoo,🦁,Z,1-first,todo
+angel,angel,😇,J,2-later,todo
+apple,apple,🍎,P,2-later,todo
+arm,arm,💪,M,2-later,todo
+arrow,arrow,🏹,R,2-later,todo
+baby,baby,👶,B,2-later,todo
+badge,badge,🎖️,J,2-later,todo
+bag,bag,🎒,G,2-later,todo
+balloon,balloon,🎈,L,2-later,todo
+bath,bath,🛁,TH,2-later,todo
+bathe,bathe,🛁,THV,2-later,todo
+bathtub,bathtub,🛁,TH,2-later,todo
+beach,beach,🏖️,CH,2-later,todo
+bees,bees,🐝,Z,2-later,todo
+bell,bell,🔔,L,2-later,todo
+bicycle,bicycle,🚲,S,2-later,todo
+bird,bird,🐦,R,2-later,todo
+birthday,birthday,🎂,TH,2-later,todo
+blocks,blocks,🧱,L,2-later,todo
+bone,bone,🦴,N,2-later,todo
+branch,branch,🌿,CH,2-later,todo
+breathe,breathe,😮‍💨,THV,2-later,todo
+bridge,bridge,🌉,J,2-later,todo
+broom,broom,🧹,M,2-later,todo
+brother,brother,👦,THV,2-later,todo
+brush,brush,🪥,SH,2-later,todo
+bucket,bucket,🪣,K,2-later,todo
+bug,bug,🐛,G,2-later,todo
+bulldozer,bulldozer,🚜,Z,2-later,todo
+button,button,🔘,T,2-later,todo
+cab,cab,🚕,B,2-later,todo
+cage,cage,🦜,J,2-later,todo
+camel,camel,🐫,M,2-later,todo
+can,can,🥫,N,2-later,todo
+car,car,🚗,R,2-later,todo
+carrot,carrot,🥕,R,2-later,todo
+castle,castle,🏰,S,2-later,todo
+cave,cave,🕳️,V,2-later,todo
+clock,clock,🕐,L,2-later,todo
+cloud,cloud,☁️,D,2-later,todo
+cob,cob,🌽,B,2-later,todo
+coffee,coffee,☕,F,2-later,todo
+color,color,🎨,L,2-later,todo
+corn,corn,🌽,R,2-later,todo
+couch,couch,🛋️,CH,2-later,todo
+crab,crab,🦀,R B,2-later,todo
+cup,cup,☕,P,2-later,todo
+dinner,dinner,🍽️,N,2-later,todo
+dish,dish,🍽️,SH,2-later,todo
+dishes,dishes,🍽️,SH,2-later,todo
+dizzy,dizzy,😵,Z,2-later,todo
+dove,dove,🕊️,V,2-later,todo
+dragon,dragon,🐉,R G,2-later,todo
+dress,dress,👗,S,2-later,todo
+driver,driver,🚗,V,2-later,todo
+drum,drum,🥁,R M,2-later,todo
+drummer,drummer,🥁,M,2-later,todo
+ear,ear,👂,R,2-later,todo
+egg,egg,🥚,G,2-later,todo
+elephant,elephant,🐘,F,2-later,todo
+engine,engine,🚂,J,2-later,todo
+father,father,👨,THV,2-later,todo
+feather,feather,🪶,THV,2-later,todo
+finger,finger,☝️,G,2-later,todo
+five,five,5️⃣,V,2-later,todo
+flag,flag,🚩,L,2-later,todo
+food,food,🍔,D,2-later,todo
+four,four,4️⃣,R,2-later,todo
+frog,frog,🐸,R G,2-later,todo
+glass,glass,🥛,S,2-later,todo
+glove,glove,🧤,L V,2-later,todo
+gloves,gloves,🧤,V,2-later,todo
+grapes,grapes,🍇,R,2-later,todo
+gum,gum,🍬,M,2-later,todo
+ham,ham,🍖,M,2-later,todo
+hammer,hammer,🔨,M,2-later,todo
+hand,hand,✋,D,2-later,todo
+happy,happy,😊,P,2-later,todo
+hat,hat,🎩,T,2-later,todo
+hose,hose,🚿,Z,2-later,todo
+house,house,🏠,S,2-later,todo
+ice,ice,🧊,S,2-later,todo
+kangaroo,kangaroo,🦘,R,2-later,todo
+ketchup,ketchup,🍅,CH,2-later,todo
+kitchen,kitchen,🍳,CH,2-later,todo
+knife,knife,🔪,F,2-later,todo
+koala,koala,🐨,L,2-later,todo
+leash,leash,🐕,SH,2-later,todo
+leather,leather,🧥,THV,2-later,todo
+leg,leg,🦵,G,2-later,todo
+letter,letter,✉️,T,2-later,todo
+lizard,lizard,🦎,Z,2-later,todo
+lunch,lunch,🥪,CH,2-later,todo
+magic,magic,🪄,J,2-later,todo
+magnet,magnet,🧲,G,2-later,todo
+map,map,🗺️,P,2-later,todo
+math,math,➗,TH,2-later,todo
+medal,medal,🏅,D,2-later,todo
+moth,moth,🦋,TH,2-later,todo
+mother,mother,👩,THV,2-later,todo
+mouth,mouth,👄,TH,2-later,todo
+muffin,muffin,🧁,F,2-later,todo
+ocean,ocean,🌊,SH,2-later,todo
+orange,orange,🍊,J,2-later,todo
+oven,oven,🍳,V,2-later,todo
+owl,owl,🦉,L,2-later,todo
+page,page,📄,J,2-later,todo
+pajamas,pajamas,🩳,J,2-later,todo
+panda,panda,🐼,N,2-later,todo
+paper,paper,📄,P,2-later,todo
+parrot,parrot,🦜,R,2-later,todo
+peach,peach,🍑,CH,2-later,todo
+peanut,peanut,🥜,N,2-later,todo
+pencil,pencil,✏️,S,2-later,todo
+pigeon,pigeon,🕊️,J,2-later,todo
+pillow,pillow,🛏️,L,2-later,todo
+pin,pin,📌,N,2-later,todo
+plane,plane,✈️,L,2-later,todo
+plate,plate,🍽️,L,2-later,todo
+potato,potato,🥔,T,2-later,todo
+puppy,puppy,🐶,P,2-later,todo
+puzzle,puzzle,🧩,Z,2-later,todo
+radio,radio,📻,D,2-later,todo
+ribbon,ribbon,🎀,B,2-later,todo
+river,river,🏞️,V,2-later,todo
+road,road,🛣️,D,2-later,todo
+roof,roof,🏠,F,2-later,todo
+rope,rope,🪢,P,2-later,todo
+salad,salad,🥗,D,2-later,todo
+scarf,scarf,🧣,F,2-later,todo
+school,school,🏫,S,2-later,todo
+scissors,scissors,✂️,Z,2-later,todo
+seven,seven,7️⃣,V,2-later,todo
+sled,sled,🛷,L,2-later,todo
+smile,smile,😄,S,2-later,todo
+smooth,smooth,🧈,THV,2-later,todo
+snail,snail,🐌,L,2-later,todo
+snake,snake,🐍,S,2-later,todo
+soda,soda,🥤,D,2-later,todo
+sofa,sofa,🛋️,F,2-later,todo
+spider,spider,🕷️,S D,2-later,todo
+spoon,spoon,🥄,S,2-later,todo
+star,star,⭐,R S,2-later,todo
+stop,stop,🛑,S,2-later,todo
+stove,stove,🍳,V,2-later,todo
+teacher,teacher,🧑‍🏫,CH,2-later,todo
+teeth,teeth,🦷,TH,2-later,todo
+teethe,teethe,🦷,THV,2-later,todo
+telephone,telephone,☎️,F,2-later,todo
+tennis,tennis,🎾,N,2-later,todo
+tissue,tissue,🤧,SH,2-later,todo
+tomato,tomato,🍅,M,2-later,todo
+toothbrush,toothbrush,🪥,TH,2-later,todo
+train,train,🚂,R N,2-later,todo
+trash,trash,🗑️,SH,2-later,todo
+tree,tree,🌳,R,2-later,todo
+truck,truck,🚚,K,2-later,todo
+tub,tub,🛁,B,2-later,todo
+wagon,wagon,🛒,G,2-later,todo
+wash,wash,🧼,SH,2-later,todo
+washing,washing,🧺,SH,2-later,todo
+watch,watch,⌚,CH,2-later,todo
+water,water,💧,R T,2-later,todo
+wave,wave,🌊,V,2-later,todo
+weather,weather,🌦️,THV,2-later,todo
+web,web,🕸️,B,2-later,todo
+whale,whale,🐳,L,2-later,todo
+wolf,wolf,🐺,F,2-later,todo
+yellow,yellow,💛,L,2-later,todo

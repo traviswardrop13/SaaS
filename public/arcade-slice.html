@@ -131,7 +131,7 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><img src="/assets/crafted/game/star.webp" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:contain"></div>
       <h2 id="endTitle">Great slicing!</h2>
       <p id="endSub"></p>
       <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
@@ -673,17 +673,21 @@
         ctx.font='800 22px "Baloo 2",sans-serif'; ctx.lineWidth=5; ctx.strokeStyle="rgba(120,50,10,.5)"; ctx.strokeText("Swipe across it!",g.x,gy-R-28); ctx.fillStyle="#fff"; ctx.fillText("Swipe across it!",g.x,gy-R-28);
       }
       ctx.save(); ctx.translate(g.x+sx,gy); ctx.rotate(Math.sin(g.t/900)*0.06);
-      ctx.fillStyle="#2f9e44"; ctx.beginPath(); ctx.ellipse(0,0,R,R*0.86,0,0,7); ctx.fill();
+      // the crafted watermelon (1 Oct 2026); the drawn one until it has loaded
+      var art=GIANT_ART.complete&&GIANT_ART.naturalWidth;
+      if(art) ctx.drawImage(GIANT_ART,-R*1.1,-R*1.1,R*2.2,R*2.2*GIANT_ART.naturalHeight/GIANT_ART.naturalWidth);
+      else { ctx.fillStyle="#2f9e44"; ctx.beginPath(); ctx.ellipse(0,0,R,R*0.86,0,0,7); ctx.fill(); }
       ctx.save(); ctx.beginPath(); ctx.ellipse(0,0,R,R*0.86,0,0,7); ctx.clip();
       ctx.strokeStyle="#1d7a34"; ctx.lineWidth=R*0.11;
-      for(i=-3;i<=3;i++){ ctx.beginPath(); ctx.ellipse(i*R*0.29,0,R*0.1,R*0.95,0,0,7); ctx.stroke(); }
+      if(!art) for(i=-3;i<=3;i++){ ctx.beginPath(); ctx.ellipse(i*R*0.29,0,R*0.1,R*0.95,0,0,7); ctx.stroke(); }
       for(i=0;i<g.gashes.length;i++){ var h=g.gashes[i], nx=-Math.sin(h.a)*h.o, ny=Math.cos(h.a)*h.o, ux=Math.cos(h.a)*R*1.2, uy=Math.sin(h.a)*R*1.2;
         ctx.lineCap="round"; ctx.strokeStyle="#ff5470"; ctx.lineWidth=R*0.17; ctx.beginPath(); ctx.moveTo(nx-ux,ny-uy); ctx.lineTo(nx+ux,ny+uy); ctx.stroke();
         ctx.strokeStyle="#ffc2cc"; ctx.lineWidth=R*0.05; ctx.beginPath(); ctx.moveTo(nx-ux,ny-uy); ctx.lineTo(nx+ux,ny+uy); ctx.stroke(); }
       ctx.restore();
-      ctx.fillStyle="rgba(255,255,255,.22)"; ctx.beginPath(); ctx.ellipse(-R*0.38,-R*0.4,R*0.26,R*0.13,-0.6,0,7); ctx.fill();
+      if(!art){ ctx.fillStyle="rgba(255,255,255,.22)"; ctx.beginPath(); ctx.ellipse(-R*0.38,-R*0.4,R*0.26,R*0.13,-0.6,0,7); ctx.fill(); }
       ctx.restore();
     }
+    var GIANT_ART=new Image(); GIANT_ART.src="/assets/crafted/game/giant-watermelon.webp";
 
     // ── the stand at the bottom: fruit waiting on the counter, restocked ──
     function drawStand(now){
@@ -812,10 +816,11 @@
         $("endOvl").classList.add("show");
         return;
       }
-      // the first game after setup: the grown-up's plan screen when it is due,
-      // else Home (Sona.firstGameEnd answers once)
+      // the first game after setup: "Play again" on top, "Back home" under it,
+      // and no price (Travis, 30 Sep 2026: "the top stays as play again").
+      // Another go goes back through practice, as every Fruit Slice turn does.
       var after=(S&&S.firstGameEnd)?S.firstGameEnd("slice"):null;
-      if(after){ $("endCharge").textContent=/subscribe/.test(after)?"Show a grown-up →":"Pick a game →"; $("endCharge").onclick=function(){ location.href=after; }; }
+      if(after){ $("endCharge").textContent="Play again"; $("endCharge").onclick=backToCharge; }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
       $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+fruitsSaid(FRUITN)+" fly!":"I saw "+fruitsSaid(FRUITN)+" fly! So fun!");
       // the fruit this child sliced, counted. "Best" is gone from this line:
