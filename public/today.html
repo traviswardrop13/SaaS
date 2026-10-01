@@ -235,7 +235,7 @@
       }
       var library=S.activityLibrary(),lockedGame=null;
       // Home art is presentation only: the catalog still owns access and routes.
-      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops",bubbles:"bubbles"};
+      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops",bubbles:"bubbles",peekaboo:"peekaboo",balloon:"balloon",flower:"flower",rocket:"rocket",snowman:"snowman",train:"train",puppy:"puppy",stars:"stars",cake:"cake",gifts:"gifts",fishtank:"fishtank",racecar:"racecar",treasure:"treasure",soccer:"soccer",robot:"robot",castle:"castle",dino:"dino",space:"space",pizza:"pizza",monster:"monster"};
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}

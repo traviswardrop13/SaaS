@@ -236,7 +236,7 @@ async function waitSpoke(pg, ms) {
     });
   }
   ok("every fuller book asks for one key word a page, each a practice word on that page that starts with the sound",
-    books.length >= 19 && books.reduce((n, b) => n + b.keys.length, 0) === 228 && keyProbs.length === 0, keyProbs.slice(0, 8).join(" | "));
+    books.length >= 19 && books.reduce((n, b) => n + b.keys.length, 0) === 12 * books.length && keyProbs.length === 0, keyProbs.slice(0, 8).join(" | "));
 
   // every fuller page is a drawn scene, and every file it names is really there:
   // the reader shows art over the sticker, so a missing file is a blank page
@@ -280,8 +280,11 @@ async function waitSpoke(pg, ms) {
 {
   const lib = readFileSync(ROOT + "/library.html", "utf8");
   const dated = [...lib.matchAll(/opens: "([\d-]+)", title: "([^"]+)"/g)].map((m) => ({ opens: m[1], title: m[2] }));
-  const open12 = [...lib.matchAll(/\{ sound: "(\w+)", emoji: "[^"]*", title: "([^"]+)"[^\n]*\n\s*cover: "\/assets\/books\//g)].map((m) => m[1]).sort();
-  ok("R, S, L, SH and TH are the twelve-page books open now", JSON.stringify(open12) === JSON.stringify(["L", "R", "S", "SH", "TH"]), open12.join(" "));
+  const open12 = [...lib.matchAll(/\{ sound: "(\w+)", emoji: "[^"]*", title: "([^"]+)"[^\n]*\n\s*cover: "\/assets\/books\//g)].map((m) => m[1]);
+  // two more each for R, S, L, SH and TH, open now (Travis, 1 Oct 2026)
+  ok("R, S, L, SH and TH are the twelve-page books open now, three of each", JSON.stringify([...new Set(open12)].sort()) === JSON.stringify(["L", "R", "S", "SH", "TH"]) && open12.length === 15, open12.join(" "));
+  open12.splice(0, open12.length, ...new Set(open12)); open12.sort();
+  ok("…and no other sound has one open", JSON.stringify(open12) === JSON.stringify(["L", "R", "S", "SH", "TH"]), open12.join(" "));
   ok("every other book has a Monday it comes out, a few at a time, the six-page ones last",
     dated.length === 27 && dated.every((d) => new Date(d.opens + "T12:00:00").getDay() === 1) &&
     Object.values(dated.reduce((n, d) => ((n[d.opens] = (n[d.opens] || 0) + 1), n), {})).every((c) => c <= 3) &&

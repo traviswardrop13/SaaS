@@ -146,8 +146,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const lib = readFileSync(APP + "/public/library.html", "utf8");
   const shelfDays = [...lib.matchAll(/\{ sound: "\w+", emoji: "[^"]*", (?:opens: "([\d-]+)", )?title: "[^"]+"[^\n]*\n\s*cover: "\/assets\/books\/([a-z-]+)\/cover\.(?:svg|webp)"/g)].map((m) => ({ slug: m[2], opens: m[1] || "" }));
   const tileDay = (slug) => (parents.match(new RegExp('<li class="tile b"(?: data-opens="([\\d-]+)")?><img src="/assets/books/' + slug + '/cover\\.(?:svg|webp)"')) || [null, null]);
-  ok("its book strip is the bookshelf's, one book for every sound, each tile with the day the shelf opens it",
-    books.length === sounds.length && shelfDays.length === books.length && (parents.match(/<li class="tile b"/g) || []).length === books.length &&
+  ok("its book strip is the bookshelf's, a book for every sound, each tile with the day the shelf opens it",
+    books.length >= sounds.length && shelfDays.length === books.length && (parents.match(/<li class="tile b"/g) || []).length === books.length &&
     shelfDays.every((b) => tileDay(b.slug)[0] && (tileDay(b.slug)[1] || "") === b.opens),
     shelfDays.filter((b) => !tileDay(b.slug)[0] || (tileDay(b.slug)[1] || "") !== b.opens).map((b) => b.slug).join(", "));
   ok("…and its book count is only the open ones, worked out from those days",
