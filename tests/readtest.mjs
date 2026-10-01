@@ -312,14 +312,14 @@ async function waitSpoke(pg, ms) {
   };
   let r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"]);
   ok("a child on R: Rory and the Rainbow first and open, the six-page R books greyed with their day",
-    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf.length === 6 && r.shelf.slice(1).every((b) => b.off && /^Coming (Nov|Dec) \d+$/.test(b.s)), JSON.stringify(r.shelf));
-  await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][1].click());
+    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf.length === 8 && r.shelf.slice(1, 3).every((b) => !b.off) && r.shelf.slice(3).every((b) => b.off && /^Coming (Nov|Dec) \d+$/.test(b.s)), JSON.stringify(r.shelf));
+  await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][3].click());
   const shut = await r.pg.evaluate(() => { openBook(STORIES.filter((b) => b.title === "Rex the Rhino")[0]); return !document.getElementById("book").classList.contains("show"); });
   ok("…and a coming book can't be opened, by a tap or by the reader itself", shut && !(await r.pg.evaluate(() => document.getElementById("book").classList.contains("show"))));
   ok("…no page errors on a dated shelf", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
   ok("a child whose sound has nothing open yet gets every open book first, then their own, coming",
-    r.shelf.slice(0, 5).every((b) => !b.off) && JSON.stringify(r.shelf.slice(5).map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.slice(5).every((b) => b.off) && r.shelf[5].s === "Coming Oct 5",
+    r.shelf.slice(0, 15).every((b) => !b.off) && JSON.stringify(r.shelf.slice(15).map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.slice(15).every((b) => b.off) && r.shelf[15].s === "Coming Oct 5",
     JSON.stringify(r.shelf)); await r.ctx.close();
   r = await shelfAt("2026-10-04T23:55:00-06:00", ["K"]);
   ok("late on Sunday where the family is (already Monday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
@@ -336,16 +336,16 @@ async function waitSpoke(pg, ms) {
     JSON.stringify(free) === JSON.stringify(["Rory and the Rainbow"]) && free.every((t) => lib.includes('title: "' + t + '"')), JSON.stringify(free));
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"], false);
   ok("without Premium, a child on R: Rory and the Rainbow first, open and marked Free, the six-page R books still dated",
-    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf[0].s === "Free" && r.shelf.length === 6 && r.shelf.slice(1).every((b) => b.off && /^Coming (Nov|Dec) \d+$/.test(b.s)), JSON.stringify(r.shelf));
+    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf[0].s === "Free" && r.shelf.length === 8 && r.shelf.slice(1, 3).every((b) => !b.off && b.locked && b.s === "Premium") && r.shelf.slice(3).every((b) => b.off && /^Coming (Nov|Dec) \d+$/.test(b.s)), JSON.stringify(r.shelf));
   await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][0].click());
   ok("…and the free book opens", await r.pg.waitForFunction(() => document.getElementById("book").classList.contains("show"), null, { timeout: 3000 }).then(() => true, () => false));
   ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["S"], false);
   ok("without Premium, a child on S: the free book first, then Sid the Seagull greyed and marked Premium, then Sunny the Seal with its day",
-    JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Rory and the Rainbow", "Sid the Seagull", "Sunny the Seal"])
+    JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Rory and the Rainbow", "Sid the Seagull", "Sam's Sailboat", "Sophie's Silly Soup", "Sunny the Seal"])
       && r.shelf[0].s === "Free" && !r.shelf[0].locked
       && r.shelf[1].s === "Premium" && r.shelf[1].locked && !r.shelf[1].off
-      && r.shelf[2].off && /^Coming Nov \d+$/.test(r.shelf[2].s), JSON.stringify(r.shelf));
+      && r.shelf[4].off && /^Coming Nov \d+$/.test(r.shelf[4].s), JSON.stringify(r.shelf));
   await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][1].click());
   await r.pg.waitForTimeout(100);
   const asked = await r.pg.evaluate(() => ({ open: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden,
