@@ -63,7 +63,7 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  keys:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
+  keys:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
   title:document.querySelector('h1').textContent
 }));
 ok("Home offers games and never exposes Coach Call",
