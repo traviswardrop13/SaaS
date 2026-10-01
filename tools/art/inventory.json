@@ -73,7 +73,7 @@
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.peekaboo (sona.js:2619) has comingSoon:true, comingOn 2026-10-12; the card is disabled and labelled 'Coming Oct 12' (seen in screenshot).",
+  "evidence": "GAME_ACTS.peekaboo (sona.js:2619) has comingSoon:true, comingOn 2026-10-09; the card is disabled and labelled 'Coming Oct 9' (seen in screenshot).",
   "area": "home"
  },
  {
@@ -84,7 +84,7 @@
   "kind": "svg-file",
   "count": 19,
   "live": "coming-soon",
-  "evidence": "All 19 have comingSoon:true with a Monday comingOn (sona.js:2642-2663); the cards are disabled. Screenshot shows them flat. Hoops is excluded correctly: it uses crafted/home-hoops.webp and sp-hoops points at games/hoops.webp.",
+  "evidence": "All 19 have comingSoon:true with a Friday comingOn (9 or 16 Oct) (sona.js:2642-2663); the cards are disabled. Screenshot shows them flat. Hoops is excluded correctly: it uses crafted/home-hoops.webp and sp-hoops points at games/hoops.webp.",
   "area": "home"
  },
  {
@@ -249,7 +249,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-05\", next Monday, 5 days away. The flat cover is already visible on the shelf today, greyed, as 'Coming Oct 5' (in the shelf render). The pages open on that date.",
+  "evidence": "opens: \"2026-10-09\", next Friday. The flat cover is already visible on the shelf today, greyed, as 'Coming Oct 9' (in the shelf render). The pages open on that date.",
   "area": "books"
  },
  {
@@ -260,7 +260,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-05\" (5 days away). Its greyed cover is already on the shelf.",
+  "evidence": "opens: \"2026-10-09\" (next Friday). Its greyed cover is already on the shelf.",
   "area": "books"
  },
  {
@@ -271,7 +271,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-05\" (5 days away). Its greyed cover is already on the shelf.",
+  "evidence": "opens: \"2026-10-09\" (next Friday). Its greyed cover is already on the shelf.",
   "area": "books"
  },
  {
@@ -282,7 +282,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-12\". Greyed cover on the shelf until then.",
+  "evidence": "opens: \"2026-10-09\". Greyed cover on the shelf until then.",
   "area": "books"
  },
  {
@@ -293,7 +293,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-12\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -304,7 +304,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-12\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -315,7 +315,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-19\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -326,7 +326,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-19\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -337,7 +337,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-19\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -348,7 +348,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-26\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -359,7 +359,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-26\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -370,7 +370,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-10-26\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -381,7 +381,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-11-02\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -392,7 +392,7 @@
   "kind": "svg-file",
   "count": 13,
   "live": "coming-soon",
-  "evidence": "opens: \"2026-11-02\".",
+  "evidence": "opens: \"2026-10-09\".",
   "area": "books"
  },
  {
@@ -931,7 +931,7 @@
   "kind": "css-drawn",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.peekaboo has comingSoon:true and comingOn 2026-10-12 (sona.js:2619). gameAccess returns 'coming-soon', so simple-play.js:22 bounces anyone who opens the page. Home shows only a disabled 'Coming Oct 12' card.",
+  "evidence": "GAME_ACTS.peekaboo has comingSoon:true and comingOn 2026-10-09 (sona.js:2619). gameAccess returns 'coming-soon', so simple-play.js:22 bounces anyone who opens the page. Home shows only a disabled 'Coming Oct 9' card.",
   "area": "games-live"
  },
  {
@@ -942,7 +942,7 @@
   "kind": "css-drawn",
   "count": 4,
   "live": "coming-soon",
-  "evidence": "Same Coming soon gate (Oct 12). Count 4 = three door fronts, plus the roof-and-garden house front.",
+  "evidence": "Same Coming soon gate (Oct 9). Count 4 = three door fronts, plus the roof-and-garden house front.",
   "area": "games-live"
  },
  {
@@ -979,14 +979,14 @@
   "area": "games-live"
  },
  {
-  "sees": "Balloon Party's card on Home: Bo the bear holding a big red balloon at a park party with bunting (greyed out, \"Coming Oct 19\")",
+  "sees": "Balloon Party's card on Home: Bo the bear holding a big red balloon at a park party with bunting (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/balloon.svg (sp-balloon in public/assets/sona-stickers.svg is only an <image> pointer to it; painted by Sona.gameSticker, public/sona.js:3850-3851, today.html:268)",
   "pages": "today.html (Home, \"More to discover soon\" shelf, Simple play / ages 3-4). activities.html redirects there. premium.html bounces coming-soon keys, so Home is the only place it shows.",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.balloon comingSoon:true, comingOn 2026-10-19 (sona.js:2642). today.html:262 disables the card; today.html:53 greys and desaturates it. Rendered: flat code-drawn vector, no embedded raster.",
+  "evidence": "GAME_ACTS.balloon comingSoon:true, comingOn 2026-10-09 (sona.js:2642). today.html:262 disables the card; today.html:53 greys and desaturates it. Rendered: flat code-drawn vector, no embedded raster.",
   "area": "games-parked"
  },
  {
@@ -1001,14 +1001,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Grow a Flower's card on Home: a smiling pink flower in bloom by a picket fence, a watering can and a bee (greyed out, \"Coming Nov 16\")",
+  "sees": "Grow a Flower's card on Home: a smiling pink flower in bloom by a picket fence, a watering can and a bee (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/flower.svg (sp-flower)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.flower comingSoon:true, comingOn 2026-11-16 (sona.js:2643). Disabled card at today.html:262.",
+  "evidence": "GAME_ACTS.flower comingSoon:true, comingOn 2026-10-16 (sona.js:2643). Disabled card at today.html:262.",
   "area": "games-parked"
  },
  {
@@ -1023,14 +1023,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Rocket Blast's card on Home: a rocket with Bo the bear in the window on a launch pad at sunset, beside a lit 5-4-3-2-1 countdown board and a launch tower (greyed out, \"Coming Nov 2\")",
+  "sees": "Rocket Blast's card on Home: a rocket with Bo the bear in the window on a launch pad at sunset, beside a lit 5-4-3-2-1 countdown board and a launch tower (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/rocket.svg (sp-rocket)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.rocket comingSoon:true, comingOn 2026-11-02 (sona.js:2644).",
+  "evidence": "GAME_ACTS.rocket comingSoon:true, comingOn 2026-10-09 (sona.js:2644).",
   "area": "games-parked"
  },
  {
@@ -1045,14 +1045,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Build a Snowman's card on Home: a finished snowman with top hat, scarf and twig arms on a snowy hill with pine trees (greyed out, \"Coming Nov 9\")",
+  "sees": "Build a Snowman's card on Home: a finished snowman with top hat, scarf and twig arms on a snowy hill with pine trees (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/snowman.svg (sp-snowman)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.snowman comingSoon:true, comingOn 2026-11-09 (sona.js:2645).",
+  "evidence": "GAME_ACTS.snowman comingSoon:true, comingOn 2026-10-09 (sona.js:2645).",
   "area": "games-parked"
  },
  {
@@ -1067,14 +1067,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Choo-Choo Train's card on Home: a little blue train with a pig, cow, duck, lamb and dog in its windows, on tracks by a platform (greyed out, \"Coming Nov 23\")",
+  "sees": "Choo-Choo Train's card on Home: a little blue train with a pig, cow, duck, lamb and dog in its windows, on tracks by a platform (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/train.svg (sp-train)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.train comingSoon:true, comingOn 2026-11-23 (sona.js:2646).",
+  "evidence": "GAME_ACTS.train comingSoon:true, comingOn 2026-10-16 (sona.js:2646).",
   "area": "games-parked"
  },
  {
@@ -1089,14 +1089,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Puppy Bath's card on Home: Dan the puppy covered in suds in a white bathtub, with a sponge, in a tiled bathroom (greyed out, \"Coming Oct 26\")",
+  "sees": "Puppy Bath's card on Home: Dan the puppy covered in suds in a white bathtub, with a sponge, in a tiled bathroom (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/puppy.svg (sp-puppy)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.puppy comingSoon:true, comingOn 2026-10-26 (sona.js:2647). The card is the scene after every word but before the finale (tools/gameart/cards.mjs finalScene), so the rubber duck is not on it.",
+  "evidence": "GAME_ACTS.puppy comingSoon:true, comingOn 2026-10-09 (sona.js:2647). The card is the scene after every word but before the finale (tools/gameart/cards.mjs finalScene), so the rubber duck is not on it.",
   "area": "games-parked"
  },
  {
@@ -1111,14 +1111,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Bedtime Stars's card on Home: a sleepy moon and five smiling stars over a little purple house with lit windows at night (greyed out, \"Coming Dec 21\")",
+  "sees": "Bedtime Stars's card on Home: a sleepy moon and five smiling stars over a little purple house with lit windows at night (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/stars.svg (sp-stars)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.stars comingSoon:true, comingOn 2026-12-21 (sona.js:2648).",
+  "evidence": "GAME_ACTS.stars comingSoon:true, comingOn 2026-10-16 (sona.js:2648).",
   "area": "games-parked"
  },
  {
@@ -1133,14 +1133,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Birthday Cake's card on Home: a two-layer pink cake with icing, sprinkles and five lit candles on a party table with bunting and balloons (greyed out, \"Coming Nov 30\")",
+  "sees": "Birthday Cake's card on Home: a two-layer pink cake with icing, sprinkles and five lit candles on a party table with bunting and balloons (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/cake.svg (sp-cake). Also mapped as the Cake reward sticker by public/crafted-rewards.js:7 (cake:'sp-cake').",
   "pages": "today.html (Coming-soon card). The same picture is the Cake sticker in the treasure-chest reveal at the end of the daily adventure (charge.html:2203) and in the sticker book (stickers.html:90).",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "On Home it is a disabled card (GAME_ACTS.cake comingSoon:true, comingOn 2026-11-30, sona.js:2649). Its sticker use is NOT reachable today: the chest only opens in finishRun(), which runs only when charge.html has ?daily=1 or ?session=1 (charge.html:542, 551), and no Home, setup or library link builds that URL (grep finds none; firstGameStart() returns the game's own go URL). Nothing links to stickers.html. So the earlier 'live' was wrong. Dedupe with the sticker-reward sweep.",
+  "evidence": "On Home it is a disabled card (GAME_ACTS.cake comingSoon:true, comingOn 2026-10-16, sona.js:2649). Its sticker use is NOT reachable today: the chest only opens in finishRun(), which runs only when charge.html has ?daily=1 or ?session=1 (charge.html:542, 551), and no Home, setup or library link builds that URL (grep finds none; firstGameStart() returns the game's own go URL). Nothing links to stickers.html. So the earlier 'live' was wrong. Dedupe with the sticker-reward sweep.",
   "area": "games-parked"
  },
  {
@@ -1155,14 +1155,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Surprise Boxes's card on Home: five opened presents on a shelf and the floor, with a bunny, toad, chick, puppy and penguin popping out (greyed out, \"Coming Dec 7\")",
+  "sees": "Surprise Boxes's card on Home: five opened presents on a shelf and the floor, with a bunny, toad, chick, puppy and penguin popping out (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/gifts.svg (sp-gifts)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.gifts comingSoon:true, comingOn 2026-12-07 (sona.js:2650).",
+  "evidence": "GAME_ACTS.gifts comingSoon:true, comingOn 2026-10-16 (sona.js:2650).",
   "area": "games-parked"
  },
  {
@@ -1177,14 +1177,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Fish Tank's card on Home: an aquarium with an orange fish, a blue fish, a pink fish, a puffer, a seahorse, a starfish and a little castle (greyed out, \"Coming Dec 14\")",
+  "sees": "Fish Tank's card on Home: an aquarium with an orange fish, a blue fish, a pink fish, a puffer, a seahorse, a starfish and a little castle (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/fishtank.svg (sp-fishtank)",
   "pages": "today.html (Home, Coming-soon shelf, ages 3-4)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.fishtank comingSoon:true, comingOn 2026-12-14 (sona.js:2651).",
+  "evidence": "GAME_ACTS.fishtank comingSoon:true, comingOn 2026-10-16 (sona.js:2651).",
   "area": "games-parked"
  },
  {
@@ -1199,14 +1199,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Race Car's card on Home: a red race car with a helmeted driver on a track by a grandstand crowd and a checkered flag, with a snail in a helmet in the next lane (greyed out, \"Coming Oct 19\")",
+  "sees": "Race Car's card on Home: a red race car with a helmeted driver on a track by a grandstand crowd and a checkered flag, with a snail in a helmet in the next lane (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/racecar.svg (sp-racecar, cropped per tools/gameart/big.mjs:43)",
   "pages": "today.html (Home, Coming-soon shelf, Arcade / ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.racecar comingSoon:true, comingOn 2026-10-19 (sona.js:2652).",
+  "evidence": "GAME_ACTS.racecar comingSoon:true, comingOn 2026-10-09 (sona.js:2652).",
   "area": "games-parked"
  },
  {
@@ -1221,14 +1221,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Treasure Map's card on Home: a parchment sea map with palm islands, a compass, a whale, a dotted route with gold coins at each stop, a sailboat and a big red X (greyed out, \"Coming Nov 2\")",
+  "sees": "Treasure Map's card on Home: a parchment sea map with palm islands, a compass, a whale, a dotted route with gold coins at each stop, a sailboat and a big red X (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/treasure.svg (sp-treasure)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.treasure comingSoon:true, comingOn 2026-11-02 (sona.js:2653). Corrected: the card shows the red X, not an open chest. The chest appears only in the finale (big.mjs:71), and this card is drawn without the finale.",
+  "evidence": "GAME_ACTS.treasure comingSoon:true, comingOn 2026-10-09 (sona.js:2653). Corrected: the card shows the red X, not an open chest. The chest appears only in the finale (big.mjs:71), and this card is drawn without the finale.",
   "area": "games-parked"
  },
  {
@@ -1243,14 +1243,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Soccer Goal's card on Home: a child kicking balls past Bo the bear in goal, in front of a stadium crowd and a scoreboard (greyed out, \"Coming Oct 12\", the first of these to drop)",
+  "sees": "Soccer Goal's card on Home: a child kicking balls past Bo the bear in goal, in front of a stadium crowd and a scoreboard (greyed out, \"Coming Oct 9\", among the first ten to drop)",
   "file": "public/assets/games/soccer.svg (sp-soccer)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.soccer comingSoon:true, comingOn 2026-10-12 (sona.js:2654).",
+  "evidence": "GAME_ACTS.soccer comingSoon:true, comingOn 2026-10-09 (sona.js:2654).",
   "area": "games-parked"
  },
  {
@@ -1265,14 +1265,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Robot Builder's card on Home: a finished blue robot with a heart on its chest in a workshop with gears and shelves (greyed out, \"Coming Nov 16\")",
+  "sees": "Robot Builder's card on Home: a finished blue robot with a heart on its chest in a workshop with gears and shelves (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/robot.svg (sp-robot)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.robot comingSoon:true, comingOn 2026-11-16 (sona.js:2658).",
+  "evidence": "GAME_ACTS.robot comingSoon:true, comingOn 2026-10-16 (sona.js:2658).",
   "area": "games-parked"
  },
  {
@@ -1287,14 +1287,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Castle Builder's card on Home: a stone castle with purple-roofed towers, a wooden gate and flags on a green hill (greyed out, \"Coming Nov 30\")",
+  "sees": "Castle Builder's card on Home: a stone castle with purple-roofed towers, a wooden gate and flags on a green hill (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/castle.svg (sp-castle)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.castle comingSoon:true, comingOn 2026-11-30 (sona.js:2659).",
+  "evidence": "GAME_ACTS.castle comingSoon:true, comingOn 2026-10-16 (sona.js:2659).",
   "area": "games-parked"
  },
  {
@@ -1309,14 +1309,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Dino Dig's card on Home: a green long-necked dinosaur awake on a sandy cliff, with a brush and 'roar' lines (greyed out, \"Coming Oct 26\")",
+  "sees": "Dino Dig's card on Home: a green long-necked dinosaur awake on a sandy cliff, with a brush and 'roar' lines (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/dino.svg (sp-dino, drawn with the finale per tools/gameart/big.mjs:218)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.dino comingSoon:true, comingOn 2026-10-26 (sona.js:2660).",
+  "evidence": "GAME_ACTS.dino comingSoon:true, comingOn 2026-10-09 (sona.js:2660).",
   "area": "games-parked"
  },
  {
@@ -1331,14 +1331,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Space Trip's card on Home: a small rocket among colourful planets, Earth in the corner and a row of gold stars across the top (greyed out, \"Coming Nov 9\")",
+  "sees": "Space Trip's card on Home: a small rocket among colourful planets, Earth in the corner and a row of gold stars across the top (greyed out, \"Coming Oct 9\")",
   "file": "public/assets/games/space.svg (sp-space)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.space comingSoon:true, comingOn 2026-11-09 (sona.js:2661).",
+  "evidence": "GAME_ACTS.space comingSoon:true, comingOn 2026-10-09 (sona.js:2661).",
   "area": "games-parked"
  },
  {
@@ -1353,14 +1353,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Pizza Chef's card on Home: Bo the bear in a chef hat beside a finished pizza on a counter, with a brick pizza oven (greyed out, \"Coming Nov 23\")",
+  "sees": "Pizza Chef's card on Home: Bo the bear in a chef hat beside a finished pizza on a counter, with a brick pizza oven (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/pizza.svg (sp-pizza)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.pizza comingSoon:true, comingOn 2026-11-23 (sona.js:2662).",
+  "evidence": "GAME_ACTS.pizza comingSoon:true, comingOn 2026-10-16 (sona.js:2662).",
   "area": "games-parked"
  },
  {
@@ -1375,14 +1375,14 @@
   "area": "games-parked"
  },
  {
-  "sees": "Monster Makeover's card on Home: Moe the teal monster with three eyes, horns, spots, a toothy grin, a bow tie, sneakers and a crown (greyed out, \"Coming Dec 7\")",
+  "sees": "Monster Makeover's card on Home: Moe the teal monster with three eyes, horns, spots, a toothy grin, a bow tie, sneakers and a crown (greyed out, \"Coming Oct 16\")",
   "file": "public/assets/games/monster.svg (sp-monster)",
   "pages": "today.html (Home, Coming-soon shelf, ages 5-8)",
   "category": "card-art",
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.monster comingSoon:true, comingOn 2026-12-07 (sona.js:2663).",
+  "evidence": "GAME_ACTS.monster comingSoon:true, comingOn 2026-10-16 (sona.js:2663).",
   "area": "games-parked"
  },
  {
@@ -1558,7 +1558,7 @@
   "kind": "svg-file",
   "count": 1,
   "live": "coming-soon",
-  "evidence": "GAME_ACTS.peekaboo has comingSoon:true, comingOn 2026-10-12. No crafted card exists.",
+  "evidence": "GAME_ACTS.peekaboo has comingSoon:true, comingOn 2026-10-09. No crafted card exists.",
   "area": "grownups"
  },
  {
@@ -1569,7 +1569,7 @@
   "kind": "svg-file",
   "count": 19,
   "live": "coming-soon",
-  "evidence": "All 19 have comingSoon:true with Monday dates (12 Oct to 21 Dec). They are not in craftedCards, so today.html:268 paints sp-<key>. These svg files are used nowhere else (the only other assets/games reference is hoops.webp). Rendered three: flat vector. If the games audit also lists assets/games/*.svg, count them once.",
+  "evidence": "All 19 have comingSoon:true with Friday dates (9 Oct and 16 Oct). They are not in craftedCards, so today.html:268 paints sp-<key>. These svg files are used nowhere else (the only other assets/games reference is hoops.webp). Rendered three: flat vector. If the games audit also lists assets/games/*.svg, count them once.",
   "area": "grownups"
  },
  {
@@ -1760,7 +1760,7 @@
   "area": "grownups"
  },
  {
-  "sees": "The landing page's picture-book shelf: 19 flat book covers (Rory and the Rainbow, Sid the Seagull, Shay the Shy Shark...), 14 of them tagged with a 'Coming' date from Oct 5 to Nov 2",
+  "sees": "The landing page's picture-book shelf: 19 flat book covers (Rory and the Rainbow, Sid the Seagull, Shay the Shy Shark...), 14 of them tagged 'Coming Oct 9'",
   "file": "public/assets/books/<book>/cover.svg (19 files) as shown by public/parents.html lines 532-552",
   "pages": "parents.html (speaksona.com home); the same covers are on library.html",
   "category": "book-page",

@@ -138,11 +138,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const gameTiles = (parents.match(/<li class="tile g">[\s\S]*?<\/li>/g) || []).join("");
   ok("…and not one game it shows as Coming soon", parkedGames.length > 0 && parkedGames.every((g) => !gameTiles.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>") && !gameTiles.includes("/assets/games/" + g[1] + ".svg")),
     parkedGames.filter((g) => gameTiles.includes("<span>" + g[2] + "</span>")).map((g) => g[2]).join(", "));
-  // THE BOOKS OPEN A FEW A WEEK (27 Sep 2026). The strip holds every
-  // twelve-page book, each tile carrying the day the bookshelf opens it, and
-  // the page counts only the open ones and tags the rest "Coming", worked out
-  // on the phone from those days (landingtest plays it), so it is never
-  // ahead of the shelf.
+  // THE BOOKS OPEN ON A DATE (27 Sep 2026; every queued one on Fri 9 Oct,
+  // 1 Oct 2026). The strip holds every twelve-page book, each tile carrying
+  // the day the bookshelf opens it, and the page counts only the open ones
+  // and tags the rest "Coming", worked out on the phone from those days
+  // (landingtest plays it), so it is never ahead of the shelf.
   const lib = readFileSync(APP + "/public/library.html", "utf8");
   const shelfDays = [...lib.matchAll(/\{ sound: "\w+", emoji: "[^"]*", (?:opens: "([\d-]+)", )?title: "[^"]+"[^\n]*\n\s*cover: "\/assets\/books\/([a-z-]+)\/cover\.(?:svg|webp)"/g)].map((m) => ({ slug: m[2], opens: m[1] || "" }));
   const tileDay = (slug) => (parents.match(new RegExp('<li class="tile b"(?: data-opens="([\\d-]+)")?><img src="/assets/books/' + slug + '/cover\\.(?:svg|webp)"')) || [null, null]);

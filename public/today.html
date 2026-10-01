@@ -152,14 +152,15 @@
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
     <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
-         the bookshelf: a twelve-page picture book for every sound, opening
-         a few a week, on Mondays (the dates live in library.html). The shelf
-         opens for every family (30 Sep 2026): one book is free (FREE_BOOKS in
-         sona.js) and the rest are Premium, each asking for a grown-up on the
-         shelf the way a Premium game does here. -->
+         the bookshelf: a twelve-page picture book for every sound, the
+         ones not out yet all opening Friday 9 Oct (the dates live in
+         library.html). The shelf opens for every family (30 Sep 2026):
+         one book is free (FREE_BOOKS in sona.js) and the rest are Premium,
+         each asking for a grown-up on the shelf the way a Premium game
+         does here. -->
     <button id="booksCard" type="button">
       <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones every week.</span></span>
+      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones on the way.</span></span>
       <span class="books-go" aria-hidden="true">›</span>
     </button>
     <p class="age-note">Ages are a guide. Explore any game that fits.</p>
@@ -239,7 +240,7 @@
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
-        // a parked game says its Monday ("Coming Oct 12"), then "Coming soon"
+        // a parked game says its day ("Coming Oct 9"), then "Coming soon"
         var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.disabled=!!comingSoon;button.classList.toggle("is-coming",!!comingSoon);
         button.dataset.locked=grant.allowed?"false":"true";

@@ -108,7 +108,7 @@ Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
-disabled "Coming …" cards (see "Monday drops") regardless of subscription,
+disabled "Coming …" cards (see "Two Fridays") regardless of subscription,
 trial or earned access.
 
 `premium()` recognizes subscriptions, founders, free-era families, founding
@@ -653,17 +653,24 @@ grown-up to help open …", naming the free one) with the button to
 too. A child whose own books are all locked or coming sees the free book first.
 Rename Rory and the Rainbow and `FREE_BOOKS` must follow (`readtest` pins it).
 
-**The books open a few a week** (Travis, 27 Sep 2026: "a solid book for the
-top four or five most popular letters... everything else, we can just set a
-date on it... new drops every week"). R, S, L, SH and TH are open. Every
-other book in `STORIES` carries `opens` (a **Monday**, at most three a week:
-Travis, 30 Sep 2026, "new ones each monday dropping"; they were Sundays) and
-waits on the shelf greyed, "Coming Oct 5", until that day on the phone's own
-calendar; a tap or `openBook()` does nothing before it. The six-page books
-(painted, see below) come after every twelve-page one: they put the sound anywhere in a word
-and are last in line to be redone. A child whose sounds have nothing open yet
-sees every open book first, then their own, coming. Home's card and the
-website say "new ones every week", never "a book for every sound".
+**Every queued book opens next Friday, 9 Oct** (Travis, 27 Sep 2026: "a
+solid book for the top four or five most popular letters... everything else,
+we can just set a date on it"; then 1 Oct 2026: "I don't want all these books
+and games to have different dates ... everything that is currently in queue
+to just say for next Friday"). R, S, L, SH and TH are open, three books each.
+Every other book in `STORIES` carries `opens: "2026-10-09"` (one day for all
+27; the old Monday-a-few-a-week schedule is gone) and waits on the shelf
+greyed, "Coming Oct 9", until that day on the phone's own calendar; a tap or
+`openBook()` does nothing before it, and on the day every one opens by
+itself. The six-page books (painted, see below) sit after every twelve-page
+one in `STORIES`, and with one day for all the shelf keeps that order: they
+put the sound anywhere in a word and are last in line to be redone. A child
+whose sounds have nothing open yet sees every open book first, then their
+own, coming. Home's card, the website and the Premium page say "new ones on
+the way" (the families pricing page: "as they come out"), never "every week":
+once the queue opens on 9 Oct no book is scheduled after it and no game after
+16 Oct, so a weekly promise would have nothing behind it. Never "a book for
+every sound", and never a weekday.
 `readtest` pins the dates and the shelf; `landingtest` the website's count.
 
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
@@ -770,18 +777,22 @@ played by him on his phone — by taking `comingSoon` off its own line in
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
-**Monday drops for the unfinished games** (Travis, 30 Sep 2026: "games that
-aren't finished ... label them ... coming October 8th or whatever", then "a
-few games/books per week w new ones each monday dropping"). Every parked game
-carries `comingOn`, a Monday: one game for ages 3-4 and one for 5-8 a week,
-from 12 Oct (Peekaboo and Soccer Goal first; Bubble Pop came back early, so
-the little kids' games moved up a week) to 21 Dec. Home says "Coming
-Oct 12" until that day on the family's calendar, then "Coming soon" again if
-the game still isn't ready, and each shelf's parked games sit soonest first.
-**The date is a label, never a switch:** `gameAccess` never reads it, and
-only taking `comingSoon` off (after Travis has played the rebuilt game) opens
-one. Keeping those dates means finishing two games a week; move a date by
-editing it. `activitytest` pins the Mondays, the labels and the order.
+**Two Fridays for the unfinished games** (Travis, 30 Sep 2026: "games that
+aren't finished ... label them ... coming October 8th or whatever"; then 1 Oct
+2026: "everything that is currently in queue to just say for next Friday ...
+split them and have like seven or eight for next Friday and then seven or
+eight for the following Friday"). Every parked game carries `comingOn`, one
+of exactly two days, ten games each: **9 Oct** for Peekaboo, Soccer Goal,
+Balloon Party, Race Car, Puppy Bath, Dino Dig, Rocket Blast, Treasure Map,
+Build a Snowman and Space Trip (the ten that were soonest on the old Monday
+list), **16 Oct** for the other ten. Home says "Coming Oct 9" or "Coming
+Oct 16" until that day on the family's calendar, then "Coming soon" again if
+the game still isn't ready; each shelf's parked games sit soonest first, in
+catalog order within a day. **The date is a label, never a switch:**
+`gameAccess` never reads it, and only taking `comingSoon` off (after Travis
+has played the rebuilt game) opens one. Keeping those dates means finishing
+ten games a week; move a date by editing it. `activitytest` pins the two
+days, the ten-and-ten split, the labels and the order.
 
 **Hoops is the first one back, rebuilt to be played** (Travis, 26 Sep 2026:
 "yes build hoops", to the plan: the hoop slides slowly side to side; say the

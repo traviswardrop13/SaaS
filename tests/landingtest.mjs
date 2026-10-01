@@ -347,13 +347,14 @@ for (const [label, reply, want] of [
   await context.close();
 }
 
-// ── the books open a few a week (27 Sep 2026) ──
+// ── the queued books all open on one day (27 Sep, 1 Oct 2026) ──
 // The page counts only the books the shelf has opened and tags the rest with
 // their day, worked out on the visitor's own calendar, so a parent is never
 // promised a book their child can't open yet.
-// Every book comes out on a Monday (30 Sep 2026), so the Sunday before is
-// still the week before.
-for (const [when, count, first] of [["2026-09-28T09:00:00", 15, "Coming Oct 5"], ["2026-10-04T09:00:00", 15, "Coming Oct 5"], ["2026-10-05T09:00:00", 18, "Coming Oct 12"], ["2026-11-02T09:00:00", 29, null]]) {
+// Every queued book comes out on Friday 9 Oct (Travis, 1 Oct 2026: "everything
+// that is currently in queue to just say for next Friday"), so the day before
+// still shows 15 and the day itself shows them all.
+for (const [when, count, first] of [["2026-09-28T09:00:00", 15, "Coming Oct 9"], ["2026-10-02T09:00:00", 15, "Coming Oct 9"], ["2026-10-08T21:00:00", 15, "Coming Oct 9"], ["2026-10-09T09:00:00", 29, null]]) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
   const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));
@@ -363,7 +364,7 @@ for (const [when, count, first] of [["2026-09-28T09:00:00", 15, "Coming Oct 5"],
     tags: [...document.querySelectorAll(".tile.b:not([aria-hidden]) .soon-tag")].map((t) => t.textContent),
     openTiles: document.querySelectorAll(".tile.b:not([aria-hidden]):not(.soon)").length }));
   ok("on " + when.slice(0, 10) + " the site counts " + count + " open books and tags the rest with their day",
-    got.n === String(count) && got.openTiles === count && got.tags.length === 29 - count && (first ? got.tags[0] === first : true), got);
+    got.n === String(count) && got.openTiles === count && got.tags.length === 29 - count && (first ? got.tags.every((t) => t === first) : true), got);
   ok("…with no page errors", errors.length === 0, errors);
   await context.close();
 }

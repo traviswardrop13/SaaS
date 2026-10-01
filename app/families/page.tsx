@@ -260,7 +260,7 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>{perMonth[0].toUpperCase() + perMonth.slice(1)}</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
-        <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books every Monday, included", "Upgrade inside the app, whenever you want"]} />
+        <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books as they come out, included", "Upgrade inside the app, whenever you want"]} />
         <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade inside Sona. On the web, secure checkout by Stripe; in the iPhone and iPad app, through the App Store at the price shown there.</div>
       </div>
       {/* Families who arrived during a free era keep it free — a grandfather

@@ -278,17 +278,19 @@
     }catch(e){}
     var PITCH = Sona.VOICE_PITCH || 1.15;
 
-    // WEEKLY DROPS (Travis, 27 Sep 2026: "a solid book for the top four or
-    // five most popular letters... everything else, we can just set a date
-    // on it... new drops every week"). A book with `opens` waits on the shelf,
-    // greyed and "Coming Oct 5", until that day on the phone's own calendar;
-    // a book without it is out. Every `opens` is a Monday (Travis, 30 Sep
-    // 2026: "new ones each monday dropping"), at most three a week. R, S, L,
-    // SH and TH are out now; which of them a family can read without Premium
-    // is FREE_BOOKS in sona.js (bookLocked, below). The six-page
-    // picture books come after every twelve-page one: they break the rule the
-    // new books keep (the sound only at the start of a word), so they are
-    // last in line to be redone, painted or not (`painted`, below).
+    // ONE DAY FOR THE WHOLE QUEUE (Travis, 27 Sep 2026: "a solid book for
+    // the top four or five most popular letters... everything else, we can
+    // just set a date on it"; then 1 Oct 2026: "I don't want all these books
+    // and games to have different dates ... everything that is currently in
+    // queue to just say for next Friday"). A book with `opens` waits on the
+    // shelf, greyed and "Coming Oct 9", until that day on the phone's own
+    // calendar; a book without it is out. Every `opens` is Friday 9 Oct. R,
+    // S, L, SH and TH are out now; which of them a family can read without
+    // Premium is FREE_BOOKS in sona.js (bookLocked, below). The six-page
+    // picture books sit after every twelve-page one (same day, so the shelf
+    // keeps this order): they break the rule the new books keep (the sound
+    // only at the start of a word), so they are last in line to be redone,
+    // painted or not (`painted`, below).
     var STORIES = [
       // THE FULLER BOOKS (Travis, 26 Sep 2026: "start with a good solid book with
       // the letter R", then "I want to write a bunch of books. So do one for each
@@ -379,7 +381,7 @@
         { e: "💍", t: "\"Is this ring lost?\" asks the raccoon.", art: "/assets/books/ray-lost-ring/p10.webp", alt: "The raccoon holds out the ring toward Ray the robin with a kind, questioning face." },
         { e: "💍", t: "\"Yes! Thank you!\" sings Ray.", art: "/assets/books/ray-lost-ring/p11.webp", alt: "Ray the robin sings happily with his beak open, the ring back with him, little music notes shapes around him." },
         { e: "💍", t: "Ray gives the raccoon a ribbon to say thank you.", art: "/assets/books/ray-lost-ring/p12.webp", alt: "Ray the robin gives the raccoon a red ribbon as a gift, both smiling." } ] },
-      { sound: "P", emoji: "🐧", opens: "2026-10-26", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
+      { sound: "P", emoji: "🐧", opens: "2026-10-09", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
         cover: "/assets/books/penny-pebble-party/cover.webp", coverAlt: "",
         keys: ["penguin", "pond", "pebble", "pebbles", "paint", "paint", "pink", "parrot", "party", "pie", "pebbles", "penny"],
         words: ["pail", "paint", "parrot", "party", "pat", "peach", "pebble", "pebbles", "peeks", "penguin", "penny", "penny's", "pie", "pig", "pink", "pole", "polly", "pond", "put", "puts"], pages: [
@@ -395,7 +397,7 @@
         { e: "🥧", t: "Polly brings a pie to the party.", art: "/assets/books/penny-pebble-party/p10.webp", alt: "" },
         { e: "🪨", t: "They put the pebbles in a row by the pond.", art: "/assets/books/penny-pebble-party/p11.webp", alt: "" },
         { e: "🎉", t: "Penny, Pat, and Polly have a pebble party!", art: "/assets/books/penny-pebble-party/p12.webp", alt: "" } ] },
-      { sound: "B", emoji: "🐻", opens: "2026-11-02", title: "Bo's Beach Day", colors: ["#ffb75e", "#f0932b"],
+      { sound: "B", emoji: "🐻", opens: "2026-10-09", title: "Bo's Beach Day", colors: ["#ffb75e", "#f0932b"],
         cover: "/assets/books/bo-beach-day/cover.webp", coverAlt: "",
         keys: ["bear", "boat", "banana", "boat", "bee", "bee", "beach", "ball", "ball", "bumps", "berries", "bo"],
         words: ["back", "ball", "banana", "basket", "beach", "bear", "bee", "bella", "ben", "berries", "big", "bo", "bo's", "boat", "bounces", "bumps", "bunny", "buns", "buzz", "buzzes", "by"], pages: [
@@ -411,7 +413,7 @@
         { e: "⚽", t: "Bo bumps the ball to Ben.", art: "/assets/books/bo-beach-day/p10.webp", alt: "" },
         { e: "🍌", t: "Ben and Bella and Bo eat berries and buns.", art: "/assets/books/bo-beach-day/p11.webp", alt: "" },
         { e: "🏖️", t: "What a fun day at the beach, Bo!", art: "/assets/books/bo-beach-day/p12.webp", alt: "" } ] },
-      { sound: "M", emoji: "🐭", opens: "2026-11-02", title: "Mia Makes Muffins", colors: ["#c49cff", "#9b6fe0"],
+      { sound: "M", emoji: "🐭", opens: "2026-10-09", title: "Mia Makes Muffins", colors: ["#c49cff", "#9b6fe0"],
         cover: "/assets/books/mia-makes-muffins/cover.webp", coverAlt: "",
         keys: ["mouse", "milk", "mixes", "milk", "melon", "muffins", "moon", "muffins", "munch", "molly", "moose", "moon"],
         words: ["make", "makes", "many", "maple", "max", "may", "meadow", "meal", "melon", "mess", "mia", "milk", "mixes", "mixing", "mole", "molly", "moon", "moose", "more", "mouse", "muffins", "munch"], pages: [
@@ -427,7 +429,7 @@
         { e: "🫎", t: "\"Mia, may I take one to Molly?\" asks Max.", art: "/assets/books/mia-makes-muffins/p10.webp", alt: "" },
         { e: "🫎", t: "Molly the moose says, \"Many thanks!\"", art: "/assets/books/mia-makes-muffins/p11.webp", alt: "" },
         { e: "🌙", t: "Mia, Max, and Molly share a meal under the moon.", art: "/assets/books/mia-makes-muffins/p12.webp", alt: "" } ] },
-      { sound: "N", emoji: "🦎", opens: "2026-10-26", title: "Ned Needs a Net", colors: ["#5fcf9a", "#2fae74"],
+      { sound: "N", emoji: "🦎", opens: "2026-10-09", title: "Ned Needs a Net", colors: ["#5fcf9a", "#2fae74"],
         cover: "/assets/books/ned-needs-a-net/cover.webp", coverAlt: "",
         keys: ["nest", "nap", "knock", "net", "nest", "ned", "net", "net", "nose", "neat", "noodles", "night"],
         words: ["knock", "nap", "near", "neat", "ned", "needs", "nest", "net", "newt", "nice", "night", "no", "noise", "noodles", "nora", "nose", "nudges"], pages: [
@@ -443,7 +445,7 @@
         { e: "🥅", t: "The net drops. \"Neat!\" says Ned.", art: "/assets/books/ned-needs-a-net/p10.webp", alt: "" },
         { e: "🍜", t: "Night falls. Nora makes noodles.", art: "/assets/books/ned-needs-a-net/p11.webp", alt: "" },
         { e: "🌙", t: "Ned eats noodles with Nora. What a nice night!", art: "/assets/books/ned-needs-a-net/p12.webp", alt: "" } ] },
-      { sound: "T", emoji: "🐯", opens: "2026-10-19", title: "Toby's Tiny Tuba", colors: ["#ff9f5a", "#e6762b"],
+      { sound: "T", emoji: "🐯", opens: "2026-10-09", title: "Toby's Tiny Tuba", colors: ["#ff9f5a", "#e6762b"],
         cover: "/assets/books/toby-tiny-tuba/cover.webp", coverAlt: "",
         keys: ["tiger", "taps", "tuba", "toucan", "tune", "town", "ten", "turkeys", "toad", "toad", "toby", "tea"],
         words: ["takes", "tap", "taps", "tea", "ten", "tia", "tiger", "time", "tiny", "to", "toad", "toby", "toby's", "toes", "too", "toucan", "town", "tuba", "tune", "turkeys"], pages: [
@@ -459,7 +461,7 @@
         { e: "🐸", t: "The toad sings a tune.", art: "/assets/books/toby-tiny-tuba/p10.webp", alt: "" },
         { e: "👏", t: "Everyone claps. Toby takes a bow.", art: "/assets/books/toby-tiny-tuba/p11.webp", alt: "" },
         { e: "🍵", t: "\"Time for tea!\" says Toby.", art: "/assets/books/toby-tiny-tuba/p12.webp", alt: "" } ] },
-      { sound: "D", emoji: "🦆", opens: "2026-10-26", title: "Dot Digs a Pool", colors: ["#ffd45e", "#e6b12b"],
+      { sound: "D", emoji: "🦆", opens: "2026-10-09", title: "Dot Digs a Pool", colors: ["#ffd45e", "#e6b12b"],
         cover: "/assets/books/dot-digs-a-pool/cover.webp", coverAlt: "",
         keys: ["duck", "digs", "dog", "dust", "deep", "down", "day", "dot", "dips", "dive", "dives", "duck"],
         words: ["dan", "day", "deep", "dig", "digs", "dips", "dive", "dives", "dog", "dot", "down", "duck", "dust"], pages: [
@@ -475,7 +477,7 @@
         { e: "🐶", t: "\"Dan, let's dive!\" says Dot.", art: "/assets/books/dot-digs-a-pool/p10.webp", alt: "" },
         { e: "💦", t: "Dot dives. Dan dives. Splash!", art: "/assets/books/dot-digs-a-pool/p11.webp", alt: "" },
         { e: "🦆", t: "Dot is a happy duck. Dan is a happy dog!", art: "/assets/books/dot-digs-a-pool/p12.webp", alt: "" } ] },
-      { sound: "K", emoji: "🦘", opens: "2026-10-05", title: "Kip's Kite", colors: ["#7fd1ff", "#43a8e6"],
+      { sound: "K", emoji: "🦘", opens: "2026-10-09", title: "Kip's Kite", colors: ["#7fd1ff", "#43a8e6"],
         cover: "/assets/books/kip-kite/cover.webp", coverAlt: "",
         keys: ["kangaroo", "kite", "kip", "kite", "kite", "cow", "cody", "kite", "carries", "come", "corn", "carrot"],
         words: ["calls", "can", "carries", "carrot", "catches", "cody", "come", "comes", "corn", "cow", "kangaroo", "kip", "kip's", "kite"], pages: [
@@ -491,7 +493,7 @@
         { e: "🦘", t: "\"Come down, Cody!\" calls Kip.", art: "/assets/books/kip-kite/p10.webp", alt: "" },
         { e: "🌽", t: "Cody comes down in the corn.", art: "/assets/books/kip-kite/p11.webp", alt: "" },
         { e: "🥕", t: "Kip gives Cody a carrot. What a day!", art: "/assets/books/kip-kite/p12.webp", alt: "" } ] },
-      { sound: "G", emoji: "🪿", opens: "2026-10-12", title: "Goldie's Guitar", colors: ["#ffcf6e", "#e0a73a"],
+      { sound: "G", emoji: "🪿", opens: "2026-10-09", title: "Goldie's Guitar", colors: ["#ffcf6e", "#e0a73a"],
         cover: "/assets/books/goldie-guitar/cover.webp", coverAlt: "",
         keys: ["goose", "guitar", "garden", "goldie", "goat", "gus", "guitar", "good", "goldie", "gets", "gophers", "garden"],
         words: ["garden", "gate", "gets", "gift", "give", "go", "goat", "goes", "goldie", "goldie's", "good", "goose", "gophers", "guitar", "gus"], pages: [
@@ -507,7 +509,7 @@
         { e: "🎸", t: "Gus gets better and better.", art: "/assets/books/goldie-guitar/p10.webp", alt: "" },
         { e: "🐿️", t: "The garden gophers come to hear.", art: "/assets/books/goldie-guitar/p11.webp", alt: "" },
         { e: "🎶", t: "Goldie and Gus give a garden show!", art: "/assets/books/goldie-guitar/p12.webp", alt: "" } ] },
-      { sound: "F", emoji: "🐟", opens: "2026-10-19", title: "Finn Finds a Feather", colors: ["#5fc6e8", "#2f9fc6"],
+      { sound: "F", emoji: "🐟", opens: "2026-10-09", title: "Finn Finds a Feather", colors: ["#5fc6e8", "#2f9fc6"],
         cover: "/assets/books/finn-finds-a-feather/cover.webp", coverAlt: "",
         keys: ["fish", "fins", "feather", "finn", "fast", "fox", "fay", "family", "feather", "feather", "finn", "fine"],
         words: ["family", "far", "fast", "fay", "feather", "feels", "finds", "fine", "finn", "fins", "fish", "fox", "fun"], pages: [
@@ -523,7 +525,7 @@
         { e: "🐦", t: "Then a gull swoops down. It has no tail feather!", art: "/assets/books/finn-finds-a-feather/p10.webp", alt: "" },
         { e: "🪶", t: "Finn gives the feather back. \"Thank you!\" says the gull.", art: "/assets/books/finn-finds-a-feather/p11.webp", alt: "" },
         { e: "🐟", t: "Finn feels fine. What a fun day!", art: "/assets/books/finn-finds-a-feather/p12.webp", alt: "" } ] },
-      { sound: "V", emoji: "🚐", opens: "2026-10-19", title: "Val the Van", colors: ["#ff8fb0", "#e0648a"],
+      { sound: "V", emoji: "🚐", opens: "2026-10-09", title: "Val the Van", colors: ["#ff8fb0", "#e0648a"],
         cover: "/assets/books/val-the-van/cover.webp", coverAlt: "",
         keys: ["van", "village", "val", "vase", "vase", "vegetables", "vet", "violin", "vince", "village", "vicky", "val"],
         words: ["val", "valley", "van", "vase", "vegetables", "very", "vet", "vicky", "village", "vince", "violet", "violin"], pages: [
@@ -587,7 +589,7 @@
         { e: "🍲", t: "\"Yummy soup!\" says Sophie.", art: "/assets/books/sophie-silly-soup/p10.webp", alt: "Sophie rubs her tummy with a delighted face, spoon in hand." },
         { e: "🍲", t: "Sophie calls her pals to the table.", art: "/assets/books/sophie-silly-soup/p11.webp", alt: "Sophie waves to the teddy-bear and duck pals, calling them to the wooden table." },
         { e: "🍲", t: "They sit and sip the soup together.", art: "/assets/books/sophie-silly-soup/p12.webp", alt: "Sophie and the bear and duck pals sit at the table sipping bowls of soup together." } ] },
-      { sound: "Z", emoji: "🦓", opens: "2026-10-05", title: "Zoe and the Zipper", colors: ["#9aa7b8", "#5b6474"],
+      { sound: "Z", emoji: "🦓", opens: "2026-10-09", title: "Zoe and the Zipper", colors: ["#9aa7b8", "#5b6474"],
         cover: "/assets/books/zoe-and-the-zipper/cover.webp", coverAlt: "",
         keys: ["zebra", "zoe", "zipper", "zipper", "zookeeper", "zip", "zipper", "zack", "zoomed", "zoo", "zucchini", "zebra"],
         words: ["zack", "zap", "zebra", "zip", "zipper", "zoe", "zoo", "zookeeper", "zoom", "zoomed", "zucchini"], pages: [
@@ -651,7 +653,7 @@
         { e: "👤", t: "Shawn makes a shadow dog with his hands.", art: "/assets/books/shawn-shadow/p10.webp", alt: "Shawn makes a dog shape with his hands, a shadow dog on the wall." },
         { e: "👤", t: "The shadow dog shakes its tail.", art: "/assets/books/shawn-shadow/p11.webp", alt: "The shadow dog on the wall wags its tail." },
         { e: "👤", t: "Shawn and his shadow go to bed.", art: "/assets/books/shawn-shadow/p12.webp", alt: "Shawn climbs into bed, his shadow beside him on the wall." } ] },
-      { sound: "CH", emoji: "🐿️", opens: "2026-10-05", title: "Chip the Chipmunk", colors: ["#ff9b7a", "#e66f4b"],
+      { sound: "CH", emoji: "🐿️", opens: "2026-10-09", title: "Chip the Chipmunk", colors: ["#ff9b7a", "#e66f4b"],
         cover: "/assets/books/chip-the-chipmunk/cover.webp", coverAlt: "",
         keys: ["chipmunk", "chestnuts", "chilly", "chimney", "chick", "cheep", "chilly", "chip", "chat", "chair", "chair", "chirps"],
         words: ["chair", "chat", "checks", "cheeks", "cheep", "cheers", "chestnuts", "chew", "chews", "chick", "chilly", "chimney", "chip", "chipmunk", "chirps", "chubby"], pages: [
@@ -667,7 +669,7 @@
         { e: "🪑", t: "They find a comfy chair.", art: "/assets/books/chip-the-chipmunk/p10.webp", alt: "" },
         { e: "🪑", t: "Chip and the chick cuddle up in the chair.", art: "/assets/books/chip-the-chipmunk/p11.webp", alt: "" },
         { e: "🐤", t: "\"Cheers for a new pal!\" chirps the chick.", art: "/assets/books/chip-the-chipmunk/p12.webp", alt: "" } ] },
-      { sound: "J", emoji: "🐆", opens: "2026-10-12", title: "Jax and the Jam Jar", colors: ["#7ccf5a", "#4fae32"],
+      { sound: "J", emoji: "🐆", opens: "2026-10-09", title: "Jax and the Jam Jar", colors: ["#7ccf5a", "#4fae32"],
         cover: "/assets/books/jax-and-the-jam-jar/cover.webp", coverAlt: "",
         keys: ["jaguar", "jump", "jar", "jam", "jar", "giraffe", "jar", "jar", "jam", "juice", "joke", "jungle"],
         words: ["giraffe", "jaguar", "jam", "jar", "jax", "jill", "jog", "join", "joke", "jolly", "joy", "juice", "jump", "jumps", "jungle"], pages: [
@@ -780,7 +782,7 @@
         { e: "🌱", t: "Soon, a thick bud pops up.", art: "/assets/books/thelma-thirsty-plant/p10.webp", alt: "A thick green bud pops up on the plant." },
         { e: "🌱", t: "Thelma says thanks to her plant.", art: "/assets/books/thelma-thirsty-plant/p11.webp", alt: "Thelma smiles and talks kindly to her plant." },
         { e: "🌱", t: "It is a big pink flower! Thelma gives it a thumbs up.", art: "/assets/books/thelma-thirsty-plant/p12.webp", alt: "A big pink flower blooms; Thelma gives a thumbs up." } ] },
-      { sound: "THV", emoji: "🐻", opens: "2026-10-12", title: "This Bear, That Bee", colors: ["#ffb3c7", "#e68aa3"],
+      { sound: "THV", emoji: "🐻", opens: "2026-10-09", title: "This Bear, That Bee", colors: ["#ffb3c7", "#e68aa3"],
         cover: "/assets/books/this-bear-that-bee/cover.webp", coverAlt: "",
         keys: ["this", "they", "there", "the", "then", "those", "the", "these", "they", "the", "then", "that"],
         words: ["that", "the", "them", "then", "there", "these", "they", "this", "those"],
@@ -797,91 +799,91 @@
         { e: "🦆", t: "The ducks quack, \"Yum, yum!\"", art: "/assets/books/this-bear-that-bee/p10.webp", alt: "" },
         { e: "🌅", t: "Then the sun sets.", art: "/assets/books/this-bear-that-bee/p11.webp", alt: "" },
         { e: "🐻", t: "\"That was the best day!\" say the pals.", art: "/assets/books/this-bear-that-bee/p12.webp", alt: "" } ] },
-      { sound: "R", emoji: "🐰", opens: "2026-11-09", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"], pages: [
+      { sound: "R", emoji: "🐰", opens: "2026-10-09", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"], pages: [
         { e: "🚀", t: "Rory the rabbit rides a red rocket." },
         { e: "🌈", t: "The rocket roars over the rainbow." },
         { e: "🤖", t: "Rory sees a robot on a rock." },
         { e: "💍", t: "The robot gives Rory a ring." },
         { e: "🌊", t: "They race around the river." },
         { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
-      { sound: "R", emoji: "🤖", opens: "2026-11-09", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"], pages: [
+      { sound: "R", emoji: "🤖", opens: "2026-10-09", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"], pages: [
         { e: "🤖", t: "Reba the robot runs on a road." },
         { e: "🌹", t: "Reba rolls past a red rose." },
         { e: "🐇", t: "A rabbit races right by." },
         { e: "🎀", t: "Reba wraps it in a ribbon." },
         { e: "🌧️", t: "Rain! They run for the roof." },
         { e: "🌈", t: "Reba the robot: ready, ready!" } ] },
-      { sound: "R", emoji: "🐓", opens: "2026-11-09", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"], pages: [
+      { sound: "R", emoji: "🐓", opens: "2026-10-09", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"], pages: [
         { e: "🐓", t: "Ruby the rooster rises at dawn." },
         { e: "🌅", t: "Ruby crows: rise and shine!" },
         { e: "🏃", t: "She runs around the red barn." },
         { e: "🪱", t: "Ruby finds a wriggly worm." },
         { e: "🌽", t: "The rooster pecks rows of corn." },
         { e: "💤", t: "Ruby rests. What a great run!" } ] },
-      { sound: "R", emoji: "🦝", opens: "2026-11-16", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"], pages: [
+      { sound: "R", emoji: "🦝", opens: "2026-10-09", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"], pages: [
         { e: "🦝", t: "Remy the raccoon roams the river." },
         { e: "🪨", t: "He reaches under a round rock." },
         { e: "🍇", t: "Remy grabs a ripe, red grape." },
         { e: "🚣", t: "He rows a raft in the rain." },
         { e: "🌿", t: "Remy rests in the reeds." },
         { e: "⭐", t: "Remy the raccoon: hooray!" } ] },
-      { sound: "R", emoji: "🦏", opens: "2026-11-16", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"], pages: [
+      { sound: "R", emoji: "🦏", opens: "2026-10-09", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"], pages: [
         { e: "🦏", t: "Rex the rhino runs really fast." },
         { e: "🛣️", t: "He roars down the rocky road." },
         { e: "🌳", t: "Rex rolls in the rich, green grass." },
         { e: "🍎", t: "He reaches for a red apple." },
         { e: "🤝", t: "Rex meets a friendly rabbit." },
         { e: "🎉", t: "Run, Rex, run! Hooray!" } ] },
-      { sound: "S", emoji: "🦭", opens: "2026-11-16", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"], pages: [
+      { sound: "S", emoji: "🦭", opens: "2026-10-09", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"], pages: [
         { e: "☀️", t: "Sunny the seal sits in the sun." },
         { e: "🐍", t: "Sunny sees a silly snake." },
         { e: "🏖️", t: "The snake slides on the soft sand." },
         { e: "🥄", t: "They sip soup with a silver spoon." },
         { e: "🎵", t: "Sunny sings a silly song." },
         { e: "😴", t: "So sleepy! Sunny says goodnight." } ] },
-      { sound: "L", emoji: "🦁", opens: "2026-11-23", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"], pages: [
+      { sound: "L", emoji: "🦁", opens: "2026-10-09", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"], pages: [
         { e: "🍭", t: "Lily the lion licks a lemon lollipop." },
         { e: "🪵", t: "Lily leaps over a little log." },
         { e: "🐞", t: "A ladybug lands on a leaf." },
         { e: "😄", t: "Lily laughs: la la la!" },
         { e: "🎈", t: "They look at a yellow balloon." },
         { e: "💛", t: "Lily loves to play all day." } ] },
-      { sound: "K", emoji: "🐨", opens: "2026-11-23", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"], pages: [
+      { sound: "K", emoji: "🐨", opens: "2026-10-09", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"], pages: [
         { e: "🍰", t: "Kiki the koala bakes a cake." },
         { e: "🔑", t: "A kind king comes with a key." },
         { e: "🪁", t: "The king flies a colorful kite." },
         { e: "🍪", t: "Kiki gives the king a cookie." },
         { e: "🐮", t: "A cat and a cow come to play." },
         { e: "🌞", t: "What a cool day for Kiki!" } ] },
-      { sound: "SH", emoji: "🐑", opens: "2026-11-23", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"], pages: [
+      { sound: "SH", emoji: "🐑", opens: "2026-10-09", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"], pages: [
         { e: "👟", t: "Shelly the sheep shines her shoes." },
         { e: "🐚", t: "She shows a shiny shell to a fish." },
         { e: "🚢", t: "They sail on a big ship. Shhh!" },
         { e: "⭐", t: "Shelly makes a wish on a star." },
         { e: "🥤", t: "She sips a milkshake — so fresh." },
         { e: "😴", t: "Shhh… Shelly is sleeping now." } ] },
-      { sound: "CH", emoji: "🐥", opens: "2026-11-30", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"], pages: [
+      { sound: "CH", emoji: "🐥", opens: "2026-10-09", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"], pages: [
         { e: "🍒", t: "Charlie the chick chews chewy cherries." },
         { e: "🚂", t: "Charlie rides the choo-choo train." },
         { e: "🧀", t: "He munches cheese at lunch." },
         { e: "🐿️", t: "A chipmunk sits on a chair." },
         { e: "🍫", t: "They share chocolate chips. Crunch!" },
         { e: "😁", t: "Charlie chirps: cheep, cheep, cheep." } ] },
-      { sound: "TH", emoji: "🦥", opens: "2026-11-30", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"], pages: [
+      { sound: "TH", emoji: "🦥", opens: "2026-10-09", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"], pages: [
         { e: "💭", t: "Theo the sloth thinks happy thoughts." },
         { e: "3️⃣", t: "Theo counts: one, two, three!" },
         { e: "👍", t: "He gives a big thumbs up." },
         { e: "🦷", t: "Theo brushes his three teeth." },
         { e: "🛁", t: "Then a warm bath — both feet in." },
         { e: "🌙", t: "Thank you, moon. Theo says goodnight." } ] },
-      { sound: "G", emoji: "🐐", opens: "2026-11-30", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"], pages: [
+      { sound: "G", emoji: "🐐", opens: "2026-10-09", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"], pages: [
         { e: "🌱", t: "Gus the goat grows a green garden." },
         { e: "🎁", t: "A goose gives Gus a gift." },
         { e: "🎸", t: "Gus plays a goofy guitar." },
         { e: "🍇", t: "They gobble grapes by the gate." },
         { e: "🐛", t: "A bug giggles on the grass." },
         { e: "🌟", t: "Good game, Gus. Goodnight!" } ] },
-      { sound: "F", emoji: "🦊", opens: "2026-12-07", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"], pages: [
+      { sound: "F", emoji: "🦊", opens: "2026-10-09", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"], pages: [
         { e: "🪶", t: "Fifi the fox finds four feathers." },
         { e: "🐟", t: "Fifi feeds a funny fish." },
         { e: "🔥", t: "They warm five feet by the fire." },

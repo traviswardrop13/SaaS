@@ -14,7 +14,7 @@ const books = STORIES.filter((s) => /\/assets\/books\/[a-z-]+\/cover\.svg$/.test
   slug: s.cover.split("/")[3], title: s.title, sound: s.sound, opens: s.opens || null,
   coverAlt: s.coverAlt || "", pages: s.pages.map((p, k) => ({ n: k + 1, text: p.t, key: (s.keys || [])[k] || "", alt: p.alt || "" })),
 }));
-// Out now first, then by the Monday each one opens.
+// Out now first, then by the day each one opens.
 books.sort((a, b) => (a.opens || "") .localeCompare(b.opens || ""));
 fs.writeFileSync(root + "tools/art/books.json", JSON.stringify(books, null, 1) + "\n");
 console.log(books.map((b) => `${b.opens || "out now"}  ${b.slug}  (${b.pages.length} pages)`).join("\n"));

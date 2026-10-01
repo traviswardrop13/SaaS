@@ -88,9 +88,9 @@ const strip = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\
 
 // ── the fake device ──
 function fakeDevice(cfg) {
-  // the phone's calendar: books open on a date (main, 27 Sep 2026: "new drops
-  // every week"), so a scenario that needs a book that isn't out yet moves the
-  // date past it; timers and performance.now() are untouched
+  // the phone's calendar: books open on a date (27 Sep 2026; every queued one
+  // on 9 Oct since 1 Oct), so a scenario that needs a book that isn't out yet
+  // moves the date past it; timers and performance.now() are untouched
   if (cfg.today) {
     const RealDate = Date, off = new RealDate(cfg.today + "T12:00:00").getTime() - RealDate.now();
     window.Date = class extends RealDate { constructor(...a) { if (a.length) super(...a); else super(RealDate.now() + off); } static now() { return RealDate.now() + off; } };
