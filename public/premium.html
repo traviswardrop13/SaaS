@@ -107,6 +107,14 @@
       function render(){
         if(!checkGate())return;
         var plan=S.previewPlan(),allOpen=catalog.length>0&&catalog.every(function(item){return S.gameAccess(item.key).allowed;}),chosenOpen=game&&S.gameAccess(key).allowed;
+        // THE PLAN SCREEN, ONE STEP SOONER (30 Sep 2026). A grown-up who
+        // tapped "Ask a grown-up" on a locked game used to land here, read a
+        // pitch, tap "See the plan", and only then meet the price and the
+        // button. The plan screen now carries the pitch itself, opened on the
+        // game the child tapped, so an offer goes straight there. Everything
+        // else stays on this page: a family that already has Premium, a live
+        // trial, the free switch, and the local preview rehearsal.
+        if(!preview&&!S.isFree()&&!(S.premium&&S.premium())&&!allOpen){location.replace("/subscribe.html?from="+(key||"library"));return;}
         el("premiumGameCount").textContent="All "+catalog.length+" available games in the library";
         // what stays free, named from the catalog and sona.js's free book
         var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;})

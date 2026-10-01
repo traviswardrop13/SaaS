@@ -234,7 +234,8 @@
       }
       var library=S.activityLibrary(),lockedGame=null;
       // Home art is presentation only: the catalog still owns access and routes.
-      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops"};
+      // The map lives in sona.js since 30 Sep 2026: the plan screen shows the same pictures.
+      var craftedCards=S.CRAFTED_CARDS||{};
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
