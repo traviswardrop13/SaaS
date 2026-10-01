@@ -193,17 +193,38 @@ until it is stopped in those dashboards. That is an operations task.
 
 **The ask happens after the product proves itself.** Setup goes straight into
 the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
-and fruit slice for ages five and up ... when they finish the game, that is
-when I want the paywall to come up"): Feed Echo for ages 3-4, Fruit Slice (its
-practice page first) from 5, a clinician's own setup still ends on Home. That
-first game's end card is where the offer is made, once: "Show a grown-up →"
-to `/subscribe.html?first=1` while `planEligible()` says so, else the usual
-end. `Sona.firstGameStart()` marks the game for this tab and
-`firstGameEnd(key)` answers once; `tests/firstgametest.mjs` pins it. Never
-during onboarding, which used to end at a price screen before the child had
-said a word. It is an offer, not a wall, it is inert while free, and it never
-fires for anyone already entitled. Declining leaves Home with every game but
-the free ones greyed out (still tappable: "ask a grown-up").
+and fruit slice for ages five and up"): Feed Echo for ages 3-4, Fruit Slice (its
+practice page first) from 5, a clinician's own setup still ends on Home.
+**That first game ends with no price** (Travis, 30 Sep 2026, after playing the
+27 Sep version where it did: "the top stays as play again ... when they see
+home they see the other games they can play and that there are premium ones
+... the flow was not good"): "Play again" on top, "Back home" under it.
+`Sona.firstGameStart()` marks the game for this tab and `firstGameEnd(key)`
+spends the mark once and always answers Home. The offer is made in exactly two
+places, both behind the grown-ups gate: **once**, automatically, at the end of
+the first completed practice run ("Show a grown-up →" to
+`/subscribe.html?first=1` while `planEligible()` says so), and **whenever** a
+grown-up answers a child's tap on a locked game or book ("Ask a grown-up" →
+`premium.html`, which forwards a family it would offer to
+`/subscribe.html?from=<game>` or `?from=library`). Never during onboarding,
+which used to end at a price screen before the child had said a word. It is an
+offer, not a wall, it is inert while free, and it never fires for anyone
+already entitled. Declining leaves Home with every game but the free ones
+greyed out (still tappable: "ask a grown-up"). `tests/firstgametest.mjs` pins
+all of it.
+
+**The plan screen reached as an offer is a moment, not Settings** (Travis, 30
+Sep 2026: "this paywall is absolutely terrible!"). With `?first=1` or `?from=`
+and a purchase card on screen, `subscribe.html` sets `body.offer`: the
+grown-ups tabs, crumb, "Your plan" head and summary box step aside, and the page
+leads with the Premium games in Home's own art (`Sona.CRAFTED_CARDS`, one map
+for both pages), one line built only from what the device recorded ("Milo just
+practiced the R sound — 12 words out loud!") or the tapped game ("Milo wants to
+play Hoops"), a headline, three checks, then the unchanged plan card with the
+button on the first screen at 375×667 and up. Counts come from the catalog and
+no date is promised ("new ones on the way"). Rachel's line moves under the
+decline, word for word. Settings › Your plan (no flag) is the page as it was.
+Every pricing rule in this section still applies to the card itself.
 
 **Eligibility and impression are two functions, and merging them is the bug.**
 `planEligible()` answers "should we take them to the plan screen" and changes
