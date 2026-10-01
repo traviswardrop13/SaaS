@@ -1221,7 +1221,10 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games and books. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
+  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"):
+  // when the mic listens, that nothing is uploaded, and the one try kept on
+  // the phone. The privacy page and /support keep the long version.
+  const MIC_PROMISE = "Grown-ups: Echo listens only after asking your child to talk. Recordings are never uploaded; one try a day may stay on this device so you can listen back.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);

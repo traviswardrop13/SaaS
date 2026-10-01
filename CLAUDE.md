@@ -79,7 +79,10 @@ Rachel and "SLP" or "speech-language pathologist" in one sentence without
 pages that introduce her (parents, subscribe, trial, progress, talk, slp)
 missing it.
 One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
-her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP". She still is a
+her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
+"She is a licensed pediatric speech-language pathologist." Since 1 Oct 2026
+it is the last screen before the first game, after the microphone (Travis:
+"add the rachel slide right before it goes to the game"). She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -381,9 +384,13 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is back on the first setup screen — it is
-the only entrance to `ORDER_SLP`, so removing it again makes that whole
-branch dead code — `for-slps.html` is indexable and linked from the landing
+is now reversed: the clinician door is on the first setup screen — since 1 Oct
+2026 that screen IS the question, "Who's setting up Sona?", with two answers,
+"Parent or caregiver" and "SLP or SLPA" (Travis: "have the very first step in
+onboarding ask"). In a browser the SLP answer is the only entrance to
+`ORDER_SLP`, so removing it makes that whole branch dead code; in the iPhone
+app, which never opens clinician screens, it sets the app up for a child and
+says the dashboard is on the web (no link, no price) — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys their own Premium and adds their

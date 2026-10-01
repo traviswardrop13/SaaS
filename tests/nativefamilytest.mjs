@@ -65,6 +65,6 @@ try{
    else ok('a clinician in a browser gets the caseload wording on Talk to us',/caseload/.test(lead),lead);
   }finally{await ctx.close();}
  }
- const {ctx,page}=await fresh('native',false);try{await page.goto(origin+'/onboarding.html',{waitUntil:'domcontentloaded'});ok('native setup ignores a saved clinician draft',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));ok('native setup hides the browser clinician door',!(await page.locator('#slpLink').isVisible()));await page.locator('#slpLink').evaluate(el=>el.click());ok('a hidden clinician action cannot switch native setup',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));}finally{await ctx.close();}
+ const {ctx,page}=await fresh('native',false);try{await page.goto(origin+'/onboarding.html',{waitUntil:'domcontentloaded'});ok('native setup ignores a saved clinician draft',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));await page.locator('.who-pick[data-role="slp"]').click();ok('an SLP answer in the app keeps the family setup: no clinician step, and the dashboard is named as being on the web',await page.evaluate(()=>ORDER===ORDER_PARENT&&ORDER.indexOf('email')<0&&ORDER.indexOf('slp')<0&&document.body.dataset.setupScreen==='name'&&!document.getElementById('slpAppNote').hidden));}finally{await ctx.close();}
 }finally{await browser.close();await new Promise(r=>server.close(r));}
 console.log(`${checks-bad}/${checks} native family checks passed`);process.exitCode=bad?1:0;

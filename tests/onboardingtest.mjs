@@ -45,15 +45,20 @@ async function fresh(config={}){
   page.on('dialog',dialog=>dialog.dismiss());await page.goto(base+'/onboarding.html');return {context,page,errors,requests};
 }
 async function next(page){await page.locator('#nextBtn').click();}
-// Welcome, then Meet Rachel (asks nothing), then name: a parent taps Continue on both.
-async function toName(page){await next(page);await page.locator('[data-step="rachel"].on').waitFor();await next(page);}
+// The first screen asks who is setting Sona up (Travis, 1 Oct 2026); either
+// answer goes straight on, so a parent's one tap reaches the name.
+async function who(page,role='parent'){await page.locator('.who-pick[data-role="'+role+'"]').click();}
+async function toName(page){await who(page);await page.locator('[data-step="name"].on').waitFor();}
 async function enter(page,{mode='speech',age='4',name='Milo'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
 async function choose(page,sound='R'){
   const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
-async function notNow(page){const b=page.locator('#micNotNow');if(await b.count())await b.click();else await next(page);}
-async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
+async function notNow(page){const b=page.locator('#micNotNow');if(await b.count())await b.click();else await next(page);await pastRachel(page);}
+// Meet Rachel is the last screen before the game for a parent's first child
+// (1 Oct 2026): it asks nothing, so the walks that are not about her pass it.
+async function pastRachel(page){if(await page.locator('[data-step="rachel"].on').waitFor({timeout:700}).then(()=>true,()=>false))await next(page);}
+async function atHandoff(page){await pastRachel(page);await page.locator('[data-step="achieve"].on').waitFor();}
 function clean(name,errors){ok(name+': no runtime errors',errors.length===0,errors);}
 function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair'&&r.method==='POST');}
 
@@ -73,7 +78,7 @@ await scenario('sound selection and private paced handoff',async()=>{
   await page.locator('#obSounds [data-sound="R"]').click();ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
   const promise=await page.evaluate(()=>({visible:document.getElementById('micPromise')?.textContent||'',shared:Sona.MIC_PROMISE||''}));
-  ok('setup renders the shared accurate microphone promise',!!promise.shared&&promise.visible===promise.shared&&/games/.test(promise.visible)&&/saved/.test(promise.visible));
+  ok('setup renders the shared accurate microphone promise',!!promise.shared&&promise.visible===promise.shared&&/listens only after asking/.test(promise.visible)&&/stay on this device/.test(promise.visible)&&promise.visible.split(/\s+/).length<=30);
   ok('microphone action is explicit and offers a quiet skip',/Turn on Echo's ears/.test(await page.locator('#nextBtn').innerText())&&await page.locator('#micNotNow').count()===1);
   const began=Date.now();await notNow(page);
   const build=await page.evaluate(()=>({shown:!!document.querySelector('#obBuild.show'),text:document.getElementById('obBuild')?.textContent||'',color:document.getElementById('obBuild')?getComputedStyle(document.getElementById('obBuild')).backgroundColor:'',complete:__setup.complete,confetti:__setup.confetti}));
@@ -104,44 +109,78 @@ await scenario('sound selection and private paced handoff',async()=>{
  }finally{await context.close();}
 });
 
-// Meet Rachel (Travis, 29 Sep 2026): one tap, no question, between welcome and
-// name: her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP" — nothing
-// else (Travis). The fellowship is named here because it is true; never CCC or
-// certified (CLAUDE.md). Clinicians skip it; parents still count three.
-await scenario('Meet Rachel sits between welcome and the first question',async()=>{
+// The first screen asks who is setting Sona up (Travis, 1 Oct 2026: "have the
+// very first step in onboarding ask if they are a parent/caregiver or an
+// slp/slpa"). Two answers, each one tap; no Continue to press.
+await scenario('the first screen asks who is setting Sona up',async()=>{
+ {const {context,page,errors,requests}=await fresh();try{
+  const first=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,title:document.getElementById('whoTitle').textContent,picks:[...document.querySelectorAll('.who-pick')].map(b=>b.innerText.replace(/\s+/g,' ').trim()),footer:getComputedStyle(document.querySelector('.obfoot')).display,words:document.querySelector('[data-step="welcome"]').innerText.trim().split(/\s+/).length}));
+  ok('the very first screen is the question, in a few words',first.screen==='welcome'&&/Who's setting up Sona\?/.test(first.title)&&first.words<=32,first);
+  ok('…with two answers: a parent or caregiver, or an SLP or SLPA',first.picks.length===2&&/^Parent or caregiver/.test(first.picks[0])&&/^SLP or SLPA/.test(first.picks[1])&&/speech-language pathologist or assistant/i.test(first.picks[1]),first.picks);
+  ok('…and the answers are the buttons: no Continue to press',first.footer==='none',first.footer);
+  await who(page,'parent');
+  ok('a parent goes straight to the child\'s name, the first of three progress segments',await page.locator('[data-step="name"].on').count()===1&&/Who's practicing/.test(await page.locator('[data-step="name"] .qh').innerText())&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1&&await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
+  await page.locator('#backBtn').click();
+  ok('Back returns to the question',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  await who(page,'slp');
+  ok('in a browser an SLP or SLPA gets the clinician setup, in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
+  ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
+  clean('first question',errors);
+ }finally{await context.close();}}
+ // The iPhone app never opens clinician screens (NATIVE.md): an SLP sets the
+ // app up for a child, in a clinician's words, and is told where the dashboard is.
+ {const {context,page,errors,requests}=await fresh({native:true});try{
+  await who(page,'slp');
+  const st=await page.evaluate(()=>({order:ORDER===ORDER_PARENT,role:draft.role,screen:document.body.dataset.setupScreen,title:document.querySelector('[data-step="name"] .qh').textContent,note:document.getElementById('slpAppNote').hidden?'':document.getElementById('slpAppNote').textContent}));
+  ok('in the app an SLP or SLPA sets the app up for a child, never the clinician steps',st.order&&st.screen==='name'&&/Which child/.test(st.title),st);
+  ok('…and is told the clinician dashboard is on the web, with no link and no price',/dashboard is on the web/.test(st.note)&&!/\$|price|Premium|<a/i.test(st.note),st.note);
+  await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="6"]').click();await next(page);await choose(page,'S');await next(page);await notNow(page);await atHandoff(page);
+  ok('…finishing as an SLP with no clinician request',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().onboarded)&&!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
+  clean('native SLP answer',errors);
+ }finally{await context.close();}}
+});
+
+// Meet Rachel (Travis, 29 Sep 2026; moved 1 Oct 2026: "add the rachel slide
+// right before it goes to the game ... even just saying and spelling out that
+// she is a pediatric speech language pathologist is enough"): one tap, no
+// question, after the microphone: her photo, "Built with", her name with her
+// letters, and one sentence. The fellowship is named here because it is true;
+// never CCC or certified (CLAUDE.md). Clinicians skip it; parents still count three.
+async function toRachel(page){await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);await page.locator('#micNotNow').click();}
+await scenario('Meet Rachel is the last screen before the game',async()=>{
  {const {context,page,errors}=await fresh();try{
-  await next(page);const card=page.locator('[data-step="rachel"]');
-  ok('welcome Continue opens Meet Rachel before any question',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>document.body.dataset.setupScreen)==='rachel');
+  await toRachel(page);const card=page.locator('[data-step="rachel"]');
+  ok('after the microphone, Meet Rachel comes before the game',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>document.body.dataset.setupScreen)==='rachel');
   const shown=await card.evaluate(async el=>{const img=el.querySelector('img');return {photo:await img.decode().then(()=>img.naturalWidth,()=>0),src:img.getAttribute('src'),alt:img.alt,text:el.innerText,page:document.body.innerText,asks:el.querySelectorAll('input,select,textarea,button').length};});
   ok('her photo actually loads',shown.photo>0&&/\/rachel-wardrop-profile\.jpg$/.test(shown.src)&&/Rachel/.test(shown.alt),shown);
-  ok('the card says only "Built with Rachel Wardrop, MS, CF-SLP" under her photo',shown.text.replace(/\s+/g,' ').trim()==='BUILT WITH Rachel Wardrop, MS, CF-SLP',shown.text);
+  ok('the card says "Built with Rachel Wardrop, MS, CF-SLP" and that she is a licensed pediatric speech-language pathologist',shown.text.replace(/\s+/g,' ').trim()==='BUILT WITH Rachel Wardrop, MS, CF-SLP She is a licensed pediatric speech-language pathologist.',shown.text);
   ok('no CCC, certification or claim that the fellowship is behind her',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page+' '+shown.alt),shown.page);
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
-  await next(page);
-  ok('Continue goes to name, the first of exactly three progress segments',await page.locator('[data-step="name"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1);
-  await page.locator('#backBtn').click();ok('Back from name returns to Meet Rachel',await page.locator('[data-step="rachel"].on').count()===1&&await page.locator('#seg').isHidden());
-  await page.locator('#backBtn').click();ok('Back from Meet Rachel returns to welcome',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  await page.locator('#backBtn').click();ok('Back from Meet Rachel returns to the microphone',await page.locator('[data-step="mic"].on').count()===1&&await page.locator('#seg').isVisible());
+  await page.locator('#micNotNow').click();await page.locator('[data-step="rachel"].on').waitFor();
+  await next(page);await atHandoff(page);
+  ok('Continue goes on to the hand-off, then the game',await page.locator('[data-step="achieve"].on').count()===1&&await page.evaluate(()=>Sona.getProfile().onboarded));
   clean('meet rachel',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
   await page.evaluate(()=>{window.__screens=[];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
-  // Back to welcome leaves the clinician path (a mistaken tap), so the link is tapped again.
-  await page.locator('#slpLink').click();await page.locator('#backBtn').click();await page.locator('#slpLink').click();
+  // Back to the question leaves the clinician path (a mistaken tap), so it is answered again.
+  await who(page,'slp');await page.locator('#backBtn').click();await who(page,'slp');
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician door never shows Meet Rachel, forward or back',screens[0]==='name'&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
+  ok('the clinician setup never shows Meet Rachel, forward or back',screens[0]==='name'&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
   clean('clinician skips rachel',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
   // Settings → Add a child: the household already has a child, and the parent met Rachel with them.
   await page.evaluate(()=>localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}]})));await page.reload();
-  await next(page);
-  ok('a parent adding a second child goes from welcome straight to the name',await page.locator('[data-step="name"].on').count()===1&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1);
+  await toName(page);await page.locator('#obName').fill('Rosie');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);await page.locator('#micNotNow').click();
+  ok('a parent adding a second child goes from the microphone straight to the hand-off',await page.locator('[data-step="achieve"].on').waitFor().then(()=>true,()=>false)&&await page.locator('[data-step="rachel"].on').count()===0);
   clean('second child skips rachel',errors);
  }finally{await context.close();}}
  for(const viewport of [{width:375,height:667},{width:320,height:568}]){
   const {context,page,errors}=await fresh({viewport});try{
-   await next(page);await page.locator('[data-step="rachel"].on').waitFor();await page.evaluate(()=>Promise.all([document.fonts.ready,document.querySelector('.rachel-photo').decode().catch(()=>{})]));await page.locator('.step.on').evaluate(el=>el.getAnimations({subtree:true}).forEach(a=>a.finish()));
+   await toRachel(page);await page.locator('[data-step="rachel"].on').waitFor();await page.evaluate(()=>Promise.all([document.fonts.ready,document.querySelector('.rachel-photo').decode().catch(()=>{})]));await page.locator('.step.on').evaluate(el=>el.getAnimations({subtree:true}).forEach(a=>a.finish()));
    await page.waitForTimeout(600); // Wait for the shared step/header transition to settle.
    const fit=await page.evaluate(()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="rachel"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,innerHeight};});
    ok('Meet Rachel fits without scrolling, card clear of Continue, at '+viewport.width+'×'+viewport.height,fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom<=fit.buttonTop&&fit.buttonTop>=0&&fit.buttonBottom<=fit.innerHeight,fit);
@@ -168,7 +207,7 @@ await scenario('exploring sounds stays optional and can be changed before finish
 
 await scenario('Done closes typing without accepting setup choices',async()=>{
  const {context,page,errors,requests}=await fresh();try{
-  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
+  await who(page,'slp');await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
   const nameDone=await page.evaluate(()=>({step:document.body.dataset.setupScreen,focused:document.activeElement.id,age:draft.childAge}));
   ok('Done in the name field leaves the age choice on screen and dismisses focus',nameDone.step==='name'&&nameDone.focused!=='obName'&&nameDone.age==='',nameDone);
   // Keep the other checks useful when exercising the pre-fix page.
@@ -187,10 +226,10 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
-async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
-  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await next(page);
+  await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
   await page.reload();
   ok('a reloaded clinician draft resumes on the clinician order at name',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('obName').value==='Milo'));
   const seen=await walk(page);
@@ -207,14 +246,14 @@ await scenario('clinician setup survives a reload',async()=>{
  }finally{await native.context.close();}
 });
 
-// Welcome is the fork: backing onto it undoes a mistaken tap on the clinician link.
+// The first question is the fork: backing onto it undoes a mistaken "SLP or SLPA".
 await scenario('a parent can back out of clinician setup',async()=>{
  const {context,page,errors,requests}=await fresh();try{
-  await page.locator('#slpLink').click();await page.locator('#backBtn').click();
+  await who(page,'slp');await page.locator('#backBtn').click();
   ok('Back to welcome returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
   await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
   const seen=await walk(page);
-  ok('Continue walks the family path past Meet Rachel to the mic, never the clinician email',seen.join()==='welcome,rachel,name,sounds,mic',seen);
+  ok('answering again walks the family path to the mic, never the clinician email',seen.join()==='welcome,name,sounds,mic',seen);
   await notNow(page);await atHandoff(page);
   ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
   clean('clinician back-out',errors);
