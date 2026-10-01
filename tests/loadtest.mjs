@@ -336,7 +336,8 @@ for (const [game, title, art] of SKIES) {
     ["chapter.html", ["#next", "#doneBtn"]],
     ["story.html", ["#startBtn", "#again", ".mic"]],
     ["library.html", ["#bkNext"]],
-    // 29 Sep 2026: "Share this week" left the Grown-ups pop-up (Progress keeps it)
+    // 29 Sep 2026: "Share this week" left the Grown-ups pop-up (Progress keeps
+    // it); on 30 Sep 2026 the pop-up itself went (the code opens Settings)
     ["today.html", ["#libraryUnlock"]],
     ["settings.html", ["button.btn:not(.ghost):not(.blue)"]],
   ];

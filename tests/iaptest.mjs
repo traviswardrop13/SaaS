@@ -279,6 +279,19 @@ await web.close();
   const acct = await pg.evaluate(() => document.getElementById("acct").textContent);
   ok("Settings names a family's free version as 'daily practice and free games'",
     /free version — daily practice and free games/.test(acct) && /See Premium/.test(acct), acct);
+  // A no-card trial an older device was promised opens every game until it
+  // runs out, so Settings names it and its days left, then names its end. That
+  // was the Grown-ups pop-up's plan note on Home until 30 Sep 2026.
+  await pg.evaluate(() => localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 86400000, days: 3 })));
+  await pg.reload(); await pg.waitForTimeout(800);
+  const trialOn = await pg.evaluate(() => document.getElementById("acct").textContent);
+  ok("Settings names a running trial and its days left",
+    /free trial — 2 days left/.test(trialOn) && /See plans/.test(trialOn) && !/free version/.test(trialOn), trialOn);
+  await pg.evaluate(() => localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 })));
+  await pg.reload(); await pg.waitForTimeout(800);
+  const trialOff = await pg.evaluate(() => document.getElementById("acct").textContent);
+  ok("…and says when it has ended, beside the free version",
+    /Your free trial has ended\./.test(trialOff) && /free version — daily practice and free games/.test(trialOff) && /See Premium/.test(trialOff), trialOff);
   await ctx.close();
 }
 
@@ -1411,7 +1424,6 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     library: !document.getElementById("libraryApp").hidden,
     adventure: Sona.adventureGames().map(key => ({ key, allowed: Sona.gameAccess(key).allowed })),
     cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ key: card.dataset.game, disabled: card.disabled, comingSoon: !!(Sona.gameAct(card.dataset.game) || {}).comingSoon, label: card.querySelector(".game-access").textContent, locked: card.dataset.locked === "true", tier: (Sona.gameAct(card.dataset.game) || {}).tier })),
-    note: (document.getElementById("planNote") || {}).innerHTML || "",
   }));
   ok("an expired family keeps the library and accessible saved adventure choices",
     home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
@@ -1421,10 +1433,6 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length >= 2 && ["peekaboo"].every(k => comingSoonCards.some(card => card.key === k)) && comingSoonCards.every(card => card.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.label)), JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
-  // Parked titles must not inflate the available free-game promise.
-  // Keep the parent-facing explanation independent of the catalog count.
-  ok("the parent corner explains continuing free access and the Premium choice",
-    /Free games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
   if (premiumCards.length) {
     await pg.evaluate(key => document.querySelector('#activityGroups [data-game="' + key + '"]').click(), premiumCards[0].key);
     await pg.locator("#libraryUnlock").click();
@@ -1433,6 +1441,21 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     ok("a Premium choice opens the parent gate with the selected game intact",
       parentDoor.open && parentDoor.to === "/premium.html?game=" + premiumCards[0].key, JSON.stringify(parentDoor));
   }
+  // What stays free and where Premium is, said to the grown-up once they are
+  // past the gate. It was the plan note in Home's Grown-ups pop-up (#planNote)
+  // until 30 Sep 2026, when the code started going straight to Settings
+  // (Travis); Settings → Account says it now, and the kid screen never does.
+  // Keep the parent-facing explanation independent of the catalog count.
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(600);
+  ok("Home carries no plan note or Grown-ups pop-up", await pg.evaluate(() => !document.querySelector("#planNote, #sheetOvl")));
+  await pg.locator("#parentBtn").click();
+  const need = await pg.evaluate(() => window.gateNeed);
+  for (const d of need) await pg.locator("#pad button", { hasText: new RegExp("^" + d + "$") }).click();
+  await Promise.all([pg.waitForURL(/\/settings\.html$/), pg.locator("#pad button", { hasText: "✓" }).click()]);
+  await pg.waitForTimeout(600);
+  const acctAfterGate = await pg.evaluate(() => ({ text: document.getElementById("acct").textContent, html: document.getElementById("acct").innerHTML }));
+  ok("past the gate, Settings explains continuing free access and the Premium choice",
+    /free version — daily practice and free games/.test(acctAfterGate.text) && /See Premium/.test(acctAfterGate.text) && /href="\/subscribe"/.test(acctAfterGate.html), acctAfterGate.text);
   await ctx.close();
 }
 

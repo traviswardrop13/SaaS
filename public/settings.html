@@ -509,8 +509,8 @@
     volEl.addEventListener("change", function () { saveAll(volEl); });
     posEl.addEventListener("change", function () { saveAll(posEl); });
 
-    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home, the
-    // parent corner and Progress read too. A week behind is said as how many
+    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home and
+    // Progress read too. A week behind is said as how many
     // more reps pass it, never as a drop, and nothing here is ever red.
     (function () {
       if (!Sona.repWeeks) { document.getElementById("reps").style.display = "none"; return; }
@@ -727,9 +727,19 @@
         // daily practice and free games, for good. "No plan
         // yet" told a family who was never going to pay that they were
         // missing something they needed.
-        ac.innerHTML = (Sona.isFree && Sona.isFree())
+        // A no-card trial an older device was promised (nothing starts one
+        // now) opens every game until its last day, so it is named here with
+        // its days left, and its end is named too. Those two lines were the
+        // Grown-ups pop-up's plan note on Home; the pop-up went on 30 Sep 2026
+        // and the code now lands here, so here is where they are said.
+        var isFreeNow = !!(Sona.isFree && Sona.isFree());
+        var trialLeft = (!isFreeNow && Sona.trialActive && Sona.trialActive()) ? (Sona.trialDaysLeft ? Sona.trialDaysLeft() : 1) : 0;
+        var trialEnded = !isFreeNow && !trialLeft && !!(Sona.trialExpired && Sona.trialExpired());
+        ac.innerHTML = isFreeNow
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
-          : 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
+          : trialLeft
+            ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
+            : (trialEnded ? 'Your free trial has ended. ' : '') + 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }

@@ -106,7 +106,7 @@ await scenario("the one count", async () => {
   ok("days holding only sound checks add no reps", r.legacy === 0, r.legacy);
   ok("tries dated before reps were counted are a wrong clock, never a week", r.early === 0, r.early);
   ok("the count narrows to one sound for Progress's lead", r.nowR === 23 && r.nowS === 5, r);
-  ok("the parent corner reads the same count, not the sound checks", r.wins === 28, r.wins);
+  ok("weekWins reads the same count, not the sound checks", r.wins === 28, r.wins);
   ok("history starts at the first counted week and ends on this one", JSON.stringify(r.weeks.weeks) === JSON.stringify([
     { start: "2026-09-21", reps: 7, current: false, best: false },
     { start: "2026-09-28", reps: 0, current: false, best: false },
@@ -176,23 +176,24 @@ await scenario("Monday morning", async () => {
   await context.close();
 });
 
-await scenario("the parent corner", async () => {
+await scenario("the Grown-ups button", async () => {
   const { context, page, errors } = await fresh({ at: THU });
   await seed(page, HISTORY); await home(page);
+  // 29 Sep 2026: the pop-up stopped carrying the week (Travis) — no wins line,
+  // no story, no "Reps, week by week" link. 30 Sep 2026: the pop-up itself
+  // went, and the code leads straight to Settings (Travis: "go straight to
+  // settings not have them choose"). Home's corner is still the way to the
+  // week-by-week card (next scenario). Sona.weekWins() and soundStory() still
+  // exist, so their count is checked at the source.
+  ok("Home has no Grown-ups pop-up and no week card", await page.evaluate(() => !document.querySelector("#sheetOvl, #goProgress, #goSettings, #goTalk, #weekCard, #wkWins, #wkMore, #planCard, #storyBits, #shareWeek")));
   await page.click("#parentBtn"); await passGate(page);
-  await page.waitForSelector("#sheetOvl.show");
-  // 29 Sep 2026: the pop-up no longer carries the week (Travis) — no wins
-  // line, no story, no "Reps, week by week" link; Home's corner is the way to
-  // the week-by-week card (next scenario). Sona.weekWins() and soundStory()
-  // still exist, so their count is checked at the source.
-  const s = await page.evaluate(() => {
-    const ovl = document.getElementById("sheetOvl");
-    return { wins: Sona.weekWins().reps, story: Sona.soundStory().join(" "), week: !!ovl.querySelector("#weekCard, #wkWins, #wkMore, #planCard, #storyBits, #shareWeek"), doors: [...ovl.querySelectorAll(".sheetBtn")].map((b) => b.id) };
-  });
+  await page.waitForURL(/\/settings\.html$/);
+  await page.waitForFunction(() => window.Sona && document.getElementById("rwThis") && document.getElementById("rwThis").textContent === "28");
+  const s = await page.evaluate(() => ({ wins: Sona.weekWins().reps, story: Sona.soundStory().join(" "), card: document.getElementById("rwThis").textContent }));
+  ok("the right code lands on Settings, not a menu", /\/settings\.html$/.test(page.url()), page.url());
   ok("weekWins says the same 28 reps", s.wins === 28, s.wins);
   ok("the week's story says the same 28 reps, not the sound checks", /28 reps, each one said out loud/.test(s.story) && !/sounds out loud/.test(s.story), s.story);
-  ok("the pop-up has no week card", !s.week, s);
-  ok("the pop-up has exactly the three doors", JSON.stringify(s.doors) === JSON.stringify(["goProgress", "goSettings", "goTalk"]), s.doors);
+  ok("…and so does the Settings card the code lands beside", s.card === "28", s.card);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -384,7 +385,7 @@ await scenario("Progress keeps practice apart from game sounds", async () => {
   ok("a week of only game sounds: 0 practice tries, and the 7 said in games", p.tries === "0" && p.games === "Plus 7 sounds said out loud in games: 7 reps in all.", p);
   await home(page);
   const story = await page.evaluate(() => Sona.soundStory()[0]);
-  ok("the parent corner never says 'practiced 0 days' beside reps", story === "Milo said the practice sound out loud 7 times in games this week." && !/0 days/.test(story), story);
+  ok("the week's story never says 'practiced 0 days' beside reps", story === "Milo said the practice sound out loud 7 times in games this week." && !/0 days/.test(story), story);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

@@ -1053,6 +1053,21 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   child has time to plan the motor movement. Needs her target rate and
   whether it changes by age or ladder rung.
 
+- **A double tap never zooms the app** (Travis, 30 Sep 2026: "i double tapped
+  the screen and it zoomed in"). Two locks, because an iPhone has two browsers:
+  every kid page's viewport meta carries `maximum-scale=1, user-scalable=no`
+  (the iOS app's web view obeys it), and since Safari ignores that, sona.js puts
+  `*{touch-action:manipulation}` first in <head> on every page that loads it,
+  except the clinician dashboard. Settings, Progress, Subscribe, Premium and
+  Talk to us keep pinch zoom for parents. A page's own `touch-action:none`
+  (Hoops' court, Fruit Slice's board) still wins. `tests/zoomtest.mjs` pins it;
+  a new grown-up page that should keep pinch zoom goes in its `GROWNUP` list.
+- **Grown-ups goes straight to Settings** (Travis, 30 Sep 2026: "when they
+  click parents and put in code i want it to go straight to settings"). Home's
+  Grown-ups button opens the grown-up check, then Settings, whose tab bar is
+  Progress · Settings · Talk to us. The old three-door pop-up is gone; its plan
+  and trial lines now live in Settings > Account.
+
 ## Code conventions
 - `public/` is static ES5 — no build step, no framework, no bundler. It ships
   to the live site and the iOS shell reads that same site, so a web change is

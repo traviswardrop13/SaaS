@@ -75,18 +75,23 @@ for (const f of ["settings.html", "progress.html", "subscribe.html", "talk.html"
   }, ds);
   const wrong = digits.map((d) => (d + 1) % 10);
   await tap(wrong); await pg.waitForTimeout(350);
-  let st = await pg.evaluate(() => ({
+  const st = await pg.evaluate(() => ({
     gate: document.getElementById("gateOvl").classList.contains("show"),
-    sheet: document.getElementById("sheetOvl").classList.contains("show"),
+    path: location.pathname,
+    passed: !!sessionStorage.getItem("sona.gate.v1"),
   }));
-  chk("a wrong sequence keeps the gate shut", st.gate === true && st.sheet === false);
+  chk("a wrong sequence keeps the gate shut", st.gate === true && st.path === "/today.html" && !st.passed);
 
-  await tap(digits); await pg.waitForTimeout(400);
-  st = await pg.evaluate(() => ({
-    gate: document.getElementById("gateOvl").classList.contains("show"),
-    sheet: document.getElementById("sheetOvl").classList.contains("show"),
-  }));
-  chk("the right sequence opens the parent corner", st.gate === false && st.sheet === true);
+  // The right code goes straight to Settings (Travis, 30 Sep 2026: "go
+  // straight to settings not have them choose what they wanna go to"). It
+  // used to open a Grown-ups pop-up of three doors; Settings' tab bar is
+  // those three doors, so the pop-up was only an extra stop.
+  await Promise.all([pg.waitForURL(/\/settings\.html$/), tap(digits)]);
+  chk("the right sequence goes straight to Settings, with no menu in between",
+    new URL(pg.url()).pathname === "/settings.html" && !new URL(pg.url()).hash);
+  await pg.waitForTimeout(500);   // long enough for Settings' own gate check to bounce, were it going to
+  chk("…and Settings opens, because the code was the pass",
+    await pg.evaluate(() => !!document.getElementById("acct") && location.pathname === "/settings.html"));
   await pg.close();
 }
 

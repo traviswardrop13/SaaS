@@ -1917,7 +1917,8 @@
   // Where a GATED KID PAGE sends the child. It used to be /trial.html — a price
   // screen, with the child's name on it, reached by a child tapping a game.
   // Home tells them to ask a grown-up; the grown-up finds the price behind the
-  // gate, in the parent corner, which is the only place a price belongs.
+  // gate, on the grown-ups' pages (Settings, the plan screen), which is the
+  // only place a price belongs.
   function gateBounce() {
     try { location.replace("/today.html?locked=1"); } catch (e) {}
   }
@@ -3355,10 +3356,10 @@
     return y + "-W" + String(wk).padStart(2, "0");
   }
   // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
-  // week by week in Settings). ONE bucketing of the day ledger feeds Home, the
-  // parent corner, Progress and Settings, so no two surfaces can disagree about
-  // "this week" — the parent corner used to sum sound checks while Progress
-  // summed tries, and showed two different numbers for the same week.
+  // week by week in Settings). ONE bucketing of the day ledger feeds Home,
+  // Progress and Settings, so no two surfaces can disagree about "this week" —
+  // Home's old Grown-ups pop-up summed sound checks while Progress summed
+  // tries, and showed two different numbers for the same week.
   //
   // A rep is a voiced try the practice screen counted: days[day].tries. Days
   // logged before tries were counted (22 Sep 2026) hold only .a, one per sound
@@ -4426,6 +4427,37 @@
           })
           .catch(function () {});
       } catch (e) {}
+    }
+  } catch (e) {}
+
+  // ── No double-tap zoom (Travis, 30 Sep 2026: "i double tapped the screen
+  // and it zoomed in"). A child taps fast (a bubble, a fruit, the same game
+  // card twice) and two quick taps are Safari's "zoom in", leaving the game
+  // half off the screen until a grown-up pinches it back. The kid pages'
+  // viewport lock (user-scalable=no) holds in the iOS app's web view, but
+  // Safari has ignored it since iOS 10, for accessibility. Both honour
+  // touch-action:manipulation, which drops double-tap zoom and nothing else:
+  // lists still scroll, and the grown-up pages, which carry no viewport lock
+  // on purpose, still pinch-zoom for a parent who needs bigger text.
+  // On EVERY element, not just html: touch-action is not inherited, and
+  // WebKit intersects it only up to the nearest scroll container, so a root
+  // rule misses every tap inside a scrolling row or pop-up. `*` weighs
+  // nothing and this sheet goes FIRST in <head>, so a page's own
+  // touch-action (Hoops' court and Fruit Slice's board say none) still wins;
+  // and since every element's default is auto, it only ever narrows.
+  // Injected here, not in a stylesheet, because no one sheet reaches every
+  // app page without also reaching the marketing pages: charge.html and the
+  // crafted games skip action.css, and check/pilot load only fonts.css,
+  // which parents.html and for-slps.html load too. The clinician dashboard
+  // (/slps) loads sona.js only for its sound labels; it is left out on
+  // purpose and keeps its own touch rules. tests/zoomtest.mjs pins all this.
+  try {
+    if (!/^\/slp(s|\.html)$/.test(location.pathname) && !document.getElementById("sonaNoZoom")) {
+      const _nz = document.createElement("style");
+      _nz.id = "sonaNoZoom";
+      _nz.textContent = "*{touch-action:manipulation}";
+      const _nzAt = document.head || document.documentElement;
+      _nzAt.insertBefore(_nz, _nzAt.firstChild);
     }
   } catch (e) {}
 

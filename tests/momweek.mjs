@@ -73,27 +73,25 @@ ok("hit after 3rd day", r2.hit, true);
 ok("weekStreak now 3", r2.weekStreak, 3);
 ok("practicedToday", r2.practicedToday, true);
 
-// UI: the parent sheet
+// UI: Home, where the Grown-ups button now leads straight to Settings
 await page.reload(); await page.waitForTimeout(900);
-const sheet = await page.evaluate(() => {
-  const ovl = document.getElementById("sheetOvl");
-  ovl.classList.add("show");
-  return { weekCard: !!ovl.querySelector("#weekCard, #wkDots, #wkMsg, #wkStreak, #planCard"), entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
-});
+const home = await page.evaluate(() => ({
+  weekCard: !!document.querySelector("#weekCard, #wkDots, #wkMsg, #wkStreak, #planCard"),
+  popup: !!document.querySelector("#sheetOvl, #goProgress, #goSettings, #goTalk"),
+}));
 // 29 Sep 2026: the Monday–Sunday week left the Grown-ups pop-up (Travis: not
 // needed the first time a parent opens it). The weekly goal now lives only on
 // Progress, checked below.
-ok("the pop-up has no week card", sheet.weekCard, false);
-// The plan lives in Settings → Account, where Restore also is; duplicating it
-// in the parent sheet made a four-tap sheet into a menu.
-// 29 Sep 2026: the sheet's doors are now exactly the grown-ups bar's three
-// tabs, in the bar's order (one bar everywhere, Travis) — still no plan entry.
-ok("parent sheet offers exactly the grown-ups bar's three places, in order", sheet.entries,
-  ["Progress", "Settings", "Talk to us"]);
+ok("Home has no week card", home.weekCard, false);
+// 30 Sep 2026 (Travis): the pop-up itself went. The code goes straight to
+// Settings, whose tab bar is the three places the pop-up offered and whose
+// Account line is where the plan is said (familynavtest and gatecheck drive
+// that path).
+ok("Home has no Grown-ups pop-up to choose from", home.popup, false);
 // pre-path families get one step per practiced day — nobody restarts at zero
 const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
 ok("path credits practiced days", pcredit >= 3, true);
-await page.screenshot({ path: OUT + "/mom-sheet.png" });
+await page.screenshot({ path: OUT + "/mom-home.png" });
 
 // progress page
 errs = [];
