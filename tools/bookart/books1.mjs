@@ -367,4 +367,4 @@ export const F_BOOK = {
   ],
 };
 
-export const BOOKS1 = [P_BOOK, B_BOOK, M_BOOK, N_BOOK, T_BOOK, D_BOOK, K_BOOK, G_BOOK, F_BOOK];
+export const BOOKS1 = [P_BOOK, B_BOOK, N_BOOK, T_BOOK, D_BOOK, K_BOOK, G_BOOK, F_BOOK];
