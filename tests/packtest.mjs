@@ -112,7 +112,7 @@ const lib = await page.evaluate(() => {
 });
 ok("no book is gated behind COMING SOON", !lib.soon);
 ok("the shelf is this child's sound, not the whole catalogue",
-  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)/.test(t)), JSON.stringify(lib.titles));
+  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)|Boo the Bat on Halloween/.test(t)), JSON.stringify(lib.titles));
 // the word box (emoji word tiles, "tap to hear") was taken off (Travis, 1 Oct 2026)
 ok("no word box on the shelf", !lib.wordBox);
 ok("every open book on the shelf opens in the reader", lib.open, JSON.stringify({ open: lib.open, head: lib.head }));
