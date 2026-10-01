@@ -75,6 +75,11 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
       localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
+      // Home asks a grandfathered family for an idea on every third visit,
+      // 0.9 s after it opens. The launch loop visits Home once per game, so a
+      // slow machine met that sheet over a card (Soccer, 1 Oct 2026). It is
+      // not this suite's subject: it starts already answered.
+      localStorage.setItem("sona.pulse.v1", JSON.stringify({ cool: Date.now() + 365 * 24 * 3600 * 1000 }));
       const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
       if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
