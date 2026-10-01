@@ -1,12 +1,14 @@
 // Paints the fuller books in the approved Sona style with OpenAI's image API.
-// Per book: a square cover, then pages 1-6 and 7-12 as two 3x2 sheets, each
-// drawn with the cover (and the first sheet) attached so every character
-// looks the same on every page. Raw images land in tools/art/out/books/<slug>/;
-// cut-books.py turns them into pages.
+// Per book: a square cover, then a character lineup (everyone who recurs,
+// side by side), then each of the 12 pages as its own picture with the cover
+// and lineup attached, so every character looks the same on every page.
+// (Six pages on one sheet was tried first, 1 Oct 2026: 5-9 of 12 pages came
+// back in the wrong place, doubled or missing their key word.) Raw images
+// land in tools/art/out/books/<slug>/; cut-books.py makes the .webp pages.
 //
-//   NODE_USE_ENV_PROXY=1 node tools/art/gen-books.mjs              # every book not yet drawn
-//   ... gen-books.mjs --only rory-rainbow,sid-the-seagull           # just these
-//   ... gen-books.mjs --redo sid-the-seagull:B                      # redraw one part (cover, A or B)
+//   NODE_USE_ENV_PROXY=1 node tools/art/gen-books.mjs              # everything not yet drawn
+//   ... gen-books.mjs --only rory-rainbow,sid-the-seagull           # just these books
+//   ... gen-books.mjs --redo sid-the-seagull:p03,sid-the-seagull:p04  # redraw parts (cover, cast, p01-p12)
 //
 // NODE_USE_ENV_PROXY=1: in a Claude cloud session Node's fetch ignores
 // HTTPS_PROXY otherwise, and the key is added by that proxy. Locally, set
@@ -19,7 +21,7 @@ const here = path.dirname(new URL(import.meta.url).pathname);
 const arg = (n) => { const i = process.argv.indexOf("--" + n); return i > 0 ? process.argv[i + 1] : null; };
 const KEY = process.env.OPENAI_API_KEY || "injected-by-proxy";
 const MODEL = process.env.ART_MODEL || "chatgpt-image-latest";
-const PARALLEL = Number(arg("parallel") || 5);
+const PARALLEL = Number(arg("parallel") || 8); // requests in flight at once, across all books
 
 // The look Travis approved on 1 Oct 2026 (Rory, smooth with warm color).
 const STYLE = `Children's picture-book illustration in the exact look of the attached approved-style sheet: soft 3D clay characters with a smooth, clean finish (no grain, no noise, no fuzzy felt, no paper texture), big friendly glossy eyes and small pink cheeks; warm, rich, sunny colors — bright blue sky, fresh greens, clear water — with gentle even daylight (no harsh golden glare, no sparkles); simple, readable painted scenery with one clear focal point. Cheerful and calm for 3 to 6 year olds. Match the STYLE of the approved sheet only: never copy its rabbit, its places or its story. Absolutely no text, letters, numbers or signs anywhere in the picture.`;
@@ -27,6 +29,16 @@ const STYLE = `Children's picture-book illustration in the exact look of the att
 const prompts = JSON.parse(fs.readFileSync(path.join(here, "book-prompts.json"), "utf8"));
 const outDir = (slug) => path.join(here, "out/books", slug);
 const file = (slug, part) => path.join(outDir(slug), part + ".png");
+const PAGES = Array.from({ length: 12 }, (_, i) => "p" + String(i + 1).padStart(2, "0"));
+const STYLE_REF = path.join(here, "refs/approved-style.png");
+
+// one shared gate: at most PARALLEL pictures being drawn at any moment
+let active = 0; const waiting = [];
+async function gate(fn) {
+  if (active >= PARALLEL) await new Promise((go) => waiting.push(go));
+  active++;
+  try { return await fn(); } finally { active--; if (waiting.length) waiting.shift()(); }
+}
 
 async function draw(prompt, refs, size) {
   for (let attempt = 1; ; attempt++) {
@@ -53,43 +65,46 @@ async function draw(prompt, refs, size) {
   }
 }
 
-const sheet = (p, from) => `${STYLE}
+const cast = (p) => `${STYLE}\n\nCharacters for this book:\n${p.bible}\n\nA character lineup: every character described above standing side by side, full body, facing forward and smiling, evenly spaced on a plain soft cream background with a soft floor shadow, each one exactly ONCE, drawn to the sizes described and matching the attached cover exactly. Nothing else in the picture.`;
+const page = (p, n) => `${STYLE}\n\nCharacters and setting for this book — they must look exactly like the attached cover and character lineup:\n${p.bible}\n\nOne picture-book page, a single scene (not a grid, no panels, no border): ${p.panels[n]}\nOnly the characters named in this description appear, each exactly once.`;
 
-Characters and setting for this book — keep them exactly like this, and exactly like the attached cover, in every panel:
-${p.bible}
-
-A sheet of SIX separate picture-book panels in a 3-column by 2-row grid of square-ish landscape panels with thin plain white gutters between them, read left to right, top row first. Keep this exact order — panel 1 top-left, panel 6 bottom-right:
-${p.panels.slice(from, from + 6).map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
-
+async function part(p, name, fn) {
+  const t = Date.now();
+  fs.writeFileSync(file(p.slug, name), await gate(fn));
+  console.log(`✓ ${p.slug} ${name} ${Math.round((Date.now() - t) / 1000)}s`);
+}
 async function book(p, parts) {
   fs.mkdirSync(outDir(p.slug), { recursive: true });
-  const style = path.join(here, "refs/approved-style.png");
-  const t = Date.now();
-  if (parts.includes("cover")) fs.writeFileSync(file(p.slug, "cover"), await draw(`${STYLE}\n\nCharacters and setting:\n${p.bible}\n\nA square book-cover picture: ${p.cover}`, [style], "1024x1024"));
-  if (parts.includes("A")) fs.writeFileSync(file(p.slug, "A"), await draw(sheet(p, 0), [style, file(p.slug, "cover")], "1536x1024"));
-  if (parts.includes("B")) fs.writeFileSync(file(p.slug, "B"), await draw(sheet(p, 6), [style, file(p.slug, "cover"), file(p.slug, "A")], "1536x1024"));
-  console.log(`✓ ${p.slug} [${parts.join(",")}] in ${Math.round((Date.now() - t) / 1000)}s`);
+  if (parts.includes("cover")) await part(p, "cover", () => draw(`${STYLE}\n\nCharacters and setting:\n${p.bible}\n\nA square book-cover picture: ${p.cover}`, [STYLE_REF], "1024x1024"));
+  if (parts.includes("cast")) await part(p, "cast", () => draw(cast(p), [STYLE_REF, file(p.slug, "cover")], "1536x1024"));
+  const refs = [STYLE_REF, file(p.slug, "cover"), file(p.slug, "cast")];
+  const results = await Promise.allSettled(PAGES.map((name, n) => parts.includes(name) ? part(p, name, () => draw(page(p, n), refs, "1024x1024")) : null));
+  const bad = PAGES.filter((_, n) => results[n].status === "rejected");
+  if (bad.length) throw new Error(bad.join(",") + ": " + results.find((r) => r.status === "rejected").reason.message);
 }
 
 // What to draw: --redo slug:part,... or --only slugs, else every part missing.
+// A new cover or lineup means every page after it follows.
 let jobs;
 if (arg("redo")) {
-  const want = {}; for (const r of arg("redo").split(",")) { const [s, part] = r.split(":"); (want[s] = want[s] || []).push(...(part ? [part] : ["cover", "A", "B"])); }
-  // a new cover or first sheet means the later parts must follow it
-  const chain = (parts) => parts.includes("cover") ? ["cover", "A", "B"] : parts.includes("A") ? ["A", "B"] : ["B"];
-  jobs = Object.entries(want).map(([s, parts]) => [prompts.find((p) => p.slug === s), chain(parts)]);
+  const want = {};
+  for (const r of arg("redo").split(",")) { const [s, x] = r.split(":"); (want[s] = want[s] || new Set()); (x ? [x] : ["cover", "cast", ...PAGES]).forEach((y) => want[s].add(y)); }
+  jobs = Object.entries(want).map(([s, set]) => {
+    if (set.has("cover")) ["cast", ...PAGES].forEach((y) => set.add(y));
+    if (set.has("cast")) PAGES.forEach((y) => set.add(y));
+    return [prompts.find((p) => p.slug === s), [...set]];
+  });
 } else {
   const only = arg("only") ? arg("only").split(",") : null;
-  jobs = prompts.filter((p) => !only || only.includes(p.slug))
-    .map((p) => [p, ["cover", "A", "B"].filter((part, i, all) => !fs.existsSync(file(p.slug, part)) || all.slice(0, i).some((x) => !fs.existsSync(file(p.slug, x))))])
-    .filter(([, parts]) => parts.length);
+  jobs = prompts.filter((p) => !only || only.includes(p.slug)).map((p) => {
+    const missing = ["cover", "cast", ...PAGES].filter((x) => !fs.existsSync(file(p.slug, x)));
+    if (missing.includes("cover")) return [p, ["cover", "cast", ...PAGES]];
+    if (missing.includes("cast")) return [p, ["cast", ...PAGES]];
+    return [p, missing];
+  }).filter(([, parts]) => parts.length);
 }
 if (jobs.some(([p]) => !p)) { console.error("unknown slug in --redo/--only"); process.exit(1); }
-console.log(`${jobs.length} books, ${PARALLEL} at a time, ${MODEL}`);
-const queue = [...jobs], failed = [];
-await Promise.all(Array.from({ length: PARALLEL }, async () => {
-  for (let j; (j = queue.shift());) {
-    try { await book(j[0], j[1]); } catch (e) { failed.push(j[0].slug); console.log(`✗ ${j[0].slug}: ${e.message}`); }
-  }
-}));
-console.log(failed.length ? `Failed: ${failed.join(",")} — run again to retry just those.` : "All drawn. Next: python3 tools/art/cut-books.py");
+console.log(`${jobs.length} books, ${jobs.reduce((n, [, x]) => n + x.length, 0)} pictures, ${PARALLEL} at a time, ${MODEL}`);
+const failed = [];
+await Promise.all(jobs.map(([p, parts]) => book(p, parts).catch((e) => { failed.push(p.slug); console.log(`✗ ${p.slug}: ${e.message}`); })));
+console.log(failed.length ? `Failed: ${failed.join(",")} — run again to retry just the missing pictures.` : "All drawn. Next: python3 tools/art/cut-books.py");
