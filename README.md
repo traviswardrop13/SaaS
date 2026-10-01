@@ -4,9 +4,9 @@ A speech-practice app for kids, at [speaksona.com](https://speaksona.com).
 A child practices a target sound in short rounds, earns arcade time by doing
 it, and a grown-up gets a practice snapshot they can share with their SLP.
 
-Built with Rachel, MS, CF-SLP — a licensed pediatric speech-language
-pathologist in her Clinical Fellowship year, and co-founder — who owns what the
-app asks a child to do.
+Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her
+clinical fellowship and Sona's co-founder, who owns what the app asks a child
+to do.
 
 > **This file was wrong for a long time.** It described "SpeakUp Kids" — a
 > Next.js/Tailwind skill tree that transcribed with the Web Speech API and

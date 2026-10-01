@@ -78,7 +78,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /<title>Speech practice kids ask for — Sona<\/title>/.test(parents) &&
     /og:title" content="Speech practice kids ask for\."/.test(parents) &&
     /twitter:title" content="Speech practice kids ask for\."/.test(parents));
-  ok("…and it names Rachel's credential in the settled words", /a licensed pediatric speech-language pathologist/.test(parents));
+  // 1 Oct 2026 (Travis): "Built with Rachel, MS, CF-SLP, a pediatric
+  // speech-language pathologist in her clinical fellowship".
+  ok("…and it names Rachel's credential in the settled words", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(parents));
   // 29 Sep 2026: Travis asked for "MS, CF-SLP" wherever Rachel is presented as an SLP — her byline on the parent page carries it.
   ok("…and her byline carries her credentials: Rachel Wardrop, MS, CF-SLP", /Rachel Wardrop, MS, CF-SLP &middot; Co-founder/.test(parents));
 
@@ -362,6 +364,13 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const carry = ["parents", "subscribe", "trial", "progress", "talk", "slp"]
     .filter((n) => !/Rachel(?: Wardrop)?, MS, CF-SLP/.test(visible("public/" + n + ".html")));
   ok("…and the pages that introduce her all carry it", carry.length === 0, carry.join(", "));
+  // The line changed on 1 Oct 2026 (Travis): she is described as "a pediatric
+  // speech-language pathologist in her clinical fellowship" everywhere, so the
+  // earlier "licensed pediatric speech-language pathologist" line is gone
+  // from every surface (a child's own SLP, "a licensed speech-language
+  // pathologist", is someone else and is not matched).
+  const oldLine = files.filter((f) => /licensed pediatric speech-language pathologist/i.test(visible(f)));
+  ok("…and every surface uses the new line: no 'licensed pediatric speech-language pathologist' left", oldLine.length === 0, oldLine.join(", "));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

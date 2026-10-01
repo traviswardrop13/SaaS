@@ -237,7 +237,7 @@ function PaidPicker() {
           </p>
 
           <p className="mt-4 text-center text-xs font-semibold leading-relaxed text-gray-500">
-            Built with Rachel, MS, CF-SLP — a licensed pediatric speech-language pathologist.
+            Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.
             Sona is speech practice at home — it is not therapy,
             diagnosis or an evaluation. Your child&apos;s voice is checked on the
             device and never uploaded.

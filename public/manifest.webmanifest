@@ -1,7 +1,7 @@
 {
   "name": "Sona — speech practice",
   "short_name": "Sona",
-  "description": "Fun daily speech practice for kids, built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist.",
+  "description": "Fun daily speech practice for kids, built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
   "start_url": "/today.html",
   "scope": "/",
   "display": "standalone",

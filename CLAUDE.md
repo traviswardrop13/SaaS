@@ -56,16 +56,22 @@ She does **not** hold ASHA's CCC.
 So: **wherever Rachel is presented as an SLP, her name carries "MS, CF-SLP"**
 (Travis, 29 Sep 2026: "make sure that it says everywhere that you're talking
 about her being a SLP … that she's a CF. So like MS, CF-SLP" — reversing the
-23 Sep call to leave the fellowship out). The plain words a parent understands
-stay beside it: "Built with Rachel, MS, CF-SLP — licensed pediatric
-speech-language pathologist", "Rachel Wardrop, MS, CF-SLP · Co-founder ·
-Licensed pediatric speech-language pathologist", a sign-off "Rachel, MS,
-CF-SLP · Co-founder". **"Licensed" is TRUE** — under-claiming a real credential
-is not a virtue — and it is always "licensed **pediatric** speech-language
-pathologist". **Wherever copy presents Sona's SLP, it names her**: "Built
-with Rachel, MS, CF-SLP", "reviewed by Rachel, MS, CF-SLP, a licensed
-pediatric speech-language pathologist" — never an anonymous "built with a
-licensed SLP" or "our SLP". (A child's OWN therapist — "your SLP", "your
+23 Sep call to leave the fellowship out). **The line is Travis's, word for
+word** (1 Oct 2026: "need to add this to speaksona.com, the onboarding and
+anywhere else where it mentions rachels credentials"): **"Built with Rachel,
+MS, CF-SLP, a pediatric speech-language pathologist in her clinical
+fellowship."** The plain words beside her name are always "a pediatric
+speech-language pathologist in her clinical fellowship" ("in my clinical
+fellowship" where she speaks): "Rachel Wardrop, MS, CF-SLP · Co-founder ·
+Pediatric speech-language pathologist in her clinical fellowship", "Reviewed
+by Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her
+clinical fellowship", a sign-off "Rachel, MS, CF-SLP · Co-founder". It
+replaced the 29 Sep line, "licensed pediatric speech-language pathologist",
+which `shiptest` now keeps off every surface (her Idaho CF licence is still
+real; the line just says where she is). **Wherever copy presents Sona's SLP,
+it names her**: "Built with Rachel, MS, CF-SLP", "reviewed by Rachel, MS,
+CF-SLP, a pediatric speech-language pathologist in her clinical fellowship" —
+never an anonymous "built with a licensed SLP" or "our SLP". (A child's OWN therapist — "your SLP", "your
 child's speech-language pathologist" — is someone else, and stays generic.)
 **Her cards name nobody else** (Travis, 29 Sep 2026: "don't mention my name").
 Never "fully licensed", never anything that suggests the fellowship is behind
@@ -80,7 +86,8 @@ pages that introduce her (parents, subscribe, trial, progress, talk, slp)
 missing it.
 One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
 her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
-"She is a licensed pediatric speech-language pathologist." Since 1 Oct 2026
+"She is a pediatric speech-language pathologist in her clinical fellowship."
+(Travis's line, 1 Oct 2026). Since 1 Oct 2026
 it is the last screen before the first game, after the microphone (Travis:
 "add the rachel slide right before it goes to the game"). She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.

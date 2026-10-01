@@ -98,12 +98,12 @@ try {
       ok('…three tabs, Talk to us marked current', JSON.stringify(bar && bar.tabs) === JSON.stringify([['Progress', '/progress.html', null], ['Settings', '/settings.html', null], ['Talk to us', '/talk.html', 'page']]), bar && bar.tabs);
       ok('the page is titled Talk to us, and offers no call', bar && bar.head === 'Talk to us' && !/call/i.test(bar.sub || ''), bar);
       const rachel = await t.page.locator('.talk-rachel').innerText();
-      ok("Rachel's card says licensed pediatric speech-language pathologist", /licensed pediatric speech-language pathologist/.test(rachel) && await t.page.locator('.talk-rachel img[alt="Rachel Wardrop"]').count() === 1, rachel);
+      ok("Rachel's card says pediatric speech-language pathologist in her clinical fellowship", /pediatric speech-language pathologist in my clinical fellowship/.test(rachel) && await t.page.locator('.talk-rachel img[alt="Rachel Wardrop"]').count() === 1, rachel);
       // 29 Sep 2026: Travis asked for her credentials after her name ("MS, CF-SLP") and his own name off her card.
       ok("…signed with her credentials: Rachel, MS, CF-SLP", /Rachel, MS, CF-SLP · Co-founder/.test(rachel), rachel);
       ok("…and her card names nobody else", !/Travis/.test(rachel), rachel);
       const all = await t.page.locator('body').innerText();
-      ok('no credential beyond the settled wording, on the page or in its source', !/Clinical Fellow|\bCCC\b|certified|fully licen[sc]ed/i.test(all + SOURCE));
+      ok('no credential beyond the settled wording, on the page or in its source', !/\bCCC\b|certified|fully licen[sc]ed/i.test(all + SOURCE));
       ok('the page never says booked', !/booked/i.test(all));
       ok('the privacy lines are shown', /leave out your child's name/.test(all) && /only to reply\. It isn't added to any mailing list/.test(all));
       ok('the reply email is prefilled from setup', await t.page.inputValue('#fbEmail') === 'mom@example.test');
