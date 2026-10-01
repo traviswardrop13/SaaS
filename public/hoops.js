@@ -102,9 +102,18 @@
       crowd.push({ r: r, u: (i + (r % 2 ? 0.5 : 0) + 0.2 * Math.sin(i * 7.3 + r)) / per, skin: SKIN[(i * 3 + r * 5) % SKIN.length], shirt: SHIRT[(i * 7 + r * 2) % SHIRT.length], ph: Math.random() * 6 });
     }
   }
+  var GYM_ART = new Image(); GYM_ART.src = "/assets/crafted/game/hoops-gym.webp";
   function drawGym() {
     var floorY = project(0, 0, WALL_Z).y;
-    var g = ctx.createLinearGradient(0, 0, 0, floorY);
+    var g;
+    // the crafted gym wall (Travis, 1 Oct 2026: "new wall"): one painted picture
+    // in place of the drawn wall, bleachers, crowd and bunting; the drawn wall
+    // until it loads. The floor below stays drawn: it carries the court lines.
+    if (GYM_ART.complete && GYM_ART.naturalWidth) {
+      var sc = Math.max(W / GYM_ART.naturalWidth, floorY / GYM_ART.naturalHeight), gw = GYM_ART.naturalWidth * sc, gh = GYM_ART.naturalHeight * sc;
+      ctx.drawImage(GYM_ART, (W - gw) / 2, floorY - gh, gw, gh);
+    } else {
+    g = ctx.createLinearGradient(0, 0, 0, floorY);
     g.addColorStop(0, "#FFF8E9"); g.addColorStop(1, "#EEDDC0");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, floorY + 1);
     timber(0, 0, W, floorY, "#f2e4cd", 0.18);
@@ -146,6 +155,7 @@
     for (var i = 0; i < 12; i++) {
       var t = (i + 0.5) / 12, x = -10 + (W + 20) * t, y = by + sag * 4 * t * (1 - t), s = Math.max(6, W * 0.026);
       ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s * 1.6); ctx.closePath(); ctx.fill();
+    }
     }
     // the floor: wood running toward the hoop, a teal key, white lines
     var near = 1.0, wallP = project(0, 0, WALL_Z);
