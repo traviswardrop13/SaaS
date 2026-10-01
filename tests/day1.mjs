@@ -357,7 +357,7 @@ for (const age of ["3", "4", "5", "8"]) {
   await pg.goto("http://localhost:8178/library.html");
   await pg.waitForTimeout(700);
   const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn")].map((b) => b.textContent));
-  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(r));
+  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)/.test(t)), JSON.stringify(r));
   ok("…and there are still real books to read", r.length >= 3, String(r.length));
 
   // play mode rotates every sound, so it keeps the whole shelf

@@ -833,11 +833,11 @@ the ball goes. What it keeps, as Hoops does:
   A really hard flick can go over the bar; a soft one still rolls in.
 - **Its sounds** (kick, net, save, bounce, whoosh, roll) go through the
   engine, and **nothing is practice data**.
-Its cards are frames of the pitch: `public/assets/games/soccer.webp` (the
-sticker and the website, through `PLAYED`) and
-`public/assets/crafted/home-soccer.webp` (Home's wide card). The painted art
-drops in at those names, and Bo's own picture by setting `KEEPER_PIC` in
-`soccer.js`. On Home the eight big-kid games fill four even rows of two, so
+Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
+from main's covers, 1 Oct 2026); the sticker and the website tile are still a
+frame of the pitch (`public/assets/games/soccer.webp`, through `PLAYED`), and
+painted art drops in at that name. Bo's own picture drops in by setting
+`KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
 neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
 whole game.
 
@@ -856,9 +856,10 @@ roars. What it keeps:
   rubbing finger.
 - **Its sounds** (brush, pop, whoosh, clack, roar) go through the engine, and
   **nothing is practice data**.
-Its cards are frames of the woken dinosaur: `public/assets/games/dino.webp` and
-`public/assets/crafted/home-dino.webp`, replaced by painted art at the same
-names. `sayplaytest` plays a whole dig.
+Home's wide card is the painted one (`public/assets/crafted/home-dino.webp`,
+from main's covers); the sticker and the website tile are still a frame of the
+woken dinosaur (`public/assets/games/dino.webp`), replaced by painted art at
+that name. `sayplaytest` plays a whole dig.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is

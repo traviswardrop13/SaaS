@@ -54,7 +54,6 @@
     #bookMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .bookBtn .doneStar{position:absolute;top:-7px;left:2px;z-index:2;filter:drop-shadow(0 2px 2px rgba(120,60,10,.3));}
     /* word box */
-    .wordgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
     .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .06s;}
     .wcard:active{transform:scale(.94);}
@@ -134,7 +133,6 @@
       transition:transform .3s cubic-bezier(.3,1.6,.5,1),background .3s;}
     .bktext span.kw.yay{animation:kwpop .6s cubic-bezier(.3,1.6,.5,1);}
     @keyframes kwpop{0%{transform:translateY(-2px) scale(1.07)}40%{transform:translateY(-8px) scale(1.3)}100%{transform:translateY(-2px) scale(1.07)}}
-    .bkhint{margin-top:5px;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(91,45,5,.5);}
     .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(28px,7.6vw,36px);line-height:1.12;color:var(--cream-ink);}
     .bksub{font-weight:800;font-size:15px;color:rgba(91,45,5,.7);margin-top:6px;}
     .bktext,.bktitle,.bksub,.bkbubble .bq{text-wrap:balance;}
@@ -237,9 +235,6 @@
          behind the grown-ups gate (premium.html asks for it first). -->
     <div id="bookNotice" hidden><div class="notice-copy"><p id="bookMessage" role="status"></p><button id="bookUnlock" type="button">Ask a grown-up</button></div><button id="bookMessageClose" type="button" aria-label="Close message">×</button></div>
 
-    <div class="shelfhead"><h2>Word box</h2><span class="tag">TAP TO HEAR</span></div>
-    <div class="sounds" id="wbSounds" style="margin-top:2px;"></div>
-    <div class="wordgrid" id="wordgrid"></div>
   </div>
 
   <!-- full-screen picture book: the stage (picture + cream card) under two
@@ -352,6 +347,38 @@
           art: "/assets/books/rory-rainbow/p11.webp", alt: "The rocket has landed in a field of red and pink roses, right where the rainbow touches the ground. Rory, Remy and the robot smile." },
         { e: "🎉", t: "Rory, Remy, and the robot run and play!",
           art: "/assets/books/rory-rainbow/p12.webp", alt: "Under the rainbow, Rory jumps for a red ball, Remy runs and the robot hops, with confetti everywhere." } ] },
+      { sound: "R", emoji: "🛒", title: "Rosie and the Red Wagon", colors: ["#ff7a6e", "#e0564a"],
+        cover: "/assets/books/rosie-red-wagon/cover.webp", coverAlt: "Rosie pulls her shiny red wagon along a sunny country road; the grey rabbit and the raccoon sit happily in the wagon waving.",
+        keys: ["red", "rope", "rolls", "rabbit", "ride", "rosie", "raccoon", "rides", "rain", "rosie", "rain", "ride"],
+        words: ["rabbit", "raccoon", "rain", "red", "ride", "rides", "road", "rolls", "rope", "rosie"], pages: [
+        { e: "🛒", t: "Rosie has a red wagon.", art: "/assets/books/rosie-red-wagon/p01.webp", alt: "Rosie stands proudly beside her shiny red wagon on a sunny road, smiling." },
+        { e: "🛒", t: "She ties a rope on it.", art: "/assets/books/rosie-red-wagon/p02.webp", alt: "Rosie kneels and ties a tan rope onto the red wagon's handle." },
+        { e: "🛒", t: "Rosie rolls the wagon up a hill.", art: "/assets/books/rosie-red-wagon/p03.webp", alt: "Rosie pulls the red wagon up a gentle green hill, rolling along." },
+        { e: "🛒", t: "A rabbit sits by the road.", art: "/assets/books/rosie-red-wagon/p04.webp", alt: "A small grey rabbit sits beside the road, watching Rosie and her red wagon come by." },
+        { e: "🛒", t: "\"Can I ride?\" asks the rabbit.", art: "/assets/books/rosie-red-wagon/p05.webp", alt: "The grey rabbit looks up at Rosie hopefully, one paw raised as if asking for a ride, next to the red wagon." },
+        { e: "🛒", t: "\"Yes! Hop in!\" says Rosie.", art: "/assets/books/rosie-red-wagon/p06.webp", alt: "Rosie laughs and points into the wagon; the grey rabbit hops into the red wagon." },
+        { e: "🛒", t: "Then a raccoon waves.", art: "/assets/books/rosie-red-wagon/p07.webp", alt: "A raccoon by the roadside waves hello at Rosie, who pulls the red wagon with the grey rabbit inside." },
+        { e: "🛒", t: "The raccoon rides in the wagon, too.", art: "/assets/books/rosie-red-wagon/p08.webp", alt: "The raccoon and the grey rabbit ride together in the red wagon while Rosie pulls it." },
+        { e: "🛒", t: "Rain falls on them all.", art: "/assets/books/rosie-red-wagon/p09.webp", alt: "Rain starts falling on Rosie, the rabbit and the raccoon on the road; raindrops everywhere, grey clouds." },
+        { e: "🛒", t: "Rosie holds a big leaf up on top.", art: "/assets/books/rosie-red-wagon/p10.webp", alt: "Rosie holds a giant green leaf up over the wagon like an umbrella, the rabbit and raccoon dry underneath in the rain." },
+        { e: "🛒", t: "The rain stops. The sun comes out.", art: "/assets/books/rosie-red-wagon/p11.webp", alt: "The rain stops and the sun comes out from behind clouds; Rosie, the rabbit and the raccoon look up smiling." },
+        { e: "🛒", t: "Rosie, the rabbit and the raccoon wave. What a ride!", art: "/assets/books/rosie-red-wagon/p12.webp", alt: "Rosie, the grey rabbit and the raccoon wave happily together beside the red wagon on a sunny hilltop." } ] },
+      { sound: "R", emoji: "💍", title: "Ray and the Lost Ring", colors: ["#ff9a6e", "#e0703f"],
+        cover: "/assets/books/ray-lost-ring/cover.webp", coverAlt: "Ray the robin holds up a shiny gold ring with a blue gem in his beak, smiling, by a little river with reeds and a red-roofed cottage behind.",
+        keys: ["ring", "ring", "ring", "river", "roof", "reeds", "red", "raccoon", "raccoon", "ring", "ray", "ribbon"],
+        words: ["raccoon", "ray", "red", "reeds", "ribbon", "ring", "river", "robin", "roof"], pages: [
+        { e: "💍", t: "Ray the robin has a ring.", art: "/assets/books/ray-lost-ring/p01.webp", alt: "Ray the robin sits on a branch admiring a shiny gold ring with a blue gem." },
+        { e: "💍", t: "It is a shiny ring.", art: "/assets/books/ray-lost-ring/p02.webp", alt: "Close up of the shiny gold ring with a blue gem sparkling in the sun, Ray the robin smiling at it." },
+        { e: "💍", t: "One day, the ring is gone!", art: "/assets/books/ray-lost-ring/p03.webp", alt: "Ray the robin looks shocked at an empty branch: the ring is gone." },
+        { e: "💍", t: "Ray looks by the river.", art: "/assets/books/ray-lost-ring/p04.webp", alt: "Ray the robin searches along the bank of a little blue river." },
+        { e: "💍", t: "Ray looks on the roof.", art: "/assets/books/ray-lost-ring/p05.webp", alt: "Ray the robin searches on top of a red roof of a cottage." },
+        { e: "💍", t: "Ray looks in the reeds.", art: "/assets/books/ray-lost-ring/p06.webp", alt: "Ray the robin peeks between tall green reeds by the water." },
+        { e: "💍", t: "A red ladybug says, \"Look up high!\"", art: "/assets/books/ray-lost-ring/p07.webp", alt: "A tiny red ladybug on a leaf points one leg upward, talking to Ray the robin." },
+        { e: "💍", t: "Ray sees a raccoon on a log.", art: "/assets/books/ray-lost-ring/p08.webp", alt: "Ray the robin spots a raccoon sitting on a fallen log." },
+        { e: "💍", t: "The raccoon has the ring!", art: "/assets/books/ray-lost-ring/p09.webp", alt: "The raccoon on the log holds up the shiny gold ring with a blue gem." },
+        { e: "💍", t: "\"Is this ring lost?\" asks the raccoon.", art: "/assets/books/ray-lost-ring/p10.webp", alt: "The raccoon holds out the ring toward Ray the robin with a kind, questioning face." },
+        { e: "💍", t: "\"Yes! Thank you!\" sings Ray.", art: "/assets/books/ray-lost-ring/p11.webp", alt: "Ray the robin sings happily with his beak open, the ring back with him, little music notes shapes around him." },
+        { e: "💍", t: "Ray gives the raccoon a ribbon to say thank you.", art: "/assets/books/ray-lost-ring/p12.webp", alt: "Ray the robin gives the raccoon a red ribbon as a gift, both smiling." } ] },
       { sound: "P", emoji: "🐧", opens: "2026-10-26", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
         cover: "/assets/books/penny-pebble-party/cover.webp", coverAlt: "",
         keys: ["penguin", "pond", "pebble", "pebbles", "paint", "paint", "pink", "parrot", "party", "pie", "pebbles", "penny"],
@@ -528,6 +555,38 @@
         { e: "🌊", t: "Oh no! The sea rolls in.", art: "/assets/books/sid-the-seagull/p10.webp", alt: "" },
         { e: "🐦", t: "The sand hill is gone. Sid is sad.", art: "/assets/books/sid-the-seagull/p11.webp", alt: "" },
         { e: "👧", t: "\"Silly Sid! We can make one more!\" says Sadie.", art: "/assets/books/sid-the-seagull/p12.webp", alt: "" } ] },
+      { sound: "S", emoji: "⛵", title: "Sam's Sailboat", colors: ["#62bdff", "#3d9be0"],
+        cover: "/assets/books/sam-sailboat/cover.webp", coverAlt: "Sam the seal sits in his little wooden sailboat with a white sail on a calm sunny blue sea, smiling.",
+        keys: ["sailboat", "sun", "sea", "sees", "sad", "sit", "sail", "seagull", "sails", "soon", "so", "song"],
+        words: ["sad", "sail", "sailboat", "sails", "sam", "sam's", "says", "sea", "seagull", "seal", "see", "sees", "sings", "sit", "so", "song", "soon", "sun"], pages: [
+        { e: "⛵", t: "Sam the seal has a sailboat.", art: "/assets/books/sam-sailboat/p01.webp", alt: "Sam the seal stands proudly next to his little wooden sailboat at the shore." },
+        { e: "⛵", t: "The sun is up. Sam sails out.", art: "/assets/books/sam-sailboat/p02.webp", alt: "Sam the seal sails out in his sailboat under a bright rising sun." },
+        { e: "⛵", t: "The sea is calm and blue.", art: "/assets/books/sam-sailboat/p03.webp", alt: "A wide calm blue sea, Sam's small sailboat far away on it." },
+        { e: "⛵", t: "Sam sees a little fish.", art: "/assets/books/sam-sailboat/p04.webp", alt: "Sam the seal leans over the side of his sailboat looking at a little orange fish in the water." },
+        { e: "⛵", t: "The fish is sad. \"I can't find my home!\"", art: "/assets/books/sam-sailboat/p05.webp", alt: "The little orange fish looks sad and lost in the water near the boat." },
+        { e: "⛵", t: "\"Sit in my boat,\" says Sam.", art: "/assets/books/sam-sailboat/p06.webp", alt: "Sam the seal holds out a flipper inviting the little fish; the fish sits in a bucket of water in the boat." },
+        { e: "⛵", t: "They sail by a seagull.", art: "/assets/books/sam-sailboat/p07.webp", alt: "Sam's sailboat with the little fish passes a white seagull flying low." },
+        { e: "⛵", t: "The seagull says, \"Go that way!\"", art: "/assets/books/sam-sailboat/p08.webp", alt: "The seagull points one wing toward the horizon, talking to Sam." },
+        { e: "⛵", t: "Sam sails and sails.", art: "/assets/books/sam-sailboat/p09.webp", alt: "Sam's sailboat glides across the sea, sail full of wind." },
+        { e: "⛵", t: "Soon, they see a big reef.", art: "/assets/books/sam-sailboat/p10.webp", alt: "Ahead, a colourful coral reef shows under clear water; Sam and the little fish look at it." },
+        { e: "⛵", t: "The mom fish is there! She is so happy.", art: "/assets/books/sam-sailboat/p11.webp", alt: "The mom fish swims up to the little fish, both happy, by the reef, Sam watching." },
+        { e: "⛵", t: "Sam sings a song all the way home.", art: "/assets/books/sam-sailboat/p12.webp", alt: "Sam the seal sings in his sailboat sailing home at sunset." } ] },
+      { sound: "S", emoji: "🍲", title: "Sophie's Silly Soup", colors: ["#7fd1a0", "#4fae74"],
+        cover: "/assets/books/sophie-silly-soup/cover.webp", coverAlt: "Sophie stirs a big blue pot of soup with a wooden spoon, laughing, a striped sock poking out of the pot.",
+        keys: ["soup", "sophie", "sophie", "sock", "silly", "sock", "salt", "seeds", "sip", "soup", "sophie", "sip"],
+        words: ["salt", "says", "seeds", "silly", "sip", "sit", "sock", "some", "sophie", "sophie's", "soup"], pages: [
+        { e: "🍲", t: "Sophie is making soup.", art: "/assets/books/sophie-silly-soup/p01.webp", alt: "Sophie in her apron stirs a big blue pot of soup on the stove." },
+        { e: "🍲", t: "Sophie adds a carrot.", art: "/assets/books/sophie-silly-soup/p02.webp", alt: "Sophie drops an orange carrot into the pot." },
+        { e: "🍲", t: "Sophie adds a big potato.", art: "/assets/books/sophie-silly-soup/p03.webp", alt: "Sophie drops a big brown potato into the pot." },
+        { e: "🍲", t: "Then Sophie adds a sock!", art: "/assets/books/sophie-silly-soup/p04.webp", alt: "Sophie drops a red-and-white striped sock into the pot, giggling." },
+        { e: "🍲", t: "\"Oh no, a sock in the soup is silly!\"", art: "/assets/books/sophie-silly-soup/p05.webp", alt: "Sophie covers her mouth laughing, pointing at the sock floating in the soup." },
+        { e: "🍲", t: "Sophie pulls the sock out.", art: "/assets/books/sophie-silly-soup/p06.webp", alt: "Sophie pulls the dripping striped sock out of the pot with tongs." },
+        { e: "🍲", t: "She adds salt.", art: "/assets/books/sophie-silly-soup/p07.webp", alt: "Sophie sprinkles salt from a little shaker into the pot." },
+        { e: "🍲", t: "She adds some seeds.", art: "/assets/books/sophie-silly-soup/p08.webp", alt: "Sophie sprinkles a handful of little seeds into the pot." },
+        { e: "🍲", t: "Sophie gives the soup a sip.", art: "/assets/books/sophie-silly-soup/p09.webp", alt: "Sophie takes a sip of soup from a wooden spoon." },
+        { e: "🍲", t: "\"Yummy soup!\" says Sophie.", art: "/assets/books/sophie-silly-soup/p10.webp", alt: "Sophie rubs her tummy with a delighted face, spoon in hand." },
+        { e: "🍲", t: "Sophie calls her pals to the table.", art: "/assets/books/sophie-silly-soup/p11.webp", alt: "Sophie waves to the teddy-bear and duck pals, calling them to the wooden table." },
+        { e: "🍲", t: "They sit and sip the soup together.", art: "/assets/books/sophie-silly-soup/p12.webp", alt: "Sophie and the bear and duck pals sit at the table sipping bowls of soup together." } ] },
       { sound: "Z", emoji: "🦓", opens: "2026-10-05", title: "Zoe and the Zipper", colors: ["#9aa7b8", "#5b6474"],
         cover: "/assets/books/zoe-and-the-zipper/cover.webp", coverAlt: "",
         keys: ["zebra", "zoe", "zipper", "zipper", "zookeeper", "zip", "zipper", "zack", "zoomed", "zoo", "zucchini", "zebra"],
@@ -560,6 +619,38 @@
         { e: "🐚", t: "Shay shakes the shell. Shh, shh, shh!", art: "/assets/books/shay-the-shy-shark/p10.webp", alt: "" },
         { e: "🦀", t: "The crabs cheer. \"Shay, you are a star!\"", art: "/assets/books/shay-the-shy-shark/p11.webp", alt: "" },
         { e: "⭐", t: "Shay is not shy now. She shines!", art: "/assets/books/shay-the-shy-shark/p12.webp", alt: "" } ] },
+      { sound: "SH", emoji: "🐚", title: "Shane and the Shiny Shell", colors: ["#ff9fb8", "#e6708f"],
+        cover: "/assets/books/shane-shiny-shell/cover.webp", coverAlt: "Shane holds up a big shiny spiral shell on a sunny beach, a little red crab peeking out of it.",
+        keys: ["shane", "shell", "shell", "shows", "shake", "shakes", "shy", "shane", "shell", "shares", "shy", "shouts"],
+        words: ["shake", "shakes", "shane", "shares", "she", "shell", "shiny", "shouts", "shows", "shy"], pages: [
+        { e: "🐚", t: "Shane is at the sea.", art: "/assets/books/shane-shiny-shell/p01.webp", alt: "Shane stands on a sunny beach by the sea, happy." },
+        { e: "🐚", t: "He sees a shiny shell.", art: "/assets/books/shane-shiny-shell/p02.webp", alt: "Shane spots a shiny pink spiral shell in the sand." },
+        { e: "🐚", t: "Shane picks up the shell.", art: "/assets/books/shane-shiny-shell/p03.webp", alt: "Shane picks up the shiny shell." },
+        { e: "🐚", t: "He shows it to his mom.", art: "/assets/books/shane-shiny-shell/p04.webp", alt: "Shane shows the shell to his mom on the beach." },
+        { e: "🐚", t: "\"Shake it!\" she says.", art: "/assets/books/shane-shiny-shell/p05.webp", alt: "Mom smiles and makes a shaking motion with her hands, talking to Shane." },
+        { e: "🐚", t: "Shane shakes the shell. A crab comes out!", art: "/assets/books/shane-shiny-shell/p06.webp", alt: "Shane shakes the shell and a little red crab pops out." },
+        { e: "🐚", t: "The crab is shy.", art: "/assets/books/shane-shiny-shell/p07.webp", alt: "The little red crab hides its face shyly behind its claws." },
+        { e: "🐚", t: "Shane sits very still.", art: "/assets/books/shane-shiny-shell/p08.webp", alt: "Shane sits very still in the sand, watching quietly." },
+        { e: "🐚", t: "The crab peeks out of the shell.", art: "/assets/books/shane-shiny-shell/p09.webp", alt: "The crab peeks out of the shell." },
+        { e: "🐚", t: "Shane shares a snack with the crab.", art: "/assets/books/shane-shiny-shell/p10.webp", alt: "Shane offers the crab a little cracker snack." },
+        { e: "🐚", t: "The crab is not shy now.", art: "/assets/books/shane-shiny-shell/p11.webp", alt: "The crab waves its claw at Shane, no longer shy." },
+        { e: "🐚", t: "Shane and the crab are pals. Shane shouts, \"Yay!\"", art: "/assets/books/shane-shiny-shell/p12.webp", alt: "Shane cheers with arms up, the crab beside him, both happy." } ] },
+      { sound: "SH", emoji: "👤", title: "Shawn and His Shadow", colors: ["#9aa7ff", "#6f7fe6"],
+        cover: "/assets/books/shawn-shadow/cover.webp", coverAlt: "Shawn waves at his own big shadow on a sunny cream wall; the shadow waves back.",
+        keys: ["shadow", "shadow", "shadow", "shadow", "shakes", "shadow", "shadow", "shines", "shadow", "shadow", "shakes", "shadow"],
+        words: ["shadow", "shakes", "shawn", "shines"], pages: [
+        { e: "👤", t: "Shawn has a shadow.", art: "/assets/books/shawn-shadow/p01.webp", alt: "Shawn stands in a sunny yard with his shadow stretching beside him." },
+        { e: "👤", t: "The shadow is on the wall.", art: "/assets/books/shawn-shadow/p02.webp", alt: "Shawn's shadow is cast clearly on a cream wall next to him." },
+        { e: "👤", t: "Shawn waves. The shadow waves.", art: "/assets/books/shawn-shadow/p03.webp", alt: "Shawn waves, and his shadow on the wall waves too." },
+        { e: "👤", t: "Shawn hops. The shadow hops.", art: "/assets/books/shawn-shadow/p04.webp", alt: "Shawn hops, and his shadow on the wall hops too." },
+        { e: "👤", t: "Shawn shakes. The shadow shakes.", art: "/assets/books/shawn-shadow/p05.webp", alt: "Shawn wiggles and shakes, his shadow shaking on the wall." },
+        { e: "👤", t: "Then the sun goes down. Where is the shadow?", art: "/assets/books/shawn-shadow/p06.webp", alt: "Evening: the sun is setting and Shawn looks for his shadow, which is fading." },
+        { e: "👤", t: "Shawn is sad. The shadow is gone.", art: "/assets/books/shawn-shadow/p07.webp", alt: "Shawn looks sad in the dim evening; no shadow on the wall." },
+        { e: "👤", t: "Mom shines a lamp.", art: "/assets/books/shawn-shadow/p08.webp", alt: "Indoors, Mom switches on a lamp, light shining across the room." },
+        { e: "👤", t: "The shadow is back! Shawn cheers.", art: "/assets/books/shawn-shadow/p09.webp", alt: "Shawn's shadow is back on the bedroom wall; Shawn cheers." },
+        { e: "👤", t: "Shawn makes a shadow dog with his hands.", art: "/assets/books/shawn-shadow/p10.webp", alt: "Shawn makes a dog shape with his hands, a shadow dog on the wall." },
+        { e: "👤", t: "The shadow dog shakes its tail.", art: "/assets/books/shawn-shadow/p11.webp", alt: "The shadow dog on the wall wags its tail." },
+        { e: "👤", t: "Shawn and his shadow go to bed.", art: "/assets/books/shawn-shadow/p12.webp", alt: "Shawn climbs into bed, his shadow beside him on the wall." } ] },
       { sound: "CH", emoji: "🐿️", opens: "2026-10-05", title: "Chip the Chipmunk", colors: ["#ff9b7a", "#e66f4b"],
         cover: "/assets/books/chip-the-chipmunk/cover.webp", coverAlt: "",
         keys: ["chipmunk", "chestnuts", "chilly", "chimney", "chick", "cheep", "chilly", "chip", "chat", "chair", "chair", "chirps"],
@@ -608,6 +699,38 @@
         { e: "🍃", t: "They lay the leaf on the lake.", art: "/assets/books/leo-lucky-leaf/p10.webp", alt: "" },
         { e: "🐞", t: "A ladybug rides the leaf boat.", art: "/assets/books/leo-lucky-leaf/p11.webp", alt: "" },
         { e: "🐞", t: "Leo and Lucy wave. What luck!", art: "/assets/books/leo-lucky-leaf/p12.webp", alt: "" } ] },
+      { sound: "L", emoji: "🍋", title: "Libby and the Lemon", colors: ["#ffd45e", "#e6b12b"],
+        cover: "/assets/books/libby-lemon/cover.webp", coverAlt: "Libby the white lamb holds a yellow lemon in a sunny garden, a little ladybug on her head.",
+        keys: ["lamb", "lunch", "lemon", "lemon", "lettuce", "likes", "ladybug", "lunch", "leaf", "log", "laughs", "lie"],
+        words: ["ladybug", "lamb", "laughs", "leaf", "lemon", "lettuce", "libby", "lie", "likes", "log", "lunch"], pages: [
+        { e: "🍋", t: "Libby the lamb is hungry.", art: "/assets/books/libby-lemon/p01.webp", alt: "Libby the lamb holds her tummy, looking hungry, in a sunny garden." },
+        { e: "🍋", t: "Libby wants lunch.", art: "/assets/books/libby-lemon/p02.webp", alt: "Libby the lamb looks around the garden for lunch." },
+        { e: "🍋", t: "She finds a lemon.", art: "/assets/books/libby-lemon/p03.webp", alt: "Libby the lamb finds a bright yellow lemon under a lemon tree." },
+        { e: "🍋", t: "The lemon is sour! Libby makes a face.", art: "/assets/books/libby-lemon/p04.webp", alt: "Libby the lamb bites the lemon and makes a funny sour face." },
+        { e: "🍋", t: "Next, she finds some lettuce.", art: "/assets/books/libby-lemon/p05.webp", alt: "Libby the lamb finds a big green head of lettuce." },
+        { e: "🍋", t: "Libby likes the lettuce.", art: "/assets/books/libby-lemon/p06.webp", alt: "Libby the lamb happily munches the lettuce." },
+        { e: "🍋", t: "Then Libby sees a ladybug.", art: "/assets/books/libby-lemon/p07.webp", alt: "Libby the lamb notices a little red ladybug on a leaf." },
+        { e: "🍋", t: "\"Can I have some lunch too?\" asks the ladybug.", art: "/assets/books/libby-lemon/p08.webp", alt: "The ladybug looks hopefully at Libby the lamb, asking for lunch." },
+        { e: "🍋", t: "Libby gives her a leaf.", art: "/assets/books/libby-lemon/p09.webp", alt: "Libby the lamb gives the ladybug a green leaf." },
+        { e: "🍋", t: "They eat lunch on a log.", art: "/assets/books/libby-lemon/p10.webp", alt: "Libby the lamb and the ladybug eat lunch together on a fallen log." },
+        { e: "🍋", t: "Libby laughs. Lunch is more fun with a friend.", art: "/assets/books/libby-lemon/p11.webp", alt: "Libby the lamb laughs happily beside the ladybug." },
+        { e: "🍋", t: "Libby and the ladybug lie down to rest.", art: "/assets/books/libby-lemon/p12.webp", alt: "Libby the lamb and the ladybug lie down on soft grass resting, eyes closed." } ] },
+      { sound: "L", emoji: "🏮", title: "Leon's Lantern", colors: ["#ffb066", "#ef923c"],
+        cover: "/assets/books/leon-lantern/cover.webp", coverAlt: "Leon the lion cub holds up a glowing lantern at night by a lake, Lucky the white puppy beside him.",
+        keys: ["lion", "leon", "lantern", "lake", "lucky", "logs", "leaf", "leon", "licks", "laughs", "light", "lantern"],
+        words: ["lake", "lantern", "laughs", "leaf", "leon", "leon's", "licks", "light", "lion", "logs", "looks", "lucky"], pages: [
+        { e: "🏮", t: "Leon the lion has a lantern.", art: "/assets/books/leon-lantern/p01.webp", alt: "Leon the lion cub stands holding an unlit lantern, evening sky." },
+        { e: "🏮", t: "It is night. Leon cannot see.", art: "/assets/books/leon-lantern/p02.webp", alt: "Leon the lion cub in the dark night, squinting, can't see." },
+        { e: "🏮", t: "He turns on his lantern.", art: "/assets/books/leon-lantern/p03.webp", alt: "Leon the lion cub switches on his lantern; warm light glows." },
+        { e: "🏮", t: "Now Leon can see the lake.", art: "/assets/books/leon-lantern/p04.webp", alt: "Leon's lantern lights up a calm lake at night." },
+        { e: "🏮", t: "Where is his pet, Lucky? Leon looks.", art: "/assets/books/leon-lantern/p05.webp", alt: "Leon the lion cub holds his lantern up, looking around worried for his pet." },
+        { e: "🏮", t: "Leon looks by the logs.", art: "/assets/books/leon-lantern/p06.webp", alt: "Leon the lion cub peeks behind a pile of logs with his lantern." },
+        { e: "🏮", t: "Leon looks under a leaf.", art: "/assets/books/leon-lantern/p07.webp", alt: "Leon the lion cub lifts a huge leaf with his lantern, looking under it." },
+        { e: "🏮", t: "Leon hears a noise. Woof!", art: "/assets/books/leon-lantern/p08.webp", alt: "Leon the lion cub perks his ears up, hearing a noise in the dark." },
+        { e: "🏮", t: "It is Lucky! Lucky licks Leon.", art: "/assets/books/leon-lantern/p09.webp", alt: "Lucky the white puppy jumps up and licks Leon's face." },
+        { e: "🏮", t: "Leon laughs and hugs Lucky.", art: "/assets/books/leon-lantern/p10.webp", alt: "Leon the lion cub laughs and hugs Lucky the puppy." },
+        { e: "🏮", t: "They go home by the light of the lantern.", art: "/assets/books/leon-lantern/p11.webp", alt: "Leon and Lucky walk home along a path lit by the lantern." },
+        { e: "🏮", t: "Leon and Lucky rest by the lantern.", art: "/assets/books/leon-lantern/p12.webp", alt: "Leon and Lucky rest curled up beside the glowing lantern." } ] },
       { sound: "TH", emoji: "🦥", title: "Theo's Thunder Day", colors: ["#a7b4ff", "#7a88e6"],
         cover: "/assets/books/theo-thunder-day/cover.webp", coverAlt: "",
         keys: ["theo", "thirsty", "thump", "thunder", "theo", "thea", "think", "thick", "thick", "thumb", "thunder", "thumbs"],
@@ -625,6 +748,38 @@
         { e: "👍", t: "Thea hums a tune. Theo taps his thumb.", art: "/assets/books/theo-thunder-day/p10.webp", alt: "" },
         { e: "🌤️", t: "Soon, no more thunder.", art: "/assets/books/theo-thunder-day/p11.webp", alt: "" },
         { e: "👍", t: "\"Thanks, Thea!\" Theo gives a big thumbs up.", art: "/assets/books/theo-thunder-day/p12.webp", alt: "" } ] },
+      { sound: "TH", emoji: "🐻", title: "Thor Says Thank You", colors: ["#c49a6c", "#9b6f45"],
+        cover: "/assets/books/thor-thank-you/cover.webp", coverAlt: "Thor the big brown bear smiles in a sunny meadow, giving a thumbs up, with Fox, Bee and Owl around him.",
+        keys: ["thor", "thinks", "thank", "thick", "thank", "thimble", "thank", "thirsty", "thinks", "thor", "thumbs", "thanks"],
+        words: ["thank", "thanks", "thick", "thimble", "thinks", "thirsty", "thor", "thumbs"], forbid: ["DH"], pages: [
+        { e: "🐻", t: "Thor is a big, kind bear.", art: "/assets/books/thor-thank-you/p01.webp", alt: "Thor the big brown bear smiles in a sunny forest meadow." },
+        { e: "🐻", t: "Thor thinks of his pals.", art: "/assets/books/thor-thank-you/p02.webp", alt: "Thor the bear sits thinking, eyes up, smiling." },
+        { e: "🐻", t: "\"I want to thank my pals,\" says Thor.", art: "/assets/books/thor-thank-you/p03.webp", alt: "Thor the bear stands with his paws on his heart, cheerful." },
+        { e: "🐻", t: "Thor picks a thick red flower.", art: "/assets/books/thor-thank-you/p04.webp", alt: "Thor the bear picks a big red flower with a thick stem." },
+        { e: "🐻", t: "He gives it to Fox. \"Thank you, Fox!\"", art: "/assets/books/thor-thank-you/p05.webp", alt: "Thor the bear gives the red flower to Fox." },
+        { e: "🐻", t: "Thor finds a thimble of honey.", art: "/assets/books/thor-thank-you/p06.webp", alt: "Thor the bear holds a tiny thimble full of golden honey." },
+        { e: "🐻", t: "He gives it to Bee. \"Thank you, Bee!\"", art: "/assets/books/thor-thank-you/p07.webp", alt: "Thor the bear gives the thimble of honey to Bee." },
+        { e: "🐻", t: "Thor is thirsty. He sips some water.", art: "/assets/books/thor-thank-you/p08.webp", alt: "Thor the bear drinks water from a stream, thirsty." },
+        { e: "🐻", t: "He thinks of one more pal.", art: "/assets/books/thor-thank-you/p09.webp", alt: "Thor the bear thinking, one paw on his chin." },
+        { e: "🐻", t: "It is Owl! Owl helps Thor every day.", art: "/assets/books/thor-thank-you/p10.webp", alt: "Owl on a branch waves a wing at Thor the bear." },
+        { e: "🐻", t: "Thor gives Owl a big thumbs up.", art: "/assets/books/thor-thank-you/p11.webp", alt: "Thor the bear gives Owl a big thumbs up." },
+        { e: "🐻", t: "\"Thanks, Thor!\" his pals say. Thor is so happy.", art: "/assets/books/thor-thank-you/p12.webp", alt: "Fox, Bee and Owl cheer around Thor the bear, who smiles happily." } ] },
+      { sound: "TH", emoji: "🌱", title: "Thelma's Thirsty Plant", colors: ["#8fdc7a", "#5fb84a"],
+        cover: "/assets/books/thelma-thirsty-plant/cover.webp", coverAlt: "Thelma holds a watering cup over her little potted plant on a sunny windowsill, the plant blooming a big pink flower.",
+        keys: ["thelma", "thirsty", "thin", "thinks", "thinks", "thud", "thelma", "thelma", "thinks", "thick", "thanks", "thumbs"],
+        words: ["thanks", "thelma", "thelma's", "thick", "thin", "thinks", "thirsty", "thud", "thumbs"], forbid: ["DH"], pages: [
+        { e: "🌱", t: "Thelma has a plant.", art: "/assets/books/thelma-thirsty-plant/p01.webp", alt: "Thelma stands beside her little potted plant on a windowsill." },
+        { e: "🌱", t: "Thelma's plant is thirsty.", art: "/assets/books/thelma-thirsty-plant/p02.webp", alt: "Thelma's little plant droops with thin sad leaves." },
+        { e: "🌱", t: "Its leaves look thin and sad.", art: "/assets/books/thelma-thirsty-plant/p03.webp", alt: "Close up of the plant's thin drooping leaves." },
+        { e: "🌱", t: "Thelma thinks.", art: "/assets/books/thelma-thirsty-plant/p04.webp", alt: "Thelma thinks with one finger on her chin." },
+        { e: "🌱", t: "\"I know! It needs water!\" thinks Thelma.", art: "/assets/books/thelma-thirsty-plant/p05.webp", alt: "Thelma has a happy idea, pointing up, a cup in her hand." },
+        { e: "🌱", t: "Thelma fills a cup. Thud! It falls.", art: "/assets/books/thelma-thirsty-plant/p06.webp", alt: "Thelma's cup of water tips over and falls with a splash." },
+        { e: "🌱", t: "Thelma tries again.", art: "/assets/books/thelma-thirsty-plant/p07.webp", alt: "Thelma fills the cup again, determined." },
+        { e: "🌱", t: "Thelma gives her plant a big drink.", art: "/assets/books/thelma-thirsty-plant/p08.webp", alt: "Thelma pours water into the plant pot." },
+        { e: "🌱", t: "Thelma waits and thinks.", art: "/assets/books/thelma-thirsty-plant/p09.webp", alt: "Thelma waits patiently, sitting beside the pot." },
+        { e: "🌱", t: "Soon, a thick bud pops up.", art: "/assets/books/thelma-thirsty-plant/p10.webp", alt: "A thick green bud pops up on the plant." },
+        { e: "🌱", t: "Thelma says thanks to her plant.", art: "/assets/books/thelma-thirsty-plant/p11.webp", alt: "Thelma smiles and talks kindly to her plant." },
+        { e: "🌱", t: "It is a big pink flower! Thelma gives it a thumbs up.", art: "/assets/books/thelma-thirsty-plant/p12.webp", alt: "A big pink flower blooms; Thelma gives a thumbs up." } ] },
       { sound: "THV", emoji: "🐻", opens: "2026-10-12", title: "This Bear, That Bee", colors: ["#ffb3c7", "#e68aa3"],
         cover: "/assets/books/this-bear-that-bee/cover.webp", coverAlt: "",
         keys: ["this", "they", "there", "the", "then", "those", "the", "these", "they", "the", "then", "that"],
@@ -1250,8 +1405,7 @@
           return wash + '<div class="bkart sticker"><div class="bkglow" style="background:radial-gradient(circle,' + hexRgba(c0, .3) + ',' + hexRgba(c1, 0) + ' 70%)"></div><div class="bkpic">' + readerArt(p) + '</div></div>';
         };
         bkStage.innerHTML = artNow(page)
-          + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
-            + (page === 0 ? '<div class="bkhint">Tap any word to hear it</div>' : ""), "", "talk");
+          + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>', "", "talk");
         fitArt();
         if (bkStage.querySelector(".bkwait")) {
           var waitBook = BOOK, waitPage = page;
@@ -1520,35 +1674,6 @@
       hush(); setBar("nudge"); echoPose("think");
     });
 
-    /* ---- word box ---- */
-    var wbHost = document.getElementById("wbSounds"), grid = document.getElementById("wordgrid");
-    var allSounds = Object.keys(Sona.WORDS);
-    // the child's focus sounds lead the chip row; every other sound follows
-    var focus = (profile.focusSounds || []).filter(function (s) { return allSounds.indexOf(s) !== -1; });
-    var order = focus.concat(allSounds.filter(function (s) { return focus.indexOf(s) === -1; }));
-    var curSound = order[0];
-    function paintChips() {
-      wbHost.innerHTML = "";
-      if (order.length < 2) { wbHost.style.display = "none"; return; }
-      order.forEach(function (s) {
-        var c = document.createElement("div");
-        c.className = "sound" + (s === curSound ? " on" : "");
-        c.textContent = sndLabel(s);   // "TH (v)", never the internal code THV
-        c.onclick = function () { chime("tap"); curSound = s; paintChips(); paintGrid(); };
-        wbHost.appendChild(c);
-      });
-    }
-    function paintGrid() {
-      grid.innerHTML = "";
-      (Sona.WORDS[curSound] || []).forEach(function (w) {
-        var c = document.createElement("div");
-        c.className = "wcard";
-        c.innerHTML = '<span class="we">' + ((window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,42):w.e) + '</span><span class="ww">' + w.w + '</span>';
-        c.onclick = function () { if (playing) return; if (window.Sona) Sona.pop(w.e, { y: window.innerHeight * 0.3 }); say(w.w); };
-        grid.appendChild(c);
-      });
-    }
-    paintChips(); paintGrid();
   </script>
 </body>
 </html>

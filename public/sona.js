@@ -3770,9 +3770,7 @@
   // The crafted picture each game wears on Home's card, and on the plan
   // screen's hero (30 Sep 2026): the plan screen sells these games, so it
   // shows them, in the same art Home does. One map, read by both pages.
-  // Soccer Goal's and Dino Dig's cards are frames of their own games until
-  // their painted cards land at the same names (home-soccer, home-dino).
-  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", soccer: "soccer", dino: "dino" };
+  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", peekaboo: "peekaboo", balloon: "balloon", flower: "flower", rocket: "rocket", snowman: "snowman", train: "train", puppy: "puppy", stars: "stars", cake: "cake", gifts: "gifts", fishtank: "fishtank", racecar: "racecar", treasure: "treasure", soccer: "soccer", robot: "robot", castle: "castle", dino: "dino", space: "space", pizza: "pizza", monster: "monster" };
 
 
   // The button path: stop whatever is talking and say THIS, now.
