@@ -327,11 +327,11 @@ async function waitSpoke(pg, ms) {
   r = await shelfAt("2026-10-08T23:55:00-06:00", ["K"]);
   ok("late on Thursday where the family is (already Friday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
   r = await shelfAt("2026-10-09T00:05:00-06:00", ["K"]);
-  ok("…and on Friday it opens, first on a K child's shelf, with Kiki the Koala open beside it",
-    r.shelf[0].t === "Kip's Kite" && JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf)); await r.ctx.close();
+  ok("…and on Friday it opens, first on a K child's shelf, with Kiki the Koala open beside it (and October's Halloween book, which sits on every shelf)",
+    r.shelf[0].t === "Kip's Kite" && JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf)); await r.ctx.close();
   r = await shelfAt("2026-10-09T09:00:00-06:00", []);
   ok("on Friday 9 Oct every book on the shelf is open, nothing still coming",
-    r.shelf.length === 42 && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
+    r.shelf.length === 43 /* 42 + October's Halloween book */ && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
 
   // ── ONE FREE BOOK, THE REST PREMIUM (Travis, 30 Sep 2026) ──
   // "one book uh so like the letter r book ... to be free and the rest is
