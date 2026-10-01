@@ -193,17 +193,38 @@ until it is stopped in those dashboards. That is an operations task.
 
 **The ask happens after the product proves itself.** Setup goes straight into
 the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
-and fruit slice for ages five and up ... when they finish the game, that is
-when I want the paywall to come up"): Feed Echo for ages 3-4, Fruit Slice (its
-practice page first) from 5, a clinician's own setup still ends on Home. That
-first game's end card is where the offer is made, once: "Show a grown-up →"
-to `/subscribe.html?first=1` while `planEligible()` says so, else the usual
-end. `Sona.firstGameStart()` marks the game for this tab and
-`firstGameEnd(key)` answers once; `tests/firstgametest.mjs` pins it. Never
-during onboarding, which used to end at a price screen before the child had
-said a word. It is an offer, not a wall, it is inert while free, and it never
-fires for anyone already entitled. Declining leaves Home with every game but
-the free ones greyed out (still tappable: "ask a grown-up").
+and fruit slice for ages five and up"): Feed Echo for ages 3-4, Fruit Slice (its
+practice page first) from 5, a clinician's own setup still ends on Home.
+**That first game ends with no price** (Travis, 30 Sep 2026, after playing the
+27 Sep version where it did: "the top stays as play again ... when they see
+home they see the other games they can play and that there are premium ones
+... the flow was not good"): "Play again" on top, "Back home" under it.
+`Sona.firstGameStart()` marks the game for this tab and `firstGameEnd(key)`
+spends the mark once and always answers Home. The offer is made in exactly two
+places, both behind the grown-ups gate: **once**, automatically, at the end of
+the first completed practice run ("Show a grown-up →" to
+`/subscribe.html?first=1` while `planEligible()` says so), and **whenever** a
+grown-up answers a child's tap on a locked game or book ("Ask a grown-up" →
+`premium.html`, which forwards a family it would offer to
+`/subscribe.html?from=<game>` or `?from=library`). Never during onboarding,
+which used to end at a price screen before the child had said a word. It is an
+offer, not a wall, it is inert while free, and it never fires for anyone
+already entitled. Declining leaves Home with every game but the free ones
+greyed out (still tappable: "ask a grown-up"). `tests/firstgametest.mjs` pins
+all of it.
+
+**The plan screen reached as an offer is a moment, not Settings** (Travis, 30
+Sep 2026: "this paywall is absolutely terrible!"). With `?first=1` or `?from=`
+and a purchase card on screen, `subscribe.html` sets `body.offer`: the
+grown-ups tabs, crumb, "Your plan" head and summary box step aside, and the page
+leads with the Premium games in Home's own art (`Sona.CRAFTED_CARDS`, one map
+for both pages), one line built only from what the device recorded ("Milo just
+practiced the R sound — 12 words out loud!") or the tapped game ("Milo wants to
+play Hoops"), a headline, three checks, then the unchanged plan card with the
+button on the first screen at 375×667 and up. Counts come from the catalog and
+no date is promised ("new ones on the way"). Rachel's line moves under the
+decline, word for word. Settings › Your plan (no flag) is the page as it was.
+Every pricing rule in this section still applies to the card itself.
 
 **Eligibility and impression are two functions, and merging them is the bug.**
 `planEligible()` answers "should we take them to the plan screen" and changes
@@ -596,24 +617,26 @@ nowhere else in the book (not mid-word, not at the end, not in a blend).
 Spelling can't check that, so `readtest` checks every line against
 `tests/booklex.json` (pronouncing-dictionary entries); a new word needs its
 entry there. The reader tints only the start of each book's listed `words`.
-Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
-Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
-built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
-in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
-**The builder never draws over hand-made art** (the family's redesign brief,
-28 Sep 2026: new pictures are coming from a designer, a book at a time). Every
-SVG it writes opens with its marker comment straight after the `<svg>` tag
-(`MARK` and `builtHere()` in `tools/bookart/book.mjs`). It plans every file
-first and writes nothing at all if a target folder holds anything it did not
-write: a .webp or .png, or an .svg that doesn't open with the marker (an old
-page redrawn in an editor that kept the comment counts as hand-made). It also
-refuses a book name it doesn't build (it used to print "built 0 books" and
-exit 0). Hand-made books are listed in `tools/bookart/handmade.mjs` (today
-only `rory-rainbow`). When a book's redrawn art lands: add its slug there,
-delete it from `books1.mjs`/`books2.mjs`, delete its old SVGs, and point its
-paths in `library.html` and `parents.html` at the new files, in one commit.
-`tests/arttooltest.mjs` pins the two lists against the shelf, the generated
-bytes on disk, every book-picture path any page uses, and the refusals.
+Every page is a picture in the crafted style: **all 19 fuller books were
+redrawn on 1 Oct 2026** (Travis: "every design done by claude we will be done
+with") as `cover.webp` + `p01..p12.webp` in `public/assets/books/<slug>/`.
+They are made by `tools/art/` (README in each script's header):
+`book-prompts.json` holds each book's character bible and one description per
+page, built around that page's key word; `gen-books.mjs` draws a cover, a
+character lineup, then every page as its own picture with the cover and lineup
+attached (six pages on one sheet put 5-9 of 12 in the wrong place);
+`cut-books.py` trims and sizes them; `wire-books.mjs` swaps a book in.
+Every page was checked by eye against its line and key word; the pages the
+check still questioned are listed on the review page (`tools/art/review/`)
+for Travis and Rachel. **What a picture shows the child is Rachel's call**:
+redraw a page through `gen-books.mjs --redo <slug>:pNN`, never by hand-editing
+a prompt into a different word.
+`tools/bookart/` (the old SVG builder) now builds no book — `handmade.mjs`
+lists all 19 and `books1.mjs`/`books2.mjs` are empty — but stays because
+`tools/gameart/` draws the parked games from its kit. The builder still never
+draws over hand-made art and refuses a book name it doesn't build;
+`tests/arttooltest.mjs` pins the lists against the shelf and every
+book-picture path any page uses.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"), and **one is
 free** (30 Sep 2026: "one book uh so like the letter r book ... to be free and
 the rest is grayed out"). Home's Books card always opens `library.html` and

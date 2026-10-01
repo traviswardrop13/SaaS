@@ -22,10 +22,13 @@
         // Sona.gateDest; it names its own page literally instead. today.html
         // re-checks ?to= against the allowlist on arrival, which is the side
         // that reads an untrusted URL.
-        // ?first=1 is the hand-off from a completed run and changes the copy
-        // here, so it is the one flag worth carrying home and back.
+        // ?first=1 is the hand-off from a completed run and ?from=<game> the
+        // tap on a locked game; both change the copy here, so they are the
+        // flags worth carrying home and back (Home re-checks ?from= against
+        // the catalog).
+        var fm = location.search.match(/[?&]from=([a-z]+)(&|$)/);
         location.replace("/today.html?gate=1&to=" + encodeURIComponent(
-          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : "")));
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : fm ? "?from=" + fm[1] : "")));
       }
     })();
   </script>
@@ -110,6 +113,57 @@
     .slpline{display:flex;align-items:flex-start;gap:9px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
       font-weight:700;font-size:13px;color:var(--muted);line-height:1.5;}
     .slpline .em{font-size:18px;flex:none;line-height:1.2;}
+
+    /* ── the offer (30 Sep 2026): only when body.offer is set by the script ──
+       Settings › Your plan keeps everything above. In the offer, the Settings
+       furniture, the summary box and the in-card repeats step aside so the
+       games, the price and the button share one iPhone screen. */
+    body.offer .family-tabs, body.offer .family-crumb, body.offer .family-pagehead,
+    body.offer #planCard, body.offer #recapCard,
+    body.offer #pickCard > h2, body.offer #pickCard > p.muted:not(#pickMsg):not(#webRenew),
+    body.offer #iapCard > h2, body.offer .plan .proof, body.offer .plan .sub,
+    body.offer #pickCard > .proof, body.offer #iapCard > .proof { display:none !important; }
+    /* the plan card stands on its own: no white card around the bordered one */
+    body.offer #pickCard, body.offer #iapCard { margin-top:16px; background:transparent; border:0; box-shadow:none; padding:0; }
+    #offerHero { text-align:center; margin-top:6px; }
+    .offer-art { position:relative; height:176px; margin:4px -8px 0; }
+    .offer-art .oc { position:absolute; top:28px; width:30%; max-width:150px; aspect-ratio:16/12; border-radius:18px; overflow:hidden;
+      background:#fff; border:4px solid #fffdf7; box-shadow:0 8px 18px rgba(148,108,54,.2),0 2px 4px rgba(148,108,54,.14); }
+    .offer-art .oc img { width:100%; height:100%; object-fit:cover; display:block; }
+    .offer-art .oc:nth-child(1) { left:0; transform:rotate(-11deg); }
+    .offer-art .oc:nth-child(2) { left:22%; top:4px; transform:rotate(-4deg); z-index:2; }
+    .offer-art .oc:nth-child(3) { right:22%; top:4px; transform:rotate(4deg); z-index:2; }
+    .offer-art .oc:nth-child(4) { right:0; transform:rotate(11deg); }
+    .offer-art.solo { height:200px; }
+    .offer-art.solo .oc { left:50%; top:2px; width:68%; max-width:290px; transform:translateX(-50%) rotate(-2deg); }
+    .offer-art .echo { position:absolute; left:50%; bottom:-6px; width:96px; transform:translateX(-50%); z-index:3; filter:drop-shadow(0 6px 8px rgba(148,108,54,.25)); }
+    .offer-art.solo .echo { left:auto; right:6%; transform:none; width:84px; }
+    .offer-pill { display:inline-block; margin-top:14px; padding:5px 13px; border-radius:99px; background:#fff3c9; border:1px solid #f3dc92;
+      font-weight:800; font-size:13.5px; color:#7a5410; line-height:1.4; }
+    #offerTitle { font-family:"Baloo 2"; font-weight:800; font-size:29px; line-height:1.08; letter-spacing:-.5px; color:var(--ink); margin-top:8px; }
+    .offer-sub { font-weight:700; font-size:15px; color:var(--muted); margin-top:5px; }
+    .offer-checks { list-style:none; margin:14px 2px 0; padding:0; display:grid; gap:8px; text-align:left; }
+    .offer-checks li { display:flex; gap:10px; align-items:flex-start; font-weight:800; font-size:14.5px; line-height:1.35; color:var(--ink); }
+    .offer-checks li:before { content:"✓"; flex:none; width:22px; height:22px; border-radius:50%; background:#dff1ee; color:#14858d;
+      display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:900; margin-top:-1px; }
+    .offer-rachel { display:flex; gap:11px; align-items:center; margin:18px 0 0; padding:12px 14px; border-radius:16px; background:#fffdf7;
+      border:1px solid var(--line); font-weight:700; font-size:13px; line-height:1.45; color:var(--ink); }
+    .offer-rachel img { width:40px; height:40px; flex:none; }
+    .offer-rachel b { font-weight:800; }
+    body.offer #freeTierCard { margin-top:16px; }
+    /* a short phone (iPhone SE, 667pt) keeps the button on the first screen:
+       the art gets smaller, nothing else goes */
+    @media (max-height: 700px) {
+      .offer-art { height:118px; }
+      .offer-art .oc { top:16px; width:25%; }
+      .offer-art .oc:nth-child(2), .offer-art .oc:nth-child(3) { top:0; }
+      .offer-art .echo { width:68px; bottom:-4px; }
+      .offer-art.solo { height:136px; }
+      .offer-art.solo .oc { width:52%; }
+      .offer-art.solo .echo { width:64px; }
+      #offerTitle { font-size:26px; }
+      .offer-checks { gap:5px; }
+    }
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -126,6 +180,29 @@
     </nav>
     <a class="family-crumb" href="/settings.html">‹ Settings</a>
     <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Your plan</h1><p>One plan, told plainly — for the grown-ups.</p></div></div>
+
+    <!-- THE OFFER, AS A MOMENT (30 Sep 2026). Travis: "this paywall is
+         absolutely terrible". Reached from the end of a first practice run
+         (?first=1) or a tap on a locked game (?from=<game>), the page used to
+         open as Settings — tabs, a crumb, "Your plan", a summary box — with
+         the price four times before the button and not one picture of what
+         Premium opens. In that case this block leads instead: the Premium
+         games in Home's own art, one line about what the child just did, a
+         headline, three checks. The plan card, the decline, the timeline and
+         every pricing rule below are unchanged; Settings › Your plan (no
+         flag) still opens the page as it was. Filled from the catalog by the
+         script, so nothing here names a game or a count that can go stale. -->
+    <section id="offerHero" hidden aria-labelledby="offerTitle">
+      <div class="offer-art" id="offerArt" aria-hidden="true"></div>
+      <p class="offer-pill" id="offerPill" hidden></p>
+      <h1 id="offerTitle">Unlock every game</h1>
+      <p class="offer-sub" id="offerSub"></p>
+      <ul class="offer-checks">
+        <li>Every game and every book, for every child on this phone</li>
+        <li>Real speech practice, built into every game</li>
+        <li>Daily practice and the free games stay free either way</li>
+      </ul>
+    </section>
 
     <!-- THE RECAP, and it only appears on the hand-off from a completed run.
          A parent arrives here having been fetched by a child who just
@@ -146,7 +223,7 @@
     <!-- Where this family stands today. The page title moved up into the
          grown-ups page head; this line stays in the same place relative to
          the recap and the offer, and every rail below rewrites it. -->
-    <div class="card">
+    <div class="card" id="planCard">
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
     </div>
 
@@ -240,7 +317,15 @@
 
     <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
       <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — keep the free version</a>
-      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+      <span class="muted" id="declineNote" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+    </p>
+
+    <!-- In the offer, Rachel's credential moves out of the plan card to here,
+         under the decline: the card above the fold carries only the price and
+         the button. The words are the card's own, unchanged. -->
+    <p class="offer-rachel" id="offerRachel" hidden>
+      <img src="/assets/crafted/echo-welcome.webp" alt="" />
+      <span><b>Built with Rachel, MS, CF-SLP — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
     </p>
 
     <!-- WHAT STAYS FREE — shown, while pricing is live, to a family who does
@@ -357,6 +442,17 @@
     // clinician handing Sona to a family never hits a wall.
     var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
 
+    // Which door the grown-up came through (30 Sep 2026): the end of a first
+    // practice run (?first=1), a tap on a locked game (?from=<game>), a locked
+    // book or "See Premium" (?from=library), or Settings (neither). ?from= is
+    // checked against the catalog — it arrived in a URL.
+    var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
+    try {
+      var _f = new URLSearchParams(location.search).get("from") || "";
+      OFFER_FROM = _f === "library" ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
+    } catch (e) {}
+    var OFFER_SOURCE = OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM ? "from-game" : "settings";
+
     // The header line for a family who holds Premium without having bought it
     // here. Where it came from is said out loud: a clinician's plan can end,
     // and a parent who was never told it was theirs cannot plan for that.
@@ -447,7 +543,7 @@
         if (Sona.premium && Sona.premium()) { premiumLine(); return; }
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
-        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
+        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE }); } catch (e) {}
         // The offer is on screen NOW — this is the only place the one-shot is
         // spent. Deciding to come here is not the same as arriving.
         try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
@@ -503,7 +599,9 @@
     // Build the recap from what this device actually recorded. Nothing here
     // is fetched and nothing is guessed: each line is skipped when its number
     // is missing, so a parent who arrives after an interrupted run sees fewer
-    // lines rather than a fabricated one.
+    // lines rather than a fabricated one. In the offer the same facts, and
+    // only those, become the one-line pill under the games (RECAP_FACTS).
+    var RECAP_FACTS = null;
     (function () {
       if (!/[?&]first=1(&|$)/.test(location.search)) return;
       try {
@@ -536,6 +634,7 @@
         // for money, is worse than no recap. (A "next time: tomorrow's chapter"
         // line used to follow — it went with the books, GAMES1.)
         if (!out.length) return;
+        RECAP_FACTS = { sound: best ? (Sona.soundLabel ? Sona.soundLabel(best.s) : best.s) : "", reps: reps > 0 ? reps : 0 };
         document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
         document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
         document.getElementById("recapCard").style.display = "block";
@@ -547,18 +646,22 @@
     })();
 
     // The decline, and the only place it is offered as a decline.
+    // A locked game's offer gets the same stated way out (30 Sep 2026); there
+    // the child was choosing a game, not finishing a run, so the line under
+    // it says the free games are still there.
     (function () {
-      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      if (!OFFER_FIRST && !OFFER_FROM) return;
       var row = document.getElementById("declineRow"), a = document.getElementById("declineLink");
       if (!row || !a) return;
       // a family who cannot be sold to is not being asked, so there is nothing
       // for them to decline
       var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.premium && Sona.premium()); } catch (e) {}
       if (!asked) return;
+      if (!OFFER_FIRST) { var dn = document.getElementById("declineNote"); if (dn) dn.textContent = "Your free games are still ready to play."; }
       row.style.display = "block";
       a.addEventListener("click", function () {
         // keepalive, because this navigates immediately afterwards
-        try { if (Sona.track) Sona.track("offer dismissed", { surface: "first-run" }); } catch (e) {}
+        try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_FIRST ? "first-run" : "from-game" }); } catch (e) {}
       });
     })();
 
@@ -601,7 +704,7 @@
       // planMoment().
       try {
         var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
-        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web" });
+        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web", source: OFFER_SOURCE });
         if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
       } catch (e) {}
       // the exact-date pill: a trial started today ends on a knowable date, and
@@ -648,6 +751,60 @@
           release();
         }).catch(release);
       })();
+    })();
+
+    // THE OFFER, AS A MOMENT (30 Sep 2026) — see the note on #offerHero. It
+    // runs last, after the rails above have decided which plan card (if any)
+    // is on the screen, and it only ever changes how that card is framed:
+    // never the price, the button, the timeline or who is asked. Nothing is
+    // offered to a family on the free switch, to one that already has
+    // Premium, or where no purchase card is showing (an old App Store binary).
+    (function () {
+      try {
+        if (!OFFER_FIRST && !OFFER_FROM) return;
+        if (FREE || (Sona.premium && Sona.premium())) return;
+        var native = !!(Sona.isNativeApp && Sona.isNativeApp());
+        var card = document.getElementById(native ? "iapCard" : "pickCard");
+        if (!card || card.style.display === "none") return;
+        document.body.classList.add("offer");
+        document.getElementById("offerHero").hidden = false;
+        document.getElementById("offerRachel").hidden = false;
+
+        var P = {}; try { P = Sona.getProfile() || {}; } catch (e) {}
+        var name = (P.childName || "").trim(), who = name || "Your child";
+        var acts = Sona.GAME_ACTS || {}, art = Sona.CRAFTED_CARDS || {};
+        // what Premium opens TODAY: released games outside the free tier
+        var open = Object.keys(acts).filter(function (k) { return acts[k].tier !== "free" && !acts[k].comingSoon; });
+        var game = OFFER_FROM && OFFER_FROM !== "library" ? acts[OFFER_FROM] : null;
+
+        // the games themselves, in Home's art: the tapped one large, or the
+        // Premium ones fanned like a hand of cards, with Echo in front
+        var pics = game && art[OFFER_FROM] ? [OFFER_FROM] : open.filter(function (k) { return art[k]; }).slice(0, 4);
+        var box = document.getElementById("offerArt");
+        if (pics.length === 1) box.className = "offer-art solo";
+        box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
+          '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
+
+        document.getElementById("offerTitle").textContent = game ? "Unlock " + game.name + ", and every other game"
+          : name ? "Unlock every game for " + name : "Unlock every game";
+        // a count read from the catalog, and no promise of a date: a Monday
+        // shown on Home is a target, never a guarantee
+        var n = open.length;
+        document.getElementById("offerSub").textContent = n
+          ? n + (game ? "" : " more") + " game" + (n === 1 ? "" : "s") + " today, and new ones on the way."
+          : "Every game, and new ones on the way.";
+
+        // one line about what just happened, from what this device recorded —
+        // the recap's own facts, so nothing here is invented
+        var line = "";
+        if (game) line = "🎮 " + who + " wants to play " + game.name;
+        else if (OFFER_FIRST && RECAP_FACTS) {
+          var f = RECAP_FACTS, words = f.reps ? f.reps + " word" + (f.reps === 1 ? "" : "s") + " out loud" : "";
+          line = f.sound ? "🎉 " + who + " just practiced the " + f.sound + " sound" + (words ? " — " + words + "!" : "!")
+            : words ? "🎉 " + who + " just said " + words + "!" : "";
+        }
+        if (line) { var pill = document.getElementById("offerPill"); pill.textContent = line; pill.hidden = false; }
+      } catch (e) {}
     })();
 
     // Plan line: reflect an active subscription if one was restored on this device.

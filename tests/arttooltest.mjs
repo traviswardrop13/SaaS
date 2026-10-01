@@ -81,49 +81,61 @@ ok("Rory and the Rainbow is hand-made, so the builder never writes it", hand.has
   ok("…and every file it writes opens with its marker, right after the <svg> tag, where build.mjs looks for it",
     BUILT.every((b) => bookFiles(b).every(([, svg]) => svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"') && builtHere(svg))));
   ok("…and a copy of its page re-saved by an editor (an <?xml> header, the tag reflowed) no longer counts as its own, though the marker is still inside",
-    (() => { const svg = bookFiles(BUILT[0])[1][1]; const resaved = '<?xml version="1.0" encoding="UTF-8"?>\n' + svg, reflowed = svg.replace(BOOK_MARK, "\n  " + BOOK_MARK);
+    (() => { const svg = BUILT.length ? bookFiles(BUILT[0])[1][1] : '<svg xmlns="http://www.w3.org/2000/svg">' + BOOK_MARK + '<circle r="9"/></svg>\n'; const resaved = '<?xml version="1.0" encoding="UTF-8"?>\n' + svg, reflowed = svg.replace(BOOK_MARK, "\n  " + BOOK_MARK);
       return resaved.includes(BOOK_MARK) && reflowed.includes(BOOK_MARK) && !builtHere(resaved) && !builtHere(reflowed) && !builtHere(""); })());
   const marked = HANDMADE.flatMap((s) => art(PUB + "/assets/books/" + s).filter((f) => readFileSync(PUB + "/assets/books/" + s + "/" + f).includes(BOOK_MARK)).map((f) => s + "/" + f));
   ok("no hand-made book's file says the builder wrote it", HANDMADE.every((s) => art(PUB + "/assets/books/" + s).length > 0) && marked.length === 0, marked.join(", ") || "a hand-made folder is empty");
 }
 
-// the builder, run where it can do no harm
+// the builder, run where it can do no harm. Since every fuller book was
+// redrawn (1 Oct 2026) none is built here, so its build-and-refuse checks
+// have no book to run on; what still holds is that it writes nothing.
+if (!BUILT.length) {
+  const d = scratch(), r = run(BOOK_TOOL, d);
+  ok("every fuller book is hand-made, so the book builder builds none and writes nothing",
+    r.status === 0 && /built 0 books/.test(r.stdout) && walk(d).length === 0, r.stderr || r.stdout);
+  const named = run(BOOK_TOOL, scratch(), "rory-rainbow");
+  ok("…and asked for a hand-made book by name, it refuses instead of printing \"built 0 books\"", named.status !== 0 && /rory-rainbow is drawn by hand/.test(named.stderr), named.stderr);
+  const unknown = run(BOOK_TOOL, scratch(), "no-such-book");
+  ok("…and a book it doesn't know", unknown.status !== 0 && /no book called no-such-book/.test(unknown.stderr), unknown.stderr);
+} else {
 {
-  const d = scratch();
-  const r = run(BOOK_TOOL, d);
-  const out = d + "/public/assets/books";
-  const same = r.status === 0 && BUILT.every((b) => bookFiles(b).every(([n, svg]) => existsSync(out + "/" + b.slug + "/" + n) && readFileSync(out + "/" + b.slug + "/" + n, "utf8") === svg));
-  ok("run on an empty folder, the book builder writes every built book and nothing else", same && readdirSync(out).sort().join() === [...built].sort().join(), r.stderr || r.stdout);
-  put(out + "/kip-kite/.DS_Store", "finder");
-  const again = run(BOOK_TOOL, d);
-  ok("…and runs again over its own pictures (and Finder's .DS_Store) without a word", again.status === 0 && /built 18 books/.test(again.stdout), again.stderr);
-}
-function refusal(label, seeds, args, expect) {
-  const d = scratch();
-  for (const [f, body] of Object.entries(seeds)) put(d + "/" + f, body);
-  const before = walk(d);
-  const r = run(BOOK_TOOL, d, ...args);
-  const untouched = Object.entries(seeds).every(([f, body]) => readFileSync(d + "/" + f, "utf8") === body);
-  ok(label, r.status !== 0 && walk(d).join() === before.join() && untouched && expect.test(r.stderr),
-    JSON.stringify({ status: r.status, wrote: walk(d).filter((f) => !before.includes(f)).slice(0, 3), untouched, stderr: r.stderr.slice(0, 240) }));
-}
-const stale = '<svg xmlns="http://www.w3.org/2000/svg">' + BOOK_MARK + "an older build</svg>\n";
-refusal("the book builder refuses a folder where new art has landed (bo-beach-day/p01.webp): it names the file, says how to fix it, and writes nothing, not even the book before it",
-  { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p01.webp": "RIFF\0\0\0\0WEBPVP8 hand-made" }, [],
-  /bo-beach-day\/p01\.webp[\s\S]*handmade\.mjs[\s\S]*Nothing was written/);
-refusal("…and a page drawn by hand under the builder's own name (a p01.svg without its marker)",
-  { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p01.svg": '<svg xmlns="http://www.w3.org/2000/svg"><circle r="9"/></svg>\n' }, [],
-  /bo-beach-day\/p01\.svg[\s\S]*marker[\s\S]*Nothing was written/);
-refusal("…and an old page redrawn in an editor that kept the marker comment but wrote its own header",
-  { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p02.svg": '<?xml version="1.0" encoding="UTF-8"?>\n<!-- Created with Inkscape -->\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 400">\n  ' + BOOK_MARK + '\n  <circle r="9"/>\n</svg>\n' }, [],
-  /bo-beach-day\/p02\.svg[\s\S]*marker[\s\S]*Nothing was written/);
-refusal("…and a cover.png beside its pages", { "public/assets/books/kip-kite/cover.png": "\x89PNG hand-made" }, [], /kip-kite\/cover\.png/);
-refusal("asked for a hand-made book by name, it refuses instead of printing \"built 0 books\"", {}, ["rory-rainbow"], /rory-rainbow is drawn by hand/);
-refusal("…and a book it doesn't know", {}, ["no-such-book"], /no book called no-such-book/);
-{
-  const d = scratch();
-  const r = run(BOOK_TOOL, d, "kip-kite");
-  ok("asked for one built book, it writes that book only", r.status === 0 && readdirSync(d + "/public/assets/books").join() === "kip-kite" && /built 1 books/.test(r.stdout), r.stderr);
+    const d = scratch();
+    const r = run(BOOK_TOOL, d);
+    const out = d + "/public/assets/books";
+    const same = r.status === 0 && BUILT.every((b) => bookFiles(b).every(([n, svg]) => existsSync(out + "/" + b.slug + "/" + n) && readFileSync(out + "/" + b.slug + "/" + n, "utf8") === svg));
+    ok("run on an empty folder, the book builder writes every built book and nothing else", same && readdirSync(out).sort().join() === [...built].sort().join(), r.stderr || r.stdout);
+    put(out + "/kip-kite/.DS_Store", "finder");
+    const again = run(BOOK_TOOL, d);
+    ok("…and runs again over its own pictures (and Finder's .DS_Store) without a word", again.status === 0 && new RegExp("built " + BUILT.length + " books").test(again.stdout), again.stderr);
+  }
+  function refusal(label, seeds, args, expect) {
+    const d = scratch();
+    for (const [f, body] of Object.entries(seeds)) put(d + "/" + f, body);
+    const before = walk(d);
+    const r = run(BOOK_TOOL, d, ...args);
+    const untouched = Object.entries(seeds).every(([f, body]) => readFileSync(d + "/" + f, "utf8") === body);
+    ok(label, r.status !== 0 && walk(d).join() === before.join() && untouched && expect.test(r.stderr),
+      JSON.stringify({ status: r.status, wrote: walk(d).filter((f) => !before.includes(f)).slice(0, 3), untouched, stderr: r.stderr.slice(0, 240) }));
+  }
+  const stale = '<svg xmlns="http://www.w3.org/2000/svg">' + BOOK_MARK + "an older build</svg>\n";
+  refusal("the book builder refuses a folder where new art has landed (bo-beach-day/p01.webp): it names the file, says how to fix it, and writes nothing, not even the book before it",
+    { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p01.webp": "RIFF\0\0\0\0WEBPVP8 hand-made" }, [],
+    /bo-beach-day\/p01\.webp[\s\S]*handmade\.mjs[\s\S]*Nothing was written/);
+  refusal("…and a page drawn by hand under the builder's own name (a p01.svg without its marker)",
+    { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p01.svg": '<svg xmlns="http://www.w3.org/2000/svg"><circle r="9"/></svg>\n' }, [],
+    /bo-beach-day\/p01\.svg[\s\S]*marker[\s\S]*Nothing was written/);
+  refusal("…and an old page redrawn in an editor that kept the marker comment but wrote its own header",
+    { "public/assets/books/penny-pebble-party/cover.svg": stale, "public/assets/books/bo-beach-day/p02.svg": '<?xml version="1.0" encoding="UTF-8"?>\n<!-- Created with Inkscape -->\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 400">\n  ' + BOOK_MARK + '\n  <circle r="9"/>\n</svg>\n' }, [],
+    /bo-beach-day\/p02\.svg[\s\S]*marker[\s\S]*Nothing was written/);
+  refusal("…and a cover.png beside its pages", { "public/assets/books/kip-kite/cover.png": "\x89PNG hand-made" }, [], /kip-kite\/cover\.png/);
+  refusal("asked for a hand-made book by name, it refuses instead of printing \"built 0 books\"", {}, ["rory-rainbow"], /rory-rainbow is drawn by hand/);
+  refusal("…and a book it doesn't know", {}, ["no-such-book"], /no book called no-such-book/);
+  {
+    const d = scratch();
+    const r = run(BOOK_TOOL, d, "kip-kite");
+    ok("asked for one built book, it writes that book only", r.status === 0 && readdirSync(d + "/public/assets/books").join() === "kip-kite" && /built 1 books/.test(r.stdout), r.stderr);
+  }
 }
 
 // ── GAMES ──

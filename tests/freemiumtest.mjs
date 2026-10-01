@@ -432,6 +432,18 @@ if (hasContract && premiumPresent) {
   await section("the parent offer follows the configured release", async () => {
     const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=stack", gate: true });
     try {
+      if (!appFree) {
+        // OFFER1 (Travis, 30 Sep 2026: "this paywall is absolutely terrible"):
+        // with pricing on, the pitch-then-"See the plan" step is gone. A family
+        // without Premium goes straight on to the page that owns the price,
+        // opened on the game the child tapped; that page's framing is pinned
+        // in firstgametest. The Premium-holder and preview states below still
+        // stay on this page.
+        await pg.waitForURL(/\/subscribe\.html\?from=stack$/);
+        ok("the paid release takes a family without Premium straight to the plan screen, opened on the tapped game", new URL(pg.url()).searchParams.get("from") === "stack", pg.url());
+        ok("…and nothing on the way starts a purchase", !calls.some(url => /checkout|revenuecat|purchases/i.test(url)), calls);
+        return;
+      }
       await pg.locator("#premiumApp").waitFor();
       const st = await pg.evaluate(() => ({
         preview: Sona.libraryPreview(), free: Sona.isFree(), premium: Sona.premium(),

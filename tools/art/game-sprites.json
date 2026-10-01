@@ -1,0 +1,206 @@
+[
+ {
+  "name": "hoops-gym",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "The back wall of a cozy children's indoor basketball gym, seen straight on from the court: warm cream painted wall, two rows of wooden bleachers at the bottom with a small happy crowd of round clay people in pastel shirts, triangle party bunting across the top, soft warm light. Leave the middle of the wall plain and uncluttered (a hoop will be drawn there by the game). No hoop, no basketball, no court floor, no text or numbers."
+ },
+ {
+  "name": "ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A single basketball: warm orange with dark seams, smooth clay. Centered, filling 80% of the square."
+ },
+ {
+  "name": "giant-watermelon",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One giant whole round watermelon, deep green with darker green stripes, smooth clay, a soft highlight top-left. Centered, filling 85% of the square, seen from the front."
+ },
+ {
+  "name": "finish-banner",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A cheerful race finish arch for a children's game: two red-and-white posts with a red banner across the top and a black-and-white checkered strip on the ground between them. The banner is plain red with no words. Front view, filling the frame width."
+ },
+ {
+  "name": "star",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One shiny golden five-point star with rounded points and a small white highlight, smooth clay, friendly. Centered, filling 85% of the square."
+ },
+ {
+  "name": "cloud",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "One soft fluffy white cloud, wide and flat-bottomed like a little platform, smooth clay with gentle blue-grey shading underneath. Filling the frame width."
+ },
+ {
+  "name": "tile-coral",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft coral red, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-purple",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft lavender purple, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-green",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft leaf green, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-blue",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft sky blue, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-gold",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, shiny warm gold, smooth glossy clay, a single cream star embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "bubble",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big round shiny soap bubble, clear with soft rainbow sheen and a bright white highlight, empty inside, friendly and toy-like. Centered, filling 85% of the square."
+ },
+ {
+  "name": "home-bubbles",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) happily popping big shiny soap bubbles in a sunny meadow, a few bubbles floating around him. Wide, cheerful, simple background."
+ },
+ {
+  "name": "home-books",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: a small cozy stack of colourful picture books in a sunny meadow, one open book in front with a little rainbow rising out of its pages, Echo the round blue clay bird (exactly like the attached reference) peeking over the top. Wide, cheerful, simple background. The book covers and pages show only colours and simple shapes."
+ },
+ {
+  "name": "cover-peekaboo",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) peeking out from behind a little red door in a cozy cottage wall, a playful surprise. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-balloon",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) blowing up a big bright red party balloon, a few more balloons and streamers around. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-flower",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) watering a big happy sunflower growing from a flower pot with a little watering can. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-rocket",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a small round red-and-white toy rocket on a launch pad, ready to blast off under a blue sky. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-snowman",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a friendly snowman with a carrot nose and a scarf in a snowy meadow. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-train",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) waving from a little colourful toy steam train with cars carrying animal friends through green hills. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-puppy",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) giving a happy fluffy puppy a bubble bath in a small tub full of bubbles. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-stars",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a nightcap under a deep blue night sky full of glowing golden stars and a smiling moon. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-cake",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a tall colourful birthday cake with candles, sprinkles and frosting. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-gifts",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) with a pile of wrapped present boxes with bows, one box open with a bunny peeking out. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-fishtank",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) looking into a round fish tank with bright friendly fish, bubbles and seaweed. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-racecar",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) driving a little red clay race car speeding along a curvy track. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-treasure",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) on a small wooden sailboat on blue sea, sailing toward an island with a treasure chest. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-soccer",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) kicking a soccer ball toward a small goal net on green grass. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-robot",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a friendly round toy robot with glowing buttons, building it with a wrench. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-castle",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a cheerful sandcastle-coloured toy castle with flags and towers. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-dino",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) with a little brush, digging up a big dinosaur fossil skeleton in sand. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-space",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a tiny round rocket flying through space past colourful planets and stars. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-pizza",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a chef's hat tossing a pizza covered in colourful toppings in a cozy kitchen. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-monster",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a fluffy friendly purple monster wearing silly glasses and a party hat. Wide, cheerful, simple background, the action easy to read at a small size."
+ }
+]

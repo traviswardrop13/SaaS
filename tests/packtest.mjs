@@ -99,21 +99,22 @@ const lib = await page.evaluate(() => {
   const shelf = document.getElementById("shelf");
   const books = [...shelf.querySelectorAll(".bookBtn")];
   const titles = books.map((b) => b.textContent);
-  const openOnes = books.filter((b) => !b.disabled);
+  const openOnes = books.filter((b) => !b.disabled && !b.classList.contains("locked"));   // a Premium book asks for a grown-up instead
   openOnes[openOnes.length - 1].click();
   return {
     n: books.length,
     titles,
     soon: /COMING SOON/.test(shelf.textContent),
-    chips: document.querySelectorAll("#wbSounds .sound").length,
+    wordBox: !!document.getElementById("wordgrid"),
     open: document.getElementById("book").classList.contains("show"),
     head: document.getElementById("bkHead").textContent,
   };
 });
 ok("no book is gated behind COMING SOON", !lib.soon);
 ok("the shelf is this child's sound, not the whole catalogue",
-  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(lib.titles));
-ok("word-box sound chips are back", lib.chips >= 10);
+  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)/.test(t)), JSON.stringify(lib.titles));
+// the word box (emoji word tiles, "tap to hear") was taken off (Travis, 1 Oct 2026)
+ok("no word box on the shelf", !lib.wordBox);
 ok("every open book on the shelf opens in the reader", lib.open, JSON.stringify({ open: lib.open, head: lib.head }));
 ok("library clean", errs.length === 0);
 

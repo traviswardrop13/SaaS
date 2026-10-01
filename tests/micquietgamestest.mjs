@@ -327,7 +327,7 @@ for (const [key, file] of ARCADE) {
       // this family, to the games (pinned below), and Back home.
       const end = await page.evaluate(() => {
         const $ = (id) => document.getElementById(id), vis = (e) => !!e && getComputedStyle(e).display !== "none";
-        return { star: vis($("endEmoji")) && !!$("endEmoji").querySelector("svg") && getComputedStyle($("endEmoji")).opacity === "1",
+        return { star: vis($("endEmoji")) && !!$("endEmoji").querySelector("svg,img") && getComputedStyle($("endEmoji")).opacity === "1",
           title: $("endTitle").textContent.trim(), echo: !!document.querySelector("#endOvl .echoWin img"),
           next: vis($("endCharge")) ? $("endCharge").textContent.trim() : null, home: vis($("endHome")) ? $("endHome").textContent.trim() : null };
       }).catch((e) => ({ error: String(e) }));
