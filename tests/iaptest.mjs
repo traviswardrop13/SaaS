@@ -1368,7 +1368,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 
   // The replay's writes are exercised below with a positive detected burst
   // and an actual completed run. Ladder gating keeps its separate source pin.
-  ok("a replay banks no ladder advancement", /S\.recordRung && !DEMO_REPLAY/.test(chg));
+  ok("a replay banks no ladder advancement", /S\.rungWin && !DEMO_REPLAY/.test(chg));
   ok("…and the replay flag is read before demoFinish can change it",
     chg.indexOf("var DEMO_REPLAY") < chg.indexOf("S.demoFinish"),
     "decided at load, or the answer flips underneath the page");
