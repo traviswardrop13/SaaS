@@ -35,7 +35,7 @@
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -125,6 +125,15 @@
     #planMonth,#iapPlanMo{padding-top:12px;padding-bottom:12px;margin-top:9px;}
     .plan .paynote{display:block;font-weight:700;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
     .planbuy{margin-top:12px;}
+    /* THE DAY THEY ARE BILLED, IN ONE LINE (Travis, 2 Oct 2026: "there's
+       still too much information ... especially everything that is under
+       start three days free ... just briefly say like what day they'll be
+       billed"). It replaced a dated three-row timeline and, on the Apple card,
+       a paragraph of small print. What stays is what a parent needs and Apple
+       requires: when the free days end, the price after them, that it renews,
+       and where to cancel; Restore, Terms and Privacy stay as links. */
+    .billday{display:block;margin:10px 0 0;font-weight:700;font-size:13px;color:var(--muted);line-height:1.45;text-align:center;}
+    .billday b{font-weight:800;color:var(--ink);}
     .planbuy .go{margin-top:0;}
     .planbuy .reassure b{font-weight:800;color:var(--ink);}
 
@@ -148,7 +157,8 @@
     body.offer #planCard, body.offer #recapCard,
     body.offer #pickCard > h2, body.offer #pickCard > p.muted:not(#pickMsg):not(#webRenew),
     body.offer #iapCard > h2, body.offer .plan .proof, body.offer .plan .sub,
-    body.offer #pickCard > .proof, body.offer #iapCard > .proof { display:none !important; }
+    body.offer #pickCard > .proof, body.offer #iapCard > .proof,
+    body.offer #declineNote { display:none !important; }
     /* the plan card stands on its own: no white card around the bordered one */
     body.offer #pickCard, body.offer #iapCard { margin-top:16px; background:transparent; border:0; box-shadow:none; padding:0; }
     #offerHero { text-align:center; margin-top:6px; }
@@ -296,6 +306,8 @@
          the recap and the offer, and every rail below rewrites it. -->
     <div class="card" id="planCard">
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
+      <!-- shown only to a family with an active plan (the last script block) -->
+      <p class="muted" id="planCancel" hidden style="margin-top:8px;font-size:12.5px;line-height:1.5;">To cancel a plan bought on speaksona.com, email <a href="mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan">hello@speaksona.com</a> and we&rsquo;ll cancel it for you. A plan bought on iPhone or iPad: open the phone&rsquo;s Settings, tap your name, then Subscriptions.</p>
     </div>
 
     <!-- native paywall (App Store build): Apple's sheet, required restore +
@@ -337,11 +349,10 @@
       <div class="planbuy">
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
-        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="iapTL"></div>
+        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions.</span>
+        <p class="billday" id="iapTL"></p>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" id="iapLegal" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium (yearly) starts with a 3-day free trial, then renews at the yearly price shown above. <span id="iapLegalMo" hidden>Sona Premium (monthly) is charged today at the monthly price shown above and renews every month. </span>Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -371,14 +382,14 @@
            pay today, but the $59.99 has a three-day trial. And have that as
            the default option selected"): the yearly plan, picked when the
            page opens, and under it $9.99 a month, charged today. One button
-           serves both and says what the picked one does; the free-days
-           timeline and "no charge today" belong to yearly and leave the
-           screen when monthly is picked. $119.88 and "save $59.89" did NOT
+           serves both and says what the picked one does; the line naming
+           the day they are billed and "no charge today" belong to yearly and
+           leave the screen when monthly is picked. $119.88 and "save $59.89" did NOT
            come back with monthly: the saving is $59.89 only while the charter
            price lasts, so it would turn false at family fifty-one. What a
            parent can still check: $59.99 / 12 = $4.9991, hence "under $5 a
            month, billed once a year" and never "$4.99". Move a price and
-           #planLine and trialTimeline()'s final row move with it. -->
+           #planLine and trialTimeline()'s billing line move with it. -->
       <div class="planpick" id="webPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="planLife" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
         <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
@@ -410,7 +421,7 @@
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
         <span class="reassure" id="monthMath" hidden><b id="monthMathPrice">$9.99</b> is charged today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="webTL"></div>
+        <p class="billday" id="webTL"></p>
         <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
           <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
           · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
@@ -418,6 +429,27 @@
       </div>
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
       <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
+    </div>
+
+    <!-- WHERE THE WEB CARD SAT, WHEN THE WEBSITE DOES NOT SELL (Travis, 1 Oct
+         2026: "i dont want them paying on the website"). A family buys Premium
+         only in the iPhone and iPad app, through Apple; a browser on the free
+         version reads this instead of the card above, which stays in the file,
+         untouched, for the day Sona.webSales() says yes again. It carries NO
+         figure, no free-days promise and no spots-left count: the price in the
+         app is App Store Connect's, and a number typed here would be a claim
+         about one this repo does not own. And it says "it opens there": nothing
+         links an Apple purchase to this browser, so a parent who buys in the
+         app and comes back here still sees the free version. Never shown to a
+         family with Premium, in the app itself, or while Sona is free. -->
+    <div class="card" id="appCard" style="display:none;">
+      <h2 id="appTitle">Sona Premium is in the iPhone and iPad app</h2>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Premium opens every game and every book in the Sona app. You buy it there, through the App Store, and it opens there. Daily practice and the free games stay free here.</p>
+      <a class="btn" id="appStoreGo" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener" style="margin-top:14px;text-decoration:none;">Get Sona on the App Store</a>
+      <!-- A plan off sale is not a cancelled subscription: whoever already
+           pays through the website keeps Premium, and Settings › Restore is
+           still how a new browser learns of it. -->
+      <p class="muted" id="appPaid" style="margin-top:12px;font-size:12.5px;font-weight:700;line-height:1.5;">Already paid on speaksona.com? Your plan keeps working. <a href="/settings.html" style="color:var(--blue-d);font-weight:800;">Open Settings and tap Restore</a>.</p>
     </div>
 
     <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
@@ -546,6 +578,11 @@
     // stay in the DOM (and under test) but neither is shown — one flag, so a
     // clinician handing Sona to a family never hits a wall.
     var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
+    // WHERE A FAMILY CAN BUY (Travis, 1 Oct 2026: "i dont want them paying on
+    // the website"). Read once, failing closed: a sona.js that cannot answer
+    // means the web card stays hidden. Only the BROWSER rails below read it;
+    // the Apple card never does.
+    var WEB_SELLS=false; try{ WEB_SELLS=!!(Sona.webSales&&Sona.webSales()); }catch(e){}
 
     // Which door the grown-up came through (30 Sep 2026): the end of a first
     // practice run (?first=1), a tap on a locked game (?from=<game>), a locked
@@ -570,36 +607,31 @@
       document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
     }
 
-    // The dated trial timeline, one builder for both paywalls.
-    //
-    // Every row has to survive a parent checking it against reality: the dates
-    // are computed from the same +3 days the charge itself uses, the middle row
-    // promises only what the code can keep (no reminder email exists — see the
-    // CSS note), and the final row carries a FIGURE only on the web, where this
-    // repo is the source of truth. On iOS the App Store price is whatever App
-    // Store Connect says and RevenueCat rewrites it above, so naming a number
-    // here could contradict the button two lines up.
+    // The day they are billed, one builder for both paywalls (2 Oct 2026; it
+    // was a dated three-row timeline). The date comes from the same +3 days
+    // the charge itself uses. On the web the price is this repo's (the
+    // charter figure, window.__yearPrice); in the app it is the store's own
+    // string, read off the card two lines up once RevenueCat has painted it,
+    // so the line can never name a different number from the box above it.
+    // No reminder is promised: there is no trial mailer to keep one.
     function trialTimeline(id, native) {
       var el = document.getElementById(id);
       if (!el) return;
-      var fmt = function (days) {
-        try { return new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); }
-        catch (e) { return ""; }
-      };
-      var d0 = fmt(0), d2 = fmt(2), d3 = fmt(3);
-      if (!d3) return;                       // no dates, no timeline — the prose line stays
-      var where = native ? "Settings → Subscriptions" : "your account";
-      var last = native
-        ? "Sona Premium's yearly plan starts, at the price above — only if you kept Premium."
-        : "Sona Premium's yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Premium.";
-      el.innerHTML =
-        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — every game unlocks</b>' +
-          '<p>Every game in Sona Premium opens. Nothing is charged today.</p></div>' +
-        '<div class="tli clock"><span class="tld"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M4 3 2 5M20 3l2 2"/></svg></span><b>' + d2 + ' — still free</b>' +
-          '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
-        '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
-      // the prose sentence said the same thing in one line; the timeline
-      // replaces it rather than repeating it
+      var d3 = "";
+      try { d3 = new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      if (!d3) return;                       // no date, no line — the prose line stays
+      var price;
+      if (native) {
+        var shown = ((document.getElementById("iapPrice") || {}).textContent || "").replace(/\/(yr|year)$/i, "");
+        price = /\d/.test(shown) ? shown + " a year" : "the yearly price above";
+      } else price = (window.__yearPrice || "$59.99") + " a year";
+      // Apple's card says where to cancel, as Apple asks. The web says
+      // "Cancel anytime" and not "in your account": a web buyer has no
+      // cancel button there (they email us), and Stripe's own page, where
+      // they actually pay, spells out the renewal.
+      el.innerHTML = "Free until <b>" + d3 + "</b>, then " + price + ". " +
+        (native ? "Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime.");
+      // the one-line version said less in the same place; this replaces it
       var prose = document.getElementById(native ? "iapMath" : "trialMath");
       if (prose) prose.style.display = "none";
     }
@@ -725,7 +757,20 @@
         // caseload, a founder key — is never offered Apple's sheet: selling a
         // family what they already have is the one sale Sona must not make.
         if (Sona.premium && Sona.premium()) { premiumLine(); return; }
-        if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
+        // AN APP BUILD WITH NO PURCHASE PLUGIN has no purchase UI at all. It
+        // used to stop here and leave the header's markup default on screen,
+        // "you're a founding family", over an empty page: false for this
+        // family, and now what Settings › See Premium opens. (1 Oct 2026: the
+        // build on the App Store, 1.0.4, is such a build. Its archive carries
+        // no RevenueCat plugin, so this is what every new iPhone family meets
+        // until a build with the plugin ships.) Say what is true, and show
+        // what stays free. No "update the app": that is only true once a
+        // build that can sell is in the store.
+        if (!(Sona.iapAvailable && Sona.iapAvailable())) {
+          document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium can’t be bought in this version of the app yet.";
+          var ftN = document.getElementById("freeTierCard"); if (ftN) ftN.style.display = "block";
+          return;
+        }
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE }); } catch (e) {}
         // The offer is on screen NOW — this is the only place the one-shot is
@@ -750,12 +795,13 @@
         trialTimeline("iapTL", true);
         Sona.iapProduct("annual").then(function (p) {
           if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
+          trialTimeline("iapTL", true);   // the billing line names the store's price too
         }).catch(function () {});
 
         // THE PICK. Yearly on arrival (Travis, 1 Oct 2026: "the $59.99 has a
         // three-day trial. And have that as the default option selected").
         // Everything that is only true of one plan is painted from here: the
-        // button's words, the free-days line and timeline (yearly), "charged
+        // button's words, the free-days line and billing day (yearly), "charged
         // today" (monthly). Nothing yearly stays on screen beside a button
         // that charges today.
         var IAP_PLAN = "annual", moProduct = null, buyBtn = document.getElementById("iapBuy");
@@ -765,7 +811,7 @@
           buyBtn.textContent = mo ? "Subscribe — " + moProduct.priceString + " a month" : "Start 3 days free";
           document.getElementById("iapMathMo").hidden = !mo;
           tl.style.display = mo ? "none" : "";
-          // the timeline replaces the one-line version when it could be built
+          // the billing line replaces the one-line version when it could be built
           math.style.display = (mo || tl.innerHTML) ? "none" : "";
           document.getElementById("iapTitle").textContent = mo ? "Get Sona Premium, month by month" : TITLE_YEAR;
           fitOffer();
@@ -782,7 +828,6 @@
           moProduct = p;
           document.getElementById("iapPriceMo").textContent = p.priceString + "/mo";
           document.getElementById("iapPlanMo").style.display = "";
-          document.getElementById("iapLegalMo").hidden = false;
           document.getElementById("planLine").innerHTML = LINE_YEAR + " Or pay <b>month by month</b>, charged today.";
           fitOffer();   // a second box just appeared above the button
         }).catch(function () {});
@@ -890,6 +935,14 @@
       // for them to decline
       var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.premium && Sona.premium()); } catch (e) {}
       if (!asked) return;
+      // Nor is a browser that does not sell: the card there points at the App
+      // Store, the header already says "Back to play", and "offer dismissed"
+      // for an offer nobody was made would be a false line in the funnel. The
+      // iPhone app never reads the web switch.
+      var inApp = false; try { inApp = !!(Sona.isNativeApp && Sona.isNativeApp()); } catch (e) {}
+      if (!inApp && !WEB_SELLS) return;
+      // nor is an app build with no purchase plugin: it made no offer either
+      if (inApp && !(Sona.iapAvailable && Sona.iapAvailable())) return;
       if (!OFFER_FIRST) { var dn = document.getElementById("declineNote"); if (dn) dn.textContent = "Your free games are still ready to play."; }
       row.style.display = "block";
       a.addEventListener("click", function () {
@@ -911,9 +964,27 @@
         if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
         if (hasPremium && !subbed) premiumLine();
         if (!hasPremium) {
-          document.getElementById("pickCard").style.display = "block";
-          var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
-          var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          if (WEB_SELLS) {
+            document.getElementById("pickCard").style.display = "block";
+            var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
+            var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          } else {
+            // THE WEBSITE DOES NOT SELL (see #appCard). The web card stays
+            // hidden, and everything below that keys on it switches itself
+            // off: no price check, no "paywall viewed", no planShown() (a card
+            // that points at the App Store is not a paywall impression, and
+            // must not spend the one ask), no offer view. What this branch
+            // must do by hand is the header line: its markup default says
+            // "you're a founding family", which is false for this family, and
+            // paintWeb only rewrites it while the web card is showing.
+            document.getElementById("appCard").style.display = "block";
+            // (the gap is set here because the two cards are not neighbours in
+            // the markup, the decline row sits between, so the stylesheet's
+            // card-after-card spacing never reaches this one)
+            var ft2 = document.getElementById("freeTierCard"); if (ft2) { ft2.style.display = "block"; ft2.style.marginTop = "16px"; }
+            var fc2 = document.getElementById("foundingCard"); if (fc2) fc2.style.display = "none";
+            document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium is bought in the iPhone and iPad app.";
+          }
         }
       } catch (e) {}
 
@@ -939,7 +1010,7 @@
         document.getElementById("monthMathPrice").textContent = monthPrice;
         document.getElementById("monthMath").hidden = !mo;
         if (tl) tl.style.display = mo ? "none" : "";
-        // the timeline replaces the one-line version when it could be built
+        // the billing line replaces the one-line version when it could be built
         if (math) math.style.display = (mo || (tl && tl.innerHTML)) ? "none" : "";
         document.getElementById("pickTitle").textContent = mo ? "Get Sona Premium, month by month"
           : welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium";
@@ -947,9 +1018,15 @@
         // who paid on the web has no account page with a cancel button (the
         // Terms say to email, and /api/portal is not linked from anywhere).
         // "In your account" on the yearly line is older than this change.
-        document.getElementById("webRenew").textContent = mo
+        var rn = document.getElementById("webRenew");
+        rn.textContent = mo
           ? "Sona Premium is charged today and renews at " + monthPrice + " a month until you cancel. To cancel, email hello@speaksona.com and we’ll stop it."
           : "Sona Premium renews at " + yearPrice + " a year after the 3-day free trial. Cancel anytime in your account.";
+        // For the yearly plan the billing line under the button already says
+        // all of this in one line (Travis, 2 Oct 2026: "get rid of as much as
+        // we can"), so the small print steps aside while that line is there.
+        // Monthly keeps it: it is the line that says how to cancel.
+        rn.hidden = !mo && !!(tl && tl.innerHTML);
         // the header line (Settings view) names both ways to pay, whichever
         // is picked. "Under $N a month" never stands without "billed once a
         // year": beside a real monthly plan it would read as that plan's price.
@@ -1016,7 +1093,10 @@
         var release = function () { if (!settled) { settled = true; checking = false; lf.disabled = false; } paintWeb(); };
         setTimeout(release, 2500);
         fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
-          if (!j || !j.ok || j.free) return release();
+          // webSales false: the server is not selling and sent no figures
+          // (only reachable with the test seam forcing this card on). Without
+          // this line the card re-priced itself to "undefined/yr".
+          if (!j || !j.ok || j.free || j.webSales === false) return release();
           if (typeof j.monthly === "string" && /^\$\d{1,3}\.\d\d$/.test(j.monthly)) monthPrice = j.monthly;
           var line = document.getElementById("charterLine");
           if (j.open) {
@@ -1112,6 +1192,14 @@
       try {
         if (Sona.isSubscribed && Sona.isSubscribed()) {
           document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.';
+          // HOW TO CANCEL, where "Manage →" lands (1 Oct 2026). Settings sends
+          // a paying family here, and this page said only "thank you": no way
+          // to stop a plan, in either shop. There is still no cancel button
+          // for a web purchase, so the words say what is true: email us.
+          var how = document.getElementById("planCancel");
+          if (how) how.hidden = false;
+          // a paying family is never told "no card on file, nothing to cancel"
+          var fcS = document.getElementById("foundingCard"); if (fcS) fcS.style.display = "none";
         }
       } catch (e) {}
     })();

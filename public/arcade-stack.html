@@ -130,6 +130,7 @@
   <script src="/sona.js"></script>
   <script>window.SLOW_HELP={phase:"floor",action:"slow the block",earned:"Slow blocks!",eligible:function(){return !dropping;}};</script>
   <script src="/arcade-speech-help.js"></script>
+  <script src="/arcade-sayit.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -158,15 +159,20 @@
     // silence, not under a chime), and the mic never opens until QUIET_MS
     // after the last sound began: the longest chime ("complete") rings about
     // 0.6 s and the rest covers speaker and Bluetooth delay, so a chime's
-    // tail can never answer the card for the child.
-    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
+    // tail can never answer the card for the child. chimeEnd (2 Oct 2026) is
+    // when the last chime asked for will have stopped ringing: Echo's voice
+    // on the say-it card waits for that, not for the mic's quiet window, so
+    // he starts as soon as the speaker is free (/arcade-sayit.js).
+    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9, chimeEnd=0;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
+    function chimeLen(n){ return window.SayIt?SayIt.chimeMs(n):600; }
     function sfx(n){
       if(rv.st||slowTurn) return;
-      if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
+      if(rv.pending){ chimeEnd=Math.max(chimeEnd,performance.now()+60+chimeLen(n)); setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
-      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
+      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); chimeEnd=Math.max(chimeEnd,performance.now()+wait+chimeLen(n)); setTimeout(function(){ sfx(n); },wait); return; }
       quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      chimeEnd=Math.max(chimeEnd,performance.now()+chimeLen(n));
       try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
     }
     // ---- charge gate: a round is unlocked by the 5-rep charge (play token) ----
@@ -263,7 +269,7 @@
       if(REV>0 && CAN_LISTEN){
         $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=floorDots();
-        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
+        reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
     }
     // The card's old name, from when a missed block opened it. Kept because
@@ -392,9 +398,11 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; if(slowTurn&&!slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"listen"); }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; if(slowTurn&&!slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"listen"); echoPose(document.querySelector("#revOvl .ovlEcho"),reviveSpeaking()?"talk":"listen"); }catch(e){} }
     // Echo's clay pose shows what he is doing (29 Sep 2026). On the slow-down
-    // button he talks while his line and the sound play.
+    // button he talks while his line and the sound play; on the say-it card
+    // (2 Oct 2026) he talks while he asks, and listens once it is the
+    // child's turn.
     var POSE="/assets/crafted/echo-";
     function echoPose(img,p){ if(img&&img.getAttribute("src")!==POSE+p+".webp")img.src=POSE+p+".webp"; }
     // Held in a variable: a preload nobody holds is collected, and the pose
@@ -406,7 +414,36 @@
     // again once the turn is over.
     var slowPaint=paintSlowKeys;
     paintSlowKeys=function(){ slowPaint(); if(!slowTurn||slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"welcome"); };
+    // ── Echo asks on the card (2 Oct 2026) ──
+    // Travis: "there's no voice telling them to say it. Most of these kids
+    // can't read". The card used to open its mic under a line of text. Now
+    // Echo says "To keep playing, say", one take of the sound in Rachel's
+    // own voice, then "Go!", and only then the mic opens, a short tail after
+    // his last word. The voice is /arcade-sayit.js's, the same in all five
+    // round games; it waits for a mic request still settling before the
+    // speaker route starts, and stops when the card closes or the page hides
+    // (closeReviveMic). A page without the helper just listens, as before.
+    // (2 Oct 2026, review) Echo waits only for what is still sounding: a mic
+    // request still settling, the phone's switch back from a mic just closed,
+    // a chime still ringing (chimeEnd), not the mic's own quiet window. After
+    // his "Go!" the mic waits SayIt.VOICE_TAIL_MS (250 ms, the tail every
+    // listening page keeps), not QUIET_MS: that is timed from when a chime
+    // BEGINS, and after a line that has already ended it left a child who
+    // answered right on "Go!" talking to a closed mic. On the website his
+    // voice plays through this page's own context (rv.ctx), which the
+    // child's taps on the game have already woken.
+    var sayVoice=window.SayIt?SayIt.voice({
+      up:function(){ return reviveWait&&!slowTurn; },
+      wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
+      note:listenNote,
+      clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
+      ctx:function(){ if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); } return rv.ctx; },
+      listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
+    }):null;
+    function speakRevive(){ if(sayVoice)sayVoice.speak(); else openReviveMic(); }
+    function reviveSpeaking(){ return !!sayVoice&&sayVoice.speaking(); }
     function closeReviveMic(){
+      if(sayVoice)sayVoice.stop();
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
@@ -419,7 +456,7 @@
     // ready…" for good and only "I'm done playing" got the child out.
     function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      if(!reviveWait||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
@@ -433,11 +470,16 @@
           var turn=slowTurn;
           try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
           turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
-          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+          // a sound heard just before the limit still earns it (2 Oct 2026,
+          // as Fruit Slice): heard, the mic stays open 550 ms more for
+          // Apple's recognizer, and the limit must not throw that try away
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt,turn.heardAt?null:"Tap Echo to try again");},6500);
         }
         listenFor(st,gen);
       }).catch(function(){
-        rv.pending--;
+        // a request that failed was the mic too (an iPhone records before
+        // it answers): Echo's voice waits SETTLE_MS after it, as Fruit Slice's
+        rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
         if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
@@ -512,10 +554,11 @@
       })();
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
-    // there stays lit in a pocket. Coming back to the card listens again.
+    // there stays lit in a pocket, and Echo stops mid-word. Coming back to
+    // the card asks again, out loud, then listens.
     function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
     if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) openReviveMic(); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
     var WOOD={}, WOOD_COLORS={"#ff6b6b":"coral","#ff8787":"coral","#ffa94d":"orange","#ffb86b":"orange","#ffd43b":"yellow","#ffe066":"yellow","#69db7c":"green","#85e099":"green","#4dabf7":"blue","#9775fa":"purple","#b197fc":"purple","#f783ac":"pink","#ffd21c":"gold"};
     ["coral","orange","yellow","green","blue","purple","pink","gold"].forEach(function(name){var im=new Image();im.src="/assets/crafted/stack-block-"+name+"-v2.webp";WOOD[name]=im;});

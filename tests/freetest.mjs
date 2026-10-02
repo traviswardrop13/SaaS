@@ -14,6 +14,12 @@
 //
 // It is written to work in BOTH directions, so the day pricing returns this
 // suite tells the truth about that too instead of needing to be rewritten.
+//
+// Since 1 Oct 2026 there is a second switch, pinned here the same way:
+// WEB_SALES, whether a FAMILY can pay on the website at all (Travis: "i dont
+// want them paying on the website"). Its two copies must agree, the checkout
+// must refuse on the server, and the plan screen is played with it forced on
+// (section 6) and forced off (section 7), whichever way it ships.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -39,6 +45,39 @@ ok("the app switch and the server switch agree",
 ok("the switches are in a known state", appFree === srvFree,
   "a half-flipped switch charges on one surface while giving the app away on another");
 
+// THE SECOND SWITCH: where a family can buy (Travis, 1 Oct 2026: "i dont want
+// them paying on the website"). WEB_SALES is mirrored the same way, sona.js for
+// the static pages and lib/pricing.ts for the server, and pinned the same way:
+// the copies agree, never which way they point. One thing is stricter than the
+// FREE_MODE pin above, which passes when both regexes miss (false === false):
+// here BOTH literals must be found, or a constant deleted from one file would
+// read as agreement.
+const appWeb = (sona.match(/const WEB_SALES = (true|false);/) || [])[1];
+const srvWeb = (pricing.match(/export const WEB_SALES = (true|false);/) || [])[1];
+ok("the web-sales switch exists in both files, as a plain true or false",
+  !!appWeb && !!srvWeb, `sona.js WEB_SALES=${appWeb}, lib/pricing.ts WEB_SALES=${srvWeb}`);
+ok("…and the app's copy and the server's copy agree",
+  !!appWeb && appWeb === srvWeb,
+  `sona.js WEB_SALES=${appWeb}, lib/pricing.ts WEB_SALES=${srvWeb} — a page offering a checkout the server refuses, or the reverse`);
+{
+  // the seam is a session key that only changes what a page SHOWS; it may
+  // never ride in a backup onto another device, and never live in localStorage
+  const noImport = (sona.match(/const NO_IMPORT = \[[\s\S]*?\];/) || [""])[0];
+  ok("the web-sales test seam cannot travel in a backup", /"sona\.websalesui"/.test(noImport), noImport.slice(0, 200));
+  const ws = (sona.match(/function webSales\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("…and is read from the session only: never localStorage, never the address",
+    /sessionStorage\.getItem\("sona\.websalesui"\)/.test(ws) && !/localStorage|location|URLSearchParams/.test(ws) && /return WEB_SALES;/.test(ws),
+    ws.slice(0, 300));
+  ok("…and pages can read the switch", /global\.Sona = \{[^\n]*\bWEB_SALES, webSales\b/.test(sona));
+  // A browser that cannot sell has nothing to offer: without this line the
+  // one-time ask is never spent on the web (the plan screen only spends it when
+  // a purchase card is on screen), so a child is told "Show a grown-up" after
+  // every finished run, forever, for a page that sells nothing.
+  const pe = (sona.match(/function planEligible\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("the one-time ask is not made in a browser that cannot sell",
+    /if \(isFree\(\)\) return false;[^\n]*\n\s*if \(!isNativeApp\(\) && !webSales\(\)\) return false;/.test(pe), pe.slice(0, 300));
+}
+
 // ── 2. the money door is bolted on the server, not just hidden ──
 {
   const co = readFileSync(APP + "/app/api/checkout/route.ts", "utf8");
@@ -55,6 +94,24 @@ ok("the switches are in a known state", appFree === srvFree,
     ok("…and neither can reach Stripe while free",
       /return NextResponse\.json\([\s\S]{0,160}status: 410/.test(post) && /NextResponse\.redirect/.test(get));
   }
+  // The same bolt for the second switch. Hiding the web card is not closing
+  // the door: an old tab, a bookmark, an ad's plain link and the test seam
+  // itself all still reach this route, so it refuses on the server's own copy
+  // before it reads the body, counts a charter spot or talks to Stripe at all.
+  const before = (src, guard, later) => src.indexOf(guard) >= 0 && later.every((t) => src.indexOf(t) > src.indexOf(guard));
+  ok("checkout imports the web-sales switch, on its own line",
+    /^import \{ WEB_SALES \} from "@\/lib\/pricing";$/m.test(co));
+  ok("POST /api/checkout refuses a web sale before any Stripe call, and before the charter count",
+    before(post, "if (!WEB_SALES)", ["stripe.checkout", "charterSpots(stripe)", "new Stripe("]),
+    "the guard must come before the key check, the body and the count, or the seam opens a real checkout");
+  ok("…with its own words, a 410, and nothing a page could mistake for a checkout link",
+    /if \(!WEB_SALES\) return NextResponse\.json\(\{ ok: false, webSales: false, error: "Sona Premium is bought in the Sona app on iPhone and iPad\." \}, \{ status: 410 \}\);/.test(post));
+  ok("GET /api/checkout refuses a web sale too, before it can proxy to POST",
+    before(get, "if (!WEB_SALES)", ["POST(proxied)"]) &&
+    /if \(!WEB_SALES\) return NextResponse\.redirect\(new URL\("\/", req\.url\), 303\);/.test(get));
+  ok("…and both come after the free-mode refusal, which says something different",
+    post.indexOf("if (FREE_MODE)") >= 0 && post.indexOf("if (FREE_MODE)") < post.indexOf("if (!WEB_SALES)") &&
+    get.indexOf("if (FREE_MODE)") >= 0 && get.indexOf("if (FREE_MODE)") < get.indexOf("if (!WEB_SALES)"));
 }
 
 // ── 3. nothing a parent sees names a price ──
@@ -210,6 +267,21 @@ const srv = createServer((req, res) => {
 await new Promise((r) => srv.listen(8211, r));
 const browser = await chromium.launch(launchOpts());
 
+// What the funnel was told, by name: SonaAnalytics.track ("paywall viewed")
+// and sona.js's own track() beacon ("plan moment shown", "offer dismissed").
+// Kept in the session so a click that navigates away does not lose the list.
+const RECORD = () => {
+  const note = (n) => { try { sessionStorage.setItem("__ev", JSON.stringify(JSON.parse(sessionStorage.getItem("__ev") || "[]").concat([String(n)]))); } catch (e) {} };
+  let sa;
+  Object.defineProperty(window, "SonaAnalytics", { configurable: true, get() { return sa; }, set(v) {
+    if (v && typeof v.track === "function") { const t = v.track; v.track = function (n) { note(n); return t.apply(this, arguments); }; }
+    sa = v;
+  } });
+  const sb = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
+  navigator.sendBeacon = function (u, b) { try { if (/\/api\/track/.test(String(u))) note(JSON.parse(b).e); } catch (e) {} return sb ? sb(u, b) : true; };
+};
+const told = (pg) => pg.evaluate(() => JSON.parse(sessionStorage.getItem("__ev") || "[]"));
+
 if (appFree) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pg = await ctx.newPage();
@@ -232,10 +304,13 @@ if (appFree) {
   const sub = await pg.evaluate(() => ({
     iap: (document.getElementById("iapCard") || {}).style?.display,
     pick: (document.getElementById("pickCard") || {}).style?.display,
+    app: (document.getElementById("appCard") || {}).style?.display,
     line: (document.getElementById("planLine") || {}).textContent || "",
     body: document.body.innerText,
   }));
   ok("neither purchase card renders", sub.iap === "none" && sub.pick === "none", JSON.stringify(sub));
+  // nothing is sold anywhere while Sona is free, so nobody is sent to buy it
+  ok("…nor the card that sends a browser to the App Store for Premium", sub.app === "none", JSON.stringify(sub));
   ok("…and the page says so plainly", /free/i.test(sub.line), sub.line);
   ok("no price survives on the parent's purchase page", !/\$\s?\d+\.\d\d/.test(sub.body),
     (sub.body.match(/\$\s?\d+\.\d\d/) || [])[0]);
@@ -260,9 +335,14 @@ if (appFree) {
   const pg = await ctx.newPage();
   const errs = [];
   pg.on("pageerror", (e) => errs.push(e.message));
+  await ctx.addInitScript(RECORD);
   await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(300);
+  // The web rails are forced ON here ("sona.websalesui"), so the selling state
+  // keeps being played whichever way WEB_SALES ships; section 7 plays the same
+  // family with them forced OFF.
   const seedNew = () => pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
+    sessionStorage.setItem("sona.websalesui", "1");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ivy", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, volume: 0 }));
     // the demonstration is long over and an old local trial is long dead —
     // the family the free version exists for
@@ -334,17 +414,112 @@ if (appFree) {
   await pg.goto("http://localhost:8211/subscribe.html"); await pg.waitForTimeout(900);
   const plan = await pg.evaluate(() => ({
     pick: document.getElementById("pickCard").style.display,
-    plans: document.querySelectorAll("#pickCard .plan").length,
+    // counted by what is really on screen: the card is always in the file, so
+    // a count of its markup would pass with the card hidden
+    plans: [...document.querySelectorAll("#pickCard .plan")].filter((n) => n.getBoundingClientRect().height > 0).length,
+    button: document.getElementById("buyLife").getBoundingClientRect().height > 0,
+    app: document.getElementById("appCard").style.display,
     free: (document.getElementById("freeTierCard") || {}).style ? document.getElementById("freeTierCard").style.display : "missing",
     freeText: (document.getElementById("freeTierCard") || {}).innerText || "",
     line: document.getElementById("planLine").innerText,
+    spent: localStorage.getItem("sona.planmoment.v1"),
   }));
   ok("the plan screen offers Premium two ways, yearly and monthly, to a family on the free version — and no third",
-    plan.pick === "block" && plan.plans === 2, JSON.stringify(plan));
+    plan.pick === "block" && plan.plans === 2 && plan.button, JSON.stringify(plan));
+  ok("…and while the website sells, it does not send them to the App Store instead", plan.app === "none", JSON.stringify(plan));
+  // (also the proof that the recorder section 7 leans on can hear both events)
+  const heard = await told(pg);
+  ok("…and that card on screen is the one impression: counted, and the one-time ask spent",
+    heard.includes("paywall viewed") && heard.includes("plan moment shown") && !!plan.spent, JSON.stringify({ heard, spent: plan.spent }));
   // The free-version promise must not count games that are still parked.
   ok("…and says what they keep if they don't buy it, in the one phrase",
     plan.free === "block" && /daily practice and free games/i.test(plan.freeText) && !/\btwo games\b/i.test(plan.freeText), JSON.stringify(plan));
   ok("no pageerrors across the free-version surfaces", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+
+// ── 7. THE SAME FAMILY, WHEN THE WEBSITE DOES NOT SELL ──
+// Travis, 1 Oct 2026: "i dont want them paying on the website". A family buys
+// Premium only in the iPhone and iPad app. The seam is forced OFF here, so this
+// holds whichever way WEB_SALES ships: a browser on the free version reads
+// where Premium is sold, with no figure of any kind (the price in the app is
+// App Store Connect's), and nothing on the page starts or prices a web sale.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pg = await ctx.newPage();
+  const errs = [], asked = [];
+  pg.on("pageerror", (e) => errs.push(e.message));
+  pg.on("request", (r) => { if (/\/api\/(checkout|charter)/.test(r.url())) asked.push(r.method() + " " + new URL(r.url()).pathname); });
+  await ctx.addInitScript(RECORD);
+  await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    sessionStorage.setItem("sona.websalesui", "0");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ivy", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, volume: 0 }));
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.micok", "1");
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  });
+  const st = await pg.evaluate(() => ({
+    sells: Sona.webSales(), premium: Sona.premium(), ask: Sona.planEligible(),
+    practice: ["practice", "daily", "session", "demo"].map((w) => Sona.gated(w)),
+    free: Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].tier === "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => Sona.gameAccess(k).allowed),
+  }));
+  ok("web sales off: the family is still on the free version, with practice and the free games open",
+    st.sells === false && st.premium === false && st.practice.every((g) => g === false) && st.free.length >= 2 && st.free.every(Boolean), JSON.stringify(st));
+  ok("…and is not sent to fetch a grown-up for a page that sells nothing", st.ask === false, JSON.stringify(st));
+
+  for (const door of ["", "?first=1", "?from=stack"]) {
+    asked.length = 0;
+    await pg.goto("http://localhost:8211/subscribe.html" + door); await pg.waitForTimeout(900);
+    const v = await pg.evaluate(() => {
+      const shown = (id) => { const n = document.getElementById(id); return !!n && n.getBoundingClientRect().height > 0; };
+      const a = document.getElementById("appStoreGo");
+      return {
+        pick: document.getElementById("pickCard").style.display, pickSeen: shown("pickCard"), buy: shown("buyLife"),
+        iap: document.getElementById("iapCard").style.display, iapSeen: shown("iapCard"),
+        app: document.getElementById("appCard").style.display, appSeen: shown("appCard"),
+        href: a.getAttribute("href"), target: a.target, rel: a.rel, button: a.innerText.trim(), tag: a.tagName,
+        title: document.querySelector("#appCard h2").innerText.trim(),
+        card: document.getElementById("appCard").innerText,
+        paid: document.querySelector('#appCard a[href="/settings.html"]') ? document.getElementById("appPaid").innerText : "",
+        free: document.getElementById("freeTierCard").style.display, freeSeen: shown("freeTierCard"),
+        founding: document.getElementById("foundingCard").style.display,
+        decline: document.getElementById("declineRow").style.display, declineSeen: shown("declineRow"),
+        line: document.getElementById("planLine").innerText,
+        offer: document.body.classList.contains("offer"), hero: shown("offerHero"),
+        body: document.body.innerText,
+        spent: localStorage.getItem("sona.planmoment.v1"),
+      };
+    });
+    const at = "web sales off, /subscribe.html" + door + ": ";
+    ok(at + "neither purchase card is on screen, and no buy button",
+      v.pick === "none" && !v.pickSeen && !v.buy && v.iap === "none" && !v.iapSeen, JSON.stringify(v));
+    ok(at + "the family reads where Premium is sold, with the way to the App Store",
+      v.app === "block" && v.appSeen && v.title === "Sona Premium is in the iPhone and iPad app" &&
+      v.tag === "A" && v.href === "https://apps.apple.com/us/app/sona-speech/id6785755867" && v.target === "_blank" && /noopener/.test(v.rel) &&
+      v.button === "Get Sona on the App Store", JSON.stringify(v));
+    ok(at + "it says the purchase opens in the app, never in this browser",
+      /You buy it there, through the App Store, and it opens there\./.test(v.card) && /Daily practice and the free games stay free here\./.test(v.card), v.card);
+    ok(at + "someone who already pays on the website is told their plan keeps working, and how to restore it",
+      /Already paid on speaksona\.com\? Your plan keeps working\./.test(v.paid) && /Restore/.test(v.paid), v.paid);
+    ok(at + "what stays free is still said, and the free-era card is not",
+      v.free === "block" && v.freeSeen && v.founding === "none", JSON.stringify(v));
+    ok(at + "the header line names Sona Premium and where it is bought: no figure, no founding family",
+      /Sona Premium is bought in the iPhone and iPad app/.test(v.line) && /free version/.test(v.line) && !/\$/.test(v.line) && !/founding family/i.test(v.line), v.line);
+    ok(at + "nothing to decline, and no offer dressed around a page that cannot sell",
+      v.decline === "none" && !v.declineSeen && !v.offer && !v.hero, JSON.stringify(v));
+    ok(at + "no dollar sign, free-days promise, charter line or spots-left count anywhere a parent can read",
+      !/\$/.test(v.body) && !/3 days free|free trial|charter|spots? left/i.test(v.body),
+      (v.body.match(/\$[^\s]*|3 days free|free trial|charter|spots? left/i) || [])[0]);
+    ok(at + "the page asks the server for no checkout and no price", asked.length === 0, asked.join(", "));
+    ok(at + "and the one-time ask is not spent on it", v.spent === null, String(v.spent));
+  }
+  const heard = await told(pg);
+  ok("web sales off: no paywall impression, no plan moment and no dismissal is counted for a card that sells nothing",
+    !heard.some((n) => /paywall viewed|plan moment shown|offer dismissed/.test(n)), JSON.stringify(heard));
+  ok("no pageerrors with web sales off", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }
 

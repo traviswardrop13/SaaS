@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import { FREE_MODE } from "@/lib/pricing";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
 import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, MONTHLY_PRICE, type Spots } from "@/lib/charter";
 
 /**
@@ -20,6 +22,16 @@ import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDAR
  * times in seven weeks and twice this page had to be rebuilt from scratch
  * because whoever flipped it deleted the half they were leaving. Flip the
  * boolean — do not rewrite copy, and do not delete the branch you are not in.
+ *
+ * A SECOND SWITCH, UNDER THE FIRST: `WEB_SALES` (Travis, 1 Oct 2026: "i dont
+ * want them paying on the website"). While it is false a family buys Premium
+ * only in the iPhone and iPad app, so every line here that quotes the web
+ * price — the charter line, the spots left, the per-month reading, "3 free
+ * days", the monthly plan, "secure checkout by Stripe" — is about a checkout
+ * that refuses. Each of those lines has a twin with NO dollar figure (the
+ * iPhone's price is App Store Connect's; this repo never types it), chosen by
+ * APP_ONLY below. The priced copy stays in this file whole, for the same
+ * reason as above: selling on the web again is one boolean, not a rewrite.
  *
  * Meta-ad parents of kids 4–9 on the R sound, 90%+ on phones. Mobile-first
  * single column, centered on desktop. Design: "Sunrise Storybook" handoff
@@ -65,6 +77,12 @@ const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
 // bait-and-switch this file spent a paragraph refusing to commit with the
 // old struck-through $119.88.
 const YEARLY = CHARTER_PRICE;   // the launch-era default; PricingPaid renders from `spots`
+
+// Sona has a price, and the website is not where a family pays it. The third
+// state of every line the switches decide: Premium is named, with where it is
+// bought, and no figure. (While Sona is free the free copy wins, as it always
+// has; WEB_SALES means nothing then.)
+const APP_ONLY = !FREE_MODE && !WEB_SALES;
 
 // Ad-funnel signal: the app being opened. There was an InitiateCheckout/$59.99
 // arm for the paid era; no checkout starts on this page any more, so firing it
@@ -239,7 +257,11 @@ function PricingPaid({ spots }: { spots: Spots }) {
       {/* PREMIUM — an upgrade made inside the app, so this card carries the
           price and no button of its own. The figures are the tier the next
           buyer is actually charged (lib/charter.ts, the count /api/checkout
-          reads), never a literal. */}
+          reads), never a literal.
+          That is the card while the website sells. While it does not
+          (APP_ONLY), PremiumInApp stands in its place and this one is left
+          exactly as it was, unrendered, for the day it sells again. */}
+      {APP_ONLY ? <PremiumInApp /> : (
       <div style={priceCard}>
         <div style={priceBadge}>{open ? `PREMIUM · ${CHARTER_LABEL.toUpperCase()} PRICE` : "PREMIUM · EVERY GAME"}</div>
         {open && (
@@ -266,6 +288,7 @@ function PricingPaid({ spots }: { spots: Spots }) {
         <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books as they come out, included", "Upgrade inside the app, whenever you want"]} />
         <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade inside Sona. On the web, secure checkout by Stripe; in the iPhone and iPad app, through the App Store at the price shown there.</div>
       </div>
+      )}
       {/* Families who arrived during a free era keep it free — a grandfather
           sweep ships with every return to pricing. This line is only true
           while those sweeps exist: _grandfatherFreeEra5() ships in the build
@@ -274,6 +297,26 @@ function PricingPaid({ spots }: { spots: Spots }) {
           the code. */}
       <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? Every game and book stays free for you — nothing to pay, nothing to do.</div>
     </>
+  );
+}
+
+// THE PREMIUM CARD WHILE THE WEBSITE DOES NOT SELL (Travis, 1 Oct 2026: "i
+// dont want them paying on the website"). No price, no charter line, no spots
+// left, no free days and no Stripe: none of those can be had here, and the
+// iPhone's price and trial length are App Store Connect's to state. It says
+// where Premium is bought and that it opens THERE: nothing links an Apple
+// purchase to a web browser, so this card must never read as "buy in the app,
+// play on the website".
+function PremiumInApp() {
+  return (
+    <div style={priceCard}>
+      <div style={priceBadge}>PREMIUM · EVERY GAME</div>
+      <div style={{ font: `800 26px/1.15 ${B}` }}>In the iPhone and iPad app</div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 700, color: MUTED, margin: "8px 0 16px" }}>Premium is bought in the Sona app on iPhone and iPad, at the price the App Store shows. It opens every game and every book in the app.</div>
+      <Perks items={["Every game and every book, for every sound", "New games and books as they come out, included"]} />
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}><AppStoreBadge /></div>
+      <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade in the app whenever you want. Daily practice and free games stay free in any browser.</div>
+    </div>
   );
 }
 
@@ -299,18 +342,27 @@ function PricingFree() {
 export default async function Landing() {
   // one Stripe read per render (memoised a minute); the page is no-store, so
   // this is the truth at the moment the parent is looking at it
-  const spots: Spots = FREE_MODE
+  // Asked only while the website sells: free, or app-only, there is no web
+  // price to pick a tier for, and nothing below prints one.
+  const spots: Spots = (FREE_MODE || APP_ONLY)
     ? { cap: CHARTER_CAP, taken: 0, left: 0, open: false, source: "fallback", at: Date.now() }
     : await charterSpots();
   const priceNow = spots.open ? CHARTER_PRICE : STANDARD_PRICE;
   const perMonthNow = spots.open ? CHARTER_PER_MONTH : STANDARD_PER_MONTH;
+  // Three states from here down: free, app-only (APP_ONLY: Premium named with
+  // where it is bought and no figure), and the website selling (the priced
+  // lines, which never render in the other two).
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
+  ) : APP_ONLY ? (
+    <>Free: daily practice and free games, no card. Every game and book with Premium, in the iPhone and iPad app.</>
   ) : (
     <>Free: daily practice and free games, no card. Every game and book with Premium — {priceNow}/yr after 3 free days.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
+  ) : APP_ONLY ? (
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game and book with Premium, in the iPhone and iPad app</>
   ) : (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game and book with Premium, {priceNow}/yr</>
   );
@@ -318,6 +370,8 @@ export default async function Landing() {
   // charter tier; the reading now comes with the tier it belongs to.
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
+    : APP_ONLY
+    ? "No card to start · Premium is bought in the iPhone and iPad app"
     // "billed once a year" rides with it (1 Oct 2026): this page names a real
     // $9.99-a-month plan too, and a bare "under $5 a month" reads as that.
     : `No card to start · Premium ${perMonthNow}, billed once a year · Cancel anytime`;
@@ -329,12 +383,18 @@ export default async function Landing() {
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
+        : APP_ONLY
+        ? "The free version costs nothing: daily practice and free games, plus a free picture book, with no card. Premium unlocks every game and every book. It is bought in the Sona app on iPhone and iPad, at the price the App Store shows, and it opens there."
         : `The free version costs nothing: daily practice and free games, plus a free picture book, with no card. Premium unlocks every game and every book for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
     ],
     [
       "What do I need to start?",
       FREE_MODE
         ? "An iPhone, iPad or any browser. Open Sona, pick your child's sound, and you're playing in minutes."
+        // "inside the app" would point a browser family at a plan screen that
+        // sells nothing; name the app that does
+        : APP_ONLY
+        ? "An iPhone, iPad or any browser. Start free, pick your child's sound, and you're practicing in minutes — Premium is there in the iPhone and iPad app whenever you want it."
         : "An iPhone, iPad or any browser. Start free, pick your child's sound, and you're practicing in minutes — Premium is there inside the app whenever you want it.",
     ],
     ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],

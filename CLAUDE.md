@@ -87,9 +87,11 @@ missing it.
 One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
 her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
 "She is a pediatric speech-language pathologist in her clinical fellowship."
-(Travis's line, 1 Oct 2026). Since 1 Oct 2026
-it is the last screen before the first game, after the microphone (Travis:
-"add the rachel slide right before it goes to the game"). She still is a
+(Travis's line, 1 Oct 2026). Since 2 Oct 2026
+it comes right before the microphone screen ("Let Echo hear you"), which is
+the last one before the first game (Travis: "put the Rachel ... slide not as
+the last step, but the step right before the let echo hear you"). "Not now"
+on the microphone still goes on to the game. She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -133,10 +135,18 @@ sweeps. `tests/freetest.mjs` checks that both pricing switches agree. The
 next free window, if there is one, gets its own sweep in the build that ends
 it, never before.
 
-**Before families can buy on the iPhone** (Travis's App Store Connect task,
-not this repo): the yearly subscription must be approved in App Store Connect
-at $59.99. Until Apple approves it, the in-app purchase fails on the iPhone
-and only the web checkout sells. **The monthly one too** (1 Oct 2026):
+**Before families can buy on the iPhone** (Travis's tasks, not this repo).
+On 1 Oct 2026 none of the three was true, so **only the web checkout sold**:
+1. **The app build must carry the purchase plugin.** 1.0.4, the build on the
+   App Store, does not (`@revenuecat/purchases-capacitor` is missing from the
+   iOS project in `~/Documents/SaaS`; 1.0.3 build 6 had it). Without it the
+   app has no buy button: `Sona.iapAvailable()` is false.
+2. **RevenueCat:** the yearly product attached to the `full` entitlement. It
+   was attached to none (only an old `lifetime` product was), so a purchase
+   would have been taken by Apple and left the app locked.
+3. **App Store Connect:** the yearly subscription approved at the price he
+   wants. It was listed at $79.99, under a description saying $59.99.
+`NATIVE.md` says how to check each. **The monthly one too** (1 Oct 2026):
 `com.speaksona.app.monthly` must be approved there, at the monthly price,
 with **no introductory offer on it**, and sit in RevenueCat's `full`
 entitlement. Until all of that is true the iPhone shows the yearly plan alone:
@@ -184,11 +194,27 @@ charter price, and **it is the one picked when the plan screen opens**.
   Settings views): two boxes that are radios, yearly picked, **one button**
   under both. Everything true of only one plan follows the pick, from one
   paint function per card: the button ("Start 3 days free" / "Subscribe —
-  $9.99 a month"), the free-days timeline and "no charge today" (yearly only),
+  $9.99 a month"), the billing line and "no charge today" (yearly only),
   "charged today" (monthly only), the small print and the heading. Nothing
   yearly stays on screen beside a button that charges today. The monthly box
   says **"Charged today"**, never "no free trial" (Travis, 1 Oct 2026: "dont
   say no free trial at the bottom"), and never the word "free" at all.
+- **Under the button, one line: the day they are billed** (Travis, 2 Oct
+  2026: "there's still too much information ... just briefly say like what
+  day they'll be billed on the bottom"). Yearly: "Free until October 5, then
+  $X a year." and, on Apple's card, "Renews unless canceled in Settings →
+  Subscriptions." (on the web, "Cancel anytime.": a web buyer has no cancel
+  button "in your account", and Stripe's page spells out the renewal). The
+  date is the same +3 days the charge uses; the price is the store's string
+  on Apple's card and the charter figure on the web, so the line never names
+  a different number from the box above it, and it never promises a reminder
+  (there is no trial mailer). It replaced a dated three-row timeline and the
+  Apple card's paragraph of small print, and the web's yearly small print
+  steps aside for it; monthly keeps its own line, which says how to cancel.
+  What Apple requires stays: each plan's price and period, the renewal, where
+  to cancel, and Restore Purchases, Terms and Privacy as links. The button is
+  setup's lighter teal (`.planbuy .btn.go` in `crafted-family.css`, "for
+  now": painted art for it has not arrived).
 - **Monthly never touches the charter.** `/api/checkout` has its own short
   branch for it — its own amount, a month interval, no `trial_period_days`,
   **no `tier` stamp**, inline `price_data` only (never an env Price), and it
@@ -247,6 +273,84 @@ pay-today monthly plan is the one people cancel most. (2) A web purchase is neve
 device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
 on Restore asks Stripe, so a web plan that was cancelled, or a trial that
 never became a charge, stays unlocked on that phone.
+
+**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE: ON SINCE 2 OCT 2026**
+(Travis, 1 Oct 2026, told that a family who pays on the website has no
+cancel button and that a cancelled web plan stays unlocked on the phone: "i
+dont want them paying on the website"). One switch, two copies, like
+`FREE_MODE`: `WEB_SALES` in `lib/pricing.ts` and `public/sona.js`
+(`Sona.webSales()`), pinned equal by `freetest`. It is the FAMILY web
+checkout only.
+
+**Both copies are `false`: the website does not sell** (Travis, 2 Oct 2026:
+"turn off payments on website then merge"). It shipped `true` on 1 Oct,
+because that night's review found the app on the App Store (1.0.4) has **no
+buy button at all**: its build carries no RevenueCat plugin (1.0.3 build 6
+had it). On 2 Oct he fixed the rest: both products sit in RevenueCat's `full`
+entitlement, the yearly price goes to $59.99 on 4 Oct with 3 free days, the
+monthly product exists at $9.99, and **1.0.5 (build 8), the first build that
+can sell, was sent to App Review**. He switched the website off the same day,
+on his word alone: **until 1.0.5 is live, nobody can buy Premium anywhere**,
+and a family on 1.0.4 is told it "can't be bought in this version of the app
+yet". Everything below is what `false` does; the tests play both states
+whichever way it ships, so turning it back on is the same two booleans.
+- **The server refuses.** `/api/checkout` answers 410 ("Sona Premium is bought
+  in the Sona app on iPhone and iPad.") before it touches Stripe, and its
+  plain-link GET goes to the home page. `/api/charter` answers with no price
+  and no Stripe call. A hidden button is not a closed door: an old tab, a
+  bookmark or an old ad link reaches the same refusal.
+- **A browser family sees where Premium is, never a price.** The plan screen
+  shows one card, "Sona Premium is in the iPhone and iPad app", with the App
+  Store button (`#appCard`); so do `trial.html`, the Next `/subscribe` page
+  and the old `/families` page. No dollar figure, no "3 days free", no charter
+  line and no spots-left number in that state: the iPhone price is Apple's
+  (App Store Connect), and the charter offer was a web price. **The Terms are
+  the one exception:** they lead with where a family buys and name no Apple
+  price, then keep the web plans' prices and free days (`PlanTerms`) as the
+  terms of subscriptions already bought on speaksona.com, not as an offer
+  (the charter paragraph has an off twin for that). Do not strip them. It says
+  Premium "opens there": **a purchase in the app does not unlock the
+  website**, because nothing links an Apple purchase to a browser.
+- **No offer in a browser.** `planEligible()` is false in a browser that
+  cannot sell, so the practice win screen says "Done", the one-time ask is not
+  spent, and no "paywall viewed" is logged for a page that sells nothing. In
+  the app nothing changes: the Apple card never reads this switch.
+- **Nor in an app build that cannot sell** (true in BOTH states of the
+  switch): a build with no purchase plugin (`Sona.iapAvailable()` false, which
+  is the App Store's 1.0.4) is not eligible either, its plan screen says "Sona
+  Premium can't be bought in this version of the app yet" over what stays
+  free, with no decline row. It used to say "you're a founding family" over an
+  empty page, after a child had been told "Show a grown-up". Never "update the
+  app" there until a build that sells is in the store.
+- **People who already pay on the web keep everything.** Restore by email
+  (Settings, `trial.html`), `/api/subscription`, the receipt for a checkout
+  opened before the flip, the billing page route and the success page never
+  read the switch. They still cancel by email, and the plan screen now says so
+  to anyone with an active plan (`#planCancel`, with Apple's way beside it):
+  Settings' "Manage →" lands there.
+- **Clinicians still buy on the web.** `/api/slp/plan`, the dashboard's buy
+  buttons and `for-slps.html` never read it. The dashboard's one line about
+  what families pay says "in the Sona app on iPhone and iPad", with no figure.
+- **Settings › Account's plan links go to the plan screen** (`/subscribe.html`),
+  in both states. They went to the Next `/subscribe` page, which threw the
+  iPhone app back to Home: in the app, "See Premium" never reached the Apple
+  card.
+- **Tests play both states** through a session-only seam,
+  `sessionStorage["sona.websalesui"]` = `"1"` / `"0"` (never localStorage, never
+  a URL flag; it changes only what a page shows, since the server refuses
+  whatever a page shows). `websalestest` plays the pages; `caseloadtest` plays
+  the refusal against the fake Stripe.
+
+**What turning it off leaves, and is Travis's to know:** (1) a family on
+Android or a computer can use the free version and can no longer buy Premium
+anywhere (the website's cost answer then says Premium is bought in the app);
+(2) Premium bought in the app is the app's, not the website's; (3) nobody new
+can take a charter spot, so "$59.99 for the first 50 families" is no longer an
+offer anyone meets (the families who hold it keep it); (4) what a family pays
+is whatever App Store Connect says, and the in-app purchase works only once
+the product is approved there AND attached to the `full` entitlement in
+RevenueCat. On 1 Oct 2026 the yearly product was listed at $79.99 and was not
+attached to `full`, so a purchase would not have unlocked Premium.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const
@@ -315,7 +419,8 @@ way." and changes by itself the day a little-kid Premium game is released. No
 date is promised. **Anything switched with the `hidden` attribute is hidden**
 (`[hidden]{display:none !important}` on this page): a display rule on the same
 element once showed an empty win pill and Rachel's line twice. Rachel's line moves under the
-decline, word for word. Settings › Your plan (no flag) is the page as it was.
+decline, word for word, and the note under the decline steps aside (2 Oct
+2026). Settings › Your plan (no flag) is the page as it was.
 Every pricing rule in this section still applies to the card itself.
 
 **Eligibility and impression are two functions, and merging them is the bug.**
@@ -393,7 +498,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   half its 400-day life, hands back a fresh one that `Sona.caseRefresh()`
   stores — before this, from day 400 a family's coverage stuck in whatever
   state it was last in. The SLP link state (`sona.slp`, `sona.slpok`,
-  `sona.slpticket`) **travels through the move-in code and backups**, because
+  `sona.slpticket`) **travels through backups** (Settings › Moving to a new
+  phone?; setup has had no code box since 2 Oct 2026), because
   the iOS app keeps separate storage from Safari and that is the only way a
   covered family's Premium reaches the iPhone app; the cached answer
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.
@@ -494,10 +600,13 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is on the first setup screen — since 1 Oct
-2026 that screen IS the question, "Who's setting up Sona?", with two answers,
-"Parent or caregiver" and "SLP or SLPA" (Travis: "have the very first step in
-onboarding ask"). In a browser the SLP answer is the only entrance to
+is now reversed: the clinician door is the setup question "Who's setting up
+Sona?", with two answers, "Parent or caregiver" and "SLP or SLPA" (Travis, 1
+Oct 2026: "have the very first step in onboarding ask"). Since 2 Oct 2026 it
+is the second screen: the first is a hello, Echo in his world and one
+Continue button (Travis: "that first page with the bird just have that be a
+fun page ... and then the second slide is who's setting up Sona"), and the
+two answers are the only way past the question. In a browser the SLP answer is the only entrance to
 `ORDER_SLP`, so removing it makes that whole branch dead code; in the iPhone
 app, which never opens clinician screens, it sets the app up for a child and
 says the dashboard is on the web (no link, no price) — `for-slps.html` is indexable and linked from the landing
@@ -789,12 +898,23 @@ displays the ones that are selected for the target letter and sound ... and
 the other ones ... they're still there, but like closed up ... there's like a
 button you can press to like drop down and then it shows the books for the
 other letters ... a kid, like they might be like wanting to just do the
-Halloween one"). The top shelf is chosen as before: the child's own sounds'
-books, plus the limited-time book(s) `Sona.seasonPick` gives them (in October
-the Halloween book in their own sound, or Boo the Bat when their sounds have
-none; see "Every book that is made is live"), and the free book first when
-their own have nothing to read. Under it sits one cream pill, "More books
-(N)", N being how many books are behind it for this child, closed on every
+Halloween one"). They are closed, not gone, so a child meets their own first
+(Travis, the same day: "less easy to find or less in your face ... the kids
+just seeing books based on their letter/s"). The top shelf is chosen as
+before: the child's own sounds' books, plus the limited-time book(s)
+`Sona.seasonPick` gives them (in October the Halloween book in their own
+sound, or Boo the Bat when their sounds have none; see "Every book that is
+made is live"), and the free book first when their own have nothing to read.
+**With more than one sound, the one practice is on now leads** (main's #184,
+1 Oct 2026): a child on R and S whose practice is on S today
+(`Sona.rotSound()`) sees the S books first, then the R ones. Only the order
+moves, inside "readable, then Premium", so without Premium the free book
+still leads; a homework sound that is not one of the child's own brings no
+books up. Home's What's new row
+follows the same rule: books in the child's own sounds only, that sound's
+first (`HOME_BOOKS` in sona.js names each book's sound; play mode and a child
+with no sounds yet see them all). Under the shelf sits one cream pill, "More
+books (N)", N being how many books are behind it for this child, closed on every
 load with nothing remembered; a tap opens "Books for other sounds", every
 in-season book the top shelf left off, and a second tap closes it. **The other
 sounds' Halloween books are behind it too**, so the Halloween one a child
@@ -808,7 +928,10 @@ Premium (nothing is "coming" since every book that is made is live), each
 sound's books together in the order `STORIES` names the sounds. Both shelves
 are built by one function (`addBook` in `library.html`), so a book there
 opens, locks and asks for its word exactly as it would on top; never a second
-copy of the button.
+copy of the button. **And never a second More books:** two sessions each built
+one on 1 Oct 2026 (this pill, and a `<details>` drop-down under the same
+shelf), and with both on the page every other book was there twice. The pill
+is the one that stayed; `readtest` fails if a second control comes back.
 The second shelf's buttons are made on the first open, because a cover on the
 page is downloaded whether or not it shows. Menus stay silent: the page's tap
 chime, no voice. **A double tap opens it once, and opens no book:** opening
@@ -940,7 +1063,7 @@ to `PLAYED`. Only a voice moves a game: no tap stands in for
 talking, and the mic button only listens again (in a play game like Hoops
 a finger plays the move, but only a move a word has earned). The mic keeps every quiet
 rule the other games keep. A spoken move is play, never practice data (no
-pass rate, no clinician sees it), but each heard word is one rep on the
+pass rate, no clinician sees it), but each saying Echo hears is one rep on the
 week's count (Travis, 29 Sep 2026; see "The week's reps"). They open straight
 from Home and never join the daily adventure.
 
@@ -1049,6 +1172,104 @@ from main's covers), and the website tile is cut from it; the sticker is still
 a frame of the woken dinosaur (`public/assets/games/dino.webp`), replaced by
 painted art at that name. `sayplaytest` plays a whole dig.
 
+**Dino Dig has four dinosaurs** (Travis, 1 Oct 2026: "i want to build different
+types of dinosaurs to look for not just one"): T. rex, Triceratops,
+Stegosaurus, Brontosaurus, dug in that order, a new one each finished round,
+round again after the last. Each has its own skeleton outline, its own eight
+bones and places in the pit, and its own body and colour when it wakes (data in
+`DINOS` in `dino.js`, drawn from one small kit; painted art drops in at `ART`).
+The round is the child's (`sona.dino.v1`, one of `PER_KID`, kept by the page
+through `Sona.kkey`; `dino.js` never touches storage): a brother or sister
+starts at the T. rex, and one left half dug waits, from its first bone. The
+start card shows the one to look for as a dashed outline ("Today: T. rex"),
+the end card says "You found a T. rex!", and both show the row of four, found
+ones filled in. **No count is ever shown** ("2 of 4" would read as a grade).
+A collection, never practice data. `tests/dinotest.mjs` digs all four.
+
+**The word is said two times** (Travis, 1 Oct 2026: "ask them to say it two
+times. and if they say it once to have it say '1 more time'"). In the Say &
+Play word games (`sayplay.js`: Hoops, Soccer Goal, Dino Dig and the parked
+ones) a turn needs two sayings. It is one setting a game, `game.sayTimes`, and
+two unless the game's page says otherwise. **Bubble Pop asks once**
+(`sayTimes: 1` in `arcade-bubbles.html`): it is the littles' game, built on
+main to be said once, and whether a three-year-old should say a word twice is
+Rachel's call, so it stays at one until she says. With one there are no dots,
+no "Say it 2 times" and no "1 more time!": one saying earns the bubbles, one
+rep. `sayplaytest` pins which game asks how many times. With two:
+- **Echo still says the word alone** ("Say... rabbit."). "Say it 2 times" is
+  only on screen, beside two dots, so no carrier phrase is glued to the target.
+- **The first saying only paints**: its dot is ticked and "1 more time!" shows
+  in the same frame, with no voice and no chime, because the mic is still open.
+  Only the second saying earns the move.
+- **One word is one saying.** The second counts only after 200 ms under the
+  loudness bar (`GAP_MS`) and never sooner than 450 ms after the first
+  (`APART_MS`): "rock...et" has a hard stop in its middle.
+- **A saying already heard belongs to the word**: the mic button, "Hear it" and
+  a pause keep it. After one saying and 12 quiet seconds the mic closes and
+  says "1 more time! Tap the mic". Silence never earns the move.
+- **Each saying heard is one rep** on the week's count (two a word); still
+  never practice data. Whether two is right, whether the littles should say it
+  twice too (Bubble Pop asks once; the ten parked games for ages 3-4 would ask
+  twice as built, so settle it before one comes back), whether Echo should
+  model the word again before the second, and whether both count as reps are
+  Rachel's calls.
+- **The wait a child feels is before the mic can hear, not after the word**
+  (Echo's word, 250 ms of quiet, the mic opening, and on a game's first word
+  450 ms to measure the room). Each is a guard: do not shorten them.
+
+**Bubble Pop is rebuilt to be played** (Travis, 1 Oct 2026: "more like the
+feed echo vibe ... we want to have more bubbles to pop", then "yeah B", the
+plan called "Say it, and Echo blows bubbles"). It was one bubble at a time,
+five taps a round, and a child never had to say anything. Now, for ages 3-4:
+Echo holds a bubble wand; say the word and Echo blows six to eight bubbles;
+pop them all; the gold one has the word's picture inside and drops it into
+the basket; five words fill the basket, then Echo floats up inside one giant
+bubble, and popping it ends the round (about 37 pops, where there were 5).
+`public/bubbles.js` draws the sky on a canvas; `public/arcade-bubbles.html` is
+written by hand; the word turn, the mic and its quiet rules are `sayplay.js`'s,
+on the same play-game hook as Hoops. What it keeps:
+- **The word blows the bubbles; the finger pops them.** No bubble before the
+  word, so a tap on the empty sky pops nothing, and the step counts only when
+  every bubble is popped and the picture is in the basket. A finger dragged
+  across the sky pops what it crosses.
+- **Every round ends.** Bubbles bob in place and never float away; a touch
+  near one counts; left alone for about eight seconds the ones left glow and
+  take a wider touch; after about fifteen, a touch anywhere pops the nearest,
+  and once that help is on it stays on for that word (a beat between pops, so
+  one dragged finger cannot empty the sky). A bubble never pops by itself. The
+  giant one is the fifth step: the end card waits for its pop, and after six
+  seconds a touch anywhere pops it.
+- **One picture, not three.** The plan said "three picture cards, like Feed
+  Echo's choices"; the child never picks a card here, so the two extra ones
+  had no job. The asked word's picture is in the word panel, inside the gold
+  bubble, then in the basket.
+- **It is NOT a catalog `say` game.** It stays on the little kids' shelf with
+  its own Home card, and stays in their old five-round adventure
+  (`charge.html?daily=1`): the page banks a finished round and sends the end
+  card's button back to it, as Feed Echo does. Adding `say: true` would list
+  it twice on Home and point its sticker at one that does not exist.
+- **In the iPhone app the pops are media**, as Piano Tiles' notes are: each
+  sound is built once on the phone and played as a media element, because a
+  pop comes seconds after the mic closes, when an iPhone plays Web Audio as a
+  quiet phone call (and not at all with the ringer off). A browser keeps Web
+  Audio. How loud they are on a real phone is `MEDIA_PEAK` in the page: it was
+  set without a phone to listen on. A muted Sona (volume 0) plays none.
+- **Its wand, basket and sky are drawn plainly in code** until painted ones
+  arrive (`WAND_PIC` in `bubbles.js` is the drop-in); the bubble is the
+  painted one, the word pictures are Feed Echo's.
+- **Nothing is practice data**; each heard word is one rep on the week's
+  count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
+  <word>." with start-of-word words for the child's sound, and "heard" is a
+  voice of the right broad kind, exactly as in Hoops.
+Peekaboo still runs on `simple-play.js`, so the old engine's tests moved to
+it. `bubblestest` (its own suite: the three other played games already fill
+most of a suite's five minutes) plays a whole round, the smallest phone, the
+app's sounds, a slow microphone and a page hidden at the wrong moment.
+**That last one was an engine bug every played game had:** a page hidden in
+the quarter second after a move finished came back to no next word and no way
+on. `sayplay.js` now calls that moment `step`, which `resume()` reads as "the
+next word".
+
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
 OK... The talking moves to between waves"). The six first games are being made
@@ -1127,7 +1348,66 @@ one only when the voice service is down.
 
 **Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
 
-**Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask: it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
+**Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask (and, since 2 Oct 2026, his "Go!"): it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened; a permissions question that has not answered within a second now means "ask the grown-up" (Say & Play too), never a Let's play that does nothing. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
+
+**Echo says the say-it card out loud, and "Go!" hands over the turn** (Travis,
+2 Oct 2026: "when a game will pause and ask them to say the target sound, I
+want the 11 Labs voice to say out loud ... to keep playing ... Most of these
+kids can't read", and "i also wanna try to have the 11 labs voice say
+"Go!""). Only Fruit Slice spoke its card; now all five round games do, from
+one copy, `public/arcade-sayit.js` (`SayIt.voice`): "To keep playing, say",
+Rachel's one take of the sound, then "Go!", and only then the mic, 250 ms
+after his last word (`VOICE_TAIL_MS`, the tail every listening page keeps),
+never into a sound. It can never look frozen: the two lines are asked for as
+the page loads and kept in the phone's voice cache; a line still on its way
+gets 2.5 s, a media element that never starts 4 s, her take 3 s, then the card
+goes on without it; on the website the lines play through the page's own Web
+Audio (a browser refuses an `<audio>` started between rounds), in the app as
+media; a mic the phone has refused gets no ask at all. Fruit Slice's cards
+that ask a syllable or a word (see "Games ask for more than the sound") say
+Echo's one line for it in place of the first two, through the helper's
+`ask` hook, then "Go!"; its step-back says "I have an idea. Let's try this
+one.", her take, then "Go!". "Go!" also follows
+every ask that hands a child the turn: the practice page's prompt, a tap on
+Echo, the turtle and its two retry lines ("… five times. Go!", joined on as
+one clip after the words, so the quiet before the mic still starts at its
+end), every Say & Play word (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+Feed Echo's ask. Not the books (their ask is pinned) and not parked Peekaboo.
+"Go!" is ONE clip, `Sona.goClip`: this page's copy or the phone's saved one,
+asked for on its own so every saved ask stays valid, never a wait on the
+network after a visit's first ask (that one waits `GO_WAIT_MS`, 1.5 s, at
+most), and never the browser's robot voice (no clip, no "Go!"). Known and
+kept: the mic opens after "Go!", so a child who answers the instant they hear
+it can be talking before the mic listens (`micquietgamestest` pins that a
+word said over "Go!" is not heard; on the practice page the next of their
+five tries is). The 24 Sep 2026 calm rule took "Go!" out for sounding jumpy;
+it is back as Travis's try, and whether it stays is his ear and Rachel's
+call (a turn cue): taking it out is one line in each place. What counts as
+the child is unchanged by any of this. `sayitcardtest` plays the card in all
+five games, `voicetest3`, `chargepacingtest`, `sayplaytest`, `feedtest`,
+`micquietgamestest` and `iphonepolishtest` the "Go!".
+
+**Hearing a child from further away: paused, numbers first** (Travis, 2 Oct
+2026: "I have to say the word super close to the phone or else it won't seem
+to hear it ... Sock.", then, about 13 hours of helper work later, stop and
+ship only the safe parts). Every bar is as it was. What the work found: every
+way of hearing a quieter voice also let quieter noise count (a fan, a tap or
+shower, a clap, a machine's hum, Echo's own ring after "Go!"), because the
+web pages hear loudness and rough sound shape only. A likely cause, still
+unchecked on a phone, is not a bar at all: in the iPhone app, Apple's
+listening check (SonaSpeech) sets the audio session to `.measurement` mode,
+which turns off the phone's automatic gain (`SPEECH_PLUGIN.md` lists the
+audio session as the known risk; a fix there needs an App Store build). So
+measure before changing anything: say "sock" at arm's length on speaksona.com in
+Safari, then in the app, then in the app with Speech Recognition off for Sona
+(iPhone Settings, Privacy & Security; quit the app first). **The mic numbers**
+show what the phone hears: five quick taps on "Account" in Settings (behind
+the grown-ups check, because the app keeps its own storage) switch on a box
+at the top of the practice page with the level now, the loudest moment of the
+last two seconds, the bar, the room, each sound that cleared the bar (how loud,
+counted or not), the frame rate and what the phone says it does to the mic.
+It changes nothing that counts, never takes a tap, and nothing it shows is
+saved or sent (`micquietpracticetest`, `familynavtest`).
 
 **Super Slice: Fruit Slice's sound power** (Travis, 29 Sep 2026: "give them an
 option to say the sound to slow the game down ... they go into some frenzy
@@ -1147,9 +1427,12 @@ games copy it one at a time:
 - **Ten seconds of Super Slice:** the fruit slow to 55%, the stand throws
   five at once (one golden), every toss after is two or three (it outranks
   the two-miss help), the swipe becomes a wide rainbow blade (it slices 34 px
-  past a fruit's edge, not 16), and the screen edge glows gold. Time left
+  past a fruit's edge, not 16), and the screen edge glows gold. Its fruit are
+  extras: they add to the row of fruit but never to the wave, and nothing
+  dropped while it lasts breaks the row (see "Beat Your Best"). Time left
   when a wave ends waits through the break and carries into the next wave
-  (the burst alone can finish wave 1); the giant watermelon ends it.
+  (a wave can still end while it is on: its 45 seconds, or the last ordinary
+  fruit in the air); the giant watermelon ends it.
 - **Every earned turn is a rep** on the week's count (see "The week's reps");
   still never practice data. The round still ends on the giant watermelon
   whether or not a child ever says a word. The retired names (STAR MODE,
@@ -1252,7 +1535,9 @@ Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
-between rounds, Echo's sound powers, a Hoops or Soccer word, Feed Echo's heard word.
+between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
+Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
+word.
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
@@ -1303,11 +1588,101 @@ after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
 gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
 control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
+**Beat Your Best: each child's own best in a game** (Travis, 1-2 Oct 2026:
+"whatever you think is best for kids you can do"). A game counts ONE real
+thing the child's finger did and remembers that child's best. The win card
+still says they won, then adds one line; the top button is "Play again"; and
+Home's picture of the game carries a small "Best 17". **Step one is built:**
+the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
+(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Hoops and Soccer
+Goal follow after Travis has played these two; Dino Dig gets no number.
+- **What binds every game that gets one.** Every round still ends on a win
+  and the title never turns into a loss. The number on screen never goes
+  down during play. It counts the finger, never the voice: nothing grades
+  speech, nothing is practice data, and nothing reaches Progress, the week's
+  reps, coins, a clinician or the server. No child sees another child's.
+  Never "score", "points" or "high score" to a child, and never "you
+  missed": under the best is an invitation ("3 away!"). A game never played
+  shows nothing. Saying the sound is the best way to go higher, because it
+  earns the help (slow keys, Super Slice); the sound itself is never counted.
+- **The store** is `Sona.gameBest(key)` and `Sona.gameBestOffer(key, n)` in
+  `sona.js` (block `BESTS1`). `gameBest` answers a whole number from 1, or 0
+  for a game never played. `gameBestOffer` keeps `n` only when it beats the
+  best and answers `{ best, prev, isNew }`: `prev` 0 is a first ever round,
+  matching the best is not new, and `best` is never below a valid `n` even
+  when the phone cannot save. Only whole numbers 1 to 99,999 and real game
+  keys count. One record per child, `sona.bests.v1` in `PER_KID` (`{ tiles:
+  { n: 38, at: "2026-10-02" } }`): a brother or sister starts with none, it
+  goes when the child is removed, and it rides in a backup. The old
+  one-per-phone keys (`sona.best.<game>`) counted the hidden score: they are
+  never read and not carried over. Pages ask for the store first
+  (`CAN_BEST`), so an older cached `sona.js` still plays the game.
+- **Home's tag** (`paintBest` in `today.html`, `.game-best` in
+  `crafted-home.css`): a game the child can open shows "Best 17" with the
+  app's small star, top left of its picture; the Free / Included badge keeps
+  the bottom right. No tag for a game never played, a greyed Premium game or
+  a Coming soon game. The card's spoken label adds "Your best: 17." Home
+  reads the tags again when it comes back to the front.
+- **In the game.** The top-left number is the longest row of this round
+  (`rowBest`), not the row they are on, so it never drops; a broken row just
+  starts again underneath it. "New best!" pops once a round, the moment the
+  row passes the best the child came in with, never on a first ever round;
+  the round's own banners wait for it. The best is kept the moment it is
+  passed, at each wave or song end, when the phone is locked, on the ✕ and
+  at the end.
+- **The win card's line** (`bestLine()` in each page): first ever "14 fruit
+  in a row. Your best: 14!"; beaten "17 fruit in a row. A new best!"; close
+  under "14 fruit in a row. Your best: 17. 3 away!"; more than `AWAY_NEAR`
+  (10) under, "5 fruit in a row. Your best: 38." with no gap (a big gap is a
+  measure, not a dare); level "The same as your best!". One thing is "1
+  fruit", never a row. A round that counted nothing keeps "Good try! Wanna go
+  again?" and shows no line. The title carries no number, so the row is the
+  only count on the card (Fruit Slice's early-stop title is "I saw the fruit
+  fly! So fun!", no longer "I saw 12 fruits fly!").
+- **"Play again" on top, "Back home" under it.** Another go is earned the
+  way every turn is, back through that game's say-it-five-times page
+  (`charge.html?game=…`). The game-to-game "WOOHOO! Next →" is gone from
+  these two; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
+  still calls `Sona.firstGameEnd("slice")`, because asking spends the
+  first-game mark.
+- **Piano Tiles: notes in a row.** Tiles tapped with none slipping past and
+  no wrong key (a tap on a key with no tile there). The row carries on from
+  song to song; the top is every note of the four songs (`ROW_TOP`, 52), and
+  a child there again is told "That is every note!". A second tap on the key
+  just played, within `DOUBLE_MS` (300 ms), is a bounce and does nothing; any
+  other empty key still ends the row, so mashing the keys can't build one.
+  The row flash is "8 in a row!" and the gold one "GOLDEN NOTE!" with no
+  "+3".
+- **Fruit Slice: fruit in a row.** Fruit sliced without one hitting the
+  ground. A golden fruit is one, the giant watermelon is one, and the row
+  carries on from wave to wave. **Super Slice's fruit are extras** (the two
+  rules Travis left to us): a fruit thrown while the power lasts adds to the
+  row when sliced but never to the wave, so saying the sound no longer ends
+  the wave sooner; and nothing that lands while the power lasts, and no
+  extra ever, breaks the row or feeds the two-miss help. A wave's 45 seconds
+  now count real seconds of play (`wavePlay`), not the clock Super Slice
+  slows, so no round runs on: three waves of at most 45 seconds, then the
+  giant. Every fifth fruit flashes the row ("5 in a row!"); the quick-slice
+  "N COMBO!" and the "+3" are gone.
+- **The old five-game run's card** (`?daily=1`; Home never opens it, a saved
+  run or a typed address still can) banks the round and moves on as before;
+  it says "Great round!" and "On to the next game…", never "+N points!".
+  Block Stacker, Sound Sprint and Flappy Glide still say "points" there and
+  still write the old shared keys until their turn.
+- **Rachel's to rule on:** children will say the bare sound more often in a
+  round, alone and quickly, because it is the best helper; whether that
+  wants a limit. And a child the phone hears poorly earns less help, so
+  their number may sit lower.
+`tests/besttest.mjs` pins the store, the leaks and Home's tag; `tilestest`
+and `slicetest` play each game's row and every line; `superslicetest` plays
+the extras through the real earned turn.
+
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
-remains in the repo. **Bubble Pop is back** (Travis, 30 Sep 2026), free, the
-second game for ages 3-4 beside Feed Echo: the same engine
-(`simple-play.js`), a full-width Home card like Feed Echo's
+(`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep
+2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
+2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
+Feed Echo's
 (`crafted-home.css`), no release date so no New shelf, and a website tile
 cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
@@ -1354,10 +1729,11 @@ to stand in for it. What was buildable was built on 28 Sep:
   round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
   letters are orange (`Sona.soundMark`). A miss never opens it
   (`micquietgamestest`). The end card's count names real things, never the
-  score: Fruit Slice counts fruit sliced (`FRUITN`, the giant is one fruit) and
-  Piano Tiles notes played (`NOTESN`), because a golden fruit or tile scores 3
-  and the giant's cuts score 5; neither shows a "Best" beside it, because the
-  best is a score. Block Stacker counts blocks and Sound Sprint metres.
+  score (a golden fruit or tile scores 3 and the giant's cuts score 5): Fruit
+  Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
+  child's own best in that same thing (see "Beat Your Best"; the old "Best"
+  was the hidden score, which is why it was taken off). Block Stacker counts
+  blocks and Sound Sprint metres until their own bests land.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
   `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
@@ -1393,7 +1769,11 @@ the app) is a later idea, not built; it is Rachel's to shape.
   is decided on the phone from the spectral shape of what was said. One clip a
   day may be kept in local IndexedDB so a parent can listen back — it is never
   uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. `mictest` pins the
+  no mechanism to break it, not because a checkbox is off. Its short form, the
+  grown-ups line on every mic ask (`MIC_PROMISE`), is "audio is never
+  uploaded. One try a day is saved on this phone so you can listen back."
+  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
+  never "never recorded", which that one saved try would make false. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.

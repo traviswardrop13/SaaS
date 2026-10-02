@@ -15,6 +15,13 @@
 // Pricing is off today, so the paywall half is played through the ?paid=1 /
 // sona.paidui seam, the way iaptest plays every purchase rail: nothing here
 // pins the switch's value.
+//
+// WEB1 (Travis, 1 Oct 2026: "i dont want them paying on the website"). This
+// suite is a browser, and a browser shows the web card only while the website
+// sells. So every paying scenario forces the web rails ON through the second
+// seam (sessionStorage "sona.websalesui"), which keeps the web card played
+// whichever way WEB_SALES ships; the scenarios at the end force it OFF and play
+// the same doors: no offer, no price, and where Premium is bought instead.
 import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
@@ -38,6 +45,8 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 function phone(cfg) {
   navigator.mediaDevices && (navigator.mediaDevices.getUserMedia = () => new Promise(() => {}));
   if (cfg.paid) sessionStorage.setItem("sona.paidui", "1");
+  // the website selling, unless the scenario says otherwise (web: "0")
+  if (cfg.paid) sessionStorage.setItem("sona.websalesui", cfg.web === "0" ? "0" : "1");
   // the grown-up passed the gate a moment ago, as setup does when pricing is on
   if (cfg.paid) sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   if (cfg.profile && !localStorage.getItem("sona.test.seeded")) {
@@ -175,14 +184,17 @@ await scenario("a locked game opens the plan screen on that game", async () => {
       summary: getComputedStyle(document.getElementById("planCard")).display,
       buy: document.getElementById("buyLife").getBoundingClientRect().bottom,
       decline: getComputedStyle(document.getElementById("declineRow")).display,
-      note: document.getElementById("declineNote").textContent,
+      declineText: document.getElementById("declineRow").innerText,
+      noteShown: getComputedStyle(document.getElementById("declineNote")).display !== "none",
       rachel: document.getElementById("offerRachel").textContent,
     }));
     ok("…opened on that game: its picture, its name in the headline", s.title === "Unlock Block Stacker, and every other game" && JSON.stringify(s.art) === '["/assets/crafted/home-stack.webp"]', s);
     ok("…and one line about the child who tapped it", s.pill === "🎮 Mia wants to play Block Stacker", s.pill);
     ok("the offer sheds the Settings furniture: tabs, page head and summary box", s.tabs === "none" && s.head === "none" && s.summary === "none", s);
     ok("the button is on the first screen of an iPhone", s.buy > 0 && s.buy <= 844, s.buy);
-    ok("a stated way out, saying the free games are still there", s.decline !== "none" && s.note === "Your free games are still ready to play.", s);
+    // the line that sat under it steps aside in the offer (Travis, 2 Oct 2026:
+    // "there's still too much information"): the button names the free version
+    ok("a stated way out, naming the free version, with nothing under it", s.decline !== "none" && /Not now — keep the free version/.test(s.declineText) && !s.noteShown, s);
     ok("Rachel's credential is still on the page, word for word", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(s.rachel), s.rachel);
     ok("locked game → plan screen: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -284,7 +296,7 @@ await scenario("a late answer from the price check, with the charter spots gone"
   try {
     await page.goto(BASE + "/subscribe.html");
     await page.locator("#pickCard").waitFor();
-    const read = () => page.evaluate(() => { const g = (id) => document.getElementById(id); return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, title: g("webTitle").innerText, renew: g("webRenew").innerText, line: g("planLine").innerText, save: document.querySelector("#planLife .save").innerText, month: g("planMonth").innerText }; });
+    const read = () => page.evaluate(() => { const g = (id) => document.getElementById(id); return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, title: g("webTitle").innerText, renew: g("webRenew").innerText, bill: g("webTL").innerText, line: g("planLine").innerText, save: document.querySelector("#planLife .save").innerText, month: g("planMonth").innerText }; });
     let s = await read();
     ok("while the price check is out, the button waits and says so", s.disabled && /Checking today/.test(s.button), s);
     await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // 2.5 s: the button lets go
@@ -292,8 +304,8 @@ await scenario("a late answer from the price check, with the charter spots gone"
     ok("after 2.5 s the button lets go at the price the page opened with", s.button === "Start 3 days free" && /\$59\.99/.test(s.title), s);
     await page.waitForFunction(() => /99\.99/.test(document.getElementById("webTitle").innerText));   // the late answer lands
     s = await read();   // NOTHING is tapped: a tap repaints, and would hide the stale small print this is here to catch
-    ok("a late answer re-prices EVERY yearly figure with no tap: the title, the per-month line, the small print and the header line",
-      /\$99\.99\/yr/.test(s.title) && /under \$8\.50 a month, billed once a year/i.test(s.save) && /renews at \$99\.99 a year/.test(s.renew) && !/59\.99/.test(s.renew) && /\$99\.99\/yr/.test(s.line) && !/59\.99/.test(s.line) && /under \$8\.50 a month/.test(s.line), s);
+    ok("a late answer re-prices EVERY yearly figure with no tap: the title, the per-month line, the billing line, the small print and the header line",
+      /\$99\.99\/yr/.test(s.title) && /under \$8\.50 a month, billed once a year/i.test(s.save) && /then \$99\.99 a year/.test(s.bill) && !/59\.99/.test(s.bill) && /renews at \$99\.99 a year/.test(s.renew) && !/59\.99/.test(s.renew) && /\$99\.99\/yr/.test(s.line) && !/59\.99/.test(s.line) && /under \$8\.50 a month/.test(s.line), s);
     ok("…and the monthly figure does not move with the charter", /\$9\.99\/mo/.test(s.month) && /\$9\.99 a month, charged today/.test(s.line), s);
     ok("late price answer: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -332,6 +344,71 @@ await scenario("Settings › Your plan", async () => {
     ok("…Rachel's line shows once there, and both ways to pay", s.rachel === 1 && s.plans === 2, s);
   } finally { await context.close(); }
 });
+
+// ── WEB1: THE SAME DOORS, WHEN THE WEBSITE DOES NOT SELL ──
+// The first game still ends the usual way, and nothing is due after it. Each
+// door a grown-up can come through (a locked game, the end of a first run,
+// Settings) opens the plan screen in its plain Settings shape: where Premium
+// is bought, the way to the App Store, what stays free. No offer view, no
+// price, no free days, no charter line, nothing to decline, and the server is
+// asked for neither a checkout nor a price.
+await scenario("Feed Echo, the website not selling", async () => {
+  const { context, page, errors } = await open("/arcade-feed.html", { profile: kid("4"), first: "feed", paid: true, web: "0" });
+  try {
+    await page.waitForFunction(() => typeof finish === "function");
+    ok("web sales off: a new family in a browser is not due the plan screen", (await page.evaluate(() => Sona.planEligible())) === false);
+    await page.evaluate(() => finish());
+    await page.locator("#endOvl.show").waitFor();
+    ok("…and the first game ends as it always does: Play again, then Back home",
+      (await page.locator("#again").innerText()) === "Play again" && (await page.locator("#goHome").innerText()) === "Back home");
+    ok("Feed Echo, web sales off: no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+for (const [w, h] of [[390, 844], [375, 667]]) for (const [door, lands] of [["/premium.html?game=stack", "?from=stack"], ["/subscribe.html?first=1", "?first=1"], ["/subscribe.html", ""]]) {
+  const label = "web sales off, " + w + "×" + h + ", " + door;
+  await scenario(label, async () => {
+    const context = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: "reduce" });
+    await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
+    await context.addInitScript(phone, { profile: kid("7"), paid: true, web: "0" });
+    const page = await context.newPage(); page.setDefaultTimeout(8000);
+    const errors = [], asked = []; page.on("pageerror", (e) => errors.push(e.message));
+    page.on("request", (r) => { if (/\/api\/(checkout|charter)/.test(r.url())) asked.push(new URL(r.url()).pathname); });
+    // a real answer is waiting, so a page that asked would have a price to paint
+    await answerCharter(page, CHARTER_OPEN);
+    try {
+      await page.goto(BASE + door);
+      await page.waitForURL((u) => u.pathname === "/subscribe.html");
+      ok(label + ": the door still leads to the plan screen", new URL(page.url()).search === lands, page.url());
+      await page.locator("#appCard").waitFor({ state: "visible" });
+      await page.waitForTimeout(400);   // long enough for a price check to have been sent, had one been
+      const v = await page.evaluate(() => {
+        const g = (id) => document.getElementById(id);
+        const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+        const a = g("appStoreGo");
+        return { offer: document.body.classList.contains("offer"), hero: seen(g("offerHero")), tabs: seen(document.querySelector(".family-tabs")), head: seen(document.querySelector(".family-pagehead")),
+          pick: seen(g("pickCard")), buy: seen(g("buyLife")), iap: seen(g("iapCard")), decline: seen(g("declineRow")), rachel: seen(g("offerRachel")),
+          title: g("appTitle").innerText, words: g("appCard").innerText, href: a.getAttribute("href"), button: a.innerText.trim(), tag: a.tagName, blank: a.target === "_blank" && /noopener/.test(a.rel),
+          go: Math.round(a.getBoundingClientRect().bottom), free: seen(g("freeTierCard")), games: g("freeGames").innerText, line: g("planLine").innerText,
+          body: document.body.innerText, wide: document.documentElement.scrollWidth > innerWidth, spent: localStorage.getItem("sona.planmoment.v1"), due: Sona.planEligible() };
+      });
+      ok(label + ": no offer view: the Settings tabs and 'Your plan' are showing, the pictures and the pitch are not", !v.offer && !v.hero && v.tabs && v.head && !v.rachel, v);
+      ok(label + ": no web card, no Apple card, no buy button, nothing to decline", !v.pick && !v.buy && !v.iap && !v.decline, v);
+      ok(label + ": the card says Sona Premium is in the iPhone and iPad app, bought there and opening there",
+        v.title === "Sona Premium is in the iPhone and iPad app" && /You buy it there, through the App Store, and it opens there\./.test(v.words) && /Daily practice and the free games stay free here\./.test(v.words), v.words);
+      ok(label + ": the way to the App Store is a real link, in a new tab, with nothing running off the side",
+        v.tag === "A" && v.href === "https://apps.apple.com/us/app/sona-speech/id6785755867" && v.blank && v.button === "Get Sona on the App Store" && v.go > 0 && !v.wide, v);
+      ok(label + ": someone who already paid on the website is told the plan keeps working", /Already paid on speaksona\.com\? Your plan keeps working\./.test(v.words), v.words);
+      ok(label + ": what stays free is under it, named from the catalog", v.free && v.games === "Fruit Slice, Piano Tiles, Feed Echo and Bubble Pop, free for every child", v.games);
+      ok(label + ": the header line says where Premium is bought, and never 'founding family'",
+        v.line === "Today: the free version. Sona Premium is bought in the iPhone and iPad app.", v.line);
+      ok(label + ": no dollar sign, free days, charter line or spots-left count anywhere on the page",
+        !/\$/.test(v.body) && !/3 days free|free trial|charter|spots? left|charged today/i.test(v.body), (v.body.match(/\$[^\s]*|3 days free|free trial|charter|spots? left|charged today/i) || [])[0]);
+      ok(label + ": the server is asked for no checkout and no price", asked.length === 0, asked);
+      ok(label + ": the one-time ask is neither due nor spent", v.due === false && v.spent === null, { due: v.due, spent: v.spent });
+      ok(label + ": no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+}
 await scenario("the gate carries the game", async () => {
   const { context, page } = await open("/today.html", { profile: kid("7") });
   try {

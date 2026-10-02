@@ -409,17 +409,19 @@ async function waitSpoke(pg, ms) {
   // premium: false is a family on the free version, paywall on: every free
   // era already judged (so no sweep adopts them), the demonstration over, no
   // trial, no subscription. The books then lock one by one.
-  const shelfAt = async (when, focus, premium = true, mode, viewport) => {
+  // rot: which of the child's sounds practice is on now (the rotation's place)
+  const shelfAt = async (when, focus, premium = true, mode, viewport, rot) => {
     const ctx = await browser.newContext({ viewport: viewport || { width: 430, height: 932 }, timezoneId: "America/Denver" });
     const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
     await pg.addInitScript(seed);
-    await pg.addInitScript(([f, premium, mode]) => {
+    await pg.addInitScript(([f, premium, mode, rot]) => {
       localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: f, onboarded: true, earlyAdopter: premium, mode: mode || undefined }));
+      if (rot) localStorage.setItem("sona.rotation.v1", JSON.stringify({ i: rot, r: 0 }));
       if (!premium) {
         ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
         localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
       }
-    }, [focus, premium, mode || ""]);
+    }, [focus, premium, mode || "", rot || 0]);
     await pg.clock.setFixedTime(new Date(when));
     await pg.goto("http://localhost:8153/library.html");
     await pg.waitForTimeout(500);
@@ -630,7 +632,42 @@ async function waitSpoke(pg, ms) {
   m = await more(r.pg);
   ok("a child on R and S has both their Halloween books on top (14 books) and the other four behind (34 books), never Boo on top",
     tapped && m.top.length === 14 && JSON.stringify(spooky(m.top)) === JSON.stringify(["Rory the Rabbit on Halloween", "Sid the Seagull on Halloween"]) && m.label === "More books (34)" && m.rest.length === 34 && whole(m)
-      && JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Rory the Rabbit on Halloween", "Sid the Seagull on Halloween"])), JSON.stringify({ top: m.top, label: m.label })); await r.ctx.close();
+      && JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Rory the Rabbit on Halloween", "Sid the Seagull on Halloween"])), JSON.stringify({ top: m.top, label: m.label }));
+  // THE SOUND PRACTISED NOW LEADS (main's #184, 1 Oct 2026; it came with no
+  // check, and with no words of Travis's: his "the kids just seeing books
+  // based on their letter/s" is about the other sounds' books being closed
+  // up, see library.html). A child on R and S whose practice is on S today
+  // sees the S books first. It moves the ORDER of the top shelf and nothing
+  // else: the same 14 books are on top, the same 34 behind the one button,
+  // each book once.
+  const rsTop = m.top.slice(), rsRest = m.rest.map((b) => b.t);
+  const runs = (list) => list.filter((x, i, a) => i === 0 || a[i - 1] !== x).join(">");
+  ok("a child on R and S, practice on R: every R book, then every S book", runs(m.topSounds) === "R>S" && rsTop[0] === "Rory and the Rainbow", JSON.stringify(m.topSounds)); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"], true, "", null, 1);
+  const nowS = await r.pg.evaluate(() => ({ now: Sona.rotSound(), fresh: ((Sona.activityLibrary().featured.find((f) => f.id === "new") || { games: [] }).games).filter((g) => g.kind === "book").map((g) => g.name) }));
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("…practice on S: every S book first, then every R book, the same 14 on top and the same 34 behind one More books",
+    tapped && nowS.now === "S" && runs(m.topSounds) === "S>R" && sameSet(m.top, rsTop) && sameSet(m.rest.map((b) => b.t), rsRest) && m.label === "More books (34)" && whole(m)
+      , JSON.stringify({ now: nowS.now, sounds: m.topSounds, label: m.label }));
+  // ONE control. Two sessions each built a More books on 1 Oct 2026 (this
+  // button, and a <details> that main's #184 drew under the same shelf); a
+  // second one would put every other book on the page twice.
+  const one = await r.pg.evaluate(() => ({ shelves: document.querySelectorAll("#moreShelf").length, boxes: document.querySelectorAll("#moreBooks").length, details: document.querySelectorAll("details, summary").length,
+    says: [...document.querySelectorAll("button, summary, a")].filter((e) => /^More books/.test(e.textContent.trim())).length }));
+  ok("…and the shelf has exactly one More books control: one button, one shelf behind it, no second drop-down in the page or its source",
+    one.shelves === 1 && one.boxes === 1 && one.details === 0 && one.says === 1 && !/<details|<summary|createElement\("details"\)|\.moreBooks\b/.test(lib), JSON.stringify(one));
+  ok("…and Home's What's new shows only that child's books, the S ones first",
+    JSON.stringify(nowS.fresh) === JSON.stringify(["Sam's Sailboat", "Sophie's Silly Soup", "Rosie and the Red Wagon", "Ray and the Lost Ring"]), JSON.stringify(nowS.fresh));
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  // readable still comes before Premium: without Premium the free book is an
+  // R book, and it leads even on a day practice is on S
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"], false, "", null, 1);
+  m = await more(r.pg);
+  ok("…without Premium, practice on S: the free book still leads, then the S books, then the other R books, all Premium",
+    m.top[0] === "Rory and the Rainbow" && m.topMarks[0] === "Free" && runs(m.topSounds.slice(1)) === "S>R" && m.topMarks.slice(1).every((x) => x === "Premium") && sameSet(m.top, rsTop) && m.label === "More books (34)",
+    JSON.stringify({ top: m.top, marks: m.topMarks }));
+  await r.ctx.close();
   // outside October the six are on neither shelf (before it and after it)
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
   tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);

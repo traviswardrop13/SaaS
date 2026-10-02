@@ -271,7 +271,57 @@ npx cap open android   # Android Studio
 ```
 Same config; Google Play is $25 once and reviews faster.
 
+## Making the app the only shop for families (built 1 Oct 2026; switched on 2 Oct 2026)
+
+**2 Oct 2026: `WEB_SALES` is `false`** (Travis: "turn off payments on
+website"). That day both products were attached to RevenueCat's `full`
+entitlement, the yearly price was set to $59.99 from 4 Oct with a 3-day free
+trial, `com.speaksona.app.monthly` was created at $9.99, a sandbox purchase on
+his iPhone unlocked Premium, and 1.0.5 (build 8, with the purchase plugin)
+went to App Review. Until 1.0.5 is live nobody can buy Premium anywhere. The
+rest of this section is the 1 Oct record of why it first shipped `true`.
+
+Travis: "i dont want them paying on the website". `WEB_SALES`
+(`lib/pricing.ts`, `public/sona.js`) set to `false` switches the family web
+checkout off: the website refuses to start a purchase, and a browser family
+is told Premium is in the iPhone and iPad app. Nothing in the app reads that
+switch. **It shipped `true`**, because on 1 Oct 2026 the app could not sell at
+all, and switching the website off too would have left no way to buy. What has
+to be true of this build before it goes `false`:
+
+1. **Every purchase is Apple's**, so three checks that used to matter only
+   for iPhone families decide whether anyone can buy at all:
+   - **The build carries the purchase plugin.** `subscribe.html` shows the
+     Apple card only when `Capacitor.Plugins.Purchases` exists
+     (`Sona.iapAvailable()`). The App Store's 1.0.4 does not have it: the iOS
+     project in `~/Documents/SaaS` lists only `@capacitor/keyboard` in
+     `package.json` and `ios/App/CapApp-SPM/Package.swift`, and the 1.0.4
+     archives hold no RevenueCat code (1.0.3 build 6 did, so it was dropped
+     between 25 and 28 Sep). The fix is in that project, then a new build
+     through App Review: `npm i @revenuecat/purchases-capacitor`, `npx cap
+     sync ios`, check `packageClassList` in the built app's
+     `capacitor.config.json` names `PurchasesPlugin`. To check any archive:
+     `strings <App.app>/App | grep -ci revenuecat` (0 means no buy button).
+   - **App Store Connect:** the product is approved and on sale, at the price
+     Travis wants. On 1 Oct 2026 the App Store listing showed "Sona Yearly" at
+     **$79.99**, while its description said $59.99 a year.
+   - **RevenueCat:** the product is attached to the `full` entitlement. On
+     1 Oct 2026 `com.speaksona.app.annual` was attached to **no** entitlement
+     (only `com.speaksona.app.lifetime` unlocked `full`), so a purchase would
+     have been taken by Apple and left the app locked. Anyone can check this
+     without the dashboard: `GET https://api.revenuecat.com/v1/product_entitlement_mapping`
+     with the app's public key (`IAP_KEY` in `sona.js`) as the bearer token.
+2. **A purchase in the app unlocks the app, not the website.** The browser
+   only ever learns of a purchase from Stripe.
+3. **Settings › Account's "See Premium" opens the plan screen**
+   (`/subscribe.html`, the Apple card). It used to open the web `/subscribe`
+   page, which sent the app back to Home.
+
 ## The charter price on iOS
+
+(With web sales off, see above, nobody new can take a charter spot: the
+charter was a web price. What follows is how the tiers worked while the
+website sold, and still does if the switch goes back.)
 
 The web sells the yearly plan at two tiers — $59.99 for the first 50 families,
 $99.99 after — and `/api/checkout` decides which at the moment of purchase

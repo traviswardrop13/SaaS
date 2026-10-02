@@ -246,6 +246,29 @@
         clearMessage();
         location.href=game.go;
       }
+      // BESTS1 ("Beat Your Best", Travis, 1-2 Oct 2026): a game this child can
+      // open carries their own best on its picture, "Best 17", top left (the
+      // Free / Included badge keeps the bottom right). It is this child's
+      // alone (Sona.gameBest reads the active child's record), it counts
+      // what their finger did in the game, never their voice, and a game
+      // never played shows nothing: no zero, no empty tag to fill. A greyed
+      // card (Premium not opened, or Coming soon) never carries one: a
+      // number on a game they cannot open is only a tease. The picture is
+      // hidden from a screen reader, so the card's own label says it too.
+      // An older cached sona.js has no gameBest, and then nothing is drawn.
+      var bestCards=[];
+      function paintBest(card){
+        var n=0;try{n=S.gameBest?S.gameBest(card.key):0;}catch(e){n=0;}
+        n=(typeof n==="number"&&n>=1)?Math.floor(n):0;
+        var tag=card.art.querySelector(".game-best");
+        if(!n){if(tag)card.art.removeChild(tag);card.button.setAttribute("aria-label",card.label);return;}
+        if(!tag){tag=node("span","game-best");card.art.appendChild(tag);}
+        tag.textContent="";
+        var star=node("span","game-best-star");star.innerHTML=S.icon?S.icon("star",12):"";tag.appendChild(star);
+        tag.appendChild(document.createTextNode("Best "));tag.appendChild(node("b","",String(n)));
+        card.button.setAttribute("aria-label",card.label+" Your best: "+n+".");
+      }
+      function paintBests(){bestCards.forEach(paintBest);}
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         var grant=game.kind==="book"?bookAccess(game):access(game),tier=grant.reason==="free-mode"?"free":game.tier;
@@ -263,6 +286,7 @@
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
         }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
         button.appendChild(art);
+        if(game.kind!=="book"&&!comingSoon&&grant.allowed){var best={button:button,art:art,key:game.key,label:button.getAttribute("aria-label")};bestCards.push(best);paintBest(best);}
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
         info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
         var arrow=node("span","game-arrow","›");arrow.setAttribute("aria-hidden","true");info.appendChild(arrow);button.appendChild(info);button.onclick=function(){launch(game);};return button;
@@ -301,6 +325,9 @@
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
+      // An iPhone keeps Home alive behind a game; when it comes back to the
+      // front the tags are read again, like the week's reps in the corner.
+      document.addEventListener("visibilitychange",function(){if(!document.hidden)paintBests();});
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted picture (1 Oct 2026); the old sticker only if it can't load
       (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);})(document.getElementById("libraryBooksArt"));

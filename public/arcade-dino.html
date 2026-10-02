@@ -13,6 +13,10 @@
     5-8; Travis, 1 Oct 2026: "go to the next game"). Say the word and get a
     brush, rub the sand to uncover a bone, and the bone flies onto the
     dinosaur's skeleton; eight bones, then the dinosaur wakes up and roars.
+    There are four dinosaurs, dug in order, a new one each round (Travis, 1 Oct
+    2026: "different types of dinosaurs to look for not just one"): the start
+    card shows the one to look for, the end card names it, and both show the
+    ones found so far. /dino.js draws them; this page keeps the child's place.
     Written by hand, not by tools/gameart/build.mjs: the dig is drawn and
     played in /dino.js, and every word turn, the mic and its quiet rules are
     /sayplay.js's, as in every Say & Play game. Its start card is the same
@@ -60,6 +64,11 @@
     <div class="ovlCard">
       <h2 id="startTitle">Dino Dig</h2>
       <p>Say the word to get a brush. Then rub the sand to dig up a dinosaur bone!</p>
+      <div id="dinoToday" hidden>
+        <canvas id="dinoPic" width="400" height="210" role="img" aria-label=""></canvas>
+        <p id="dinoName"></p>
+      </div>
+      <div class="dinoRow" id="dinoRow" role="img" aria-label="" hidden></div>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
     </div>
@@ -86,6 +95,7 @@
       <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="endTitle"></h2>
       <p id="endSub"></p>
+      <div class="dinoRow" id="dinoRowEnd" role="img" aria-label="" hidden></div>
       <button class="btn" id="again">Play again</button>
       <button class="ghost" id="goHome">Back home</button>
     </div>
@@ -112,9 +122,15 @@
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain * vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
     }
-    SayPlay.start({
+    // Which dinosaur comes next, and the ones already found, belong to the
+    // child: sona.dino.v1 is one of sona.js's per-child keys, so a brother or
+    // sister starts at the first dinosaur. It is a collection, not practice:
+    // no attempt, rep or coin, and nothing a clinician is shown.
+    var DINOKEY = (window.Sona && Sona.kkey) ? Sona.kkey("sona.dino.v1") : "sona.dino.v1";
+    var GAME = {
       key: "dino", title: "Dino Dig",
       steps: [[], [], [], [], [], [], [], []], finale: [],
+      // the title is the dinosaur's own name once it wakes (found, below)
       done: { title: "The dinosaur woke up!", sub: "Eight words, eight bones. What a digger!" },
       play: window.Dino,
       sounds: {
@@ -125,7 +141,15 @@
         roar: function (ctx, vol) { dinoTone(ctx, vol, 150, 0.75, 0.18, "sawtooth", 80); dinoNoise(ctx, vol, 0.7, 500, 200, 0.18, "lowpass"); dinoTone(ctx, vol, 523.3, 0.3, 0.05, "sine", 0, 0.75); dinoTone(ctx, vol, 659.3, 0.4, 0.05, "sine", 0, 0.9); },
       },
       soundMs: { brush: 160, pop: 300, whoosh: 300, clack: 160, roar: 1350 },
+    };
+    // (a /dino.js the phone saved before there were four has no setup: it
+    // digs its one dinosaur, and the cards keep their picture rows hidden)
+    if (window.Dino && Dino.setup) Dino.setup({
+      read: function () { try { return JSON.parse(localStorage.getItem(DINOKEY) || "null"); } catch (e) { return null; } },
+      write: function (v) { try { localStorage.setItem(DINOKEY, JSON.stringify(v)); } catch (e) {} },
+      found: function (d) { GAME.done.title = "You found " + d.a + " " + d.name + "!"; },
     });
+    SayPlay.start(GAME);
   </script>
 </body>
 </html>

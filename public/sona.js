@@ -206,9 +206,17 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
+    // Dino Dig's round of dinosaurs: which one is next and the ones found
+    // (arcade-dino.html keeps it). A collection, never practice data.
+    "sona.dino.v1",
     // how many races this child has started from Sound Sprint's start card
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
+    // each child's own best in each game (BESTS1, Sona.gameBest): a brother
+    // or sister starts with none, and it goes when the child is removed. The
+    // old "sona.best.<game>" keys were one per phone, so siblings overwrote
+    // each other; they are not carried over.
+    "sona.bests.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -489,6 +497,78 @@
       events: _voiceEvents.map(function (item) { return Object.assign({}, item); }) };
   }
 
+  // ── "Go!": Echo's turn cue after a game's ask (2 Oct 2026) ──
+  // Travis: "i also wanna try to have the 11 labs voice say 'Go!'". Feed
+  // Echo, the Say & Play games (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+  // Peekaboo say it straight after the word, as its own short clip, so a child
+  // who can't read hears that it is their turn. It is a nicety, so it never
+  // holds up a turn (review, 2 Oct 2026). Fetched like the word, every turn
+  // waited on the voice service a second time while "Listen…" sat on screen
+  // in silence: up to 8 s more when the service was slow, on every turn while
+  // it sent stand-ins (those are never saved, so "Go!" was fetched again each
+  // time), and a "Go!" the service could not send came in the browser's robot
+  // voice after Echo's word. So each game asks goClip() for the clip it can
+  // play right now, and plays nothing when there is none:
+  // - this page's copy, or this phone's saved copy (read from the phone, not
+  //   the network); if neither, nothing this turn, and the voice service is
+  //   asked in the background, so the next turn has it;
+  // - only the first ask of a visit waits for that request (waitMs, the
+  //   game's GO_WAIT_MS: 1.5 s at most after the word), so a new phone hears
+  //   "Go!" from the start;
+  // - an ordinary answer is saved on the phone; a stand-in (X-Sona-Voice-Keep
+  //   "0") is kept for this page only and never saved, so the next visit asks
+  //   again, the rule every voice line keeps (28 Sep 2026);
+  // - never the browser voice: no clip, no "Go!".
+  // Resolves with the clip's bytes (an ArrayBuffer of 24 kHz PCM) or null.
+  const GO_LINE = "Go!", GO_WAIT_MS = 1500, _go = { mem: {}, job: {} };
+  function _goStore(key, bytes) {
+    return new Promise(function (done) {
+      // a phone that never answers is the same as one without the clip
+      const timer = setTimeout(function () { done(null); }, 500);
+      const fin = function (v) { clearTimeout(timer); done(v || null); };
+      try {
+        const rq = indexedDB.open("sona-tts", 1);
+        rq.onupgradeneeded = function () { try { if (!rq.result.objectStoreNames.contains("clips")) rq.result.createObjectStore("clips"); } catch (e) {} };
+        rq.onerror = function () { fin(null); };
+        rq.onsuccess = function () {
+          try {
+            const tx = rq.result.transaction("clips", bytes ? "readwrite" : "readonly"), st = tx.objectStore("clips");
+            if (bytes) { st.put(bytes, key); tx.oncomplete = function () { fin(bytes); }; tx.onerror = function () { fin(null); }; return; }
+            const q = st.get(key); q.onsuccess = function () { fin(q.result); }; q.onerror = function () { fin(null); };
+          } catch (e) { fin(null); }
+        };
+      } catch (e) { fin(null); }
+    });
+  }
+  function _goFetch(voice) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 8000); } catch (e) {}
+    return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: GO_LINE, voice: voice || "", stable: true }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) return null;
+        const keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b && b.byteLength ? { bytes: b, keep: keep } : null; });
+      })
+      .then(function (v) { clearTimeout(to); return v; }, function () { clearTimeout(to); return null; });
+  }
+  function goClip(voice, waitMs) {
+    const key = (voice || "echo") + "|" + TTS_CACHE_VERSION + "|" + GO_LINE;
+    if (_go.mem[key]) return Promise.resolve(_go.mem[key]);
+    let job = _go.job[key];
+    if (!job) {
+      job = _go.job[key] = {};
+      job.phone = _goStore(key);
+      job.all = job.phone.then(function (b) {
+        if (b) return b;
+        return _goFetch(voice).then(function (v) { if (!v) return null; if (v.keep) _goStore(key, v.bytes); return v.bytes; });
+      }).then(function (b) { if (b) _go.mem[key] = b; if (_go.job[key] === job) delete _go.job[key]; return b; },
+        function () { if (_go.job[key] === job) delete _go.job[key]; return null; });
+    }
+    if (!(waitMs > 0)) return job.phone.then(function (b) { return b || _go.mem[key] || null; });
+    return Promise.race([job.all, new Promise(function (done) { setTimeout(function () { done(null); }, waitMs); })])
+      .then(function (b) { return b || _go.mem[key] || null; });
+  }
+
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {
@@ -587,6 +667,24 @@
     const g = getProgress(); const cur = g.stage[sound] || 0;
     const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
     if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
+    return g.stage[sound] || 0;
+  }
+  // One clean first-listen pass at the stretch rung; the second one earns it.
+  // The rule (two passes, never down) is Rachel's and is unchanged — this is
+  // only WHOSE count it is. The practice page used to keep it in a key named
+  // for the sound and rung ("sona.rungwins.R.0") and pass that through kkey(),
+  // but PER_KID holds fixed names, so the key was never suffixed and the count
+  // was the DEVICE's: one sibling's pass plus the other's moved a level for a
+  // child who had earned half of it. It lives inside the child's own progress
+  // now, so it follows them through load()/save(), a backup and a removal.
+  // Counts left under the old keys are not read: a child at worst needs one
+  // more clean round, which is the safe direction.
+  function rungWin(sound, rung) {
+    const g = getProgress(); const k = sound + "." + rung;
+    g.rungWins = g.rungWins || {};
+    const w = (g.rungWins[k] | 0) + 1;
+    if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1); }
+    g.rungWins[k] = w; save(GKEY, g);
     return g.stage[sound] || 0;
   }
   // ── free-play rotation: one letter at a time, one rung per game ──
@@ -1303,10 +1401,13 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"):
-  // when the mic listens, that nothing is uploaded, and the one try kept on
-  // the phone. The privacy page and /support keep the long version.
-  const MIC_PROMISE = "Grown-ups: Echo listens only after asking your child to talk. Recordings are never uploaded; one try a day may stay on this device so you can listen back.";
+  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"; 2
+  // Oct 2026: "still too long ... just say audio is never recorded or
+  // uploaded"). Two things, both true: nothing is uploaded, and the one try a
+  // day kept on the phone for a parent to play back. Not "never recorded":
+  // that one try IS recorded, on the phone, and a consent line must not deny
+  // it (mictest). The privacy page and /support keep the long version.
+  const MIC_PROMISE = "Grown-ups: audio is never uploaded. One try a day is saved on this phone so you can listen back.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -1880,7 +1981,7 @@
   // say "this device was judged on its first load", which is true of the
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
-  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.pilot.v1", "sona.trial.v1",
+  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
@@ -2886,7 +2987,11 @@
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
     // free version's games for ages 3-4. No release date, so no New shelf.
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Pop a bubble. Find a little surprise." },
+    // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
+    // Play engine, but NOT a `say` game: that flag would list it twice on
+    // Home, point its sticker at one that does not exist, and take it out of
+    // the little kids' adventure deck. Its page keeps that adventure's hand-off.
+    bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
     peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-09", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
@@ -3063,11 +3168,16 @@
   // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
   // under Limited time for that window instead. Folder = public/assets/books/<slug>.
   const HOME_BOOKS = [
-    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", releasedOn: "2026-10-01" },
-    { slug: "sam-sailboat", title: "Sam's Sailboat", releasedOn: "2026-10-01" },
-    { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
-    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
-    { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "sophie-silly-soup", title: "Sophie's Silly Soup", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "libby-lemon", title: "Libby and the Lemon", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "leon-lantern", title: "Leon's Lantern", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "shawn-shadow", title: "Shawn and His Shadow", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "thor-thank-you", title: "Thor Says Thank You", sound: "TH", releasedOn: "2026-10-01" },
+    { slug: "thelma-thirsty-plant", title: "Thelma's Thirsty Plant", sound: "TH", releasedOn: "2026-10-01" },
     { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
@@ -3150,8 +3260,13 @@
     // games"). HOME_BOOKS names each book's day out and, for a limited-time
     // one, its window; a book is still opened (or not) by the shelf's rules.
     function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
-    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
-      .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
+    // only the child's own sounds, the one practised now first (Travis, 1 Oct
+    // 2026: "the kids just seeing books based on their letter/s")
+    var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var nowSound = ""; try { nowSound = String(rotSound() || "").toUpperCase(); } catch (e) {}
+    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000 && (!mySounds.length || playMode() || mySounds.indexOf(b.sound) !== -1); })
+      .sort(function (a, b) { return (b.sound === nowSound) - (a.sound === nowSound); })
+      .map(bookEntry);
     var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
     // the limited-time book in this child's sound (seasonPick); play mode,
     // which rotates every sound, and a child with no sounds yet see them all
@@ -3759,6 +3874,56 @@
   // are retired; counts remain local except consented pilot progress sharing.
   function repsBeacon() {}
 
+  // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
+  // best for kids you can do"). Each big-kid game counts ONE real thing the
+  // child's FINGER did (fruit sliced in a row, notes in a row) and remembers
+  // this child's own best: the win card adds one line and Home's picture
+  // carries a small "Best 17". The rules it keeps, all of them on purpose:
+  //   - It counts the finger, never the voice. Nothing here grades speech, so
+  //     it is not practice data: outcomes(), sendProgress(), Progress and the
+  //     clinician's note never read it (besttest pins that), and it mints no
+  //     coins. It stays on the phone; like other play data it rides in a
+  //     backup, which is a grown-up moving their own family's phone.
+  //   - One record per CHILD (PER_KID), so no child ever sees another's best.
+  //   - It only ever goes up. A lower round changes nothing; there is no way
+  //     to lose a best by playing.
+  //   - Whole numbers of real things only. A game's hidden number (a golden
+  //     fruit is worth 3) was once shown as "Best" beside a count of fruit and
+  //     did not match it; a caller passes the count the child can see.
+  // gameBest(key) is the child's best (a whole number from 1) or 0 for a game
+  // never played, and Home shows no tag for 0. gameBestOffer(key, n) stores n
+  // when it beats the best and answers { best, prev, isNew }: prev is the
+  // best before this round (0 = their first ever, which just sets it), isNew
+  // is true when n went in, and best is never below a valid n, so a win card
+  // can always say "Your best: {best}". An n that is not a whole number from
+  // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
+  // older sona.js must still play the game.
+  const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
+  function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
+  function _bestOf(all, key) {
+    const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
+    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+  }
+  function gameBest(key) {
+    try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
+  }
+  function gameBestOffer(key, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = gameKey(key); if (!key) return out;
+      const all = _bests();
+      out.prev = out.best = _bestOf(all, key);
+      if (!_bestN(n) || n <= out.prev) return out;
+      // answered before the write: a phone that cannot save (storage full or
+      // off) still tells the child the truth about the round they just played
+      out.best = n; out.isNew = true;
+      all[key] = { n: n, at: today() };
+      save(BESTKEY, all);
+    } catch (e) {}
+    return out;
+  }
+
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
   // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
   // chapter.html and story.html each carried their own copy of the TTS path,
@@ -3974,6 +4139,8 @@
   function planEligible() {
     try {
       if (isFree()) return false;                    // nothing to sell
+      if (!isNativeApp() && !webSales()) return false;   // a browser that cannot sell has nothing to offer
+      if (isNativeApp() && !iapAvailable()) return false;   // nor has an app build with no purchase plugin
       if (localStorage.getItem(PLANSEEN)) return false;
       // anyone who already has every game is never asked: subscribers,
       // founders, founding pilots, a covered clinician's families, and all
@@ -4602,6 +4769,49 @@
     return true;
   }
 
+  // ── WHERE A FAMILY CAN BUY ────────────────────────────────────────────
+  // WEB_SALES is the second switch, and it is a different question from
+  // FREE_MODE: not "does Sona cost anything" but "can a FAMILY start a
+  // purchase in a web browser". Off (Travis, 1 Oct 2026: "i dont want them
+  // paying on the website"), a family buys Premium only in the iPhone and
+  // iPad app, through Apple: a family who paid on the web had no cancel
+  // button, and a cancelled web plan stayed unlocked on the phone. Mirrored in
+  // lib/pricing.ts for the server (tests/freetest.mjs fails if they disagree),
+  // and the server refuses on its own copy, whatever a page shows.
+  //
+  // It is the FAMILY web checkout and nothing else. The Apple card never reads
+  // it ("native" is isNativeApp(), always). Nor does anything a family who
+  // ALREADY pays through Stripe leans on: restore(), isSubscribed(), the
+  // receipt page. A plan off sale is not a cancelled subscription. The
+  // clinician plans, bought on the dashboard, never read it either.
+  //
+  // Pages keep BOTH states and read webSales(), failing closed:
+  //   !!(Sona.webSales && Sona.webSales())
+  // so a stale page beside a new sona.js shows no web card rather than a card
+  // whose button the server refuses.
+  //
+  // It shipped true on 1 Oct 2026, because the app on the App Store that
+  // night had no purchase plugin. OFF since 2 Oct 2026, on Travis's word
+  // ("turn off payments on website"), the day 1.0.5 (the first build that can
+  // sell) went to App Review: until that build is live, nobody can buy
+  // Premium anywhere, and he chose that.
+  const WEB_SALES = false;  // off (Travis, 2 Oct 2026: "turn off payments on website")
+  // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
+  // rails, "0" hides them, anything else is the constant), so both states stay
+  // played by the tests whichever way this ships. sessionStorage only, and no
+  // URL flag: the grown-ups gate strips every query key but first= and from=,
+  // and a localStorage seam once showed a family a paywall forever (see
+  // isFree above). It only controls VISIBILITY: /api/checkout refuses on the
+  // server's switch, so forcing it on in a browser opens nothing.
+  function webSales() {
+    try {
+      const v = sessionStorage.getItem("sona.websalesui");
+      if (v === "1") return true;
+      if (v === "0") return false;
+    } catch (e) {}
+    return WEB_SALES;
+  }
+
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
   // Two auto-renewable products in the "full" entitlement. The annual id is
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
@@ -4886,5 +5096,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

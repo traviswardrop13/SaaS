@@ -29,8 +29,18 @@ try{
   ok('leaving retry cancels audio without opening microphone',await page.evaluate(()=>h.media[1].paused&&h.mic===0));
   await page.evaluate(()=>{playing=true;crash();});await page.waitForFunction(()=>h.media.length===3);await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});
   ok('backgrounding cancels retry narration',await page.evaluate(()=>h.media[2].paused&&h.mic===0));
-  await page.evaluate(()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await page.waitForFunction(()=>h.media.length===4);await page.evaluate(()=>h.media[3].onended());await page.waitForFunction(()=>h.media.length===5);await page.evaluate(()=>h.media[4].onended());await page.waitForTimeout(300);
+  await page.evaluate(()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await page.waitForFunction(()=>h.media.length===4);await page.evaluate(()=>h.media[3].onended());await page.waitForFunction(()=>h.media.length===5);await page.evaluate(()=>h.media[4].onended());
+  // 2 Oct 2026 (Travis: "i also wanna try to have the 11 labs voice say
+  // 'Go!'"): after Rachel's take Echo says "Go!", in the same media voice,
+  // and the mic still waits for it and for the quiet tail after it.
+  await page.waitForFunction(()=>h.media.length===6,{},{timeout:2500}).catch(()=>{});
+  ok('after her sound, Echo says "Go!" as media, with no microphone yet',await page.evaluate(()=>h.media.length===6&&h.media[5].src.startsWith('blob:')&&h.mic===0)&&texts.includes('Go!'),{texts});
+  // The mic waits the 250 ms tail every listening page keeps after a voice
+  // line (2 Oct 2026, review: the 900 ms chime window left a child who
+  // answered right on "Go!" talking to a closed mic), then opens promptly.
+  if(await page.evaluate(()=>h.media.length===6))await page.evaluate(()=>h.media[5].onended());const goEnd=await page.evaluate(()=>performance.now());await page.waitForTimeout(150);
   ok('microphone waits for the sound tail',await page.evaluate(()=>h.mic===0));await page.waitForFunction(()=>h.mic===1);
+  ok('microphone opens within a moment of the tail, not the old 900 ms window',await page.evaluate((t)=>performance.now()-t<800,goEnd));
   ok('microphone starts after completed spoken retry',await page.evaluate(()=>h.mic===1));
  }
  const wav=await page.evaluate(async()=>{if(!Sona.pcmWave)return null;var bytes=new Uint8Array([0,128,0,0,255,127]),blob=Sona.pcmWave(bytes),data=new Uint8Array(await blob.arrayBuffer()),v=new DataView(data.buffer);return {type:blob.type,rate:v.getUint32(24,true),channels:v.getUint16(22,true),samples:Array.from(data.slice(44))};});
@@ -49,7 +59,10 @@ try{
  // as media in the app too, never Web Audio, and a voice that won't start
  // still reaches the child as the browser voice.
  {
-  const ctx2=await browser.newContext({reducedMotion:'reduce'});await ctx2.route('**/api/tts',route=>route.fulfill({body:Buffer.alloc(48000),contentType:'application/octet-stream'}));
+  // ttsTexts: what each voice request asked to be said (2 Oct 2026: "Go!"
+  // follows the word as its own line, and plays as media too)
+  const ttsTexts=[];
+  const ctx2=await browser.newContext({reducedMotion:'reduce'});await ctx2.route('**/api/tts',route=>{try{ttsTexts.push(JSON.parse(route.request().postData()).text);}catch(e){}route.fulfill({body:Buffer.alloc(48000),contentType:'application/octet-stream'});});
   await ctx2.addInitScript(()=>{
    localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['R'],childAge:'4',voiceOn:true,soundOn:false,volume:.6,earlyAdopter:true}));localStorage.setItem('sona.micok','1');
    window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
@@ -79,11 +92,23 @@ try{
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('a word game (Hoops) says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
-  await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startGame'));
-  await pg.evaluate(()=>{h.media=[];document.getElementById('startGame').click();});await pg.waitForTimeout(200);
-  await pg.evaluate(()=>document.getElementById('revealButton').click());
+  await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
+  await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
+  ok('…then "Go!", as its own line, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts[ttsTexts.length-1]==='Go!'&&/^Say\.\.\. [a-z]+\.$/i.test(ttsTexts[ttsTexts.length-2]),{texts:ttsTexts.slice(-2),media:await pg.evaluate(()=>h.media.length)});
+  const bubblesFrom=ttsTexts.length;
+  // Bubble Pop is a word game on the same engine since 1 Oct 2026: Echo asks
+  // for the word straight after Let's play, before any bubble exists
+  await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startBtn'));
+  await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('Bubble Pop says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
+  await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
+  await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
+  // "Go!" is one clip per phone: Hoops above already saved it, so Bubble Pop
+  // asks the voice service for its word at most and plays "Go!" from the
+  // phone. (Its word may be one Hoops just asked for, and so saved too: the
+  // two games pick from the same start-of-word words.)
+  ok('Bubble Pop: …then "Go!", as its own line from the clip this phone already saved, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts.length-bubblesFrom<=1&&!ttsTexts.slice(bubblesFrom).includes('Go!'),{texts:ttsTexts.slice(bubblesFrom),media:await pg.evaluate(()=>h.media.length)});
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
  }
  // 1 Oct 2026 ("start with isolation then ree rah roh then rot"): for a child
@@ -106,18 +131,22 @@ try{
   const pg=await ctx3.newPage(),errs=[],lines=[];pg.on('pageerror',e=>errs.push(e.message));pg.on('request',r=>{if(r.url().endsWith('/api/tts'))lines.push(JSON.parse(r.postData()).text);});
   const card=async()=>{await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===1,{},{timeout:8000}).catch(()=>{});};
   const title=()=>pg.evaluate(()=>document.getElementById('revTitle').textContent);
+  // The card's voice (/arcade-sayit.js, 2 Oct 2026) asks for its own two
+  // lines, "To keep playing, say" and "Go!", as the page loads, whatever the
+  // card will ask: they are set aside, and own() is what the card asked for.
+  const own=()=>lines.filter(t=>t!=='To keep playing, say'&&t!=='Go!');
   await pg.goto(base+'/arcade-slice.html?from=charge');await card();
-  ok('a syllable card says its ask in ONE line, as native media, before any microphone',lines.length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(lines[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
-  ok('…and the card shows that same syllable',(await title())==='Say “'+(lines[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());
-  await pg.evaluate(()=>h.media[0].onended());await pg.waitForTimeout(300);
-  ok('no recording follows a syllable, and the microphone waits for the line\'s tail',await pg.evaluate(()=>h.media.length===1&&h.mic===0));
-  await pg.waitForFunction(()=>h.mic===1);
-  ok('the microphone starts after the syllable line',lines.length===1&&await pg.evaluate(()=>h.mic===1&&h.media.length===1));
+  ok('a syllable card says its ask in ONE line, as native media, before any microphone',own().length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(own()[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
+  ok('…and the card shows that same syllable',(await title())==='Say “'+(own()[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());
+  await pg.evaluate(()=>h.media[0].onended());await pg.waitForFunction(()=>h.media.length===2,{},{timeout:4000}).catch(()=>{});
+  ok('no recording follows a syllable: then "Go!", as native media too, and the microphone waits for it',await pg.evaluate(()=>h.media.length===2&&h.media[1].src.startsWith('blob:')&&h.mic===0));
+  await pg.evaluate(()=>h.media[1].onended());await pg.waitForFunction(()=>h.mic===1);
+  ok('the microphone starts after "Go!"',own().length===1&&await pg.evaluate(()=>h.mic===1&&h.media.length===2));
   down=true;await pg.goto(base+'/arcade-slice.html?from=charge');await card();
-  ok('a syllable line that will not load: the card asks the bare sound and plays Rachel\'s recording at once, with no second line',(await title())==='Say “rrrr” for wave 2!'&&lines.length===2&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  ok('a syllable line that will not load: the card asks the bare sound and plays Rachel\'s recording at once, with no second line',(await title())==='Say “rrrr” for wave 2!'&&own().length===2&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
   down=false;await pg.evaluate(()=>sessionStorage.setItem('test.refuse','1'));await pg.goto(base+'/arcade-slice.html?from=charge');
   await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===2,{},{timeout:8000}).catch(()=>{});
-  ok('a syllable line the phone refuses to start: the same, the bare sound and its recording',(await title())==='Say “rrrr” for wave 2!'&&lines.length===3&&await pg.evaluate(()=>h.media.length===2&&h.media[0].src.startsWith('blob:')&&h.media[1].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  ok('a syllable line the phone refuses to start: the same, the bare sound and its recording',(await title())==='Say “rrrr” for wave 2!'&&own().length===3&&await pg.evaluate(()=>h.media.length===2&&h.media[0].src.startsWith('blob:')&&h.media[1].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
   ok('syllable card: no runtime errors',errs.length===0,errs);await ctx3.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

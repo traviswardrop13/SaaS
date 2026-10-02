@@ -1196,8 +1196,11 @@ const count = (pred) => S.calls.filter(pred).length;
   const litSelf = (/const SELF_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
   ok("the success page's copies of both plan ids match lib/caseload (it cannot import a server module)", lit === C.CASELOAD_PLAN && litSelf === C.SELF_PLAN, lit + " " + litSelf);
   const branch = page.indexOf("if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID)");
-  ok("…and it refuses BOTH before anything is granted: no sona.sub.v1, no hand-off code, no purchase event",
-    branch > 0 && branch < page.indexOf("localStorage.setItem(") && branch < page.indexOf("/api/pair") && branch < page.indexOf("purchase completed") &&
+  // The hand-off code is gone altogether (2 Oct 2026: setup takes no move-in
+  // code, so a web buyer restores by email in the app), so "before the code"
+  // became "there is no code to mint".
+  ok("…and it refuses BOTH before anything is granted: no sona.sub.v1, no purchase event, and no hand-off code at all",
+    branch > 0 && branch < page.indexOf("localStorage.setItem(") && !page.includes("/api/pair") && branch < page.indexOf("purchase completed") &&
     /if \(j\.plan === CASELOAD_PLAN_ID \|\| j\.plan === SELF_PLAN_ID\) \{\s*setCaseload\(true\);\s*return;\s*\}/.test(page), String(branch));
   r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_newbieselfbuy01");
   ok("…and the read-back names \"slp-self\" for a clinician's own", r.json.plan === "slp-self", JSON.stringify(r.json));
@@ -1213,10 +1216,21 @@ const count = (pred) => S.calls.filter(pred).length;
 // the fifty charter families, with every text pin still green. So this plays
 // the route against the fake Stripe and reads what Stripe was asked for.
 // The pricing switch is stubbed, not pinned: tests do not hold FREE_MODE.
+//
+// Nor WEB_SALES (1 Oct 2026, Travis: "i dont want them paying on the
+// website"), the second switch in the same file: may a family pay on the
+// website at all. The stub carries both, so the purchases below play the
+// SELLING state whichever way the switch ships (the day the website sells
+// again, these are the assertions that say it still charges the right
+// amounts), and the blocks after them play the two refusals: Sona free, and
+// the website not selling, where Stripe is never asked anything.
 {
   const pricingFile = path.join(ROOT, "lib/pricing.ts"), checkoutFile = path.join(ROOT, "app/api/checkout/route.ts");
+  const charterFile = path.join(ROOT, "app/api/charter/route.ts");
   const realPricing = cache.get(pricingFile);
-  const loadCheckout = (free) => { cache.set(pricingFile, { exports: { FREE_MODE: free } }); cache.delete(checkoutFile); return L("app/api/checkout/route.ts"); };
+  const stubPricing = (free, web) => cache.set(pricingFile, { exports: { FREE_MODE: free, WEB_SALES: web } });
+  const loadCheckout = (free, web = true) => { stubPricing(free, web); cache.delete(checkoutFile); return L("app/api/checkout/route.ts"); };
+  const loadCharter = (free, web) => { stubPricing(free, web); cache.delete(charterFile); return L("app/api/charter/route.ts"); };
   let CK = null;
   try { CK = loadCheckout(false); } catch (e) { console.log("(could not load the checkout route: " + (e && e.stack) + ")"); }
   ok("the family checkout route loads against the fake Stripe", !!(CK && CK.POST && CK.GET));
@@ -1292,10 +1306,98 @@ const count = (pred) => S.calls.filter(pred).length;
       ok("while Sona is free the checkout refuses both plans before any Stripe call", r.status === 410 && r2.status === 410 && created().length === n, r.status + " " + r2.status);
     } catch (e) { ok("the checkout route loads with the switch on free", false, String(e && e.stack)); }
 
+    // ── and while the website does not sell, neither plan can be bought on it ──
+    // The refusal has to be the SERVER's: hiding the plan screen's web card
+    // leaves this endpoint reachable from a stale tab, an old ad link, or a
+    // browser with the page's test seam forced on. "Before any Stripe call"
+    // is counted on everything the fake Stripe was asked, not just sessions:
+    // the yearly branch's first act is the charter count, and a refusal that
+    // came after it would still pass a sessions-only check.
+    try {
+      const OFF_CK = loadCheckout(false, false);
+      S.searchNoise = charterSold(3); CH._resetCharterMemo();   // no memo to answer the count quietly
+      const asked = S.calls.length;
+      const refused = (x) => x.status === 410 && !!x.json && x.json.ok === false && x.json.webSales === false && !x.json.url;
+      r = await call(OFF_CK, "POST", "/api/checkout", { body: { plan: "monthly", email: "mom@example.com" } });
+      const r2 = await call(OFF_CK, "POST", "/api/checkout", { body: { plan: "annual", email: "mom@example.com" } });
+      const r3 = await call(OFF_CK, "POST", "/api/checkout");   // no body: what the plain-link path used to send
+      ok("while the website does not sell, the checkout refuses the monthly plan: 410, ok:false", refused(r), JSON.stringify({ s: r.status, j: r.json }));
+      ok("…and the yearly plan", refused(r2), JSON.stringify({ s: r2.status, j: r2.json }));
+      ok("…and a request with no plan at all", refused(r3), JSON.stringify({ s: r3.status, j: r3.json }));
+      ok("…saying where Premium IS bought, with no price in the sentence",
+        r.json && r.json.error === "Sona Premium is bought in the Sona app on iPhone and iPad." && r2.json.error === r.json.error && !/\$|\d/.test(r.json.error), r.json && r.json.error);
+      ok("…with no Stripe call of any kind: no session, no charter count, nothing", S.calls.length === asked, JSON.stringify(S.calls.slice(asked).map((c) => c[0])));
+      // the refusal is the switch's, not a side effect of something missing
+      delete process.env.STRIPE_SECRET_KEY;
+      const r4 = await call(OFF_CK, "POST", "/api/checkout", { body: { plan: "annual" } });
+      process.env.STRIPE_SECRET_KEY = "sk_test_caseload";
+      ok("…and it is refused before the Stripe key is even read (410, not the missing-key 500)", refused(r4), JSON.stringify({ s: r4.status, j: r4.json }));
+
+      const home = (x) => { try { const u = new URL(x.location); return x.status === 303 && u.origin === "https://sona.test.invalid" && u.pathname === "/" && u.search === ""; } catch { return false; } };
+      const g = await call(OFF_CK, "GET", "/api/checkout");
+      const g2 = await call(OFF_CK, "GET", "/api/checkout?plan=monthly");
+      ok("a plain link (an old ad, an email) lands on the home page: 303 to \"/\", never to Stripe", home(g) && home(g2), JSON.stringify([g.status, g.location, g2.status, g2.location]));
+      ok("…as itself, not as a failed checkout", !/checkout=failed/.test((g.location || "") + (g2.location || "")), g.location);
+      ok("…and the link asked Stripe nothing either", S.calls.length === asked, JSON.stringify(S.calls.slice(asked).map((c) => c[0])));
+
+      // both switches set: "Sona is free" is the truer sentence, and it wins
+      const BOTH = loadCheckout(true, false);
+      r = await call(BOTH, "POST", "/api/checkout", { body: { plan: "annual" } });
+      ok("while Sona is free the free refusal still speaks first, whatever the website switch says", r.status === 410 && /Sona is free/.test(r.json.error || "") && S.calls.length === asked, JSON.stringify(r.json));
+    } catch (e) { ok("the checkout route loads with the website not selling", false, String(e && e.stack)); }
+
+    // ── /api/charter, the price every static page asks for, in the same three states ──
+    // With the website not selling there is no web price, so the answer
+    // carries none: a reader that printed one would be quoting a checkout that
+    // refuses. And Stripe is not asked for a count nobody can change.
+    try {
+      const priced = (j) => ["price", "standard", "label", "monthly"].filter((k) => k in j);
+      const OFF_CR = loadCharter(false, false);
+      S.searchNoise = charterSold(3); CH._resetCharterMemo();
+      let asked = S.calls.length;
+      r = await call(OFF_CR, "GET", "/api/charter");
+      ok("/api/charter, while the website does not sell: exactly { ok, free:false, webSales:false, cap, taken:0, left:0, open:false, source:\"off\" }",
+        r.status === 200 && JSON.stringify(r.json) === JSON.stringify({ ok: true, free: false, webSales: false, cap: CH.CHARTER_CAP, taken: 0, left: 0, open: false, source: "off" }), JSON.stringify(r.json));
+      ok("…no price field and no dollar figure anywhere in it", !!r.json && priced(r.json).length === 0 && !/\$/.test(JSON.stringify(r.json)), JSON.stringify(r.json));
+      ok("…and Stripe was not asked for the count", S.calls.length === asked, JSON.stringify(S.calls.slice(asked).map((c) => c[0])));
+      const raw = await OFF_CR.GET(new NextRequest("https://sona.test.invalid/api/charter", { headers: { "x-real-ip": "10.77.0.9" } }));
+      ok("…cacheable at the edge like the priced answer (speaksona.com asks on every visit)", /s-maxage=60/.test(raw.headers.get("cache-control") || ""), raw.headers.get("cache-control"));
+
+      const ON_CR = loadCharter(false, true);
+      CH._resetCharterMemo(); const s1 = searches();
+      r = await call(ON_CR, "GET", "/api/charter");
+      ok("/api/charter, while the website sells: the live count and every price, and it says so",
+        r.status === 200 && r.json.ok === true && r.json.free === false && r.json.webSales === true && r.json.source === "stripe" && r.json.taken === 3 && r.json.left === CH.CHARTER_CAP - 3 && r.json.open === true &&
+        r.json.price === CH.CHARTER_PRICE && r.json.standard === CH.STANDARD_PRICE && r.json.label === CH.CHARTER_LABEL && r.json.monthly === CH.MONTHLY_PRICE && searches() === s1 + 1, JSON.stringify(r.json));
+
+      asked = S.calls.length; CH._resetCharterMemo();
+      const answers = [];
+      for (const [free, web] of [[true, true], [true, false]]) answers.push((await call(loadCharter(free, web), "GET", "/api/charter")).json);
+      ok("/api/charter, while Sona is free: free:true, no price, no Stripe call, whatever the website switch says",
+        answers.every((j) => j && j.ok === true && j.free === true && j.open === false && priced(j).length === 0) && S.calls.length === asked, JSON.stringify(answers));
+      ok("`free` and `webSales` are booleans in every answer (parents.html reads only `free`; slp.html reads an explicit webSales:false)",
+        [...answers, (await call(OFF_CR, "GET", "/api/charter")).json, (await call(ON_CR, "GET", "/api/charter")).json].every((j) => typeof j.free === "boolean" && typeof j.webSales === "boolean"));
+    } catch (e) { ok("the charter route loads against the stubbed switches", false, String(e && e.stack)); }
+
     S.searchNoise = savedNoise; CH._resetCharterMemo();
   }
   if (realPricing) cache.set(pricingFile, realPricing); else cache.delete(pricingFile);
-  cache.delete(checkoutFile);
+  cache.delete(checkoutFile); cache.delete(charterFile);
+
+  // ── a rail off sale is not a cancelled subscription ──
+  // Everyone who already pays through Stripe keeps their plan, so the routes
+  // that serve THEM must not open or shut with the website switch: restore by
+  // email, the receipt for a Stripe form opened before the flip and paid
+  // after it, the family billing page, and the success page that reads the
+  // receipt. Nor the clinician's checkout, which still sells on the web, nor
+  // the charter count's library. Those routes are run for real further up
+  // and down this file with the REAL lib/pricing.ts; this is the pin that
+  // says why they pass: none of them reads the switch at all.
+  for (const f of ["app/api/subscription/route.ts", "app/api/checkout/session/route.ts", "app/api/portal/route.ts", "app/subscribe/success/page.tsx",
+    "app/api/slp/plan/route.ts", "app/api/slp/plan/portal/route.ts", "lib/charter.ts", "lib/caseload.ts"]) {
+    const code = noComments(read(f));
+    ok(f + " does not read the website-sales switch", !!code && !/WEB_SALES|webSales/.test(code) && !/from "@\/lib\/pricing"/.test(code));
+  }
 }
 
 // ═════════════════════════ the receipt: finished, and for which plan (1 Oct 2026) ═════════════════════════

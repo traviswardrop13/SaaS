@@ -36,3 +36,19 @@ body[data-crafted="dino"] #pic .crafted-word-crop{display:block;flex:none;backgr
 /* Echo beside the word is the engine's own clay pose (sayplay.js face()),
    shown as it is: the wrap stays clear of the kit's green square. */
 body[data-crafted="dino"] #echoWrap{background:none;}
+
+/* The dinosaurs on the cards (dino.js draws them): the one to look for today
+   on the start card, and the collection on both cards: found ones filled in,
+   the rest dashed outlines. No number sits beside them: a count would read as
+   a grade. The name is ink, never the orange that means a practice sound. */
+body[data-crafted="dino"] #dinoToday{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;}
+body[data-crafted="dino"] #dinoToday[hidden],body[data-crafted="dino"] .dinoRow[hidden]{display:none;}
+body[data-crafted="dino"] #dinoPic{display:block;width:min(200px,62%);height:auto;aspect-ratio:400/210;}
+body[data-crafted="dino"] #dinoName{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:21px;line-height:1.15;color:#44270f;}
+body[data-crafted="dino"] .dinoRow{display:flex;justify-content:center;gap:7px;width:100%;}
+body[data-crafted="dino"] .dinoRow canvas{display:block;flex:1 1 0;min-width:0;max-width:66px;height:auto;aspect-ratio:132/84;padding:3px;border-radius:13px;background:#f8ecd8;box-shadow:inset 0 2px 4px #b5986b25;}
+body[data-crafted="dino"] .dinoRow canvas[data-found="1"]{background:#fff8e6;box-shadow:inset 0 0 0 2px #ecd9b4;}
+@media(max-height:650px){
+ body[data-crafted="dino"] #dinoPic{width:min(150px,50%);}
+ body[data-crafted="dino"] #dinoName{font-size:19px;}
+}

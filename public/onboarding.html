@@ -7,7 +7,7 @@
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="color-scheme" content="light" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -18,8 +18,8 @@
   <style>
     html,body{height:100%;}
     html{color-scheme:light;}
-    .ob input,.move-card input{-webkit-appearance:none;appearance:none;color:var(--ink);caret-color:var(--orange-d);}
-    .ob input:focus,.move-card input:focus{outline:2px solid var(--orange-d);outline-offset:2px;}
+    .ob input{-webkit-appearance:none;appearance:none;color:var(--ink);caret-color:var(--orange-d);}
+    .ob input:focus{outline:2px solid var(--orange-d);outline-offset:2px;}
     .ob{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
       padding:calc(14px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom));}
     /* progress segments — gradient fill that sweeps in as each step completes */
@@ -95,7 +95,7 @@
     .ob input{scroll-margin-block:20px 120px;}
     body.keyboard-open .obfoot{padding-bottom:10px;}
     body.keyboard-open .ob{padding-bottom:100px;}
-    .sound:focus-visible,.skip:focus-visible,.btn:focus-visible,#moveLink:focus-visible{outline:3px solid #795534;outline-offset:3px;}
+    .sound:focus-visible,.skip:focus-visible,.btn:focus-visible{outline:3px solid #795534;outline-offset:3px;}
     [hidden]{display:none!important;}
     body.ob-world{background:linear-gradient(180deg,#caeafb 0%,#e7f4f8 46%,#fff0d5 100%) fixed;}
     .ob-world .step.on{text-align:center;}
@@ -107,17 +107,8 @@
     .world-scene:before{content:"";position:absolute;left:-12%;right:-12%;bottom:-55px;height:95px;border-radius:50%;background:#9edab6;z-index:-1;}
     .world-scene img{width:clamp(150px,25vh,210px);height:clamp(150px,25vh,210px);object-fit:contain;filter:drop-shadow(0 10px 12px rgba(74,44,20,.12));}
     body[data-setup-screen="achieve"] .mascot{display:none;}
-    #moveLink{display:inline-block;min-height:44px;padding:10px 0;color:#795534;font-weight:800;}
     #micNotNow{display:block;margin:14px auto 0;min-height:44px;}
     #micStatus{font-weight:800;color:#795534;line-height:1.5;margin-top:12px;}
-    .move-sheet{position:fixed;inset:0;z-index:80;background:rgba(74,44,20,.42);display:flex;align-items:flex-end;justify-content:center;padding:20px 16px 0;}
-    .move-card{position:relative;width:100%;max-width:440px;max-height:calc(100dvh - 24px);overflow-y:auto;background:#fff6e9;border-radius:26px 26px 0 0;padding:26px 22px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(74,44,20,.14);}
-    .move-card h2{padding-right:34px;}
-    .move-card p{line-height:1.5;margin:10px 0;}
-    #moveClose{position:absolute;top:12px;right:12px;width:44px;height:44px;font-size:22px;}
-    #moveInput{text-transform:uppercase;letter-spacing:.15em;font-weight:800;}
-    #moveSubmit{margin-top:16px;}
-    #moveError{color:#a74a12;min-height:22px;font-weight:800;}
     @media(prefers-reduced-motion:reduce){.step.on,.mascot .leo,#obBuild img,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
     .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);border-color:var(--act);background:#e8f6f7;color:var(--act-d);box-shadow:0 0 0 3px rgba(31,152,166,.16);}
     /* fixed footer */
@@ -163,25 +154,33 @@
          — buddy (Pip is preselected), interests, the weekly goal and the
          email all still exist, in Settings, once the product has earned the
          question.
-         WHO IS SETTING THIS UP is the first screen (Travis, 1 Oct 2026: "have
-         the very first step in onboarding ask if they are a parent/caregiver
-         or an slp/slpa"). A tap on either answer goes straight on. In a
-         browser a speech therapist gets the clinician setup; the iPhone app
-         never opens clinician screens (NATIVE.md), so there they set up the
-         app for a child, as a parent would, and are told the dashboard is on
-         the web. A family who already has a save somewhere else keeps its
-         link under the question. -->
+         THE FIRST SCREEN IS JUST A HELLO (Travis, 2 Oct 2026: "that first page
+         with the bird just have that be a fun page and then they can just
+         press a button on the bottom that says continue and then the second
+         slide is who's setting up Sona"): the orchard, Echo and Sona's name,
+         and one button. No question, and no move-in code ("take off moving
+         from another phone enter your code. I just don't want that in
+         there"): a family moving phones brings its save over in Settings ›
+         Moving to a new phone?, and one who paid on the website restores it
+         in Settings › Restore access. -->
     <div class="step on" data-step="welcome">
       <div class="welcome-brand" aria-label="Sona">Sona<span>A little world of play</span></div>
-      <div class="welcome-copy">
-        <h1 class="qh" id="whoTitle">Who's setting up Sona?</h1>
-        <div class="who" id="obWho" role="group" aria-labelledby="whoTitle">
-          <button type="button" class="who-pick" data-role="parent"><b>Parent or caregiver</b><span>For my child</span></button>
-          <button type="button" class="who-pick" data-role="slp"><b>SLP or SLPA</b><span>Speech-language pathologist or assistant</span></button>
-        </div>
-      </div>
       <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
-      <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Moving from another phone? Enter your code</a></p>
+    </div>
+
+    <!-- WHO IS SETTING THIS UP is the second screen, its own page (Travis, 1
+         Oct 2026: "have the very first step in onboarding ask if they are a
+         parent/caregiver or an slp/slpa"; 2 Oct 2026: on a separate page). A
+         tap on either answer goes straight on. In a browser a speech
+         therapist gets the clinician setup; the iPhone app never opens
+         clinician screens (NATIVE.md), so there they set up the app for a
+         child, as a parent would, and are told the dashboard is on the web. -->
+    <div class="step" data-step="who">
+      <h1 class="qh" id="whoTitle">Who's setting up Sona?</h1>
+      <div class="who" id="obWho" role="group" aria-labelledby="whoTitle">
+        <button type="button" class="who-pick" data-role="parent"><b>Parent or caregiver</b><span>For my child</span></button>
+        <button type="button" class="who-pick" data-role="slp"><b>SLP or SLPA</b><span>Speech-language pathologist or assistant</span></button>
+      </div>
     </div>
 
     <!-- MEET RACHEL (Travis, 29 Sep 2026). One screen and one tap: who made
@@ -189,9 +188,11 @@
          with her letters, and one sentence saying what she is, spelled out
          (Travis, 1 Oct 2026: "add the rachel slide right before it goes to the
          game ... even just saying and spelling out that she is a pediatric
-         speech language pathologist is enough"). So it comes after the three
-         questions and the microphone, the last thing a grown-up sees before
-         the child plays. "MS, CF-SLP" and the sentence are Travis's words (1
+         speech language pathologist is enough"). It comes after the name and
+         the sounds, and right before the microphone, which is the last step
+         before the game (Travis, 2 Oct 2026: "put the Rachel slide not as the
+         last step, but the step right before the let echo hear you ... have
+         the let echo hear you be right before the game"). "MS, CF-SLP" and the sentence are Travis's words (1
          Oct 2026: "Built with Rachel, MS, CF-SLP, a pediatric speech-language
          pathologist in her clinical fellowship"): true, she is a Clinical
          Fellow. Never "CCC" or "certified" (CLAUDE.md). It asks
@@ -334,17 +335,6 @@
     </div>
   </div>
 
-  <div class="move-sheet" id="moveSheet" hidden role="dialog" aria-modal="true" aria-labelledby="moveTitle" aria-describedby="moveCopy">
-    <form class="move-card" id="moveForm">
-      <button type="button" class="skip" id="moveClose" aria-label="Close code entry">×</button>
-      <h2 id="moveTitle">Bring your Sona with you</h2>
-      <p class="muted" id="moveCopy">Enter the six-character code from Backup &amp; restore in Settings on your other phone.</p>
-      <label class="field" for="moveInput">Your code</label>
-      <input type="text" id="moveInput" maxlength="6" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="ABC234" aria-describedby="moveError" />
-      <p id="moveError" role="status" aria-live="polite"></p>
-      <button type="submit" class="btn" id="moveSubmit" disabled>Use code</button>
-    </form>
-  </div>
   <script src="/sona.js"></script>
   <script>
     (function setupNativeKeyboard(){
@@ -413,21 +403,23 @@
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
     // Parents choose sounds directly, or explore the existing all-sounds path.
-    // Clinicians keep their separate browser-only setup. Meet Rachel is the
-    // last screen before the child plays (Travis, 1 Oct 2026).
-    var ORDER_PARENT = ["welcome","name","sounds","mic","rachel"];
+    // Clinicians keep their separate browser-only setup. Meet Rachel comes
+    // right before the microphone, and the microphone is the last screen
+    // before the child plays (Travis, 2 Oct 2026).
+    var ORDER_PARENT = ["welcome","who","name","sounds","rachel","mic"];
     // Settings → Add a child sends a returning parent back through setup;
     // they met Rachel the first time, so the second child starts at the name.
     try{ if(Sona.kids().length>1) ORDER_PARENT.splice(ORDER_PARENT.indexOf("rachel"),1); }catch(e){}
-    var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
+    var ORDER_SLP    = ["welcome","who","name","sounds","slp","email"];
     // A reload mid-setup restores draft.role, so the order must follow it.
     // Always starting on ORDER_PARENT sent a clinician down the family path:
     // no email step, so no account and no sign-in link, yet finish() still
     // saved role "slp". They resume on name, where the link itself lands:
-    // welcome is the fork: its two answers choose the path.
+    // "who" is the fork: its two answers choose the path.
     var ORDER = (!nativeFamily && draft.role === "slp") ? ORDER_SLP : ORDER_PARENT;
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
+      who:     "Hi! I'm Echo!",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
@@ -439,13 +431,15 @@
       mic:     "Let's hear you!",
     };
     var CTA = { email: "Continue", mic: "Turn on Echo's ears" };
-    var idx = ORDER === ORDER_SLP ? 1 : 0;
+    var idx = ORDER === ORDER_SLP ? ORDER.indexOf("name") : 0;
 
     var segEl = document.getElementById("seg");
-    function paintSeg(){ segEl.innerHTML=""; var count=ORDER===ORDER_PARENT?3:ORDER.length-1; for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i")); }
+    // the questions after "who" get a segment each (the hello and the
+    // question of who is setting up take none)
+    function paintSeg(){ segEl.innerHTML=""; var count=ORDER===ORDER_PARENT?3:ORDER.length-2; for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i")); }
     function paintProgress(key){
-      var n=ORDER===ORDER_PARENT?({name:0,sounds:1,mic:2}[key]):idx-1;
-      segEl.hidden=key==="welcome"||key==="rachel"||key==="achieve";
+      var n=ORDER===ORDER_PARENT?({name:0,sounds:1,mic:2}[key]):idx-2;
+      segEl.hidden=key==="welcome"||key==="who"||key==="rachel"||key==="achieve";
       Array.prototype.forEach.call(segEl.children,function(el,i){el.classList.toggle("on",i<=n);});
       segEl.setAttribute("role","progressbar");segEl.setAttribute("aria-label","Setup progress");
       segEl.setAttribute("aria-valuemin","0");segEl.setAttribute("aria-valuemax",String(segEl.children.length));segEl.setAttribute("aria-valuenow",String(n==null?0:n+1));
@@ -495,8 +489,8 @@
       });
     }
     document.getElementById("micNotNow").onclick=function(){if(finished)return;cancelSetupMic();afterMic();};
-    // After the microphone a parent's first child meets Rachel; for anyone
-    // else the microphone is the last step.
+    // The microphone is the last step before the first game (Meet Rachel is
+    // the one before it).
     function afterMic(){if(finished)return;if(idx<ORDER.length-1){idx++;render();}else finish();}
     if(Sona.onBackground)Sona.onBackground(cancelSetupMic);
     else {document.addEventListener("visibilitychange",function(){if(document.hidden)cancelSetupMic();});window.addEventListener("pagehide",cancelSetupMic);}
@@ -665,8 +659,8 @@
       if (leo.innerHTML !== want) leo.innerHTML = want;
     }
 
-    // Who is setting this up: the first screen's two answers (Travis, 1 Oct
-    // 2026). Either goes straight on. A speech therapist in a browser gets the
+    // Who is setting this up: the second screen's two answers (Travis, 1 Oct
+    // 2026; its own page since 2 Oct). Either goes straight on. A speech therapist in a browser gets the
     // clinician setup; the iPhone app never opens clinician screens
     // (NATIVE.md), so there they set the app up for a child the way a parent
     // would, in a clinician's words ("Which child is this for?"), and are told
@@ -675,7 +669,7 @@
       var host=document.getElementById("obWho"); if(!host) return;
       host.querySelectorAll(".who-pick").forEach(function(btn){
         btn.onclick=function(){
-          if(finished||idx!==0)return;
+          if(finished||ORDER[idx]!=="who")return;
           try{ Sona.sfx.tap(); }catch(e){}
           var slp=btn.dataset.role==="slp";
           draft.role=slp?"slp":"parent";
@@ -683,7 +677,7 @@
           ORDER=(slp&&!nativeFamily)?ORDER_SLP:ORDER_PARENT;
           document.getElementById("slpAppNote").hidden=!(slp&&nativeFamily);
           try{ applyRoleCopy(); }catch(e){}
-          saveDraft(); paintSeg(); idx=1; render();
+          saveDraft(); paintSeg(); idx=ORDER.indexOf("name"); render();
         };
       });
     })();
@@ -717,6 +711,9 @@
     function next(){
       if(finished||micBusy)return;
       var key=ORDER[idx];
+      // the question's two answers are its only way on: Continue is hidden
+      // there, and a stray press must not pick "parent" for them
+      if(key==="who")return;
       if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
@@ -742,10 +739,10 @@
     function back(){
       if(idx<=0||micBusy||finished) return;
       Sona.sfx.tap(); idx--;
-      // Backing onto the first screen undoes its answer. Otherwise a parent who
-      // tapped "SLP or SLPA" by mistake could only finish as a clinician,
+      // Backing onto the "who" screen undoes its answer. Otherwise a parent
+      // who tapped "SLP or SLPA" by mistake could only finish as a clinician,
       // email and all.
-      if(idx===0){ draft.role="parent"; ORDER=ORDER_PARENT; document.getElementById("slpAppNote").hidden=true; applyRoleCopy(); paintSeg(); }
+      if(ORDER[idx]==="who"){ draft.role="parent"; ORDER=ORDER_PARENT; document.getElementById("slpAppNote").hidden=true; applyRoleCopy(); paintSeg(); }
       render();
     }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:
@@ -871,31 +868,6 @@
         // Setup and menus stay quiet; spoken coaching belongs inside games.
       });
     }
-
-    // Import is an explicit action. Creating/exporting a backup stays in
-    // Settings; completing setup must never POST a family's save.
-    (function(){
-      var link=document.getElementById("moveLink"),sheet=document.getElementById("moveSheet"),form=document.getElementById("moveForm"),input=document.getElementById("moveInput"),submit=document.getElementById("moveSubmit"),close=document.getElementById("moveClose"),error=document.getElementById("moveError"),busy=false;
-      var ob=document.querySelector(".ob"),footer=document.querySelector(".obfoot");
-      function closeSheet(){if(busy)return;sheet.hidden=true;ob.inert=false;footer.inert=false;link.focus();}
-      link.onclick=function(ev){ev.preventDefault();sheet.hidden=false;ob.inert=true;footer.inert=true;error.textContent="";input.focus();};
-      close.onclick=closeSheet;
-      input.oninput=function(){input.value=input.value.toUpperCase().replace(/[^A-Z0-9]/g,"");submit.disabled=busy||input.value.length!==6;};
-      sheet.onclick=function(ev){if(ev.target===sheet)closeSheet();};
-      sheet.onkeydown=function(ev){
-        if(ev.key==="Escape"){ev.preventDefault();closeSheet();}
-        if(ev.key==="Tab"){var first=close.disabled?input:close,last=submit.disabled?input:submit;if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus();}else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus();}}
-      };
-      form.onsubmit=function(ev){
-        ev.preventDefault();var code=input.value.trim();if(busy||code.length!==6)return;
-        busy=true;submit.disabled=true;close.disabled=true;input.readOnly=true;error.textContent="Checking your code…";
-        var controller=typeof AbortController!=="undefined"?new AbortController():null,timer=setTimeout(function(){if(controller)controller.abort();},8000);
-        fetch("/api/pair?code="+encodeURIComponent(code),controller?{signal:controller.signal}:{}).then(function(r){return r.json();}).then(function(j){
-          if(j&&j.ok&&j.data&&Sona.importData){var result=Sona.importData(j.data);if(result&&result.ok){var profile=Sona.getProfile()||{};location.href=profile.onboarded||profile.childName?"/today.html":"/onboarding.html?paired=1";return;}}
-          error.textContent=(j&&j.error)||"That code didn't work. Codes last 48 hours and can only be used once.";
-        }).catch(function(){error.textContent="We couldn't check the code. Check your connection and try again.";}).then(function(){clearTimeout(timer);busy=false;close.disabled=false;input.readOnly=false;input.oninput();});
-      };
-    })();
 
     nextBtn.onclick=next; backBtn.onclick=back;
     // Done closes typing; Continue and Let's play remain explicit choices.

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/sona.css" />
   <link rel="stylesheet" href="/action.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -1182,12 +1182,15 @@
     // for sounds nobody is working on is a library a child scrolls past — and
     // for a kid on /r/, a Theo-the-Sloth /th/ book is practice they were never
     // assigned. That is still why the other sounds' books are CLOSED when the
-    // page opens. They are no longer out of reach (Travis, 1 Oct 2026: "the
-    // other ones ... they're still there, but like closed up ... there's like
-    // a button you can press to like drop down and then it shows the books
-    // for the other letters"): every in-season book this shelf leaves off
-    // waits behind "More books", under it (MORE, below). The shelf itself is
-    // chosen exactly as before. Two escape hatches, because an empty shelf is
+    // page opens (Travis, 1 Oct 2026: "less easy to find or less in your face
+    // ... the kids just seeing books based on their letter/s"). They are not
+    // out of reach, though (Travis, the same day: "the other ones ... they're
+    // still there, but like closed up ... there's like a button you can press
+    // to like drop down and then it shows the books for the other letters"):
+    // every in-season book this shelf leaves off waits behind "More books",
+    // under it (MORE, below). WHICH books the shelf holds is chosen exactly
+    // as before; their ORDER now starts with the sound practice is on (see
+    // focusOrder, below). Two escape hatches, because an empty shelf is
     // worse than an unfocused one:
     //   - play mode (PLAY1) rotates every sound, so it gets the whole shelf
     //   - if a filter would leave nothing this child can read, show every
@@ -1206,6 +1209,11 @@
     var ALL_STORIES = STORIES.slice();
     var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
+    // With more than one sound, the one practice is on now leads: its books
+    // are first on the shelf (inside "readable, then Premium", below). Only
+    // the order moves: a sound that is not one of the child's own (an SLP's
+    // homework can name one) is left alone, and brings no books up here.
+    try { var nowSnd = window.Sona && Sona.rotSound && Sona.rotSound(); if (nowSnd && focusOrder.indexOf(String(nowSnd).toUpperCase()) > 0) { focusOrder.splice(focusOrder.indexOf(String(nowSnd).toUpperCase()), 1); focusOrder.unshift(String(nowSnd).toUpperCase()); } } catch (e) {}
     if (!playMode && focusOrder.length) {
       var SEASON_MINE = (window.Sona && Sona.seasonPick) ? Sona.seasonPick(STORIES.filter(function (st) { return st.season; }), focusOrder) : null;
       var mine = STORIES.filter(function (st) { return st.season ? (!SEASON_MINE || SEASON_MINE.indexOf(st) !== -1) : focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });

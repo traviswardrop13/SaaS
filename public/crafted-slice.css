@@ -30,4 +30,9 @@ body[data-crafted="slice"] #combo{font-size:29px;top:27%;color:#fff0a3;}
  body[data-crafted="slice"] #timer .wbar{width:36px;}
  body[data-crafted="slice"] #close{width:43px;height:43px;}
  body[data-crafted="slice"] #banner b{font-size:23px;}
+ /* The win title's bubble is see-through here, so its side padding only
+    narrows the words: on a 320px phone "You sliced the giant watermelon!"
+    took three lines, and with the two-line best under it the card ran 5px
+    off the top and bottom of the screen. Two lines fit without it. */
+ body[data-crafted="slice"] #endTitle{padding-left:0;padding-right:0;}
 }

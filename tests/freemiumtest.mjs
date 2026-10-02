@@ -429,8 +429,14 @@ if (hasContract && premiumPresent) {
   });
 
   // Follow the configured release without pinning the business switch.
-  await section("the parent offer follows the configured release", async () => {
-    const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=stack", gate: true });
+  // Nor the second one (1 Oct 2026, Travis: "i dont want them paying on the
+  // website"): this page never sold anything itself, it forwards, so the
+  // forward is the same whether or not the website sells. What differs is what
+  // the grown-up lands on, and both are played here through the session seam
+  // "sona.websalesui": the plan to buy while the website sells ("1"), and where
+  // Premium is bought when it does not ("0").
+  for (const web of appFree ? [null] : ["1", "0"]) await section("the parent offer follows the configured release" + (web === null ? "" : web === "1" ? ", the website selling" : ", the website not selling"), async () => {
+    const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=stack", gate: true, session: web === null ? {} : { "sona.websalesui": web } });
     try {
       if (!appFree) {
         // OFFER1 (Travis, 30 Sep 2026: "this paywall is absolutely terrible"):
@@ -439,9 +445,28 @@ if (hasContract && premiumPresent) {
         // opened on the game the child tapped; that page's framing is pinned
         // in firstgametest. The Premium-holder and preview states below still
         // stay on this page.
+        const at = web === "1" ? "the website selling: " : "the website not selling: ";
         await pg.waitForURL(/\/subscribe\.html\?from=stack$/);
-        ok("the paid release takes a family without Premium straight to the plan screen, opened on the tapped game", new URL(pg.url()).searchParams.get("from") === "stack", pg.url());
-        ok("…and nothing on the way starts a purchase", !calls.some(url => /checkout|revenuecat|purchases/i.test(url)), calls);
+        ok(at + "the paid release takes a family without Premium straight to the plan screen, opened on the tapped game", new URL(pg.url()).searchParams.get("from") === "stack", pg.url());
+        ok(at + "…and nothing on the way starts a purchase", !calls.some(url => /checkout|revenuecat|purchases/i.test(url)), calls);
+        await pg.locator(web === "1" ? "#pickCard" : "#appCard").waitFor({ state: "visible" });
+        await pg.waitForTimeout(500);
+        const landed = await pg.evaluate(() => {
+          const seen = (id) => { const el = document.getElementById(id); return !!el && el.getBoundingClientRect().height > 0; };
+          return { offer: document.body.classList.contains("offer"), pick: seen("pickCard"), buy: seen("buyLife"), app: seen("appCard"), store: seen("appStoreGo") ? document.getElementById("appStoreGo").getAttribute("href") : "",
+            body: document.body.innerText, real: JSON.parse(sessionStorage.getItem("test.realCalls") || "[]") };
+        });
+        if (web === "1") {
+          ok(at + "the grown-up lands on the plan to buy, as the offer for that game, and the price check is asked",
+            landed.offer && landed.pick && landed.buy && !landed.app && calls.includes("/api/charter"), { ...landed, body: undefined, calls });
+        } else {
+          ok(at + "the grown-up lands on where Premium is bought: the App Store link, no plan card and no offer view",
+            !landed.offer && !landed.pick && !landed.buy && landed.app && landed.store === "https://apps.apple.com/us/app/sona-speech/id6785755867", { ...landed, body: undefined });
+          ok(at + "…with no price on the page and none asked of the server",
+            !/\$\s?\d/.test(landed.body) && !calls.some(url => /\/api\/(charter|checkout)/.test(url)), { price: (landed.body.match(/\$\s?\d[^\s]*/) || [])[0], calls });
+        }
+        ok(at + "…and arriving starts no purchase, trial or subscription", landed.real.length === 0 && !calls.some(url => /checkout|revenuecat|purchases/i.test(url)), { real: landed.real, calls });
+        ok(at + "the parent flow has no runtime errors", errors.length === 0, errors);
         return;
       }
       await pg.locator("#premiumApp").waitFor();
