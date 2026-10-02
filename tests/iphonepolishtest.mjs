@@ -121,7 +121,9 @@ try{
    AC.prototype.createBuffer=function(c,n,r){if(n>1)h.pcm++;return mkBuf.call(this,c,n,r);};
    // the microphone: a real stream carrying a 300 Hz tone, silent until h.talk()
    navigator.mediaDevices.getUserMedia=()=>{h.mic++;const c=h.micCtx||(h.micCtx=new AC());c.resume();const o=mkOsc.call(c),g=c.createGain(),d=c.createMediaStreamDestination();o.frequency.value=300;g.gain.value=0;o.connect(g);g.connect(d);o.start();h.micGain=g;h.tracks.push(d.stream.getTracks()[0]);return Promise.resolve(d.stream);};
-   h.talk=()=>{h.micGain.gain.value=.5;};
+   // the child says the word as often as the game asks (two times since 1 Oct
+   // 2026), with a breath between, until the game takes it
+   h.talk=()=>{let on=true;h.micGain.gain.value=.5;const t=setInterval(()=>{if(!window.__sayplay||__sayplay.phase!=='turn'){h.micGain.gain.value=0;clearInterval(t);return;}on=!on;h.micGain.gain.value=on?.5:0;},600);};
   });
   const pg=await ctx3.newPage(),errs=[];pg.on('pageerror',e=>errs.push(e.message));
   const tick=()=>pg.waitForTimeout(60);
