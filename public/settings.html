@@ -7,7 +7,7 @@
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -303,7 +303,17 @@
 
     <section class="card" id="acctCard" aria-labelledby="acctTitle">
       <div class="set-head"><h2 id="acctTitle">Account</h2></div>
-      <p class="muted" id="acct">Checking your plan… · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <!-- Every plan link here opens the PLAN SCREEN, /subscribe.html (1 Oct
+           2026). They went to /subscribe, the website's own checkout page,
+           which sends the iPhone app straight back to Home: so in the app
+           "See Premium" led nowhere, and the app is now the only place a
+           family can buy (Travis, 1 Oct 2026: "i dont want them paying on the
+           website"). The plan screen is right everywhere: Apple's card in the
+           app; in a browser, the web card or the words saying Premium is
+           bought in the app, whichever Sona.webSales() says; "Active ✓" for a
+           family who already pays. Restore stays in every state: it is how a
+           family who paid on speaksona.com gets their plan back. -->
+      <p class="muted" id="acct">Checking your plan… · <a href="/subscribe.html">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
       <div id="restoreBox" style="display:none;">
         <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
         <div class="set-actions">
@@ -825,7 +835,7 @@
         return;
       }
       if (Sona.isSubscribed && Sona.isSubscribed()) {
-        ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
+        ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe.html">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
       } else if (!(Sona.isFree && Sona.isFree()) && Sona.premium && Sona.premium()) {
         // Premium that nobody here bought. Say where it came from, so the
@@ -852,8 +862,8 @@
         ac.innerHTML = isFreeNow
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
           : trialLeft
-            ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
-            : (trialEnded ? 'Your free trial has ended. ' : '') + 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
+            ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe.html">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
+            : (trialEnded ? 'Your free trial has ended. ' : '') + 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe.html">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }

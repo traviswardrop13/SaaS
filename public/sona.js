@@ -206,6 +206,9 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
+    // Dino Dig's round of dinosaurs: which one is next and the ones found
+    // (arcade-dino.html keeps it). A collection, never practice data.
+    "sona.dino.v1",
     // how many races this child has started from Sound Sprint's start card
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
@@ -587,6 +590,24 @@
     const g = getProgress(); const cur = g.stage[sound] || 0;
     const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
     if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
+    return g.stage[sound] || 0;
+  }
+  // One clean first-listen pass at the stretch rung; the second one earns it.
+  // The rule (two passes, never down) is Rachel's and is unchanged — this is
+  // only WHOSE count it is. The practice page used to keep it in a key named
+  // for the sound and rung ("sona.rungwins.R.0") and pass that through kkey(),
+  // but PER_KID holds fixed names, so the key was never suffixed and the count
+  // was the DEVICE's: one sibling's pass plus the other's moved a level for a
+  // child who had earned half of it. It lives inside the child's own progress
+  // now, so it follows them through load()/save(), a backup and a removal.
+  // Counts left under the old keys are not read: a child at worst needs one
+  // more clean round, which is the safe direction.
+  function rungWin(sound, rung) {
+    const g = getProgress(); const k = sound + "." + rung;
+    g.rungWins = g.rungWins || {};
+    const w = (g.rungWins[k] | 0) + 1;
+    if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1); }
+    g.rungWins[k] = w; save(GKEY, g);
     return g.stage[sound] || 0;
   }
   // ── free-play rotation: one letter at a time, one rung per game ──
@@ -1880,7 +1901,7 @@
   // say "this device was judged on its first load", which is true of the
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
-  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.pilot.v1", "sona.trial.v1",
+  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
@@ -2886,7 +2907,11 @@
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
     // free version's games for ages 3-4. No release date, so no New shelf.
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Pop a bubble. Find a little surprise." },
+    // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
+    // Play engine, but NOT a `say` game: that flag would list it twice on
+    // Home, point its sticker at one that does not exist, and take it out of
+    // the little kids' adventure deck. Its page keeps that adventure's hand-off.
+    bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
     peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-09", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
@@ -3063,11 +3088,16 @@
   // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
   // under Limited time for that window instead. Folder = public/assets/books/<slug>.
   const HOME_BOOKS = [
-    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", releasedOn: "2026-10-01" },
-    { slug: "sam-sailboat", title: "Sam's Sailboat", releasedOn: "2026-10-01" },
-    { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
-    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
-    { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "sophie-silly-soup", title: "Sophie's Silly Soup", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "libby-lemon", title: "Libby and the Lemon", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "leon-lantern", title: "Leon's Lantern", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "shawn-shadow", title: "Shawn and His Shadow", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "thor-thank-you", title: "Thor Says Thank You", sound: "TH", releasedOn: "2026-10-01" },
+    { slug: "thelma-thirsty-plant", title: "Thelma's Thirsty Plant", sound: "TH", releasedOn: "2026-10-01" },
     { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
@@ -3150,8 +3180,13 @@
     // games"). HOME_BOOKS names each book's day out and, for a limited-time
     // one, its window; a book is still opened (or not) by the shelf's rules.
     function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
-    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
-      .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
+    // only the child's own sounds, the one practised now first (Travis, 1 Oct
+    // 2026: "the kids just seeing books based on their letter/s")
+    var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var nowSound = ""; try { nowSound = String(rotSound() || "").toUpperCase(); } catch (e) {}
+    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000 && (!mySounds.length || playMode() || mySounds.indexOf(b.sound) !== -1); })
+      .sort(function (a, b) { return (b.sound === nowSound) - (a.sound === nowSound); })
+      .map(bookEntry);
     var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
     // the limited-time book in this child's sound (seasonPick); play mode,
     // which rotates every sound, and a child with no sounds yet see them all
@@ -3974,6 +4009,8 @@
   function planEligible() {
     try {
       if (isFree()) return false;                    // nothing to sell
+      if (!isNativeApp() && !webSales()) return false;   // a browser that cannot sell has nothing to offer
+      if (isNativeApp() && !iapAvailable()) return false;   // nor has an app build with no purchase plugin
       if (localStorage.getItem(PLANSEEN)) return false;
       // anyone who already has every game is never asked: subscribers,
       // founders, founding pilots, a covered clinician's families, and all
@@ -4602,6 +4639,47 @@
     return true;
   }
 
+  // ── WHERE A FAMILY CAN BUY ────────────────────────────────────────────
+  // WEB_SALES is the second switch, and it is a different question from
+  // FREE_MODE: not "does Sona cost anything" but "can a FAMILY start a
+  // purchase in a web browser". Off (Travis, 1 Oct 2026: "i dont want them
+  // paying on the website"), a family buys Premium only in the iPhone and
+  // iPad app, through Apple: a family who paid on the web had no cancel
+  // button, and a cancelled web plan stayed unlocked on the phone. Mirrored in
+  // lib/pricing.ts for the server (tests/freetest.mjs fails if they disagree),
+  // and the server refuses on its own copy, whatever a page shows.
+  //
+  // It is the FAMILY web checkout and nothing else. The Apple card never reads
+  // it ("native" is isNativeApp(), always). Nor does anything a family who
+  // ALREADY pays through Stripe leans on: restore(), isSubscribed(), the
+  // receipt page. A plan off sale is not a cancelled subscription. The
+  // clinician plans, bought on the dashboard, never read it either.
+  //
+  // Pages keep BOTH states and read webSales(), failing closed:
+  //   !!(Sona.webSales && Sona.webSales())
+  // so a stale page beside a new sona.js shows no web card rather than a card
+  // whose button the server refuses.
+  //
+  // IT SHIPPED true, AND WAITS FOR TRAVIS'S WORD (lib/pricing.ts says why):
+  // the app on the App Store that night had no purchase plugin, so with the
+  // website off as well nobody could have bought Premium anywhere.
+  const WEB_SALES = true;  // built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell
+  // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
+  // rails, "0" hides them, anything else is the constant), so both states stay
+  // played by the tests whichever way this ships. sessionStorage only, and no
+  // URL flag: the grown-ups gate strips every query key but first= and from=,
+  // and a localStorage seam once showed a family a paywall forever (see
+  // isFree above). It only controls VISIBILITY: /api/checkout refuses on the
+  // server's switch, so forcing it on in a browser opens nothing.
+  function webSales() {
+    try {
+      const v = sessionStorage.getItem("sona.websalesui");
+      if (v === "1") return true;
+      if (v === "0") return false;
+    } catch (e) {}
+    return WEB_SALES;
+  }
+
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
   // Two auto-renewable products in the "full" entitlement. The annual id is
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
@@ -4886,5 +4964,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

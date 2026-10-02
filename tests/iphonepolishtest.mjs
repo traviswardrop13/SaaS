@@ -79,9 +79,10 @@ try{
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('a word game (Hoops) says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
-  await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startGame'));
-  await pg.evaluate(()=>{h.media=[];document.getElementById('startGame').click();});await pg.waitForTimeout(200);
-  await pg.evaluate(()=>document.getElementById('revealButton').click());
+  // Bubble Pop is a word game on the same engine since 1 Oct 2026: Echo asks
+  // for the word straight after Let's play, before any bubble exists
+  await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startBtn'));
+  await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('Bubble Pop says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();

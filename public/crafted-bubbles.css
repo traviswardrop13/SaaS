@@ -1,0 +1,45 @@
+/* Bubble Pop: a soft sky and a cream basket. Gameplay lives in bubbles.js. */
+body[data-crafted="bubbles"] #app{height:100dvh;min-height:0;gap:12px;padding-top:calc(10px + env(safe-area-inset-top));padding-bottom:calc(14px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 15%,#fbfdf8 0,#eef6ee 62%,#e6eedb 100%);}
+body[data-crafted="bubbles"] #stageWrap.sky{flex:none;width:min(100%,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 230px) * .846));border:5px solid #fffdf3;border-radius:24px;box-shadow:0 3px 0 #9dbfc6,0 7px 0 #dcebe6,0 13px 20px #3a5d6626;}
+body[data-crafted="bubbles"] #top{gap:8px;}
+body[data-crafted="bubbles"] .hudpill{background:#fffaf0;border:1px solid #ead8b8;box-shadow:0 3px 0 #ccb08a;font-size:17px;}
+body[data-crafted="bubbles"] #dots{gap:6px;padding:11px 12px;box-shadow:0 3px 0 #b39062,inset 0 1px 0 #fffaf0;background:#f3e3c4;}
+body[data-crafted="bubbles"] #dots i{width:9px;height:9px;background:#d6bf98;box-shadow:inset 0 1px 2px #8c6a3b55;}
+body[data-crafted="bubbles"] #dots i.on{background:#129fa6;box-shadow:0 1px 1px #0a6a7080,inset 0 0 0 1px #0a6a7055;}
+body[data-crafted="bubbles"] #turnPanel{width:100%;padding:10px 12px;gap:6px 10px;background:linear-gradient(#fffdf6,#fbf1e0);border:1px solid #fffaf0;border-radius:23px;box-shadow:0 4px 0 #ccb08a,0 7px 14px #7856361c;}
+body[data-crafted="bubbles"] #picBox{width:66px;height:66px;border-radius:17px;background:#f8ecd8;box-shadow:inset 0 2px 4px #b5986b25;}
+body[data-crafted="bubbles"] #hear{background:#e0f1eb;box-shadow:0 3px 0 #9fbba6;color:#087d86;border:1px solid #edf9ea;}
+body[data-crafted="bubbles"] #hear svg path{fill:#378d88;}
+body[data-crafted="bubbles"] #hear svg path+path{fill:none;stroke:#378d88;}
+body[data-crafted="bubbles"] #startBtn,body[data-crafted="bubbles"] #micBtn{background:linear-gradient(#22b8bd,#078d9a);box-shadow:0 4px 0 #086d78;}
+body[data-crafted="bubbles"] #listenRow{min-height:48px;}
+body[data-crafted="bubbles"] #echoWrap,body[data-crafted="bubbles"] #echoFace{width:46px;height:46px;}
+body[data-crafted="bubbles"] #micState{font-size:18px;}
+body[data-crafted="bubbles"] #cheer{font-size:19px;}
+/* The basket: a plain cream tray with five spots, drawn here until its
+   picture arrives. A spot fills with the word's picture when the gold bubble
+   is popped. */
+body[data-crafted="bubbles"] #basket{background:linear-gradient(#fffaf0,#f3e2c3);border:2px solid #fffdf5;border-radius:18px;box-shadow:0 3px 0 #c9ab7c,0 6px 10px #5b3a1a22;}
+body[data-crafted="bubbles"] #basket .well{border-radius:50%;background:#ecd9b6;box-shadow:inset 0 2px 4px #8c6a3b40;}
+body[data-crafted="bubbles"] #basket .well.full{background:#fffdf6;box-shadow:inset 0 0 0 2px #ffd21c,0 2px 0 #c9ab7c;}
+@media(max-height:650px){
+ body[data-crafted="bubbles"] #app{gap:9px;padding-left:12px;padding-right:12px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+ body[data-crafted="bubbles"] #stageWrap.sky{width:min(100%,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 212px) * .846));border-width:4px;border-radius:21px;}
+ body[data-crafted="bubbles"] #turnPanel{padding:8px 10px;gap:4px 9px;}
+ body[data-crafted="bubbles"] #picBox{width:54px;height:54px;}
+ body[data-crafted="bubbles"] #listenRow{min-height:42px;}
+ body[data-crafted="bubbles"] #echoWrap,body[data-crafted="bubbles"] #echoFace{width:40px;height:40px;}
+ body[data-crafted="bubbles"] #word{font-size:28px;}
+ body[data-crafted="bubbles"] #micState,body[data-crafted="bubbles"] #cheer{font-size:16px;}
+ body[data-crafted="bubbles"] .hudpill{font-size:15px;padding:8px 10px;}
+ body[data-crafted="bubbles"] #dots{gap:5px;padding:11px 9px;}
+ body[data-crafted="bubbles"] #basket{border-radius:14px;}
+}
+
+/* Illustrated word art is opt-in on this page; speech still owns the target. */
+body[data-crafted="bubbles"] #pic{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:3px;}
+body[data-crafted="bubbles"] #pic>.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;width:100%!important;height:100%!important;}
+body[data-crafted="bubbles"] #pic .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
+/* Echo beside the word is the engine's own clay pose (sayplay.js face()),
+   shown as it is: the wrap stays clear of the kit's green square. */
+body[data-crafted="bubbles"] #echoWrap{background:none;}

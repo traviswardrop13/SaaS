@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { FREE_MODE } from "@/lib/pricing";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
 import { charterSpots, CHARTER_CENTS, STANDARD_CENTS, CHARTER_CAP, CHARTER_LABEL, MONTHLY_CENTS } from "@/lib/charter";
 
 /**
  * Creates a Stripe Checkout Session for Sona.
+ *
+ * ONLY WHILE THE WEBSITE SELLS: `WEB_SALES` in lib/pricing.ts, switched off
+ * on 1 Oct 2026. While it is false a family buys Premium in the iPhone and
+ * iPad app, and both handlers here refuse before any Stripe call. What
+ * follows describes the selling state, which stays in this file untouched.
  *
  * TWO offers (again, since 1 Oct 2026): the yearly plan with a 3-day free
  * trial at the charter or standard price, or $9.99 a month charged at
@@ -68,6 +75,15 @@ export async function POST(req: NextRequest) {
       { status: 410 },
     );
   }
+  // Families do not pay on the website (Travis, 1 Oct 2026: "i dont want them
+  // paying on the website"): Premium is bought in the iPhone and iPad app,
+  // through Apple. Refused HERE, before the key, the Stripe client, the body
+  // and the charter count, so nothing below this line runs and Stripe is never
+  // asked anything — and on the server for the same reason as the line above:
+  // a stale plan screen, an old link, or a browser with the test seam forced
+  // on still reaches this endpoint. Everything under it is the selling state,
+  // kept whole for the day WEB_SALES is true again.
+  if (!WEB_SALES) return NextResponse.json({ ok: false, webSales: false, error: "Sona Premium is bought in the Sona app on iPhone and iPad." }, { status: 410 });
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     return NextResponse.json(
@@ -200,6 +216,11 @@ export async function GET(req: NextRequest) {
   // A click on an old ad or a stale "Start 3 days free" link lands on the
   // marketing page, which now says the app is free — never on a Stripe form.
   if (FREE_MODE) return NextResponse.redirect(new URL("/", req.url), 303);
+  // The same click while the website is not selling lands on the same page,
+  // which carries the App Store button. Said here rather than left to the
+  // POST's refusal, which would end on "/?checkout=failed": a parameter no
+  // page reads, on a visit where nothing failed.
+  if (!WEB_SALES) return NextResponse.redirect(new URL("/", req.url), 303);
   const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan: "annual" }) });
   const res = await POST(proxied);
   const j = (await res.json()) as { ok?: boolean; url?: string };

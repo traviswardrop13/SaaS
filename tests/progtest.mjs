@@ -336,6 +336,16 @@ await page.evaluate(() => {
   const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
   localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  // THE WEB CARD, WHICHEVER WAY THE SWITCHES SHIP. ?paid=1 in the address
+  // below is only read while Sona is free, and it says nothing about the second
+  // switch: since 1 Oct 2026 (Travis: "i dont want them paying on the
+  // website") a browser shows this card only while Sona.webSales() says yes.
+  // Both seams are session keys, set here before the page loads and taken off
+  // again after this section. Without them every click below lands on a hidden
+  // button: a 30-second wait, a throw at the top level, and nothing after this
+  // point in the file would run.
+  sessionStorage.setItem("sona.paidui", "1");
+  sessionStorage.setItem("sona.websalesui", "1");
 });
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
@@ -343,10 +353,15 @@ t = await page.evaluate(() => ({
   founding: document.getElementById("foundingCard").style.display,
   life: document.getElementById("planLife").textContent,
   line: document.getElementById("planLine").textContent,
-  cards: document.querySelectorAll("#pickCard .plan").length,
+  // counted and measured on the screen: the card is always in the file, so
+  // its markup alone would satisfy a count with the card hidden
+  cards: [...document.querySelectorAll("#pickCard .plan")].filter((n) => n.getBoundingClientRect().height > 0).length,
+  seen: document.getElementById("buyLife").getBoundingClientRect().height > 0,
+  app: document.getElementById("appCard").style.display,
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
   t.pick === "block" && t.founding === "none" && /59\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
+ok("…on the screen, with its button, and not the 'it's in the iPhone app' card", t.seen && t.app === "none", JSON.stringify({ seen: t.seen, app: t.app }));
 // TWO WAYS TO PAY as of 1 Oct 2026 (Travis: "add to the paywall a $10 a month
 // option ... that does not have a free trial. That's a pay today, but the
 // $59.99 has a three-day trial. And have that as the default option
@@ -471,6 +486,44 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",
   /Rachel/.test(t) && /speech-language pathologist/.test(t));
+// THE SAME FAMILY, WHEN THE WEBSITE DOES NOT SELL (Travis, 1 Oct 2026: "i dont
+// want them paying on the website"). The seam forced off: the web card and its
+// button are gone, and in their place the page says where Premium is bought,
+// with no figure of any kind. Nothing here clicks: there is nothing to buy.
+{
+  await page.evaluate(() => sessionStorage.setItem("sona.websalesui", "0"));
+  const posts = [];
+  await page.route("**/api/checkout", (r) => { posts.push(r.request().method()); r.fulfill({ contentType: "application/json", body: "{}" }); });
+  await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
+  const off = await page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return { pick: g("pickCard").style.display, card: seen(g("pickCard")), buy: seen(g("buyLife")), boxes: [...document.querySelectorAll("#pickCard .plan")].filter(seen).length,
+      app: g("appCard").style.display, appSeen: seen(g("appCard")), store: seen(g("appStoreGo")) ? g("appStoreGo").getAttribute("href") : "",
+      title: g("appTitle").textContent, words: g("appCard").innerText, free: g("freeTierCard").style.display, founding: g("foundingCard").style.display,
+      line: g("planLine").textContent, body: document.body.innerText, order: [...document.querySelectorAll("#appCard, #freeTierCard")].map((e) => e.id).join(">") };
+  });
+  ok("web sales off: no plan boxes and no buy button are on the screen",
+    off.pick === "none" && !off.card && !off.buy && off.boxes === 0, JSON.stringify({ pick: off.pick, card: off.card, buy: off.buy, boxes: off.boxes }));
+  ok("…the page says Sona Premium is in the iPhone and iPad app, and links the App Store",
+    off.app === "block" && off.appSeen && off.title === "Sona Premium is in the iPhone and iPad app" &&
+    off.store === "https://apps.apple.com/us/app/sona-speech/id6785755867" && /Get Sona on the App Store/.test(off.words), JSON.stringify({ app: off.app, store: off.store, title: off.title }));
+  ok("…in the settled words: bought there, opens there, practice and the free games stay free here",
+    /Premium opens every game and every book in the Sona app\. You buy it there, through the App Store, and it opens there\. Daily practice and the free games stay free here\./.test(off.words), off.words);
+  ok("…and tells someone who already paid on the website that the plan keeps working",
+    /Already paid on speaksona\.com\? Your plan keeps working\./.test(off.words), off.words);
+  ok("…with what stays free right under it, and no free-era card",
+    off.order === "appCard>freeTierCard" && off.free === "block" && off.founding === "none", JSON.stringify({ order: off.order, free: off.free, founding: off.founding }));
+  ok("…the header line says where Premium is bought, and never 'founding family'",
+    /free version/.test(off.line) && /Sona Premium is bought in the iPhone and iPad app/.test(off.line) && !/founding/i.test(off.line), off.line);
+  ok("…and no dollar figure, free-days promise or charter line is anywhere a parent can read",
+    !/\$/.test(off.body) && !/3 days free|free trial|charter|spots? left|charged today/i.test(off.body),
+    (off.body.match(/\$[^\s]*|3 days free|free trial|charter|spots? left|charged today/i) || [])[0]);
+  ok("…and nothing was sent to checkout", posts.length === 0, posts.join(","));
+  await page.unroute("**/api/checkout");
+  // the seams come off: everything after this runs on the switches as shipped
+  await page.evaluate(() => { sessionStorage.removeItem("sona.websalesui"); sessionStorage.removeItem("sona.paidui"); });
+}
 // ── practice volume: local tries and the family's own prior week only ──
 {
   const iso = new Date().toISOString().slice(0, 10);
@@ -573,8 +626,11 @@ ok("proof strip: named SLP credential above the plan",
     early: Sona.getProfile().earlyAdopter,
     pick: document.getElementById("pickCard").style.display,
     founding: document.getElementById("foundingCard").style.display,
+    app: document.getElementById("appCard").style.display,
   }));
   ok("founding family keeps the free story", f.early === true && f.pick !== "block" && f.founding !== "none");
+  // …whichever way the website's switch points: no seam here, on purpose
+  ok("…and is never sent to the App Store to buy what they were promised free", f.app !== "block", String(f.app));
   await fctx.close();
 }
 
