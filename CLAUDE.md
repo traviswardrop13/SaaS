@@ -955,7 +955,7 @@ to `PLAYED`. Only a voice moves a game: no tap stands in for
 talking, and the mic button only listens again (in a play game like Hoops
 a finger plays the move, but only a move a word has earned). The mic keeps every quiet
 rule the other games keep. A spoken move is play, never practice data (no
-pass rate, no clinician sees it), but each heard word is one rep on the
+pass rate, no clinician sees it), but each saying Echo hears is one rep on the
 week's count (Travis, 29 Sep 2026; see "The week's reps"). They open straight
 from Home and never join the daily adventure.
 
@@ -1063,6 +1063,51 @@ Home's wide card is the painted one (`public/assets/crafted/home-dino.webp`,
 from main's covers), and the website tile is cut from it; the sticker is still
 a frame of the woken dinosaur (`public/assets/games/dino.webp`), replaced by
 painted art at that name. `sayplaytest` plays a whole dig.
+
+**Dino Dig has four dinosaurs** (Travis, 1 Oct 2026: "i want to build different
+types of dinosaurs to look for not just one"): T. rex, Triceratops,
+Stegosaurus, Brontosaurus, dug in that order, a new one each finished round,
+round again after the last. Each has its own skeleton outline, its own eight
+bones and places in the pit, and its own body and colour when it wakes (data in
+`DINOS` in `dino.js`, drawn from one small kit; painted art drops in at `ART`).
+The round is the child's (`sona.dino.v1`, one of `PER_KID`, kept by the page
+through `Sona.kkey`; `dino.js` never touches storage): a brother or sister
+starts at the T. rex, and one left half dug waits, from its first bone. The
+start card shows the one to look for as a dashed outline ("Today: T. rex"),
+the end card says "You found a T. rex!", and both show the row of four, found
+ones filled in. **No count is ever shown** ("2 of 4" would read as a grade).
+A collection, never practice data. `tests/dinotest.mjs` digs all four.
+
+**The word is said two times** (Travis, 1 Oct 2026: "ask them to say it two
+times. and if they say it once to have it say '1 more time'"). In the Say &
+Play word games (`sayplay.js`: Hoops, Soccer Goal, Dino Dig and the parked
+ones) a turn needs two sayings. It is one setting a game, `game.sayTimes`, and
+two unless the game's page says otherwise. **Bubble Pop asks once**
+(`sayTimes: 1` in `arcade-bubbles.html`): it is the littles' game, built on
+main to be said once, and whether a three-year-old should say a word twice is
+Rachel's call, so it stays at one until she says. With one there are no dots,
+no "Say it 2 times" and no "1 more time!": one saying earns the bubbles, one
+rep. `sayplaytest` pins which game asks how many times. With two:
+- **Echo still says the word alone** ("Say... rabbit."). "Say it 2 times" is
+  only on screen, beside two dots, so no carrier phrase is glued to the target.
+- **The first saying only paints**: its dot is ticked and "1 more time!" shows
+  in the same frame, with no voice and no chime, because the mic is still open.
+  Only the second saying earns the move.
+- **One word is one saying.** The second counts only after 200 ms under the
+  loudness bar (`GAP_MS`) and never sooner than 450 ms after the first
+  (`APART_MS`): "rock...et" has a hard stop in its middle.
+- **A saying already heard belongs to the word**: the mic button, "Hear it" and
+  a pause keep it. After one saying and 12 quiet seconds the mic closes and
+  says "1 more time! Tap the mic". Silence never earns the move.
+- **Each saying heard is one rep** on the week's count (two a word); still
+  never practice data. Whether two is right, whether the littles should say it
+  twice too (Bubble Pop asks once; the ten parked games for ages 3-4 would ask
+  twice as built, so settle it before one comes back), whether Echo should
+  model the word again before the second, and whether both count as reps are
+  Rachel's calls.
+- **The wait a child feels is before the mic can hear, not after the word**
+  (Echo's word, 250 ms of quiet, the mic opening, and on a game's first word
+  450 ms to measure the room). Each is a guard: do not shorten them.
 
 **Bubble Pop is rebuilt to be played** (Travis, 1 Oct 2026: "more like the
 feed echo vibe ... we want to have more bubbles to pop", then "yeah B", the
@@ -1285,7 +1330,9 @@ Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
-between rounds, Echo's sound powers, a Hoops, Soccer or Bubble Pop word, Feed Echo's heard word.
+between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
+Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
+word.
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.

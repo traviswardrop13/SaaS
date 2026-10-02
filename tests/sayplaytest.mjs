@@ -4,6 +4,15 @@
 // One engine (public/sayplay.js) runs all twenty pages. What this holds:
 //   - only a voice moves a game: silence never does, "Hear it" and the mic
 //     button only listen again, and nothing is written as practice data;
+//   - SAY IT TWO TIMES (Travis, 1 Oct 2026: "ask them to say it two times.
+//     and if they say it once to have it say '1 more time'"): the first saying
+//     ticks a dot and shows "1 more time!" at once, with no sound and the mic
+//     still open; only the second earns the move; one long word is one saying,
+//     and so is a word with a hard stop in its middle;
+//     a saying already heard survives the mic button, "Hear it" and a pause;
+//     Echo still says the word alone; each saying heard is one rep on the
+//     week's count and nothing else. Two is the engine's number, and one game
+//     asks once (Bubble Pop, below);
 //   - the mic keeps the rules every other game keeps: it opens only for the
 //     child's turn, after Echo's word, closes before any chime, and a sound
 //     after it leaves the phone a moment to switch back (no iPhone call audio);
@@ -26,12 +35,20 @@
 //     up nothing, rubbing uncovers the bone, the help glows and then gives way
 //     only while the child rubs, a pause holds the brush, and eight bones wake
 //     the dinosaur;
+//   - DIFFERENT DINOSAURS (Travis, 1 Oct 2026: "different types of dinosaurs
+//     to look for not just one"): four, each dug to its own finale with its
+//     own eight bones, places in the pit and colour; a new one each round, in
+//     order, kept per child and round again after the last; the start card
+//     names the one to look for, the end card names the one found, and both
+//     show the collection, with no count;
 //   - BUBBLE POP (1 Oct 2026), a little kids' game rebuilt on this engine
 //     without being a catalog "say" game: no bubble before the word, the
 //     finger pops them all, the gold one drops the picture in the basket, the
 //     help grows until every round ends, one giant bubble finishes it, and in
-//     the iPhone app the pops are media. It runs as its own part
-//     (tests/bubblestest.mjs);
+//     the iPhone app the pops are media. It asks for the word ONCE
+//     (sayTimes: 1 on its page): it is the littles' game, and whether a
+//     three-year-old says a word twice is Rachel's call. It runs as its own
+//     part (tests/bubblestest.mjs);
 //   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
 //     a parked game's card is greyed out, and its page sends a typed address
 //     back to Home before any mic or sound. The engine is still played through
@@ -209,6 +226,8 @@ function fakeDevice(cfg) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: cfg.age || "7", focusSounds: ["R"], onboarded: true, earlyAdopter: cfg.premium !== false,
       voiceOn: cfg.voiceOn !== false, soundOn: cfg.soundOn !== false, volume: cfg.volume == null ? 0.6 : cfg.volume }));
     if (cfg.micok) localStorage.setItem("sona.micok", "1");
+    // anything else a scenario starts with (Dino Dig's round of dinosaurs)
+    if (cfg.seed) Object.keys(cfg.seed).forEach((k) => localStorage.setItem(k, cfg.seed[k]));
     if (cfg.paid) {
       sessionStorage.setItem("sona.paidui", "1");
       localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 100 * 3600000, done: Date.now() - 90000 }));
@@ -268,14 +287,40 @@ const PRACTICE = /^sona\.(?:progress|reps|charge|tickets|rotation|today|coins|st
 const ASK = /^Say\.\.\. [a-z]+\.$/i;
 const asksRight = (speech) => speech.length > 0 && speech.every((t) => ASK.test(t));
 const practiceState = (page) => page.evaluate((src) => { const re = new RegExp(src); return Object.keys(localStorage).filter((k) => re.test(k)).sort().map((k) => [k, localStorage.getItem(k)]); }, PRACTICE.source);
-// one turn: wait for the mic to be listening, then say it
-async function sayIt(page) {
+// one saying: wait for the mic to be listening, then say the word
+async function sayOnce(page) {
   const listening = await until(page, () => window.__sayplay && window.__sayplay.listening === true, 8000);
   if (!listening) return false;
   await page.waitForTimeout(80);
   await voice(page, 260);
   return true;
 }
+// one turn: the word, two times, a breath apart (a saying Echo has already
+// heard this turn is kept, so then one more is the whole turn). In a game that
+// asks once (Bubble Pop: the page publishes times: 1) one saying is the turn,
+// exactly as it was before two times.
+async function sayIt(page) {
+  if (!(await until(page, () => window.__sayplay && window.__sayplay.listening === true, 8000))) return false;
+  const g = await game(page), first = g.said === 0;
+  if (!(await sayOnce(page))) return false;
+  if (!first || g.times === 1) return true;
+  if (!(await until(page, () => window.__sayplay.said === 1 && window.__sayplay.listening === true, 3000))) return false;
+  await page.waitForTimeout(320);   // a breath: longer than the engine's gap between two sayings
+  await voice(page, 260);
+  return true;
+}
+// what the child sees of the two sayings, and what the week's count holds
+const twice = (page) => page.evaluate(() => ({
+  line: document.getElementById("twiceSay").textContent, shown: getComputedStyle(document.getElementById("twiceSay")).visibility !== "hidden",
+  dots: [...document.querySelectorAll("#twiceDots i")].map((i) => i.classList.contains("on")), mic: document.getElementById("micState").textContent,
+  face: document.getElementById("echoFace").getAttribute("src"), button: !document.getElementById("micBtn").hidden,
+}));
+const gameReps = (page) => page.evaluate(() => { const g = JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}"); return Object.keys(g).reduce((n, day) => n + Object.keys(g[day]).reduce((m, k) => m + g[day][k], 0), 0); });
+// the child's voice on a script, timed inside the page (a round trip per
+// change would smear a 90 ms dip): [ms on, ms off, ms on, …]
+const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done) => {
+  let i = 0; (function next() { if (i >= spans.length) { __quiet.voice = false; return done(); } __quiet.voice = i % 2 === 0; setTimeout(next, spans[i++]); })();
+}), spans);
 
 // ── the catalog ──
 const { GAMES } = await import("../tools/gameart/games.mjs");
@@ -304,6 +349,11 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   ok("…and its Home card is a frame of the dig", existsSync(ROOT + "/assets/games/dino.webp") && readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8").includes('<g id="sp-dino"><image href="/assets/games/dino.webp"'));
   const dug = readFileSync(ROOT + "/dino.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   ok("the dig never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(dug));
+  // which dinosaur is next is the child's: the page keeps it under one of
+  // sona.js's per-child keys, so a brother or sister starts at the first
+  const perKid = (readFileSync(ROOT + "/sona.js", "utf8").match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
+  ok("the round of dinosaurs is kept per child: the page's key goes through Sona.kkey, and sona.js lists it", /Sona\.kkey\("sona\.dino\.v1"\)/.test(dp) && perKid.includes('"sona.dino.v1"') && !/localStorage\.\w+\((?!DINOKEY)/.test(dp));
+  ok("the dinosaurs are drawn, not downloaded, and none is an emoji", !/\.(?:png|jpe?g|svg|gif)\b/.test(dug) && (dug.match(/\.webp/g) || []).length === 2 && !/[\u{1F300}-\u{1FAFF}]/u.test(dug));
 }
 {
   // Bubble Pop is on this engine too (1 Oct 2026), but it is NOT a catalog
@@ -320,10 +370,29 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   ok("…and the catalog keeps it a free little-kids game that is not a Say & Play card", /group: "simple"/.test(line) && /tier: "free"/.test(line) && /go: "\/arcade-bubbles\.html"/.test(line) && !/say: true/.test(line) && !/comingSoon/.test(line), line);
 }
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
+{
+  // HOW MANY TIMES A WORD IS SAID is one setting a game (game.sayTimes), and
+  // two unless the page says 1. Travis asked for two in the word games (1 Oct
+  // 2026); Bubble Pop, for ages 3-4, was built to be said once, and whether
+  // the littles say it twice is Rachel's call. So: Bubble Pop's page says 1,
+  // and nothing else says anything.
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  const asks = (file) => (strip(readFileSync(ROOT + "/" + file, "utf8")).match(/\bsayTimes\b[^,}\n]*/g) || []).join("|");
+  const eng = strip(readFileSync(ROOT + "/sayplay.js", "utf8")).replace(/\s+/g, " ");
+  ok("the engine asks for a word two times unless the game's page asks for one, and takes no other number",
+    /var SAY_TIMES = 2,/.test(eng) && /G = game; SAY_TIMES = G\.sayTimes === 1 \? 1 : 2;/.test(eng) && (eng.match(/SAY_TIMES = /g) || []).length === 2 && (eng.match(/sayTimes/g) || []).length === 1);
+  ok("Bubble Pop (ages 3-4) asks for the word once", asks("arcade-bubbles.html") === "sayTimes: 1", asks("arcade-bubbles.html"));
+  ok("Hoops, Soccer Goal and Dino Dig ask for it two times: their pages leave the engine's number alone", ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].every((f) => asks(f) === ""), ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].map(asks));
+  ok("…and so does every page the generator writes (the parked games)", GAMES.every((g) => asks("arcade-" + g.key + ".html") === "") && !/sayTimes/.test(strip(readFileSync(new URL("../tools/gameart/page.mjs", import.meta.url), "utf8"))));
+  ok("a game that asks once gets no dots, no \"Say it 2 times\" and never \"1 more time\"",
+    /function oneMore\(\) \{ return said > 0 && said < SAY_TIMES; \}/.test(eng) && /function addTwice\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng) && /function paintSaid\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng)
+    && (eng.match(/MORE \+/g) || []).length === 2 && (eng.match(/oneMore\(\) \? MORE \+/g) || []).length === 2);
+}
 // The played games (Hoops, Soccer Goal, Dino Dig) run as their own suite,
 // tests/playgamestest.mjs, which sets SAYPLAY_PART=play and imports this file:
 // with every rebuilt game added, one file outgrew run-all's five minutes a suite.
-// Bubble Pop is a third part, "bubbles" (tests/bubblestest.mjs): three games
+// Dino Dig's four dinosaurs are a third part, tests/dinotest.mjs (SAYPLAY_PART=dinos).
+// Bubble Pop is a fourth part, "bubbles" (tests/bubblestest.mjs): three games
 // take about 160 s of those 300, so THE NEXT REBUILT GAME GOES IN ITS OWN PART
 // too, or run-all kills the suite with no failing assertion to read.
 const PART = process.env.SAYPLAY_PART || "engine";
@@ -341,8 +410,16 @@ ok("the engine records nothing and uploads nothing: no recorder, no upload", !/M
 const flat = engine.replace(/\s+/g, " ");
 ok("a play game's step counts only when the game says the move is done, and only in its play phase",
   /function moveDone\(\) \{ if \(phase !== "play" \|\| paused\) return; step\+\+; paintDots\(\);/.test(flat) && (flat.match(/moveDone/g) || []).length === 2);
-ok("no tap moves a game: the only caller of a step is the voice check, after the sound-family check",
-  (flat.match(/(?<!function )gotIt\(\)/g) || []).length === 1 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else \{ gotIt\(\); return; \}/.test(flat));
+ok("no tap moves a game: the only caller of a step is the voice check, after the sound-family check, on the last of the sayings",
+  (flat.match(/(?<!function )gotIt\(\)/g) || []).length === 1 && /said\+\+; paintSaid\(\); if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \}/.test(flat)
+  && (flat.match(/(?<!function )heardOne\(\)/g) || []).length === 1 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else if \(heardOne\(\)\) return;/.test(flat));
+ok("a word is said two times, and the second counts only after the voice has dropped under the bar for a timed gap, and never straight after the first",
+  /var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;/.test(flat) && /if \(f\.t <= lastSaid\) continue;/.test(flat) && /if \(f\.r > thr\) \{ gapAt = 0; if \(!armed \|\| \(lastSaid && f\.t - lastSaid < APART_MS\)\) continue; voiced\+\+;/.test(flat)
+  && /if \(!armed\) \{ if \(!gapAt\) gapAt = f\.t; else if \(f\.t - gapAt >= GAP_MS\) armed = true; \}/.test(flat));
+ok("each saying heard is one rep on the week's count, counted in one place: where the voice check passed",
+  (flat.match(/gameRep/g) || []).length === 2 && /function heardOne\(\) \{ if \(!turnLive\) return true; try \{ if \(S && S\.gameRep\) S\.gameRep\(SOUND\); \} catch \(e\) \{\} said\+\+;/.test(flat));
+ok("the first saying plays nothing: it only paints, and the same mic goes on listening",
+  /if \(said >= SAY_TIMES\) \{ gotIt\(\); return true; \} showTurn\(true\); return false; \}/.test(flat));
 
 await scenario("catalog in the app", async () => {
   const { context, page, errors } = await fresh("today.html", { age: "4" });
@@ -480,6 +557,8 @@ for (const key of ["balloon", "racecar"]) {
       ok(key + ": the word on screen is a picture word for the child's sound", (await page.locator("#word").innerText()) === g0.word && g0.sound === "R");
       await page.waitForFunction(() => window.__sayplay.listening === true);
       ok(key + ": \"Your turn!\" shows only once the mic is open", (await live(page)) === 1 && /Your turn/.test(await page.locator("#micState").innerText()));
+      const ask = await twice(page);
+      ok(key + ": under the word it says \"Say it 2 times\", with two empty dots", ask.line === "Say it 2 times" && ask.shown && ask.dots.length === 2 && !ask.dots[0] && !ask.dots[1], ask);
       await page.waitForTimeout(1500);
       ok(key + ": silence moves nothing", (await game(page)).step === 0);
       await page.locator("#hear").click();
@@ -489,13 +568,16 @@ for (const key of ["balloon", "racecar"]) {
       for (let i = 0; i < total; i++) {
         const heard = await sayIt(page);
         const moved = await until(page, (n) => window.__sayplay.step === n, 3000, i + 1);
-        ok(key + " word " + (i + 1) + ": the child's voice moves the game one step", heard && moved, await game(page));
+        ok(key + " word " + (i + 1) + ": the word, said two times, moves the game one step", heard && moved, await game(page));
         if (i === 0) {
           await page.waitForTimeout(100);
-          ok(key + ": the mic is closed once the child is heard", (await live(page)) === 0);
+          ok(key + ": the mic is closed once the child is heard the second time", (await live(page)) === 0);
           ok(key + ": the progress dots count the step", (await page.locator("#dots i.on").count()) === 1);
+          const done = await twice(page);
+          ok(key + ": both dots are ticked, and the words \"Say it 2 times\" step aside", done.dots[0] && done.dots[1] && !done.shown, done);
         }
       }
+      ok(key + ": each saying was one rep on the week's count: two a word", (await gameReps(page)) === 2 * total, { reps: await gameReps(page), words: total });
       await page.locator("#endOvl.show").waitFor({ timeout: 8000 });
       ok(key + ": the last word ends the game on a win", (await game(page)).phase === "end" && (await page.locator("#endTitle").innerText()).length > 0);
       await page.waitForTimeout(300);
@@ -569,7 +651,10 @@ await scenario("hoops played through", async () => {
     ok("hoops: before the word there is no ball, and a swipe shoots nothing", h.state === "idle" && h.shots === 0, h);
     await page.waitForTimeout(1500);
     ok("hoops: silence brings no ball", (await hoops(page)).state === "idle" && (await game(page)).step === 0);
-    ok("hoops: the child's word brings the ball, and the mic closes", await sayForBall(page) && (await live(page)) === 0);
+    ok("hoops: the word said once brings no ball: \"1 more time!\", and Echo is still listening",
+      await sayOnce(page) && await until(page, () => window.__sayplay.said === 1, 2000) && (await hoops(page)).state === "idle" && (await game(page)).phase === "turn" && (await live(page)) === 1 && /^1 more time!$/.test(await page.locator("#micState").innerText()), await game(page));
+    await page.waitForTimeout(320);
+    ok("hoops: the second time brings the ball, and the mic closes", await sayForBall(page) && (await live(page)) === 0);
     ok("hoops: the word alone is not a basket: the step waits for the shot", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("hoops: it says how to shoot", /Swipe up to shoot/.test(await page.locator("#micState").innerText()));
     // a tap is not a shot
@@ -661,7 +746,10 @@ await scenario("soccer played through", async () => {
     ok("soccer: before the word there is no ball, and a swipe kicks nothing", s.state === "idle" && s.kicks === 0, s);
     await page.waitForTimeout(1500);
     ok("soccer: silence brings no ball", (await soccer(page)).state === "idle" && (await game(page)).step === 0);
-    ok("soccer: the child's word brings the ball, and the mic closes", await sayForKick(page) && (await live(page)) === 0);
+    ok("soccer: the word said once brings no ball: \"1 more time!\", and Echo is still listening",
+      await sayOnce(page) && await until(page, () => window.__sayplay.said === 1, 2000) && (await soccer(page)).state === "idle" && (await game(page)).phase === "turn" && (await live(page)) === 1 && /^1 more time!$/.test(await page.locator("#micState").innerText()), await game(page));
+    await page.waitForTimeout(320);
+    ok("soccer: the second time brings the ball, and the mic closes", await sayForKick(page) && (await live(page)) === 0);
     ok("soccer: the word alone is not a goal: the step waits for the kick", (await game(page)).step === 0 && (await game(page)).phase === "play");
     ok("soccer: it says how to kick", /Swipe up to kick/.test(await page.locator("#micState").innerText()));
     // a tap is not a kick
@@ -726,6 +814,12 @@ await scenario("soccer played through", async () => {
   } finally { await context.close(); }
 });
 
+}
+// Dino Dig is two parts: the one dig that holds every rule of the game runs
+// with Hoops and Soccer Goal ("play"), and the four dinosaurs and the child's
+// round of them run as their own suite, tests/dinotest.mjs ("dinos"), so
+// neither outgrows run-all's five minutes.
+if (PART === "play" || PART === "dinos") {
 // ── DINO DIG: the third game rebuilt to be played (Travis, 1 Oct 2026: "go to
 // the next game"). The word earns a brush; the child rubs the sand off a bone;
 // the bone flies onto the skeleton; eight bones wake the dinosaur. ──
@@ -742,7 +836,42 @@ async function sayForBrush(page) {
   if (!(await sayIt(page))) return false;
   return until(page, () => window.__dino && window.__dino.state === "ready", 5000);
 }
-await scenario("dino dug up", async () => {
+// The four dinosaurs, in the order every child digs them.
+// (the names are spelled out here on purpose: they are what a child reads)
+const DINOS = ["trex", "tri", "steg", "bronto"], DINO_NAMES = { trex: "T. rex", tri: "Triceratops", steg: "Stegosaurus", bronto: "Brontosaurus" };
+// say the word until the brush is out: two sayings, a breath apart (a saying
+// that fell in a busy frame is simply said again, as a child would)
+async function brushFor(page) {
+  for (let t = 0; t < 6; t++) {
+    if (await page.evaluate(() => window.__dino.state === "ready")) return true;
+    if (!(await until(page, () => window.__sayplay.listening === true || window.__dino.state === "ready", 9000))) return false;
+    if (await page.evaluate(() => window.__dino.state === "ready")) return true;
+    await page.waitForTimeout(90); await voice(page, 260); await page.waitForTimeout(340);
+  }
+  return page.evaluate(() => window.__dino.state === "ready");
+}
+// what a card's pictures show. ink: painted pixels; fill: pixels in that
+// dinosaur's own body colour (none on a dashed outline)
+const cards = (page, rowId) => page.evaluate((rowId) => {
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const FILL = {}; window.__dino.dinos.forEach((d) => { FILL[d.id] = d.fill; });
+  const read = (cv, id) => {
+    const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data, f = rgb(FILL[id]); let ink = 0, fill = 0;
+    for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 40) ink++; if (d[i + 3] > 200 && Math.abs(d[i] - f[0]) + Math.abs(d[i + 1] - f[1]) + Math.abs(d[i + 2] - f[2]) < 24) fill++; }
+    return { ink, fill };
+  };
+  const row = document.getElementById(rowId), pic = document.getElementById("dinoPic");
+  return { text: row.closest(".ovlCard").innerText, label: row.getAttribute("aria-label"),
+    pic: Object.assign(read(pic, window.__dino.dino), { label: pic.getAttribute("aria-label") }),
+    row: [...row.querySelectorAll("canvas")].map((cv) => Object.assign({ id: cv.dataset.dino, found: cv.dataset.found === "1", shown: cv.getBoundingClientRect().width > 20 }, read(cv, cv.dataset.dino))) };
+}, rowId);
+// how much of the cliff is painted in a colour (the woken dinosaur's body)
+const paint = (page, hex) => page.evaluate((hex) => {
+  const cv = document.getElementById("dig"), d = cv.getContext("2d").getImageData(0, 0, cv.width, Math.round(cv.height * 0.58)).data, f = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - f[0]) + Math.abs(d[i + 1] - f[1]) + Math.abs(d[i + 2] - f[2]) < 30) n++;
+  return n;
+}, hex);
+if (PART === "play") await scenario("dino dug up", async () => {
   const { context, page, errors } = await fresh("arcade-dino.html", { age: "7", micok: true, permission: "granted" });
   const dig = () => page.evaluate(() => window.__dino || {});
   const overBone = async (box, passes = 3) => { const b = (await dig()).bone; for (let r = -1; r <= 1; r++) await rub(page, box, b.x - b.w / 2, b.x + b.w / 2, b.y + r * b.h * 0.3, passes); };
@@ -750,6 +879,10 @@ await scenario("dino dug up", async () => {
     await page.locator("#startOvl.show").waitFor();
     ok("dino: it is open on Home, with no day on it", await page.evaluate(() => { const a = Sona.GAME_ACTS.dino; return !a.comingSoon && !a.comingOn && a.say === true && a.group === "arcade" && a.go === "/arcade-dino.html" && Sona.gameAccess("dino").allowed; }));
     ok("dino: the start card says how to play: say the word, then rub the sand", /Say the word to get a brush/.test(await page.locator("#startOvl").innerText()) && /rub the sand/i.test(await page.locator("#startOvl").innerText()));
+    // THE FIRST DINOSAUR: a child who has never dug looks for the T. rex
+    let c = await cards(page, "dinoRow");
+    ok("dino: the start card says which one to look for today, with its outline", (await page.locator("#dinoName").innerText()) === "Today: T. rex" && c.pic.ink > 200 && c.pic.fill === 0 && /T\. rex/.test(c.pic.label) && (await dig()).dino === "trex", c.pic);
+    ok("dino: …and the collection: four dinosaurs, all still dashed outlines, and no number", c.row.length === 4 && c.row.every((t) => !t.found && t.ink > 40 && t.fill === 0) && c.row.map((t) => t.id).join() === DINOS.join() && !/\d/.test(c.text.replace(/2 times|sound: \S+/g, "")), c);
     const before = await practiceState(page);
     await page.locator("#startBtn").click();
     const box = await page.locator("#dig").boundingBox();
@@ -762,7 +895,10 @@ await scenario("dino dug up", async () => {
     ok("dino: before the word there is no brush, and rubbing moves no sand", d.state === "idle" && d.rubs === 0 && d.found === 0, d);
     await page.waitForTimeout(1500);
     ok("dino: silence brings no brush", (await dig()).state === "idle" && (await game(page)).step === 0);
-    ok("dino: the child's word brings the brush, and the mic closes", await sayForBrush(page) && (await live(page)) === 0);
+    ok("dino: the word said once brings no brush: \"1 more time!\", and Echo is still listening",
+      await sayOnce(page) && await until(page, () => window.__sayplay.said === 1, 2000) && (await dig()).state === "idle" && (await game(page)).phase === "turn" && (await live(page)) === 1 && /^1 more time!$/.test(await page.locator("#micState").innerText()), await game(page));
+    await page.waitForTimeout(320);
+    ok("dino: the second time brings the brush, and the mic closes", await sayForBrush(page) && (await live(page)) === 0);
     ok("dino: the word alone digs nothing: the step waits for the bone", (await game(page)).step === 0 && (await game(page)).phase === "play" && (await dig()).revealed === 0);
     ok("dino: it says how to dig", /Rub the sand/.test(await page.locator("#micState").innerText()));
     // a tap is not a dig
@@ -804,7 +940,11 @@ await scenario("dino dug up", async () => {
       ok("dino bone " + n + ": found and placed", await until(page, (k) => window.__dino.found === k, 4000, n), await dig());
     }
     await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
-    ok("dino: eight bones wake the dinosaur and end the game on a win", (await game(page)).phase === "end" && (await game(page)).step === 8 && (await dig()).awake === true && /dinosaur woke up/i.test(await page.locator("#endTitle").innerText()));
+    ok("dino: eight bones wake the dinosaur and end the game on a win", (await game(page)).phase === "end" && (await game(page)).step === 8 && (await dig()).awake === true);
+    c = await cards(page, "dinoRowEnd");
+    ok("dino: the end card names the dinosaur", (await page.locator("#endTitle").innerText()) === "You found a T. rex!", await page.locator("#endTitle").innerText());
+    ok("dino: …and shows it found, filled in with its own colour, and the other three still to find", c.row.map((t) => +t.found).join("") === "1000" && c.row[0].fill > 40 && c.row.slice(1).every((t) => t.fill === 0 && t.ink > 40) && !/\d/.test(c.text), c.row);
+    ok("dino: it is kept for the child, as a collection and nothing else", (await page.evaluate(() => localStorage.getItem("sona.dino.v1"))) === JSON.stringify({ last: "trex", got: ["trex"] }));
     await page.waitForTimeout(300);
     const l = await log(page);
     noOverlap("dino", l);
@@ -814,10 +954,141 @@ await scenario("dino dug up", async () => {
     ok("dino: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     await page.locator("#again").click();
     ok("dino: Play again starts over: no bones, no brush", (await game(page)).step === 0 && (await dig()).found === 0 && (await dig()).state === "idle" && (await page.locator("#dots i.on").count()) === 0);
+    ok("dino: …on the next dinosaur, the Triceratops, asleep again", (await dig()).dino === "tri" && (await dig()).awake === false && (await dig()).got.join() === "trex" && /Triceratops/.test(await page.locator("#dig").getAttribute("aria-label")));
     clean("dino", errors);
   } finally { await context.close(); }
 });
 
+if (PART === "dinos") {
+// ── EVERY DINOSAUR (Travis, 1 Oct 2026: "different types of dinosaurs to look
+// for not just one"). Each of the four is dug, with a finger, to its own
+// finale: its own eight bones (the skull last), its own places in the pit, its
+// own colour when it wakes; the end card names it and Play again moves on to
+// the next, round to the first after the last. The four are dug side by side
+// (each on its own phone, a child who has already found the ones before it),
+// so this costs one dig's time, not four. ──
+await scenario("every dinosaur", async () => {
+  const SIGN = { trex: "jaw", tri: "frill", steg: "plates", bronto: "neck" };
+  const dug = await Promise.all(DINOS.map(async (id, i) => {
+    const seed = i ? { "sona.dino.v1": JSON.stringify({ last: DINOS[i - 1], got: DINOS.slice(0, i) }) } : null;
+    const { context, page, errors } = await fresh("arcade-dino.html", { age: "7", micok: true, permission: "granted", seed });
+    const dig = () => page.evaluate(() => window.__dino || {});
+    try {
+      await page.locator("#startOvl.show").waitFor();
+      const name = DINO_NAMES[id];
+      ok(id + ": the start card says \"Today: " + name + "\"", (await page.locator("#dinoName").innerText()) === "Today: " + name && (await dig()).dino === id);
+      let c = await cards(page, "dinoRow");
+      ok(id + ": the ones dug before it are filled in on the start card; it and the rest are outlines", c.row.map((t) => +t.found).join("") === "1".repeat(i) + "0".repeat(4 - i) && c.row.every((t) => (t.fill > 40) === t.found), c.row);
+      await page.locator("#startBtn").click();
+      const box = await page.locator("#dig").boundingBox();
+      const d0 = await dig();
+      ok(id + ": eight bones of its own, the skull last", d0.bones.length === 8 && new Set(d0.bones).size === 8 && d0.bones[7] === "skull" && d0.bones.includes(SIGN[id]), d0.bones);
+      ok(id + ": asleep, the cliff shows no body, only its outline", (await paint(page, d0.fill)) === 0);
+      const spots = [];
+      for (let n = 1; n <= 8; n++) {
+        if (!(await brushFor(page))) { ok(id + " bone " + n + ": the word, said twice, brings the brush", false, await game(page)); break; }
+        const d = await dig();
+        spots.push([(d.bone.x - d.pit.x) / d.pit.w, (d.bone.y - d.pit.y) / d.pit.h, d.bone.id]);
+        const inside = d.bone.x - d.bone.w / 2 >= d.pit.x && d.bone.x + d.bone.w / 2 <= d.pit.x + d.pit.w && d.bone.y - d.bone.h / 2 >= d.pit.y && d.bone.y + d.bone.h / 2 <= d.pit.y + d.pit.h;
+        // the finger digs it: rows across the bone, again if a row fell short
+        for (let t = 0; t < 4 && (await dig()).state === "ready"; t++) for (let r = -1; r <= 1 && (await dig()).state === "ready"; r++) await rub(page, box, d.bone.x - d.bone.w / 2, d.bone.x + d.bone.w / 2, d.bone.y + r * d.bone.h * 0.3, 3);
+        ok(id + " bone " + n + " (" + d.bone.id + "): it lies wholly in the pit, a finger uncovers it, and it lands on the skeleton", inside && d.bone.id === d0.bones[n - 1] && await until(page, (k) => window.__dino.found === k, 5000, n), d.bone);
+      }
+      await until(page, () => window.__dino.awake === true, 6000);
+      await page.waitForTimeout(1100);
+      ok(id + ": it wakes in its own colour", (await paint(page, d0.fill)) > 300, { fill: d0.fill, px: await paint(page, d0.fill) });
+      await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+      ok(id + ": the end card names it: \"You found a " + name + "!\"", (await page.locator("#endTitle").innerText()) === "You found a " + name + "!" && (await game(page)).step === 8, await page.locator("#endTitle").innerText());
+      c = await cards(page, "dinoRowEnd");
+      ok(id + ": …and it joins the ones found so far", c.row.map((t) => +t.found).join("") === "1".repeat(i + 1) + "0".repeat(3 - i) && c.row[i].fill > 40, c.row);
+      const kept = JSON.parse(await page.evaluate(() => localStorage.getItem("sona.dino.v1")));
+      ok(id + ": it is kept as the last one found", kept.last === id && kept.got.join() === DINOS.slice(0, i + 1).join(), kept);
+      const l = await log(page);
+      ok(id + ": every sound waited for a closed mic, and Echo only ever said the word", l.sfx.every((s) => s.live === 0) && overlaps(l).length === 0 && l.speech.length >= 8 && l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+      await page.locator("#again").click();
+      const next = DINOS[(i + 1) % 4];
+      ok(id + ": Play again goes on to the " + DINO_NAMES[next] + (i === 3 ? ": round again after the last" : ""), (await dig()).dino === next && (await dig()).found === 0 && (await dig()).awake === false && (await game(page)).step === 0, await dig());
+      clean(id, errors);
+      return { id, fill: d0.fill, bones: d0.bones.join(), spots };
+    } finally { await context.close(); }
+  }));
+  ok("the four dinosaurs wake in four colours", new Set(dug.map((d) => d.fill)).size === 4, dug.map((d) => d.fill));
+  ok("…are four different skeletons", new Set(dug.map((d) => d.bones)).size === 4, dug.map((d) => d.bones));
+  // "different places" is held bone by bone: between any two dinosaurs, at
+  // least six of the eight lie somewhere else (more than a brush's width away)
+  const apart = [];
+  for (let a = 0; a < dug.length; a++) for (let b = a + 1; b < dug.length; b++) {
+    const n = dug[a].spots.filter((s, i) => { const t = dug[b].spots[i]; return t && (Math.abs(s[0] - t[0]) > 0.08 || Math.abs(s[1] - t[1]) > 0.08); }).length;
+    apart.push(dug[a].id + "/" + dug[b].id + ":" + n);
+  }
+  ok("…and their bones lie in different places in the pit", dug.every((d) => d.spots.length === 8) && apart.length === 6 && apart.every((p) => +p.split(":")[1] >= 6), apart);
+});
+
+// ── THE ROUND BELONGS TO THE CHILD: it survives leaving, a dinosaur left
+// half dug is the one waiting next time, a second child starts at the first,
+// and anything unreadable in its place starts the round again. ──
+await scenario("the child's round of dinosaurs", async () => {
+  const two = { "sona.dino.v1": JSON.stringify({ last: "tri", got: ["trex", "tri"] }) };
+  const { context, page, errors } = await fresh("arcade-dino.html", { age: "7", micok: true, permission: "granted", seed: two });
+  const dig = () => page.evaluate(() => window.__dino || {});
+  const today = async () => { await page.locator("#startOvl.show").waitFor(); return { name: await page.locator("#dinoName").innerText(), found: (await cards(page, "dinoRow")).row.map((t) => +t.found).join(""), id: (await dig()).dino }; };
+  try {
+    let t = await today();
+    ok("round: a child who has found two is looking for the third", t.name === "Today: Stegosaurus" && t.found === "1100" && t.id === "steg", t);
+    // one bone dug, then away: nothing is found until the dinosaur wakes
+    await page.locator("#startBtn").click();
+    await brushFor(page); await page.keyboard.press("Space");
+    await until(page, () => window.__dino.found === 1, 5000);
+    ok("round: a dinosaur left half dug is not found yet", (await page.evaluate(() => localStorage.getItem("sona.dino.v1"))) === two["sona.dino.v1"] && (await dig()).found === 1);
+    await page.reload(); t = await today();
+    ok("round: …and it is the one waiting next time", t.name === "Today: Stegosaurus" && t.found === "1100", t);
+    // A SECOND CHILD starts at the first dinosaur, and leaves the first child's round alone
+    await page.evaluate(() => { Sona.addKid("Leo", "7"); Sona.saveProfile(Object.assign(Sona.getProfile(), { onboarded: true, focusSounds: ["R"] })); });
+    await page.reload(); t = await today();
+    ok("round: a second child starts at the first dinosaur, with none found", t.name === "Today: T. rex" && t.found === "0000" && t.id === "trex" && (await page.evaluate(() => Sona.kkey("sona.dino.v1"))) === "sona.dino.v1@k2", t);
+    await page.locator("#startBtn").click();
+    for (let n = 1; n <= 8; n++) { if (!(await brushFor(page))) break; await page.keyboard.press("Space"); await until(page, (k) => window.__dino.found === k, 5000, n); }
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    const keys = await page.evaluate(() => ({ first: localStorage.getItem("sona.dino.v1"), second: localStorage.getItem("sona.dino.v1@k2") }));
+    ok("round: what the second child finds is theirs alone", keys.first === two["sona.dino.v1"] && keys.second === JSON.stringify({ last: "trex", got: ["trex"] }) && (await page.locator("#endTitle").innerText()) === "You found a T. rex!", keys);
+    await page.evaluate(() => Sona.switchKid(""));
+    await page.reload(); t = await today();
+    ok("round: …and the first child is still looking for the third", t.name === "Today: Stegosaurus" && t.found === "1100", t);
+    // ROUND AGAIN after the last, with every one still shown as found
+    await page.evaluate(() => localStorage.setItem("sona.dino.v1", JSON.stringify({ last: "bronto", got: ["trex", "tri", "steg", "bronto"] })));
+    await page.reload(); t = await today();
+    ok("round: after the last dinosaur the round starts again, and all four stay found", t.name === "Today: T. rex" && t.found === "1111", t);
+    // anything unreadable where the round is kept starts it again, and breaks nothing
+    for (const junk of ["not json", JSON.stringify({ last: "unicorn", got: ["unicorn", "tri", "tri", 7] }), JSON.stringify([1, 2]), "null"]) {
+      await page.evaluate((v) => localStorage.setItem("sona.dino.v1", v), junk);
+      await page.reload(); t = await today();
+      ok("round: an unreadable round (" + junk.slice(0, 22) + ") starts at the T. rex", t.name === "Today: T. rex" && t.found === (/tri/.test(junk) ? "0100" : "0000"), t);
+    }
+    clean("round", errors);
+  } finally { await context.close(); }
+});
+
+// ── A PHONE THAT WILL NOT SAVE (storage full, or switched off): the round
+// still goes on for as long as the page is open. Play again used to read the
+// child's place back from the phone, found nothing, and dug the T. rex again. ──
+await scenario("a phone that will not save", async () => {
+  const { context, page, errors } = await fresh("arcade-dino.html", { age: "7", micok: true, permission: "granted" });
+  const dig = () => page.evaluate(() => window.__dino || {});
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    await page.evaluate(() => { const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (/^sona\.dino/.test(k)) throw new DOMException("full", "QuotaExceededError"); return set.call(this, k, v); }; });
+    await page.locator("#startBtn").click();
+    for (let n = 1; n <= 8; n++) { if (!(await brushFor(page))) break; await page.keyboard.press("Space"); await until(page, (k) => window.__dino.found === k, 5000, n); }
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    const c = await cards(page, "dinoRowEnd");
+    ok("unsaved: the T. rex still wakes, is named, and is shown found, though nothing could be kept", (await page.locator("#endTitle").innerText()) === "You found a T. rex!" && c.row.map((t) => +t.found).join("") === "1000" && (await page.evaluate(() => localStorage.getItem("sona.dino.v1"))) === null, c.row);
+    await page.locator("#again").click();
+    ok("unsaved: Play again still goes on to the Triceratops", (await dig()).dino === "tri" && (await dig()).got.join() === "trex" && (await dig()).found === 0, await dig());
+    clean("unsaved", errors);
+  } finally { await context.close(); }
+});
+
+}
 }
 // ── BUBBLE POP, rebuilt to be played (Travis, 1 Oct 2026: "yeah B": "Say it,
 // and Echo blows bubbles"). The word blows a cloud of bubbles; the finger pops
@@ -883,7 +1154,13 @@ await scenario("bubbles popped", async () => {
     ok("bubbles: before the word there are no bubbles, and a tap or a key makes none", s.state === "idle" && s.left === 0 && s.popped === 0, s);
     await page.waitForTimeout(1500);
     ok("bubbles: silence blows no bubbles", (await sky()).state === "idle" && (await game(page)).step === 0);
+    // SAID ONCE (the littles' game; the word games for ages 5-8 ask twice)
+    const once = () => page.evaluate(() => ({ times: window.__sayplay.times, line: !!document.getElementById("twice"), dots: document.querySelectorAll("#twiceDots i").length, said: document.getElementById("turnPanel").getAttribute("data-said"), panel: document.getElementById("turnPanel").innerText, wordIn: document.getElementById("word").parentNode.id }));
+    let asked = await once();
+    ok("bubbles: it asks for the word once: no \"Say it 2 times\", no dots, and the word sits where the page put it", asked.times === 1 && !asked.line && asked.dots === 0 && asked.said === null && !/2 times|more time/i.test(asked.panel) && /Your turn/.test(asked.panel) && asked.wordIn === "turnPanel", asked);
     ok("bubbles: the child's word blows the bubbles, and the mic closes", await sayForBubbles(page) && (await live(page)) === 0);
+    asked = await once();
+    ok("bubbles: …one saying did it: never \"1 more time!\", and it was one rep", (await game(page)).said === 1 && !asked.line && !/more time/i.test(asked.panel) && (await gameReps(page)) === 1, { asked, reps: await gameReps(page) });
     s = await sky();
     ok("bubbles: the word alone pops nothing: the step waits for the finger", (await game(page)).step === 0 && (await game(page)).phase === "play" && s.popped === 0 && s.left === 6, s);
     ok("bubbles: it says what to do", /Pop the bubbles/.test(await page.locator("#micState").innerText()));
@@ -1178,6 +1455,105 @@ await scenario("pause", async () => {
     ok("pause: and the game goes on", await until(page, () => window.__sayplay.step === 1, 3000));
     noOverlap("pause", await log(page));
     clean("pause", errors);
+  } finally { await context.close(); }
+});
+
+// ── SAY IT TWO TIMES (Travis, 1 Oct 2026) ──
+// The first saying ticks a dot and shows "1 more time!" in the frame it is
+// heard, with the mic still open and nothing played; one long word is one
+// saying; "Hear it", a pause and the mic button all keep it; only the second
+// earns the step.
+await scenario("two times", async () => {
+  const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  try {
+    await page.locator("#startBtn").click();
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    const before = await practiceState(page), word = (await game(page)).word;
+    const played = (await log(page)).sounds.length;
+    // the first saying, timed from the voice starting to the screen changing
+    const first = await page.evaluate(() => new Promise((done) => {
+      const t0 = performance.now(); __quiet.voice = true;
+      (function wait() {
+        if (window.__sayplay.said === 1) return done({ ms: Math.round(performance.now() - t0), mic: document.getElementById("micState").textContent, dot: document.querySelector("#twiceDots i").classList.contains("on"), live: __quiet.live(), voice: __quiet.voice });
+        if (performance.now() - t0 > 3000) return done({ ms: -1 });
+        requestAnimationFrame(wait);
+      })();
+    }));
+    ok("twice: the tick and \"1 more time!\" show the moment the first saying is heard, mid-word, with the mic still open",
+      first.ms >= 0 && first.ms < 400 && first.mic === "1 more time!" && first.dot && first.live === 1 && first.voice === true, first);
+    // ONE LONG WORD IS ONE SAYING: it goes on, with a short closed-mouth dip in it
+    await voiceScript(page, [700, 90, 300]);
+    await page.waitForTimeout(120);
+    let g = await game(page), t = await twice(page);
+    ok("twice: one long word, even with a short dip in the middle, is one saying", g.said === 1, g);
+    ok("twice: the first saying moves nothing", g.step === 0 && g.phase === "turn" && (await page.locator("#dots i.on").count()) === 0, g);
+    ok("twice: the first dot is ticked, the second is not, and Echo keeps his listening pose", t.dots[0] && !t.dots[1] && t.shown && /echo-listen/.test(t.face) && !t.button && (await live(page)) === 1, t);
+    ok("twice: nothing plays for the first saying: no chime, no voice", (await log(page)).sounds.length === played, { before: played, after: (await log(page)).sounds.length });
+    ok("twice: the first saying is one rep on the week's count", (await gameReps(page)) === 1);
+    // "HEAR IT" keeps the first saying
+    await page.locator("#hear").click();
+    await page.waitForFunction(() => __quiet.speaking > 0);
+    ok("twice: \"Hear it\" closes the mic and Echo says the same word again", (await live(page)) === 0 && (await game(page)).word === word);
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    t = await twice(page);
+    ok("twice: …and the saying already heard is kept: one more time", (await game(page)).said === 1 && t.mic === "1 more time!" && t.dots[0] && !t.dots[1], t);
+    // A PAUSE keeps it too
+    await page.evaluate(() => __quiet.background());
+    await page.waitForTimeout(200);
+    await page.evaluate(() => __quiet.foreground());
+    await page.locator("#resume").click();
+    ok("twice: back from a pause, the same word still needs only one more", await until(page, () => window.__sayplay.listening === true, 8000) && (await game(page)).word === word && (await game(page)).said === 1 && (await twice(page)).mic === "1 more time!");
+    // SILENCE after one: the mic closes and waits for a tap; the tap only listens again
+    ok("twice: after one saying and then a long silence, the mic closes and offers a tap",
+      await until(page, () => window.__sayplay.phase === "nudge", 14000) && (await live(page)) === 0 && await page.locator("#micBtn").isVisible());
+    t = await twice(page); g = await game(page);
+    ok("twice: …it says \"1 more time! Tap the mic\", and the silence earned nothing", t.mic === "1 more time! Tap the mic" && g.step === 0 && g.said === 1 && t.dots[0] && !t.dots[1], t);
+    await page.locator("#micBtn").click();
+    ok("twice: the tap only listens again, and the first saying is kept", await until(page, () => window.__sayplay.listening === true, 4000) && (await game(page)).step === 0 && (await game(page)).said === 1 && (await twice(page)).mic === "1 more time!");
+    ok("twice: no rep was counted for the silence, \"Hear it\", the pause or the tap", (await gameReps(page)) === 1);
+    // THE SECOND SAYING earns the step
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    ok("twice: the second saying moves the game one step", await until(page, () => window.__sayplay.step === 1, 3000), await game(page));
+    await page.waitForTimeout(100);
+    t = await twice(page);
+    ok("twice: …the mic closes, both dots are ticked, and it was two reps", (await live(page)) === 0 && t.dots[0] && t.dots[1] && (await gameReps(page)) === 2, t);
+    // THE NEXT WORD starts at none of two, and the second saying gets a full
+    // listening window of its own: said late, it is not cut short
+    ok("twice: the next word starts again at none of two", await until(page, () => window.__sayplay.listening === true && window.__sayplay.said === 0, 8000) && (await twice(page)).dots.every((d) => !d) && (await twice(page)).shown && /Your turn/.test((await twice(page)).mic));
+    await page.waitForTimeout(8500);
+    await voice(page, 260);
+    ok("twice: a first saying late in the listening window is heard", await until(page, () => window.__sayplay.said === 1, 2000));
+    await page.waitForTimeout(5000);
+    ok("twice: …and the mic then waits a full window for the second (it is still listening)", (await game(page)).listening === true && (await game(page)).phase === "turn" && (await live(page)) === 1, await game(page));
+    await voice(page, 260);
+    ok("twice: which then earns the step", await until(page, () => window.__sayplay.step === 2, 3000));
+    // THREE IN ONE BREATH: the second closes the mic, so the third is said to
+    // a closed mic: not a rep, and not a start on the next word
+    ok("twice: the third word is asked for", await until(page, () => window.__sayplay.listening === true && window.__sayplay.said === 0, 8000));
+    const reps3 = await gameReps(page);
+    await page.waitForTimeout(80);
+    await voiceScript(page, [220, 260, 220, 260, 220]);
+    ok("twice: three sayings in one breath are one step and two reps, never three", await until(page, () => window.__sayplay.step === 3, 3000) && (await gameReps(page)) === reps3 + 2, { reps: await gameReps(page), was: reps3 });
+    ok("twice: …and the word after it still starts at none of two", await until(page, () => window.__sayplay.listening === true, 8000) && (await game(page)).said === 0 && (await gameReps(page)) === reps3 + 2);
+    // A WORD WITH A STOP IN THE MIDDLE ("rock-et", said with care): its closed-
+    // mouth moment is longer than the gap, but its second half comes too soon
+    // after the first to be the word said again
+    await page.waitForTimeout(80);
+    await voiceScript(page, [160, 230, 120]);
+    await page.waitForTimeout(150);
+    g = await game(page);
+    ok("twice: a word with a long stop in its middle is still one saying", g.said === 1 && g.step === 3 && g.phase === "turn" && (await live(page)) === 1 && (await gameReps(page)) === reps3 + 3, g);
+    await page.waitForTimeout(300);
+    await voice(page, 260);
+    ok("twice: …and said once more, it earns the step", await until(page, () => window.__sayplay.step === 4, 3000) && (await gameReps(page)) === reps3 + 4);
+    await page.waitForTimeout(300);
+    const l = await log(page);
+    noOverlap("twice", l);
+    ok("twice: every chime waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
+    ok("twice: Echo still says the word alone: \"2 times\" is only ever on screen", l.speech.length >= 4 && l.speech.every((x) => /^Say\.\.\. [a-z]+\.$/i.test(x)), l.speech);
+    ok("twice: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
+    clean("twice", errors);
   } finally { await context.close(); }
 });
 
