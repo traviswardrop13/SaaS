@@ -283,7 +283,7 @@
       else sessionStorage.removeItem(key);
       // A game entrance token is transient; the saved ready checkpoint owns
       // any already-earned game and will issue its own token on resume.
-      ["sona.play.token", "sona.play.active", "sona.boost.sound"].forEach((k) => sessionStorage.removeItem(k));
+      ["sona.play.token", "sona.play.active", "sona.boost.sound", "sona.boost.level", "sona.boost.ask"].forEach((k) => sessionStorage.removeItem(k));
     } catch (e) {}
   }
   function addKid(name, age) {
@@ -497,6 +497,78 @@
       events: _voiceEvents.map(function (item) { return Object.assign({}, item); }) };
   }
 
+  // ── "Go!": Echo's turn cue after a game's ask (2 Oct 2026) ──
+  // Travis: "i also wanna try to have the 11 labs voice say 'Go!'". Feed
+  // Echo, the Say & Play games (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+  // Peekaboo say it straight after the word, as its own short clip, so a child
+  // who can't read hears that it is their turn. It is a nicety, so it never
+  // holds up a turn (review, 2 Oct 2026). Fetched like the word, every turn
+  // waited on the voice service a second time while "Listen…" sat on screen
+  // in silence: up to 8 s more when the service was slow, on every turn while
+  // it sent stand-ins (those are never saved, so "Go!" was fetched again each
+  // time), and a "Go!" the service could not send came in the browser's robot
+  // voice after Echo's word. So each game asks goClip() for the clip it can
+  // play right now, and plays nothing when there is none:
+  // - this page's copy, or this phone's saved copy (read from the phone, not
+  //   the network); if neither, nothing this turn, and the voice service is
+  //   asked in the background, so the next turn has it;
+  // - only the first ask of a visit waits for that request (waitMs, the
+  //   game's GO_WAIT_MS: 1.5 s at most after the word), so a new phone hears
+  //   "Go!" from the start;
+  // - an ordinary answer is saved on the phone; a stand-in (X-Sona-Voice-Keep
+  //   "0") is kept for this page only and never saved, so the next visit asks
+  //   again, the rule every voice line keeps (28 Sep 2026);
+  // - never the browser voice: no clip, no "Go!".
+  // Resolves with the clip's bytes (an ArrayBuffer of 24 kHz PCM) or null.
+  const GO_LINE = "Go!", GO_WAIT_MS = 1500, _go = { mem: {}, job: {} };
+  function _goStore(key, bytes) {
+    return new Promise(function (done) {
+      // a phone that never answers is the same as one without the clip
+      const timer = setTimeout(function () { done(null); }, 500);
+      const fin = function (v) { clearTimeout(timer); done(v || null); };
+      try {
+        const rq = indexedDB.open("sona-tts", 1);
+        rq.onupgradeneeded = function () { try { if (!rq.result.objectStoreNames.contains("clips")) rq.result.createObjectStore("clips"); } catch (e) {} };
+        rq.onerror = function () { fin(null); };
+        rq.onsuccess = function () {
+          try {
+            const tx = rq.result.transaction("clips", bytes ? "readwrite" : "readonly"), st = tx.objectStore("clips");
+            if (bytes) { st.put(bytes, key); tx.oncomplete = function () { fin(bytes); }; tx.onerror = function () { fin(null); }; return; }
+            const q = st.get(key); q.onsuccess = function () { fin(q.result); }; q.onerror = function () { fin(null); };
+          } catch (e) { fin(null); }
+        };
+      } catch (e) { fin(null); }
+    });
+  }
+  function _goFetch(voice) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 8000); } catch (e) {}
+    return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: GO_LINE, voice: voice || "", stable: true }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) return null;
+        const keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b && b.byteLength ? { bytes: b, keep: keep } : null; });
+      })
+      .then(function (v) { clearTimeout(to); return v; }, function () { clearTimeout(to); return null; });
+  }
+  function goClip(voice, waitMs) {
+    const key = (voice || "echo") + "|" + TTS_CACHE_VERSION + "|" + GO_LINE;
+    if (_go.mem[key]) return Promise.resolve(_go.mem[key]);
+    let job = _go.job[key];
+    if (!job) {
+      job = _go.job[key] = {};
+      job.phone = _goStore(key);
+      job.all = job.phone.then(function (b) {
+        if (b) return b;
+        return _goFetch(voice).then(function (v) { if (!v) return null; if (v.keep) _goStore(key, v.bytes); return v.bytes; });
+      }).then(function (b) { if (b) _go.mem[key] = b; if (_go.job[key] === job) delete _go.job[key]; return b; },
+        function () { if (_go.job[key] === job) delete _go.job[key]; return null; });
+    }
+    if (!(waitMs > 0)) return job.phone.then(function (b) { return b || _go.mem[key] || null; });
+    return Promise.race([job.all, new Promise(function (done) { setTimeout(function () { done(null); }, waitMs); })])
+      .then(function (b) { return b || _go.mem[key] || null; });
+  }
+
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {
@@ -704,10 +776,23 @@
   // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
   // quietly ignore it for the position.
+  //
+  // A FAMILY CAN PICK ONLY THE START OF A WORD FOR NOW (Travis, 1 Oct 2026:
+  // "have the options listed but to not let them select other positioning
+  // because it's not built yet ... make it clear that it's just the initial
+  // position"). Only the practice page ever read the setting; the games ask
+  // for start-of-word words whatever it says (and so do the books, but for
+  // the odd page with no such word), so "Middle" was a choice the app half
+  // kept. FAMILY_POSITIONS is the one switch: Settings
+  // and the pilot page list every position and grey out the ones not in it
+  // ("coming soon"), and a position saved before this reads as the start of
+  // a word here rather than being quietly honoured on one page. Add an id to
+  // open it. An SLP's homework still names its own position.
+  const FAMILY_POSITIONS = ["i"];
   function practicePos() {
     const hw = homework();
     if (hw && hw.pos) return hw.pos;
-    try { return getProfile().practicePosition || "i"; } catch (e) { return "i"; }
+    try { const p = getProfile().practicePosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
   }
   function rotState() {
     const st = load(ROTKEY, {}); const f = rotSounds();
@@ -1491,6 +1576,133 @@
     return [];
   }
 
+  // ── GAMEASK1: what a round game's say-it card asks for (Travis, 1 Oct
+  // 2026: "we need to add back the increase of complexity to the sounds in
+  // the games and start with isolation then ree rah roh then rot. and maybe
+  // have that be something to update in settings") ──
+  // The card between rounds always said the bare sound. It now climbs: the
+  // sound alone ("rrrr"), then ONE syllable a card ("ree"; a different one
+  // each calendar day, never three in a breath), then a short word ("rot").
+  // This is the one reader every round game calls, and the Settings picker
+  // paints its grey line from it, so neither can promise an ask the other
+  // won't make.
+  //
+  // gameAsk(sound, card): card 0 is the bare sound (Echo's power button, and
+  // where a card steps back to); 1 and 2 are the two cards between rounds.
+  // The step asked is min(top, floor + card):
+  //   top   — the grown-up's pick in Settings (profile.gameLevel), else one
+  //           step past what the child has EARNED on the practice page, the
+  //           practice page's own rule. A pick wins both ways.
+  //   floor — the step the "Say it 5 times" page ended on this sitting
+  //           (charge.html hands it over), so a card never asks below what
+  //           the child was just asked; its own syllable or word is reused.
+  // For a child aged 2 to 4, and while Echo's voice is off, the step is 0
+  // whatever top and floor say (gameHold): those cards keep the bare sound.
+  // Otherwise it is lowered to what can really be asked: a sound whose syllables nobody
+  // has listened to yet (SonaContent.GAME_SYL_ON) stays on the bare sound,
+  // as does a page without gamecontent.js; and when the position being
+  // practised is not the start of a word (an SLP's end-of-word or "er, ar,
+  // or" homework) there is no syllable step, because "ree" is a start-of-word
+  // R, a different target from the one the therapist set: the sound, then one
+  // of the homework's own words if it names any.
+  //
+  // HONEST LIMITS. A card hears only "a voice of the right kind": it cannot
+  // tell "ree" from "rrrr" or "rot", so harder here means what Echo ASKS,
+  // never what is checked, and Echo never says "correct". And it only READS:
+  // nothing said in a game moves the earned level (recordRung is the practice
+  // page's alone), and a heard card stays one game rep, never practice data.
+  // Which syllables, which word, the pace, and the computer voice modelling
+  // them are Rachel's calls (CLAUDE.md, "Games ask for more than the sound").
+  const GAME_LEVELS = ["isolation", "syllable", "word"];
+  function _gameContent() { return (typeof window !== "undefined" && window.SonaContent) || null; }
+  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned or
+  // picked. One answer, read by the cards (through _gameWant and _gameItem)
+  // and by the Settings line, which says the reason in words, so the two can
+  // never disagree:
+  //   "little"   — a child aged 2 to 4. Their Home still shows the round
+  //                games (Fruit Slice is free and open to a four-year-old),
+  //                and Settings hides the picker for that age, so their cards
+  //                ask the bare sound exactly as before, whatever a pick saved
+  //                at an older age says. Whether little ones should ever be
+  //                asked a syllable is Rachel's call.
+  //   "muted"    — Echo's voice is off in Sona. Only his voice can model a
+  //                syllable or a word; nothing past the bare sound is recorded.
+  //   "sound"    — this sound's syllables are not switched on yet (or the
+  //                page has no gamecontent.js).
+  //   "position" — the position being practised is not the start of a word.
+  //   ""         — nothing does.
+  function gameHold(sound) {
+    sound = String(sound || "").toUpperCase();
+    try { if (playStyle() === "simple") return "little"; } catch (e) {}
+    try { const p = getProfile(); if (p.voiceOn === false || Number(p.volume) === 0) return "muted"; } catch (e) {}
+    const SC = _gameContent();
+    if (!(SC && SC.gameSyllables && SC.gameSyllables(sound).length)) return "sound";
+    if (practicePos() !== "i") return "position";
+    return "";
+  }
+  // The ceiling asked for, before the sound's own limits.
+  function _gameWant(sound) {
+    const hold = gameHold(sound);
+    if (hold === "little" || hold === "muted") return 0;
+    let pick = ""; try { pick = getProfile().gameLevel || ""; } catch (e) {}
+    const i = GAME_LEVELS.indexOf(pick);
+    return i >= 0 ? i : Math.min(2, rungOf(sound) + 1);
+  }
+  // What the practice page ended on this sitting, if it was this sound.
+  function _gameHand(sound) {
+    try {
+      if (String(sessionStorage.getItem("sona.boost.sound") || "").toUpperCase() !== sound) return null;
+      const lvl = LADDER.indexOf(sessionStorage.getItem("sona.boost.level") || "");
+      if (lvl < 0) return null;
+      return { rung: Math.min(2, lvl), ask: String(sessionStorage.getItem("sona.boost.ask") || "").toLowerCase().trim() };
+    } catch (e) { return null; }
+  }
+  function _gameItem(sound, want, card, hand) {
+    const SC = _gameContent(), bare = soundSay(sound);
+    const syls = SC && SC.gameSyllables ? SC.gameSyllables(sound) : [];
+    let rung = 0, text = bare;
+    if (syls.length && want > 0) {
+      const start = practicePos() === "i", hw = homeworkWords(sound);
+      if (want >= 2) {
+        // the practice page's own word, then the homework's, then the short word
+        if (hand && hand.rung === 2 && (WORDS[sound] || []).some((w) => String(w.w).toLowerCase() === hand.ask)) text = hand.ask;
+        else if (hw.length) text = String(hw[(dayNum() + card) % hw.length].w).toLowerCase();
+        else if (start && SC.gameWord) text = SC.gameWord(sound) || "";
+        else text = "";
+        if (text) rung = 2; else text = bare;
+      }
+      if (!rung && start) {
+        // the practice page's own syllable if it just asked one of this
+        // sound's (never one the skip list holds back); else today's
+        const skip = (SC.GAME_SKIP || {})[sound] || [];
+        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 && SC.syllables(sound).some((s) => s.t === hand.ask);
+        text = own ? hand.ask : syls[(dayNum() + Math.max(1, card) - 1) % syls.length].t;
+        rung = 1;
+      }
+    }
+    return {
+      rung: rung, level: GAME_LEVELS[rung], text: text, html: soundMark(text, sound),
+      // how Echo models it: the bare sound is Rachel's recording; a syllable
+      // or word is one line in his own voice, which the page must fall back
+      // from (to card 0) the moment it cannot play
+      clip: rung ? "" : "/coach/say-echo/" + sound + "-sound.wav", say: rung ? text : "",
+    };
+  }
+  // The highest step this sound's cards can reach today: 0, 1 or 2.
+  function gameTop(sound) {
+    sound = String(sound || "").toUpperCase();
+    return _gameItem(sound, _gameWant(sound), 2, null).rung;
+  }
+  // opts.first: as on the first game of a day, ignoring the practice page's
+  // hand-over (Settings paints its line with it).
+  function gameAsk(sound, card, opts) {
+    sound = String(sound || "").toUpperCase();
+    card = Math.max(0, Math.min(2, parseInt(card, 10) || 0));
+    const hand = (opts && opts.first) ? null : _gameHand(sound);
+    const want = card ? Math.min(_gameWant(sound), (hand ? hand.rung : 0) + card) : 0;
+    return _gameItem(sound, want, card, hand);
+  }
+
   // ── the week, narrated ────────────────────────────────────────────────
   // The Sound Story: a plain-language read of the week from REAL practice
   // data — days practiced, reps out loud, and honest-scoring movement on the
@@ -1647,19 +1859,24 @@
     { id: "i", name: "Beginning" }, { id: "m", name: "Middle" }, { id: "f", name: "End" },
     { id: "v", name: "Vocalic R" }, { id: "b", name: "Blends" }, { id: "mix", name: "Mixed" },
   ];
-  function wordsFor(sound, pos) {
-    // An assignment may name its own words. Only words this app already knows
-    // are used — an SLP typing a word with no recorded target is a silent
-    // dead end, so unknown ones fall through to the bank rather than shipping
-    // a round the child cannot pass.
+  // An assignment may name its own words. Only words this app already knows
+  // are used — an SLP typing a word with no recorded target is a silent
+  // dead end, so unknown ones fall through to the bank rather than shipping
+  // a round the child cannot pass. [] when the assignment names none for
+  // this sound (the game reader, gameAsk, needs to tell the two apart).
+  function homeworkWords(sound) {
     try {
       const hw = homework();
       if (hw && hw.words && hw.words.length && hw.sounds.indexOf(String(sound).toUpperCase()) >= 0) {
         const want = {}; hw.words.forEach(function (w) { want[String(w).toLowerCase()] = 1; });
-        const pick = (WORDS[sound] || []).filter(function (w) { return want[String(w.w).toLowerCase()]; });
-        if (pick.length) return pick;
+        return (WORDS[sound] || []).filter(function (w) { return want[String(w.w).toLowerCase()]; });
       }
     } catch (e) {}
+    return [];
+  }
+  function wordsFor(sound, pos) {
+    const pick = homeworkWords(sound);
+    if (pick.length) return pick;
     const list = (WORDS[sound] || []).slice();
     if (pos === "mix" || pos === "all") return list;
     pos = pos || "i"; // no selection → initial position (preserves prior behavior; SLPs opt into others)
@@ -4570,10 +4787,12 @@
   // so a stale page beside a new sona.js shows no web card rather than a card
   // whose button the server refuses.
   //
-  // IT SHIPPED true, AND WAITS FOR TRAVIS'S WORD (lib/pricing.ts says why):
-  // the app on the App Store that night had no purchase plugin, so with the
-  // website off as well nobody could have bought Premium anywhere.
-  const WEB_SALES = true;  // built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell
+  // It shipped true on 1 Oct 2026, because the app on the App Store that
+  // night had no purchase plugin. OFF since 2 Oct 2026, on Travis's word
+  // ("turn off payments on website"), the day 1.0.5 (the first build that can
+  // sell) went to App Review: until that build is live, nobody can buy
+  // Premium anywhere, and he chose that.
+  const WEB_SALES = false;  // off (Travis, 2 Oct 2026: "turn off payments on website")
   // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
   // rails, "0" hides them, anything else is the constant), so both states stay
   // played by the tests whichever way this ships. sessionStorage only, and no
@@ -4874,5 +5093,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

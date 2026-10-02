@@ -209,6 +209,8 @@ function device(config) {
 
   localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done'); localStorage.setItem('sona.micok', '1');
   localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.5 }));
+  // the mic numbers' switch (five taps on "Account" in Settings, 2 Oct 2026)
+  if (config.micNumbers) localStorage.setItem('sona.micnumbers', '1');
   const n = config.round || 0;
   sessionStorage.setItem('sona.run.v1', JSON.stringify({ active: true, round: n, scores: Array(n).fill(7), sum: n * 7, sound: 'R', level: 1, pending: false, games: ['slice', 'tiles', 'stack', 'run', 'glide'], tries: n * 5 }));
 }
@@ -293,6 +295,7 @@ await scenario('prompt, five tries and the win', async () => {
     const complete = s.events.find((e) => e.kind === 'chime' && e.label === 'complete'), win = voiceAt(s, "You did it. Let's play.");
     ok('the win line waits ~600ms after the chime instead of landing on it', !!complete && win - complete.t >= 550, { chime: complete && complete.t, win });
     ok('closing the mic at the end of the window keeps the one keepsake clip whole', s.effects.includes('saveRecording'), s.effects);
+    ok('with the mic numbers switched off, no numbers box is drawn', await page.evaluate(() => !document.getElementById('micNumbers')));
     clean('prompt and win', errors);
   } finally { await context.close(); }
 });
@@ -482,6 +485,30 @@ await scenario('a room as loud as a TV during the reading is not a room', async 
     ok('…the quiet window measures the room itself, and all five tries count', won && s.reps === 5 && after > 0 && after < 0.01, { won, reps: s.reps, after });
     audit('loud reading', s);
     clean('loud reading', errors);
+  } finally { await context.close(); }
+});
+
+// ── MIC NUMBERS (2 Oct 2026). Travis, in the iPhone app: "I have to say
+// the word super close to the phone or else it won't seem to hear it". With
+// the switch on (five taps on "Account" in Settings), a box at the top of the
+// page shows the mic's own levels while it listens: now, the loudest moment
+// of the last two seconds, the bar a sound must clear, the room, each sound
+// that cleared it and whether it counted, the frame rate and what the phone
+// says it does to the mic. It only shows numbers: a try counts exactly as it
+// did, the box never takes a tap, and nothing it shows is ever sent. ──
+await scenario('mic numbers', async () => {
+  const { context, page, errors } = await fresh({ micNumbers: true });
+  const posts = []; page.on('request', (r) => { if (r.method() !== 'GET') posts.push(r.url() + ' ' + (r.postData() || '')); });
+  try {
+    await yourTurn(page);
+    const shown = await page.waitForFunction(() => /counts above/.test((document.getElementById('micNumbers') || {}).textContent || ''), {}, { timeout: 3000 }).then(() => true, () => false);
+    ok('mic numbers: the box shows while the mic listens: the level now, the loudest moment, the bar and the room', shown && await page.evaluate(() => { const t = document.getElementById('micNumbers').textContent; return /now (-?\d+ dB|silent)/.test(t) && /loudest in 2 s/.test(t) && /counts above -\d+ dB/.test(t) && /room /.test(t) && /\d+ fps · \d+ Hz · echo cancel/.test(t); }), await page.evaluate(() => (document.getElementById('micNumbers') || {}).textContent));
+    await bursts(page, 1);
+    const last = await page.waitForFunction(() => /last sound: loudest -?\d+ dB, middle -?\d+ dB, [\d.]+ s, counted/.test(document.getElementById('micNumbers').textContent), {}, { timeout: 3000 }).then(() => true, () => false);
+    ok('mic numbers: a sound that cleared the bar is listed with how loud it was, and that it counted', last && (await page.evaluate(() => window.reps)) === 1, await page.evaluate(() => ({ text: document.getElementById('micNumbers').textContent, reps: window.reps })));
+    ok('mic numbers: the box never takes a tap', await page.evaluate(() => getComputedStyle(document.getElementById('micNumbers')).pointerEvents === 'none'));
+    ok('mic numbers: nothing the box shows is ever sent', !posts.some((p) => /counts above|loudest|fps|dB/.test(p)), posts);
+    clean('mic numbers', errors);
   } finally { await context.close(); }
 });
 

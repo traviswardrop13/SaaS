@@ -84,7 +84,11 @@ function phone(cfg) {
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
   let tts=0;
-  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
+  // The say-it card's own two lines are asked for as the page loads (2 Oct
+  // 2026, /arcade-sayit.js): they are answered, and never counted here, so
+  // "the first ask" is still the sound power's instruction.
+  const CARD_LINES=['To keep playing, say','Go!'];
+  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}if(!CARD_LINES.includes(text)){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});}return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
   await context.addInitScript(phone,cfg);
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(BASE+'/arcade-slice.html?from=charge');
@@ -330,6 +334,31 @@ try {
       await page.waitForFunction(()=>phase==='finale',null,{timeout:6000});
       ok('the giant watermelon ends it',await page.evaluate(()=>slowMs===0&&!document.body.classList.contains('speech-help-earned')));
       await clean('wave end',page,errors);
+    }finally{await context.close();}
+  });
+
+  // 1 Oct 2026: the card between waves now asks a syllable for a child on R
+  // ("start with isolation then ree rah roh then rot"). Echo's power button
+  // does not climb with it: Travis asked for that button to be quick ("1 time
+  // to get it"), and Apple's listener, which judges it, would turn away a
+  // good "ree" it wrote down as "we" or "read".
+  await scenario('the card asks a syllable; Super Slice stays the sound',async()=>{
+    const{context,page,errors}=await fresh({voiceOn:true});try{
+      await page.evaluate(()=>{waveGot=WAVES[wave].goal;});
+      await page.waitForFunction(()=>document.getElementById('revOvl').classList.contains('show')&&/listening/i.test(document.getElementById('revListen').textContent),null,{timeout:12000});
+      const a=await page.evaluate(()=>({title:document.getElementById('revTitle').textContent,rung:ASK.rung,say:SAYTXT,pill:document.getElementById('slowSound').textContent,label:document.getElementById('slowKeys').getAttribute('aria-label')}));
+      ok('while the card asks a syllable, Echo\'s button still says the bare sound',/^Say “r(ee|ah|oh)” for wave 2!$/.test(a.title)&&a.rung===1&&a.say==='rrrr'&&a.pill==='rrrr'&&a.label==='Say rrrr to get Super Slice',a);
+      const w0=(await reps(page)).week;
+      await page.evaluate(()=>{closeReviveMic();doRevive();});
+      await page.waitForFunction(()=>phase==='wave'&&wave===1);
+      await page.waitForTimeout(400);await quietBoard(page);
+      const n=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').length);
+      await turn(page);
+      const v=await page.evaluate((n)=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url).slice(n),n);
+      ok('…and its turn after that card models the recorded R, never the syllable',v.length===2&&/^blob:/.test(v[0])&&/\/coach\/say-echo\/R-sound\.wav$/.test(v[1])&&await page.evaluate(()=>document.getElementById('slowSound').textContent==='rrrr'),v);
+      await say(page);const e=await earned(page);
+      ok('a heard syllable card and a Super Slice turn are one rep each',e.total===10000&&(await reps(page)).week===w0+2,{e,w0});
+      await clean('syllable card',page,errors);
     }finally{await context.close();}
   });
 
