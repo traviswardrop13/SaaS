@@ -579,6 +579,8 @@ await scenario("slice: no microphone", async () => {
   } finally { await context.close(); }
 });
 
+// the say-it card's own two lines (/arcade-sayit.js), asked for as the page loads
+const HELPER_LINES = new Set(["To keep playing, say", "Go!"]);
 // ── Fruit Slice: a card that asks a syllable (Travis, 1 Oct 2026: "start with
 // isolation then ree rah roh then rot") ──
 // The card after a wave now asks one syllable for a child on R, in ONE line
@@ -589,9 +591,14 @@ await scenario("slice: no microphone", async () => {
 // Echo speaks again; and backgrounding, "I'm done playing" and Echo's power
 // button each leave nothing waiting to speak.
 await scenario("slice: a syllable card", async () => {
-  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
-  // Echo's voice service answers here (it is down for the rest of this suite)
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  // Inside the app, where each of Echo's lines and Rachel's take is a media
+  // element (the card's voice, /arcade-sayit.js, plays the website's lines
+  // through Web Audio: sayitcardtest plays that path).
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", native: true });
+  // Echo's voice service answers here (it is down for the rest of this suite).
+  // The card's voice asks for its own two lines, "To keep playing, say" and
+  // "Go!", as the page loads: `said` is what the card itself asks for.
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   const card = () => page.evaluate(() => { const b = [...document.querySelectorAll("#revTitle .snd")];
     return { title: document.getElementById("revTitle").textContent, snd: b.map((x) => x.textContent), sound: b[0] && getComputedStyle(b[0]).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rung: ASK.rung, text: ASK.text, rev: REV }; });
@@ -606,8 +613,10 @@ await scenario("slice: a syllable card", async () => {
     await page.waitForFunction(() => __quiet.live() === 1);
     let l = await log(page);
     const line = l.sounds.filter((x) => x.kind === "media").pop(), mic = l.mics[l.mics.length - 1];
-    ok("slice syllable card: Echo says it in one line, with no recording after it", said.join("|") === "To keep playing, say... " + c.text + "." && l.sounds.filter((x) => x.kind === "media").length === 1, { said, sounds: l.sounds.filter((x) => x.kind === "media").length });
-    ok("slice syllable card: the mic opens only after his line and its quiet tail", !!line && !line.live && mic.start - line.end >= 0.85, { line, mic });
+    ok("slice syllable card: Echo says it in one line, then \"Go!\", with no recording after it", said.join("|") === "To keep playing, say... " + c.text + "." && l.sounds.filter((x) => x.kind === "media").length === 2, { said, sounds: l.sounds.filter((x) => x.kind === "media").length });
+    // the tail after his last word is SayIt.VOICE_TAIL_MS (250 ms), as on
+    // every listening page; a chime's tail (QUIET_MS) is timed from its start
+    ok("slice syllable card: the mic opens only after his \"Go!\" and its quiet tail", !!line && !line.live && mic.start - line.end >= 0.24, { line, mic });
     // nobody answers: the mic closes, then Echo offers the bare sound, then it listens again
     await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
     await page.waitForFunction(() => ASK.rung === 0, null, { timeout: 6000 });
@@ -616,7 +625,7 @@ await scenario("slice: a syllable card", async () => {
     l = await log(page);
     const after = l.sounds.filter((x) => x.kind === "media").slice(1), srcs = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => x.src.replace(/^.*(\/coach\/)/, "$1").replace(/^blob:.*/, "voice")));
     ok("slice syllable card: Echo's idea and Rachel's recording play between the two mics, never under one",
-      said[1] === "I have an idea. Let's try this one." && srcs.join() === "voice,voice,/coach/say-echo/R-sound.wav" && after.every((x) => !x.live) && l.mics.length === 2, { said, srcs, after, mics: l.mics.length });
+      said[1] === "I have an idea. Let's try this one." && srcs.join() === "voice,voice,voice,/coach/say-echo/R-sound.wav,voice" && after.every((x) => !x.live) && l.mics.length === 2, { said, srcs, after, mics: l.mics.length });
     await voice(page, 450);
     await page.waitForFunction(() => REV === 2 && phase === "wave" && wave === 1);
     // the second card: backgrounding stops the line and leaves nothing waiting.
@@ -626,17 +635,17 @@ await scenario("slice: a syllable card", async () => {
     await nextCard();
     c = await card();
     ok("slice syllable card: the card after a step back repeats that syllable, never a harder ask", c.rung === 1 && c.text === first && c.snd.join() === "r", { first, c });
-    await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "media").length === 4);
+    await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "media").length === 6);
     await page.evaluate(() => __quiet.background());
     const cut = await page.evaluate(() => { const m = __quiet.sounds.filter((x) => x.kind === "media").pop(); return m.end !== Infinity && m.end <= __quiet.now(); });
     await page.waitForTimeout(2200);
     let st = await page.evaluate(() => ({ rung: ASK.rung, live: __quiet.live(), media: __quiet.sounds.filter((x) => x.kind === "media").length, requests: __quiet.requests }));
-    ok("slice syllable card: backgrounding mid-line stops Echo, opens no mic and steps nothing back while away", cut && st.rung === 1 && st.live === 0 && st.media === 4 && st.requests === 2 && said.length === 2, { cut, st, said });
+    ok("slice syllable card: backgrounding mid-line stops Echo, opens no mic and steps nothing back while away", cut && st.rung === 1 && st.live === 0 && st.media === 6 && st.requests === 2 && said.length === 2, { cut, st, said });
     await page.evaluate(() => __quiet.foreground());
     await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
     const back = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => ({ voice: /^blob:/.test(x.src), live: x.live })));
     ok("slice syllable card: coming back says the ask as it stands (the line it already holds, no new download), then listens",
-      said.length === 2 && back.length === 5 && back[4].voice && !back[4].live && (await card()).rung === 1 && (await card()).text === c.text, { said, back });
+      said.length === 2 && back.length === 8 && back[6].voice && back[7].voice && !back[6].live && !back[7].live && (await card()).rung === 1 && (await card()).text === c.text, { said, back });
     // backgrounding while it listens cancels the eight-second wait with the mic
     await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
     await page.evaluate(() => __quiet.background());
@@ -664,8 +673,8 @@ await scenario("slice: a syllable card", async () => {
 });
 
 await scenario("slice: done on a syllable card", async () => {
-  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", native: true });
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   try {
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");

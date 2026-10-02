@@ -129,18 +129,22 @@ try{
   const pg=await ctx3.newPage(),errs=[],lines=[];pg.on('pageerror',e=>errs.push(e.message));pg.on('request',r=>{if(r.url().endsWith('/api/tts'))lines.push(JSON.parse(r.postData()).text);});
   const card=async()=>{await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===1,{},{timeout:8000}).catch(()=>{});};
   const title=()=>pg.evaluate(()=>document.getElementById('revTitle').textContent);
+  // The card's voice (/arcade-sayit.js, 2 Oct 2026) asks for its own two
+  // lines, "To keep playing, say" and "Go!", as the page loads, whatever the
+  // card will ask: they are set aside, and own() is what the card asked for.
+  const own=()=>lines.filter(t=>t!=='To keep playing, say'&&t!=='Go!');
   await pg.goto(base+'/arcade-slice.html?from=charge');await card();
-  ok('a syllable card says its ask in ONE line, as native media, before any microphone',lines.length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(lines[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
-  ok('…and the card shows that same syllable',(await title())==='Say “'+(lines[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());
-  await pg.evaluate(()=>h.media[0].onended());await pg.waitForTimeout(300);
-  ok('no recording follows a syllable, and the microphone waits for the line\'s tail',await pg.evaluate(()=>h.media.length===1&&h.mic===0));
-  await pg.waitForFunction(()=>h.mic===1);
-  ok('the microphone starts after the syllable line',lines.length===1&&await pg.evaluate(()=>h.mic===1&&h.media.length===1));
+  ok('a syllable card says its ask in ONE line, as native media, before any microphone',own().length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(own()[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
+  ok('…and the card shows that same syllable',(await title())==='Say “'+(own()[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());
+  await pg.evaluate(()=>h.media[0].onended());await pg.waitForFunction(()=>h.media.length===2,{},{timeout:4000}).catch(()=>{});
+  ok('no recording follows a syllable: then "Go!", as native media too, and the microphone waits for it',await pg.evaluate(()=>h.media.length===2&&h.media[1].src.startsWith('blob:')&&h.mic===0));
+  await pg.evaluate(()=>h.media[1].onended());await pg.waitForFunction(()=>h.mic===1);
+  ok('the microphone starts after "Go!"',own().length===1&&await pg.evaluate(()=>h.mic===1&&h.media.length===2));
   down=true;await pg.goto(base+'/arcade-slice.html?from=charge');await card();
-  ok('a syllable line that will not load: the card asks the bare sound and plays Rachel\'s recording at once, with no second line',(await title())==='Say “rrrr” for wave 2!'&&lines.length===2&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  ok('a syllable line that will not load: the card asks the bare sound and plays Rachel\'s recording at once, with no second line',(await title())==='Say “rrrr” for wave 2!'&&own().length===2&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
   down=false;await pg.evaluate(()=>sessionStorage.setItem('test.refuse','1'));await pg.goto(base+'/arcade-slice.html?from=charge');
   await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===2,{},{timeout:8000}).catch(()=>{});
-  ok('a syllable line the phone refuses to start: the same, the bare sound and its recording',(await title())==='Say “rrrr” for wave 2!'&&lines.length===3&&await pg.evaluate(()=>h.media.length===2&&h.media[0].src.startsWith('blob:')&&h.media[1].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  ok('a syllable line the phone refuses to start: the same, the bare sound and its recording',(await title())==='Say “rrrr” for wave 2!'&&own().length===3&&await pg.evaluate(()=>h.media.length===2&&h.media[0].src.startsWith('blob:')&&h.media[1].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
   ok('syllable card: no runtime errors',errs.length===0,errs);await ctx3.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}
