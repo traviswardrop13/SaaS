@@ -238,6 +238,129 @@ async function waitSpoke(pg, ms) {
   ok("every fuller book asks for one key word a page, each a practice word on that page that starts with the sound",
     books.length >= 19 && books.reduce((n, b) => n + b.keys.length, 0) === 12 * books.length && keyProbs.length === 0, keyProbs.slice(0, 8).join(" | "));
 
+  // EVERY BOOK ASKS NOW (Travis, 1 Oct 2026: "we want to make that something
+  // that is happening on every book"). The thirteen six-page books got six
+  // key words each. Their SENTENCES can't keep the rule above: they put the
+  // sound anywhere in a word, and they are fixed (the pictures were painted
+  // for them, pinned further down). Their KEYS can, and do, because a key is
+  // the one word the child is asked to say: six keys for six pages,
+  // lower-case, each a whole word ON its own page as the reader splits the
+  // line (on spaces, so "choo-choo" is one word and "choo" is none), that
+  // STARTS with the book's sound before a vowel by its pronouncing entry,
+  // never by its spelling ("then" is the other th, "worm" has no R). "The
+  // sound somewhere in the word" was the first rule here, and it would have
+  // passed "corn" (K AO1 R N) as an R word and "all" as an L word.
+  // No `words` list: that one means "every word that starts with the sound".
+  //
+  // The words that can't meet it are listed BY NAME, so each is a decision
+  // someone made and the next one fails here until it is made too:
+  //   ELSEWHERE  the sound is in the word but not at its start. The TH book's
+  //              page 5 ("Then a warm bath — both feet in.") has no word that
+  //              starts with that th, so its key ends with it.
+  //   R_TWICE    an R book's key with a second r-coloured sound after the
+  //              first (R or ER): harder than the one R the child is working
+  //              on. "Rory" is the page's easiest ("roars" has two as well).
+  // Which word a child is asked to say is Rachel's call; take a word off
+  // these lists when she swaps it, add one only on her say-so.
+  const ELSEWHERE = { "Theo the Sloth p5": "bath" };
+  const R_TWICE = { "Rory the Rabbit p6": "rory" };
+  const all = await pg.evaluate(() => STORIES.map((b) => ({ sound: b.sound, title: b.title, six: !!b.painted, listed: !!b.words, keys: b.keys || [], pages: b.pages.map((p) => p.t) })));
+  const six = all.filter((b) => b.six);
+  ok("every book on the shelf has one key word per page, the six-page books too",
+    all.length === books.length + six.length && six.length === 13 && all.every((b) => b.keys.length === b.pages.length && b.keys.every(Boolean)),
+    all.filter((b) => b.keys.length !== b.pages.length).map((b) => b.title + ": " + b.keys.length + " keys, " + b.pages.length + " pages").join(" | "));
+  const spanWord = (w) => w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "");   // the reader's markKey, word for word
+  // the rule itself, so the made-up words below go through the same lines
+  const sixKeyProb = (sound, k, at) => {
+    const tp = TARGET[sound];
+    if (!(k in LEX)) return `key "${k}" is not in tests/booklex.json`;
+    const ph = phones(k);
+    if (ELSEWHERE[at] === k) { if (!ph.includes(tp)) return `key "${k}" has no ${sound} sound in it`; }
+    else if (ph[0] !== tp || !VOWEL.test(ph[1] || "")) return `key "${k}" doesn't start with ${sound} and a vowel, and isn't a listed exception`;
+    if (sound === "R" && R_TWICE[at] !== k && ph.slice(1).some((x) => x === "R" || x === "ER")) return `key "${k}" has a second r-coloured sound, and isn't a listed exception`;
+    return "";
+  };
+  const sixProbs = [], named = { ELSEWHERE: [], R_TWICE: [] };
+  for (const b of six) {
+    if (b.pages.length !== 6 || b.keys.length !== 6) sixProbs.push(`${b.title}: ${b.keys.length} key words for ${b.pages.length} pages, not 6 and 6`);
+    if (b.listed) sixProbs.push(`${b.title}: a six-page book lists \`words\`, which would hold every line to the start-of-word rule`);
+    b.keys.forEach((k, i) => {
+      const at = `${b.title} p${i + 1}`;
+      if (!/^[a-z']+$/.test(k)) sixProbs.push(`${at}: key "${k}" is not lower-case letters (Echo would show it as written)`);
+      if (!(b.pages[i] || "").split(" ").map(spanWord).includes(k)) sixProbs.push(`${at}: key "${k}" is not a whole word on its page`);
+      const prob = sixKeyProb(b.sound, k, at);
+      if (prob) sixProbs.push(`${at}: ${prob}`);
+      if (ELSEWHERE[at] === k) named.ELSEWHERE.push(at);
+      if (R_TWICE[at] === k) named.R_TWICE.push(at);
+    });
+  }
+  ok("…every key word of a six-page book is a word on its own page that starts with the book's sound before a vowel, by its pronouncing entry",
+    six.reduce((n, b) => n + b.keys.length, 0) === 78 && sixProbs.length === 0, sixProbs.slice(0, 8).join(" | "));
+  ok("…but for the words listed by name: \"bath\" (no word on that page starts with its th) and \"rory\" (two r sounds), and each list still names a real key",
+    JSON.stringify(named.ELSEWHERE) === JSON.stringify(Object.keys(ELSEWHERE)) && JSON.stringify(named.R_TWICE) === JSON.stringify(Object.keys(R_TWICE)), JSON.stringify(named));
+  ok("…and the rule would catch the next one: \"corn\" is no R word, \"shh\" has no vowel after it, \"rooster\" and \"river\" carry a second r-coloured sound, \"bath\" passes only on its own page",
+    ["corn", "rooster", "river", "rory"].every((w) => sixKeyProb("R", w, "Ruby the Rooster p5")) && !sixKeyProb("R", "rows", "Ruby the Rooster p5")
+      && sixKeyProb("SH", "shh", "Shelly the Sheep p3") && sixKeyProb("SH", "fish", "Shelly the Sheep p2") && !sixKeyProb("SH", "she", "Shelly the Sheep p5")
+      && sixKeyProb("TH", "bath", "Theo the Sloth p4") && !sixKeyProb("TH", "bath", "Theo the Sloth p5") && sixKeyProb("TH", "then", "Theo the Sloth p5"),
+    JSON.stringify(["corn", "rooster", "river", "rory", "rows"].map((w) => w + ": " + sixKeyProb("R", w, "Ruby the Rooster p5"))));
+  // A key the reader can't find fails silently (Echo asks, nothing glows), so
+  // every one of them goes through the reader's own line and its own
+  // highlighter: exactly one word lights up, and it is the key.
+  //
+  // And the ORANGE LETTERS in that word are the ones Echo's bubble shows.
+  // Orange means "these letters make the sound". The line and the bubble are
+  // on screen together, on the word the child is asked to say, and they used
+  // to disagree on 21 of the six-page books' 78 words: the old line coloured
+  // every letter equal to the sound's first letter ("[s]heep" beside the
+  // bubble's "[sh]eep", "[c]hi[c]k", "ba[t]h", "ca[k]e", and "cow" with no
+  // orange at all). So for every page of every book: the lit word carries one
+  // mark, the bubble carries one mark, and they are the same letters at the
+  // same place in the word. In a six-page book nothing else on the line is
+  // orange (the old tint also lit "sips" in the SH book and "feet" in the TH
+  // one), the mark is a spelling of the book's sound and never the whole
+  // word (soundMark's answer when it isn't sure), and it starts the word
+  // everywhere but in "bath". The reader always tells soundMark "start of the
+  // word"; "ba[th]" comes from a fallback inside it, which this pins.
+  const SPELLS = { R: ["r"], S: ["s"], L: ["l"], K: ["k", "c"], SH: ["sh"], CH: ["ch"], TH: ["th"], G: ["g"], F: ["f"] };
+  const lit = await pg.evaluate(() => {
+    const rows = [], keepStage = bkStage.innerHTML, keepBook = BOOK, tmp = document.createElement("div");
+    const norm = (w) => w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "");
+    // [letters before the mark, the mark], lower-case letters only; null unless there is exactly one mark
+    const mark = (el) => {
+      const bs = el ? el.querySelectorAll("b.snd") : [];
+      if (bs.length !== 1) return null;
+      const r = document.createRange(); r.setStart(el, 0); r.setEndBefore(bs[0]);
+      return [r.toString().toLowerCase().replace(/[^a-z']/g, ""), bs[0].textContent.toLowerCase()];
+    };
+    STORIES.forEach((b) => b.pages.forEach((p, i) => {
+      const k = (b.keys || [])[i];
+      bkStage.innerHTML = '<div class="bktext">' + lineHTML(b, i) + "</div>";
+      markKey(k);
+      const kw = bkStage.querySelectorAll(".bktext .kw");
+      BOOK = b; tmp.innerHTML = askHTML(keyShown(k));
+      rows.push({ at: b.title + " p" + (i + 1), six: !!b.painted, sound: b.sound, key: k, lit: kw.length === 1 ? norm(kw[0].textContent) : null,
+        line: mark(kw[0]), bubble: mark(tmp.querySelector(".bkw")), orange: bkStage.querySelectorAll(".bktext b.snd").length });
+    }));
+    BOOK = keepBook; bkStage.innerHTML = keepStage;
+    return rows;
+  });
+  const show = (r) => r.at + ": " + r.key + " line=" + JSON.stringify(r.line) + " bubble=" + JSON.stringify(r.bubble);
+  const dark = lit.filter((r) => r.lit !== r.key);
+  ok("…and the reader lights up every key word on its page, in every book (" + lit.length + " pages)",
+    lit.length === all.reduce((n, b) => n + b.pages.length, 0) && lit.length >= 438 && dark.length === 0, dark.slice(0, 8).map(show).join(" | "));
+  const apart = lit.filter((r) => !r.line || !r.bubble || r.line[0] !== r.bubble[0] || r.line[1] !== r.bubble[1]);
+  ok("…with the same orange letters in the lit word as in Echo's bubble beside it, in every book", lit.length >= 438 && apart.length === 0, apart.slice(0, 8).map(show).join(" | "));
+  const sixLit = lit.filter((r) => r.six);
+  const off = sixLit.filter((r) => !r.line || r.orange !== 1 || !(SPELLS[r.sound] || []).includes(r.line[1]) || r.line[1] === r.key
+    || (ELSEWHERE[r.at] === r.key ? r.line[0] === "" : r.line[0] !== ""));
+  ok("…in a six-page book that word is the only orange on the line, the letters spell the book's sound (never the whole word), and they start the word everywhere but \"bath\"",
+    sixLit.length === 78 && off.length === 0, off.slice(0, 8).map((r) => show(r) + " orange=" + r.orange).join(" | "));
+  const pin = (at) => { const r = sixLit.find((x) => x.at === at) || {}; return [r.key, r.line, r.bubble]; };
+  ok("…\"ba[th]\" in the TH book, \"[sh]e\" and \"[sh]eep\" in the SH one, \"[ch]ick\" in the CH one, \"[c]ake\" and \"[c]ow\" in the K one",
+    JSON.stringify([pin("Theo the Sloth p5"), pin("Shelly the Sheep p5"), pin("Shelly the Sheep p1"), pin("Charlie the Chick p1"), pin("Kiki the Koala p1"), pin("Kiki the Koala p5")])
+      === JSON.stringify([["bath", ["ba", "th"], ["ba", "th"]], ["she", ["", "sh"], ["", "sh"]], ["sheep", ["", "sh"], ["", "sh"]], ["chick", ["", "ch"], ["", "ch"]], ["cake", ["", "c"], ["", "c"]], ["cow", ["", "c"], ["", "c"]]]),
+    JSON.stringify(["Theo the Sloth p5", "Shelly the Sheep p5", "Shelly the Sheep p1", "Charlie the Chick p1", "Kiki the Koala p1", "Kiki the Koala p5"].map(pin)));
+
   // every fuller page is a drawn scene, and every file it names is really there:
   // the reader shows art over the sticker, so a missing file is a blank page
   const art = await pg.evaluate(() => STORIES.filter((b) => b.words).map((b) => ({ title: b.title, cover: b.cover, pages: b.pages.map((p) => p.art) })));
@@ -379,23 +502,41 @@ async function waitSpoke(pg, ms) {
 // Sep 2026) each scene is cut out of its book's picture on the phone and fills
 // the page like any wide drawn page: whole, at full width, its own edges
 // carried to the screen's, the cream card over its foot.
+//
+// Since 1 Oct 2026 they ask for a word on every page, like the twelve-page
+// books (Travis: "we want to make that something that is happening on every
+// book"): each entry carries six `keys` beside its six sentences. The
+// sentences did not change, and the hash below still says so. So Next is no
+// longer on a page when it opens: the mic rests in its place and, on a phone
+// that has never been asked, a grown-ups' question comes up. This section
+// reads the books the way a family that answers "Not now" does (one answer,
+// then Next for the rest of the visit) and presses only buttons a finger
+// could. booktest plays the other answer with a fake mic: every page asks,
+// and a voice turns it.
 {
   const lib = readFileSync(ROOT + "/library.html", "utf8");
   const SIX = ["Rory the Rabbit", "Reba the Robot", "Ruby the Rooster", "Remy the Raccoon", "Rex the Rhino", "Sunny the Seal", "Lily the Lion", "Kiki the Koala", "Shelly the Sheep", "Charlie the Chick", "Theo the Sloth", "Gus the Goat", "Fifi the Fox"];
-  const painted = [...lib.matchAll(/title: "([^"]+)", painted: "([a-z]+)", colors: \[[^\]]+\], pages: \[([\s\S]*?)\] \}/g)]
-    .map((m) => ({ title: m[1], id: m[2], lines: [...m[3].matchAll(/t: "((?:[^"\\]|\\.)*)"/g)].map((x) => x[1]) }));
+  const painted = [...lib.matchAll(/title: "([^"]+)", painted: "([a-z]+)", colors: \[[^\]]+\],\s*keys: \[([^\]]+)\],\s*pages: \[([\s\S]*?)\] \}/g)]
+    .map((m) => ({ title: m[1], id: m[2], keys: [...m[3].matchAll(/"([^"]+)"/g)].map((x) => x[1]), lines: [...m[4].matchAll(/t: "((?:[^"\\]|\\.)*)"/g)].map((x) => x[1]) }));
   const file = (id, c) => ROOT + "/assets/books/painted/" + id + (c ? "-cover" : "") + ".webp";
   ok("all 13 six-page books are painted, each with its picture and a small cover",
     painted.length === 13 && SIX.every((t) => painted.some((b) => b.title === t)) && painted.every((b) => existsSync(file(b.id)) && existsSync(file(b.id, 1))),
     JSON.stringify(painted.map((b) => b.title)));
   ok("…small enough for a phone: each book's picture under 400 KB, each cover under 40 KB",
     painted.every((b) => existsSync(file(b.id)) && statSync(file(b.id)).size < 400e3 && statSync(file(b.id, 1)).size < 40e3));
+  ok("…each with six key words beside its six sentences", painted.length === 13 && painted.every((b) => b.keys.length === 6 && b.lines.length === 6),
+    JSON.stringify(painted.filter((b) => b.keys.length !== 6 || b.lines.length !== 6).map((b) => b.title)));
+  // the keys sit outside this hash on purpose: a key word can change on
+  // Rachel's say-so without a redraw, a sentence can't
   ok("…and the 78 sentences are the ones the pictures were drawn for (change one, redraw its scene)",
     createHash("sha1").update(JSON.stringify(painted.map((b) => [b.title, b.lines]))).digest("hex") === "73b75ea59038d1d5609747e499180af69189158f");
 
   const reader = async (when, vp) => {
     const ctx = await browser.newContext({ viewport: vp || { width: 390, height: 844 } });
     const pg = await ctx.newPage(); const errs = [], got = [];
+    // a button that isn't there to press fails its check in 8 s; it doesn't
+    // hang the suite for 30 and take every section below down with it
+    pg.setDefaultTimeout(8000);
     pg.on("pageerror", (e) => errs.push(e.message));
     pg.on("request", (q) => { const m = q.url().match(/\/painted\/([a-z-]+)\.webp/); if (m) got.push(m[1]); });
     await pg.addInitScript(seed);
@@ -421,15 +562,37 @@ async function waitSpoke(pg, ms) {
   }, id);
   const fitsNow = (pg) => pg.evaluate(() => { const t = document.querySelector(".bktext").getBoundingClientRect(), n = document.getElementById("bkNext").getBoundingClientRect(), c = document.querySelector(".bkcard").getBoundingClientRect(), img = document.querySelector("#bkStage .bkart.scene img"), a = img && img.getBoundingClientRect();
     return t.bottom <= n.top && n.bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth && !!a && a.height > 150 && a.top < c.top; });
+  // a real press, as a finger would: false if the button isn't there to press
+  const tap = (pg, sel) => pg.click(sel).then(() => true, () => false);
+  const sceneUp = (pg) => pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth); }, null, { timeout: 4000 }).catch(() => {});
+  // what the bottom bar and the line show right now
+  const bar = (pg) => pg.evaluate(() => {
+    const vis = (id) => { const e = document.getElementById(id); return !!(e && !e.hidden && e.offsetParent !== null); }, b = window.__book || {};
+    const kw = document.querySelector("#bkStage .bktext .kw"), bub = document.getElementById("bkBubble");
+    return { page: b.page, mode: b.mode, primer: !!b.primer, next: vis("bkNext"), mic: vis("bkMic"), skip: vis("bkSkip"),
+      kw: kw ? kw.textContent : null, ask: bub && !bub.hidden ? document.getElementById("bkAsk").textContent : null,
+      // every orange letter on the line, each with the word it sits in, and the bubble's
+      tint: [...document.querySelectorAll("#bkStage .bktext b.snd")].map((x) => x.textContent + " in " + x.parentNode.textContent).join(", "),
+      askTint: [...document.querySelectorAll("#bkAsk b.snd")].map((x) => x.textContent).join(", ") };
+  });
+  // the grown-ups' question comes up once Echo has read the page; "Not now"
+  // gives the book back its Next for the rest of the visit
+  const question = (pg) => pg.waitForFunction(() => window.__book && window.__book.primer === true, null, { timeout: 6000 }).then(() => true, () => false);
   let r = await reader("2026-10-09T10:00:00");
   await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click();
   // the title page swaps the shelf's small copy for the full-size first scene once it is cut
   const sharp = await r.pg.waitForFunction(() => /^(blob|data):/.test((document.querySelector("#bkStage img.bkcover") || {}).src || ""), null, { timeout: 4000 }).then(() => true, () => false);
   const seen = [await scene(r.pg, "rory")];
-  let fits = true;
-  for (let i = 0; i < 6; i++) {
-    await r.pg.click("#bkNext");
-    await r.pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth); }, null, { timeout: 4000 }).catch(() => {});
+  let fits = true, pressed = await tap(r.pg, "#bkNext");   // the title page's Start
+  await sceneUp(r.pg);
+  seen.push(await scene(r.pg, "rory"));                    // page 1, as it opens
+  const asked = await question(r.pg), asking = await bar(r.pg);
+  pressed = await tap(r.pg, "#bkPrimerNo") && pressed;
+  const after = await bar(r.pg);
+  fits = fits && await fitsNow(r.pg);
+  for (let i = 1; i < 6; i++) {
+    pressed = await tap(r.pg, "#bkNext") && pressed;
+    await sceneUp(r.pg);
     seen.push(await scene(r.pg, "rory"));
     fits = fits && await fitsNow(r.pg);
   }
@@ -438,18 +601,28 @@ async function waitSpoke(pg, ms) {
   ok("…the title page at full size once it is cut (the shelf's small copy only until then)", sharp && seen[0].cover && seen[0].fullSize, JSON.stringify(seen[0]));
   ok("…each page's scene a picture of its own, filling the page like a drawn one: whole, full width, its edges carried out, never a small square",
     seen.slice(1).every((x) => !x.cover && x.fullSize && x.fullWidth && x.edges && !x.tall), JSON.stringify(seen.slice(1)));
-  ok("…no key-word moment in a six-page book: Next on every page", seen.slice(1).every((x) => x.mode === "next"), JSON.stringify(seen.map((x) => x && x.mode)));
+  ok("…a six-page book asks for its key word: the mic rests where Next was, with Skip, the page's word lit, and a grown-up is asked first",
+    asked && seen[1] && seen[1].mode === "wait" && asking.page === 0 && asking.mode === "wait" && asking.primer && !asking.next && asking.mic && asking.skip
+      && asking.kw === "rabbit" && asking.ask === "Can you say rabbit?", JSON.stringify({ asked, opened: seen[1] && seen[1].mode, asking }));
+  // "Rory the rabbit rides a red rocket." used to light all seven r's; the
+  // word to say is "rabbit", and its r is the one the bubble shows
+  ok("…and the only orange on the line is that word's own sound, the r of \"rabbit\", the same letter Echo's bubble shows; it stays when the glow goes",
+    asking.tint === "r in rabbit" && asking.askTint === "r" && after.tint === "r in rabbit", JSON.stringify({ asking: asking.tint, bubble: asking.askTint, after: after.tint }));
+  ok("…after \"Not now\" Next is back, nothing is lit or asked, and every page after reads on with it",
+    pressed && after.mode === "next" && after.next && !after.mic && !after.kw && !after.ask && seen.length === 7 && seen.slice(2).every((x) => x && x.mode === "next"),
+    JSON.stringify({ pressed, after, modes: seen.map((x) => x && x.mode) }));
   ok("…and the line and Next stay on a 390 x 844 phone below the picture", fits);
   ok("…with the book's picture downloaded once for all six pages", r.got.filter((n) => n === "rory").length === 1, JSON.stringify(r.got));
   ok("…with no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   // a small phone: the scene still shows whole above the card
   r = await reader("2026-10-09T10:00:00", { width: 320, height: 568 });
   await r.pg.locator(".bookBtn", { hasText: "Reba the Robot" }).click(); await r.pg.waitForTimeout(200);
-  await r.pg.click("#bkNext"); await r.pg.click("#bkNext");
-  await r.pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth); }, null, { timeout: 4000 }).catch(() => {});
+  // Start, the grown-up's "Not now" on page 1, then Next to page 2
+  const walked = await tap(r.pg, "#bkNext") && await question(r.pg) && await tap(r.pg, "#bkPrimerNo") && await tap(r.pg, "#bkNext");
+  await sceneUp(r.pg);
   const small = await scene(r.pg, "reba");
   ok("on a 320 x 568 phone a painted page shows its own scene over its edges, with the line and Next below it",
-    small && small.best === 1 && small.close && small.edges && await fitsNow(r.pg), JSON.stringify(small));
+    walked && small && small.best === 1 && small.close && small.edges && small.mode === "next" && await fitsNow(r.pg), JSON.stringify({ walked, small }));
   ok("…with no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   // The End's "Read again" and "All done" used to run off both sides of a
   // 375 px phone: the hidden "Hear it" button between them still took its room.
@@ -457,7 +630,9 @@ async function waitSpoke(pg, ms) {
   for (const [w, h] of [[375, 667], [320, 693]]) {
     r = await reader("2026-10-09T10:00:00", { width: w, height: h });
     await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click(); await r.pg.waitForTimeout(250);
-    for (let i = 0; i < 7; i++) { await r.pg.click("#bkNext"); await r.pg.waitForTimeout(120); }
+    // Start; "Not now" to the grown-ups' question on page 1; Next six times
+    await tap(r.pg, "#bkNext"); await question(r.pg); await tap(r.pg, "#bkPrimerNo");
+    for (let i = 0; i < 6; i++) { await tap(r.pg, "#bkNext"); await r.pg.waitForTimeout(120); }
     // Measure only once The End is on screen and its fonts have loaded: a
     // slower runner, or a fallback font still showing, is not the bug.
     await r.pg.waitForFunction(() => /The End!/.test(document.getElementById("bkStage").textContent), null, { timeout: 5000 }).catch(() => {});

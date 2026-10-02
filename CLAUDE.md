@@ -630,7 +630,7 @@ Each puts its sound at the start of a word, before a vowel, on every page, and
 nowhere else in the book (not mid-word, not at the end, not in a blend).
 Spelling can't check that, so `readtest` checks every line against
 `tests/booklex.json` (pronouncing-dictionary entries); a new word needs its
-entry there. The reader tints only the start of each book's listed `words`.
+entry there (so does a six-page book's key word). The reader tints only the start of each book's listed `words`.
 Every page is a picture in the crafted style: **all 19 fuller books were
 redrawn on 1 Oct 2026** (Travis: "every design done by claude we will be done
 with") as `cover.webp` + `p01..p12.webp` in `public/assets/books/<slug>/`.
@@ -700,13 +700,37 @@ the screen's edges, the cream card over its foot. The title page is scene 1
 way a page shows its wash and fills in; if it never comes, the old emoji
 sticker, never a blank page. The art was drawn for those exact 78 sentences,
 so `readtest` pins them (change a sentence and redraw its scene) and checks,
-by comparing pixels, that each page shows its own scene. They have no `keys`,
-so no say-the-word moment: they put the sound anywhere in a word. Codex's own
+by comparing pixels, that each page shows its own scene. Codex's own
 say-a-word-to-turn-the-page prototype was not brought over; the books
 branch's version below was, and it is ON for the twelve-page books (Travis,
 29 Sep 2026: "On now", after being told it changes what a child is asked to
-say). Rachel's review is still owed: the words, Echo's lines and what counts
-as a try are listed in that PR's body.
+say) **and, since 1 Oct 2026, for these thirteen too** (Travis: "It's doing
+it on some of the books. But we want to make that something that is happening
+on every book"). Each carries six `keys`, one a page, and no `words`. They
+put the sound anywhere in a word and their sentences can't change, but a key
+is the one word the child is asked to say, so the keys keep the twelve-page
+rule: a whole word on its own page, lower-case, that starts with the book's
+sound before a vowel by its `tests/booklex.json` entry. Where a page had such
+a word it is the key ("she", not "milkshake"; "ruby", not "rooster"). Two
+words can't, and `readtest` lists them by name so the next one is a decision:
+**"bath"** on the TH book's fifth page, where no word starts with that sound
+(the one key in the app that isn't start-of-word, while Settings tells parents
+"Sona practices each sound at the beginning of a word"; true of practice, and
+a book word is play), and **"rory"**, an R on both sides of "or", on a page
+with nothing easier. A key the reader can't find fails silently (Echo asks,
+nothing glows), so `readtest` runs every key of every book through the
+reader's own highlighter. Nothing about the moment changed for them, the age
+rule least of all: a child of 6 is not asked on the five R books, and a child
+of 4 only on the K, G and F ones. **On a six-page line only the key word has
+orange letters**, the same ones Echo's bubble shows (`tintKey`, through
+`Sona.soundMark`): those lines used to colour every letter equal to the
+sound's first letter, which on 21 of the 78 words put the orange on the wrong
+letters ("[s]heep", "[c]hi[c]k", "ba[t]h", "ca[k]e", a plain "cow") beside a
+bubble marking the right ones. `readtest` holds the lit word and the bubble to
+the same letters in every book. **Rachel's review is still owed**: the
+twelve-page words, Echo's lines and what counts as a try are listed in that
+PR's body, and these 78 words, the two named ones and the line's colouring in
+this one's.
 
 **The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
 concept boards, in `design/crafted-world/references/`). Painted scenes and game
@@ -728,9 +752,12 @@ stretched to the edges. `#bkStage .bkart.scene img` stays the only picture
 what is still missing; its box must never animate, because sona.css makes
 transitions near-instant under Reduce Motion and a box mid-transition reports
 where it WAS (that once collapsed the picture to nothing).
-Each fuller book has `keys`, one word per page (the brief's list; readtest
-holds every key to the book's sound rule). After Echo reads a page the key
-word glows, Echo asks "Can you say... <word>." and the teal mic listens:
+Every book has `keys`, one word per page (Travis, 1 Oct 2026: "we want to
+make that something that is happening on every book"). A twelve-page book's
+are the brief's list, and readtest holds each to that book's rule: the sound
+starts the word, before a vowel. A six-page book's keep the same rule but for
+two words listed by name (see "The six-page books are painted"). After Echo
+reads a page the key word glows, Echo asks "Can you say... <word>." and the teal mic listens:
 - **The check is Say & Play's**, copied into `public/saycheck.js`
   (`window.SayCheck`) because `sayplaytest` pins `sayplay.js`'s source as it
   stands. `tests/booktest.mjs` fails if a timing, the loudness bar or the

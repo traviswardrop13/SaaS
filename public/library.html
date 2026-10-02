@@ -315,6 +315,25 @@
       // picked automatically; readtest holds each to the same sound rule as
       // `words`. Which word a child is asked to say is Rachel's call.
       //
+      // EVERY book has `keys` now, the six-page ones at the foot of this list
+      // too (Travis, 1 Oct 2026: "we want to make that something that is
+      // happening on every book"): six words, one a page. Those books put the
+      // sound anywhere in a word and their sentences can't change (the pictures
+      // were painted for them), so they get no `words`: that list means "every
+      // word here that starts with the sound", and the reader and readtest
+      // both read it that way. Their KEYS keep the twelve-page rule all the
+      // same, because a key is the one word the child is asked to say: a whole
+      // word on its own page, lower-case, as the page spells it (the reader
+      // lights the word up by matching it), that STARTS with the book's sound,
+      // before a vowel, by its tests/booklex.json entry. Where a page offered
+      // a start-of-word word, that is the key ("she", not "milkshake"; "ruby",
+      // not "rooster" with its second, r-coloured vowel). Two are known and
+      // listed by name in readtest, so the next one is a decision and not an
+      // accident: "bath" (the TH book's page 5 has no word that starts with
+      // that sound, so its key ends with it) and "rory" (an R on both sides of
+      // "or"; the page's other words are no easier). The 78 words are
+      // Rachel's to review.
+      //
       // Every page is a drawn scene (`art`). Rory's were drawn by hand on a
       // Claude Design canvas; the other eighteen are built from one shared cast
       // by tools/bookart (node tools/bookart/build.mjs), so the shelf reads as
@@ -815,91 +834,104 @@
         { e: "🦆", t: "The ducks quack, \"Yum, yum!\"", art: "/assets/books/this-bear-that-bee/p10.webp", alt: "" },
         { e: "🌅", t: "Then the sun sets.", art: "/assets/books/this-bear-that-bee/p11.webp", alt: "" },
         { e: "🐻", t: "\"That was the best day!\" say the pals.", art: "/assets/books/this-bear-that-bee/p12.webp", alt: "" } ] },
-      { sound: "R", emoji: "🐰", opens: "2026-10-09", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"], pages: [
+      { sound: "R", emoji: "🐰", opens: "2026-10-09", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"],
+        keys: ["rabbit", "rainbow", "robot", "ring", "race", "rory"], pages: [
         { e: "🚀", t: "Rory the rabbit rides a red rocket." },
         { e: "🌈", t: "The rocket roars over the rainbow." },
         { e: "🤖", t: "Rory sees a robot on a rock." },
         { e: "💍", t: "The robot gives Rory a ring." },
         { e: "🌊", t: "They race around the river." },
         { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
-      { sound: "R", emoji: "🤖", opens: "2026-10-09", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"], pages: [
+      { sound: "R", emoji: "🤖", opens: "2026-10-09", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"],
+        keys: ["robot", "rose", "rabbit", "ribbon", "rain", "ready"], pages: [
         { e: "🤖", t: "Reba the robot runs on a road." },
         { e: "🌹", t: "Reba rolls past a red rose." },
         { e: "🐇", t: "A rabbit races right by." },
         { e: "🎀", t: "Reba wraps it in a ribbon." },
         { e: "🌧️", t: "Rain! They run for the roof." },
         { e: "🌈", t: "Reba the robot: ready, ready!" } ] },
-      { sound: "R", emoji: "🐓", opens: "2026-10-09", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"], pages: [
+      { sound: "R", emoji: "🐓", opens: "2026-10-09", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"],
+        keys: ["ruby", "rise", "red", "ruby", "rows", "run"], pages: [
         { e: "🐓", t: "Ruby the rooster rises at dawn." },
         { e: "🌅", t: "Ruby crows: rise and shine!" },
         { e: "🏃", t: "She runs around the red barn." },
         { e: "🪱", t: "Ruby finds a wriggly worm." },
         { e: "🌽", t: "The rooster pecks rows of corn." },
         { e: "💤", t: "Ruby rests. What a great run!" } ] },
-      { sound: "R", emoji: "🦝", opens: "2026-10-09", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"], pages: [
+      { sound: "R", emoji: "🦝", opens: "2026-10-09", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"],
+        keys: ["raccoon", "rock", "red", "rain", "reeds", "remy"], pages: [
         { e: "🦝", t: "Remy the raccoon roams the river." },
         { e: "🪨", t: "He reaches under a round rock." },
         { e: "🍇", t: "Remy grabs a ripe, red grape." },
         { e: "🚣", t: "He rows a raft in the rain." },
         { e: "🌿", t: "Remy rests in the reeds." },
         { e: "⭐", t: "Remy the raccoon: hooray!" } ] },
-      { sound: "R", emoji: "🦏", opens: "2026-10-09", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"], pages: [
+      { sound: "R", emoji: "🦏", opens: "2026-10-09", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"],
+        keys: ["rhino", "road", "rolls", "red", "rabbit", "run"], pages: [
         { e: "🦏", t: "Rex the rhino runs really fast." },
         { e: "🛣️", t: "He roars down the rocky road." },
         { e: "🌳", t: "Rex rolls in the rich, green grass." },
         { e: "🍎", t: "He reaches for a red apple." },
         { e: "🤝", t: "Rex meets a friendly rabbit." },
         { e: "🎉", t: "Run, Rex, run! Hooray!" } ] },
-      { sound: "S", emoji: "🦭", opens: "2026-10-09", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"], pages: [
+      { sound: "S", emoji: "🦭", opens: "2026-10-09", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"],
+        keys: ["seal", "silly", "sand", "soup", "song", "sunny"], pages: [
         { e: "☀️", t: "Sunny the seal sits in the sun." },
         { e: "🐍", t: "Sunny sees a silly snake." },
         { e: "🏖️", t: "The snake slides on the soft sand." },
         { e: "🥄", t: "They sip soup with a silver spoon." },
         { e: "🎵", t: "Sunny sings a silly song." },
         { e: "😴", t: "So sleepy! Sunny says goodnight." } ] },
-      { sound: "L", emoji: "🦁", opens: "2026-10-09", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"], pages: [
+      { sound: "L", emoji: "🦁", opens: "2026-10-09", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"],
+        keys: ["lion", "log", "leaf", "laughs", "look", "lily"], pages: [
         { e: "🍭", t: "Lily the lion licks a lemon lollipop." },
         { e: "🪵", t: "Lily leaps over a little log." },
         { e: "🐞", t: "A ladybug lands on a leaf." },
         { e: "😄", t: "Lily laughs: la la la!" },
         { e: "🎈", t: "They look at a yellow balloon." },
         { e: "💛", t: "Lily loves to play all day." } ] },
-      { sound: "K", emoji: "🐨", opens: "2026-10-09", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"], pages: [
+      { sound: "K", emoji: "🐨", opens: "2026-10-09", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"],
+        keys: ["cake", "king", "kite", "cookie", "cow", "kiki"], pages: [
         { e: "🍰", t: "Kiki the koala bakes a cake." },
         { e: "🔑", t: "A kind king comes with a key." },
         { e: "🪁", t: "The king flies a colorful kite." },
         { e: "🍪", t: "Kiki gives the king a cookie." },
         { e: "🐮", t: "A cat and a cow come to play." },
         { e: "🌞", t: "What a cool day for Kiki!" } ] },
-      { sound: "SH", emoji: "🐑", opens: "2026-10-09", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"], pages: [
+      { sound: "SH", emoji: "🐑", opens: "2026-10-09", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"],
+        keys: ["sheep", "shell", "ship", "shelly", "she", "shelly"], pages: [
         { e: "👟", t: "Shelly the sheep shines her shoes." },
         { e: "🐚", t: "She shows a shiny shell to a fish." },
         { e: "🚢", t: "They sail on a big ship. Shhh!" },
         { e: "⭐", t: "Shelly makes a wish on a star." },
         { e: "🥤", t: "She sips a milkshake — so fresh." },
         { e: "😴", t: "Shhh… Shelly is sleeping now." } ] },
-      { sound: "CH", emoji: "🐥", opens: "2026-10-09", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"], pages: [
+      { sound: "CH", emoji: "🐥", opens: "2026-10-09", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"],
+        keys: ["chick", "charlie", "cheese", "chair", "chips", "cheep"], pages: [
         { e: "🍒", t: "Charlie the chick chews chewy cherries." },
         { e: "🚂", t: "Charlie rides the choo-choo train." },
         { e: "🧀", t: "He munches cheese at lunch." },
         { e: "🐿️", t: "A chipmunk sits on a chair." },
         { e: "🍫", t: "They share chocolate chips. Crunch!" },
         { e: "😁", t: "Charlie chirps: cheep, cheep, cheep." } ] },
-      { sound: "TH", emoji: "🦥", opens: "2026-10-09", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"], pages: [
+      { sound: "TH", emoji: "🦥", opens: "2026-10-09", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"],
+        keys: ["thinks", "theo", "thumbs", "theo", "bath", "thank"], pages: [
         { e: "💭", t: "Theo the sloth thinks happy thoughts." },
         { e: "3️⃣", t: "Theo counts: one, two, three!" },
         { e: "👍", t: "He gives a big thumbs up." },
         { e: "🦷", t: "Theo brushes his three teeth." },
         { e: "🛁", t: "Then a warm bath — both feet in." },
         { e: "🌙", t: "Thank you, moon. Theo says goodnight." } ] },
-      { sound: "G", emoji: "🐐", opens: "2026-10-09", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"], pages: [
+      { sound: "G", emoji: "🐐", opens: "2026-10-09", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"],
+        keys: ["goat", "goose", "guitar", "gate", "giggles", "gus"], pages: [
         { e: "🌱", t: "Gus the goat grows a green garden." },
         { e: "🎁", t: "A goose gives Gus a gift." },
         { e: "🎸", t: "Gus plays a goofy guitar." },
         { e: "🍇", t: "They gobble grapes by the gate." },
         { e: "🐛", t: "A bug giggles on the grass." },
         { e: "🌟", t: "Good game, Gus. Goodnight!" } ] },
-      { sound: "F", emoji: "🦊", opens: "2026-10-09", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"], pages: [
+      { sound: "F", emoji: "🦊", opens: "2026-10-09", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"],
+        keys: ["fox", "fish", "fire", "fast", "fun", "fifi"], pages: [
         { e: "🪶", t: "Fifi the fox finds four feathers." },
         { e: "🐟", t: "Fifi feeds a funny fish." },
         { e: "🔥", t: "They warm five feet by the fire." },
@@ -1261,19 +1293,26 @@
       if (st.painted) cutScenes(st, function () {});
       showPage();
     }
-    // color every target-sound letter in a sentence (design §8 reader)
+    // the page's first word that has a sticker (the picture a page falls back to)
     function readerWord(t){ try{ var ws=String(t||"").toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/);
       for(var i=0;i<ws.length;i++){ if(window.Sona&&Sona.WORD_STICKERS&&Sona.WORD_STICKERS[ws[i]]) return ws[i]; }
       return ""; }catch(e){ return ""; } }
-    function tintSound(html, snd){ try{ var L=String(snd||"").charAt(0);
-      return html.replace(/>([^<]+)</g, function(m, txt){
-        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b class="snd">$1</b>')+"<"; // the sound's orange (action.css), matches the sound chip
-      }); }catch(e){ return html; } }
-    // A book that lists its practice words tints only the START of those words
-    // (the letters that make the sound). tintSound above colours every matching
-    // letter, which in a T book lights up "the" and in an S book lights up the z
-    // at the end of "says": a cue pointing at a sound that isn't there. LEAD is
-    // each sound's possible opening letters, longest first ("sure" is an SH word).
+    // WHICH LETTERS OF A LINE ARE ORANGE. Orange means "these letters make
+    // the practice sound", so a line colours only what it can prove.
+    // A twelve-page book lists its practice words, and tintWords colours the
+    // START of each (the letters that make the sound). LEAD is each sound's
+    // possible opening letters, longest first ("sure" is an SH word).
+    // A six-page book has no such list (its sound is anywhere in a word), so
+    // tintKey colours ONE word, the page's key word, with the very letters
+    // Echo's bubble shows for it (Sona.soundMark, the call askHTML makes).
+    // Until 1 Oct 2026 those lines coloured every letter equal to the sound's
+    // first letter: only the "s" of "sheep" in the SH book, the k-sounding c
+    // of "chick" in the CH one, the plain t of "feet" in the TH one, "cake"
+    // by its last k and "cow" not at all. Harmless-looking in a sentence, but
+    // that word now glows as the one to say, beside a bubble marking other
+    // letters, and a cue on the wrong letter is worse than none. With no
+    // soundMark to ask, the line stays plain. What a child is shown is
+    // Rachel's call; readtest holds the line and the bubble to each other.
     var LEAD = { SH: ["sh", "s"], CH: ["ch"], TH: ["th"], THV: ["th"], K: ["k", "c", "q"], N: ["kn", "n"],
       R: ["wr", "r"], F: ["ph", "f"], J: ["j", "g"], S: ["s", "c"], Z: ["z", "x"], G: ["gh", "g"] };
     function tintWords(t, book) {
@@ -1294,8 +1333,19 @@
     }
     function closeBook() { endMoment(); stopSpeech(); setBar("next"); bookEl.classList.remove("show"); bookEl.classList.remove("tall"); BOOK = null; publish(); }
 
-    function tappable(t) {
-      return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
+    function tintKey(t, book, at) {
+      var key = String((book.keys || [])[at] || "").toLowerCase(), done = !key || !(window.Sona && Sona.soundMark);
+      return t.split(" ").map(function (w) {
+        var html = escHtml(w);
+        // the first, if it's there twice: the one markKey lights up
+        if (!done && w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "") === key) { done = true; html = Sona.soundMark(w, book.sound, "i"); }
+        return "<span>" + html + "</span>";
+      }).join(" ");
+    }
+    // One page's line, each word in a span of its own (a tap reads it aloud).
+    function lineHTML(book, at) {
+      var t = book.pages[at].t;
+      return book.words ? tintWords(t, book) : tintKey(t, book, at);
     }
     // Echo stands behind the card in the clay pose for what he is doing:
     // "talk" while he reads a line, "wave" when he asks the child to have a
@@ -1429,7 +1479,7 @@
           return wash + '<div class="bkart sticker"><div class="bkglow" style="background:radial-gradient(circle,' + hexRgba(c0, .3) + ',' + hexRgba(c1, 0) + ' 70%)"></div><div class="bkpic">' + readerArt(p) + '</div></div>';
         };
         bkStage.innerHTML = artNow(page)
-          + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>', "", "talk");
+          + footHTML('<div class="bktext">' + lineHTML(BOOK, page) + '</div>', "", "talk");
         fitArt();
         if (bkStage.querySelector(".bkwait")) {
           var waitBook = BOOK, waitPage = page;
