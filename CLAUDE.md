@@ -687,6 +687,41 @@ once the queue opens on 9 Oct no book is scheduled after it and no game after
 every sound", and never a weekday.
 `readtest` pins the dates and the shelf; `landingtest` the website's count.
 
+**The other sounds' books wait behind "More books"** (Travis, 1 Oct 2026: "it
+displays the ones that are selected for the target letter and sound ... and
+the other ones ... they're still there, but like closed up ... there's like a
+button you can press to like drop down and then it shows the books for the
+other letters ... a kid, like they might be like wanting to just do the
+Halloween one"). The top shelf is chosen as before: the child's own sounds'
+books, plus any limited-time book in its window (a book with `season`, like
+October's Halloween one, which is on every child's shelf), and every readable
+book first when their own have nothing to read. Under it sits one cream pill,
+"More books (N)", N being how many books are behind it for this child (34 for
+a child on R in October), closed on every load with nothing remembered; a tap
+opens "Books for other sounds", every in-season book the top shelf left off,
+and a second tap closes it. Play mode, or a child with no sounds picked,
+already has the whole shelf, so the pill is not there. Behind it: readable
+first, then Premium, then coming, each sound's books together in the order
+`STORIES` names the sounds. Both shelves are built by one function (`addBook`
+in `library.html`), so a book there opens, locks, waits for its day and asks
+for its word exactly as it would on top; never a second copy of the button.
+The second shelf's buttons are made on the first open, because a cover on the
+page is downloaded whether or not it shows. Menus stay silent: the page's tap
+chime, no voice. **A double tap opens it once, and opens no book:** opening
+slides the pill to the top of the screen and closing lets the page spring
+back, so a second quick tap used to land on whatever had moved under the
+finger: a book the child never picked or, without Premium, "Ask a grown-up to
+help open …" for one, a push toward the plan screen nobody asked for. So for
+700 ms after either tap nothing on the page takes a tap, the pill included
+(`.wrap.settling`, lifted by a timer; scrolling and the keyboard still work).
+The pill's colours are action.css's cream pill and nothing else: the page's
+own rules for `#moreBtn` set its size and place only, and `readtest` fails on
+a colour, border or shadow there. **What this changes for a child is Rachel's
+to know:** a child on R can now open an S book, and it asks them to say that
+book's words if they are old enough for that sound (`Sona.soundNorm` of the
+BOOK's sound, not the child's). Still play, never practice data. `readtest`
+pins both shelves; `booktest` the word moment from the second one.
+
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
 holding its six scenes, three across and two down, in reading order, plus a

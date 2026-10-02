@@ -419,17 +419,17 @@ async function waitSpoke(pg, ms) {
   // premium: false is a family on the free version, paywall on: every free
   // era already judged (so no sweep adopts them), the demonstration over, no
   // trial, no subscription. The books then lock one by one.
-  const shelfAt = async (when, focus, premium = true) => {
-    const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, timezoneId: "America/Denver" });
+  const shelfAt = async (when, focus, premium = true, mode, viewport) => {
+    const ctx = await browser.newContext({ viewport: viewport || { width: 430, height: 932 }, timezoneId: "America/Denver" });
     const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
     await pg.addInitScript(seed);
-    await pg.addInitScript(([f, premium]) => {
-      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: f, onboarded: true, earlyAdopter: premium }));
+    await pg.addInitScript(([f, premium, mode]) => {
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: f, onboarded: true, earlyAdopter: premium, mode: mode || undefined }));
       if (!premium) {
         ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
         localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
       }
-    }, [focus, premium]);
+    }, [focus, premium, mode || ""]);
     await pg.clock.setFixedTime(new Date(when));
     await pg.goto("http://localhost:8153/library.html");
     await pg.waitForTimeout(500);
@@ -491,6 +491,147 @@ async function waitSpoke(pg, ms) {
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["S"], true);
   ok("with Premium, the same shelf opens Sid the Seagull, and nothing says Free or Premium",
     r.shelf[0].t === "Sid the Seagull" && !r.shelf[0].off && !r.shelf.some((b) => b.locked || /^(Free|Premium)$/.test(b.s)), JSON.stringify(r.shelf)); await r.ctx.close();
+
+  // ── MORE BOOKS: the other sounds' books, closed up under the shelf ──
+  // Travis, 1 Oct 2026: "the other ones ... they're still there, but like
+  // closed up ... there's like a button you can press to like drop down and
+  // then it shows the books for the other letters ... a kid, like they might
+  // be like wanting to just do the Halloween one." The top shelf (#shelf,
+  // every check above) is chosen exactly as before; every other in-season
+  // book waits on #moreShelf behind one closed control.
+  const more = (pg) => pg.evaluate(() => {
+    const btn = document.getElementById("moreBtn"), box = document.getElementById(btn.getAttribute("aria-controls") || "x");
+    const seen = (e) => !!(e && !e.hidden && e.offsetParent !== null);
+    return { tag: btn.tagName, type: btn.type, cream: btn.classList.contains("cream-pill"), shown: seen(btn), label: btn.textContent.trim(), open: btn.getAttribute("aria-expanded"),
+      box: seen(box), head: box ? (box.querySelector(".shelfhead h2") || {}).textContent : null, chev: !!btn.querySelector("svg"), h: btn.getBoundingClientRect().height,
+      // what the browser paints it with, beside a bare cream pill put next to it
+      paint: (() => { const bare = document.createElement("button"); bare.className = "cream-pill"; bare.type = "button"; btn.parentNode.insertBefore(bare, btn);
+        const of = (e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.backgroundImage, c.color, c.borderTopColor, c.borderBottomColor, c.borderLeftColor, c.borderRightColor, c.boxShadow, c.textShadow, c.opacity, c.filter].join(" | "); };
+        const out = { pill: of(btn), bare: of(bare) }; bare.remove(); return out; })(),
+      top: [...document.querySelectorAll("#shelf .bookBtn")].map((b) => b.querySelector(".bt").textContent),
+      // every book button on the page that is not on the top shelf, and whether a child can see it
+      rest: [...document.querySelectorAll(".bookBtn")].filter((b) => !b.closest("#shelf")).map((b) => ({ t: b.querySelector(".bt").textContent, off: b.disabled, s: b.querySelector(".bs").textContent,
+        locked: b.classList.contains("locked"), seen: seen(b), in: !!b.closest("#moreShelf"), sound: (ALL_STORIES.filter((x) => x.title === b.querySelector(".bt").textContent)[0] || {}).sound })),
+      all: ALL_STORIES.map((x) => x.title), sounds: ALL_STORIES.map((x) => x.sound).filter((x, i, a) => a.indexOf(x) === i), wide: document.documentElement.scrollWidth > innerWidth };
+  });
+  const sameSet = (a, b) => a.length === b.length && new Set(a).size === a.length && a.every((t) => b.includes(t));
+  // A tap that answers instead of throwing: a control that is missing, hidden
+  // or not taking taps must be a FAIL line with its own name, not a stack
+  // trace that ends the suite before the checks below it have run. (For a
+  // beat after More books opens or closes the page takes no tap, see "a small
+  // finger taps twice" below; a real tap waits that beat out.)
+  const tap = (pg, sel, text) => pg.locator(sel, text ? { hasText: text } : undefined).first().click({ timeout: 4000 }).then(() => true, () => false);
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"]);
+  let m = await more(r.pg);
+  ok("a child on R in October: the top shelf is their R books and the Halloween one, nothing else",
+    m.top.length === 9 && m.top.includes("Boo the Bat on Halloween") && m.top.every((t) => /^R|^Boo the Bat on Halloween$/.test(t)) && m.all.length === 43, JSON.stringify(m.top));
+  ok("…under it one closed More books control: a real button, a cream pill tall enough for a small finger, saying how many books are behind it",
+    m.tag === "BUTTON" && m.type === "button" && m.cream && m.shown && m.open === "false" && m.label === "More books (34)" && m.chev && m.h >= 48 && !m.wide, JSON.stringify(m, ["tag", "type", "cream", "shown", "open", "label", "chev", "h", "wide"]));
+  // "Never paste the hex values into a page": the tests above and loadtest
+  // only ask whether it has the class and looks light and warm, which a cream
+  // hex pasted onto it would pass. So the page may size and place the pill
+  // and nothing more, and the browser must paint it exactly as it paints a
+  // bare cream pill.
+  {
+    const css = (lib.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join("\n").replace(/\/\*[\s\S]*?\*\//g, "");
+    const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((x) => /#moreBtn\b/.test(x[1]));
+    const PAINT = /^(background(-[a-z-]+)?|color|border|border-(top|right|bottom|left)|border-((top|right|bottom|left)-)?color|box-shadow|text-shadow|outline|outline-color|fill|stroke|filter|opacity)$/i;
+    const bad = [];
+    for (const [, sel, body] of rules) for (const d of body.split(";")) {
+      const i = d.indexOf(":"); if (i === -1) continue;
+      const prop = d.slice(0, i).trim(), val = d.slice(i + 1).trim();
+      if (PAINT.test(prop) || /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i.test(val)) bad.push(sel.trim() + " { " + prop + ": " + val + " }");
+    }
+    const tag = (lib.match(/<button id="moreBtn"[^>]*>/) || [""])[0];
+    ok("…its colours are the cream pill's own: the page's rules for it set size and place, never a colour, a border or a shadow",
+      rules.length >= 2 && bad.length === 0 && /class="cream-pill"/.test(tag) && !/\sstyle=/.test(tag), bad.join(" | ") || tag);
+    ok("…and the browser paints it exactly as it paints a bare cream pill", !!m.paint.bare && m.paint.pill === m.paint.bare && !/rgba\(0, 0, 0, 0\) \| none \|/.test(m.paint.pill.slice(0, 30)), JSON.stringify(m.paint));
+  }
+  ok("…and none of the other sounds' books on the page until it is opened", !m.box && m.rest.length === 0, JSON.stringify(m.rest.map((b) => b.t)));
+  let tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("a tap opens it: \"Books for other sounds\", every in-season book that is not on the top shelf, each exactly once",
+    tapped && m.open === "true" && m.box && m.head === "Books for other sounds" && m.rest.length === 34 && m.rest.every((b) => b.in && b.seen && !m.top.includes(b.t)) && sameSet(m.top.concat(m.rest.map((b) => b.t)), m.all) && !m.wide,
+    JSON.stringify({ open: m.open, head: m.head, n: m.rest.length }));
+  ok("…the Halloween book stays on the top shelf, never behind it", m.top.includes("Boo the Bat on Halloween") && !m.rest.some((b) => b.t === "Boo the Bat on Halloween"));
+  // readable, then coming; inside each the sounds in the order STORIES names
+  // them, each sound's books side by side
+  const inOrder = (list) => { const at = list.map((b) => m.sounds.indexOf(b.sound)); return at.every((x, i) => x >= 0 && (!i || at[i - 1] <= x)); };
+  const ready = m.rest.filter((b) => !b.off), coming = m.rest.filter((b) => b.off);
+  ok("…the ones a child can read first (S, SH, L and TH, three each), then the coming ones with their day, each sound's books together",
+    JSON.stringify(ready.map((b) => b.sound)) === JSON.stringify(["S", "S", "S", "SH", "SH", "SH", "L", "L", "L", "TH", "TH", "TH"]) && ready[0].t === "Sid the Seagull" && ready.every((b) => /pages$/.test(b.s))
+      && m.rest.slice(0, 12).every((b) => !b.off) && coming.length === 22 && coming.every((b) => b.s === "Coming Oct 9") && inOrder(ready) && inOrder(coming)
+      && coming.findIndex((b) => b.t === "Kiki the Koala") === coming.findIndex((b) => b.t === "Kip's Kite") + 1, JSON.stringify(m.rest.map((b) => b.sound + ":" + b.t)));
+  // the first book there that says "Coming": a real, greyed-out button
+  const comingBook = await r.pg.evaluate(() => { const b = [...document.querySelectorAll("#moreShelf .bookBtn")].find((x) => /^Coming /.test(x.querySelector(".bs").textContent)); if (!b) return null; b.click(); return { t: b.querySelector(".bt").textContent, off: b.disabled, soon: b.classList.contains("soon") }; });
+  ok("…a coming book behind it is switched off, and can't be opened", !!comingBook && comingBook.off && comingBook.soon && !(await r.pg.evaluate(() => document.getElementById("book").classList.contains("show"))), JSON.stringify(comingBook));
+  tapped = await tap(r.pg, "#moreShelf .bookBtn", "Sid the Seagull");
+  const read = await r.pg.waitForFunction(() => document.getElementById("book").classList.contains("show"), null, { timeout: 3000 }).then(() => true, () => false);
+  ok("…and an open one opens its reader, on its own title page", tapped && read && await r.pg.evaluate(() => (document.querySelector("#bkStage .bktitle") || {}).textContent) === "Sid the Seagull", JSON.stringify({ tapped, read }));
+  await r.pg.evaluate(() => document.getElementById("bkClose").click());
+  m = await more(r.pg);
+  ok("…closing the book comes back to the shelf still open", m.open === "true" && m.box && m.rest.length === 34);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(100);
+  m = await more(r.pg);
+  ok("a second tap closes it: no other sound's book left showing", tapped && m.open === "false" && !m.box && m.rest.every((b) => !b.seen) && m.top.length === 9, JSON.stringify({ tapped, open: m.open, box: m.box }));
+  await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(100);
+  await r.pg.reload(); await r.pg.waitForTimeout(500);
+  m = await more(r.pg);
+  ok("…and it is closed again whenever the page loads, with nothing remembered", m.open === "false" && !m.box && m.rest.length === 0 && m.shown, JSON.stringify({ open: m.open, rest: m.rest.length }));
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"], true, "play");
+  m = await more(r.pg);
+  ok("play mode keeps the whole shelf on top, so there is no More books control", m.top.length === 43 && !m.shown && !m.box && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", []);
+  m = await more(r.pg);
+  ok("…nor for a child with no sounds picked: every book is already on the shelf", m.top.length === 43 && !m.shown && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
+  // the escape hatch above (every open book first, then their own) leaves only coming books behind it
+  r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("a child on K in September: the 17 books on top and the 25 behind More books make the whole shelf, with no Halloween book on either",
+    tapped && m.top.length === 17 && m.label === "More books (25)" && m.rest.length === 25 && m.rest.every((b) => b.off && b.seen) && sameSet(m.top.concat(m.rest.map((b) => b.t)), m.all) && m.all.length === 42 && !m.all.includes("Boo the Bat on Halloween"),
+    JSON.stringify({ top: m.top.length, label: m.label, rest: m.rest.length, all: m.all.length })); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"], false);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("without Premium, the open books behind More books are greyed and marked Premium", tapped && m.rest.length === 34 && m.rest.slice(0, 12).every((b) => b.locked && !b.off && b.s === "Premium") && m.rest.slice(12).every((b) => b.off && !b.locked), JSON.stringify(m.rest.slice(0, 13)));
+  tapped = await tap(r.pg, "#moreShelf .bookBtn", "Sid the Seagull"); await r.pg.waitForTimeout(100);
+  const asked2 = await r.pg.evaluate(() => ({ open: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden, msg: document.getElementById("bookMessage").textContent, url: location.pathname }));
+  ok("…and a tap on one shows the same grown-up message, naming the book and the free one, and opens nothing",
+    tapped && !asked2.open && asked2.notice && asked2.url === "/library.html" && /grown-up/.test(asked2.msg) && /Sid the Seagull/.test(asked2.msg) && /Rory and the Rainbow is free/.test(asked2.msg), JSON.stringify(asked2));
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+
+  // A SMALL FINGER TAPS TWICE (found in review, 1 Oct 2026). Opening slides
+  // the button to the top of the screen, and closing lets the page spring
+  // back, so the second tap of a double tap landed on whatever had moved
+  // under the finger: a book the child never picked (its reader opened; or,
+  // without Premium, "Ask a grown-up to help open ..." came up for it, a push
+  // toward the plan screen nobody asked for). Two taps on one spot, 250 ms
+  // apart, on a phone-sized screen where the button really does move away.
+  const twice = async (w, h, premium) => {
+    const d = await shelfAt("2026-10-01T10:00:00-06:00", ["R"], premium, "", { width: w, height: h });
+    const look = (p) => d.pg.evaluate((p) => {
+      const u = document.elementFromPoint(p.x, p.y), bk = u && u.closest(".bookBtn");
+      return { exp: document.getElementById("moreBtn").getAttribute("aria-expanded"), reader: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden,
+        msg: document.getElementById("bookMessage").textContent, path: location.pathname, settling: document.querySelector(".wrap").classList.contains("settling"),
+        under: !u ? "" : u.closest("#moreBtn") ? "the button" : bk ? "book: " + bk.querySelector(".bt").textContent : u.tagName + (u.id ? "#" + u.id : "") };
+    }, p);
+    const spot = () => d.pg.evaluate(() => { const b = document.getElementById("moreBtn"); b.scrollIntoView({ block: "nearest" }); const q = b.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; });
+    const two = async () => { const p = await spot(); await d.pg.mouse.click(p.x, p.y); await d.pg.waitForTimeout(250); await d.pg.mouse.click(p.x, p.y); await d.pg.waitForTimeout(1300); return look(p); };
+    const opened = await two(), closed = await two();
+    const out = { opened, closed, errs: d.errs.slice() }; await d.ctx.close(); return out;
+  };
+  const calm = (x) => !x.reader && !x.notice && x.msg === "" && x.path === "/library.html";
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    const prem = await twice(w, h, true), free = await twice(w, h, false);
+    ok("a double tap on More books at " + w + "×" + h + " opens it once, though the button slid out from under the finger: no reader opens for a book the child never picked",
+      prem.opened.exp === "true" && calm(prem.opened) && prem.opened.under !== "the button", JSON.stringify(prem.opened));
+    ok("…and without Premium no grown-up message comes up for a book nobody tapped", free.opened.exp === "true" && calm(free.opened) && free.opened.under !== "the button", JSON.stringify(free.opened));
+    ok("…a double tap that closes it closes it once: nothing that sprang back under the finger opens, with Premium or without",
+      prem.closed.exp === "false" && calm(prem.closed) && free.closed.exp === "false" && calm(free.closed), JSON.stringify({ prem: prem.closed, free: free.closed }));
+    ok("…and the page takes taps again a beat later, with no page errors", !prem.opened.settling && !prem.closed.settling && !free.closed.settling && prem.errs.length + free.errs.length === 0, JSON.stringify({ prem: prem.errs, free: free.errs }));
+  }
 }
 
 // ── the painted books (Codex, 28 Sep 2026) ──

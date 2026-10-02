@@ -53,6 +53,17 @@
     #bookUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:999px;padding:9px 18px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 4px 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);color:#fff;font:inherit;font-weight:800;cursor:pointer;}
     #bookMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .bookBtn .doneStar{position:absolute;top:-7px;left:2px;z-index:2;filter:drop-shadow(0 2px 2px rgba(120,60,10,.3));}
+    /* MORE BOOKS: the closed control under the child's own shelf. Its colours
+       are action.css's cream pill (a second choice); only its size and place
+       are set here: tall and full width, because a small finger presses it. */
+    #moreBtn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:56px;margin:26px 0 6px;padding:0 22px;font-size:18px;line-height:1.2;
+      scroll-margin-top:calc(14px + env(safe-area-inset-top));}
+    #moreBtn .chev{width:18px;height:18px;flex:none;transition:transform .2s;}
+    #moreBtn[aria-expanded="true"] .chev{transform:rotate(180deg);}
+    #moreBooks .shelfhead{margin-top:22px;}
+    /* a small finger taps twice: for a beat after More books opens or closes,
+       nothing on the page takes a tap (see MORE BOOKS in the script) */
+    .wrap.settling{pointer-events:none;}
     /* word box */
     .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .06s;}
@@ -229,6 +240,16 @@
 
     <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
     <div class="shelf" id="shelf"></div>
+
+    <!-- MORE BOOKS (Travis, 1 Oct 2026): every other sound's book, closed up
+         under the child's own shelf until this is tapped; a second tap closes
+         it. Closed on every load, and not shown when nothing is behind it.
+         The books are put on #moreShelf the first time it opens. -->
+    <button id="moreBtn" class="cream-pill" type="button" aria-expanded="false" aria-controls="moreBooks" hidden><span id="moreLabel">More books</span><svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div id="moreBooks" role="region" aria-labelledby="moreHead" hidden>
+      <div class="shelfhead"><h2 id="moreHead">Books for other sounds</h2></div>
+      <div class="shelf" id="moreShelf"></div>
+    </div>
 
     <!-- A Premium book asks for a grown-up, the way a Premium game on Home
          does: the child is never sent to a price, and the grown-up finds it
@@ -1079,8 +1100,14 @@
     // BOOKS1: the shelf holds the child's OWN sounds. A library full of books
     // for sounds nobody is working on is a library a child scrolls past — and
     // for a kid on /r/, a Theo-the-Sloth /th/ book is practice they were never
-    // assigned. Two escape hatches, because an empty shelf is worse than an
-    // unfocused one:
+    // assigned. That is still why the other sounds' books are CLOSED when the
+    // page opens. They are no longer out of reach (Travis, 1 Oct 2026: "the
+    // other ones ... they're still there, but like closed up ... there's like
+    // a button you can press to like drop down and then it shows the books
+    // for the other letters"): every in-season book this shelf leaves off
+    // waits behind "More books", under it (MORE, below). The shelf itself is
+    // chosen exactly as before. Two escape hatches, because an empty shelf is
+    // worse than an unfocused one:
     //   - play mode (PLAY1) rotates every sound, so it gets the whole shelf
     //   - if a filter would leave nothing this child can read, show every
     //     readable book first (for a family without Premium, the free one),
@@ -1120,7 +1147,10 @@
       try { if (libRead()[st.title]) return true; } catch (e) {}
       try { var g = JSON.parse(localStorage.getItem((window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
-    STORIES.forEach(function (st) {
+    // One book's button, for either shelf: the child's own (#shelf) and the
+    // one behind "More books" (#moreShelf) are built here and nowhere else, so
+    // a book behaves the same wherever it stands.
+    function addBook(st, host) {
       var b = document.createElement("button"), open = bookOpen(st), locked = open && LOCKED[st.title];
       // while other books are locked, the free one says it is free
       var free = open && !locked && anyLocked && !!(window.Sona && Sona.bookFree && Sona.bookFree(st.title));
@@ -1140,8 +1170,67 @@
         if (bookLocked(st)) { showLocked(st); return; }
         clearLocked(); chime("tap"); openBook(st);
       };
-      shelf.appendChild(b);
+      host.appendChild(b);
+    }
+    STORIES.forEach(function (st) { addBook(st, shelf); });
+
+    // MORE BOOKS (Travis, 1 Oct 2026: "a kid, like they might be like wanting
+    // to just do the Halloween one"). Every in-season book the shelf above
+    // left off, behind one closed control. Nothing is remembered: it is closed
+    // on every load. Play mode, or a shelf that already holds everything, has
+    // nothing behind it, so the control never shows. Readable first, then
+    // Premium, then coming (soonest first); inside a rank the sounds keep the
+    // order STORIES names them in, so one sound's books sit together.
+    // The buttons are made on the first open, not at load: a cover that is
+    // on the page is downloaded whether or not it shows, and a child who never
+    // opens this should not pay for thirty of them.
+    var SOUND_ORDER = [];
+    ALL_STORIES.forEach(function (st) { var s = String(st.sound).toUpperCase(); if (SOUND_ORDER.indexOf(s) === -1) SOUND_ORDER.push(s); });
+    var MORE = ALL_STORIES.filter(function (st) { return STORIES.indexOf(st) === -1; });
+    MORE.sort(function (a, b) {
+      var ar = shelfRank(a), br = shelfRank(b);
+      if (ar !== br) return ar - br;
+      if (ar === 2 && a.opens !== b.opens) return a.opens < b.opens ? -1 : 1;
+      var sa = SOUND_ORDER.indexOf(String(a.sound).toUpperCase()), sb = SOUND_ORDER.indexOf(String(b.sound).toUpperCase());
+      if (sa !== sb) return sa - sb;
+      return ALL_STORIES.indexOf(a) - ALL_STORIES.indexOf(b);
     });
+    (function () {
+      var btn = document.getElementById("moreBtn"), box = document.getElementById("moreBooks"), host = document.getElementById("moreShelf"), built = false;
+      var wrap = document.querySelector(".wrap"), settle = null, SETTLE_MS = 700;
+      if (!MORE.length) return;
+      document.getElementById("moreLabel").textContent = "More books (" + MORE.length + ")";
+      btn.hidden = false;
+      btn.onclick = function () {
+        var open = btn.getAttribute("aria-expanded") !== "true";
+        if (open && !built) { built = true; MORE.forEach(function (st) { addBook(st, host); }); }
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        box.hidden = !open;
+        // a menu is silent: the page's own tap chime, never a voice
+        clearLocked(); chime("tap");
+        // A SMALL FINGER TAPS TWICE. Opening slides this button to the top of
+        // the screen and closing lets the page spring back, so the second tap
+        // of a double tap landed on whatever had just moved under the finger:
+        // a book the child never picked (its reader opened, or without
+        // Premium the grown-up message for it came up, a push toward the plan
+        // screen nobody asked for), or the Home button. So for a beat nothing
+        // on the page takes a tap, this button included: a double tap opens
+        // it once, or closes it once. A timer, not the clock: it must lift
+        // even where the phone's time stands still (the tests freeze it).
+        // Scrolling and the keyboard are untouched.
+        wrap.classList.add("settling"); clearTimeout(settle);
+        settle = setTimeout(function () { wrap.classList.remove("settling"); }, SETTLE_MS);
+        if (!open) return;
+        // the control is often the last thing on the screen: bring it to the
+        // top, so the child sees the books it just opened
+        try {
+          if (box.getBoundingClientRect().top > window.innerHeight - 220) {
+            var calm = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+            btn.scrollIntoView({ block: "start", behavior: calm ? "auto" : "smooth" });
+          }
+        } catch (e) {}
+      };
+    })();
     // THE GROWN-UP MESSAGE for a Premium book, worded like Home's for a game.
     var bookNotice = document.getElementById("bookNotice");
     function clearLocked(){ bookNotice.hidden = true; document.getElementById("bookMessage").textContent = ""; }
