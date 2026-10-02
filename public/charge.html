@@ -2284,6 +2284,10 @@
         _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
+      // The step this page ended on, and its item (a sentence hands over its
+      // practice word), so the game's say-it cards never ask below what was
+      // just asked here (Sona.gameAsk). Nothing this page asks or records changes.
+      try{ sessionStorage.setItem("sona.boost.level",ITEM.level||"isolation"); sessionStorage.setItem("sona.boost.ask",String(ITEM.word||ITEM.t||"")); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
       // Calm, and after the chime rather than on top of it (24 Sep 2026).

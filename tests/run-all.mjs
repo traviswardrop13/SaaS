@@ -26,6 +26,7 @@ const SUITES = [
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
+  "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; Settings' pick, the practice page's floor, homework; it only reads
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only

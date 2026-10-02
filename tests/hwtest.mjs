@@ -181,6 +181,41 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   await ctx.close();
 }
 
+// ── 3b. the cards between a game's rounds follow the assignment too ──
+// (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
+// Fruit Slice's card may now ask a syllable, then a short word. "ree" is an R
+// at the START of a syllable: when the therapist set the end of a word, or
+// "er, ar, or", that is a different target from hers. So under that homework
+// the cards skip the syllable step: the sound, then one of the homework's own
+// words if it names any. Read on the game's own page, through the one reader
+// its card calls (Sona.gameAsk). What those cards should ask is Rachel's call.
+{
+  const { ctx, pg } = await page();
+  // the grown-up picked the top step, so the word card is open to this child
+  await pg.evaluate(() => Sona.saveProfile({ gameLevel: "word" }));
+  const asks = async (over) => {
+    await pg.evaluate(over ? CACHE(over) : `localStorage.removeItem(Sona.kkey("sona.homework.v1"))`);
+    await pg.goto("http://localhost:8191/arcade-slice.html?from=charge");
+    await pg.waitForFunction(() => window.Sona && window.SonaContent);
+    return pg.evaluate(() => ({ pos: Sona.practicePos(), top: Sona.gameTop("R"), t: [0, 1, 2].map((c) => Sona.gameAsk("R", c).text) }));
+  };
+  const syl = (t) => /^r(ah|ee|oo|oh|ay)$/.test(t);
+  let a = await asks({ sounds: ["R"], pos: "f", words: ["car", "star"] });
+  ok("end-of-word homework: the game's cards stay on the sound, then ask one of the homework's own words",
+    a.pos === "f" && a.t[0] === "rrrr" && a.t[1] === "rrrr" && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
+  ok("…and never a start-of-word syllable", !a.t.some(syl), JSON.stringify(a.t));
+  a = await asks({ sounds: ["R"], pos: "v", words: null });
+  ok("\"er, ar, or\" homework that names no words: every card stays on the bare sound",
+    a.pos === "v" && a.top === 0 && a.t.join() === "rrrr,rrrr,rrrr", JSON.stringify(a));
+  a = await asks({ sounds: ["R"], pos: "i", words: ["rain"] });
+  ok("start-of-word homework keeps the syllable step, and its word card asks the homework's word, not the app's",
+    syl(a.t[1]) && a.t[2] === "rain", JSON.stringify(a));
+  a = await asks(null);
+  ok("with no homework the same child gets the app's own steps: the sound, a syllable, then rot",
+    a.pos === "i" && a.top === 2 && syl(a.t[1]) && a.t[2] === "rot", JSON.stringify(a));
+  await ctx.close();
+}
+
 // ── 4. the sync reports a TOTAL, never a delta ──
 // A retried request must not be able to inflate a child's practice, the same
 // reason mintCoins() derives from the day's count instead of incrementing.

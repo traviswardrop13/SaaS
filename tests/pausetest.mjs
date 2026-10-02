@@ -465,6 +465,14 @@ await scenario('earned game waits for Resume and survives Home', async () => {
     await page.evaluate(() => __pauseHarness.releaseHeld());
     await page.waitForURL('**/arcade-slice.html?**');
     ok('restored handoff reaches the earned game', page.url().includes('/arcade-slice.html'));
+    // 1 Oct 2026: the hand-off also carries the step the practice page ended
+    // on and its item, so the game's say-it cards never ask below it
+    // (Sona.gameAsk). It has to survive the same trip through Home; a missing
+    // one would only mean the cards start from the sound (gameasktest).
+    await page.waitForFunction(() => window.Sona && typeof Sona.gameAsk === 'function');
+    const hand = await page.evaluate(() => { const g = (k) => sessionStorage.getItem('sona.boost.' + k); return { sound: g('sound'), level: g('level'), ask: g('ask'), bare: Sona.soundSay(g('sound')), card: Sona.gameAsk(g('sound'), 1).text }; });
+    ok('the restored handoff still carries the step practice ended on, and its item, for the game\'s cards',
+      !!hand.sound && ['isolation', 'syllable', 'word', 'sentence'].includes(hand.level) && !!hand.ask && (hand.level !== 'isolation' || hand.ask === hand.bare) && !!hand.card, hand);
     clean('earned game restore', errors);
   } finally { await context.close(); }
 });

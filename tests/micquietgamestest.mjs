@@ -563,6 +563,110 @@ await scenario("slice: no microphone", async () => {
   } finally { await context.close(); }
 });
 
+// ── Fruit Slice: a card that asks a syllable (Travis, 1 Oct 2026: "start with
+// isolation then ree rah roh then rot") ──
+// The card after a wave now asks one syllable for a child on R, in ONE line
+// of Echo's own voice. The quiet rules are the card's as before, with one
+// more thing that can be in flight: the eight-second wait before a card
+// nobody answers steps back to the bare sound. So: the mic never opens under
+// his line or inside its quiet tail; the step back closes the mic before
+// Echo speaks again; and backgrounding, "I'm done playing" and Echo's power
+// button each leave nothing waiting to speak.
+await scenario("slice: a syllable card", async () => {
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
+  // Echo's voice service answers here (it is down for the rest of this suite)
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
+  const card = () => page.evaluate(() => { const b = [...document.querySelectorAll("#revTitle .snd")];
+    return { title: document.getElementById("revTitle").textContent, snd: b.map((x) => x.textContent), sound: b[0] && getComputedStyle(b[0]).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rung: ASK.rung, text: ASK.text, rev: REV }; });
+  const nextCard = async () => { await page.evaluate(() => { waveGot = WAVES[wave].goal; }); await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); };
+  try {
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
+    await page.evaluate(() => { ASK_WAIT_MS = 1500; });
+    await nextCard();
+    let c = await card();
+    ok("slice syllable card: it asks one syllable, and only the sound's letter is orange, the rest in the card's ink",
+      c.rung === 1 && /^Say “r(ee|ah|oh)” for wave 2!$/.test(c.title) && c.snd.join() === "r" && isOrange(c.sound) && !isOrange(c.ink), c);
+    await page.waitForFunction(() => __quiet.live() === 1);
+    let l = await log(page);
+    const line = l.sounds.filter((x) => x.kind === "media").pop(), mic = l.mics[l.mics.length - 1];
+    ok("slice syllable card: Echo says it in one line, with no recording after it", said.join("|") === "To keep playing, say... " + c.text + "." && l.sounds.filter((x) => x.kind === "media").length === 1, { said, sounds: l.sounds.filter((x) => x.kind === "media").length });
+    ok("slice syllable card: the mic opens only after his line and its quiet tail", !!line && !line.live && mic.start - line.end >= 0.85, { line, mic });
+    // nobody answers: the mic closes, then Echo offers the bare sound, then it listens again
+    await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
+    await page.waitForFunction(() => ASK.rung === 0, null, { timeout: 6000 });
+    ok("slice syllable card: nobody answers, and the mic is closed before the card steps back to the bare sound", (await live(page)) === 0 && (await card()).title === "Say “rrrr” for wave 2!", await card());
+    await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
+    l = await log(page);
+    const after = l.sounds.filter((x) => x.kind === "media").slice(1), srcs = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => x.src.replace(/^.*(\/coach\/)/, "$1").replace(/^blob:.*/, "voice")));
+    ok("slice syllable card: Echo's idea and Rachel's recording play between the two mics, never under one",
+      said[1] === "I have an idea. Let's try this one." && srcs.join() === "voice,voice,/coach/say-echo/R-sound.wav" && after.every((x) => !x.live) && l.mics.length === 2, { said, srcs, after, mics: l.mics.length });
+    await voice(page, 450);
+    await page.waitForFunction(() => REV === 2 && phase === "wave" && wave === 1);
+    // the second card: backgrounding stops the line and leaves nothing waiting.
+    // Card 1 stepped back, so this card asks that same syllable again, from
+    // the line the page already holds: no second download.
+    const first = c.text;
+    await nextCard();
+    c = await card();
+    ok("slice syllable card: the card after a step back repeats that syllable, never a harder ask", c.rung === 1 && c.text === first && c.snd.join() === "r", { first, c });
+    await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "media").length === 4);
+    await page.evaluate(() => __quiet.background());
+    const cut = await page.evaluate(() => { const m = __quiet.sounds.filter((x) => x.kind === "media").pop(); return m.end !== Infinity && m.end <= __quiet.now(); });
+    await page.waitForTimeout(2200);
+    let st = await page.evaluate(() => ({ rung: ASK.rung, live: __quiet.live(), media: __quiet.sounds.filter((x) => x.kind === "media").length, requests: __quiet.requests }));
+    ok("slice syllable card: backgrounding mid-line stops Echo, opens no mic and steps nothing back while away", cut && st.rung === 1 && st.live === 0 && st.media === 4 && st.requests === 2 && said.length === 2, { cut, st, said });
+    await page.evaluate(() => __quiet.foreground());
+    await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
+    const back = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => ({ voice: /^blob:/.test(x.src), live: x.live })));
+    ok("slice syllable card: coming back says the ask as it stands (the line it already holds, no new download), then listens",
+      said.length === 2 && back.length === 5 && back[4].voice && !back[4].live && (await card()).rung === 1 && (await card()).text === c.text, { said, back });
+    // backgrounding while it listens cancels the eight-second wait with the mic
+    await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
+    await page.evaluate(() => __quiet.background());
+    await page.waitForTimeout(2200);
+    st = await page.evaluate(() => ({ rung: ASK.rung, live: __quiet.live() }));
+    ok("slice syllable card: backgrounding while it listens closes the mic and cancels the wait", st.rung === 1 && st.live === 0 && said.length === 2, { st, said });
+    await page.evaluate(() => __quiet.foreground());
+    await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
+    await voice(page, 450);
+    await page.waitForFunction(() => REV === 1 && phase === "wave" && wave === 2);
+    // Echo's power button after a syllable card: its turn is the bare sound, and the card's wait never runs in it
+    await page.waitForTimeout(1200);
+    const n = said.length;
+    await page.evaluate(() => { fruits.length = 0; nextToss = waveMs + 60000; });
+    await page.locator("#slowKeys").click();
+    await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
+    await page.waitForTimeout(2200);
+    st = await page.evaluate(() => ({ turn: !!slowTurn, rung: ASK.rung, pill: document.getElementById("slowSound").textContent, card: document.getElementById("revOvl").classList.contains("show") }));
+    ok("slice syllable card: Echo's power button still asks the bare sound, and the card's wait does not run in its turn",
+      st.turn && st.pill === "rrrr" && !st.card && said.slice(n).join("|") === "Super Slice! Say", { st, said: said.slice(n) });
+    await page.locator("#slowCancel").click(); await page.waitForFunction(() => !slowTurn);
+    noOverlap("slice syllable card", await log(page));
+    clean("slice syllable card", errors);
+  } finally { await context.close(); }
+});
+
+await scenario("slice: done on a syllable card", async () => {
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
+  try {
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
+    await page.evaluate(() => { ASK_WAIT_MS = 1500; waveGot = WAVES[wave].goal; });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
+    await page.waitForFunction(() => __quiet.sounds.some((x) => x.kind === "media"));
+    await page.evaluate(SCORED.slice);
+    await page.locator("#revDone").click();
+    await page.locator("#endOvl.show").waitFor();
+    await page.waitForTimeout(2200);
+    const l = await log(page), line = l.sounds.filter((x) => x.kind === "media");
+    ok("slice: \"I'm done playing\" mid-line stops Echo, opens no mic, and nothing is said after it",
+      line.length === 1 && line[0].end !== Infinity && l.requests === 0 && said.length === 1 && (await live(page)) === 0, { line, requests: l.requests, said });
+    clean("slice done on a syllable card", errors);
+  } finally { await context.close(); }
+});
+
 // ── Piano Tiles: the notes follow Sona's sound on/off ──
 async function tapTile(page) {
   return page.evaluate(() => {

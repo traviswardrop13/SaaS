@@ -1057,8 +1057,9 @@ solid one at a time, and this is the first:
   counts three) or after 45 seconds of play, whatever the count.
 - **A missed fruit just falls.** Nothing stops and nothing is lost; after two
   misses in a row the fruit come one at a time, bigger and slower.
-- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!"),
-  never after a miss. Its listening and quiet rules are the ones every arcade
+- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!";
+  for a child on R it may ask a syllable or a short word, see "Games ask for
+  more than the sound"), never after a miss. Its listening and quiet rules are the ones every arcade
   card shares (`micquietgamestest`); `crash()` is kept as the card's old name
   because those suites open it through it.
 - **The fruit are thrown from the stand** at the bottom of the screen. The first
@@ -1155,6 +1156,95 @@ games copy it one at a time:
   FRUIT FRENZY, SLOW-MO…) stay banned. `tests/superslicetest.mjs` plays it;
   Block Stacker, Sound Sprint and Flappy Glide keep the eight-second slow
   help (now with the same one-take sound) until each gets its own mode.
+
+**Games ask for more than the sound: Fruit Slice first, R first** (Travis, 1
+Oct 2026, by voice: "we need to add back the increase of complexity to the
+sounds in the games and start with isolation then ree rah roh then rot. and
+maybe have that be something to update in settings"). "Add back": in June the
+old speech games asked for the level a child had earned; they were deleted in
+August, and since then only the "Say it 5 times" page climbed. Every say-it
+card between rounds said the bare sound. What is built is the first slice:
+- **One reader, `Sona.gameAsk(sound, card)`** (and `gameTop`). Card 0 is the
+  bare sound; cards 1 and 2 are the two cards between rounds. The steps: the
+  sound alone ("rrrr"), then **one syllable a card** ("ree", "rah" or "roh",
+  moving on one each calendar day, so nothing is stored; never three in a
+  breath, which confused children in July), then **a short word** ("rot",
+  Travis's word: it is in no word bank and has no picture, so only a text
+  card may ask it).
+- **How far a child's cards go:** one step past what they have earned on the
+  practice page (so a new child gets a syllable on both cards, and the word
+  after two clean practice rounds), or what a grown-up picked in Settings.
+  Never below what the "Say it 5 times" page just asked: that page hands over
+  the step it ended on and its item (`sona.boost.level`, `sona.boost.ask`),
+  and a card repeats that syllable or word instead of adding a new target.
+- **Two kinds of child never get the harder cards** (`Sona.gameHold` says which, and
+  the Settings line reads it): **a child aged 2 to 4**, whatever was earned
+  or saved (Home shows a four-year-old Fruit Slice too, and Settings hides
+  the picker for that age, so the cards had to stay on the bare sound for
+  hiding it to be honest), and **any child while Sona's sound is off**
+  (only Echo's voice can model a syllable).
+- **Switched on one sound at a time.** `gamecontent.js` holds three lists
+  Rachel can read: `GAME_SYL_ON` (today `["R"]`), `GAME_SKIP` (never asked:
+  "pee"; "gee", which Echo's voice reads "jee"; the quiet th's "thee", which
+  it reads as the loud th) and `GAME_SHORT` (today `R: "rot"`). A sound goes
+  into `GAME_SYL_ON` only after someone has **listened** to its lines on a
+  phone. A sound that is not in it asks the bare sound exactly as before, so
+  nothing changed for any child who is not on R.
+- **An SLP's homework wins.** Its own words are the word card's words. When
+  its position is not the start of a word (end of word, "er, ar, or") there
+  is no syllable step, because "ree" is a start-of-word R, not her target:
+  the sound, then one of the homework's words if it names any.
+- **Fruit Slice's card is the only one that does it.** It shows the ask with
+  only the sound's letters orange and says it in ONE line of Echo's own voice
+  ("To keep playing, say... ree."), because nothing past the bare sound is
+  recorded. **A harder ask is never shown unless Echo says it.** His line
+  starts downloading as the wave ends (about 2.6 seconds before the card),
+  and the syllable is painted only once the line is in hand, just before it
+  plays. Until then the card shows the bare sound; if the line has not come
+  about three seconds after the card opens, or will not play, it stays on
+  the bare sound and plays Rachel's recording. (The first cut painted "ree"
+  and then waited up to seven seconds for a voice.) **A card nobody
+  answers** for about eight seconds closes its mic and steps back to the bare
+  sound ("I have an idea. Let's try this one.", then her recording), **and
+  the next card that round does not climb**: it asks that same syllable or
+  word again, never the next step. Echo's power button (Super Slice) still
+  asks the bare sound: Travis wanted it quick, and Apple's listener would
+  turn away a good "ree" it wrote down as "we".
+- **Honest limits.** A card hears only "a voice of the right kind". It cannot
+  tell "ree" from "rrrr" or "rot", so harder means what Echo asks, never what
+  is checked, and Echo never says "correct". Nothing said in a game moves the
+  earned level, and a heard card is exactly one game rep, never practice data.
+- **Settings has one picker** under Word position: "Between rounds in a game,
+  Echo asks for" (Sona decides · Just the sound · Sound, then syllables ·
+  Sound, syllables, word), saved per child as `profile.gameLevel`. It is a
+  ceiling for the cards and never writes the earned level. The choices are
+  short on purpose: a phone's closed picker cut the longer ones off ("Sona
+  decides (starts easy, gets h…") and two of them then read the same;
+  `kidtest` measures them at 320 px. The wording is Travis's to change. Its
+  grey line is painted from the same reader, for the sound a game will
+  really ask (the homework's sound first), so it shows only what will be
+  asked, and it names Fruit Slice because that is the only game that does
+  this yet. When something holds the cards to the bare sound the line says
+  what: Sona's sound is off, the sound is not switched on yet, or a speech
+  therapist's homework is for another part of the word. Hidden for a child
+  aged 2 to 4, whose cards keep the bare sound whatever is saved.
+- **Not built yet:** the other four round games (Piano Tiles, Block Stacker,
+  Sound Sprint, Flappy Glide: their cards are silent, so each page's mic must
+  first learn to wait for Echo's voice); the other 18 sounds; the picture
+  games, which keep whole words. Travis plays Fruit Slice on his phone and
+  hears "ree", "rah", "roh" and "rot" before any of that starts.
+- **Rachel's calls, built on defaults until she answers:** which syllables
+  and in what order; whether "rot" is the word (and the list for the other
+  sounds); the pace (syllables from day one, the word once earned, the
+  eight-second step back, and whether the card after a step back should
+  repeat the same ask, as built, or go lower); Echo's computer voice
+  modelling "ree" and "rot" rather than her own recordings; that a card asks
+  for "rot" but cannot check it; whether a grown-up may set the step by hand;
+  what the cards ask under end-of-word homework; and whether a child aged 2
+  to 4 should ever be asked a syllable (today: never).
+`tests/gameasktest.mjs` holds the reader to these rules; `slicetest`,
+`micquietgamestest` and `iphonepolishtest` play the card; `soundmap` pins the
+three lists and `kidtest` the picker.
 
 **The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows this
 week's reps, the parent corner and Progress say the same number, and

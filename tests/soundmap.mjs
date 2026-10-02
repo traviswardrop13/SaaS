@@ -143,6 +143,49 @@ ok("the consent copy states it plainly",
   ok("the word bank was read", bankWords.length > 100, `got ${bankWords.length}`);
   const badBank = bankWords.filter((w) => w.split(/\s+/).some((x) => NEVER_SAY.includes(x)));
   ok("no word in Sona.WORDS is a never-say word", badBank.length === 0, badBank.join(", "));
+
+  // ---- 7c. what a game's say-it card may ask for, past the bare sound ----
+  // (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
+  // One syllable a card, from the same generator, so the swaps above hold; a
+  // skip list for the ones Echo's computer voice would model wrong ("gee"
+  // reads "jee", "thee" is the loud th) or that are potty words ("pee"); and
+  // a switch, one sound at a time. Which syllables and which word are
+  // Rachel's calls: this holds the code to the list, not the list to a rule.
+  const on = SC && SC.GAME_SYL_ON ? [...SC.GAME_SYL_ON] : [];
+  ok("gamecontent.js exports the game asks: gameSyllables(), gameWord() and their three lists",
+    !!(SC && SC.gameSyllables && SC.gameWord && SC.GAME_SYL_ON && SC.GAME_SKIP && SC.GAME_SHORT));
+  ok("only R is switched on: a sound goes in after its lines were LISTENED to on a phone, and then here",
+    on.join() === "R", on.join());
+  const off = ALL.filter((x) => !on.includes(x));
+  ok("a sound that is not switched on gets no game syllable and no short word (its cards keep the bare sound)",
+    off.every((x) => SC.gameSyllables(x).length === 0 && SC.gameWord(x) === ""), off.filter((x) => SC.gameSyllables(x).length || SC.gameWord(x)).join(", "));
+  ok("R's game syllables are ree, rah, roh, in that order, and its short word is rot",
+    SC.gameSyllables("R").map((x) => x.t).join() === "ree,rah,roh" && SC.gameWord("R") === "rot" && Object.keys(SC.GAME_SHORT).join() === "R",
+    SC.gameSyllables("R").map((x) => x.t).join() + " · " + SC.gameWord("R"));
+  // …and what each of the others would get the day it is switched on
+  ALL.forEach((x) => { if (!SC.GAME_SYL_ON.includes(x)) SC.GAME_SYL_ON.push(x); });
+  const SKIPPED = { P: ["pee"], G: ["gee"], TH: ["thee"] }, wrong = [];
+  for (const x of ALL) {
+    const five = SC.syllables(x).map((y) => y.t), gs = SC.gameSyllables(x);
+    if (gs.length !== 3 || new Set(gs.map((y) => y.t)).size !== 3) wrong.push(`${x}: not three (${gs.map((y) => y.t).join(", ")})`);
+    gs.forEach((y) => {
+      if (!five.includes(y.t)) wrong.push(`${x}: ${y.t} is not one of syllables()`);
+      if (y.say !== y.t) wrong.push(`${x}: shows ${y.t}, says ${y.say}`);
+      if (NEVER_SAY.includes(y.t) || (SKIPPED[x] || []).includes(y.t)) wrong.push(`${x}: ${y.t} is never asked`);
+    });
+  }
+  ok("every sound's game syllables are three of its own five, none a never-say word, none on the skip list (pee, gee, the quiet th's thee)",
+    wrong.length === 0, wrong.join("; "));
+  ok("a skipped syllable is replaced by the next of that sound's five, never dropped",
+    SC.gameSyllables("P").map((x) => x.t).join() === "pah,poh,pie" && SC.gameSyllables("G").map((x) => x.t).join() === "gah,goh,goo" && SC.gameSyllables("TH").map((x) => x.t).join() === "thah,thoh,thoo",
+    ["P", "G", "TH"].map((x) => x + ": " + SC.gameSyllables(x).map((y) => y.t).join(",")).join(" · "));
+  const LEAD = { K: /^[ck]/, J: /^[jg]/, S: /^s(?!h)/, T: /^t(?!h)/, THV: /^th/ };
+  const badShort = Object.keys(SC.GAME_SHORT).filter((x) => {
+    const w = String(SC.GAME_SHORT[x]);
+    return !ALL.includes(x) || !/^[a-z]+$/.test(w) || NEVER_SAY.includes(w) || !(LEAD[x] || new RegExp("^" + x.toLowerCase())).test(w) || (w !== "rot" && !bankWords.includes(w));
+  });
+  ok("every short word is one word, starts with its sound, and (rot aside: Travis's word) is in the word bank",
+    badShort.length === 0, badShort.map((x) => x + ": " + SC.GAME_SHORT[x]).join(", "));
 }
 
 

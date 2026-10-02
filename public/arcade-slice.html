@@ -142,6 +142,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <!-- the syllables and the short word a say-it card may ask for (Sona.gameAsk reads them) -->
+  <script src="/gamecontent.js"></script>
   <!-- SUPER SLICE (Travis, 29 Sep 2026: "give them an option to say the sound
        to slow the game down ... they go into some frenzy mode or easy mode or
        beast mode when they say their target sounds"; then "1 time to get it
@@ -307,6 +309,9 @@
       var bn=$("banner"); bn.style.top=getComputedStyle(bn).top;
       phase="break"; hud(); paintSlowKeys();
       var last=wave===WAVES.length-1;
+      // Echo's line for the coming card starts downloading now, through the
+      // wave's cheer, so the card can show its ask the moment it opens.
+      if(!last) askReady(wave+1);
       setTimeout(function(){
         if(window.__ended||!playing) return;
         banner(last?"Amazing slicing!":"Wave "+(wave+1)+" done!", last?"Here comes a giant watermelon…":"Great job!");
@@ -314,7 +319,7 @@
         setTimeout(function(){
           if(window.__ended||!playing) return;
           if(last) startFinale();
-          else sayCard("Say \u201C"+SAYTXT+"\u201D for wave "+(wave+2)+"!","none");
+          else sayCard("for wave "+(wave+2)+"!","none",wave+1);
         },1700);
       },900);
     }
@@ -354,13 +359,78 @@
     // letters alone, and Sona.soundMark decides which letters they are. The
     // title arrives as plain text, so everything else in it is escaped.
     function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
-    function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
-    function sayCard(title,snd){
+    // WHAT THE CARD ASKS FOR (Travis, 1 Oct 2026: "add back the increase of
+    // complexity ... start with isolation then ree rah roh then rot"). It
+    // always said the bare sound. Card 1 and card 2 now ask what
+    // Sona.gameAsk(SND, card) says: one syllable ("ree"), then a short word
+    // ("rot"), as far as this child's cards go; a sound not switched on yet
+    // still gets the bare sound, as before. ASK is the card's ask right now.
+    // SAYTXT stays the bare sound: it is all Echo's power button ever asks.
+    // Four promises the card keeps:
+    //  - A harder ask is never shown unless Echo says it. Nothing past the
+    //    bare sound is recorded, so his line is DOWNLOADED FIRST and the
+    //    syllable is painted only once it is in hand, just before it plays
+    //    (askLineStart, speakRevive). Until then, and if the line never
+    //    comes or will not play, the card shows the bare sound. With his
+    //    voice off the reader itself answers the bare sound (Sona.gameHold).
+    //  - A card nobody answers steps back to the bare sound (askWatch).
+    //  - After a step back the next card does not climb: it asks that same
+    //    syllable or word again (askHeld). Repeat or go lower is Rachel's call.
+    //  - The card hears only "a voice of the right kind" (famOK): it cannot
+    //    tell "ree" from "rrrr" or "rot". So nothing here says "correct",
+    //    nothing moves the child's earned level, and a heard card is still
+    //    exactly one game rep (doRevive).
+    // askNext: the syllable or word this card will ask once Echo's line for
+    // it is in hand. askHeld: the ask a card stepped back from this round.
+    var ASK=null, askTail="", askNext=null, askHeld=null;
+    // Sona muted: the card says nothing at all and just listens (speakRevive).
+    function voiceOff(){ var p=S.getProfile(); return p.voiceOn===false||Number(p.volume)===0; }
+    function cardAsk(n){
+      var a=null; try{ a=S.gameAsk(SND,n); }catch(e){}
+      return a&&a.text?a:{rung:0,level:"isolation",text:SAYTXT,html:'<b class="snd">'+esc(SAYTXT)+'</b>',clip:"/coach/say-echo/"+SND+"-sound.wav",say:""};
+    }
+    // What card n (1 or 2) is to ask: the reader's answer, unless a card
+    // already stepped back this round.
+    function cardWant(n){ return n&&askHeld?askHeld:cardAsk(n); }
+    function paintAsk(){ $("revTitle").innerHTML="Say \u201C"+ASK.html+"\u201D "+esc(askTail); }
+    // ECHO'S LINE FOR A SYLLABLE OR A WORD, FETCHED BEFORE IT IS SHOWN. On a
+    // slow connection the card used to paint "ree", sit under "Listen to
+    // Echo…" with nothing said for up to seven seconds, then flip to "rrrr":
+    // a reader may already have said "ree" to a closed mic. So the download
+    // starts as the wave ends (askReady), about 2.6 s before the card; the
+    // card waits ASK_LINE_MS more for it at most; and the bytes are kept for
+    // the card's life, so coming back to the page, or a second card asking
+    // the same thing, plays at once with no second download.
+    var ASK_LINE_MS=3000, askLine=null;
+    function askLineDrop(){ if(askLine){ clearTimeout(askLine.t); try{ askLine.ctl.abort(); }catch(e){} askLine=null; } }
+    // keep: the card itself is asking. A download that already failed for
+    // this ask is its answer (the bare sound, at once), never a second wait;
+    // only the end of a wave tries a failed line again.
+    function askLineStart(a,keep){
+      if(askLine&&askLine.say===a.say&&(keep||askLine.bytes||!askLine.done)) return askLine;
+      askLineDrop();
+      var ctl=new AbortController(), L={say:a.say,bytes:null,done:false,ctl:ctl}, profile=S.getProfile();
+      L.t=setTimeout(function(){ ctl.abort(); },7000);
+      // ONE line, the ask last and after a pause, with no carrier glued to it
+      L.p=fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:"To keep playing, say... "+a.say+".",voice:profile.voiceId||"",stable:true}),signal:ctl.signal})
+        .then(function(r){ return r.ok?r.arrayBuffer():null; })
+        .then(function(b){ return b&&b.byteLength?b:null; },function(){ return null; })
+        .then(function(b){ clearTimeout(L.t); L.done=true; L.bytes=b; return b; });
+      return askLine=L;
+    }
+    function askReady(n){ try{ var a=cardWant(n); if(a.say&&REV>0&&CAN_LISTEN) askLineStart(a); }catch(e){} }
+    // tail: the round's own words after the ask ("for wave 2!"); card: which
+    // card between waves this is (1 or 2). Neither, and it is the old
+    // keep-playing card, which asks the bare sound.
+    function sayCard(tail,snd,card){
       if(!playing) return;
       playing=false; fruits=[]; trail.length=0; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
+        // The syllable or word shows at once only when Echo's line for it is
+        // already here; otherwise the bare sound, until it is (speakRevive).
+        var want=cardWant(card||0), line=want.say?askLineStart(want,true):null;
+        ASK=line&&line.bytes?want:cardAsk(0); askNext=want.say&&ASK!==want?want:null;
+        askTail=tail||"to keep playing!"; paintAsk();
         $("revHearts").innerHTML=waveDots();
         reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
@@ -416,46 +486,96 @@
       if(reviveFetch){reviveFetch.abort();reviveFetch=null;}
       if(reviveStop){var stop=reviveStop;reviveStop=null;stop();}
     }
+    // Both answer whether the sound PLAYED to its end: true only from the
+    // element's own "ended". A refused or failed element, a download that
+    // failed or timed out, and a line that was stopped all answer false.
     function reviveAudio(url,gen){return new Promise(function(resolve){
-      if(gen!==reviveVoice||!reviveWait||document.hidden)return resolve();
+      if(gen!==reviveVoice||!reviveWait||document.hidden)return resolve(false);
       var a=new Audio(url),ended=false,timer;
       var profile=S.getProfile();a.volume=profile.volume!=null?profile.volume:0.8;
-      function finish(){if(ended)return;ended=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}if(reviveStop===finish)reviveStop=null;resolve();}
-      reviveStop=finish;a.onended=finish;a.onerror=finish;timer=setTimeout(finish,15000);
+      function finish(ok){if(ended)return;ended=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}if(reviveStop===finish)reviveStop=null;resolve(ok===true);}
+      reviveStop=finish;a.onended=function(){finish(true);};a.onerror=finish;timer=setTimeout(finish,15000);
       try{var playing=a.play();if(playing&&playing.catch)playing.catch(finish);}catch(e){finish();}
     });}
     async function reviveLine(text,gen){
-      if(gen!==reviveVoice||document.hidden)return;
+      if(gen!==reviveVoice||document.hidden)return false;
       var controller=new AbortController();reviveFetch=controller;
-      var timer=setTimeout(function(){controller.abort();},7000),url;
+      var timer=setTimeout(function(){controller.abort();},7000),url,played=false;
       try{
         var profile=S.getProfile(),response=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||"",stable:true}),signal:controller.signal});
-        if(!response.ok)return;
+        if(!response.ok)return false;
         var bytes=await response.arrayBuffer();
-        if(gen!==reviveVoice||document.hidden)return;
-        url=URL.createObjectURL(S.pcmWave(bytes));await reviveAudio(url,gen);
+        if(gen!==reviveVoice||document.hidden)return false;
+        url=URL.createObjectURL(S.pcmWave(bytes));played=await reviveAudio(url,gen);
       }catch(e){}finally{clearTimeout(timer);if(url)URL.revokeObjectURL(url);if(reviveFetch===controller)reviveFetch=null;}
+      return played;
     }
-    async function speakRevive(){
-      stopReviveVoice();var gen=reviveVoice,profile=S.getProfile();
-      if(profile.voiceOn===false||Number(profile.volume)===0){openReviveMic();return;}
+    // idea: the card has just stepped back to the bare sound (askWatch), so
+    // Echo offers it as his own idea, the practice page's words for the same
+    // move, never as a demotion.
+    function reviveBytes(bytes,gen){
+      var url=URL.createObjectURL(S.pcmWave(bytes));
+      return reviveAudio(url,gen).then(function(ok){ URL.revokeObjectURL(url); return ok; });
+    }
+    async function speakRevive(idea){
+      stopReviveVoice();var gen=reviveVoice,lead=true;
+      if(voiceOff()){askNext=null;if(ASK.rung){ASK=cardAsk(0);paintAsk();}openReviveMic();return;}
       reviveSpeaking=true;listenNote("Listen to Echo…");
       // A delayed microphone request may still own the iPhone audio session.
       // Wait for it to settle and close before starting the speaker route.
       while(gen===reviveVoice&&!document.hidden&&(rv.pending||rv.st||performance.now()<Math.max(quietUntil,micClosedAt+SETTLE_MS)))await new Promise(function(done){setTimeout(done,40);});
       if(gen!==reviveVoice||document.hidden)return;
-      await reviveLine("To keep playing, say",gen);
+      if(askNext){
+        // The card is still on the bare sound, waiting for Echo's line. It
+        // gets ASK_LINE_MS more; only with the line in hand is the syllable
+        // or word painted, and it plays straight after. No line (no signal,
+        // a slow one): the card stays on the bare sound and plays its
+        // recording at once, with no second line to wait for.
+        var L=askLineStart(askNext,true),bytes=L.bytes||await Promise.race([L.p,new Promise(function(done){setTimeout(function(){done(null);},ASK_LINE_MS);})]);
+        if(gen!==reviveVoice||document.hidden)return;
+        if(bytes){ASK=askNext;paintAsk();}else{askLineDrop();lead=false;}
+        askNext=null;
+      }
+      if(ASK.say){
+        // A syllable or a word: ONE line in Echo's own voice (askLineStart),
+        // from the bytes the card already holds.
+        var said=!!(askLine&&askLine.say===ASK.say&&askLine.bytes)&&await reviveBytes(askLine.bytes,gen);
+        if(gen!==reviveVoice||document.hidden)return;
+        // It did not play (a refused element): the card goes to the bare
+        // sound at once, which IS recorded. A child never sees "ree" that
+        // nobody said.
+        if(!said){ASK=cardAsk(0);paintAsk();}
+      }
+      else if(lead)await reviveLine(idea?"I have an idea. Let's try this one.":"To keep playing, say",gen);
       // Model the real sound in Rachel's own voice, never a synthesized
       // letter name: ONE take of it (tools/soundclips.mjs), as loud as Echo's
       // words to the ear — her demo holds it up to seven times (S ran 15 s).
       // The shared switch, as practice reads it (sona.js HUMAN_CLIPS).
-      if(gen===reviveVoice&&S.ALL_SOUNDS.indexOf(SND)>=0&&S.humanClipsOn&&S.humanClipsOn())await reviveAudio("/coach/say-echo/"+SND+"-sound.wav",gen);
+      if(!ASK.say&&gen===reviveVoice&&S.ALL_SOUNDS.indexOf(SND)>=0&&S.humanClipsOn&&S.humanClipsOn())await reviveAudio(ASK.clip,gen);
       if(gen!==reviveVoice)return;
       reviveSpeaking=false;listenNote("Get ready…");quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);openReviveMic();
     }
+    // A syllable or word card nobody answers steps back to the bare sound:
+    // ASK_WAIT_MS after "I'm listening…" with nothing heard, or nothing the
+    // family check let through (for a hissy sound the first loud moment of
+    // "see" is its vowel). The mic closes first, then Echo offers the sound.
+    // closeReviveMic clears the wait, so "I'm done playing", backgrounding
+    // and Echo's power button all cancel it; coming back to the card speaks
+    // the ask as it stands and starts the wait again. The ask it stepped
+    // back from is kept (askHeld): the next card this round repeats it and
+    // never asks for more. A child who could not answer a syllable is not
+    // asked a word a minute later.
+    var ASK_WAIT_MS=8000, askT=0;
+    function askWatch(){
+      clearTimeout(askT); if(!ASK||!ASK.rung||slowTurn) return;
+      askT=setTimeout(function(){
+        if(!reviveWait||slowTurn||!ASK.rung||document.hidden) return;
+        closeReviveMic(); askHeld=ASK; ASK=cardAsk(0); paintAsk(); speakRevive(true);
+      },ASK_WAIT_MS);
+    }
     function closeReviveMic(){
       stopReviveVoice();
-      rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
+      rv.gen++; clearTimeout(rv.t); clearTimeout(askT); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
       listenNote("Get ready…");
@@ -541,7 +661,7 @@
           var q=p20(w); if(rv.floor<0||q<rv.floor) rv.floor=q;
         }
         if(rv.floor>=0){
-          if(!said){ said=true; listenNote("I'm listening…"); }
+          if(!said){ said=true; listenNote("I'm listening…"); askWatch(); }
           var thr=Math.max(0.05,rv.floor*3.5), voiced=0, shp=null;
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
