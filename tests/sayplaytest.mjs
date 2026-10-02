@@ -521,8 +521,9 @@ await scenario("racecar slow stand-in voice", async () => {
   try {
     await page.locator("#startOvl.show").waitFor();
     await page.locator("#startBtn").click();
+    // each word said as many times as the game asks (two here, 1 Oct 2026)
     for (let i = 0; i < 3; i++) {
-      const heard = await (async () => { const on = await until(page, () => window.__sayplay && window.__sayplay.listening === true, 15000); if (!on) return false; await page.waitForTimeout(80); await voice(page, 260); return true; })();
+      const heard = await sayIt(page);
       ok("racecar slow stand-in, word " + (i + 1) + ": the mic opens and the child is heard", heard && await until(page, (n) => window.__sayplay.step === n, 3000, i + 1));
     }
     const l = await log(page);
