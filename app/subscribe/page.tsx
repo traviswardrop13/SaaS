@@ -84,6 +84,12 @@ function PaidPicker() {
     const t = setTimeout(() => settle({ open: true, left: 0, cap: 50, source: "fallback", standard: "$99.99", label: "Charter" }), 2500);
     return () => clearTimeout(t);
   }, []);
+  // has this browser set a child up? (read after mount: localStorage is not
+  // there on the server render)
+  const [setUp, setSetUp] = useState(false);
+  useEffect(() => {
+    try { setSetUp(!!JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded); } catch { /* no profile */ }
+  }, []);
   const open = spots ? spots.open : true;
   const yearPrice = open ? "$59.99" : "$99.99";
   const perMonth = open ? "Under $5 a month" : "Under $8.50 a month";
@@ -239,7 +245,13 @@ function PaidPicker() {
               MONTHLY_PRICE. It is bought on the plan screen, never here. */}
           <p className="mt-3 text-center text-xs font-bold leading-relaxed text-gray-500">
             Rather pay month by month? It&apos;s $9.99 a month, charged today.{" "}
-            <a className="text-sky-700 underline" href="/subscribe.html">Choose it on the plan screen →</a>
+            {/* The plan screen sits behind the grown-ups check, which a
+                browser with no child set up answers by starting setup. So the
+                link is offered only where it leads to the plan screen; anyone
+                else is told where the choice is, in words. */}
+            {setUp
+              ? <a className="text-sky-700 underline" href="/subscribe.html">Choose it on the plan screen →</a>
+              : <>You can choose it inside Sona once your child is set up.</>}
           </p>
 
           {/* The era-four grandfather sweep ships with this build (as eras one

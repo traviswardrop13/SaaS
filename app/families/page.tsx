@@ -318,7 +318,9 @@ export default async function Landing() {
   // charter tier; the reading now comes with the tier it belongs to.
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
-    : `No card to start · Premium ${perMonthNow} · Cancel anytime`;
+    // "billed once a year" rides with it (1 Oct 2026): this page names a real
+    // $9.99-a-month plan too, and a bare "under $5 a month" reads as that.
+    : `No card to start · Premium ${perMonthNow}, billed once a year · Cancel anytime`;
   const stickyTitle = FREE_MODE ? "Free to play" : "Start free";
   const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + free games";
   const faq: [string, string][] = [

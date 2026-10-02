@@ -378,6 +378,8 @@ ok("TWO ways to pay exactly — the yearly plan and the monthly one", t.cards ==
 const buyArea = await page.evaluate(() => document.querySelector("#pickCard .planbuy").innerText);
 ok("yearly card states the 3-day trial, and the cancel promise sits with the button",
   /3 days free/i.test(t.life) && /cancel any ?time/i.test(buyArea), buyArea.slice(0, 160));
+ok("…and nothing a parent can read under that button says the monthly plan's 'charged today, then every month'",
+  !/then every month|\$9\.99 is charged/i.test(buyArea), buyArea.slice(0, 200));
 // The comparison figures did NOT come back with monthly. $119.88 really is
 // twelve months of $9.99 again, but "save $59.89" is true only while the
 // charter price lasts: at family fifty-one the yearly plan is $99.99 and the
@@ -403,7 +405,9 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
   // passed on a page with no monthly price on it at all.
   const pay = await page.evaluate(() => {
     const g = (id) => document.getElementById(id);
-    const seen = (el) => !!el && !el.hidden && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    // by what is PAINTED, never by the hidden attribute the page sets: a
+    // display rule that beats the attribute is exactly the bug to catch
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
     return {
       month: g("planMonth") ? g("planMonth").innerText : null,
       yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth") && g("planMonth").getAttribute("aria-checked"),
@@ -431,7 +435,9 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
   await page.route("**/api/checkout", (r) => { posts.push(r.request().postDataJSON()); r.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: false, error: "test: not opened" }) }); });
   const look = () => page.evaluate(() => {
     const g = (id) => document.getElementById(id);
-    const seen = (el) => !!el && !el.hidden && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    // by what is PAINTED, never by the hidden attribute the page sets: a
+    // display rule that beats the attribute is exactly the bug to catch
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
     return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, timeline: seen(g("webTL")), noChargeToday: seen(g("trialMath")), payToday: seen(g("monthMath")),
       area: document.querySelector("#pickCard .planbuy").innerText, renew: g("webRenew").innerText, heading: g("pickTitle").textContent,
       yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth").getAttribute("aria-checked") };
@@ -445,12 +451,15 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
   ok("…the free-days timeline and 'no charge today' leave the screen: nothing under the button says 'free'", !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
   ok("…and 'charged today, then every month' is what is under the button", m.payToday && /\$9\.99 is charged today, then every month/i.test(m.area), m.area.slice(0, 200));
   ok("…the small print is the monthly plan's: charged today, $9.99 a month", /charged today/i.test(m.renew) && /\$9\.99 a month/.test(m.renew) && !/3-day|a year|free/i.test(m.renew), m.renew);
+  // a family who paid on the web has no account page with a cancel button,
+  // so the new line names the way that works (the Terms say the same)
+  ok("…and it names a way to cancel that exists: an email address, not 'in your account'", /To cancel, email \S+@speaksona\.com/.test(m.renew) && !/in your account/i.test(m.renew), m.renew);
   ok("…and the heading stops promising free days", !/free days/i.test(m.heading), m.heading);
   await page.locator("#buyLife").click(); await page.waitForTimeout(250);
   ok("…and the button now buys the monthly plan", posts.length === 2 && posts[1].plan === "monthly", JSON.stringify(posts));
   await page.locator("#planLife").click(); await page.waitForTimeout(150);
   m = await look();
-  ok("picking yearly again puts every yearly line back", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && /3-day free trial/.test(m.renew) && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
+  ok("picking yearly again puts every yearly line back, and takes the monthly ones off the screen", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && !/then every month/i.test(m.area) && /3-day free trial/.test(m.renew) && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
   await page.locator("#planMonth").focus(); await page.keyboard.press("Space"); await page.waitForTimeout(100);
   const key1 = await look();
   await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100);

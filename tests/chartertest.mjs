@@ -205,8 +205,18 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
 
   const terms = src("/app/terms/page.tsx");
   ok("the Terms sell the monthly plan: its price, charged at purchase, no free trial, renewing each month",
-    new RegExp(esc + " per month").test(terms) && /no free trial/.test(terms) && /charged when you buy\s+it/.test(terms) && /the monthly plan each month/.test(terms), terms.slice(terms.indexOf("monthly"), terms.indexOf("monthly") + 200));
+    // read inside the monthly paragraph itself: the Terms say "no free trial"
+    // about the free version and the clinician plans too, and any of those
+    // would have passed a loose search
+    new RegExp("Sona Premium, monthly[\\s\\S]{0,160}" + esc + " per month[\\s\\S]{0,120}no free trial[\\s\\S]{0,120}charged when you buy\\s+it").test(terms) && /the monthly plan each month/.test(terms), terms.slice(terms.indexOf("Sona Premium, monthly"), terms.indexOf("Sona Premium, monthly") + 260));
   ok("…and no longer say it is not sold", !/no\s+longer sold|plan was retired/i.test(terms));
+  // This block prints while Sona is free too, under a sentence saying nothing
+  // is being sold: "is sold two ways" would be false there.
+  ok("…and describe two plans rather than claim a sale", /There are two Sona Premium plans/.test(terms) && !/is sold two ways/.test(terms));
+  // "Under $5 a month" beside a real $9.99-a-month plan, with nothing saying
+  // it is the yearly plan's reading, is a cheaper monthly plan that isn't sold.
+  ok("the families page's footnote says its per-month figure is billed once a year",
+    /Premium \$\{perMonthNow\}, billed once a year/.test(src("/app/families/page.tsx")));
   ok("…and keep the charter price for the yearly plan only", /charter price is for the\s+yearly plan only/.test(terms));
 
   // BOTH pricing states, comments stripped. freetest's ban on these figures

@@ -243,7 +243,9 @@ export default function SubscribeSuccess() {
               <div className="text-sm text-gray-600">
                 {plan === "annual"
                   ? <>Full access starts now — <strong>$0 charged</strong>.</>
-                  : <>Full access starts now — <strong>{fmtMoney(amount)}/month</strong>, cancel anytime.</>}
+                  // the monthly plan was charged at checkout: say so, with the
+                  // amount Stripe reports (the Terms promise this page shows it)
+                  : <>Full access starts now. <strong>{fmtMoney(amount)} was charged today</strong>, and again each month until you cancel.</>}
               </div>
             </div>
           </div>

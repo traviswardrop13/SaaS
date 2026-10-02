@@ -186,26 +186,55 @@
     body.offer .plan .reassure { margin-top:4px; }
     body.offer #planMonth, body.offer #iapPlanMo { padding-top:10px; padding-bottom:10px; margin-top:8px; }
     body.offer .planbuy { margin-top:10px; }
-    /* a short phone (iPhone SE, 667pt) keeps the button on the first screen:
-       the art becomes a strip and the type steps down. The third check ("the
-       free games stay free") gives way there to the card that says the same
-       thing in full right under the offer. */
-    @media (max-height: 700px) {
-      .offer-art { height:70px; margin-top:0; }
-      .offer-art .oc { top:8px; width:22%; border-width:3px; border-radius:13px; }
-      .offer-art .oc:nth-child(2), .offer-art .oc:nth-child(3) { top:0; }
-      .offer-art .echo { display:none; }
-      .offer-art.solo { height:84px; }
-      .offer-art.solo .oc { width:36%; }
-      .offer-art.solo .echo { display:block; width:46px; right:20%; bottom:-2px; }
-      .offer-pill { margin-top:8px; font-size:12.5px; padding:3px 11px; }
-      #offerTitle { font-size:23px; margin-top:5px; }
-      .offer-sub { font-size:13.5px; margin-top:2px; }
-      .offer-checks { margin-top:8px; gap:3px; }
-      .offer-checks li { font-size:13.5px; }
-      .offer-checks li:nth-child(3) { display:none; }
-      body.offer #pickCard, body.offer #iapCard { margin-top:11px; }
-    }
+    /* THE BUTTON STAYS ON THE FIRST SCREEN, MEASURED (1 Oct 2026). One
+       height breakpoint could not know what is on the page: a win pill, a
+       two-line headline, the charter line, the Apple card's monthly box all
+       come and go, and with two plan boxes a 736, 780 or 812-tall phone lost
+       the button under a rule written for 667. So fitOffer() (in the script)
+       measures the button and steps the page down one level at a time until
+       it fits — the picture smaller, then the type, then the third check (only
+       on the web card, where "What stays free" says the same thing in full
+       under the offer), and the picture altogether only when nothing else
+       is left. */
+    /* fitOffer() measures the moment after it changes a class. Under Reduce
+       Motion sona.css gives EVERY property a .01ms transition, and a box
+       mid-transition reports where it WAS: the fit read the old layout, ran
+       every level, and threw the picture away on phones that needed none of
+       them. So nothing the fit resizes may animate. (The buy button keeps
+       its press animation: it is not in this list and is never resized.) */
+    body.offer #offerHero, body.offer #offerHero *, body.offer #pickCard, body.offer #iapCard,
+    body.offer .planpick, body.offer .planpick *, body.offer .planbuy { transition:none !important; }
+    body.fit1 .offer-art { height:128px; }
+    body.fit1 .offer-art .oc { top:18px; width:26%; }
+    body.fit1 .offer-art .oc:nth-child(2), body.fit1 .offer-art .oc:nth-child(3) { top:2px; }
+    body.fit1 .offer-art .echo { width:72px; }
+    body.fit1 .offer-art.solo { height:142px; }
+    body.fit1 .offer-art.solo .oc { width:54%; }
+    body.fit1 .offer-art.solo .echo { width:64px; }
+    body.fit1 .offer-pill { margin-top:10px; }
+    body.fit2 .offer-art { height:70px; margin-top:0; }
+    body.fit2 .offer-art .oc { top:8px; width:22%; border-width:3px; border-radius:13px; }
+    body.fit2 .offer-art .oc:nth-child(2), body.fit2 .offer-art .oc:nth-child(3) { top:0; }
+    body.fit2 .offer-art .echo { display:none; }
+    body.fit2 .offer-art.solo { height:84px; }
+    body.fit2 .offer-art.solo .oc { width:36%; }
+    body.fit2 .offer-art.solo .echo { display:block; width:46px; right:20%; bottom:-2px; }
+    body.fit2 .offer-pill { margin-top:8px; font-size:12.5px; padding:3px 11px; }
+    body.fit2 #offerTitle { font-size:25px; margin-top:5px; }
+    body.fit2 .offer-sub { font-size:14px; margin-top:2px; }
+    body.fit2 .offer-checks { margin-top:9px; gap:4px; }
+    body.fit2.offer #pickCard, body.fit2.offer #iapCard { margin-top:11px; }
+    body.fit3 #offerTitle { font-size:23px; }
+    body.fit3 .offer-sub { font-size:13.5px; }
+    body.fit3 .offer-checks { margin-top:7px; gap:2px; }
+    body.fit3 .offer-checks li { font-size:13.5px; }
+    body.fit3.offer .plan { padding:10px 13px; }
+    body.fit3.offer .planpick .plan { padding-right:44px; }
+    body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding-top:8px; padding-bottom:8px; margin-top:7px; }
+    body.fit3.offer .planbuy { margin-top:8px; }
+    body.fit4 .offer-checks li:nth-child(3) { display:none; }
+    body.fit5 .offer-art { display:none; }
+    body.fit5 .offer-pill { margin-top:0; }
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -603,6 +632,48 @@
       }
     }
 
+    // THE BUTTON ON THE FIRST SCREEN, BY MEASURING (1 Oct 2026) — see the
+    // .fit1…fit5 note in the styles. Only the offer view is fitted; it starts
+    // from the full layout every time and adds one level at a time while the
+    // buy button's bottom edge is still below the screen (less the phone's
+    // home-bar inset and a little air). It is called again whenever something
+    // that changes the height arrives: the charter line, the Apple card's
+    // monthly box, the fonts, a rotation.
+    function fitOffer() {
+      try {
+        var b = document.body;
+        if (!b.classList.contains("offer")) return;
+        var LEVELS = ["fit1", "fit2", "fit3", "fit4", "fit5"];
+        LEVELS.forEach(function (c) { b.classList.remove(c); });
+        var btn = null;
+        ["iapBuy", "buyLife"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!btn && el && el.getBoundingClientRect().height > 0) btn = el;
+        });
+        if (!btn) return;
+        var inset = 0;
+        try {
+          var probe = document.createElement("div");
+          probe.style.cssText = "position:fixed;left:0;bottom:0;visibility:hidden;padding-bottom:env(safe-area-inset-bottom);";
+          b.appendChild(probe); inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0; b.removeChild(probe);
+        } catch (e) {}
+        var fits = function () { return btn.getBoundingClientRect().bottom + (window.pageYOffset || 0) <= window.innerHeight - inset - 8; };
+        var ft = document.getElementById("freeTierCard");
+        var freeSaid = !!ft && ft.style.display !== "none" && ft.getBoundingClientRect().height > 0;
+        for (var i = 0; i < LEVELS.length && !fits(); i++) {
+          // fit4 drops the third check ("the free games stay free"): only
+          // where the card under the offer says it in full (the web card).
+          // The Apple card has no such card, so it keeps the check and gives
+          // up the picture instead.
+          if (LEVELS[i] === "fit4" && !freeSaid) continue;
+          b.classList.add(LEVELS[i]);
+        }
+      } catch (e) {}
+    }
+    window.addEventListener("resize", fitOffer);
+    window.addEventListener("load", fitOffer);
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitOffer); } catch (e) {}
+
     // TWO WAYS TO PAY (1 Oct 2026). The plan boxes on each card are radios;
     // this wires one group: a tap, Space or Enter picks a box, the arrow keys
     // move between the ones on screen, and the picked box wears .best and
@@ -697,6 +768,7 @@
           // the timeline replaces the one-line version when it could be built
           math.style.display = (mo || tl.innerHTML) ? "none" : "";
           document.getElementById("iapTitle").textContent = mo ? "Get Sona Premium, month by month" : TITLE_YEAR;
+          fitOffer();
         }
         wirePick("iapPlans", function (plan) { IAP_PLAN = plan === "monthly" && moProduct ? "monthly" : "annual"; paintIap(); });
         // MONTHLY IS OFFERED ONLY IF THE APP STORE SELLS IT AS DESCRIBED: the
@@ -712,6 +784,7 @@
           document.getElementById("iapPlanMo").style.display = "";
           document.getElementById("iapLegalMo").hidden = false;
           document.getElementById("planLine").innerHTML = LINE_YEAR + " Or pay <b>month by month</b>, charged today.";
+          fitOffer();   // a second box just appeared above the button
         }).catch(function () {});
 
         var msg = document.getElementById("iapMsg");
@@ -870,14 +943,19 @@
         if (math) math.style.display = (mo || (tl && tl.innerHTML)) ? "none" : "";
         document.getElementById("pickTitle").textContent = mo ? "Get Sona Premium, month by month"
           : welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium";
+        // The monthly line names the way to cancel that works today: a family
+        // who paid on the web has no account page with a cancel button (the
+        // Terms say to email, and /api/portal is not linked from anywhere).
+        // "In your account" on the yearly line is older than this change.
         document.getElementById("webRenew").textContent = mo
-          ? "Sona Premium is charged today and renews at " + monthPrice + " a month until you cancel. Cancel anytime in your account."
+          ? "Sona Premium is charged today and renews at " + monthPrice + " a month until you cancel. To cancel, email hello@speaksona.com and we’ll stop it."
           : "Sona Premium renews at " + yearPrice + " a year after the 3-day free trial. Cancel anytime in your account.";
         // the header line (Settings view) names both ways to pay, whichever
         // is picked. "Under $N a month" never stands without "billed once a
         // year": beside a real monthly plan it would read as that plan's price.
         if (document.getElementById("pickCard").style.display !== "none")
           document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then " + yearPrice + "/yr — <b>" + yearPer + "</b>, billed once a year. Or " + monthPrice + " a month, charged today.";
+        fitOffer();   // the charter line, or a pick, may have moved the button
       }
       wirePick("webPlans", function (plan) { WEB_PLAN = plan === "monthly" ? "monthly" : "annual"; paintWeb(); });
       function buy(plan, value) {
@@ -930,7 +1008,12 @@
         checking = true; lf.disabled = true; paintWeb();
         // the button comes back saying what the plan picked NOW does — not a
         // label remembered from before the wait
-        var release = function () { if (settled) return; settled = true; checking = false; lf.disabled = false; paintWeb(); };
+        // It always repaints, even when the 2.5 s timer already let the button
+        // go: an answer that arrives AFTER that still re-prices the yearly
+        // figures, and #planLine and #webRenew are written only by paintWeb.
+        // Returning early on a late answer left "$59.99 a year" in the small
+        // print under a card that had just become $99.99.
+        var release = function () { if (!settled) { settled = true; checking = false; lf.disabled = false; } paintWeb(); };
         setTimeout(release, 2500);
         fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
           if (!j || !j.ok || j.free) return release();
@@ -1020,6 +1103,7 @@
             : words ? "🎉 " + who + " just said " + words + "!" : "";
         }
         if (line) { var pill = document.getElementById("offerPill"); pill.textContent = line; pill.hidden = false; }
+        fitOffer();
       } catch (e) {}
     })();
 

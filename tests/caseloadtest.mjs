@@ -1317,7 +1317,9 @@ const count = (pred) => S.calls.filter(pred).length;
     r.status === 200 && r.json.ok && r.json.interval === "month" && r.json.amountCents === 999 && r.json.trialEnd === null && r.json.plan === null, JSON.stringify(r.json));
   const succ = noComments(read("app/subscribe/success/page.tsx"));
   ok("the success page takes the plan from Stripe's interval, not from the address",
-    /j\.interval === "month" \? "monthly" : j\.interval === "year" \? "annual" : planUrl/.test(succ) && succ.indexOf('j.interval === "month"') < succ.indexOf("setPaid(true)"), "a ?plan= in the URL once chose the sentence about what was charged");
+    // working the plan out is not enough: the sentence is drawn from the
+    // `plan` state, so the answer has to be put there too
+    /j\.interval === "month" \? "monthly" : j\.interval === "year" \? "annual" : planUrl;\s*setPlan\(planQ\)/.test(succ) && succ.indexOf('j.interval === "month"') < succ.indexOf("setPaid(true)"), "a ?plan= in the URL once chose the sentence about what was charged");
   ok("…and never tells a monthly buyer they hold the charter price", /charter && plan === "annual"/.test(succ));
 
   S.customers.push({ id: "cus_fam_mo", email: "monthly.mom@example.com" });

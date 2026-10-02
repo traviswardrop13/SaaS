@@ -220,7 +220,8 @@ charter price, and **it is the one picked when the plan screen opens**.
 `caseloadtest` plays the checkout route against a fake Stripe (what each plan
 is charged, charter open and closed); `progtest` and `iaptest` play the pick on
 both cards; `firstgametest` keeps both boxes and the button on the first
-screen at 390×844 and 375×667.
+screen at seven phone sizes with the charter line showing, and re-prices
+every yearly figure when the price check answers late.
 
 What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
 surface says "**under $5 a month**" and never "$4.99 a month" (which would
@@ -237,10 +238,12 @@ App Store Connect is the first operations task of any flip (see "The iOS
 price does not live in this repo").
 
 **Known, and not fixed by the monthly change (1 Oct 2026) — Travis's call when:**
-(1) A family who paid on the WEB has no cancel button: the page says "cancel
-anytime in your account", the Terms say to email, and `/api/portal` (Stripe's
-billing page) is built but nothing links to it. A pay-today monthly plan is
-the one people cancel most. (2) A web purchase is never re-checked on the
+(1) A family who paid on the WEB has no cancel button: `/api/portal` (Stripe's
+billing page) is built but nothing links to it. So the monthly plan's small
+print says what is true ("To cancel, email hello@speaksona.com and we'll stop
+it", pinned in `progtest`), as the Terms do; the yearly card still says
+"cancel anytime in your account", which is the older, looser wording. A
+pay-today monthly plan is the one people cancel most. (2) A web purchase is never re-checked on the
 device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
 on Restore asks Stripe, so a web plan that was cancelled, or a trial that
 never became a charge, stays unlocked on that phone.
@@ -291,9 +294,16 @@ leads with the Premium games in Home's own art (`Sona.CRAFTED_CARDS`, one map
 for both pages), one line built only from what the device recorded ("Milo just
 practiced the R sound — 12 words out loud!") or the tapped game ("Milo wants to
 play Hoops"), a headline, three checks, then the plan card (two ways to pay
-since 1 Oct 2026, below) with the button on the first screen at 375×667 and
-up (there the art shrinks to a strip and the third check gives way to the
-"What stays free" card under the offer). **The line under the headline says
+since 1 Oct 2026, above) with the button on the first screen at 360×740,
+375×667 and up. **The fit is measured, never guessed from the screen's
+height:** `fitOffer()` looks at where the button actually landed and takes
+one step at a time (`body.fit1`…`fit5`: a smaller picture, a strip, tighter
+type and boxes, then the third check gives way to the "What stays free" card
+under the offer, and only last the picture goes) until it is on screen. A
+height rule failed between 701 and 855 px tall with the charter line showing.
+Everything it resizes has `transition:none`, because `sona.css` gives every
+property a near-instant transition under Reduce Motion and a box
+mid-transition reports the size it WAS. **The line under the headline says
 who Premium's games are for, never how many** (Travis, 1 Oct 2026: "a
 different way to say 6 more games today, like more games for littles and for
 bigs ... new ones on the way is fine"), and it is read from the catalog so it

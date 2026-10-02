@@ -97,7 +97,8 @@ let t = await page.evaluate(() => ({
   button: document.getElementById("iapBuy").textContent,
   buttons: document.querySelectorAll("#iapCard button.go").length,
   legal: document.getElementById("iapLegal").innerText,
-  payToday: !document.getElementById("iapMathMo").hidden && getComputedStyle(document.getElementById("iapMathMo")).display !== "none",
+  payToday: getComputedStyle(document.getElementById("iapMathMo")).display !== "none",   // painted, not the attribute
+  area: document.querySelector("#iapCard .planbuy").innerText,
   restore: !!document.getElementById("iapRestore"),
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
@@ -120,7 +121,8 @@ ok("…saying it is charged today, and never the word 'free'",
 ok("the yearly plan is the one picked on arrival, and the button starts its free days",
   t.yearPicked === "true" && t.monthPicked === "false" && t.button === "Start 3 days free", JSON.stringify([t.yearPicked, t.monthPicked, t.button]));
 ok("one button serves both plans", t.buttons === 1, String(t.buttons));
-ok("…and the 'charged today' line is not on screen under a button that starts free days", t.payToday === false, String(t.payToday));
+ok("…and the 'charged today' line is not on screen under a button that starts free days",
+  t.payToday === false && !/charged to your Apple\s*ID today/i.test(t.area), t.area.slice(0, 200));
 // Apple requires each plan's price, period and renewal terms on the paywall
 ok("the small print states both plans: yearly's trial, and monthly charged today",
   /yearly\) starts with a 3-day free trial/.test(t.legal) && /monthly\) is charged today/.test(t.legal) && /renews every month/.test(t.legal) && /renews unless canceled/.test(t.legal), t.legal);
@@ -180,7 +182,8 @@ ok("paywall dismisses on success", t.card === "none");
   };
   const look = () => page.evaluate(() => {
     const g = (id) => document.getElementById(id);
-    const seen = (el) => !!el && !el.hidden && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    // by what is PAINTED, never by the hidden attribute the page sets
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
     return { button: g("iapBuy").textContent, monthShown: seen(g("iapPlanMo")), yearPicked: g("iapPlan").getAttribute("aria-checked"), monthPicked: g("iapPlanMo").getAttribute("aria-checked"),
       timeline: seen(g("iapTL")), noChargeToday: seen(g("iapMath")), payToday: seen(g("iapMathMo")), area: document.querySelector("#iapCard .planbuy").innerText,
       legalMo: seen(g("iapLegalMo")), msg: g("iapMsg").textContent, line: g("planLine").textContent,
@@ -279,15 +282,17 @@ await web.addInitScript(() => {
 await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
-t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
+t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText, month: document.getElementById("planMonth").innerText }));
 // TWO ways to pay on the web card too (1 Oct 2026). The two figures that left
 // with monthly on 18 Sep ($119.88, "save $59.89") did NOT come back with it:
 // the saving is only true while the charter price lasts, so it would turn
 // false at family fifty-one. The per-month reading stands on its own.
 ok("web picker states the yearly plan honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
-ok("…and the monthly one: $9.99, charged today",
-  /\$9\.99\/mo/.test(t.body) && /charged today/i.test(t.body), t.body.slice(0, 300));
+// read the monthly BOX: the card's yearly timeline says "Nothing is charged
+// today", which would satisfy a "charged today" check on the whole card
+ok("…and the monthly one, in its own box: $9.99, charged today",
+  /\$9\.99\/mo/.test(t.month) && /^[^\n]*\n\s*Charged today/i.test(t.month) && !/free/i.test(t.month), JSON.stringify(t.month));
 ok("…with no was-price and no 'you save' figure",
   !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
   t.body.slice(0, 200));

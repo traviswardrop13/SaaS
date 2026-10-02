@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const COMPANY = "Wardrop Ventures LLC";
 const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 const GOVERNING_LAW = "the State of Florida, United States";
-const EFFECTIVE = "September 2026";
+const EFFECTIVE = "October 2026"; // the monthly plan went back on sale on 1 October 2026
 
 export default function TermsPage() {
   return (
@@ -266,8 +266,11 @@ export default function TermsPage() {
 function PlanTerms() {
   return (
     <>
-      Sona Premium is sold two ways: by the year, or by the month. Both open
-      the same things.
+      {/* "There are two plans", not "is sold two ways": this block renders
+          while Sona is free too, under a sentence that says nothing is being
+          sold, and has to be true there for the people still holding a plan. */}
+      There are two Sona Premium plans: one billed by the year, one billed by
+      the month. Both open the same things.
       <br />
       <br />
       <strong>Sona Premium, yearly</strong> (called Sona Yearly before
@@ -305,8 +308,9 @@ function PlanTerms() {
       month under these same terms until you cancel it.{" "}
       {!FREE_MODE && (
         <>
-          After checkout, your confirmation page shows the exact date and amount
-          of your first charge.
+          After checkout, your confirmation page shows what you were charged:
+          for the yearly plan, the exact date and amount of your first charge;
+          for the monthly plan, the amount charged that day.
         </>
       )}
       {/* That last sentence is backed by app/subscribe/success/page.tsx, which
