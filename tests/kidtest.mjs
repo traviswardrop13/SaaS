@@ -9,7 +9,7 @@
 // needs no migration. That is the case most likely to break silently, so it is
 // asserted directly.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
@@ -190,6 +190,132 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   ok("the first-run guard reads the ACTIVE child's profile",
     /sona\.kids\.v1[\s\S]{0,320}sona\.profile\.v1"\s*\+\s*\(slot/.test(today),
     "it would always read child one, so a new sibling would skip setup");
+
+  // kkey() only splits a key that is in PER_KID; handed any other key it
+  // returns it unchanged, and the call site still LOOKS per-child. That is
+  // how the Progress page's "Firsts" shelf was shared by every child on a
+  // device while its own comment said it was not. So: every key written out
+  // in a kkey("…") call, in any page or script, must be on the list.
+  const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  const sona = strip(readFileSync(ROOT + "/sona.js", "utf8"));
+  const body = (sona.match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || [])[1] || "";
+  const konst = (name) => (sona.match(new RegExp("\\b" + name + "\\s*=\\s*\"([^\"]+)\"")) || [])[1];
+  const perKid = new Set((body.match(/"[^"]+"/g) || []).map((s) => s.slice(1, -1)));
+  (body.replace(/"[^"]*"/g, "").match(/[A-Za-z_]\w*/g) || []).forEach((name) => perKid.add(konst(name)));
+  const calls = [];
+  readdirSync(ROOT).filter((f) => /\.(html|js)$/.test(f)).forEach((file) => {
+    const src = readFileSync(ROOT + "/" + file, "utf8");
+    for (const m of src.matchAll(/kkey\(\s*(["'])([^"']+)\1\s*\)/g)) calls.push({ file, key: m[2] });
+  });
+  const stray = calls.filter((c) => !perKid.has(c.key));
+  ok("the per-child list is read out of sona.js", perKid.has("sona.profile.v1") && perKid.has("sona.progress.v1") && perKid.size > 20 && !perKid.has(undefined), [...perKid].join(","));
+  ok("the check sees the pages' kkey() calls", calls.length >= 6 && calls.some((c) => c.file === "progress.html" && c.key === "sona.firsts.v1"), JSON.stringify(calls));
+  ok("every key a page hands to kkey() is on the per-child list", stray.length === 0, stray.map((c) => c.file + ": " + c.key).join(" | "));
+}
+
+// ── the Progress page's "Firsts" shelf is one child's, not the device's ──
+// (2 Oct 2026) Rows like "First clear R sound" and "First day at Words level
+// — R sound". The list was shared, so a sibling saw the other child's rows —
+// and because the page dates any climb above the level it remembered from the
+// LAST visit, a sibling on a lower level made it date, today, a level the
+// other child had held for weeks.
+{
+  const c3 = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const p3 = await c3.newPage();
+  const e3 = []; p3.on("pageerror", (e) => e3.push(e.message));
+  const openProgress = async () => {
+    await p3.goto("http://localhost:8153/progress.html");
+    await p3.waitForFunction(() => window.Sona && document.getElementById("firsts") && document.getElementById("firsts").children.length > 0, null, { timeout: 5000 }).catch(() => {});
+    return p3.evaluate(() => {
+      const d = new Date(), today = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+      let list = {}; try { list = JSON.parse(localStorage.getItem(Sona.kkey("sona.firsts.v1"))) || {}; } catch (e) {}
+      const entries = list.entries || [];
+      return {
+        key: Sona.kkey("sona.firsts.v1"),
+        // what the parent reads: the dated rows, not the grey "coming up" one
+        shown: [...document.querySelectorAll("#firsts .firstrow:not(.next) b")].map((b) => b.textContent),
+        ids: entries.map((en) => en.id).sort(),
+        dates: Object.fromEntries(entries.map((en) => [en.id, en.date])),
+        datedToday: entries.filter((en) => en.date === today).map((en) => en.label),
+      };
+    });
+  };
+  // A device with Milo (R: one clear try 20 days ago, on level 2 — Words)
+  // and, when `sibling`, Ana (R: tries but no clear one, level 0).
+  const seedShelf = (sibling, shelf) => p3.evaluate(({ sibling, shelf }) => {
+    const day = (off) => { const d = new Date(); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+    localStorage.clear(); sessionStorage.clear();
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true });
+    localStorage.setItem("sona.outcomes.v1", JSON.stringify({ R: { attempts: 6, passes: 4, tries: 6, firstAt: day(-20), lastAt: day(-20), days: { [day(-20)]: { a: 6, p: 4, tries: 6 } } } }));
+    const g = Sona.getProgress(); g.stage.R = 2; localStorage.setItem("sona.progress.v1", JSON.stringify(g));
+    if (shelf) localStorage.setItem("sona.firsts.v1", JSON.stringify(shelf === "old" ? {
+      // what a shared list looks like: Ana's rows in with Milo's, the level
+      // snapshot left at Ana's
+      entries: [
+        { id: "pass-S", label: "First clear S sound", date: day(-5) },                    // Ana's sound; Milo never said S
+        { id: "pass-R", label: "First clear R sound", date: day(-3) },                    // Ana's date on Milo's sound
+        { id: "rung-S-1", label: "First day at Syllables level — S sound", date: day(-4) }, // above Milo's S level (0)
+        { id: "rung-R-1", label: "First day at Syllables level — R sound", date: day(-10) }, // within Milo's R level
+        { id: "rung-R-4", label: "First day at Sentences level — R sound", date: "2026-07-20" }, // before a sibling could exist
+      ], rungs: { R: 0, S: 1 },
+    } : shelf));
+    if (sibling) {
+      Sona.addKid("Ana", "5");
+      Sona.saveProfile({ focusSounds: ["R"], onboarded: true });
+      localStorage.setItem(Sona.kkey("sona.outcomes.v1"), JSON.stringify({ R: { attempts: 3, passes: 0, tries: 3, firstAt: day(-1), lastAt: day(-1), days: { [day(-1)]: { a: 3, p: 0, tries: 3 } } } }));
+      Sona.switchKid("");
+    }
+    return { m20: day(-20), m10: day(-10) };
+  }, { sibling, shelf });
+
+  await p3.goto("http://localhost:8153/today.html"); await p3.waitForTimeout(400);
+
+  // 1) from a clean start: Milo, then Ana, then Milo again
+  const days = await seedShelf(true, null);
+  const a1 = await openProgress();
+  ok("a child's first clear try is on their own shelf, with its real date", a1.shown.join("|") === "First clear R sound" && a1.dates["pass-R"] === days.m20, JSON.stringify(a1));
+  await p3.evaluate(() => Sona.switchKid("k2"));
+  const b1 = await openProgress();
+  ok("each child's shelf is stored under that child", a1.key === "sona.firsts.v1" && b1.key === "sona.firsts.v1@k2", a1.key + " / " + b1.key);
+  ok("a sibling's shelf does not list the other child's firsts", b1.shown.length === 0 && b1.ids.length === 0, JSON.stringify(b1));
+  await p3.evaluate(() => Sona.switchKid(""));
+  const a2 = await openProgress();
+  ok("a level a child already held is not dated today because a sibling opened Progress", a2.datedToday.length === 0 && a2.shown.join("|") === "First clear R sound", JSON.stringify(a2));
+  // …while a real climb still is: nothing invented, nothing withheld
+  await p3.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 3; localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g)); });
+  const a3 = await openProgress();
+  ok("a level reached since the last visit is still dated", a3.datedToday.join("|") === "First day at Sentences level — R sound", JSON.stringify(a3));
+
+  // 2) the shelf travels with its child in a backup, and leaves with them
+  st = await p3.evaluate(() => {
+    localStorage.setItem("sona.firsts.v1@k2", JSON.stringify({ entries: [{ id: "pass-R", label: "First clear R sound", date: "2026-09-30" }], rungs: { R: 0 }, own: 1 }));
+    const mine = localStorage.getItem("sona.firsts.v1"), theirs = localStorage.getItem("sona.firsts.v1@k2");
+    const backup = Sona.exportString();
+    localStorage.clear();
+    const res = Sona.importData(backup);
+    const back = localStorage.getItem("sona.firsts.v1") === mine && localStorage.getItem("sona.firsts.v1@k2") === theirs;
+    const removed = Sona.removeKid("k2");
+    return { ok: res.ok, back, removed, gone: localStorage.getItem("sona.firsts.v1@k2") === null, kept: localStorage.getItem("sona.firsts.v1") === mine };
+  });
+  ok("a backup carries each child's shelf back to that child", st.ok && st.back, JSON.stringify(st));
+  ok("removing a child removes their shelf and leaves the other's alone", st.removed && st.gone && st.kept, JSON.stringify(st));
+
+  // 3) a shelf written while it was shared: the first child keeps the old
+  //    key, so theirs is the one a sibling's rows are in
+  await seedShelf(true, "old");
+  const m1 = await openProgress();
+  ok("the first child's shelf loses the rows that cannot be theirs", m1.ids.join(",") === "pass-R,rung-R-1,rung-R-4", m1.ids.join(","));
+  ok("…their own first clear try gets its own date back", m1.dates["pass-R"] === days.m20, JSON.stringify(m1.dates));
+  ok("…and the sibling's remembered level dates nothing today", m1.datedToday.length === 0, JSON.stringify(m1.datedToday));
+  const m2 = await openProgress();
+  ok("the tidy-up happens once and changes nothing on the next visit", JSON.stringify(m2.dates) === JSON.stringify(m1.dates), JSON.stringify(m2.dates));
+  await seedShelf(false, "old");
+  const s1 = await openProgress();
+  ok("with one child on the phone, nothing on the shelf is removed", ["pass-S", "pass-R", "rung-S-1", "rung-R-1", "rung-R-4"].every((id) => s1.ids.includes(id)) && s1.dates["rung-R-1"] === days.m10, s1.ids.join(","));
+  ok("no pageerrors (firsts shelf)", e3.length === 0, e3.join(" | "));
+  await c3.close();
 }
 
 // ── Settings surfaces the switcher ──
