@@ -4660,10 +4660,12 @@
   // so a stale page beside a new sona.js shows no web card rather than a card
   // whose button the server refuses.
   //
-  // IT SHIPPED true, AND WAITS FOR TRAVIS'S WORD (lib/pricing.ts says why):
-  // the app on the App Store that night had no purchase plugin, so with the
-  // website off as well nobody could have bought Premium anywhere.
-  const WEB_SALES = true;  // built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell
+  // It shipped true on 1 Oct 2026, because the app on the App Store that
+  // night had no purchase plugin. OFF since 2 Oct 2026, on Travis's word
+  // ("turn off payments on website"), the day 1.0.5 (the first build that can
+  // sell) went to App Review: until that build is live, nobody can buy
+  // Premium anywhere, and he chose that.
+  const WEB_SALES = false;  // off (Travis, 2 Oct 2026: "turn off payments on website")
   // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
   // rails, "0" hides them, anything else is the constant), so both states stay
   // played by the tests whichever way this ships. sessionStorage only, and no

@@ -256,24 +256,26 @@ device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
 on Restore asks Stripe, so a web plan that was cancelled, or a trial that
 never became a charge, stays unlocked on that phone.
 
-**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE: BUILT, AND WAITING ON THE
-APP** (Travis, 1 Oct 2026, told that a family who pays on the website has no
+**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE: ON SINCE 2 OCT 2026**
+(Travis, 1 Oct 2026, told that a family who pays on the website has no
 cancel button and that a cancelled web plan stays unlocked on the phone: "i
 dont want them paying on the website"). One switch, two copies, like
 `FREE_MODE`: `WEB_SALES` in `lib/pricing.ts` and `public/sona.js`
 (`Sona.webSales()`), pinned equal by `freetest`. It is the FAMILY web
 checkout only.
 
-**It shipped `true`: the website still sells.** The same night's review
-found that the app on the App Store (1.0.4) has **no buy button at all**: its
-build carries no RevenueCat plugin (the archives on Travis's Mac for 1.0.4
-have none; 1.0.3 build 6 had it). With the website off as well, no family
-could have bought Premium anywhere on the night his ad started. Set both
-copies to `false` when (a) a build with the purchase plugin is live, (b) its
-product is attached to RevenueCat's `full` entitlement and priced as he wants
-in App Store Connect, and (c) he says so — or on his word alone. Everything
-below is what `false` does; the code, the pages and the tests for it are in
-place, and the tests play both states whichever way it ships.
+**Both copies are `false`: the website does not sell** (Travis, 2 Oct 2026:
+"turn off payments on website then merge"). It shipped `true` on 1 Oct,
+because that night's review found the app on the App Store (1.0.4) has **no
+buy button at all**: its build carries no RevenueCat plugin (1.0.3 build 6
+had it). On 2 Oct he fixed the rest: both products sit in RevenueCat's `full`
+entitlement, the yearly price goes to $59.99 on 4 Oct with 3 free days, the
+monthly product exists at $9.99, and **1.0.5 (build 8), the first build that
+can sell, was sent to App Review**. He switched the website off the same day,
+on his word alone: **until 1.0.5 is live, nobody can buy Premium anywhere**,
+and a family on 1.0.4 is told it "can't be bought in this version of the app
+yet". Everything below is what `false` does; the tests play both states
+whichever way it ships, so turning it back on is the same two booleans.
 - **The server refuses.** `/api/checkout` answers 410 ("Sona Premium is bought
   in the Sona app on iPhone and iPad.") before it touches Stripe, and its
   plain-link GET goes to the home page. `/api/charter` answers with no price
