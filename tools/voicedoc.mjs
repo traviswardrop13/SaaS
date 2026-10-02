@@ -78,10 +78,12 @@ function coverAll(file, re, covered, what, emptyCounts) {
 }
 // The ways a page reaches the voice with a line of its own: a request to the
 // voice service, and sona.js's speak()/speakNow() (an empty line is only a
-// stop). The browser's voice (speechSynthesis.speak) is each player's last
-// resort for the same text, so it is not a line of its own.
+// stop). The browser's voice (speechSynthesis.speak(u), an utterance of the
+// same text) is each player's last resort, so it is not a line of its own;
+// nor is the say-it card's sayVoice.speak(), which takes no line (its lines
+// are arcade-sayit.js's, read below).
 const TTS_CALL = /fetch\(\s*["']\/api\/tts/;
-const SPEAK_CALL = /(?<!speechSynthesis)\.speak(?:Now)?\((?!""\))/;
+const SPEAK_CALL = /\.speak(?:Now)?\((?!""\)|\)|u\)|utterance\))/;
 
 // ───────────────────────── the app's own tables ─────────────────────────
 globalThis.window = {};
@@ -126,8 +128,17 @@ const tipRule = find(CH, /var tip=\((.*)\);\n/, "retry tip rule");
 const tipOf = (sound) => new Function("c", "soundName", "var tip=(" + tipRule.m[1] + "); return tip;")(S.cue(sound), () => soundNameOf(sound));
 const sayLineFn = liftFn(CH, "sayLine", true);
 find(CH, /if\(ITEM\.level==="isolation"\) ask="make your "\+soundName\(\)\+" sound";\n\s*else ask="say "\+\(ITEM\.display\|\|ITEM\.t\);/, "sayLine ask forms");
-find(CH, /return "Ready\? "\+CUESHORT\+", and "\+ask\+", "\+times\+"\.";/, "cued first prompt");
-find(CH, /return "Ready\? "\+ask\.charAt\(0\)\.toUpperCase\(\)\+ask\.slice\(1\)\+", "\+times\+"\.";/, "plain prompt");
+find(CH, /return "Ready\? "\+CUESHORT\+", and "\+ask\+", "\+times\+"\. Go!";/, "cued first prompt");
+find(CH, /return "Ready\? "\+ask\.charAt\(0\)\.toUpperCase\(\)\+ask\.slice\(1\)\+", "\+times\+"\. Go!";/, "plain prompt");
+// "Go!" is Echo's one shared clip (Sona.goClip), joined on after a hand-over
+// line's words; the words are asked for without it. The page's own goSplit()
+// says which part of a line is the words.
+const goDef = find(CH, /var GO="( Go!)", GO_GAP=\d+/, "the practice page's GO");
+const goSplitFn = find(CH, /function goSplit\(t\)\{return .*\}/, "function goSplit()");
+const wordsOf = (line) => { const w = new Function("GO", goSplitFn.m[0] + "\nreturn goSplit;")(goDef.m[1])(line); return w == null ? line : w; };
+const goLine = find("public/sona.js", /const GO_LINE = "([^"]*)", GO_WAIT_MS = (\d+)/, "Sona.goClip's line");
+if (goDef.m[1].trim() !== goLine.m[1]) fail(`the practice page's "Go!" (${goDef.m[1].trim()}) is not Sona.goClip's (${goLine.m[1]}).`);
+const GO = goLine.m[1];
 // Run the page's own sayLine() with the page's inputs (or placeholders, for the template rows).
 function runSayLine(env) {
   const f = new Function("NUMWORD", "soundName", "ITEM", "NEED", "CUESHORT", sayLineFn.m[0] + "\nreturn sayLine;")(env.NUMWORD, env.soundName, env.ITEM, env.NEED, env.CUESHORT);
@@ -135,6 +146,9 @@ function runSayLine(env) {
   return f();
 }
 function sayLine(sound, item, need, cuedAlready) {
+  return wordsOf(sayLineGo(sound, item, need, cuedAlready));
+}
+function sayLineGo(sound, item, need, cuedAlready) {
   return runSayLine({ NUMWORD, soundName: () => soundNameOf(sound), ITEM: item, NEED: need, CUESHORT: cueShortOf(sound), cued: cuedAlready });
 }
 const TEMPLATE_ENV = { NUMWORD: { [NEED_DEFAULT]: "{n}" }, soundName: () => "{sound}", NEED: NEED_DEFAULT, CUESHORT: "{cue}" };
@@ -146,18 +160,21 @@ const promptCall = find(CH, /function playPrompt\(\)\{\n\s*if\(mutedSpeech\(\)\)
 const soundSlotFn = find(CH, /^    function soundSlot\(text\)\{\n[\s\S]*?^    \}$/m, "function soundSlot()");
 const slotOf = (sound, text) => new Function("HUMANCLIPS", "ITEM", "SOUND", "soundName", soundSlotFn.m[0] + "\nreturn soundSlot;")(true, { level: "isolation" }, sound, () => soundNameOf(sound))(text);
 find(CH, /HUMANCLIPS=!!\(S&&S\.humanClipsOn&&S\.humanClipsOn\(\)\);/, "the practice page reads the shared sound-model switch");
-find(CH, /var packet=\{text:t,slow:!!slow,slot:soundSlot\(t\),epoch:practiceEpoch\};/, "every queued line is offered the sound slot");
+find(CH, /var words=goSplit\(t\),packet=\{text:t,line:words,slow:!!slow,slot:soundSlot\(words!=null\?words:t\),epoch:practiceEpoch\};/, "every queued line is offered the sound slot, its words apart from its Go!");
+const goJoin = find(CH, /result=await playSlot\(packet\.slot,packet\.slow,job,packet\.line!=null\);/, "her take and the Go! joined into one clip");
 const voiceDown = find(CH, /if\(result==="voice-down"\)result=await playMedia\(packet\.slot\.whole,packet\.slow,job\);/, "her whole July line when the voice service is down");
 const promptStart = find(CH, /await playPrompt\(\);/, "the first prompt of a round");
 const promptTap = find(CH, /\$\("echoBuddy"\)\.onclick=function\(\)\{.*playPrompt\(\); \};/, "tap on Echo replays the prompt");
 const turtle = find(CH, /function turtleText\(\)\{ return ITEM\.level==="isolation" \? sayLine\(\) : String\(ITEM\.say\|\|ITEM\.display\|\|ITEM\.t\); \}/, "turtle text");
 const turtleRate = find(CH, /if\(slow\)\{a\.playbackRate=(0\.\d+);/, "turtle playback rate");
 find(CH, /\$\("turtleBtn"\)\.onclick=function\(\)\{.*saySlow\(turtleText\(\)\); \};/, "turtle tap");
-const coach = find(CH, /await say\("(Let's try that one again\. )"\+tip\+"(\.)"\);/, "coaching line");
-const idea = find(CH, /await say\("(I have an idea\. Let's try this one\. )"\+\(ITEM\.level==="isolation"\?\("(Make your )"\+soundName\(\)\+"( sound)"\):\("(Say )"\+\(ITEM\.say\|\|ITEM\.t\)\)\)\+"(\.)"\);/, "Echo's idea line");
+const coach = find(CH, /await say\("(Let's try that one again\. )"\+tip\+"(\.)( Go!)"\);/, "coaching line");
+const idea = find(CH, /await say\("(I have an idea\. Let's try this one\. )"\+\(ITEM\.level==="isolation"\?\("(Make your )"\+soundName\(\)\+"( sound)"\):\("(Say )"\+\(ITEM\.say\|\|ITEM\.t\)\)\)\+"(\.)( Go!)"\);/, "Echo's idea line");
 // The idea line's pieces: [1] prefix, [2] "Make your ", [3] " sound", [4] "Say ", [5] full stop.
 const ideaSound = (s) => idea.m[1] + idea.m[2] + soundNameOf(s) + idea.m[3] + idea.m[5];
 const ideaTemplate = idea.m[1] + idea.m[4] + "{target}" + idea.m[5];
+// Every line that hands the child the turn ends on "Go!".
+for (const [what, go] of [["the coaching line", coach.m[3]], ["Echo's idea line", idea.m[6]], ["the prompt", sayLineGo("R", isoItem("R"), NEED_DEFAULT, true).slice(sayLine("R", isoItem("R"), NEED_DEFAULT, true).length)]]) if (go !== goDef.m[1]) fail(`${what} no longer ends on "${GO}" — re-read the sheet's "Go!" row.`);
 // Every line that names the sound must take her recording, and the recording
 // must be there: the first prompt, the prompt again, and Echo's idea.
 const SLOT = {};
@@ -199,15 +216,18 @@ find(CH, /ITEMS=\(S\.ladderContent\(SOUND,useRung\)\|\|\[\]\)\.filter\(function\
 
 // ───────────────────────── Feed Echo (live) ─────────────────────────
 const FEED = "public/arcade-feed.html";
-const feedAsk = find(FEED, /say\("(Where is the )"\+target\.w\+"(\? Say\.\.\. )"\+target\.w\+"(\.)"\)/, "Feed Echo ask");
+const feedAsk = find(FEED, /sayGo\("(Where is the )"\+target\.w\+"(\? Say\.\.\. )"\+target\.w\+"(\.)"\)/, "Feed Echo ask");
 const feedPoolFn = find(FEED, /^    function pool\(sound\)\{.*\}$/m, "Feed Echo word pool");
 const feedPool = new Function("S", feedPoolFn.m[0] + "\nreturn pool;")(S);
 find(FEED, /var SOUND=\(S&&S\.rotSound\)\?S\.rotSound\(\):"R";/, "Feed Echo sound");
 // The mic button that waits after a quiet turn says the word again, alone.
-const feedAgain = find(FEED, /say\("(Say\.\.\. )"\+target\.w\+"(\.)"\)/, "Feed Echo's mic-button ask");
+const feedAgain = find(FEED, /sayGo\("(Say\.\.\. )"\+target\.w\+"(\.)"\)/, "Feed Echo's mic-button ask");
+// sayGo(): the ask, then Echo's one "Go!" clip (Sona.goClip) while the turn is still live.
+const feedSayGo = find(FEED, /function sayGo\(t\)\{\n\s*var asked=target;\n\s*return say\(t\)\.then\(function\(\)\{\n[^\n]*\n\s*if\(turnLive&&!heardThisTurn&&target===asked\)return goLine\(\);/, "Feed Echo: the ask, then Go!");
+find(FEED, /return Promise\.resolve\(S\.goClip\(profile\.voiceId,wait\)\)/, "Feed Echo's Go! is Sona.goClip");
 const feedWait = find(FEED, /var LISTEN_MS=(\d+)/, "Feed Echo's listening window");
 const feedVoice = find(FEED, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:t,voice:profile\.voiceId\|\|"",stable:true\}\)\}\)/, "Feed Echo's voice request");
-coverAll(FEED, /(?<![\w$.])say\(/, [feedAsk, feedAgain]);
+coverAll(FEED, /(?<![\w$.])(say|sayGo)\(/, [feedAsk, feedAgain, feedSayGo]);
 coverAll(FEED, TTS_CALL, [feedVoice], "a voice request"); coverAll(FEED, SPEAK_CALL, [], "a voice call");
 const feedLine = (w) => feedAsk.m[1] + w + feedAsk.m[2] + w + feedAsk.m[3];
 
@@ -227,25 +247,44 @@ const cardTitle = { slice: find(SLICE, /function paintAsk\(\)\{ \$\("revTitle"\)
 find(SLICE, /askTail=tail\|\|"to keep playing!"; paintAsk\(\);/, "Fruit Slice's say-it card tail");
 for (const k of ROUND_KEYS.slice(1)) cardTitle[k] = find(roundFile(k), /\$\("revTitle"\)\.innerHTML=markTitle\(title\|\|\("Say \\u201C"\+SAYTXT\+"\\u201D to keep playing!"\)\);/, "say-it card title");
 
-// Fruit Slice's card, spoken (speakRevive). What it asks comes from one
-// reader, Sona.gameAsk: the bare sound, a syllable or a short word.
+// The say-it card, spoken in all five (2 Oct 2026): one shared voice,
+// arcade-sayit.js. Echo's "To keep playing, say", Rachel's take of the sound,
+// then "Go!"; only then the mic. Fruit Slice's card can put its own line in
+// place of the first two (its ask hook).
+const SAYIT = "public/arcade-sayit.js";
+const sayitLines = find(SAYIT, /var ASK = "([^"]*)", GO = "([^"]*)";/, "the say-it card's lines");
+if (sayitLines.m[2] !== GO) fail(`the say-it card's "${sayitLines.m[2]}" is not Sona.goClip's "${GO}".`);
+const sayitVoice = find(SAYIT, /return fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \},\n\s*body: JSON\.stringify\(\{ text: text, voice: profile\(\)\.voiceId \|\| "", stable: true \}\)/, "the say-it card's voice request");
+const sayitHook = find(SAYIT, /line: function \(text\) \{ return sayLine\(text, g, st\)\.then\(null, skip\); \},/, "the say-it card: a page's own line");
+const sayitOrder = find(SAYIT, /: sayLine\(ASK, g, st\)\.then\(null, skip\)\.then\(function \(\) \{ return sayTake\(g, st\); \}\);\n\s*asked\.then\(null, skip\)\n\s*\.then\(function \(\) \{ return sayLine\(GO, g, st\); \}\)/, "the say-it card: the ask, her take, then Go!");
+const sayitTake = find(SAYIT, /if \(!url \|\| !live\(g\) \|\| st\.stuck \|\| !\(S\.humanClipsOn && S\.humanClipsOn\(\)\)\) return Promise\.resolve\(\);/, "the say-it card plays her take only while the switch is on");
+const sayitMuted = find(SAYIT, /if \(!voiceOn\(\)\) \{ page\.listen\(false\); return; \}/, "the say-it card says nothing while Sona's sound is off");
+coverAll(SAYIT, TTS_CALL, [sayitVoice], "a voice request"); coverAll(SAYIT, SPEAK_CALL, [], "a voice call");
+coverAll(SAYIT, /(?<![\w$.])sayLine\(/, [sayitHook, sayitOrder]);
+const SAYIT_CLIP = /clip:function\(\)\{ return S\.ALL_SOUNDS\.indexOf\(SND\)>=0\?"\/coach\/say-echo\/"\+SND\+"-sound\.wav":""; \},/;
+const cardVoice = {};
+for (const k of ROUND_KEYS) {
+  if (!src(roundFile(k)).includes('<script src="/arcade-sayit.js"></script>')) fail(`${roundName(k)} no longer loads arcade-sayit.js — its say-it card may have gone quiet. Re-read the round games' section.`);
+  find(roundFile(k), /var sayVoice=window\.SayIt\?SayIt\.voice\(\{/, "the say-it card's voice");
+  cardVoice[k] = find(roundFile(k), SAYIT_CLIP, "the say-it card plays Rachel's take of the sound");
+}
+// Fruit Slice's card, through that voice's ask hook. What it asks comes from
+// one reader, Sona.gameAsk: the bare sound, a syllable or a short word.
 const gameAskFn = find("public/sona.js", /function gameAsk\(sound, card, opts\) \{/, "gameAsk()");
 const gameAskVoice = find("public/sona.js", /clip: rung \? "" : "\/coach\/say-echo\/" \+ sound \+ "-sound\.wav", say: rung \? text : "",/, "gameAsk(): her recording for the bare sound, Echo's line past it");
 const sylOn = find(GC, /var GAME_SYL_ON = \[/, "GAME_SYL_ON");
 const gameSkip = find(GC, /var GAME_SKIP = \{/, "GAME_SKIP");
 const gameShort = find(GC, /var GAME_SHORT = \{/, "GAME_SHORT");
 find(SLICE, /var a=null; try\{ a=S\.gameAsk\(SND,n\); \}catch\(e\)\{\}/, "Fruit Slice's card reads Sona.gameAsk");
+find(SLICE, /\n\s*ask:askCard,\n/, "Fruit Slice's card uses the say-it voice's ask hook");
 const sliceAsk = find(SLICE, /L\.p=fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:"(To keep playing, say\.\.\. )"\+a\.say\+"(\.)",voice:profile\.voiceId\|\|"",stable:true\}\)/, "Fruit Slice's card: the syllable or word line");
-const sliceAskPlay = find(SLICE, /var said=!!\(askLine&&askLine\.say===ASK\.say&&askLine\.bytes\)&&await reviveBytes\(askLine\.bytes,gen\);/, "Fruit Slice's card plays the line it holds");
-const sliceLineFn = find(SLICE, /async function reviveLine\(text,gen\)\{[\s\S]*?fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:text,voice:profile\.voiceId\|\|"",stable:true\}\)/, "Fruit Slice's reviveLine()");
-const sliceLead = find(SLICE, /else if\(lead\)await reviveLine\(idea\?"(I have an idea\. Let's try this one\.)":"(To keep playing, say)",gen\);/, "Fruit Slice's card: Echo's words before the bare sound");
-const sliceSound = find(SLICE, /if\(!ASK\.say&&gen===reviveVoice&&S\.ALL_SOUNDS\.indexOf\(SND\)>=0&&S\.humanClipsOn&&S\.humanClipsOn\(\)\)await reviveAudio\(ASK\.clip,gen\);/, "Fruit Slice's card: Rachel's recording of the bare sound");
+find(SLICE, /return \(b\?t\.bytes\(b\):Promise\.resolve\(false\)\)\.then\(function\(said\)\{/, "Fruit Slice's card plays the line it holds");
+const sliceIdea = find(SLICE, /var IDEA_LINE="([^"]*)", reviveIdea=false;/, "Fruit Slice's step-back line");
+const sliceLead = find(SLICE, /return \(lead\?t\.line\(reviveIdea\?IDEA_LINE:SayIt\.ASK\):Promise\.resolve\(\)\)\.then\(function\(\)\{ return t\.take\(\); \}\);/, "Fruit Slice's card: Echo's words before the bare sound");
 const sliceBack = find(SLICE, /closeReviveMic\(\); askHeld=ASK; ASK=cardAsk\(0\); paintAsk\(\); speakRevive\(true\);/, "Fruit Slice's card steps back to the bare sound");
 const sliceWait = find(SLICE, /var ASK_WAIT_MS=(\d+), askT=0;/, "ASK_WAIT_MS");
-const sliceMuted = find(SLICE, /if\(voiceOff\(\)\)\{askNext=null;if\(ASK\.rung\)\{ASK=cardAsk\(0\);paintAsk\(\);\}openReviveMic\(\);return;\}/, "Fruit Slice's card says nothing while Sona's sound is off");
-coverAll(SLICE, TTS_CALL, [sliceAsk, sliceLineFn], "a voice request");
-coverAll(SLICE, /(?<![\w$.])reviveLine\(/, [sliceLead]);
-coverAll(SLICE, /(?<![\w$.])reviveBytes\(/, [sliceAskPlay]);
+coverAll(SLICE, TTS_CALL, [sliceAsk], "a voice request");
+coverAll(SLICE, /\bt\.line\(/, [sliceLead]);
 const sliceAskLine = (ask) => sliceAsk.m[1] + ask + sliceAsk.m[2];
 // What a card may ask past the bare sound: the lists in gamecontent.js.
 const GAME_ON = SC.GAME_SYL_ON.slice();
@@ -263,9 +302,11 @@ const helpSound = find(HELP, /S\.humanClipsOn&&S\.humanClipsOn\(\)\)return slowA
 const MUTED = /if\(p\.voiceOn===false\|\|Number\(p\.volume\)===0\)return Promise\.resolve\(\);/;
 const helpMuted = find(HELP, MUTED, "the sound power says nothing while Sona's sound is off");
 coverAll(HELP, TTS_CALL, [helpLine], "a voice request"); coverAll(HELP, SPEAK_CALL, [], "a voice call");
-const HELP_KEYS = ROUND_KEYS.filter((k) => src(roundFile(k)).includes("/arcade-speech-help.js"));
+// A page loads a script by its <script src>, not by a comment that names it.
+const loads = (file, script) => src(file).includes(`<script src="${script}"></script>`);
+const HELP_KEYS = ROUND_KEYS.filter((k) => loads(roundFile(k), "/arcade-speech-help.js"));
 for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html"))) {
-  if (src("public/" + f).includes("/arcade-speech-help.js") && !HELP_KEYS.some((k) => roundFile(k) === "public/" + f)) fail(`public/${f} loads arcade-speech-help.js — another page now has Echo's sound power. Add it to the script.`);
+  if (loads("public/" + f, "/arcade-speech-help.js") && !HELP_KEYS.some((k) => roundFile(k) === "public/" + f)) fail(`public/${f} loads arcade-speech-help.js — another page now has Echo's sound power. Add it to the script.`);
 }
 const power = {};
 for (const k of HELP_KEYS) {
@@ -287,7 +328,7 @@ const runVoice = find(RUN, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Conte
 const runFallback = find(RUN, /said=S\.speakNow\(START_LINE\);/, "Sound Sprint's fallback voice");
 const runMuted = find(RUN, /if\(!sc\.line\|\|!startVoiceOn\(\)\)\{ beginRace\(\); return; \}/, "Sound Sprint says nothing while Sona's sound is off");
 // Nothing else in the five pages reaches the voice.
-const roundKnown = { slice: [sliceAsk, sliceLineFn], tiles: [tilesLine], run: [runVoice, runFallback], stack: [], glide: [] };
+const roundKnown = { slice: [sliceAsk], tiles: [tilesLine], run: [runVoice, runFallback], stack: [], glide: [] };
 for (const k of ROUND_KEYS) {
   const f = roundFile(k);
   coverAll(f, TTS_CALL, roundKnown[k], "a voice request");
@@ -314,7 +355,7 @@ const gameOfPage = (f) => {
   if (!key) fail(`public/${f} loads a speaking game script but GAME_ACTS has no game at /${f}. Add it to the script.`);
   return S.GAME_ACTS[key];
 };
-const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && src("public/" + f).includes(script)).sort();
+const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
 
@@ -509,7 +550,7 @@ const ccLines = []; // {text, line, when}
 // picture games and the round games' power button speak through the shared
 // scripts read above; the pages themselves hold no voice call.)
 {
-  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, "public/sona.js"];
+  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYIT, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, "public/sona.js"];
   for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js"))) {
     const text = src("public/" + f);
     const m = /\/api\/tts|SpeechSynthesisUtterance/.exec(text) || SPEAK_CALL.exec(text);
@@ -565,7 +606,10 @@ const cueOf = (s) => S.cue(s).tip;
 const spokenName = (s) => soundNameOf(s);
 const SOUND_TITLE = (s) => (s === "THV" ? "TH (voiced, as in 'the')" : s === "TH" ? "TH (as in 'thumb')" : s);
 const totals = { fixed: 0, expansions: 0, fillers: 0, words: 0, distinct: 0, parked: 0 };
-const bangLines = [roundEnd.m[1], win.m[1], chest.m[1], advEnd.m[1], quiet.m[1], sliceLead.m[2], sliceLead.m[1], ...ROUND_KEYS.map((k) => power[k].text), runLine.m[1], bookEnd.m[1], bookBye.m[1]].filter((l) => l.includes("!"));
+// "Go!" is its own row, the last of B4; every line that hands over the turn points at it.
+const GO_ROW = "B" + (S.PRAISES.length + SOUNDS.length * 2 + 6);
+for (const [f, what] of [[LB, "the books"], [SP, "simple-play.js (Peekaboo)"], [HELP, "the sound power"], [TILES, "Piano Tiles"], [RUN, "Sound Sprint"]]) if (/goClip/.test(src(f))) fail(`${what} now says "Go!" (${f}) — the sheet's "Go!" row says it does not.`);
+const bangLines = [roundEnd.m[1], win.m[1], chest.m[1], advEnd.m[1], quiet.m[1], GO, sayitLines.m[1], sliceIdea.m[1], ...ROUND_KEYS.map((k) => power[k].text), runLine.m[1], bookEnd.m[1], bookBye.m[1]].filter((l) => l.includes("!"));
 let bN = 0, cN = 0;
 
 P("# Echo's Recording Script");
@@ -661,32 +705,33 @@ const bTable = (title, intro) => {
 S.PRAISES.forEach((p, i) => B(`praise-${i + 1}.mp3`, p, i === 0 ? `After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line.` : "Same moment, random pick of five.", "Soft and pleased, a small smile in it. Not a cheer.", `${praisesLine.cite}; spoken at ${praise.cite}`));
 bTable("B1 — Praise (5)", `Pinned as exactly this list with no "!" (\`tests/voicetest3.mjs\`).`);
 SOUNDS.forEach((s) => B(`coach-${s}.mp3`, coach.m[1] + tipOf(s) + coach.m[2], `Once per round, when the on-device check heard a clearly different sound on ${SOUND_TITLE(s)}. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries.`, "Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word.", coach.cite));
-bTable("B2 — Coaching after a miss (19)", `\`${coach.m[1]}{tip}${coach.m[2]}\` — the tip is Rachel's mouth cue cut at the dash (rule at ${tipRule.cite}).`);
+bTable("B2 — Coaching after a miss (19)", `\`${coach.m[1]}{tip}${coach.m[2]}\`, then "${GO}" (${GO_ROW}) — the tip is Rachel's mouth cue cut at the dash (rule at ${tipRule.cite}).`);
 SOUNDS.forEach((s) => B(`idea-${s}.mp3`, ideaSound(s), `After the retry ALSO missed on a syllable round of ${SOUND_TITLE(s)}: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries.`, "Bright and easy, like a good idea just arrived. Not a consolation.", idea.cite));
-bTable("B3 — Echo's idea, sound alone (19)", `\`${idea.m[1]}${idea.m[2]}{sound}${idea.m[3]}${idea.m[5]}\` — the same line with a syllable or a word in it is a template (C5). Where the code spells the letter name ("S H", "C H", "T H"), say the sound name as a person would.`);
+bTable("B3 — Echo's idea, sound alone (19)", `\`${idea.m[1]}${idea.m[2]}{sound}${idea.m[3]}${idea.m[5]}\`, then "${GO}" (${GO_ROW}) — the same line with a syllable or a word in it is a template (C5). Where the code spells the letter name ("S H", "C H", "T H"), say the sound name as a person would.`);
 B("roundend.mp3", roundEnd.m[1], "Round end when the retry (and the easier target, if there was one) still came back as the wrong sound. The game opens anyway; the win line is NOT spoken in this case.", "Warm and light. There is no disappointment in it — the child practised, and now they play.", roundEnd.cite);
 B("win.mp3", win.m[1], `The win: five tries heard and the last check passed. Spoken ${afterChime.m[1]} ms after the win chime; the game loads 1.2 s later.`, "Quietly delighted. A full stop, not a fanfare.", win.cite);
 B("chest.mp3", chest.m[1], `The treasure chest at the end of the adventure: after the child's third tap opens it, ${afterChime.m[1]} ms after the tap chime, while the sticker shows.`, "A small wonder, like peeking into a box together.", chest.cite);
 B("adventure-end.mp3", advEnd.m[1], `Adventure end: when the fifth round's game hands back and the "Adventure complete!" card appears, ${afterChime.m[1]} ms after its chime.`, "Proud and settled, winding down.", advEnd.cite);
 B("quiet.mp3", quiet.m[1], "The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: \"I couldn't hear you!\" / \"Say it big — I'm all ears!\" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt.", "Gentle and playful. This is the one line that kept its \"!\" on 24 Sep — \"Say it big\" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call.", quiet.cite);
-bTable("B4 — Round end, win, chest, adventure end, quiet screen (5)");
+B("go.mp3", GO, `After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7), every picture-game word (C8) and Feed Echo's asks (C6). Not the books, the sound power or Sound Sprint's how-to-play. Then the mic opens.`, "Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call.", `${goLine.cite} (Sona.goClip; the say-it card asks for the same "${GO}" at ${sayitLines.cite}); joined on at ${goJoin.cite}`);
+if ("B" + bN !== GO_ROW) fail(`the "Go!" row is B${bN}, but the sheet points at ${GO_ROW}.`);
+bTable(`B4 — Round end, win, chest, adventure end, quiet screen, "${GO}" (6)`);
 P();
 {
   const bare = S.soundSay("R"), secs = (ms) => Number(ms) / 1000;
-  B("card-say.mp3", sliceLead.m[2], `${roundName("slice")}'s say-it card (between rounds, and its keep-playing card), when the card asks for the sound alone: Echo says this, then Rachel's recording of the sound plays (\`say-echo/<SOUND>-sound.wav\`, Part A), then the mic opens. Screen: "Say “${bare}” for wave 2!" or "…to keep playing!". When the card asks for a syllable or a word, the whole ask is one line instead (C7).`, "Friendly and plain. It runs straight into the sound, so leave it open at the end.", `${sliceLead.cite}; her sound at ${sliceSound.cite}`);
-  B("card-idea.mp3", sliceLead.m[1], `${roundName("slice")}'s card, when a syllable or a word got no answer for ${secs(sliceWait.m[1])} s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording plays. The practice page's own words for the same move (B3).`, "As B3: a good idea just arrived. Not a consolation.", `${sliceLead.cite}; the step back at ${sliceBack.cite}`);
+  B("card-say.mp3", sayitLines.m[1], `The say-it card between rounds in all five round games (${ROUND_KEYS.map(roundName).join(", ")}): Echo says this, then Rachel's recording of the sound plays (\`say-echo/<SOUND>-sound.wav\`, Part A), then "${GO}" (${GO_ROW}), then the mic opens. Screen: "Say “${bare}” for wave 2!" (each game its own words). On ${roundName("slice")}, a card that asks a syllable or a word says one line instead of this and her recording (C7).`, "Friendly and plain. It runs straight into the sound, so leave it open at the end.", `${sayitLines.cite}; in this order at ${sayitOrder.cite}`);
+  B("card-idea.mp3", sliceIdea.m[1], `${roundName("slice")}'s card, when a syllable or a word got no answer for ${secs(sliceWait.m[1])} s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "${GO}". The practice page's own words for the same move (B3).`, "As B3: a good idea just arrived. Not a consolation.", `${sliceIdea.cite}; said at ${sliceLead.cite}; the step back at ${sliceBack.cite}`);
   for (const k of ROUND_KEYS) B(`power-${k}.mp3`, power[k].text, `${roundName(k)}: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens.${power[k].once ? " Spoken the first time in a game only; after that the tap plays just the sound." : ""}`, `Short and bright. It runs straight into the sound, so leave it open at the end.${power[k].text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
   B("sprint-howto.mp3", runLine.m[1], `${roundName("run")}'s start card, on a child's first ${NUMWORD[runRaces.m[1]] || runRaces.m[1]} races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early).`, 'Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout.', `${runLine.cite}; asked for at ${runVoice.cite}`);
 }
-bTable(`B5 — The round games (${2 + ROUND_KEYS.length + 1})`, `${roundName("slice")}'s say-it card, Echo's power button in all five round games (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sliceMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
+bTable(`B5 — The round games (${2 + ROUND_KEYS.length + 1})`, `The say-it card in all five round games (one voice for all five, \`arcade-sayit.js\`), Echo's power button in all five (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
 B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
 bTable("B6 — Books (2)");
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
-P("picker, the mic-permission screens, the chest captions, every in-round label, and");
-P(`the say-it card between rounds of ${ROUND_KEYS.slice(1).map(roundName).join(", ")} — their`);
-P(`"Say “rrrr” to keep playing!" card is text only (${ROUND_KEYS.slice(1).map((k) => cardTitle[k].cite.replace("public/", "")).join(", ")}). See E8.`);
+P("picker, the mic-permission screens, the chest captions and every in-round label.");
+P("See E8.");
 
 // ── Part C ──
 P();
@@ -701,14 +746,14 @@ const cRows = [];
 const C = (file, text, when, cite) => { cN++; totals.expansions++; cRows.push([`C${cN}`, file, text, when, cite]); };
 const cTable = () => { P(); P("| # | File | Say this | When | Source |"); P("|---|---|---|---|---|"); cRows.splice(0).forEach((r) => P(`| ${r.map(esc).join(" | ")} |`)); };
 const needWord = (n) => NUMWORD[n];
-const cuedTemplate = runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: false });
-const plainTemplate = runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: true });
-const targetTemplate = runSayLine({ ...TEMPLATE_ENV, ITEM: { t: "{target}", say: "{target}", display: "{target}", level: "syllable" }, cued: true });
+const cuedTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: false }));
+const plainTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: isoItem("R"), cued: true }));
+const targetTemplate = wordsOf(runSayLine({ ...TEMPLATE_ENV, ITEM: { t: "{target}", say: "{target}", display: "{target}", level: "syllable" }, cued: true }));
 
 P();
 P("### C1 — The first prompt of a sound-alone round");
 P();
-P(`\`${cuedTemplate}\` (${promptStart.cite}, built at ${sayLineFn.cite})`);
+P(`\`${cuedTemplate}\`, then "${GO}" (${GO_ROW}) (${promptStart.cite}, built at ${sayLineFn.cite})`);
 P();
 P("Spoken once, into a closed mic, right after the mic opens and the room is measured.");
 P("Every session's first round is a sound-alone round, so a child hears this every day.");
@@ -732,7 +777,7 @@ cTable();
 P();
 P("### C2 — The prompt again (tap on Echo)");
 P();
-P(`\`${plainTemplate}\` (tap: ${promptTap.cite}; built at ${sayLineFn.cite})`);
+P(`\`${plainTemplate}\`, then "${GO}" (tap: ${promptTap.cite}; built at ${sayLineFn.cite})`);
 P();
 P("Every later prompt of the same sound-alone round: the child taps Echo (\"Tap Echo to");
 P("hear it again\"). With the sound models on, her take sits in the letter's place here too.");
@@ -743,7 +788,7 @@ cTable();
 P();
 P("### C3 — The prompt on a syllable, word or sentence round");
 P();
-P(`\`${targetTemplate}\` (${sayLineFn.cite}; targets from \`ladderContent\`)`);
+P(`\`${targetTemplate}\`, then "${GO}" (${sayLineFn.cite}; targets from \`ladderContent\`)`);
 P();
 P("Round two onward of an adventure climbs sound → syllable → word → sentence, capped");
 P("one rung above what the child has mastered. One target per round; the same line");
@@ -769,12 +814,12 @@ totals.fillers += SENTENCE_FRAMES.length;
 P();
 P("### C4 — Hear it slooow (the turtle)");
 P();
-P(`Not a separate recording. The turtle pill replays the current line slowed to ${turtleRate.m[1]}× by the app (${turtleRate.cite}); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (${turtle.cite}). On a sound-alone round with the sound models on, the slowed line has Rachel's take in the letter's place, slowed with it.`);
+P(`Not a separate recording. The turtle pill replays the current line slowed to ${turtleRate.m[1]}× by the app (${turtleRate.cite}); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (${turtle.cite}). On a sound-alone round the slowed line ends on "${GO}", and with the sound models on it has Rachel's take in the letter's place, slowed with it.`);
 
 P();
 P("### C5 — Echo's idea, with a syllable or a word");
 P();
-P(`\`${ideaTemplate}\` (${idea.cite})`);
+P(`\`${ideaTemplate}\`, then "${GO}" (${idea.cite})`);
 P();
 P("The step-down after two misses on a word or sentence round: {target} is a syllable");
 P("(C3 list) or a word at the practice position (Part D) from one rung down. (Rarely — the");
@@ -786,10 +831,10 @@ P("### C6 — Feed Echo");
 P();
 P(`\`${feedLine("{word}")}\` (${feedAsk.cite})`);
 P();
-P("Live, free, opened straight from Home. Echo asks this at the start of each of the");
-P("five turns; the four pictures stay locked until he hears the word, and nothing is");
+P(`Live, free, opened straight from Home. Echo asks this, then "${GO}" (${GO_ROW}), at the start of`);
+P("each of the five turns; the four pictures stay locked until he hears the word, and nothing is");
 P("spoken on a right tap, a wrong tap or at the finish. If nothing is heard for");
-P(`${Number(feedWait.m[1]) / 1000} s the mic closes and a mic button waits; a tap on it says \`${feedAgain.m[1]}{word}${feedAgain.m[2]}\``);
+P(`${Number(feedWait.m[1]) / 1000} s the mic closes and a mic button waits; a tap on it says \`${feedAgain.m[1]}{word}${feedAgain.m[2]}\` and "${GO}"`);
 P(`(${feedAgain.cite}) and listens again. The sound is the one the child's rotation is on that`);
 P("round (homework sounds first, else the child's focus sounds, else R); the pool is that sound's shortest");
 P(`eight Beginning-position words with a picture (${feedPoolFn.cite}). The screen says "Where's" while the voice says "Where is".`);
@@ -810,14 +855,14 @@ P(`\`${sliceAskLine("{ask}")}\` (${sliceAsk.cite})`);
 P();
 P(`The card between rounds of ${roundName("slice")}. When it asks for more than the sound alone, Echo`);
 P("says the whole ask as ONE line in his own voice, the syllable or word last and after");
-P("a pause, because nothing past the bare sound is recorded. The line is downloaded before");
-P("the syllable is shown; if it does not come, or will not play, the card stays on the");
-P(`sound alone and "${sliceLead.m[2]}" plus Rachel's recording plays instead (B5). What a card`);
+P(`a pause, because nothing past the bare sound is recorded; then "${GO}". The line is downloaded`);
+P("before the syllable is shown; if it does not come, or will not play, the card stays on the");
+P(`sound alone and "${sayitLines.m[1]}" plus Rachel's recording plays instead (B5). What a card`);
 P(`asks comes from one reader, \`Sona.gameAsk\` (${gameAskFn.cite}; which voice at ${gameAskVoice.cite}):`);
 P("the sound alone, then one syllable a card, then a short word, as far as that child's");
 P(`cards go. Screen: "Say “${(gameSteps(GAME_ON[0] || "R").syl[0]) || S.soundSay("R")}” for wave 2!". The card hears only a voice of the right`);
 P("kind — it cannot tell a syllable from the bare sound — and nothing here says \"correct\".");
-P(`The other four round games' cards are text and ask only the sound.`);
+P(`The other four round games' cards ask only the sound (B5).`);
 P();
 P(`**{ask} = a syllable or the short word** — only for the sounds switched on in \`GAME_SYL_ON\` (${sylOn.cite}); today: ${GAME_ON.join(", ") || "none"}. One syllable a card, moving on one each day. The short word is \`GAME_SHORT\` (${gameShort.cite}). Never asked, \`GAME_SKIP\` (${gameSkip.cite}): ${Object.keys(SC.GAME_SKIP).map((s) => `${s} ${SC.GAME_SKIP[s].map((x) => `"${x}"`).join(", ")}`).join("; ")}.`);
 P();
@@ -842,7 +887,7 @@ P();
 P(`\`${spLine("{word}")}\` (${spAsk.cite})`);
 P();
 P(`One shared script (\`sayplay.js\`) runs every picture game. Each turn shows a picture and`);
-P("its word, Echo models the word with this line, then the mic opens. It is the only line");
+P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. It is the only line`);
 P("these games speak: the cheers (\"Yes!\", \"You did it!\") are text. The sound is the one the");
 P(`child's rotation is on (else R); the pool is up to ten of that sound's shortest`);
 P(`Beginning-position words with a picture (${spPoolFn.cite}). **Best left to TTS.**`);
@@ -1008,8 +1053,8 @@ P("chest! Tap, tap, tap to open!\", \"Tap, tap!\", \"One more tap!\", \"You foun
 P("sticker!\"), the in-round labels (\"Say\", \"Almost! {cue} —\", \"Try again — you've got");
 P("this!\", \"Echo's idea — say\", \"YES! That's the one!\", \"Here we go!\", \"Say it {n}");
 P("times\", \"Just 1 more!\", \"Tap Echo to hear it again\", \"Your turn\", \"Listen to Echo\"),");
-P("the round games' \"Say “rrrr” to keep playing!\" card title (only Fruit Slice's card is");
-P("also spoken: B5, C7) and their end cards, the picture games' cheers, the books' \"Can you");
+P("the round games' \"Say “rrrr” to keep playing!\" card title (Echo also says what it");
+P("asks: B5, C7) and their end cards, the picture games' cheers, the books' \"Can you");
 P("say {word}?\" bubble, \"Your turn!\" and \"I heard you!\", and Feed Echo's");
 P("\"Where's the {word}?\" / \"Say it out loud, then tap it!\" / \"Echo heard you!\".");
 
