@@ -212,6 +212,11 @@
     // how many races this child has started from Sound Sprint's start card
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
+    // each child's own best in each game (BESTS1, Sona.gameBest): a brother
+    // or sister starts with none, and it goes when the child is removed. The
+    // old "sona.best.<game>" keys were one per phone, so siblings overwrote
+    // each other; they are not carried over.
+    "sona.bests.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -3649,6 +3654,56 @@
   // are retired; counts remain local except consented pilot progress sharing.
   function repsBeacon() {}
 
+  // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
+  // best for kids you can do"). Each big-kid game counts ONE real thing the
+  // child's FINGER did (fruit sliced in a row, notes in a row) and remembers
+  // this child's own best: the win card adds one line and Home's picture
+  // carries a small "Best 17". The rules it keeps, all of them on purpose:
+  //   - It counts the finger, never the voice. Nothing here grades speech, so
+  //     it is not practice data: outcomes(), sendProgress(), Progress and the
+  //     clinician's note never read it (besttest pins that), and it mints no
+  //     coins. It stays on the phone; like other play data it rides in a
+  //     backup, which is a grown-up moving their own family's phone.
+  //   - One record per CHILD (PER_KID), so no child ever sees another's best.
+  //   - It only ever goes up. A lower round changes nothing; there is no way
+  //     to lose a best by playing.
+  //   - Whole numbers of real things only. A game's hidden number (a golden
+  //     fruit is worth 3) was once shown as "Best" beside a count of fruit and
+  //     did not match it; a caller passes the count the child can see.
+  // gameBest(key) is the child's best (a whole number from 1) or 0 for a game
+  // never played, and Home shows no tag for 0. gameBestOffer(key, n) stores n
+  // when it beats the best and answers { best, prev, isNew }: prev is the
+  // best before this round (0 = their first ever, which just sets it), isNew
+  // is true when n went in, and best is never below a valid n, so a win card
+  // can always say "Your best: {best}". An n that is not a whole number from
+  // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
+  // older sona.js must still play the game.
+  const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
+  function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
+  function _bestOf(all, key) {
+    const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
+    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+  }
+  function gameBest(key) {
+    try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
+  }
+  function gameBestOffer(key, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = gameKey(key); if (!key) return out;
+      const all = _bests();
+      out.prev = out.best = _bestOf(all, key);
+      if (!_bestN(n) || n <= out.prev) return out;
+      // answered before the write: a phone that cannot save (storage full or
+      // off) still tells the child the truth about the round they just played
+      out.best = n; out.isNew = true;
+      all[key] = { n: n, at: today() };
+      save(BESTKEY, all);
+    } catch (e) {}
+    return out;
+  }
+
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
   // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
   // chapter.html and story.html each carried their own copy of the TTS path,
@@ -4819,5 +4874,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

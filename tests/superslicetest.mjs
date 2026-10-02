@@ -7,6 +7,14 @@
 // from the stand, more fruit per toss and a wide rainbow blade, and adds one
 // rep to the week's count without touching practice data.
 //
+// BEAT YOUR BEST (1-2 Oct 2026) made the sound the best way to a longer row
+// of fruit (slicetest has the row itself), with two rules: every fruit thrown
+// while Super Slice lasts is an EXTRA (slicing it adds to the row, never to
+// the wave, so the power no longer ends the wave sooner), and nothing dropped
+// while it lasts breaks the row or feeds the two-miss help. The burst, the
+// blade, the ten seconds and the time carried into the next wave are as they
+// were.
+//
 // This drives the real button, analyser, listening loop and native verdict
 // on a fake phone. Nothing calls the success path directly; a try is loud
 // frames the page's own analyser reads.
@@ -150,6 +158,53 @@ try {
       await page.evaluate(()=>{slowMs=0;});
       ok('…and the normal blade misses the same swipe',!(await nearSwipe()));
       await clean('one try',page,errors);
+    }finally{await context.close();}
+  });
+
+  // ── the earned power's fruit are extras, and its drops are free ──
+  await scenario('extras',async()=>{
+    const{context,page,errors}=await fresh();try{
+      // one still fruit in the middle of the sky, and a swipe through it (or through whatever is parked there)
+      async function swipeMid(add){
+        if(add)await page.evaluate(()=>{fruits.push({e:'🍊',x:W/2,y:H*.5,vx:0,vy:0,g:1e-9,rot:0,vr:0,r:30,sliced:false});});
+        const box=await page.locator('#cv').boundingBox(),y=box.y+box.height*.5;
+        await page.mouse.move(box.x+box.width*.2,y-10);await page.mouse.down();await page.mouse.move(box.x+box.width*.8,y+10,{steps:6});await page.mouse.up();
+      }
+      const row=()=>page.evaluate(()=>({on:rowN,best:rowBest,pill:document.getElementById('score').textContent,got:waveGot,miss:missRun,phase,ms:slowMs}));
+      await page.evaluate(()=>{fruits=[];nextToss=waveMs+60000;});
+      await swipeMid(true);await swipeMid(true);
+      const r0=await row();
+      ok('before the power: two ordinary fruit are two on the row and two toward the wave',r0.on===2&&r0.best===2&&r0.pill==='2'&&r0.got===2,r0);
+      await page.evaluate(()=>{fruits=[];});
+      await turn(page);await say(page);await earned(page);
+      const burst=await page.evaluate(()=>{fruits.forEach(f=>{f.__b=1;});return fruits.map(f=>!!f.extra);});
+      ok('the burst of five is all extras',burst.length===5&&burst.every(Boolean),burst);
+      // two of the burst are sliced; the other three are left to fall
+      await page.evaluate(()=>{fruits.slice(0,2).forEach(f=>{f.x=W/2;f.y=H*.5;f.vx=0;f.vy=0;f.g=1e-9;f.gold=false;});});
+      await swipeMid(false);
+      await page.waitForFunction(()=>!fruits.some(f=>f.sliced));
+      // (the wide blade may catch a third on its way up: count what it took)
+      const cut=5-await page.evaluate(()=>fruits.filter(f=>f.__b).length);
+      const r1=await row();
+      ok('slicing some of them makes the row longer, and adds nothing to the wave',cut>=2&&cut<5&&r1.on===2+cut&&r1.best===r1.on&&r1.pill===String(r1.on)&&r1.got===2&&r1.phase==='wave',{cut,r1});
+      // an ordinary fruit, thrown before the power, landing while it lasts
+      await page.evaluate(()=>{fruits.push({e:'🍎',x:W*.3,y:H+200,vx:0,vy:5,g:1e-9,rot:0,vr:0,r:30,sliced:false,__o:1});});
+      await page.waitForFunction(()=>!fruits.some(f=>f.__o));
+      // …and the rest of the burst, and every toss after it, hit the ground
+      await page.waitForFunction(()=>!fruits.some(f=>f.__b),null,{timeout:9500});
+      const r2=await row();
+      ok('the fruit that fell during Super Slice broke nothing: the row stands, and the two-miss help is not fed',r2.on===r1.on&&r2.best===r1.on&&r2.miss===0&&r2.got===2&&r2.phase==='wave',{r1,r2});
+      ok('…and the top-left number never went down',r2.pill===r1.pill,r2);
+      // the power over: fruit count toward the wave again, and a drop ends the row
+      await page.evaluate(()=>{slowMs=0;fruits=[];nextToss=waveMs+60000;});
+      await swipeMid(true);
+      const r3=await row();
+      ok('once it is over, an ordinary fruit counts toward the wave again',r3.got===3&&r3.on===r2.on+1,r3);
+      await page.evaluate(()=>{fruits.push({e:'🍎',x:W*.3,y:H+200,vx:0,vy:5,g:1e-9,rot:0,vr:0,r:30,sliced:false});});
+      await page.waitForFunction(()=>fruits.length===0);
+      const r4=await row();
+      ok('…and an ordinary drop ends the row, the number staying where it was',r4.on===0&&r4.miss===1&&r4.best===r3.best&&r4.pill===String(r3.best),r4);
+      await clean('extras',page,errors);
     }finally{await context.close();}
   });
 
