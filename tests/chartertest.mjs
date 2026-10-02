@@ -235,5 +235,92 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   ok("…and the trial page", /Under \$5 a month, billed once a year\./.test(src("/public/trial.html")) && /Under \$8\.50 a month, billed once a year\./.test(src("/public/trial.html")));
 }
 
+// ── WHEN THE WEBSITE DOES NOT SELL, NO SURFACE QUOTES ITS PRICE (1 Oct 2026) ──
+// Travis: "i dont want them paying on the website". WEB_SALES in
+// lib/pricing.ts (mirrored in sona.js; freetest pins the pair equal) decides
+// whether a family can pay on the website at all. Everything above this line
+// pins the SELLING state, which stays in every file whole. This pins the other
+// arm of the Next.js half: the charter offer is a web offer, so with the web
+// rail shut nobody new can take a spot, and a page that still said "$59.99
+// for the first 50 families" would be the banned anchor again, a price nobody
+// can pay. What the routes actually answer in each state is PLAYED in
+// caseloadtest; this reads the copy, because the pages render one arm and
+// keep the other, and only the source shows both.
+// It does not hold the switch's value: every check here is true either way.
+{
+  const strip = (t) => t.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const src = (f) => strip(readFileSync(APP + f, "utf8"));
+  // anything that is the WEBSITE's offer: a figure, a price constant, the
+  // charter, the free days, Stripe
+  const WEB_OFFER = /\$\s?\d|PRICE\b|PER_MONTH|priceNow|perMonthNow|CHARTER_|spots\b|Stripe|charter|3 days free|3 free days|free trial|on the web/;
+  const between = (t, a, b) => { const i = t.indexOf(a), j = t.indexOf(b, i + 1); return i >= 0 && j > i ? t.slice(i, j) : ""; };
+  const store = (/var APP_STORE = "([^"]+)"/.exec(readFileSync(APP + "/public/parents.html", "utf8")) || [])[1] || "";
+
+  const route = src("/app/api/charter/route.ts");
+  ok("/api/charter says whether the website sells, in every answer",
+    (route.match(/webSales: /g) || []).length === 3 && /free: true, webSales: WEB_SALES/.test(route), String((route.match(/webSales: /g) || []).length));
+  ok("…and with the website not selling it answers before the count is asked for, with no price field",
+    route.indexOf("if (!WEB_SALES)") > route.indexOf("if (FREE_MODE)") && route.indexOf("if (!WEB_SALES)") < route.indexOf("await charterSpots()") &&
+    /\{ ok: true, free: false, webSales: false, cap: CHARTER_CAP, taken: 0, left: 0, open: false, source: "off" \}/.test(route),
+    "a page that reads price or standard from this answer would be quoting a checkout that refuses");
+
+  const landing = src("/app/families/page.tsx");
+  ok("the families page has a third state: priced, but not sold on the website",
+    /const APP_ONLY = !FREE_MODE && !WEB_SALES;/.test(landing) && /import \{ WEB_SALES \} from "@\/lib\/pricing"/.test(landing));
+  ok("…in which it does not ask Stripe for a charter count it will not print",
+    /const spots: Spots = \(FREE_MODE \|\| APP_ONLY\)\s*\?\s*\{[^{}]*source: "fallback"[^{}]*\}\s*:\s*await charterSpots\(\);/.test(landing), "the count is the website's offer");
+  const card = between(landing, "function PremiumInApp()", "function PricingFree()");
+  ok("…its Premium card names no price, no charter, no free days and no Stripe, and says where Premium is bought",
+    !!card && !WEB_OFFER.test(card) && /Premium is bought in the Sona app on iPhone and iPad, at the price the App Store shows\./.test(card) && /<AppStoreBadge \/>/.test(card),
+    (WEB_OFFER.exec(card) || ["(card not found)"])[0]);
+  ok("…and that card stands in the priced one's place, which stays in the file", /\{APP_ONLY \? <PremiumInApp \/> : \(\s*<div style=\{priceCard\}>\s*<div style=\{priceBadge\}>\{open \?/.test(landing));
+  // the lines the switches decide: the hero subline, the final price line, its
+  // footnote, and the two FAQ answers. Each has an app-only twin.
+  const twins = [...landing.matchAll(/APP_ONLY\s*\?\s*(\(\s*<>[\s\S]*?<\/>\s*\)|"[^"]*")/g)].map((m) => m[1]);
+  ok("…every other priced line has an app-only twin with no web offer in it, naming the iPhone and iPad app",
+    twins.length === 5 && twins.every((t) => !WEB_OFFER.test(t) && /iPhone and iPad/.test(t)),
+    twins.length + " twins; " + twins.filter((t) => WEB_OFFER.test(t) || !/iPhone and iPad/.test(t)).join(" | "));
+  ok("…and the page sends a parent to the one App Store address the website uses", !!store && landing.includes('"' + store + '"'), store);
+
+  const web = src("/app/subscribe/page.tsx");
+  const page = web.slice(web.indexOf("export default function SubscribePage"));
+  ok("/subscribe chooses the app-only notice before the picker can mount",
+    page.indexOf("if (!FREE_MODE && !WEB_SALES) return <AppOnlyNotice />;") > 0 && page.indexOf("if (!FREE_MODE && !WEB_SALES) return <AppOnlyNotice />;") < page.indexOf("<SubscribeInner />"),
+    "the picker's charter fetch and its checkout button must not exist while the website does not sell");
+  const notice = between(web, "function AppOnlyNotice()", "export default function SubscribePage");
+  ok("…the notice names no price, no charter, no free days and no Stripe, and asks the server nothing",
+    !!notice && !WEB_OFFER.test(notice) && !/fetch\(/.test(notice), (WEB_OFFER.exec(notice) || ["(notice not found)"])[0]);
+  ok("…it says where Premium is bought, and that it opens THERE (an Apple purchase does not open the website)",
+    /Sona Premium is in the iPhone and iPad app/.test(notice) && /You buy it there, through\s+the App Store, and it opens there\./.test(notice) &&
+    /Daily practice and the free games stay free here\./.test(notice) && /Get Sona on the App Store/.test(notice) && !!store && web.includes('"' + store + '"') && /href=\{APP_STORE_URL\}/.test(notice));
+  ok("…and it is not a dead end for someone already paying: their plan keeps working, how to restore it, how to cancel it",
+    /Already paid on speaksona\.com\? Your plan keeps working\./.test(notice) && /href="\/trial\.html"/.test(notice) && /mailto:/.test(notice) && /we will cancel it for you/.test(notice) && /href="\/today\.html"/.test(notice));
+  ok("…inside the iPhone app it goes to the plan screen (the Apple card), never to an App Store button",
+    /Capacitor[\s\S]{0,120}location\.replace\("\/subscribe\.html"\)/.test(notice) && /if \(!inBrowser\) return null;/.test(notice) &&
+    /Capacitor[\s\S]{0,120}location\.replace\("\/subscribe\.html"\)/.test(between(web, "function PaidPicker()", "function AppOnlyNotice()")));
+
+  const terms = src("/app/terms/page.tsx").replace(/\{" "\}/g, " ").replace(/\s+/g, " ");
+  const off = between(terms, "{!WEB_SALES && (", "<PlanTerms />");
+  ok("the Terms, with the website not selling, lead with who sells new subscriptions, and quote no Apple price",
+    /New family subscriptions to Sona Premium are sold in the Sona app on iPhone and iPad, by Apple, at the price and free-trial length shown in the App Store\./.test(off) &&
+    /We are not selling new family subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
+  // "family", every time: a clinician's plans ARE new Sona Premium
+  // subscriptions sold on speaksona.com, two sections down the same page
+  ok("…and say FAMILY subscriptions, pointing a clinician at the plans still sold here",
+    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) && /A clinician(?:&apos;|')s plans are still sold here: see Premium for clinicians below\./.test(off));
+  // the charter paragraph is an offer only while the website sells
+  const charterOff = between(terms, ") : ( <> <strong>Charter price.</strong>", "</>");
+  ok("…and with the website not selling, the charter paragraph is what a charter plan costs, not an offer",
+    /\{WEB_SALES \? \( <> <strong>Charter price\.<\/strong> The first 50 families/.test(terms) &&
+    /A yearly subscription bought on speaksona\.com at the charter price is/.test(charterOff) && /keeps that price/.test(charterOff) &&
+    !/first 50|at checkout|new subscriptions/.test(charterOff), charterOff.slice(0, 240));
+  ok("…then say a subscription already bought on speaksona.com keeps working and renewing, and that the plan terms govern those",
+    /A subscription already bought on speaksona\.com keeps working\./.test(off) && /keeps renewing at the price it was bought at until you cancel it/.test(off) && /The terms that follow govern those subscriptions\./.test(off));
+  ok("…and drop the confirmation-page sentence, which describes a checkout that refuses",
+    /\{!FREE_MODE && WEB_SALES && \( <> After checkout, your confirmation page shows/.test(terms));
+  ok("…while the way to cancel a plan bought on speaksona.com stays in every state",
+    /For a family's subscription bought on speaksona\.com, email us and we will cancel it for you\./.test(terms.replace(/&apos;/g, "'")));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

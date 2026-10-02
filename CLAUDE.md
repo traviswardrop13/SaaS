@@ -133,10 +133,18 @@ sweeps. `tests/freetest.mjs` checks that both pricing switches agree. The
 next free window, if there is one, gets its own sweep in the build that ends
 it, never before.
 
-**Before families can buy on the iPhone** (Travis's App Store Connect task,
-not this repo): the yearly subscription must be approved in App Store Connect
-at $59.99. Until Apple approves it, the in-app purchase fails on the iPhone
-and only the web checkout sells. **The monthly one too** (1 Oct 2026):
+**Before families can buy on the iPhone** (Travis's tasks, not this repo).
+On 1 Oct 2026 none of the three was true, so **only the web checkout sold**:
+1. **The app build must carry the purchase plugin.** 1.0.4, the build on the
+   App Store, does not (`@revenuecat/purchases-capacitor` is missing from the
+   iOS project in `~/Documents/SaaS`; 1.0.3 build 6 had it). Without it the
+   app has no buy button: `Sona.iapAvailable()` is false.
+2. **RevenueCat:** the yearly product attached to the `full` entitlement. It
+   was attached to none (only an old `lifetime` product was), so a purchase
+   would have been taken by Apple and left the app locked.
+3. **App Store Connect:** the yearly subscription approved at the price he
+   wants. It was listed at $79.99, under a description saying $59.99.
+`NATIVE.md` says how to check each. **The monthly one too** (1 Oct 2026):
 `com.speaksona.app.monthly` must be approved there, at the monthly price,
 with **no introductory offer on it**, and sit in RevenueCat's `full`
 entitlement. Until all of that is true the iPhone shows the yearly plan alone:
@@ -247,6 +255,82 @@ pay-today monthly plan is the one people cancel most. (2) A web purchase is neve
 device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
 on Restore asks Stripe, so a web plan that was cancelled, or a trial that
 never became a charge, stays unlocked on that phone.
+
+**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE: BUILT, AND WAITING ON THE
+APP** (Travis, 1 Oct 2026, told that a family who pays on the website has no
+cancel button and that a cancelled web plan stays unlocked on the phone: "i
+dont want them paying on the website"). One switch, two copies, like
+`FREE_MODE`: `WEB_SALES` in `lib/pricing.ts` and `public/sona.js`
+(`Sona.webSales()`), pinned equal by `freetest`. It is the FAMILY web
+checkout only.
+
+**It shipped `true`: the website still sells.** The same night's review
+found that the app on the App Store (1.0.4) has **no buy button at all**: its
+build carries no RevenueCat plugin (the archives on Travis's Mac for 1.0.4
+have none; 1.0.3 build 6 had it). With the website off as well, no family
+could have bought Premium anywhere on the night his ad started. Set both
+copies to `false` when (a) a build with the purchase plugin is live, (b) its
+product is attached to RevenueCat's `full` entitlement and priced as he wants
+in App Store Connect, and (c) he says so — or on his word alone. Everything
+below is what `false` does; the code, the pages and the tests for it are in
+place, and the tests play both states whichever way it ships.
+- **The server refuses.** `/api/checkout` answers 410 ("Sona Premium is bought
+  in the Sona app on iPhone and iPad.") before it touches Stripe, and its
+  plain-link GET goes to the home page. `/api/charter` answers with no price
+  and no Stripe call. A hidden button is not a closed door: an old tab, a
+  bookmark or an old ad link reaches the same refusal.
+- **A browser family sees where Premium is, never a price.** The plan screen
+  shows one card, "Sona Premium is in the iPhone and iPad app", with the App
+  Store button (`#appCard`); so do `trial.html`, the Next `/subscribe` page
+  and the old `/families` page. No dollar figure, no "3 days free", no charter
+  line and no spots-left number in that state: the iPhone price is Apple's
+  (App Store Connect), and the charter offer was a web price. **The Terms are
+  the one exception:** they lead with where a family buys and name no Apple
+  price, then keep the web plans' prices and free days (`PlanTerms`) as the
+  terms of subscriptions already bought on speaksona.com, not as an offer
+  (the charter paragraph has an off twin for that). Do not strip them. It says
+  Premium "opens there": **a purchase in the app does not unlock the
+  website**, because nothing links an Apple purchase to a browser.
+- **No offer in a browser.** `planEligible()` is false in a browser that
+  cannot sell, so the practice win screen says "Done", the one-time ask is not
+  spent, and no "paywall viewed" is logged for a page that sells nothing. In
+  the app nothing changes: the Apple card never reads this switch.
+- **Nor in an app build that cannot sell** (true in BOTH states of the
+  switch): a build with no purchase plugin (`Sona.iapAvailable()` false, which
+  is the App Store's 1.0.4) is not eligible either, its plan screen says "Sona
+  Premium can't be bought in this version of the app yet" over what stays
+  free, with no decline row. It used to say "you're a founding family" over an
+  empty page, after a child had been told "Show a grown-up". Never "update the
+  app" there until a build that sells is in the store.
+- **People who already pay on the web keep everything.** Restore by email
+  (Settings, `trial.html`), `/api/subscription`, the receipt for a checkout
+  opened before the flip, the billing page route and the success page never
+  read the switch. They still cancel by email, and the plan screen now says so
+  to anyone with an active plan (`#planCancel`, with Apple's way beside it):
+  Settings' "Manage →" lands there.
+- **Clinicians still buy on the web.** `/api/slp/plan`, the dashboard's buy
+  buttons and `for-slps.html` never read it. The dashboard's one line about
+  what families pay says "in the Sona app on iPhone and iPad", with no figure.
+- **Settings › Account's plan links go to the plan screen** (`/subscribe.html`),
+  in both states. They went to the Next `/subscribe` page, which threw the
+  iPhone app back to Home: in the app, "See Premium" never reached the Apple
+  card.
+- **Tests play both states** through a session-only seam,
+  `sessionStorage["sona.websalesui"]` = `"1"` / `"0"` (never localStorage, never
+  a URL flag; it changes only what a page shows, since the server refuses
+  whatever a page shows). `websalestest` plays the pages; `caseloadtest` plays
+  the refusal against the fake Stripe.
+
+**What turning it off leaves, and is Travis's to know:** (1) a family on
+Android or a computer can use the free version and can no longer buy Premium
+anywhere (the website's cost answer then says Premium is bought in the app);
+(2) Premium bought in the app is the app's, not the website's; (3) nobody new
+can take a charter spot, so "$59.99 for the first 50 families" is no longer an
+offer anyone meets (the families who hold it keep it); (4) what a family pays
+is whatever App Store Connect says, and the in-app purchase works only once
+the product is approved there AND attached to the `full` entitlement in
+RevenueCat. On 1 Oct 2026 the yearly product was listed at $79.99 and was not
+attached to `full`, so a purchase would not have unlocked Premium.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const
@@ -980,6 +1064,59 @@ from main's covers), and the website tile is cut from it; the sticker is still
 a frame of the woken dinosaur (`public/assets/games/dino.webp`), replaced by
 painted art at that name. `sayplaytest` plays a whole dig.
 
+**Bubble Pop is rebuilt to be played** (Travis, 1 Oct 2026: "more like the
+feed echo vibe ... we want to have more bubbles to pop", then "yeah B", the
+plan called "Say it, and Echo blows bubbles"). It was one bubble at a time,
+five taps a round, and a child never had to say anything. Now, for ages 3-4:
+Echo holds a bubble wand; say the word and Echo blows six to eight bubbles;
+pop them all; the gold one has the word's picture inside and drops it into
+the basket; five words fill the basket, then Echo floats up inside one giant
+bubble, and popping it ends the round (about 37 pops, where there were 5).
+`public/bubbles.js` draws the sky on a canvas; `public/arcade-bubbles.html` is
+written by hand; the word turn, the mic and its quiet rules are `sayplay.js`'s,
+on the same play-game hook as Hoops. What it keeps:
+- **The word blows the bubbles; the finger pops them.** No bubble before the
+  word, so a tap on the empty sky pops nothing, and the step counts only when
+  every bubble is popped and the picture is in the basket. A finger dragged
+  across the sky pops what it crosses.
+- **Every round ends.** Bubbles bob in place and never float away; a touch
+  near one counts; left alone for about eight seconds the ones left glow and
+  take a wider touch; after about fifteen, a touch anywhere pops the nearest,
+  and once that help is on it stays on for that word (a beat between pops, so
+  one dragged finger cannot empty the sky). A bubble never pops by itself. The
+  giant one is the fifth step: the end card waits for its pop, and after six
+  seconds a touch anywhere pops it.
+- **One picture, not three.** The plan said "three picture cards, like Feed
+  Echo's choices"; the child never picks a card here, so the two extra ones
+  had no job. The asked word's picture is in the word panel, inside the gold
+  bubble, then in the basket.
+- **It is NOT a catalog `say` game.** It stays on the little kids' shelf with
+  its own Home card, and stays in their old five-round adventure
+  (`charge.html?daily=1`): the page banks a finished round and sends the end
+  card's button back to it, as Feed Echo does. Adding `say: true` would list
+  it twice on Home and point its sticker at one that does not exist.
+- **In the iPhone app the pops are media**, as Piano Tiles' notes are: each
+  sound is built once on the phone and played as a media element, because a
+  pop comes seconds after the mic closes, when an iPhone plays Web Audio as a
+  quiet phone call (and not at all with the ringer off). A browser keeps Web
+  Audio. How loud they are on a real phone is `MEDIA_PEAK` in the page: it was
+  set without a phone to listen on. A muted Sona (volume 0) plays none.
+- **Its wand, basket and sky are drawn plainly in code** until painted ones
+  arrive (`WAND_PIC` in `bubbles.js` is the drop-in); the bubble is the
+  painted one, the word pictures are Feed Echo's.
+- **Nothing is practice data**; each heard word is one rep on the week's
+  count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
+  <word>." with start-of-word words for the child's sound, and "heard" is a
+  voice of the right broad kind, exactly as in Hoops.
+Peekaboo still runs on `simple-play.js`, so the old engine's tests moved to
+it. `bubblestest` (its own suite: the three other played games already fill
+most of a suite's five minutes) plays a whole round, the smallest phone, the
+app's sounds, a slow microphone and a page hidden at the wrong moment.
+**That last one was an engine bug every played game had:** a page hidden in
+the quarter second after a move finished came back to no next word and no way
+on. `sayplay.js` now calls that moment `step`, which `resume()` reads as "the
+next word".
+
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
 OK... The talking moves to between waves"). The six first games are being made
@@ -1093,7 +1230,7 @@ Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
-between rounds, Echo's sound powers, a Hoops or Soccer word, Feed Echo's heard word.
+between rounds, Echo's sound powers, a Hoops, Soccer or Bubble Pop word, Feed Echo's heard word.
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
@@ -1146,9 +1283,10 @@ control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
-remains in the repo. **Bubble Pop is back** (Travis, 30 Sep 2026), free, the
-second game for ages 3-4 beside Feed Echo: the same engine
-(`simple-play.js`), a full-width Home card like Feed Echo's
+(`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep
+2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
+2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
+Feed Echo's
 (`crafted-home.css`), no release date so no New shelf, and a website tile
 cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests

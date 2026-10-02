@@ -74,7 +74,7 @@ await scenario('shared ElevenLabs playback',async()=>{
  ok('diagnostics are bounded, private, memory-only copies',safe);
  }finally{await ctx.close();}
 });
-for(const game of ['bubbles','peekaboo'])await scenario(game+' delivery and cache',async()=>{
+for(const game of ['peekaboo'])await scenario(game+' delivery and cache',async()=>{
  mode='pcm';const {ctx,page,errors}=await fresh('/arcade-'+game+'.html');try{
  const before=requests;ok(game+': opening a game does not start the demonstration clock',await page.evaluate(()=>!Sona.demoState().started));
  await page.click('#startGame');const started=await page.evaluate(()=>Sona.demoState().started);
@@ -94,14 +94,14 @@ for(const game of ['bubbles','peekaboo'])await scenario(game+' delivery and cach
 });
 // 28 Sep 2026: a stand-in (X-Sona-Voice-Keep: 0, the v2 clip sent while v4
 // Turbo was busy) is played but never saved, so "Hear it" asks the server again.
-await scenario('bubbles stand-in is never kept',async()=>{
- mode='standin';const {ctx,page,errors}=await fresh('/arcade-bubbles.html');try{
- const before=requests;await page.click('#startGame');await page.click('#revealButton');await page.waitForTimeout(150);
- ok('bubbles: a stand-in word is played',requests===before+1,{before,requests});
+await scenario('peekaboo stand-in is never kept',async()=>{
+ mode='standin';const {ctx,page,errors}=await fresh('/arcade-peekaboo.html');try{
+ const before=requests;await page.click('#startGame');await page.click('[data-door="1"]');await page.waitForTimeout(150);
+ ok('peekaboo: a stand-in word is played',requests===before+1,{before,requests});
  await page.click('#hearWord');await page.waitForTimeout(150);
- ok('bubbles: a stand-in is asked for again, not replayed from the phone',requests===before+2,{before,requests});
- ok('bubbles: nothing was saved on the phone',await page.evaluate(()=>Object.keys(__voiceTest.cache).length===0),await page.evaluate(()=>Object.keys(__voiceTest.cache)));
- ok('bubbles stand-in: no runtime errors',!errors.length,errors);
+ ok('peekaboo: a stand-in is asked for again, not replayed from the phone',requests===before+2,{before,requests});
+ ok('peekaboo: nothing was saved on the phone',await page.evaluate(()=>Object.keys(__voiceTest.cache).length===0),await page.evaluate(()=>Object.keys(__voiceTest.cache)));
+ ok('peekaboo stand-in: no runtime errors',!errors.length,errors);
  }finally{await ctx.close();}
 });
 await browser.close();await new Promise(resolve=>server.close(resolve));

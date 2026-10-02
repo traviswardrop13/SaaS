@@ -1,42 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#fff9ee">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Bubble Pop</title>
-  <link rel="stylesheet" href="/fonts.css">
-  <link rel="stylesheet" href="/simple-play.css">
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
+  <link href="/sayplay.css" rel="stylesheet">
+  <meta name="theme-color" content="#eaf7fb" />
+  <!--
+    Bubble Pop, rebuilt to be played (ages 3-4; Travis, 1 Oct 2026: "yeah B",
+    the plan called "Say it, and Echo blows bubbles"). Say the word and Echo
+    blows a cloud of bubbles; pop them all; the gold one drops the word's
+    picture into the basket; five words fill it, then one giant bubble with
+    Echo inside ends the round.
+    Written by hand: the bubbles are drawn and popped in /bubbles.js, and
+    every word turn, the mic and its quiet rules are /sayplay.js's, as in
+    Hoops, Soccer Goal and Dino Dig. It is not a catalog "say" game (it keeps
+    its own place on the little kids' shelf and in their old five-round
+    adventure), so the adventure's hand-off is kept at the foot of this page.
+    The page it replaced ran on /simple-play.js, which Peekaboo still uses.
+  -->
+  <style>
+    :root{--top:#eaf7fb;--bottom:#f6efd8;}
+    /* the sky is taller than a picture scene: bubbles need room to float */
+    #stageWrap.sky{width:min(100%,calc(58dvh * .846));background:#BFE6F7;}
+    #sky{display:block;width:100%;aspect-ratio:440/520;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer;}
+    /* Echo with the wand, the word's picture and the basket sit over the
+       canvas as HTML: the painted word pictures are sprite crops */
+    #bubEcho{position:absolute;left:1.5%;bottom:2%;width:25%;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(40,90,110,.25));}
+    #bubEcho.hop{animation:echoHop .9s cubic-bezier(.3,1.5,.5,1);}
+    @keyframes echoHop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
+    @media (prefers-reduced-motion: reduce){ #bubEcho.hop{animation:none;} }
+    #prize{position:absolute;left:0;top:0;width:64px;height:64px;pointer-events:none;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%;will-change:transform;}
+    #prize[hidden]{display:none;}
+    #basket{position:absolute;left:29%;right:2.5%;bottom:4%;height:16.5%;display:flex;align-items:center;justify-content:space-between;gap:2.5%;padding:0 3%;pointer-events:none;}
+    #basket .well{flex:1 1 0;aspect-ratio:1;max-height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    #basket .well.full{animation:wellIn .45s cubic-bezier(.3,1.6,.5,1) both;}
+    @keyframes wellIn{0%{transform:scale(.5)}100%{transform:scale(1)}}
+    @media (prefers-reduced-motion: reduce){ #basket .well.full{animation:none;} }
+  </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-bubbles.css" rel="stylesheet">
 </head>
-<body data-simple-game="bubbles" data-phase="intro">
-  <div class="game-shell">
-    <header class="game-header">
-      <a class="back-link" id="backLibrary" href="/activities.html"><span aria-hidden="true">←</span> Play library</a>
-      <a class="sona-brand" id="homeLink" href="/today.html" aria-label="Sona home"><img src="/assets/crafted/echo-welcome.webp" alt=""> Sona</a>
-      <button class="pause-button" id="pauseGame" type="button" hidden><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M5 3v12M13 3v12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg><span>Pause</span></button>
-    </header>
-
-    <main>
-      <section class="start-panel" id="startPanel" aria-labelledby="gameTitle">
-        <div class="intro-copy"><p class="eyebrow">SIMPLE PLAY · NO TIMER</p><h1 id="gameTitle">Bubble Pop</h1><h2>A little pop.<br> A big surprise.</h2><p class="intro-description">Pop a bubble, say the word together, and see what appears next.</p><button class="primary" id="startGame" type="button">Let’s play <span aria-hidden="true">→</span></button><p class="together-note">Five little surprises. Take your time.</p></div>
-        <div class="intro-art" aria-hidden="true"><div class="intro-bubbles"><span class="bubble bubble-small"></span><span class="bubble bubble-main"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><span class="bubble bubble-tiny"></span><span class="bubble bubble-back"></span></div><span class="intro-spark spark-a"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><span class="intro-spark spark-b"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div>
-      </section>
-
-      <section class="play-panel" id="playPanel" aria-label="Bubble Pop game" hidden>
-        <div class="round-top"><p class="eyebrow">Bubble Pop</p><p id="progressText">Surprise 1 of 5</p></div>
-        <div class="progress-dots" id="progressDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="prompt"><h1 id="promptTitle" tabindex="-1">Pop a bubble</h1><p id="promptHint">A little surprise is waiting.</p></div>
-        <div class="play-stage" id="playStage"><span class="scene-bubble scene-bubble-a" aria-hidden="true"></span><span class="scene-bubble scene-bubble-b" aria-hidden="true"></span><button class="bubble" id="revealButton" type="button" aria-label="Pop the bubble"><span class="bubble-surprise" aria-hidden="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></button><div class="word-discovery"><div id="wordPicture" aria-hidden="true"></div><p id="wordLabel"></p></div><span class="reveal-spark reveal-spark-a" aria-hidden="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><span class="reveal-spark reveal-spark-b" aria-hidden="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div>
-        <div class="play-controls"><p class="heard-message" id="heardMessage" role="status"></p><div class="turn-buttons"><button class="secondary" id="hearWord" type="button" hidden><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M17 8q4 4 0 8M19.5 4.5q7.5 7.5 0 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Hear it</button><button class="primary" id="nextTurn" type="button" hidden>Next <span aria-hidden="true">→</span></button></div></div>
-      </section>
-
-      <section class="pause-panel message-panel" id="pausePanel" aria-labelledby="pauseTitle" hidden><div class="rest-art" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt=""></div><p class="eyebrow">TAKE YOUR TIME</p><h1 id="pauseTitle">A little break</h1><p>Your surprise will be right here.</p><button class="primary" id="resumeGame" type="button">Keep playing <span aria-hidden="true">→</span></button><a class="text-link" href="/activities.html">Back to the play library</a></section>
-
-      <section class="finish-panel message-panel" id="finishPanel" aria-labelledby="finishTitle" hidden><div class="finish-art" aria-hidden="true"><span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><img src="/assets/crafted/echo-cheer.webp" alt=""><span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div><p class="eyebrow">FIVE LITTLE SURPRISES</p><h1 id="finishTitle" tabindex="-1">You found them all!</h1><p id="finishCopy">That was fun. Let’s play again!</p><button class="primary" id="playAgain" type="button">Play again <span aria-hidden="true">↻</span></button><a class="text-link" href="/activities.html">Choose another game <span aria-hidden="true">→</span></a></section>
-    </main>
-    <footer class="game-footer"><span class="footer-dot" aria-hidden="true"></span> Little discoveries, together.</footer>
+<body data-phase="boot" data-crafted="bubbles">
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Back">✕</button>
+      <span class="hudpill"><span id="ttl">Bubble Pop</span></span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
+    </div>
+    <div id="stageWrap" class="sky">
+      <canvas id="sky" role="img" aria-label="A sky where Echo holds a bubble wand. Say the word and Echo blows bubbles, then pop them all. The gold bubble has a picture inside for the basket."></canvas>
+      <div id="basket" role="img" aria-label="A basket with five spots for pictures"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
+      <img id="bubEcho" src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <div id="prize" hidden aria-hidden="true"></div>
+    </div>
+    <div id="turnPanel" aria-live="polite">
+      <div id="picBox"><span id="pic"></span></div>
+      <div id="word"></div>
+      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+      <div id="listenRow">
+        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></span>
+        <span id="micState"></span>
+        <span id="cheer"></span>
+        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
   </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <h2 id="startTitle">Bubble Pop</h2>
+      <p>Say the word and Echo blows bubbles. Pop them all, and find the gold one!</p>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word and Echo blows the bubbles.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo">Not now</button>
+    </div>
+  </div>
+  <div class="ovl" id="pauseOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Paused</h2>
+      <button class="btn" id="resume">Keep playing</button>
+    </div>
+  </div>
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
   <script src="/sona.js"></script>
-  <script src="/simple-play.js"></script>
+  <script src="/crafted-words.js"></script>
+  <script src="/sayplay.js"></script>
+  <script src="/bubbles.js"></script>
+  <script>
+  (function () {
+    // THE BUBBLES' OWN SOUNDS, made on the phone and played through the engine,
+    // so each waits for a closed mic like every chime.
+    //
+    // IN THE IPHONE APP THEY ARE MEDIA, as Piano Tiles' notes are (1 Oct 2026).
+    // A pop comes seconds after the mic closes, and an iPhone plays Web Audio
+    // on a page that just had the mic open as a quiet phone call, and not at
+    // all with the ringer switched off: the pops are the game, and they would
+    // not be there. So each sound is built once as a short wave, and the app
+    // plays it as a media element (the level is in the samples: an iPhone
+    // gives a media element no volume). A browser keeps Web Audio. A refused
+    // element falls back to Web Audio, never to silence. How loud it is on a
+    // real phone is MEDIA_PEAK: it was set without a phone to listen on.
+    var S = window.Sona, RATE = 24000, MEDIA_PEAK = 0.4, WEB_GAIN = 0.16;
+    var waves = {}, bufs = {}, players = {}, mediaBroken = false;
+    // each pop a little different, so a run of them sounds like bubbles
+    var POPS = [640, 760, 900, 700, 840, 980, 720], popN = 0;
+    // a sound is a few parts: a tone that slides from f0 to f1, or a puff of
+    // noise, each starting at `at` and dying away over `dur` seconds
+    function recipe(name) {
+      if (name.indexOf("pop") === 0) { var f = POPS[+name.slice(3) || 0]; return { secs: 0.1, level: 0.9, parts: [{ f0: f, f1: f * 2.1, dur: 0.09, gain: 1 }] }; }
+      if (name === "gold") return { secs: 0.42, level: 0.8, parts: [{ f0: 880, f1: 1760, dur: 0.12, gain: 1 }, { f0: 1318.5, dur: 0.2, gain: 0.55, at: 0.09 }, { f0: 1760, dur: 0.22, gain: 0.4, at: 0.18 }] };
+      if (name === "drop") return { secs: 0.18, level: 0.9, parts: [{ f0: 320, f1: 170, dur: 0.14, gain: 1 }, { f0: 660, dur: 0.1, gain: 0.35, at: 0.05 }] };
+      if (name === "blow") return { secs: 0.5, level: 0.7, parts: [{ noise: true, f0: 500, f1: 1500, dur: 0.5, gain: 1, fall: 0.8 }] };
+      return { secs: 0.72, level: 1, parts: [{ noise: true, f0: 900, f1: 3200, dur: 0.22, gain: 0.9 }, { f0: 300, f1: 1200, dur: 0.2, gain: 0.8 }, { f0: 1046.5, dur: 0.2, gain: 0.4, at: 0.16 }, { f0: 1318.5, dur: 0.2, gain: 0.4, at: 0.28 }, { f0: 1568, dur: 0.3, gain: 0.4, at: 0.4 }] };   // big
+    }
+    function wave(name) {
+      if (waves[name]) return waves[name];
+      var r = recipe(name), n = Math.round(RATE * r.secs), a = new Float32Array(n), peak = 0, i, p;
+      for (p = 0; p < r.parts.length; p++) {
+        var q = r.parts[p], i0 = Math.round((q.at || 0) * RATE), m = Math.round(q.dur * RATE), ph = 0, seed = 1234567 + p * 7919;
+        for (i = 0; i < m && i0 + i < n; i++) {
+          var t = i / m, f = q.f1 ? q.f0 * Math.pow(q.f1 / q.f0, t) : q.f0, v;
+          ph += 6.283185307 * f / RATE;
+          if (q.noise) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; v = (seed / 0x3fffffff - 1) * 0.55 + Math.sin(ph) * 0.45; }   // breathy: noise riding the slide
+          else v = Math.sin(ph);
+          // no click going in; q.fall shapes how fast it dies away
+          a[i0 + i] += v * q.gain * Math.min(1, i / (RATE * 0.004)) * Math.pow(1 - t, q.fall || 1.6);
+        }
+      }
+      for (i = 0; i < n; i++) if (Math.abs(a[i]) > peak) peak = Math.abs(a[i]);
+      for (i = 0; i < n; i++) a[i] = a[i] / (peak || 1) * r.level;
+      return (waves[name] = a);
+    }
+    function playWeb(name, ctx, vol) {
+      var b = bufs[name];
+      if (!b) { var w = wave(name); b = ctx.createBuffer(1, w.length, RATE); b.getChannelData(0).set(w); bufs[name] = b; }
+      var src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = b; g.gain.value = WEB_GAIN * vol; src.connect(g); g.connect(ctx.destination); src.start(0);
+    }
+    function asMedia() { return !mediaBroken && !!(S && S.pcmWave && S.voiceAsMedia && S.voiceAsMedia()); }
+    function playMedia(name, ctx, vol) {
+      try {
+        var p = players[name];
+        if (!p) {
+          var w = wave(name), bytes = new Uint8Array(w.length * 2), dv = new DataView(bytes.buffer), i;
+          for (i = 0; i < w.length; i++) dv.setInt16(i * 2, Math.round(w[i] * MEDIA_PEAK * 32767), true);
+          p = new Audio(URL.createObjectURL(S.pcmWave(bytes))); p.preload = "auto";
+          p.onerror = function () { mediaBroken = true; };
+          players[name] = p;
+        }
+        try { if (p.currentTime) p.currentTime = 0; } catch (e) {}
+        var r = p.play();
+        if (r && r.then) r.then(null, function () { mediaBroken = true; try { playWeb(name, ctx, vol); } catch (e) {} });
+      } catch (e) { mediaBroken = true; playWeb(name, ctx, vol); }
+    }
+    // (a level of zero is Sona's own mute: the media path has no volume to turn
+    // down, so it must not play at all)
+    function sound(name) { return function (ctx, vol) { if (!vol) return; var n = name === "pop" ? "pop" + (popN++ % POPS.length) : name; if (asMedia()) playMedia(n, ctx, vol); else playWeb(n, ctx, vol); }; }
+    SayPlay.start({
+      key: "bubbles", title: "Bubble Pop",
+      steps: [[], [], [], [], []], finale: [],
+      done: { title: "You popped them all!", sub: "Five words, and five pictures in the basket." },
+      play: window.Bubbles,
+      sounds: { blow: sound("blow"), pop: sound("pop"), gold: sound("gold"), drop: sound("drop"), big: sound("big") },
+      soundMs: { blow: 520, pop: 120, gold: 440, drop: 200, big: 740 },
+    });
+    // THE OLD FIVE-ROUND ADVENTURE for little kids (charge.html?daily=1) still
+    // deals Bubble Pop. A finished round is banked here, and the end card's
+    // button goes back to the adventure, as Feed Echo's does. The engine knows
+    // nothing of it, so the click is taken before it reaches "Play again".
+    var daily = false;
+    if (S && S.simpleAdventure && window.Bubbles) {
+      window.Bubbles.onFinale = function () {
+        daily = !!S.simpleAdventure("bubbles", true);
+        if (daily) document.getElementById("again").textContent = "Keep going →";
+      };
+      document.addEventListener("click", function (e) {
+        var t = e.target && e.target.closest ? e.target.closest("#again") : null;
+        if (!t || !daily || !S.simpleAdventure("bubbles", false)) return;
+        e.stopPropagation(); e.preventDefault();
+        location.href = "/charge.html?daily=1&banked=0";
+      }, true);
+    }
+  })();
+  </script>
 </body>
 </html>

@@ -167,18 +167,19 @@ try {
     } finally { await context.close(); }
   });
 
-  await scenario('Bubble Pop: the bubble and the stage around it', async () => {
+  // Bubble Pop was rebuilt on 1 Oct 2026: its bubbles live on a canvas now, and
+  // a finger dragged across it pops them, so the sky says none (as Hoops'
+  // court does) and everything around it keeps the no-double-tap rule.
+  await scenario('Bubble Pop: the sky and the word panel around it', async () => {
     const { context, page, open } = await fresh();
     try {
       await open('arcade-bubbles.html');
-      await page.click('#startGame');
-      await page.waitForSelector('#playPanel:not([hidden])');
       const m = await page.evaluate(([fn]) => {
-        const effective = new Function('return ' + fn)();
-        return { bubble: effective('#revealButton'), stage: effective('#playStage'), prompt: effective('#promptTitle') };
+        const effective = new Function('return ' + fn)(); const sky = document.getElementById('sky');
+        return { own: sky && getComputedStyle(sky).touchAction, sky: effective(sky), start: effective('#startBtn'), panel: effective('#turnPanel'), word: effective('#word') };
       }, [effective.toString()]);
-      ok('Bubble Pop: tapping the bubble fast never zooms', m.bubble === 'manipulation', m);
-      ok('Bubble Pop: a tap beside the bubble never zooms either', m.stage === 'manipulation' && m.prompt === 'manipulation', m);
+      ok('Bubble Pop: the sky says none, so popping bubbles fast (or dragging across them) never zooms or scrolls', m.own === 'none' && m.sky === 'none', m);
+      ok('Bubble Pop: a tap beside the sky never zooms either', m.start === 'manipulation' && m.panel === 'manipulation' && m.word === 'manipulation', m);
     } finally { await context.close(); }
   });
 
