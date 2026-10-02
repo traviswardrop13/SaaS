@@ -333,6 +333,17 @@ for (const [key, file] of ARCADE) {
       }).catch((e) => ({ error: String(e) }));
       ok(key + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
       ok(key + ": \u2026and offers Next and Back home", /Next/.test(end.next || "") && end.home === "Back home", end);
+      // Echo hops under the round's count line, and his box has to hold the
+      // whole hop: at 120px he stood proud of it and hid "notes" at the top of
+      // every hop (1 Oct 2026). Measured at rest, plus the hop's own reach.
+      const hop = /@keyframes echoHop\{[^@]*?translateY\(-(\d+)px\) rotate\(-(\d+)deg\)/.exec(code) || [];
+      const gap = await page.evaluate(([px, deg]) => {
+        const img = document.querySelector("#endOvl .echoWin img"), above = img.parentNode.previousElementSibling, was = img.style.animation;
+        img.style.animation = "none"; const r = img.getBoundingClientRect(); img.style.animation = was;
+        const a = deg * Math.PI / 180, reach = px + r.height / 2 * (Math.cos(a) + Math.sin(a) - 1), line = above.getBoundingClientRect();
+        return { above: above.id, text: above.textContent, shown: line.height > 0, reach, clear: r.top - reach - line.bottom };
+      }, [+hop[1], +hop[2]]).catch((e) => ({ error: String(e) }));
+      ok(key + ": at the top of his hop, Echo stays clear of the count line above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, gap);
       await page.waitForTimeout(500);
       l = await log(page);
       ok(key + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
