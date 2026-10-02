@@ -121,7 +121,10 @@ await scenario('cold browser voice list',async()=>{
 // 29 Sep 2026 — ECHO'S WORDS, RACHEL'S SOUND. With her clips on, the first
 // line of a sound round is ONE clip joined on the phone: v4 Turbo says the
 // words up to "make your", her recorded R (/coach/say-echo/R-sound.wav) takes
-// the letter's place, and v4 Turbo says "sound, five times." Her whole July
+// the letter's place, and v4 Turbo says "sound, five times." and then "Go!"
+// (since 2 Oct 2026, Travis: "i also wanna try to have the 11 labs voice say
+// 'Go!'"; asked for on its own and joined on, so the words before it keep
+// the text every phone already saved: charge.html, GO, ON ITS OWN). Her whole July
 // line never plays. It is one listening turn, pauses and resumes as one line,
 // slows as one for the turtle, and falls back to the whole TTS line if her
 // recording is missing.
@@ -132,11 +135,13 @@ await scenario('human model and interruption',async()=>{
     ok('the joined line is identified locally as carrying her recording',await page.evaluate(()=>__pacing.diagnostics.some(e=>e.source==='human')));
     const said=await page.evaluate(()=>__pacing.ttsTexts.slice());
     ok('Echo says the words around the sound and never the letter',said.includes('Ready? Pull your tongue back and up, and make your')&&said.includes('sound, five times.')&&!said.some(t=>/make your R sound/.test(t)),said);
+    ok('…and "Go!" on its own, never inside another request',said.includes('Go!')&&!said.some(t=>t!=='Go!'&&/Go!/.test(t)),said);
     ok('her whole recorded line never plays',await page.evaluate(()=>__pacing.media.length===0));
     const lens=await page.evaluate(()=>__pacing.bufLens.slice());
     // Her R take plus both halves, each trimmed to 50 ms of quiet at the join
-    // (this fake voice sends silence, so the halves shrink to ~1,200 samples).
-    ok('the three pieces play as ONE clip: both halves and her one R',lens.length===1&&lens[0]>R_TAKE&&lens[0]<R_TAKE+48000*2+2400,{lens,R_TAKE});
+    // (this fake voice sends silence, so the halves shrink to ~1,200 samples),
+    // and "Go!" after a 0.2s breath.
+    ok('the pieces play as ONE clip: both halves, her one R and "Go!"',lens.length===1&&lens[0]>R_TAKE+4800&&lens[0]<R_TAKE+48000*3+4800,{lens,R_TAKE});
     const target=await page.locator('#bTarget').innerText();
     await page.evaluate(()=>__pacing.background());await page.locator('#pauseOvl.show').waitFor();
     ok('pausing stops the line and withholds the child turn',await page.evaluate(()=>!__pacing.pcm.some(p=>p.active)&&!engineOn));
@@ -155,7 +160,7 @@ await scenario('the voice service is down: her whole July line plays',async()=>{
   const {context,page,errors}=await fresh({human:true,server:false});try{
     await page.waitForFunction(()=>__pacing.media.some(m=>m.active));
     ok('with no voice service, her recording needs none: the whole July line plays',await page.evaluate(()=>__pacing.media.length===1&&/\/coach\/say-echo\/R\.mp3$/.test(__pacing.media[0].src)&&__pacing.voices.length===0));
-    ok('…and nothing asks the failing service for the whole line on top',await page.evaluate(()=>!__pacing.ttsTexts.includes('Ready? Pull your tongue back and up, and make your R sound, five times.')));
+    ok('…and nothing asks the failing service for the whole line on top',await page.evaluate(()=>!__pacing.ttsTexts.some(t=>/make your R sound/.test(t))));
     await page.evaluate(()=>__pacing.media[0].end());await childTurn(page);
     ok('her line hands over to the child as the joined one does',/Your turn/.test(await status(page)));
     clean('voice down',errors);
@@ -166,7 +171,7 @@ await scenario('a missing recording falls back to the whole line',async()=>{
   const {context,page,errors}=await fresh({human:true,server:true,noClip:true});try{
     await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
     const said=await page.evaluate(()=>__pacing.ttsTexts.slice());
-    ok('without her recording Echo says the whole line, letter and all',said.includes('Ready? Pull your tongue back and up, and make your R sound, five times.'),said);
+    ok('without her recording Echo says the whole line, letter and all, and "Go!" on its own',said.includes('Ready? Pull your tongue back and up, and make your R sound, five times.')&&said.includes('Go!'),said);
     ok('nothing half-said: the fallback is one clip and no human playback',await page.evaluate(()=>__pacing.pcm.length===1&&!__pacing.diagnostics.some(e=>e.source==='human')));
     clean('missing recording',errors);
   }finally{await context.close();}

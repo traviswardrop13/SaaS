@@ -137,6 +137,23 @@ try {
         await clean('accepted sound',page,errors);
       }finally{await context.close();}
     });
+    // 2 Oct 2026: a sound heard just before the 6.5 s limit keeps the mic
+    // open 550 ms more for Apple's recognizer, and the limit used to cut that
+    // short as "Tap Echo to try again", throwing the heard sound away. Fruit
+    // Slice already kept it; the slow keys now do too.
+    await scenario('a sound just before the limit',async()=>{
+      const{context,page,errors}=await fresh();try{
+        await page.locator('#slowKeys').click();await ready(page);
+        await page.waitForFunction(()=>performance.now()-__slowTest.openedAt>=6000,null,{timeout:9000});
+        await page.evaluate(()=>{__slowTest.voice=true;});
+        const heard=await page.waitForFunction(()=>slowTurn&&slowTurn.heardAt,null,{timeout:2000}).then(()=>true,()=>false);
+        const at=await page.evaluate(()=>slowTurn&&slowTurn.heardAt?slowTurn.heardAt-__slowTest.openedAt:null);
+        await page.waitForFunction(()=>!slowTurn,null,{timeout:4000});
+        await page.evaluate(()=>{__slowTest.voice=false;});
+        ok('a sound heard in the last moment before the limit still earns slower keys, not "try again"',heard&&at>5950&&(await page.evaluate(()=>slowMs>0)),{at,status:await page.locator('#slowStatus').innerText()});
+        await clean('late sound',page,errors);
+      }finally{await context.close();}
+    });
     for(const cfg of [{text:'',name:'unclear transcript',reward:true},{text:'rrrr',hiss:true,name:'wrong sound family',reward:false}])await scenario(cfg.name,async()=>{
       const{context,page,errors}=await fresh(cfg);try{
         await page.locator('#slowKeys').click();await ready(page);await voiced(page);

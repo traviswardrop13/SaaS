@@ -282,7 +282,8 @@ await scenario("human practice prompt respects sound settings", async () => {
       const oldPCM = playPCM, oldFetch = window.fetch, oldHuman = HUMANCLIPS, oldItem = ITEM, oldProfile = profile;
       const calls = [];
       window.fetch = (url, opts) => {
-        calls.push({ fetch: String(url) });
+        let text = null; try { text = JSON.parse(opts.body).text; } catch (e) {}
+        calls.push({ fetch: String(url), text });
         if (String(url) === "/api/tts") return Promise.resolve(new Response(new Uint8Array(4800), { headers: { "X-Sona-Voice-Keep": "0" } }));
         return oldFetch(url, opts);
       };
@@ -300,7 +301,10 @@ await scenario("human practice prompt respects sound settings", async () => {
     ok("zero volume never starts the human prompt", results[0].calls.length === 0, results[0]);
     ok("disabled voice never starts the human prompt", results[1].calls.length === 0, results[1]);
     const c = results[2].calls, plays = c.filter((x) => x.play);
-    ok("a human prompt asks for her one R and Echo's two halves", c.filter((x) => x.fetch === "/coach/say-echo/R-sound.wav").length === 1 && c.filter((x) => x.fetch === "/api/tts").length === 2, c);
+    // 2 Oct 2026: the prompt hands the turn over with "Go!", Echo's own clip,
+    // asked for on its own (charge.html, GO, ON ITS OWN) and joined on.
+    const tts = c.filter((x) => x.fetch === "/api/tts");
+    ok("a human prompt asks for her one R, Echo's two halves, and \"Go!\" on its own", c.filter((x) => x.fetch === "/coach/say-echo/R-sound.wav").length === 1 && tts.filter((x) => x.text !== "Go!").length === 2 && tts.filter((x) => x.text === "Go!").length === 1, c);
     ok("a human prompt plays once, as one clip, at the selected positive volume", plays.length === 1 && plays[0].volume === 0.35 && plays[0].play > 9600, c);
   } finally { await context.close(); }
 });

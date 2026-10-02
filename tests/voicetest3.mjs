@@ -73,14 +73,15 @@ await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.htm
 await page.waitForTimeout(2500);
 // 29 Sep 2026 — ECHO'S WORDS, RACHEL'S SOUND. Isolation asks the voice for
 // the WORDS around the sound, "Ready? Pull your tongue back and up, and make
-// your" and "sound, five times.", and Rachel's one recorded R
+// your" and "sound, five times. Go!", and Rachel's one recorded R
 // (/coach/say-echo/R-sound.wav) takes the letter's place — the real sound,
 // which TTS can't perform, so no post ever carries it (noSustained guards
 // every post). This server refuses TTS, so the page then falls back to the
 // exact calm whole line: the only other prompt it may post.
 // CITY1: the house's story beat is spoken FIRST now, so the prompt is not
 // necessarily post 0 — pick the prompt out by its shape, same as sylLine below.
-const r1halves = ttsPosts.includes("Ready? Pull your tongue back and up, and make your") && ttsPosts.includes("sound, five times.");
+// 2 Oct 2026: and "Go!" on its own, joined on after them (GO, ON ITS OWN).
+const r1halves = ttsPosts.includes("Ready? Pull your tongue back and up, and make your") && ttsPosts.includes("sound, five times.") && ttsPosts.includes("Go!");
 ok("E2E r1 asks the voice for the words around the sound, never the sound", r1halves, true);
 const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l) && !/make your$/.test(l))[0];
 // CALM PROMPT (24 Sep 2026, rewritten deliberately): was "...five times...
@@ -89,7 +90,12 @@ const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l) && !/make your$/.test
 // before anything could hear the child who obeyed it; the glowing mic hands
 // the turn over instead. The mouth cue and the practice word inside it are
 // unchanged (Rachel's calls).
-const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times.";
+// "Go!" BACK ON THE HAND-OVER (2 Oct 2026, Travis: "i also wanna try to have
+// the 11 labs voice say 'Go!'"): most children can't read, and nothing they
+// could hear told them it was their turn. It is the only "!" in the line.
+// Its words are asked for without the "Go!" first (GO, ON ITS OWN), then the
+// whole line with it if that fails: either is the exact calm line.
+const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times." || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times. Go!";
 if (!r1ok) fails++;
 console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 whole-line fallback is the exact calm line  → " + JSON.stringify(r1prompt || "(no whole-line post — the joined line played)"));
 if (!r1ok) fails++;
@@ -125,7 +131,7 @@ if (!r2.sylls.includes(r2.prompt)) fails++;
 // matching the prompt grammar — not simply the first thing said.
 const sylLine = ttsPosts.filter((l) => /^Ready\?/.test(l))[0] || ttsPosts[0] || "";
 // ONE syllable per round now — the card no longer rotates rah→ree→roo mid-round
-const sylWant = /^Ready\? Say [a-z]+, five times\.$/; // calm frame, no spoken "Your turn." (24 Sep 2026)
+const sylWant = /^Ready\? Say [a-z]+, five times\.$/; // calm frame, no spoken "Your turn." (24 Sep 2026); "Go!" hands it over, asked for on its own (2 Oct 2026)
 console.log((sylWant.test(sylLine) ? "PASS" : "FAIL") + "  E2E r2 spoken one syllable  → " + JSON.stringify(sylLine));
 if (!sylWant.test(sylLine)) fails++;
 for (const t of ttsPosts) noSustained("E2E:" + t.slice(0, 24), t);
@@ -165,7 +171,8 @@ const cases = await page.evaluate(
       const tip = new Function("c", "soundName", "return " + failTipSrc)(c, soundName);
       // 24 Sep 2026: the calm retry line (was "Hmm, that was a different
       // sound! {tip}. Try again!"). Pinned against charge.html's source below.
-      return "Let's try that one again. " + tip + ".";
+      // 2 Oct 2026: the mic opens straight after it, so it ends on "Go!".
+      return "Let's try that one again. " + tip + ". Go!";
     };
     out.failR = failFor("R"); out.failS = failFor("S"); out.failZ = failFor("Z"); out.failM = failFor("M");
     // card rotation: paintCard with a syllable ITEM must update the bubble target
@@ -186,37 +193,50 @@ const cases = await page.evaluate(
 // nothing; the glowing mic, lit only once the window hears, marks the turn.
 // The mouth cue (CUES tip, first clause) and the practice word are exactly
 // what they were — Rachel's calls.
-ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times.");
-ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times.");
-ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times.");
-ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times.");
-ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times.");
-ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times.");
-ok("word level", cases.word, "Ready? Say rabbit, five times.");
-ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times.");
-ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times.");
+// 2 Oct 2026 (Travis: "i also wanna try to have the 11 labs voice say
+// 'Go!'"): every line that hands the turn over ends "… Go!"; the rest of the
+// frame is the calm one above.
+ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times. Go!");
+ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times. Go!");
+ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times. Go!");
+ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times. Go!");
+ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times. Go!");
+ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times. Go!");
+ok("word level", cases.word, "Ready? Say rabbit, five times. Go!");
+ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times. Go!");
+ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times. Go!");
 ok("card flip prompt", cases.cardPrompt, "ree");
 // isolation shows the SUSTAINED target on screen (huge, orange) — the
 // no-sustained rule below guards SPOKEN lines only, so card* is excluded
 ok("card isolation prompt", cases.cardIso, "rrrr");
 // The tip text is Rachel's CUES wording, untouched; only the frame is calmer.
-ok("fail R", cases.failR, "Let's try that one again. Pull your tongue back and up like a tiger growl.");
-ok("fail S", cases.failS, "Let's try that one again. Teeth together, big smile, let the air hiss out.");
-ok("fail Z", cases.failZ, "Let's try that one again. Teeth together and buzz like a bee.");
-ok("fail M", cases.failM, "Let's try that one again. Lips together and hum.");
-ok("charge.html speaks exactly the calm retry line pinned above", /await say\("Let's try that one again\. "\+tip\+"\."\);/.test(html), true);
+ok("fail R", cases.failR, "Let's try that one again. Pull your tongue back and up like a tiger growl. Go!");
+ok("fail S", cases.failS, "Let's try that one again. Teeth together, big smile, let the air hiss out. Go!");
+ok("fail Z", cases.failZ, "Let's try that one again. Teeth together and buzz like a bee. Go!");
+ok("fail M", cases.failM, "Let's try that one again. Lips together and hum. Go!");
+ok("charge.html speaks exactly the calm retry line pinned above", /await say\("Let's try that one again\. "\+tip\+"\. Go!"\);/.test(html), true);
+// ...and Echo's idea, the other line the retry hands over on.
+ok("charge.html ends Echo's idea on the hand-over's \"Go!\"", /await say\("I have an idea\. Let's try this one\. "\+[^\n]*\+"\. Go!"\);/.test(html), true);
 for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noSustained(k, v);
 
 // ---- CALM, NOT HYPED (24 Sep 2026) ----
 // The voice reads "!" as a jump in pitch and energy. Travis heard the result
 // as "jumpy and explosive" and asked for "relaxed and sweet, like talking to a
 // little kid". So no line Echo SPEAKS in these places may carry a "!".
+// Except one (2 Oct 2026, Travis: "i also wanna try to have the 11 labs
+// voice say 'Go!'"): a line that hands the child their turn ends "Go!", and
+// that is the only "!" it may carry. Every practice line here is one.
 const noBang = (name, s) => {
   const pass = typeof s === "string" && s.length > 0 && !s.includes("!");
   if (!pass) fails++;
   console.log((pass ? "PASS" : "FAIL") + "  no \"!\"  " + name + (pass ? "" : "  → " + JSON.stringify(s)));
 };
-for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noBang("practice line " + k, v);
+for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) {
+  const handOver = typeof v === "string" && v.endsWith(" Go!");
+  if (!handOver) fails++;
+  console.log((handOver ? "PASS" : "FAIL") + "  practice line " + k + " hands over with \"Go!\"" + (handOver ? "" : "  → " + JSON.stringify(v)));
+  noBang("practice line " + k + " (before its \"Go!\")", handOver ? v.slice(0, -4) : v);
+}
 // The praise list, read from the live Sona object, not from a copy.
 const praises = await page.evaluate(() => (window.Sona && Sona.PRAISES) ? Sona.PRAISES.slice() : null);
 ok("praise is the calm list", JSON.stringify(praises), JSON.stringify(["Nice one.", "Good job.", "I heard that.", "That was lovely.", "Well done."]));

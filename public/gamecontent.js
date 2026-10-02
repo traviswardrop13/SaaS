@@ -41,6 +41,38 @@
     var on = ONSET[sound] || sound.toLowerCase();
     return ["ah", "ee", "oo", "oh", "ay"].map(function (v) { var t = SWAP[on + v] || (on + v); return { t: t, say: t }; });
   }
+  // ── what a GAME's say-it card may ask for, past the bare sound (Travis, 1
+  // Oct 2026: "start with isolation then ree rah roh then rot") ──
+  // The card between rounds asks ONE of these a card, never three in a breath:
+  // a rotating list was tried in July and confused children. They are built
+  // from syllables() so the never-say swaps above hold, in Travis's order
+  // (ee, ah, oh), with oo and ay standing in for one that is skipped.
+  // GAME_SKIP: Echo's computer voice models a card's syllable, and it reads
+  // "gee" as "jee" and "thee" as the loud th, the wrong sound for the child
+  // copying it; "pee" is a potty word.
+  // GAME_SYL_ON is the switch, one sound at a time. A sound goes in only
+  // after someone has LISTENED to its lines on a phone (R is where a changed
+  // voice once slid toward "w"). A sound that is not in it gets nothing here,
+  // and its cards keep asking the bare sound, exactly as before.
+  // GAME_SHORT is the short word that follows the syllables: an explicit list
+  // Rachel can read, never "the shortest bank word" (L tied on lion and
+  // leaf). "rot" is Travis's word; it is in no word bank and has no picture,
+  // so only a text card may ask it. All of this is Rachel's call.
+  var GAME_SYL_ON = ["R"];
+  var GAME_SKIP = { P: ["pee"], G: ["gee"], TH: ["thee"] };
+  var GAME_SHORT = { R: "rot" };
+  function gameSyllables(sound) {
+    sound = String(sound || "").toUpperCase();
+    if (GAME_SYL_ON.indexOf(sound) < 0) return [];
+    var all = syllables(sound), skip = GAME_SKIP[sound] || [];
+    // syllables() runs ah, ee, oo, oh, ay: take ee, ah, oh, then the stand-ins
+    return [1, 0, 3, 2, 4].map(function (i) { return all[i]; })
+      .filter(function (s) { return s && skip.indexOf(s.t) < 0; }).slice(0, 3);
+  }
+  function gameWord(sound) {
+    sound = String(sound || "").toUpperCase();
+    return GAME_SYL_ON.indexOf(sound) >= 0 ? (GAME_SHORT[sound] || "") : "";
+  }
   function sentences(sound) {
     var frames = ["I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___."];
     return take(targetWords(sound), frames.length).map(function (w, i) {
@@ -64,5 +96,5 @@
     return out;
   }
 
-  window.SonaContent = { initialWords: initialWords, targetWords: targetWords, syllables: syllables, sentences: sentences, storyPages: storyPages, chats: chats };
+  window.SonaContent = { initialWords: initialWords, targetWords: targetWords, syllables: syllables, gameSyllables: gameSyllables, gameWord: gameWord, GAME_SYL_ON: GAME_SYL_ON, GAME_SKIP: GAME_SKIP, GAME_SHORT: GAME_SHORT, sentences: sentences, storyPages: storyPages, chats: chats };
 })();

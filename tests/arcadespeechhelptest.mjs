@@ -169,6 +169,23 @@ try {
         await clean(game+' wrong word',page,errors);
       }finally{await context.close();}
     });
+    // 2 Oct 2026: a sound heard just before the 6.5 s limit keeps the mic
+    // open 550 ms more for Apple's recognizer; Block Stacker, Sound Sprint and
+    // Flappy Glide used to let the limit throw it away ("Tap Echo to try
+    // again"). Fruit Slice already kept it, and now all four do.
+    await scenario(game+' a sound just before the limit',async()=>{
+      const{context,page,errors}=await fresh({game});try{
+        await page.locator('#slowKeys').click();await ready(page);
+        await page.waitForFunction(()=>performance.now()-__slowTest.openedAt>=6000,null,{timeout:9000});
+        await page.evaluate(()=>{__slowTest.voice=true;});
+        const heard=await page.waitForFunction(()=>slowTurn&&slowTurn.heardAt,null,{timeout:2000}).then(()=>true,()=>false);
+        const at=await page.evaluate(()=>slowTurn&&slowTurn.heardAt?slowTurn.heardAt-__slowTest.openedAt:null);
+        await page.waitForFunction(()=>!slowTurn,null,{timeout:4000});
+        await page.evaluate(()=>{__slowTest.voice=false;});
+        ok(game+': a sound heard in the last moment before the limit still earns the help, not "try again"',heard&&at>5950&&(await page.evaluate(()=>slowMs>0)),{at,status:await page.locator('#slowStatus').innerText()});
+        await clean(game+' late sound',page,errors);
+      }finally{await context.close();}
+    });
     for(const owner of ['native','browser'])await scenario(game+' exit during delayed '+owner+' start',async()=>{
       const{context,page,errors}=await fresh({game,startDelay:owner==='native'?1100:0,webDelay:owner==='browser'?1100:0});try{
         await page.locator('#slowKeys').click();

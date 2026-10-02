@@ -26,8 +26,10 @@ const SUITES = [
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
+  "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; Settings' pick, the practice page's floor, homework; it only reads
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
+  "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
@@ -64,14 +66,15 @@ const SUITES = [
   "micquietpracticetest.mjs", // the practice screen never plays a sound into a live mic (no iPhone call mode)
   "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
-  "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win
-  "superslicetest.mjs", // SUPERSLICE1: say the sound once, quick or held, mid-wave for ten seconds of Super Slice; a rep on the week's count, never practice data
+  "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win; the child's own best is fruit in a row (Beat Your Best)
+  "superslicetest.mjs", // SUPERSLICE1: say the sound once, quick or held, mid-wave for ten seconds of Super Slice; its fruit are extras and its drops are free; a rep on the week's count, never practice data
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
   "arcadespeechhelptest.mjs", // spoken help changes live game motion and preserves quiet, local microphones
   "tilesspeechtest.mjs", // a spoken sound earns temporary slower keys; quiet mic and native verdict
   "tilestest.mjs", // TILES2: Piano Tiles is a round: three songs a child knows, the same speed on every screen, a finale that waits
   "runtest.mjs", // RUN2: Sound Sprint is a race: park, beach, forest, a checkpoint card between, a finish line that always wins; a child's first three races open on Echo's how-to-play card
   "glidetest.mjs", // GLIDE2: Flappy Glide is a flight: three legs, a cloud rest card between, a fireworks landing; the balloon floats
+  "sayitcardtest.mjs", // SAYIT1: the five round games' say-it card speaks (ask, Rachel's take, "Go!") before it listens, and is never frozen; a child answering right on "Go!" is heard
   "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win

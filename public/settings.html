@@ -97,6 +97,11 @@
     .family-settings #playNote b{color:var(--ink);}
     .family-settings #playNote a{font-weight:800;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
+    /* the game-level picker: its four choices are short enough to read in
+       full on a 320 px phone while it is closed (kidtest measures them); the
+       grey line under it carries the rest. If one is ever longer, the cut
+       ends in "…" instead of mid-letter. */
+    .family-settings #gameLevel{text-overflow:ellipsis;}
     /* sound: one slim line, and only while Sona itself is muted. A .card, so
        the cards on either side keep their gap whether it shows or not. */
     .family-settings .set-soundoff{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px 10px 16px;}
@@ -222,15 +227,50 @@
         Picking sounds below switches to focus mode. <a href="#" id="playKeep">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
+      <!-- ONLY THE START OF A WORD CAN BE PICKED FOR NOW (Travis, 1 Oct 2026:
+           "have the options listed but to not let them select other
+           positioning because it's not built yet"). Every position stays on
+           the list so a parent sees what is coming; the script below greys
+           out the ones Sona.FAMILY_POSITIONS does not open yet. -->
       <label class="field" for="practicePos">Word position</label>
-      <select id="practicePos">
+      <select id="practicePos" aria-describedby="posNote">
         <option value="i">Beginning of word</option>
         <option value="m">Middle of word</option>
         <option value="f">End of word</option>
         <option value="v">Vocalic R (er, ar, or…)</option>
         <option value="b">Blends (tr, st, bl…)</option>
-        <option value="mix">Mixed — all positions</option>
+        <option value="mix">Mixed (all positions)</option>
       </select>
+      <p class="muted set-lead" id="posNote">For now, Sona practices each sound at the beginning of a word. The other positions are coming soon.</p>
+      <!-- WHAT A GAME'S SAY-IT CARD ASKS FOR (Travis, 1 Oct 2026: "start with
+           isolation then ree rah roh then rot. and maybe have that be
+           something to update in settings"). One picker, one grey line. It is
+           a ceiling for the cards between rounds, for this child, and it never
+           writes the level the child has EARNED, so Progress never shows a
+           level nobody earned. The label says "between rounds" because that is
+           all it changes: not the "Say it 5 times" page, not Echo's power
+           button, not the picture games. The grey line is painted from the
+           reader the games call (Sona.gameAsk), so it shows only what will
+           really be asked, and says which game does it today, and why when
+           something holds the cards to the bare sound (Sona.gameHold).
+           Hidden for a child aged 2 to 4: their Home shows Fruit Slice too,
+           but their cards keep the bare sound whatever is saved here (the
+           reader holds them there), so the picker would do nothing. Whether
+           little ones should ever be asked a syllable is Rachel's call.
+           THE CHOICES ARE SHORT ON PURPOSE: a phone's closed picker cut the
+           longer ones off ("Sona decides (starts easy, gets h…"), and two of
+           them then read the same. "Starts easy, gets harder" moved to the
+           grey line, which also shows the short word itself. -->
+      <div id="gameLevelBox">
+        <label class="field" for="gameLevel">Between rounds in a game, Echo asks for</label>
+        <select id="gameLevel" aria-describedby="gameLevelNote">
+          <option value="">Sona decides</option>
+          <option value="isolation">Just the sound</option>
+          <option value="syllable">Sound, then syllables</option>
+          <option value="word">Sound, syllables, word</option>
+        </select>
+        <p class="muted set-lead" id="gameLevelNote"></p>
+      </div>
     </section>
 
     <!-- NO VOLUME SLIDER (Travis, 30 Sep 2026: "why can't we just use our
@@ -282,6 +322,7 @@
         </div>
       </div>
       <p class="set-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/talk.html">Help</a></p>
+      <p class="muted" id="micNumsNote" hidden></p>
     </section>
 
     <!-- SLP corner: only for clinicians (profile.role === "slp"). Their job
@@ -363,6 +404,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <!-- the syllables and short word a game's card may ask for: the picker's grey line reads them through Sona.gameAsk -->
+  <script src="/gamecontent.js"></script>
   <script src="/analytics.js"></script>
   <script>
     // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
@@ -375,6 +418,7 @@
     var childEl = document.getElementById("childName"),
         ageEl = document.getElementById("childAge"),
         posEl = document.getElementById("practicePos"),
+        levelEl = document.getElementById("gameLevel"),
         wrap = document.getElementById("sounds");
 
     // THE FORM BELONGS TO ONE CHILD. It was painted for whoever was active
@@ -389,7 +433,21 @@
 
     childEl.value = p.childName || "";
     ageEl.value = p.childAge || "";
-    posEl.value = p.practicePosition || "i";
+    // Grey out the positions a family cannot pick yet, and show the one in
+    // use: a position saved before the others were closed reads as Beginning,
+    // which is what the practice page now asks for (Sona.practicePos).
+    var openPos = (Sona.FAMILY_POSITIONS || ["i"]);
+    Array.prototype.forEach.call(posEl.options, function (o) {
+      if (openPos.indexOf(o.value) >= 0) return;
+      o.disabled = true; o.textContent = o.textContent + " · coming soon";
+    });
+    posEl.value = openPos.indexOf(p.practicePosition) >= 0 ? p.practicePosition : "i";
+    document.getElementById("posNote").hidden = openPos.length > 1;
+    // What the cards between rounds ask for: "" lets Sona decide (one step
+    // past what the child has earned). A value this build does not know
+    // reads as that.
+    levelEl.value = p.gameLevel || "";
+    if (levelEl.selectedIndex < 0) levelEl.value = "";
 
     // Sound: the phone's own buttons set the level now. Sona's mute is the one
     // thing they can't undo (a volume of 0, or voice or effects off: every page
@@ -402,6 +460,8 @@
         if (activeSlot() !== loadSlot) { location.reload(); return; }
         Sona.saveProfile({ volume: 0.8, voiceOn: true, soundOn: true });
         line.hidden = true;
+        // with Echo's voice back, the cards between rounds can ask more again
+        paintGameLevel();
         // the button just vanished under the parent's finger; say what it did
         document.getElementById("soundSaid").textContent = "Sound is on.";
       };
@@ -435,6 +495,33 @@
     }
 
     var sel = new Set(p.focusSounds || []);
+    // The grey line under "Between rounds in a game, Echo asks for": the
+    // asks themselves, for the sound a game will ask this child (the
+    // homework's sound first, then the first focus sound: Sona.rotSounds),
+    // read from the one reader the games call, as on the first game of a
+    // day. So it can only say what will really be asked, and when something
+    // holds the cards to the bare sound it says what (Sona.gameHold): Sona's
+    // sound is off, the sound's syllables are not switched on yet, or a
+    // speech therapist's homework is for another part of the word. It names
+    // Fruit Slice because that is the only game whose cards do this so far;
+    // when the others do, this line changes.
+    function paintGameLevel() {
+      document.getElementById("gameLevelBox").hidden = Sona.playStyle() === "simple";
+      var label = function (x) { return Sona.soundLabel ? Sona.soundLabel(x) : x; };
+      var snd = Sona.rotSounds()[0] || "R", name = label(snd), asks = [], line;
+      for (var c = 0; c <= 2; c++) {
+        var t = Sona.gameAsk(snd, c, { first: true }).text;
+        if (asks.indexOf(t) < 0) asks.push(t);
+      }
+      var on = (window.SonaContent && SonaContent.GAME_SYL_ON) || [], hold = Sona.gameHold(snd);
+      var said = asks.map(function (t) { return "\u201C" + t + "\u201D"; }).join(", then ");
+      if (hold === "sound") line = "For " + name + " today: " + said + ". So far only " + on.map(label).join(", ") + " has syllables and a short word, and only in Fruit Slice.";
+      else if (hold === "muted") line = "For " + name + " in Fruit Slice today: " + said + ". Sound is off in Sona, so the cards ask just the sound.";
+      else if (hold === "position") line = "For " + name + " in Fruit Slice today: " + said + ". Your child\u2019s speech therapist set a different part of the word, so the cards keep to the sound" + (asks.length > 1 ? ", then one of the homework\u2019s words." : ".");
+      else line = (levelEl.value ? "" : "Sona starts easy and gets harder. ") + "For " + name + " in Fruit Slice today: " + said + ". The other games don\u2019t have this yet.";
+      document.getElementById("gameLevelNote").textContent = line;
+    }
+    paintGameLevel();
     // AUTOSAVE (29 Sep 2026). One Save button at the foot of a page of cards
     // meant a parent who changed the sounds and then tapped Back to play lost
     // the change without a word. Every control now saves on its own "change"
@@ -454,7 +541,8 @@
       var name = childEl.value.trim();
       Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
         focusArea: "articulation",
-        practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
+        practicePosition: posEl.value, gameLevel: levelEl.value, focusSounds: [].concat(Array.from(sel)) });
+      paintGameLevel();
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();
@@ -509,6 +597,7 @@
         sel=new Set(Sona.PLAY_ORDER);
         wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
         Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
+        paintGameLevel();
         showSaved(keep);
       };
     })();
@@ -534,6 +623,7 @@
     window.addEventListener("pagehide", flushText);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushText(); });
     posEl.addEventListener("change", function () { saveAll(posEl); });
+    levelEl.addEventListener("change", function () { saveAll(levelEl); });
 
     // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home and
     // Progress read too. A week behind is said as how many
@@ -713,6 +803,34 @@
       };
     })();
 
+    // MIC NUMBERS (2 Oct 2026). Travis, in the iPhone app: "I have to say
+    // the word super close to the phone or else it won't seem to hear it".
+    // Five quick taps on "Account" turn on a small box at the top of the
+    // practice page with the microphone's own levels: how loud the room is,
+    // how loud a sound has to be to count, and how loud each sound was. It is
+    // here, behind the grown-ups check, because the iPhone app keeps its own
+    // storage and has no address bar for ?debug=1, and the app is where the
+    // problem is. It changes nothing about what counts. The numbers stay on
+    // the screen: never saved, never sent.
+    (function () {
+      var t = document.getElementById("acctTitle"), note = document.getElementById("micNumsNote"), taps = [];
+      function on() { try { return localStorage.getItem("sona.micnumbers") === "1"; } catch (e) { return false; } }
+      function paint(changed) {
+        if (on()) { note.textContent = "Mic numbers are on. They show at the top of the practice page. Tap \u201cAccount\u201d five times to turn them off."; note.hidden = false; }
+        else if (changed) { note.textContent = "Mic numbers are off."; note.hidden = false; }
+        else note.hidden = true;
+      }
+      if (!t || !note) return;
+      t.addEventListener("click", function () {
+        var now = Date.now(); taps.push(now);
+        while (taps.length && now - taps[0] > 3000) taps.shift();
+        if (taps.length < 5) return;
+        taps = [];
+        try { if (on()) localStorage.removeItem("sona.micnumbers"); else localStorage.setItem("sona.micnumbers", "1"); } catch (e) {}
+        paint(true);
+      });
+      paint(false);
+    })();
     // account / subscription
     // Founder unlock: owner's key, prompt-entry, server-verified. Shows as a
     // quiet link under Account; once unlocked the line just says so.
