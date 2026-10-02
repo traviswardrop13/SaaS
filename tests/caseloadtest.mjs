@@ -1196,8 +1196,11 @@ const count = (pred) => S.calls.filter(pred).length;
   const litSelf = (/const SELF_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
   ok("the success page's copies of both plan ids match lib/caseload (it cannot import a server module)", lit === C.CASELOAD_PLAN && litSelf === C.SELF_PLAN, lit + " " + litSelf);
   const branch = page.indexOf("if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID)");
-  ok("…and it refuses BOTH before anything is granted: no sona.sub.v1, no hand-off code, no purchase event",
-    branch > 0 && branch < page.indexOf("localStorage.setItem(") && branch < page.indexOf("/api/pair") && branch < page.indexOf("purchase completed") &&
+  // The hand-off code is gone altogether (2 Oct 2026: setup takes no move-in
+  // code, so a web buyer restores by email in the app), so "before the code"
+  // became "there is no code to mint".
+  ok("…and it refuses BOTH before anything is granted: no sona.sub.v1, no purchase event, and no hand-off code at all",
+    branch > 0 && branch < page.indexOf("localStorage.setItem(") && !page.includes("/api/pair") && branch < page.indexOf("purchase completed") &&
     /if \(j\.plan === CASELOAD_PLAN_ID \|\| j\.plan === SELF_PLAN_ID\) \{\s*setCaseload\(true\);\s*return;\s*\}/.test(page), String(branch));
   r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_newbieselfbuy01");
   ok("…and the read-back names \"slp-self\" for a clinician's own", r.json.plan === "slp-self", JSON.stringify(r.json));

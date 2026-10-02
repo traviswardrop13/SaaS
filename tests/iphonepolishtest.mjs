@@ -105,8 +105,10 @@ try{
   await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
   await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
   // "Go!" is one clip per phone: Hoops above already saved it, so Bubble Pop
-  // asks the voice service for its word alone and plays "Go!" from the phone
-  ok('Bubble Pop: …then "Go!", as its own line from the clip this phone already saved, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts.length===bubblesFrom+1&&ttsTexts[bubblesFrom]!=='Go!',{texts:ttsTexts.slice(bubblesFrom),media:await pg.evaluate(()=>h.media.length)});
+  // asks the voice service for its word at most and plays "Go!" from the
+  // phone. (Its word may be one Hoops just asked for, and so saved too: the
+  // two games pick from the same start-of-word words.)
+  ok('Bubble Pop: …then "Go!", as its own line from the clip this phone already saved, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts.length-bubblesFrom<=1&&!ttsTexts.slice(bubblesFrom).includes('Go!'),{texts:ttsTexts.slice(bubblesFrom),media:await pg.evaluate(()=>h.media.length)});
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
  }
  // 1 Oct 2026 ("start with isolation then ree rah roh then rot"): for a child

@@ -309,7 +309,7 @@ try {
     const seen = (el) => { if (!el) return false; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0; };
     const g = (id) => document.getElementById(id), t = (id) => (seen(g(id)) ? g(id).innerText : "");
     return { line: t("planLine"), pick: seen(g("pickCard")), iap: seen(g("iapCard")), app: seen(g("appCard")), free: seen(g("freeTierCard")), decline: seen(g("declineRow")), founding: seen(g("foundingCard")),
-      cancel: t("planCancel"), title: t("webTitle"), renew: t("webRenew"), charter: seen(g("charterLine")), offer: document.body.classList.contains("offer"), text: document.body.innerText,
+      cancel: t("planCancel"), title: t("webTitle"), renew: t("webRenew"), bill: t("webTL"), charter: seen(g("charterLine")), offer: document.body.classList.contains("offer"), text: document.body.innerText,
       eligible: Sona.planEligible(), spent: localStorage.getItem("sona.planmoment.v1") };
   };
   // 1. The web card forced on (the seam) against a server that is not selling:
@@ -321,7 +321,7 @@ try {
     await pg.goto(BASE + "/subscribe.html"); await settle(pg);
     await pg.waitForFunction(() => !document.getElementById("buyLife").disabled);
     const p = await pg.evaluate(PLAN);
-    ok("the web card, shown by the seam against a server that is not selling, prints no \"undefined\" and keeps its own figures", p.pick && !/undefined|NaN/.test(p.text) && /\$59\.99\/yr/.test(p.title) && /renews at \$59\.99 a year/.test(p.renew) && !p.charter, { title: p.title, renew: p.renew, line: p.line });
+    ok("the web card, shown by the seam against a server that is not selling, prints no \"undefined\" and keeps its own figures", p.pick && !/undefined|NaN/.test(p.text) && /\$59\.99\/yr/.test(p.title) && /then \$59\.99 a year/.test(p.bill) && !p.charter, { title: p.title, bill: p.bill, line: p.line });
     ok("…no page errors", errors.length === 0, errors);
     await ctx.close(); CHARTER = CHARTER_OPEN;
   });

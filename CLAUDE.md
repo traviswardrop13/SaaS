@@ -87,9 +87,11 @@ missing it.
 One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
 her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
 "She is a pediatric speech-language pathologist in her clinical fellowship."
-(Travis's line, 1 Oct 2026). Since 1 Oct 2026
-it is the last screen before the first game, after the microphone (Travis:
-"add the rachel slide right before it goes to the game"). She still is a
+(Travis's line, 1 Oct 2026). Since 2 Oct 2026
+it comes right before the microphone screen ("Let Echo hear you"), which is
+the last one before the first game (Travis: "put the Rachel ... slide not as
+the last step, but the step right before the let echo hear you"). "Not now"
+on the microphone still goes on to the game. She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -192,11 +194,27 @@ charter price, and **it is the one picked when the plan screen opens**.
   Settings views): two boxes that are radios, yearly picked, **one button**
   under both. Everything true of only one plan follows the pick, from one
   paint function per card: the button ("Start 3 days free" / "Subscribe —
-  $9.99 a month"), the free-days timeline and "no charge today" (yearly only),
+  $9.99 a month"), the billing line and "no charge today" (yearly only),
   "charged today" (monthly only), the small print and the heading. Nothing
   yearly stays on screen beside a button that charges today. The monthly box
   says **"Charged today"**, never "no free trial" (Travis, 1 Oct 2026: "dont
   say no free trial at the bottom"), and never the word "free" at all.
+- **Under the button, one line: the day they are billed** (Travis, 2 Oct
+  2026: "there's still too much information ... just briefly say like what
+  day they'll be billed on the bottom"). Yearly: "Free until October 5, then
+  $X a year." and, on Apple's card, "Renews unless canceled in Settings →
+  Subscriptions." (on the web, "Cancel anytime.": a web buyer has no cancel
+  button "in your account", and Stripe's page spells out the renewal). The
+  date is the same +3 days the charge uses; the price is the store's string
+  on Apple's card and the charter figure on the web, so the line never names
+  a different number from the box above it, and it never promises a reminder
+  (there is no trial mailer). It replaced a dated three-row timeline and the
+  Apple card's paragraph of small print, and the web's yearly small print
+  steps aside for it; monthly keeps its own line, which says how to cancel.
+  What Apple requires stays: each plan's price and period, the renewal, where
+  to cancel, and Restore Purchases, Terms and Privacy as links. The button is
+  setup's lighter teal (`.planbuy .btn.go` in `crafted-family.css`, "for
+  now": painted art for it has not arrived).
 - **Monthly never touches the charter.** `/api/checkout` has its own short
   branch for it — its own amount, a month interval, no `trial_period_days`,
   **no `tier` stamp**, inline `price_data` only (never an env Price), and it
@@ -401,7 +419,8 @@ way." and changes by itself the day a little-kid Premium game is released. No
 date is promised. **Anything switched with the `hidden` attribute is hidden**
 (`[hidden]{display:none !important}` on this page): a display rule on the same
 element once showed an empty win pill and Rachel's line twice. Rachel's line moves under the
-decline, word for word. Settings › Your plan (no flag) is the page as it was.
+decline, word for word, and the note under the decline steps aside (2 Oct
+2026). Settings › Your plan (no flag) is the page as it was.
 Every pricing rule in this section still applies to the card itself.
 
 **Eligibility and impression are two functions, and merging them is the bug.**
@@ -479,7 +498,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   half its 400-day life, hands back a fresh one that `Sona.caseRefresh()`
   stores — before this, from day 400 a family's coverage stuck in whatever
   state it was last in. The SLP link state (`sona.slp`, `sona.slpok`,
-  `sona.slpticket`) **travels through the move-in code and backups**, because
+  `sona.slpticket`) **travels through backups** (Settings › Moving to a new
+  phone?; setup has had no code box since 2 Oct 2026), because
   the iOS app keeps separate storage from Safari and that is the only way a
   covered family's Premium reaches the iPhone app; the cached answer
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.
@@ -580,10 +600,13 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is on the first setup screen — since 1 Oct
-2026 that screen IS the question, "Who's setting up Sona?", with two answers,
-"Parent or caregiver" and "SLP or SLPA" (Travis: "have the very first step in
-onboarding ask"). In a browser the SLP answer is the only entrance to
+is now reversed: the clinician door is the setup question "Who's setting up
+Sona?", with two answers, "Parent or caregiver" and "SLP or SLPA" (Travis, 1
+Oct 2026: "have the very first step in onboarding ask"). Since 2 Oct 2026 it
+is the second screen: the first is a hello, Echo in his world and one
+Continue button (Travis: "that first page with the bird just have that be a
+fun page ... and then the second slide is who's setting up Sona"), and the
+two answers are the only way past the question. In a browser the SLP answer is the only entrance to
 `ORDER_SLP`, so removing it makes that whole branch dead code; in the iPhone
 app, which never opens clinician screens, it sets the app up for a child and
 says the dashboard is on the web (no link, no price) — `for-slps.html` is indexable and linked from the landing
@@ -1746,7 +1769,11 @@ the app) is a later idea, not built; it is Rachel's to shape.
   is decided on the phone from the spectral shape of what was said. One clip a
   day may be kept in local IndexedDB so a parent can listen back — it is never
   uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off. `mictest` pins the
+  no mechanism to break it, not because a checkbox is off. Its short form, the
+  grown-ups line on every mic ask (`MIC_PROMISE`), is "audio is never
+  uploaded. One try a day is saved on this phone so you can listen back."
+  (Travis, 2 Oct 2026, asked for "audio is never recorded or uploaded"):
+  never "never recorded", which that one saved try would make false. `mictest` pins the
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.

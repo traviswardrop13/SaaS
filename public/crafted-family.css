@@ -52,6 +52,13 @@ body.crafted-family{
   background:linear-gradient(155deg,#1899a0,#07747d);color:#fff;font-size:16px;font-weight:800;
   box-shadow:inset 0 1px 0 #ffffff50,0 4px 0 #065d66,0 6px 12px #0a68781c;
 }
+/* The plan screen's buy button wears setup's lighter teal (Travis, 2 Oct 2026:
+   "the onboarding green button is a little bit lighter so we could even just
+   do that for now"): the last button a parent meets looks like the ones they
+   pressed all through setup (onboarding-crafted.css, .obfoot .btn). */
+.crafted-family .planbuy .btn.go{background:linear-gradient(#22b4bc,#069ca8);border:1px solid #08959e;border-radius:21px;box-shadow:0 5px 0 #087e89,inset 0 1px 0 #ffffff60;}
+.crafted-family .planbuy .btn.go:active{box-shadow:0 1px 0 #087e89;}
+.crafted-family .planbuy .btn.go:disabled{background:#eae1d3;border-color:#eae1d3;color:#948472;box-shadow:none;}
 .crafted-family .btn.ghost,.crafted-family #previewExpire{border:1px solid var(--line);color:var(--ink);background:#fffcf6;box-shadow:inset 0 1px 0 #fff,0 3px 0 #e8d9c54d;}
 .crafted-family .btn:active,.crafted-family .action:active{transform:translateY(2px);box-shadow:0 2px 0 #065d66;}
 .crafted-family .btn.ghost:active{box-shadow:0 1px 0 #dac7ad;}

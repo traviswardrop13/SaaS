@@ -274,10 +274,12 @@ ok("primer shows before the mic prompt", mp.shown);
 // the sound goes), and the games/practice distinction — so those are what is
 // pinned now, in the form that is currently true. mictest.mjs guards the other
 // direction: no sending claim may come back without the mechanism.
-// Shortened on 1 Oct 2026 (Travis: "way too many words here"): when the mic
-// listens, that nothing is uploaded, and the one try kept on the phone.
+// Shortened on 1 Oct 2026 (Travis: "way too many words here") and again on
+// 2 Oct 2026 ("just say audio is never recorded or uploaded"): that nothing is
+// uploaded, and the one try a day kept on the phone. Not "never recorded":
+// that one try is recorded, on the phone, and the line must not deny it.
 ok("primer explains listening honestly",
-  /listens only after asking your child to talk/.test(mp.txt) && /never uploaded/.test(mp.txt) && /one try a day may stay on this device/.test(mp.txt));
+  /never uploaded/.test(mp.txt) && /One try a day is saved on this phone/.test(mp.txt) && !/never recorded/i.test(mp.txt), mp.txt);
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
@@ -428,6 +430,7 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
       yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth") && g("planMonth").getAttribute("aria-checked"),
       secondButton: !!g("buyMonth"), buttons: document.querySelectorAll("#pickCard button.go").length,
       button: g("buyLife").textContent, timeline: seen(g("webTL")), payToday: seen(g("monthMath")),
+      bill: g("webTL").innerText, renewShown: seen(g("webRenew")),
     };
   });
   // "Charged today", not "no free trial" (Travis, 1 Oct 2026: "dont say no
@@ -439,8 +442,14 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
     !!pay.month && !/charter|spots? left|first 50/i.test(pay.month), JSON.stringify(pay.month));
   ok("the yearly plan is the one picked when the page opens", pay.yearPicked === "true" && pay.monthPicked === "false", JSON.stringify(pay));
   ok("one button serves both plans — no second buy button", pay.buttons === 1 && !pay.secondButton, JSON.stringify(pay));
-  ok("on arrival the button starts free days, the timeline is showing and 'charged today' is not",
+  ok("on arrival the button starts free days, the billing day is showing and 'charged today' is not",
     pay.button === "Start 3 days free" && pay.timeline && !pay.payToday, JSON.stringify(pay));
+  // ONE LINE UNDER THE BUTTON (Travis, 2 Oct 2026: "there's still too much
+  // information ... just briefly say like what day they'll be billed"): the
+  // day the free days end and the price after them, and the small print that
+  // said the same steps aside for the yearly plan.
+  ok("…in one line: free until a named day, then the yearly price, cancel anytime, and no second small print saying it again",
+    /^Free until [A-Z][a-z]+ \d{1,2}, then \$\d+\.\d\d a year\. Cancel anytime\.$/.test(pay.bill.trim()) && !pay.renewShown, JSON.stringify([pay.bill, pay.renewShown]));
 }
 {
   // WHAT THE BUTTON SENDS. Every browser suite answers /api/* with an error,
@@ -454,7 +463,7 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
     // display rule that beats the attribute is exactly the bug to catch
     const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
     return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, timeline: seen(g("webTL")), noChargeToday: seen(g("trialMath")), payToday: seen(g("monthMath")),
-      area: document.querySelector("#pickCard .planbuy").innerText, renew: g("webRenew").innerText, heading: g("pickTitle").textContent,
+      area: document.querySelector("#pickCard .planbuy").innerText, renew: g("webRenew").innerText, renewShown: seen(g("webRenew")), heading: g("pickTitle").textContent,
       yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth").getAttribute("aria-checked") };
   });
   await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // the price check has let go
@@ -463,9 +472,9 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
   await page.locator("#planMonth").click(); await page.waitForTimeout(150);
   let m = await look();
   ok("picking monthly: the button names the price charged today", m.monthPicked === "true" && m.yearPicked === "false" && m.button === "Subscribe — $9.99 a month", JSON.stringify(m));
-  ok("…the free-days timeline and 'no charge today' leave the screen: nothing under the button says 'free'", !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
+  ok("…the free days' billing line and 'no charge today' leave the screen: nothing under the button says 'free'", !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
   ok("…and 'charged today, then every month' is what is under the button", m.payToday && /\$9\.99 is charged today, then every month/i.test(m.area), m.area.slice(0, 200));
-  ok("…the small print is the monthly plan's: charged today, $9.99 a month", /charged today/i.test(m.renew) && /\$9\.99 a month/.test(m.renew) && !/3-day|a year|free/i.test(m.renew), m.renew);
+  ok("…the small print is the monthly plan's, on screen: charged today, $9.99 a month", m.renewShown && /charged today/i.test(m.renew) && /\$9\.99 a month/.test(m.renew) && !/3-day|a year|free/i.test(m.renew), m.renew);
   // a family who paid on the web has no account page with a cancel button,
   // so the new line names the way that works (the Terms say the same)
   ok("…and it names a way to cancel that exists: an email address, not 'in your account'", /To cancel, email \S+@speaksona\.com/.test(m.renew) && !/in your account/i.test(m.renew), m.renew);
@@ -474,7 +483,7 @@ ok("…and the true thing about the monthly one: its price, and that it is charg
   ok("…and the button now buys the monthly plan", posts.length === 2 && posts[1].plan === "monthly", JSON.stringify(posts));
   await page.locator("#planLife").click(); await page.waitForTimeout(150);
   m = await look();
-  ok("picking yearly again puts every yearly line back, and takes the monthly ones off the screen", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && !/then every month/i.test(m.area) && /3-day free trial/.test(m.renew) && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
+  ok("picking yearly again puts every yearly line back, and takes the monthly ones off the screen", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && !/then every month/i.test(m.area) && !m.renewShown && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
   await page.locator("#planMonth").focus(); await page.keyboard.press("Space"); await page.waitForTimeout(100);
   const key1 = await look();
   await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100);

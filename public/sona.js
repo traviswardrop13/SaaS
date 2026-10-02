@@ -1401,10 +1401,13 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"):
-  // when the mic listens, that nothing is uploaded, and the one try kept on
-  // the phone. The privacy page and /support keep the long version.
-  const MIC_PROMISE = "Grown-ups: Echo listens only after asking your child to talk. Recordings are never uploaded; one try a day may stay on this device so you can listen back.";
+  // Short on purpose (Travis, 1 Oct 2026: "make this much more concise"; 2
+  // Oct 2026: "still too long ... just say audio is never recorded or
+  // uploaded"). Two things, both true: nothing is uploaded, and the one try a
+  // day kept on the phone for a parent to play back. Not "never recorded":
+  // that one try IS recorded, on the phone, and a consent line must not deny
+  // it (mictest). The privacy page and /support keep the long version.
+  const MIC_PROMISE = "Grown-ups: audio is never uploaded. One try a day is saved on this phone so you can listen back.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);

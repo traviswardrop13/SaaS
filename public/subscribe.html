@@ -125,6 +125,15 @@
     #planMonth,#iapPlanMo{padding-top:12px;padding-bottom:12px;margin-top:9px;}
     .plan .paynote{display:block;font-weight:700;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
     .planbuy{margin-top:12px;}
+    /* THE DAY THEY ARE BILLED, IN ONE LINE (Travis, 2 Oct 2026: "there's
+       still too much information ... especially everything that is under
+       start three days free ... just briefly say like what day they'll be
+       billed"). It replaced a dated three-row timeline and, on the Apple card,
+       a paragraph of small print. What stays is what a parent needs and Apple
+       requires: when the free days end, the price after them, that it renews,
+       and where to cancel; Restore, Terms and Privacy stay as links. */
+    .billday{display:block;margin:10px 0 0;font-weight:700;font-size:13px;color:var(--muted);line-height:1.45;text-align:center;}
+    .billday b{font-weight:800;color:var(--ink);}
     .planbuy .go{margin-top:0;}
     .planbuy .reassure b{font-weight:800;color:var(--ink);}
 
@@ -148,7 +157,8 @@
     body.offer #planCard, body.offer #recapCard,
     body.offer #pickCard > h2, body.offer #pickCard > p.muted:not(#pickMsg):not(#webRenew),
     body.offer #iapCard > h2, body.offer .plan .proof, body.offer .plan .sub,
-    body.offer #pickCard > .proof, body.offer #iapCard > .proof { display:none !important; }
+    body.offer #pickCard > .proof, body.offer #iapCard > .proof,
+    body.offer #declineNote { display:none !important; }
     /* the plan card stands on its own: no white card around the bordered one */
     body.offer #pickCard, body.offer #iapCard { margin-top:16px; background:transparent; border:0; box-shadow:none; padding:0; }
     #offerHero { text-align:center; margin-top:6px; }
@@ -339,11 +349,10 @@
       <div class="planbuy">
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
-        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="iapTL"></div>
+        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions.</span>
+        <p class="billday" id="iapTL"></p>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" id="iapLegal" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium (yearly) starts with a 3-day free trial, then renews at the yearly price shown above. <span id="iapLegalMo" hidden>Sona Premium (monthly) is charged today at the monthly price shown above and renews every month. </span>Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -373,14 +382,14 @@
            pay today, but the $59.99 has a three-day trial. And have that as
            the default option selected"): the yearly plan, picked when the
            page opens, and under it $9.99 a month, charged today. One button
-           serves both and says what the picked one does; the free-days
-           timeline and "no charge today" belong to yearly and leave the
-           screen when monthly is picked. $119.88 and "save $59.89" did NOT
+           serves both and says what the picked one does; the line naming
+           the day they are billed and "no charge today" belong to yearly and
+           leave the screen when monthly is picked. $119.88 and "save $59.89" did NOT
            come back with monthly: the saving is $59.89 only while the charter
            price lasts, so it would turn false at family fifty-one. What a
            parent can still check: $59.99 / 12 = $4.9991, hence "under $5 a
            month, billed once a year" and never "$4.99". Move a price and
-           #planLine and trialTimeline()'s final row move with it. -->
+           #planLine and trialTimeline()'s billing line move with it. -->
       <div class="planpick" id="webPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="planLife" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
         <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
@@ -412,7 +421,7 @@
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
         <span class="reassure" id="monthMath" hidden><b id="monthMathPrice">$9.99</b> is charged today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="webTL"></div>
+        <p class="billday" id="webTL"></p>
         <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
           <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
           · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
@@ -598,36 +607,31 @@
       document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
     }
 
-    // The dated trial timeline, one builder for both paywalls.
-    //
-    // Every row has to survive a parent checking it against reality: the dates
-    // are computed from the same +3 days the charge itself uses, the middle row
-    // promises only what the code can keep (no reminder email exists — see the
-    // CSS note), and the final row carries a FIGURE only on the web, where this
-    // repo is the source of truth. On iOS the App Store price is whatever App
-    // Store Connect says and RevenueCat rewrites it above, so naming a number
-    // here could contradict the button two lines up.
+    // The day they are billed, one builder for both paywalls (2 Oct 2026; it
+    // was a dated three-row timeline). The date comes from the same +3 days
+    // the charge itself uses. On the web the price is this repo's (the
+    // charter figure, window.__yearPrice); in the app it is the store's own
+    // string, read off the card two lines up once RevenueCat has painted it,
+    // so the line can never name a different number from the box above it.
+    // No reminder is promised: there is no trial mailer to keep one.
     function trialTimeline(id, native) {
       var el = document.getElementById(id);
       if (!el) return;
-      var fmt = function (days) {
-        try { return new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); }
-        catch (e) { return ""; }
-      };
-      var d0 = fmt(0), d2 = fmt(2), d3 = fmt(3);
-      if (!d3) return;                       // no dates, no timeline — the prose line stays
-      var where = native ? "Settings → Subscriptions" : "your account";
-      var last = native
-        ? "Sona Premium's yearly plan starts, at the price above — only if you kept Premium."
-        : "Sona Premium's yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Premium.";
-      el.innerHTML =
-        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — every game unlocks</b>' +
-          '<p>Every game in Sona Premium opens. Nothing is charged today.</p></div>' +
-        '<div class="tli clock"><span class="tld"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M4 3 2 5M20 3l2 2"/></svg></span><b>' + d2 + ' — still free</b>' +
-          '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
-        '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
-      // the prose sentence said the same thing in one line; the timeline
-      // replaces it rather than repeating it
+      var d3 = "";
+      try { d3 = new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      if (!d3) return;                       // no date, no line — the prose line stays
+      var price;
+      if (native) {
+        var shown = ((document.getElementById("iapPrice") || {}).textContent || "").replace(/\/(yr|year)$/i, "");
+        price = /\d/.test(shown) ? shown + " a year" : "the yearly price above";
+      } else price = (window.__yearPrice || "$59.99") + " a year";
+      // Apple's card says where to cancel, as Apple asks. The web says
+      // "Cancel anytime" and not "in your account": a web buyer has no
+      // cancel button there (they email us), and Stripe's own page, where
+      // they actually pay, spells out the renewal.
+      el.innerHTML = "Free until <b>" + d3 + "</b>, then " + price + ". " +
+        (native ? "Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime.");
+      // the one-line version said less in the same place; this replaces it
       var prose = document.getElementById(native ? "iapMath" : "trialMath");
       if (prose) prose.style.display = "none";
     }
@@ -791,12 +795,13 @@
         trialTimeline("iapTL", true);
         Sona.iapProduct("annual").then(function (p) {
           if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
+          trialTimeline("iapTL", true);   // the billing line names the store's price too
         }).catch(function () {});
 
         // THE PICK. Yearly on arrival (Travis, 1 Oct 2026: "the $59.99 has a
         // three-day trial. And have that as the default option selected").
         // Everything that is only true of one plan is painted from here: the
-        // button's words, the free-days line and timeline (yearly), "charged
+        // button's words, the free-days line and billing day (yearly), "charged
         // today" (monthly). Nothing yearly stays on screen beside a button
         // that charges today.
         var IAP_PLAN = "annual", moProduct = null, buyBtn = document.getElementById("iapBuy");
@@ -806,7 +811,7 @@
           buyBtn.textContent = mo ? "Subscribe — " + moProduct.priceString + " a month" : "Start 3 days free";
           document.getElementById("iapMathMo").hidden = !mo;
           tl.style.display = mo ? "none" : "";
-          // the timeline replaces the one-line version when it could be built
+          // the billing line replaces the one-line version when it could be built
           math.style.display = (mo || tl.innerHTML) ? "none" : "";
           document.getElementById("iapTitle").textContent = mo ? "Get Sona Premium, month by month" : TITLE_YEAR;
           fitOffer();
@@ -823,7 +828,6 @@
           moProduct = p;
           document.getElementById("iapPriceMo").textContent = p.priceString + "/mo";
           document.getElementById("iapPlanMo").style.display = "";
-          document.getElementById("iapLegalMo").hidden = false;
           document.getElementById("planLine").innerHTML = LINE_YEAR + " Or pay <b>month by month</b>, charged today.";
           fitOffer();   // a second box just appeared above the button
         }).catch(function () {});
@@ -1006,7 +1010,7 @@
         document.getElementById("monthMathPrice").textContent = monthPrice;
         document.getElementById("monthMath").hidden = !mo;
         if (tl) tl.style.display = mo ? "none" : "";
-        // the timeline replaces the one-line version when it could be built
+        // the billing line replaces the one-line version when it could be built
         if (math) math.style.display = (mo || (tl && tl.innerHTML)) ? "none" : "";
         document.getElementById("pickTitle").textContent = mo ? "Get Sona Premium, month by month"
           : welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium";
@@ -1014,9 +1018,15 @@
         // who paid on the web has no account page with a cancel button (the
         // Terms say to email, and /api/portal is not linked from anywhere).
         // "In your account" on the yearly line is older than this change.
-        document.getElementById("webRenew").textContent = mo
+        var rn = document.getElementById("webRenew");
+        rn.textContent = mo
           ? "Sona Premium is charged today and renews at " + monthPrice + " a month until you cancel. To cancel, email hello@speaksona.com and we’ll stop it."
           : "Sona Premium renews at " + yearPrice + " a year after the 3-day free trial. Cancel anytime in your account.";
+        // For the yearly plan the billing line under the button already says
+        // all of this in one line (Travis, 2 Oct 2026: "get rid of as much as
+        // we can"), so the small print steps aside while that line is there.
+        // Monthly keeps it: it is the line that says how to cancel.
+        rn.hidden = !mo && !!(tl && tl.innerHTML);
         // the header line (Settings view) names both ways to pay, whichever
         // is picked. "Under $N a month" never stands without "billed once a
         // year": beside a real monthly plan it would read as that plan's price.
