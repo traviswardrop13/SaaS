@@ -10,7 +10,10 @@
  * disagree. When the app is live, set all three to true: the pages send people
  * to the App Store again and these emails stop.
  *
- * TRUE since 2 Oct 2026, launch day (Travis: the App Store shows Get).
+ * LIVE since 1 Oct 2026 (Travis: "yeah send people to app store now!", with
+ * the App Store listing checked: a free download, not a pre-order). The
+ * people already on the list were promised an email "the moment it's ready";
+ * nothing here sends it, that is a Kit broadcast.
  */
 export const APP_READY = true;
 

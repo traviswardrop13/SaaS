@@ -67,6 +67,8 @@ function phone(cfg) {
   localStorage.setItem('sona.freeera.v1','post');for(const k of ['sona.freeera2.v1','sona.freeera3.v1','sona.freeera4.v1','sona.freeera5.v1'])localStorage.setItem(k,'done');
   localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'7',focusSounds:['R'],onboarded:true,earlyAdopter:true,voiceOn:cfg.voiceOn===true,soundOn:true,volume:.6}));
   localStorage.setItem('sona.micok','1');sessionStorage.setItem('sona.play.token','arcade-'+cfg.game+'.html');sessionStorage.setItem('sona.boost.sound','R');
+  // past Sound Sprint's start card (a child's first three races; runtest plays it), so its race is running
+  localStorage.setItem('sona.sprintintro.v1','3');
 }
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
