@@ -12,7 +12,11 @@ jobs:
     # 27-30 minutes. At 25 the job was cancelled mid-run on main (#143) and
     # on #146, which reads as neither pass nor fail. One job, same name, so
     # a required check keeps matching.
-    timeout-minutes: 45
+    # 75, not 45 (2 Oct 2026): it had grown to 43 minutes on main, and the
+    # say-it card's suite (sayitcardtest) took it past 45 on #190, cancelled
+    # mid-sayplaytest with every check so far passing. Room to grow, still a
+    # cap on a hung run.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
