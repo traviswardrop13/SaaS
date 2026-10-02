@@ -198,6 +198,10 @@ function fakeDevice(cfg) {
       voiceOn: cfg.voiceOn !== false, soundOn: cfg.soundOn !== false, volume: cfg.volume == null ? 0.6 : cfg.volume }));
     if (cfg.micok) localStorage.setItem("sona.micok", "1");
     if (cfg.token) sessionStorage.setItem("sona.play.token", cfg.token);
+    // Past Sound Sprint's start card (Echo's how-to-play, a child's first
+    // three races, 1 Oct 2026), so the race these scenarios need is running
+    // from the first frame; the card itself is runtest's.
+    localStorage.setItem("sona.sprintintro.v1", "3");
   }
 }
 

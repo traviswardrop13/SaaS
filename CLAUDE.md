@@ -1252,6 +1252,24 @@ left or right half of the screen). A golden coin is a coin magnet. The top
 bar shows coins and the stretch; the end card counts metres (it said
 "treats"). `tests/runtest.mjs` runs a whole race.
 
+**Sound Sprint opens on Echo's how-to-play** (Travis, 1 Oct 2026: "when a kid
+is about to start playing sound sprint, we want the voice ... to say
+instructions ... so that they have instruction on what to do"). A child's
+first three races open on a start card: Echo waving, three pictures from the
+race itself (the runner in the lanes, a rock and a cactus, a gold coin) and one
+teal button, "Let's run!". An iPhone plays nothing on a new page until a tap,
+so the tap is the button: Echo says "Tap a lane to move side to side. Dodge
+the rocks and the cactus, and grab the gold coins!" (true to the race: there
+is no gold star), the button becomes a cream "Skip", and the race starts the
+moment he stops. The race is held behind the card (nothing moves, spawns or
+counts; both clocks start with the race). Three races, counted per child
+(`sona.sprintintro.v1`); a suite that needs the race running seeds it to 3.
+The line plays as media inside the tap (`Sona.mediaPCM`), with the browser
+voice as the fallback, and never leaves a dead end: sound off starts the race
+at once, a voice that never comes starts it within seven seconds, and locking
+the phone mid-line stops Echo and keeps the race held. No microphone, no rep,
+no practice data. `tests/runtest.mjs` plays all of it.
+
 **Flappy Glide is the same round, as a flight** (27 Sep 2026): three legs of
 6, 7 and 8 gaps, a rest on a cloud between each with the say-it card ("Say
 “rrrr” to fly on!"), and a fireworks landing that always ends the flight in a
