@@ -1427,9 +1427,12 @@ games copy it one at a time:
 - **Ten seconds of Super Slice:** the fruit slow to 55%, the stand throws
   five at once (one golden), every toss after is two or three (it outranks
   the two-miss help), the swipe becomes a wide rainbow blade (it slices 34 px
-  past a fruit's edge, not 16), and the screen edge glows gold. Time left
+  past a fruit's edge, not 16), and the screen edge glows gold. Its fruit are
+  extras: they add to the row of fruit but never to the wave, and nothing
+  dropped while it lasts breaks the row (see "Beat Your Best"). Time left
   when a wave ends waits through the break and carries into the next wave
-  (the burst alone can finish wave 1); the giant watermelon ends it.
+  (a wave can still end while it is on: its 45 seconds, or the last ordinary
+  fruit in the air); the giant watermelon ends it.
 - **Every earned turn is a rep** on the week's count (see "The week's reps");
   still never practice data. The round still ends on the giant watermelon
   whether or not a child ever says a word. The retired names (STAR MODE,
@@ -1585,6 +1588,95 @@ after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
 gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
 control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
+**Beat Your Best: each child's own best in a game** (Travis, 1-2 Oct 2026:
+"whatever you think is best for kids you can do"). A game counts ONE real
+thing the child's finger did and remembers that child's best. The win card
+still says they won, then adds one line; the top button is "Play again"; and
+Home's picture of the game carries a small "Best 17". **Step one is built:**
+the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
+(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Hoops and Soccer
+Goal follow after Travis has played these two; Dino Dig gets no number.
+- **What binds every game that gets one.** Every round still ends on a win
+  and the title never turns into a loss. The number on screen never goes
+  down during play. It counts the finger, never the voice: nothing grades
+  speech, nothing is practice data, and nothing reaches Progress, the week's
+  reps, coins, a clinician or the server. No child sees another child's.
+  Never "score", "points" or "high score" to a child, and never "you
+  missed": under the best is an invitation ("3 away!"). A game never played
+  shows nothing. Saying the sound is the best way to go higher, because it
+  earns the help (slow keys, Super Slice); the sound itself is never counted.
+- **The store** is `Sona.gameBest(key)` and `Sona.gameBestOffer(key, n)` in
+  `sona.js` (block `BESTS1`). `gameBest` answers a whole number from 1, or 0
+  for a game never played. `gameBestOffer` keeps `n` only when it beats the
+  best and answers `{ best, prev, isNew }`: `prev` 0 is a first ever round,
+  matching the best is not new, and `best` is never below a valid `n` even
+  when the phone cannot save. Only whole numbers 1 to 99,999 and real game
+  keys count. One record per child, `sona.bests.v1` in `PER_KID` (`{ tiles:
+  { n: 38, at: "2026-10-02" } }`): a brother or sister starts with none, it
+  goes when the child is removed, and it rides in a backup. The old
+  one-per-phone keys (`sona.best.<game>`) counted the hidden score: they are
+  never read and not carried over. Pages ask for the store first
+  (`CAN_BEST`), so an older cached `sona.js` still plays the game.
+- **Home's tag** (`paintBest` in `today.html`, `.game-best` in
+  `crafted-home.css`): a game the child can open shows "Best 17" with the
+  app's small star, top left of its picture; the Free / Included badge keeps
+  the bottom right. No tag for a game never played, a greyed Premium game or
+  a Coming soon game. The card's spoken label adds "Your best: 17." Home
+  reads the tags again when it comes back to the front.
+- **In the game.** The top-left number is the longest row of this round
+  (`rowBest`), not the row they are on, so it never drops; a broken row just
+  starts again underneath it. "New best!" pops once a round, the moment the
+  row passes the best the child came in with, never on a first ever round;
+  the round's own banners wait for it. The best is kept the moment it is
+  passed, at each wave or song end, when the phone is locked, on the ✕ and
+  at the end.
+- **The win card's line** (`bestLine()` in each page): first ever "14 fruit
+  in a row. Your best: 14!"; beaten "17 fruit in a row. A new best!"; close
+  under "14 fruit in a row. Your best: 17. 3 away!"; more than `AWAY_NEAR`
+  (10) under, "5 fruit in a row. Your best: 38." with no gap (a big gap is a
+  measure, not a dare); level "The same as your best!". One thing is "1
+  fruit", never a row. A round that counted nothing keeps "Good try! Wanna go
+  again?" and shows no line. The title carries no number, so the row is the
+  only count on the card (Fruit Slice's early-stop title is "I saw the fruit
+  fly! So fun!", no longer "I saw 12 fruits fly!").
+- **"Play again" on top, "Back home" under it.** Another go is earned the
+  way every turn is, back through that game's say-it-five-times page
+  (`charge.html?game=…`). The game-to-game "WOOHOO! Next →" is gone from
+  these two; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
+  still calls `Sona.firstGameEnd("slice")`, because asking spends the
+  first-game mark.
+- **Piano Tiles: notes in a row.** Tiles tapped with none slipping past and
+  no wrong key (a tap on a key with no tile there). The row carries on from
+  song to song; the top is every note of the four songs (`ROW_TOP`, 52), and
+  a child there again is told "That is every note!". A second tap on the key
+  just played, within `DOUBLE_MS` (300 ms), is a bounce and does nothing; any
+  other empty key still ends the row, so mashing the keys can't build one.
+  The row flash is "8 in a row!" and the gold one "GOLDEN NOTE!" with no
+  "+3".
+- **Fruit Slice: fruit in a row.** Fruit sliced without one hitting the
+  ground. A golden fruit is one, the giant watermelon is one, and the row
+  carries on from wave to wave. **Super Slice's fruit are extras** (the two
+  rules Travis left to us): a fruit thrown while the power lasts adds to the
+  row when sliced but never to the wave, so saying the sound no longer ends
+  the wave sooner; and nothing that lands while the power lasts, and no
+  extra ever, breaks the row or feeds the two-miss help. A wave's 45 seconds
+  now count real seconds of play (`wavePlay`), not the clock Super Slice
+  slows, so no round runs on: three waves of at most 45 seconds, then the
+  giant. Every fifth fruit flashes the row ("5 in a row!"); the quick-slice
+  "N COMBO!" and the "+3" are gone.
+- **The old five-game run's card** (`?daily=1`; Home never opens it, a saved
+  run or a typed address still can) banks the round and moves on as before;
+  it says "Great round!" and "On to the next game…", never "+N points!".
+  Block Stacker, Sound Sprint and Flappy Glide still say "points" there and
+  still write the old shared keys until their turn.
+- **Rachel's to rule on:** children will say the bare sound more often in a
+  round, alone and quickly, because it is the best helper; whether that
+  wants a limit. And a child the phone hears poorly earns less help, so
+  their number may sit lower.
+`tests/besttest.mjs` pins the store, the leaks and Home's tag; `tilestest`
+and `slicetest` play each game's row and every line; `superslicetest` plays
+the extras through the real earned turn.
+
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
 (`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep
@@ -1637,10 +1729,11 @@ to stand in for it. What was buildable was built on 28 Sep:
   round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
   letters are orange (`Sona.soundMark`). A miss never opens it
   (`micquietgamestest`). The end card's count names real things, never the
-  score: Fruit Slice counts fruit sliced (`FRUITN`, the giant is one fruit) and
-  Piano Tiles notes played (`NOTESN`), because a golden fruit or tile scores 3
-  and the giant's cuts score 5; neither shows a "Best" beside it, because the
-  best is a score. Block Stacker counts blocks and Sound Sprint metres.
+  score (a golden fruit or tile scores 3 and the giant's cuts score 5): Fruit
+  Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
+  child's own best in that same thing (see "Beat Your Best"; the old "Best"
+  was the hidden score, which is why it was taken off). Block Stacker counts
+  blocks and Sound Sprint metres until their own bests land.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
   `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,

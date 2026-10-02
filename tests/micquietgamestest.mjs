@@ -267,10 +267,16 @@ function stripComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, "").replac
 // only listener, and only while it shows ──
 const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["stack", "arcade-stack.html"], ["tiles", "arcade-tiles.html"], ["glide", "arcade-glide.html"]];
 // Each game sets its own score to reach the end card with points (a round
-// with none ends on "Good try! Wanna go again?" instead). Fruit Slice and
-// Piano Tiles also count the real fruit and notes, because their end card
-// names those, never the score.
-const SCORED = { slice: () => { score = 7; FRUITN = 5; }, tiles: () => { score = 7; NOTESN = 7; }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
+// with none ends on "Good try! Wanna go again?" instead). Fruit Slice sets a
+// row of five fruit through its own rowUp(); Piano Tiles sets a row
+// of seven notes the same way: their cards name the row (Beat Your Best, 1-2
+// Oct 2026).
+const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
+// Beat Your Best: a game that keeps the child's own best dares them to pass
+// it, so its top button is "Play again" (back through its own practice page),
+// not "Next" on to a different game. Piano Tiles and Fruit Slice are the
+// first two; each game joins this list as its best lands.
+const PLAYS_AGAIN = ["tiles", "slice"];
 // "orange" by hue, so a new value from the designer needs no test edit: the
 // crafted orange (#bf5d24) and action.css's (#ef6f23) both read as orange
 const isOrange = (c) => { const m = String(c).match(/(\d+),\s*(\d+),\s*(\d+)/); if (!m) return false; const [r, g, b] = m.slice(1).map(Number);
@@ -348,7 +354,8 @@ for (const [key, file] of ARCADE) {
       // the round's own line in place of the markup's placeholder, never
       // "points" (a child's copy says what they did), Echo, and two ways on:
       // Next, which goes to the next game or, when that game is closed to
-      // this family, to the games (pinned below), and Back home.
+      // this family, to the games (pinned below), and Back home. A game with
+      // a best to pass (PLAYS_AGAIN) says "Play again" in Next's place.
       const end = await page.evaluate(() => {
         const $ = (id) => document.getElementById(id), vis = (e) => !!e && getComputedStyle(e).display !== "none";
         return { star: vis($("endEmoji")) && !!$("endEmoji").querySelector("svg,img") && getComputedStyle($("endEmoji")).opacity === "1",
@@ -356,7 +363,8 @@ for (const [key, file] of ARCADE) {
           next: vis($("endCharge")) ? $("endCharge").textContent.trim() : null, home: vis($("endHome")) ? $("endHome").textContent.trim() : null };
       }).catch((e) => ({ error: String(e) }));
       ok(key + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
-      ok(key + ": \u2026and offers Next and Back home", /Next/.test(end.next || "") && end.home === "Back home", end);
+      const again = PLAYS_AGAIN.includes(key);
+      ok(key + ": \u2026and offers " + (again ? "Play again" : "Next") + " and Back home", (again ? end.next === "Play again" : /Next/.test(end.next || "")) && end.home === "Back home", end);
       // Echo hops under the round's count line, and his box has to hold the
       // whole hop: at 120px he stood proud of it and hid "notes" at the top of
       // every hop (1 Oct 2026). Measured at rest, plus the hop's own reach.
@@ -378,17 +386,19 @@ for (const [key, file] of ARCADE) {
   });
 }
 
-// ── the end card's Next when the next game is closed to this family ──
-// Piano Tiles' Next is Block Stacker, a Premium game. Through the paid seam,
-// for a family holding no plan, Next must not open a door that bounces them:
-// it takes them to the games instead of Block Stacker's practice page. This
-// holds whichever way pricing points, because the seam shows the paid state
-// either way. (It was Fruit Slice → Piano Tiles until Piano Tiles turned free
-// on 30 Sep 2026; Fruit Slice's Next now opens Piano Tiles for everyone.)
+// ── the end card's top button, for a family holding no plan ──
+// Through the paid seam, the top button must not open a door that bounces
+// them. This holds whichever way pricing points, because the seam shows the
+// paid state either way. Piano Tiles' Next used to be Block Stacker, a
+// Premium game, and went to the games instead; since Beat Your Best (1-2 Oct
+// 2026) its top button is "Play again", which goes back through Piano Tiles'
+// own practice page (a free game, open to everyone) and never on to Block
+// Stacker. Fruit Slice's is "Play again" too: back through Fruit Slice's own
+// practice page, never on to Piano Tiles (its Next until then).
 for (const [key, token, set, next, nextName] of [
-  ["tiles", "arcade-tiles.html", () => { score = 7; NOTESN = 7; }, "stack", "Block Stacker"],
-  ["slice", "arcade-slice.html", () => { score = 7; FRUITN = 5; }, "tiles", "Piano Tiles"],
-]) await scenario(key + ": Next with the paid seam", async () => {
+  ["tiles", "arcade-tiles.html", () => { score = 7; comboN = 7; rowUp(); }, "stack", "Block Stacker"],
+  ["slice", "arcade-slice.html", () => { score = 7; rowN = 5; rowUp(); }, "tiles", "Piano Tiles"],
+]) await scenario(key + ": the top button with the paid seam", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
   await context.addInitScript(fakeDevice, { token });
@@ -408,10 +418,8 @@ for (const [key, token, set, next, nextName] of [
     const went = page.waitForRequest((r) => r.isNavigationRequest() && r.frame() === page.mainFrame(), { timeout: 3000 }).then((r) => r.url(), () => null);
     await page.locator("#endCharge").click();
     const to = await went;
-    if (next === "stack")
-      ok(key + ": with " + nextName + " closed, Next goes to the games, never to " + nextName, !open && !!to && /\/(activities|today)\.html/.test(to) && !/stack/.test(to), { open, to });
-    else
-      ok(key + ": " + nextName + " is free, so Next goes on to its practice page", open && !!to && /\/charge\.html\?game=arcade-tiles\.html/.test(to), { open, to });
+    // (Block Stacker must really be closed in this seam, or "never to Block Stacker" proves nothing)
+    ok(key + ": Play again goes back through this game's own practice page, never on to " + nextName + (open ? "" : ", which is closed to this family"), PLAYS_AGAIN.includes(key) && (next !== "stack" || !open) && to === BASE + "/charge.html?game=" + token, { open, to });
     clean(key + " next card", errors);
   } finally { await context.close(); }
 });
@@ -426,11 +434,11 @@ for (const [key, token, set, next, nextName] of [
 // the list the draw loop was walking threw inside the loop, which in Fruit
 // Slice and Piano Tiles killed it for good (a frozen game only the ✕ could
 // leave). In Piano Tiles the slipped tile also ends the "N in a row!" run,
-// so that banner is always true.
+// and in Fruit Slice the dropped fruit does, so that flash is always true.
 const MISS = {
   // [set up the miss, did the game count it, place one moving thing, read where it is]
-  slice: [() => { missRun = 0; fruits.length = 0; fruits.push({ e: "🍎", x: W * 0.3, y: H * 0.5, vx: 0, vy: 0, r: 38, rot: 0, vr: 0, sliced: false }, { e: "🍊", x: W * 0.6, y: H + 200, vx: 0, vy: 5, r: 38, rot: 0, vr: 0, sliced: false }); },
-    () => missRun >= 1,
+  slice: [() => { missRun = 0; rowN = 4; fruits.length = 0; fruits.push({ e: "🍎", x: W * 0.3, y: H * 0.5, vx: 0, vy: 0, r: 38, rot: 0, vr: 0, sliced: false }, { e: "🍊", x: W * 0.6, y: H + 200, vx: 0, vy: 5, r: 38, rot: 0, vr: 0, sliced: false }); },
+    () => missRun >= 1 && rowN === 0,
     () => { fruits.length = 0; fruits.push({ e: "🍎", x: 100, y: 300, vx: 0, vy: 1, r: 38, rot: 0, vr: 0, sliced: false }); }, () => fruits[0] && fruits[0].y],
   tiles: [() => { waitLeft = 0; missRun = 0; comboN = 4; tiles.length = 0; tiles.push({ lane: 0, y: H * 0.3, h: 88, hit: false, gone: false, note: 440, wait: false }, { lane: 1, y: HITY() + 100, h: 88, hit: false, gone: false, note: 440, wait: false }); },
     () => missRun >= 1 && comboN === 0,
