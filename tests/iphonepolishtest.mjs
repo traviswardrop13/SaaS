@@ -184,15 +184,18 @@ try{
    // the microphone: a real stream carrying a 300 Hz tone, silent until h.talk()
    navigator.mediaDevices.getUserMedia=()=>{h.mic++;const c=h.micCtx||(h.micCtx=new AC());c.resume();const o=mkOsc.call(c),g=c.createGain(),d=c.createMediaStreamDestination();o.frequency.value=300;g.gain.value=0;o.connect(g);g.connect(d);o.start();h.micGain=g;h.tracks.push(d.stream.getTracks()[0]);return Promise.resolve(d.stream);};
    // the child says the word as often as the game asks (two times since 1 Oct
-   // 2026), with a breath between, until the game takes it
-   h.talk=()=>{let on=true;h.micGain.gain.value=.5;const t=setInterval(()=>{if(!window.__sayplay||__sayplay.phase!=='turn'){h.micGain.gain.value=0;clearInterval(t);return;}on=!on;h.micGain.gain.value=on?.5:0;},600);};
+   // 2026): each saying lasts until the game has counted it, then a breath,
+   // then the next, until the game takes the word. Paced by what the game
+   // heard, not by a clock, so a busy machine's slow frames cannot merge two.
+   h.talk=()=>{let said=__sayplay.said,quietAt=0;h.micGain.gain.value=.5;const t=setInterval(()=>{const sp=window.__sayplay;if(!sp||sp.phase!=='turn'){h.micGain.gain.value=0;clearInterval(t);return;}
+    if(!quietAt&&sp.said!==said){said=sp.said;quietAt=performance.now();h.micGain.gain.value=0;}else if(quietAt&&performance.now()-quietAt>700){quietAt=0;h.micGain.gain.value=.5;}},30);};
   });
   const pg=await ctx4.newPage(),errs=[];pg.on('pageerror',e=>errs.push(e.message));
   const tick=()=>pg.waitForTimeout(60);
   await pg.goto(base+'/arcade-hoops.html');await pg.locator('#startBtn').click();
   const listening=await pg.waitForFunction(()=>window.__sayplay&&__sayplay.listening===true&&h.live()===1,{},{timeout:9000}).then(()=>true,()=>false);
   const n=await pg.evaluate(()=>{const n=h.media.length;h.talk();return n;});
-  await pg.waitForFunction(n=>h.media.length>n,n,{timeout:5000}).catch(()=>{});
+  await pg.waitForFunction(n=>h.media.length>n,n,{timeout:10000}).catch(()=>{});
   const heard=await pg.evaluate(async n=>{const a=h.media[n];if(!a)return {phase:__sayplay.phase,media:h.media.length,osc:h.osc,mic:h.mic};
    const b=new DataView(await(await fetch(a.src)).arrayBuffer());let peak=0;for(let i=44;i+1<b.byteLength;i+=2)peak=Math.max(peak,Math.abs(b.getInt16(i,true)));
    return {phase:__sayplay.phase,blob:a.src.startsWith('blob:'),micLive:a.micLive,osc:h.osc,pcm:h.pcm,riff:String.fromCharCode(b.getUint8(0),b.getUint8(1),b.getUint8(2),b.getUint8(3)),rate:b.getUint32(24,true),secs:+((b.byteLength-44)/2/b.getUint32(24,true)).toFixed(2),peak:+(peak/32767).toFixed(3)};},n);
