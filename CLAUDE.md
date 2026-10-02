@@ -923,15 +923,26 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
 `tests/tilestest.mjs` plays a whole round.
 
-**The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
-her July demo by ear: "use number 4"). Every game's one-take sound
-(`/coach/say-echo/<S>-sound.wav`, cut by `tools/soundclips.mjs`) was her take
-re-voiced into Echo's voice, and for R the voice changer moved her third
-formant from about 1,430 Hz to about 2,900, toward /w/: the "wabbit" error the
-child is here to fix. A gentler setting still left it near 1,850. So R alone
-plays her own take (`OWN` in the tool), at the same loudness as the rest; the
-other voiced sounds stay re-voiced until a listen says otherwise. Piano Tiles
-plays the same one take now (it played the three-take re-voiced demo).
+**Every sound is Rachel's own voice** (Travis, 1 Oct 2026, of the L on Fruit
+Slice's practice page: "it said the weirdest sound. But it didn't say the
+actual one ... we need to either insert her voice right there or re-record";
+R went first that morning, "use number 4"). The one-take sound that plays in
+the letter's place ("…and make your [lll] sound, five times."), on every
+say-it card and in every sound power (`/coach/say-echo/<S>-sound.wav`) is cut
+by `tools/soundclips.mjs` from her July recordings in `/coach/say/`: her short
+demo of the sound where it is clean, else the same sound inside her whole July
+line ("… — p! p! p!"), whose room noise is 20–30 dB lower. They used to be her
+takes re-voiced into Echo's voice, and the voice changer bent the very cue a
+child copies: her L became an "ee", her R moved toward W (the "wabbit" error),
+her N and Z took a vowel's shape and Z lost its hiss; v4 Turbo's F (used for
+the voiceless sounds) came out voiced. All 19 now come from her, R still the
+take Travis picked, levelled to Echo's words to the ear. `storytest` holds
+every take to her recordings and checks each still sounds like its sound:
+voiced sounds voiced, hisses hissing, the L not an "ee". A new take is a new
+window in the tool's `TAKES`, read off a spectrogram; which take is the model
+is Rachel's call. Piano Tiles plays the same one take (it played the
+three-take re-voiced demo). Her whole lines stay re-voiced: practice plays
+one only when the voice service is down.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 

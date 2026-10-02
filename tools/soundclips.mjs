@@ -1,123 +1,111 @@
 // Build the ONE take of each target sound that plays in the letter's place
-// inside Echo's v4 Turbo words ("…and make your [rrrr] sound, five times.") —
-// Travis, 29 Sep 2026: v4 Turbo for every word, a recording only for the split
-// second of the sound itself.
-//   node tools/soundclips.mjs        # → public/coach/say-echo/<S>-sound.wav
-// Needs ELEVENLABS_API_KEY (env or .env.local) for the voiceless takes, and
-// macOS's afconvert to decode Rachel's demos. A dev tool: the app only loads
-// the files it writes.
+// inside Echo's words ("…and make your [rrrr] sound, five times."), on every
+// round game's say-it card and in every sound power.
+//   node tools/soundclips.mjs          # all 19 → public/coach/say-echo/<S>-sound.wav
+//   node tools/soundclips.mjs L F      # only those
+// Decodes with Chromium (tests/_env.mjs), the decoder the app's pages use, so
+// the windows below are read off the very samples a page gets. No API key.
 //
-// WHERE EACH TAKE COMES FROM, measured (29 Sep 2026), not assumed:
-// - R is Rachel's OWN voice: take 1 of her raw demo (/coach/say/R-demo.mp3),
-//   picked by ear by Travis on 1 Oct 2026 ("use number 4"). The voice
-//   changer moved her R's third formant from about 1,430 Hz to about 2,900
-//   (LPC medians, measured 1 Oct 2026) — toward /w/, the "wabbit" the child is
-//   here to fix — and a gentler setting (stability 0.85, similarity 0.25)
-//   still left it near 1,850.
-// - The other VOICED sounds (B D G J M N V Z L THV) are Rachel's re-voiced demos
-//   (/coach/say-echo/<S>-demo.mp3, tools/revoice.mjs). The voice changer keeps
-//   a voiced sound voiced, and her production is the clinical model. Each take
-//   is picked BY HAND from the burst map below, never "the first burst": for
-//   K the first burst was room noise the voice changer had turned into a
-//   vowel, L's first burst ran on into "la la la", S's carried a breath.
-// - VOICELESS sounds (P T K CH F S SH TH) are v4 Turbo's own, in Echo's voice.
-//   The voice changer VOICES them: her raw F measures 7–22 % voiced frames,
-//   the re-voiced F 100 %; SH 1 % → 27–58 %; TH 0 % → 53–67 %; CH 8–18 % →
-//   70–94 % — a buzz where a child must hear a whisper, on the very pairs the
-//   cues separate ("Like F, but buzz your voice"). v4 Turbo renders them
-//   unvoiced (0–6 % for S SH TH T K P CH), the stops as short bursts, never
-//   letter names. Her raw takes are also clean but never play (storytest).
-// Every take is levelled to sound as loud as Echo's words to the ear: equal
-// A-weighted loudness with a reference v4 Turbo line at /api/tts's level, one
-// gain, peaks ≤ −3 dBFS — a plain RMS match left hisses ~3–4 dB louder and
-// hums ~4–6 dB quieter than the words around them. 10 ms fades. WAV, 24 kHz
-// mono 16-bit, the rate Echo's words arrive in (charge.html refuses others).
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from "node:fs";
-import { execFileSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+// EVERY TAKE IS RACHEL'S OWN VOICE. Travis, 1 Oct 2026, picked her own R by ear
+// ("use number 4"); then, of the L on Fruit Slice's practice page: "it said the
+// weirdest sound. But it didn't say the actual one ... we need to either insert
+// her voice right there or re-record". Until 2 Oct 2026 the voiced takes were
+// hers re-voiced into Echo's voice (tools/revoice.mjs) and the voiceless ones
+// v4 Turbo's own. Measured then (LPC formant medians, voicing by
+// autocorrelation), the voice changer had bent the very cue a child copies:
+// - R: third formant 1,430 → 2,900 Hz, toward /w/ (the "wabbit" error);
+// - L: second formant 740 → 2,260 Hz: an "ee", not an L (what Travis heard);
+// - N and Z: a vowel's first formant (880–920 Hz), and Z lost its hiss
+//   (energy above 3 kHz 22 % → 1 %);
+// - V, THV, D and J: formants moved 200–600 Hz;
+// and v4 Turbo's F came out 44 % voiced with its energy near 780 Hz: a vowel
+// where an F is a soft hiss.
+//
+// WHERE EACH TAKE COMES FROM (TAKES): her short demo of the sound
+// (/coach/say/<S>-demo.mp3) where it is clean, else the same sound performed
+// inside her whole July line (/coach/say/<S>.mp3, "… — p! p! p!"). The demos
+// were turned up after recording and their room noise with them: L's and CH's
+// sit 20–30 dB noisier than their lines, and L's demo shows no clear voice at
+// all. Every window was read off a spectrogram and a 10 ms burst map: no
+// breath, no click, no next word; a stop keeps its burst and its puff, never a
+// held "uh" (VOICE_SCRIPT.md: "a held /p/ teaches a schwa").
+// CLEAN-UP that leaves the sound alone: a high-pass at 900 Hz on the hisses
+// (F S SH TH CH: nothing of theirs lives below it, the room's rumble does) and
+// at 80 Hz on the rest, run forward and back so a pop is not smeared. R is
+// exactly the take Travis picked. Fades: 10 ms in; out over the take's own
+// decay (a pop's puff dies away, it is not cut off).
+// LEVEL: as loud as Echo's words to the ear — equal A-weighted loudness with a
+// reference v4 Turbo line at /api/tts's level (TARGET_A, measured 29 Sep 2026;
+// the set has sat there since) — peaks never over −3 dBFS. A pop's burst or a
+// hum's every period can reach that ceiling first: then a look-ahead limiter
+// takes the top off those peaks alone, eased over 2 ms, never more than 3 dB.
+// WAV, 24 kHz mono 16-bit, the rate Echo's words arrive in (charge.html
+// refuses any other). storytest pins the format, the level, the sources and
+// that every voiced take is voiced and every hiss is not.
+import { readFileSync, writeFileSync } from "node:fs";
 import { aWeightedLevel } from "./aweight.mjs";
+import { chromium, launchOpts } from "../tests/_env.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
-const DIR = ROOT + "public/coach/say-echo/";
-const RATE = 24000;
-// Rachel's re-voiced demos: [from, to] seconds, margins included, read off a
-// 10 ms burst map (onset/offset at 30 dB under the peak).
-const DEMO = {
-  B: [0.05, 0.34], D: [0.07, 0.35], G: [0.07, 0.43], J: [0.08, 0.47],
-  M: [0.05, 1.23], N: [0.08, 1.09], V: [0.08, 1.30], Z: [0.08, 1.04],
-  L: [0.00, 0.57], THV: [0.09, 0.98],
+const SRC = ROOT + "public/coach/say/", DIR = ROOT + "public/coach/say-echo/";
+const RATE = 24000, TARGET_A = -3.04;
+// sound: [her recording, from s, to s, high-pass Hz, fade-out ms]
+export const TAKES = {
+  P: ["P.mp3", 7.585, 7.79, 80, 60],          // "… — p! p! p!": the second pop
+  B: ["B-demo.mp3", 0.03, 0.45, 80, 30],
+  M: ["M-demo.mp3", 0.02, 1.24, 80, 30],      // take 1 of 3
+  N: ["N-demo.mp3", 3.28, 4.31, 80, 30],      // take 3: the others end on a click
+  T: ["T.mp3", 12.15, 12.355, 80, 40],        // stops before the breath at 12.37 s
+  D: ["D-demo.mp3", 0.04, 0.45, 80, 30],
+  K: ["K.mp3", 7.655, 7.88, 80, 50],          // the first "k!"
+  G: ["G-demo.mp3", 0.04, 0.55, 80, 40],
+  F: ["F.mp3", 9.36, 10.28, 900, 30],         // "… blow soft — ffff."
+  V: ["V-demo.mp3", 1.84, 3.24, 80, 30],      // take 2: take 1 opens on a breath
+  S: ["S.mp3", 9.68, 10.66, 900, 30],         // "… — sss like a snake."
+  Z: ["Z-demo.mp3", 1.48, 2.80, 80, 30],      // take 2 of 3
+  SH: ["SH-demo.mp3", 0.02, 1.30, 900, 30],   // take 1 of 2
+  CH: ["CH.mp3", 13.70, 13.99, 900, 40],      // "… like a little train — ch!"
+  J: ["J-demo.mp3", 0.06, 0.62, 80, 40],      // take 1 of 2
+  L: ["L.mp3", 9.97, 10.86, 80, 40],          // "… — lll, la la la.": the lll
+  R: ["R-demo.mp3", 0.00, 1.24, 0, 10],       // take 1, Travis's pick (1 Oct 2026)
+  TH: ["TH.mp3", 11.34, 11.98, 900, 30],      // "… blow soft — th.", after its click
+  THV: ["THV-demo.mp3", 3.25, 4.30, 80, 30],  // take 3: 1 and 2 carry clicks
 };
-// Rachel's own (raw) demos, same burst map: the sounds the voice changer bends.
-const OWN = { R: [0.00, 1.24] };
-// v4 Turbo: what it is sent, and which burst of the render to keep.
-const V4 = {
-  P: ["p... p... p", 0], T: ["t... t... t", 0], K: ["k... k... k", 0], CH: ["ch... ch... ch", 0],
-  F: ["ffffff", "longest"], S: ["ssssss", 0], SH: ["shhhhhh", 0], TH: ["thhhhhh", 0],
-};
-// Exactly the route's delivery (app/api/tts/route.ts): voice, model, settings, seed.
-const VOICE = "qBDvhofpxp92JgXJxDjB", MODEL = "eleven_v4_turbo", SEED = 20260924;
-const SETTINGS = { stability: 0.7, similarity_boost: 0.85, style: 0, speed: 0.93, use_speaker_boost: true };
-const REFERENCE = "sound, five times.";
 
-const key = process.env.ELEVENLABS_API_KEY || (existsSync(ROOT + ".env.local") && (readFileSync(ROOT + ".env.local", "utf8").match(/^ELEVENLABS_API_KEY=["']?([^"'\s]+)/m) || [])[1]);
-if (!key) { console.error("soundclips: ELEVENLABS_API_KEY is not set (env or .env.local)."); process.exit(1); }
-async function tts(text) {
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_24000`, {
-    method: "POST", headers: { "xi-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ text, model_id: MODEL, voice_settings: SETTINGS, seed: SEED }),
-  });
-  if (!r.ok) throw new Error(`ElevenLabs ${r.status} for "${text}"`);
-  const b = Buffer.from(await r.arrayBuffer());
-  return Float64Array.from({ length: b.length >> 1 }, (_, i) => b.readInt16LE(i * 2) / 32768);
+// 2nd-order Butterworth high-pass, forward then backward: no phase shift.
+function highpass(x, fc) {
+  if (!fc) return Float64Array.from(x);
+  const w = Math.tan(Math.PI * fc / RATE), q = Math.SQRT1_2, n = 1 / (1 + w / q + w * w);
+  const b0 = n, b1 = -2 * n, b2 = n, a1 = 2 * (w * w - 1) * n, a2 = (1 - w / q + w * w) * n;
+  const run = (y) => { const o = new Float64Array(y.length); let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let i = 0; i < y.length; i++) { const v = b0 * y[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = y[i]; y2 = y1; y1 = v; o[i] = v; } return o; };
+  return run(run(x).reverse()).reverse();
 }
-const tmp = mkdtempSync(join(tmpdir(), "soundclips-"));
-function decode(mp3) {
-  const out = join(tmp, "d.wav");
-  execFileSync("afconvert", ["-f", "WAVE", "-d", `LEI16@${RATE}`, "-c", "1", mp3, out]);
-  const b = readFileSync(out); let off = 12;
-  while (off < b.length) {
-    const id = b.toString("ascii", off, off + 4), size = b.readUInt32LE(off + 4);
-    if (id === "data") return Float64Array.from({ length: size >> 1 }, (_, i) => b.readInt16LE(off + 8 + i * 2) / 32768);
-    off += 8 + size;
+// Look-ahead peak limiter: each sample over the ceiling pulls the gain down
+// around it, eased in and out over 2 ms, so only the peaks themselves move.
+function limit(x, ceil) {
+  const H = 48, g = new Float64Array(x.length).fill(1);
+  for (let i = 0; i < x.length; i++) {
+    const a = Math.abs(x[i]); if (a <= ceil) continue;
+    const need = ceil / a;
+    for (let j = Math.max(0, i - H); j <= Math.min(x.length - 1, i + H); j++) { const v = 1 - (1 - need) * (0.5 + 0.5 * Math.cos(Math.PI * (j - i) / (H + 1))); if (v < g[j]) g[j] = v; }
   }
-  throw new Error("no data chunk in " + mp3);
+  return x.map((v, i) => v * g[i]);
 }
-// Bursts of a render: 10 ms frames over peak − 30 dB, split on gaps > 60 ms.
-function bursts(x) {
-  const F = 240, db = [];
-  for (let s = 0; s + F <= x.length; s += F) { let e = 0; for (let i = s; i < s + F; i++) e += x[i] * x[i]; db.push(10 * Math.log10(e / F + 1e-12)); }
-  const thr = Math.max(...db) - 30, out = []; let st = -1, gap = 0;
-  db.forEach((d, i) => { if (d > thr) { if (st < 0) st = i; gap = 0; } else if (st >= 0 && ++gap > 6) { out.push([st * F, (i - gap + 1) * F]); st = -1; gap = 0; } });
-  if (st >= 0) out.push([st * F, db.length * F]);
-  return out;
-}
-function v4Take(x, pick) {
-  const b = bursts(x);
-  const i = pick === "longest" ? b.reduce((best, s, k) => (s[1] - s[0] > b[best][1] - b[best][0] ? k : best), 0) : pick;
-  const [a, z] = b[i], prev = i > 0 ? b[i - 1][1] : 0, next = i + 1 < b.length ? b[i + 1][0] : x.length;
-  return x.slice(Math.max(prev, a - Math.round(0.05 * RATE)), Math.min(next, z + Math.round(0.08 * RATE)));
-}
-const amp = (db) => Math.pow(10, db / 20);
-// /api/tts's own levelling (levelPcm): −20 dBFS RMS over the spoken frames.
-function routeLevel(x) {
-  const F = 480, frames = [];
-  for (let s = 0; s < x.length; s += F) { const e = Math.min(x.length, s + F); let sum = 0; for (let i = s; i < e; i++) sum += x[i] * x[i]; frames.push({ sum, len: e - s }); }
-  const spoken = frames.filter((f) => f.sum / f.len >= amp(-50) ** 2);
-  const mean = spoken.reduce((t, f) => t + f.sum, 0) / spoken.reduce((t, f) => t + f.len, 0);
-  const speech = spoken.filter((f) => f.sum / f.len >= mean * amp(-20) ** 2);
-  const rms = Math.sqrt(speech.reduce((t, f) => t + f.sum, 0) / speech.reduce((t, f) => t + f.len, 0));
-  return x.map((v) => v * amp(-20) / rms);
-}
-function finish(x, targetA) {
-  // Which frames count as spoken depends on the level (a fixed −50 dBFS
-  // floor), so a short burst's measure moves with its gain: settle it.
-  let gain = 1;
-  for (let i = 0; i < 6; i++) gain *= amp(targetA - aWeightedLevel(x.map((v) => v * gain), RATE));
-  const peak = x.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
-  gain = Math.min(gain, (Math.floor(amp(-3) * 32768 - 1) / 32768) / peak);
-  const fade = Math.min(240, x.length >> 1);
-  return x.map((v, i) => v * gain * Math.min(1, i / fade, (x.length - 1 - i) / fade));
+const amp = (db) => Math.pow(10, db / 20), peakOf = (y) => y.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+function finish(take, fadeOutMs) {
+  // Fades first, so the level is measured on exactly what will play.
+  const fin = 240, fout = Math.round(fadeOutMs * RATE / 1000);
+  const x = take.map((v, i) => v * Math.min(1, i / fin, (take.length - 1 - i) / fout));
+  const ceil = Math.floor(amp(-3) * 32768 - 1) / 32768;
+  let gain = 1, y = x;
+  for (let k = 0; k < 10; k++) {
+    const lin = x.map((v) => v * gain), pk = peakOf(lin);
+    y = pk > ceil ? limit(lin, Math.max(ceil, pk / amp(3))) : lin;
+    const step = amp(TARGET_A - aWeightedLevel(y, RATE)); gain *= step;
+    if (Math.abs(20 * Math.log10(step)) < 0.01) break;
+  }
+  const pk = peakOf(y);
+  return pk > ceil ? y.map((v) => v * ceil / pk) : y;
 }
 function wav(x) {
   const n = x.length * 2, h = Buffer.alloc(44);
@@ -126,16 +114,32 @@ function wav(x) {
   const d = Buffer.alloc(n); x.forEach((v, i) => d.writeInt16LE(Math.max(-32768, Math.min(32767, Math.round(v * 32768))), i * 2));
   return Buffer.concat([h, d]);
 }
-try {
-  const targetA = aWeightedLevel(routeLevel(await tts(REFERENCE)), RATE);
-  console.log(`reference "${REFERENCE}" at the route's level: ${targetA.toFixed(1)} dB A-weighted`);
-  for (const s of ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"]) {
-    let take, from;
-    if (OWN[s]) { const x = decode(ROOT + "public/coach/say/" + s + "-demo.mp3"), [a, z] = OWN[s]; take = x.slice(Math.round(a * RATE), Math.round(z * RATE)); from = `Rachel's own demo ${a.toFixed(2)}–${z.toFixed(2)} s`; }
-    else if (DEMO[s]) { const x = decode(DIR + s + "-demo.mp3"), [a, z] = DEMO[s]; take = x.slice(Math.round(a * RATE), Math.round(z * RATE)); from = `Rachel's demo ${a.toFixed(2)}–${z.toFixed(2)} s`; }
-    else { const [text, pick] = V4[s]; take = v4Take(await tts(text), pick); from = `v4 Turbo "${text}" (burst ${pick})`; }
-    const out = finish(take, targetA);
-    writeFileSync(DIR + s + "-sound.wav", wav(out));
-    console.log(`${s.padEnd(4)} ${(out.length / RATE).toFixed(2)} s  ← ${from}`);
-  }
-} finally { rmSync(tmp, { recursive: true, force: true }); }
+
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  const only = process.argv.slice(2), sounds = only.length ? only : Object.keys(TAKES);
+  const bad = sounds.filter((s) => !TAKES[s]);
+  if (bad.length) { console.error("soundclips: no take for " + bad.join(", ")); process.exit(1); }
+  const browser = await chromium.launch(launchOpts());
+  try {
+    const page = await browser.newPage();
+    for (const s of sounds) {
+      const [file, from, to, hp, fadeOut] = TAKES[s];
+      // Decode and resample to 24 kHz mono exactly as a page would.
+      const b64 = await page.evaluate(async (src) => {
+        const bin = Uint8Array.from(atob(src), (c) => c.charCodeAt(0));
+        const buf = await new OfflineAudioContext(1, 1, 24000).decodeAudioData(bin.buffer);
+        const oc = new OfflineAudioContext(1, Math.ceil(buf.duration * 24000), 24000), node = oc.createBufferSource();
+        node.buffer = buf; node.connect(oc.destination); node.start();
+        const u8 = new Uint8Array((await oc.startRendering()).getChannelData(0).buffer.slice(0));
+        let out = ""; for (let i = 0; i < u8.length; i += 0x8000) out += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+        return btoa(out);
+      }, readFileSync(SRC + file).toString("base64"));
+      const raw = Buffer.from(b64, "base64"), x = new Float32Array(raw.buffer, raw.byteOffset, raw.length >> 2);
+      // Filter with 0.2 s of context either side, so the filter has settled at the cut.
+      const a = Math.round(from * RATE), z = Math.round(to * RATE), lo = Math.max(0, a - 4800);
+      const y = highpass(x.slice(lo, Math.min(x.length, z + 4800)), hp), out = finish(y.slice(a - lo, z - lo), fadeOut);
+      writeFileSync(DIR + s + "-sound.wav", wav(out));
+      console.log(`${s.padEnd(4)}${(out.length / RATE).toFixed(2)} s  ← ${file} ${from.toFixed(3)}–${to.toFixed(3)} s, high-pass ${hp || "none"}  A ${aWeightedLevel(out, RATE).toFixed(2)}  peak ${(20 * Math.log10(peakOf(out))).toFixed(1)} dBFS`);
+    }
+  } finally { await browser.close(); }
+}

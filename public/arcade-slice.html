@@ -445,7 +445,7 @@
       while(gen===reviveVoice&&!document.hidden&&(rv.pending||rv.st||performance.now()<Math.max(quietUntil,micClosedAt+SETTLE_MS)))await new Promise(function(done){setTimeout(done,40);});
       if(gen!==reviveVoice||document.hidden)return;
       await reviveLine("To keep playing, say",gen);
-      // Model the real sound from Rachel's recording, never a synthesized
+      // Model the real sound in Rachel's own voice, never a synthesized
       // letter name: ONE take of it (tools/soundclips.mjs), as loud as Echo's
       // words to the ear — her demo holds it up to seven times (S ran 15 s).
       // The shared switch, as practice reads it (sona.js HUMAN_CLIPS).
