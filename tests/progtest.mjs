@@ -347,15 +347,17 @@ t = await page.evaluate(() => ({
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
   t.pick === "block" && t.founding === "none" && /59\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
-// ONE offer as of 18 Sep 2026: monthly was retired. A SECOND card is a dead
-// tier creeping back — and since nobody can buy monthly any more, a page that
-// still shows it would take a parent to a checkout that quietly sells them the
-// yearly plan instead.
-ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "cards=" + t.cards);
-// ONE PLAN, ONE HEADING. "Pick your plan" over a single card asked a parent
-// to choose between a thing and nothing; the heading now says what the
-// button does. And the decline sat two screens below the offer, past the
-// SLP card — it now sits directly beneath the card it declines.
+// TWO WAYS TO PAY as of 1 Oct 2026 (Travis: "add to the paywall a $10 a month
+// option ... that does not have a free trial. That's a pay today, but the
+// $59.99 has a three-day trial. And have that as the default option
+// selected"). Monthly was retired on 18 Sep and is back, sold for real: the
+// checkout honours it (caseloadtest plays the route). A THIRD box would be a
+// tier nobody approved.
+ok("TWO ways to pay exactly — the yearly plan and the monthly one", t.cards === 2, "cards=" + t.cards);
+// THE HEADING SAYS WHAT THE BUTTON DOES. On arrival the yearly plan is picked
+// and the button starts free days, so the heading says so; it is never the
+// bare "Pick your plan". And the decline sat two screens below the offer,
+// past the SLP card — it now sits directly beneath the card it declines.
 {
   const shape = await page.evaluate(() => {
     const h = document.querySelector("#pickCard h2");
@@ -363,42 +365,98 @@ ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "car
     const slpCard = !!document.getElementById("slpEntryCard");
     return { heading: h ? h.textContent.trim() : "", order, slpCard };
   });
-  ok("the plan card is headed by what the button does, not a choice that does not exist",
+  ok("the plan card is headed by what the button does on arrival: free days, the yearly plan's",
     /Start your free days/.test(shape.heading) && !/Pick your plan/.test(shape.heading), shape.heading);
   ok("…and the decline sits directly under the plan card",
     shape.order.join(">") === "pickCard>declineRow", shape.order.join(">"));
   // the SLP side is hidden (19 Sep 2026): the plan screen no longer offers it
   ok("…and the 'working with a speech therapist?' card is gone from the plan screen", !shape.slpCard);
 }
-ok("yearly card states the 3-day trial and the cancel promise",
-  /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
-// The comparison figures died with the plan they compared to: $119.88 and
-// "save $59.89" were only ever 12 x $9.99, so striking one through now would
-// anchor against a price nobody can pay. What must survive is the per-month
-// reading, which is just $59.99/12 and true on its own.
-ok("…and no fabricated anchor survives the retirement",
+// The button and its "what happens when" lines sit UNDER both plan boxes
+// since 1 Oct 2026 (one button, two plans), so the cancel promise is read
+// there, as a parent sees it: innerText, which leaves out anything hidden.
+const buyArea = await page.evaluate(() => document.querySelector("#pickCard .planbuy").innerText);
+ok("yearly card states the 3-day trial, and the cancel promise sits with the button",
+  /3 days free/i.test(t.life) && /cancel any ?time/i.test(buyArea), buyArea.slice(0, 160));
+// The comparison figures did NOT come back with monthly. $119.88 really is
+// twelve months of $9.99 again, but "save $59.89" is true only while the
+// charter price lasts: at family fifty-one the yearly plan is $99.99 and the
+// saving is $19.89, so a typed saving is a number with an expiry date. What
+// must survive is the per-month reading, which is just $59.99/12.
+ok("…and no was-price or 'you save' figure rides back in with the monthly plan",
   !/119\.88/.test(t.life) && !/59\.89/.test(t.life),
-  "a strike-through with no monthly plan behind it is an invented was-price: " + t.life.slice(0, 120));
-ok("…while the honest per-month reading stays",
-  /under \$5 a month/i.test(t.life), t.life.slice(0, 120));
-// THE HEADER LINE IS PRICE COPY TOO. The card markup was cleaned up when
-// monthly was retired; #planLine was not, because the page WRITES it at
-// runtime and every check here read the card. It still said "saves $59.89 a
-// year vs $9.99/mo · Monthly: $9.99/mo, billed today" above a page with one
-// plan on it and no monthly button to find. Read what the parent reads.
-ok("the header line retired with the plan — no dead tier, no invented saving",
-  !/119\.88/.test(t.line) && !/59\.89/.test(t.line) && !/9\.99\s*\/?\s*mo/i.test(t.line) &&
-  !/\bmonthly\b/i.test(t.line),
-  "planLine: " + t.line.slice(0, 160));
-ok("…and says the one true thing about the one plan",
-  /59\.99/.test(t.line) && /3 days free/i.test(t.line), "planLine: " + t.line.slice(0, 160));
+  "the saving is only true for the first 50 families: " + t.life.slice(0, 120));
+ok("…while the honest per-month reading stays, and says it is billed once a year",
+  /under \$5 a month, billed once a year/i.test(t.life), t.life.slice(0, 120));
+// THE HEADER LINE IS PRICE COPY TOO. The page WRITES #planLine at runtime, so
+// read what the parent reads. It names both ways to pay, with what makes each
+// one different, and still carries no was-price.
+ok("the header line carries no was-price and no invented saving",
+  !/119\.88/.test(t.line) && !/59\.89/.test(t.line), "planLine: " + t.line.slice(0, 200));
+ok("…says the true thing about the yearly plan: its price and its 3 free days",
+  /59\.99/.test(t.line) && /3 days free/i.test(t.line) && /under \$5 a month<?[^.]*billed once a year/i.test(t.line), "planLine: " + t.line.slice(0, 200));
+ok("…and the true thing about the monthly one: its price, and that it is charged today",
+  /\$9\.99 a month, charged today/.test(t.line), "planLine: " + t.line.slice(0, 200));
 {
-  const gone = await page.evaluate(() => ({
-    month: !!document.getElementById("planMonth"),
-    buy: !!document.getElementById("buyMonth"),
-  }));
-  ok("the monthly card and its buy button are gone from the paywall",
-    !gone.month && !gone.buy, JSON.stringify(gone));
+  // THE MONTHLY BOX IS HONEST, AND YEARLY IS THE ONE PICKED. /\$9\.99/, with
+  // the dollar sign: a bare /9\.99/ also matches "$59.99" and "$99.99" and
+  // passed on a page with no monthly price on it at all.
+  const pay = await page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    const seen = (el) => !!el && !el.hidden && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return {
+      month: g("planMonth") ? g("planMonth").innerText : null,
+      yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth") && g("planMonth").getAttribute("aria-checked"),
+      secondButton: !!g("buyMonth"), buttons: document.querySelectorAll("#pickCard button.go").length,
+      button: g("buyLife").textContent, timeline: seen(g("webTL")), payToday: seen(g("monthMath")),
+    };
+  });
+  // "Charged today", not "no free trial" (Travis, 1 Oct 2026: "dont say no
+  // free trial at the bottom"): the same fact, said as what the plan does.
+  // It must never say "free" at all — that word is the yearly plan's.
+  ok("the monthly box is honest: $9.99, charged today — and never the word 'free'",
+    !!pay.month && /\$9\.99/.test(pay.month) && /charged today/i.test(pay.month) && !/free/i.test(pay.month), JSON.stringify(pay.month));
+  ok("…and it never borrows the charter price or a spots-left number",
+    !!pay.month && !/charter|spots? left|first 50/i.test(pay.month), JSON.stringify(pay.month));
+  ok("the yearly plan is the one picked when the page opens", pay.yearPicked === "true" && pay.monthPicked === "false", JSON.stringify(pay));
+  ok("one button serves both plans — no second buy button", pay.buttons === 1 && !pay.secondButton, JSON.stringify(pay));
+  ok("on arrival the button starts free days, the timeline is showing and 'charged today' is not",
+    pay.button === "Start 3 days free" && pay.timeline && !pay.payToday, JSON.stringify(pay));
+}
+{
+  // WHAT THE BUTTON SENDS. Every browser suite answers /api/* with an error,
+  // so until now nothing read what the plan screen posts to checkout: a
+  // "monthly" pick that posted "annual" would have passed everything.
+  const posts = [];
+  await page.route("**/api/checkout", (r) => { posts.push(r.request().postDataJSON()); r.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: false, error: "test: not opened" }) }); });
+  const look = () => page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    const seen = (el) => !!el && !el.hidden && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, timeline: seen(g("webTL")), noChargeToday: seen(g("trialMath")), payToday: seen(g("monthMath")),
+      area: document.querySelector("#pickCard .planbuy").innerText, renew: g("webRenew").innerText, heading: g("pickTitle").textContent,
+      yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth").getAttribute("aria-checked") };
+  });
+  await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // the price check has let go
+  await page.locator("#buyLife").click(); await page.waitForTimeout(250);
+  ok("with nothing touched, the button buys the yearly plan", posts.length === 1 && posts[0].plan === "annual", JSON.stringify(posts));
+  await page.locator("#planMonth").click(); await page.waitForTimeout(150);
+  let m = await look();
+  ok("picking monthly: the button names the price charged today", m.monthPicked === "true" && m.yearPicked === "false" && m.button === "Subscribe — $9.99 a month", JSON.stringify(m));
+  ok("…the free-days timeline and 'no charge today' leave the screen: nothing under the button says 'free'", !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
+  ok("…and 'charged today, then every month' is what is under the button", m.payToday && /\$9\.99 is charged today, then every month/i.test(m.area), m.area.slice(0, 200));
+  ok("…the small print is the monthly plan's: charged today, $9.99 a month", /charged today/i.test(m.renew) && /\$9\.99 a month/.test(m.renew) && !/3-day|a year|free/i.test(m.renew), m.renew);
+  ok("…and the heading stops promising free days", !/free days/i.test(m.heading), m.heading);
+  await page.locator("#buyLife").click(); await page.waitForTimeout(250);
+  ok("…and the button now buys the monthly plan", posts.length === 2 && posts[1].plan === "monthly", JSON.stringify(posts));
+  await page.locator("#planLife").click(); await page.waitForTimeout(150);
+  m = await look();
+  ok("picking yearly again puts every yearly line back", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && /3-day free trial/.test(m.renew) && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
+  await page.locator("#planMonth").focus(); await page.keyboard.press("Space"); await page.waitForTimeout(100);
+  const key1 = await look();
+  await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100);
+  const key2 = await look();
+  ok("the two boxes work from a keyboard: Space picks, an arrow moves", key1.monthPicked === "true" && key2.yearPicked === "true", JSON.stringify([key1.monthPicked, key2.yearPicked]));
+  await page.unroute("**/api/checkout");
 }
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");

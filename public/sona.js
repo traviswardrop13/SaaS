@@ -4436,10 +4436,12 @@
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
-  // Monthly was retired from SALE on 18 Sep 2026 — no surface offers it — but
-  // its product id STAYS here. RevenueCat needs it to recognise an existing
-  // monthly subscriber on restore or reinstall, and dropping it would strand
-  // every one of them behind a paywall they are already paying for.
+  // Monthly was retired from SALE on 18 Sep 2026 and is on sale again since
+  // 1 Oct 2026 (the plan screen offers it only when the App Store hands the
+  // product back). Either way its product id STAYS here: RevenueCat needs it
+  // to recognise an existing monthly subscriber on restore or reinstall, and
+  // dropping it would strand every one of them behind a paywall they are
+  // already paying for.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
@@ -4460,12 +4462,22 @@
   function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
   // fetch the live product (price string comes from the App Store, locale-
   // correct). kind: "annual" (default) | "monthly".
+  // THE PRODUCT ASKED FOR, OR NOTHING (1 Oct 2026). This took the first
+  // product in the answer whatever it was. With two on sale that is how a
+  // "Monthly" button buys the yearly plan: a store that has no monthly product
+  // but answers with the yearly one would have priced and sold it under the
+  // wrong name. A product that names itself must name the id asked for; only
+  // an answer with no identifier at all (an old plugin) is taken on trust.
   function iapProduct(kind) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
       Promise.resolve(P.getProducts({ productIdentifiers: [id], type: IAP_TYPE }))
         .catch(() => P.getProducts({ productIdentifiers: [id] }))
-        .then((r) => (r && r.products && r.products[0]) || null)
+        .then((r) => {
+          const list = (r && r.products) || [];
+          for (let i = 0; i < list.length; i++) if (list[i] && list[i].identifier === id) return list[i];
+          return (list.length === 1 && list[0] && list[0].identifier == null) ? list[0] : null;
+        })
     );
   }
   // buy: try the modern API first, fall back across plugin versions

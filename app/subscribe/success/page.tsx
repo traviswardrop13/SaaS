@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 
 /**
  * Post-checkout confirmation. Stripe redirects here with ?session_id=… after a
- * successful subscription start. Sona is $9.99/mo or $59.99/yr with a 3-day free trial, so
- * this page's real job is defusing the one fear every trial buyer has — "I'll
- * forget and get billed" — by showing the LITERAL first-charge date off the
- * real Stripe subscription. If the read-back is unreachable we fall back to
- * honest client-side math: a 3-day trial started now ends 3 days from now.
+ * successful subscription start. Sona is the yearly plan with a 3-day free
+ * trial, or $9.99 a month charged at purchase (back on sale 1 Oct 2026), so
+ * this page's real job for a yearly buyer is defusing the one fear every
+ * trial buyer has — "I'll forget and get billed" — by showing the LITERAL
+ * first-charge date off the real Stripe subscription, and for a monthly buyer
+ * saying plainly that the first month was charged. Which of the two it is
+ * comes from Stripe's answer, never from the address.
  */
 
+// only a fallback for the conversion event's value when Stripe's answer has
+// no amount; what a parent reads always comes from Stripe
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
 // CASELOAD_PLAN and SELF_PLAN in lib/caseload.ts, written out because that
@@ -51,8 +55,8 @@ export default function SubscribeSuccess() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const sessionId = q.get("session_id") || "";
-    const planQ: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
-    setPlan(planQ);
+    const planUrl: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
+    setPlan(planUrl);
     // the tier the checkout actually applied rides back on the URL; the
     // charged amount itself comes from Stripe below, so this only chooses
     // a sentence, never a number
@@ -80,6 +84,15 @@ export default function SubscribeSuccess() {
           setCaseload(true);
           return;
         }
+        // WHICH PLAN, FROM STRIPE (1 Oct 2026). The address said so until
+        // now, and with monthly on sale again that is a sentence about money
+        // taken from a URL: ?plan=monthly on a yearly receipt printed
+        // "$59.99/month", and a monthly receipt opened without it told a
+        // family charged today "$0 charged". The subscription's own interval
+        // is the fact; the address only picks the words shown while this
+        // answer is on its way.
+        const planQ: "annual" | "monthly" = j.interval === "month" ? "monthly" : j.interval === "year" ? "annual" : planUrl;
+        setPlan(planQ);
         setInfo({ amountCents: j.amountCents ?? null, trialEnd: j.trialEnd ?? null, email: j.email ?? null });
         setPaid(true);
 
@@ -241,7 +254,7 @@ export default function SubscribeSuccess() {
                 <div className="font-display font-extrabold text-gray-900">{fmtDate(trialEnd)}</div>
                 <div className="text-sm text-gray-600">
                   First charge: <strong>{fmtMoney(amount)}/year</strong> — only if you keep Sona.
-                  {charter && <> Charter price, locked in for as long as you keep it — regular price $99.99/yr.</>}
+                  {charter && plan === "annual" && <> Charter price, locked in for as long as you keep it — regular price $99.99/yr.</>}
                 </div>
               </div>
             </div>

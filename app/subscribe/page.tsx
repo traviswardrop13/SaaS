@@ -5,7 +5,10 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
 
-// Shown under the one plan, so every line has to be true of it. The plan is
+// THIS PAGE SELLS THE YEARLY PLAN, and only that one. Since 1 Oct 2026 there
+// is a monthly plan too ($9.99, charged today, no free trial); it is bought on
+// the plan screen (subscribe.html), which this page points to in one line. So
+// every line below has to be true of the yearly plan. The plan is
 // SONA PREMIUM (24 Sep 2026): Sona has a free version — daily practice and
 // free games and a free book, for every family — so this list sells
 // only what Premium adds, and says out loud what stays free either way, in
@@ -144,15 +147,19 @@ function PaidPicker() {
             </span>
           </div>
 
-          {/* ONE PLAN as of 18 Sep 2026. The picker, the struck "$119.88" and
-              "yearly saves $59.89" all left with the monthly tier: every one of
-              them was 12 x $9.99, and a strike-through with no monthly plan
-              behind it is an anchor against a price nobody can buy. What is
-              left is checkable arithmetic — $59.99 / 12 = $4.9991 — which is
-              why it reads "under $5 a month" and never "$4.99 a month". */}
+          {/* THE YEARLY PLAN ONLY. The picker that used to sit here, the struck
+              was-price and the "yearly saves" figure all left with the monthly
+              tier on 18 Sep 2026. Monthly is on sale again since 1 Oct, on the
+              plan screen; none of those three came back with it, because the
+              saving is only true while the charter price lasts. What is left
+              is checkable arithmetic — $59.99 / 12 = $4.9991 — which is why
+              it reads "under $5 a month" and never "$4.99 a month". */}
           <div className="mt-4 rounded-2xl border-2 border-sky-500 bg-sky-50 px-4 py-4 text-left">
             <span className="block font-display text-2xl font-extrabold text-gray-900">{yearPrice}/yr</span>
-            <span className="block text-xs font-bold text-grass-600">{perMonth} · 3 days free first</span>
+            {/* "billed once a year" rides with the per-month reading: this page
+                now names a real monthly plan too, and a bare "under $5 a
+                month" beside it would read as that plan's price. */}
+            <span className="block text-xs font-bold text-grass-600">{perMonth}, billed once a year · 3 days free first</span>
             {spots && open && (
               <span className="mt-1 block text-xs font-bold text-grass-700">
                 {spots.label} price for the first {spots.cap} families — regular price <s>{spots.standard}/yr</s>
@@ -224,6 +231,15 @@ function PaidPicker() {
 
           <p className="mt-3 text-center text-xs text-gray-400">
             Secure payment by Stripe. We never see your card details.
+          </p>
+
+          {/* The monthly plan, named once with what makes it different. This
+              page cannot import lib/charter.ts (server-only), so the figure
+              is written out; chartertest fails if it ever differs from
+              MONTHLY_PRICE. It is bought on the plan screen, never here. */}
+          <p className="mt-3 text-center text-xs font-bold leading-relaxed text-gray-500">
+            Rather pay month by month? It&apos;s $9.99 a month, charged today.{" "}
+            <a className="text-sky-700 underline" href="/subscribe.html">Choose it on the plan screen →</a>
           </p>
 
           {/* The era-four grandfather sweep ships with this build (as eras one

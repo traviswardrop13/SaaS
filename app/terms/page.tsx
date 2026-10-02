@@ -173,9 +173,9 @@ export default function TermsPage() {
         <br />
         {!FREE_MODE && (
           <>
-            A family plan canceled during its 3 free days is never charged. A
-            monthly subscription bought before that plan was retired has no trial
-            and is charged at the start of each month.{" "}
+            A yearly family plan canceled during its 3 free days is never
+            charged. The monthly plan has no free days: it is charged when you
+            buy it and at the start of each month after that.{" "}
           </>
         )}
         Canceling stops the next renewal and leaves your access — or, for a
@@ -250,22 +250,27 @@ export default function TermsPage() {
  * priced they are the terms of sale, and while it is free they still govern
  * everyone holding a plan bought before the flip, until they cancel.
  *
- * ONE PLAN as of 18 Sep 2026. Monthly was retired; the comparison figures
- * ($119.88, "saves $59.89") went with it, because both were only 12 x $9.99
- * and neither can be stated once nobody can buy the plan they compare to.
+ * TWO PLANS again as of 1 Oct 2026 (Travis: "add to the paywall a $10 a month
+ * option ... that does not have a free trial"). Monthly was retired on 18 Sep
+ * and is back on sale: $9.99 a month (MONTHLY_PRICE in lib/charter.ts, the
+ * amount checkout charges), charged at purchase, no free trial, never the
+ * charter price. The comparison figures ($119.88, "saves $59.89") did NOT
+ * come back with it: the saving is $59.89 only while the charter price lasts,
+ * and a figure that turns false at family fifty-one is not a term of sale.
  * "Under $5 a month" stays: it is $59.99 / 12 ($4.9991), never written as
- * "$4.99 a month", which would imply $59.88 a year. Move the price and it
- * moves here, on /subscribe, on the landing page and on the static purchase
- * surfaces in the same commit.
- *
- * The MONTHLY paragraph below is deliberately kept. Retiring a plan does not
- * cancel a live subscription: anyone still on $9.99/month bought under these
- * terms and is still governed by them until they cancel.
+ * "$4.99 a month", which would imply $59.88 a year, and it always sits beside
+ * "per year" so it cannot be read as the monthly plan's price. Move a price
+ * and it moves here, on /subscribe, on the landing page and on the static
+ * purchase surfaces in the same commit.
  */
 function PlanTerms() {
   return (
     <>
-      <strong>Sona Premium</strong> (the yearly plan, called Sona Yearly before
+      Sona Premium is sold two ways: by the year, or by the month. Both open
+      the same things.
+      <br />
+      <br />
+      <strong>Sona Premium, yearly</strong> (called Sona Yearly before
       24 September 2026) is <strong>$99.99 per year</strong> and starts
       with <strong>3 free days</strong>. Nothing is charged during those days —
       the first charge lands on day 3, and only if you keep Premium.
@@ -276,7 +281,15 @@ function PlanTerms() {
       instead, and keep that price for as long as their subscription continues
       without a break. The price you see at checkout is the price you will be
       charged; once the 50 charter places are taken, new subscriptions are
-      $99.99 per year (under $8.50 a month).
+      $99.99 per year (under $8.50 a month). The charter price is for the
+      yearly plan only.
+      <br />
+      <br />
+      <strong>Sona Premium, monthly</strong> (called Sona Monthly before
+      24 September 2026) is <strong>$9.99 per month</strong>. It has{" "}
+      <strong>no free trial</strong>: the first month is charged when you buy
+      it, and it is charged again at the start of each month until you cancel.
+      Its price does not change with the charter places.
       <br />
       <br />
       Prices are in US dollars and exclude any applicable taxes. Premium
@@ -285,14 +298,11 @@ function PlanTerms() {
       version and is never behind the paywall.
       <br />
       <br />
-      Sona Premium renews automatically each year at the price you subscribed
-      at unless you cancel at least 24 hours before the current period ends.{" "}
-      <strong>
-        Sona Monthly ($9.99 per month, billed at purchase, no free trial) is no
-        longer sold.
-      </strong>{" "}
-      If you already hold a monthly subscription it is unaffected: it renews at
-      $9.99 each month under these same terms until you cancel it.{" "}
+      Sona Premium renews automatically at the price you subscribed at — the
+      yearly plan each year, the monthly plan each month — unless you cancel at
+      least 24 hours before the current period ends. A monthly subscription
+      bought before 1 October 2026 is unaffected: it renews at $9.99 each
+      month under these same terms until you cancel it.{" "}
       {!FREE_MODE && (
         <>
           After checkout, your confirmation page shows the exact date and amount

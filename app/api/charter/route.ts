@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { FREE_MODE } from "@/lib/pricing";
-import { charterSpots, CHARTER_CAP, CHARTER_PRICE, STANDARD_PRICE, CHARTER_LABEL } from "@/lib/charter";
+import { charterSpots, CHARTER_CAP, CHARTER_PRICE, STANDARD_PRICE, CHARTER_LABEL, MONTHLY_PRICE } from "@/lib/charter";
 
 /**
- * GET /api/charter -> { ok, cap, taken, left, open, source, price, standard, label }
+ * GET /api/charter -> { ok, cap, taken, left, open, source, price, standard, label, monthly }
+ *
+ * `monthly` (1 Oct 2026) is the monthly plan's price, from the same constant
+ * checkout charges, so the plan screen's monthly row shows what Stripe will
+ * take. It has nothing to do with the charter: it never changes with the count.
  *
  * The one number every price surface reads: how many charter spots are left.
  * The static app cannot import lib/charter.ts, so subscribe.html and
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
   const s = await charterSpots();
   return NextResponse.json(
     { ok: true, free: false, cap: s.cap, taken: s.taken, left: s.left, open: s.open, source: s.source,
-      price: CHARTER_PRICE, standard: STANDARD_PRICE, label: CHARTER_LABEL },
+      price: CHARTER_PRICE, standard: STANDARD_PRICE, label: CHARTER_LABEL, monthly: MONTHLY_PRICE },
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } },
   );
 }

@@ -1203,6 +1203,132 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…and the read-back names \"slp-self\" for a clinician's own", r.json.plan === "slp-self", JSON.stringify(r.json));
 }
 
+// ═════════════════════════ the family checkout: what each plan is really charged (1 Oct 2026) ═════════════════════════
+// Until now nothing RAN app/api/checkout/route.ts: three suites read its text.
+// With one plan that was survivable. With monthly back on sale (Travis: "a $10
+// a month option ... that does not have a free trial. That's a pay today, but
+// the $59.99 has a three-day trial") it is not: the route prices a sale from
+// the charter count, so a monthly plan added to the table and nothing else
+// would have been charged $59.99, or $99.99, EVERY MONTH, stamped as one of
+// the fifty charter families, with every text pin still green. So this plays
+// the route against the fake Stripe and reads what Stripe was asked for.
+// The pricing switch is stubbed, not pinned: tests do not hold FREE_MODE.
+{
+  const pricingFile = path.join(ROOT, "lib/pricing.ts"), checkoutFile = path.join(ROOT, "app/api/checkout/route.ts");
+  const realPricing = cache.get(pricingFile);
+  const loadCheckout = (free) => { cache.set(pricingFile, { exports: { FREE_MODE: free } }); cache.delete(checkoutFile); return L("app/api/checkout/route.ts"); };
+  let CK = null;
+  try { CK = loadCheckout(false); } catch (e) { console.log("(could not load the checkout route: " + (e && e.stack) + ")"); }
+  ok("the family checkout route loads against the fake Stripe", !!(CK && CK.POST && CK.GET));
+  if (CK) {
+    delete process.env.STRIPE_PRICE_ID_ANNUAL5999; delete process.env.STRIPE_PRICE_ID_MONTHLY999;
+    const created = () => S.calls.filter((c) => c[0] === "checkout.sessions.create").map((c) => c[1]);
+    const searches = () => S.calls.filter((c) => c[0] === "subscriptions.search").length;
+    const buy = async (body) => { const n = created().length; const r = await call(CK, "POST", "/api/checkout", { body }); return { r, p: created().length > n ? created()[created().length - 1] : null }; };
+    const item = (p) => p.line_items[0];
+    const charterSold = (n) => Array.from({ length: n }, (_, i) => ({ id: "sub_charter_" + i, status: "active", metadata: { tier: "charter" }, items: { data: [{ price: { recurring: { interval: "year" } } }] } }));
+    const savedNoise = S.searchNoise;
+
+    // ── while charter spots are open ──
+    S.searchNoise = charterSold(3); CH._resetCharterMemo();
+    let s0 = searches();
+    let { r, p } = await buy({ plan: "monthly", email: "mom@example.com" });
+    ok("monthly: Stripe is asked for $9.99, every month, as a subscription",
+      r.status === 200 && r.json.ok && !!p && p.mode === "subscription" && p.line_items.length === 1 && item(p).quantity === 1 &&
+      item(p).price_data.unit_amount === 999 && item(p).price_data.unit_amount === CH.MONTHLY_CENTS && item(p).price_data.currency === "usd" && item(p).price_data.recurring.interval === "month", JSON.stringify(p));
+    ok("…charged at purchase: no trial of any kind on it",
+      !!p && !(p.subscription_data && ("trial_period_days" in p.subscription_data || "trial_end" in p.subscription_data)) && !/trial/i.test(JSON.stringify(p)), JSON.stringify(p && p.subscription_data));
+    ok("…never a charter spot, and never told it is one: no tier on the subscription, the session, the name or the way back",
+      !!p && !/tier|charter/i.test(JSON.stringify(p)), JSON.stringify(p));
+    ok("…and it does not even ask how many charter spots are left", searches() === s0, String(searches() - s0));
+    ok("…Stripe's page says it is charged today, and never 'free'",
+      !!p && /charged today/i.test(item(p).price_data.product_data.description) && !/free/i.test(item(p).price_data.product_data.name + item(p).price_data.product_data.description), JSON.stringify(p && item(p).price_data.product_data));
+    ok("…and the way back says monthly", !!p && /[?&]plan=monthly(&|$)/.test(p.success_url) && /session_id=\{CHECKOUT_SESSION_ID\}/.test(p.success_url), p && p.success_url);
+    ok("…with the buyer's email carried to Stripe", !!p && p.customer_email === "mom@example.com");
+
+    ({ r, p } = await buy({ plan: "annual", email: "mom@example.com" }));
+    ok("yearly, while spots are open: $59.99 a year, 3 free days, stamped as a charter sale",
+      r.json.ok && !!p && item(p).price_data.unit_amount === 5999 && item(p).price_data.recurring.interval === "year" && p.subscription_data.trial_period_days === 3 &&
+      p.subscription_data.metadata.tier === "charter" && p.metadata.tier === "charter" && /plan=annual&tier=charter/.test(p.success_url), JSON.stringify(p));
+
+    // ── anything that is not exactly "monthly" is the yearly plan, with its free days ──
+    for (const [label, body] of [["no plan at all", { email: "a@example.com" }], ['"month" (an August ad)', { plan: "month" }], ['"Monthly"', { plan: "Monthly" }], ['"monthly " with a space', { plan: "monthly " }], ["a list", { plan: ["monthly"] }], ["a typo", { plan: "montly" }]]) {
+      ({ r, p } = await buy(body));
+      ok("only the exact word buys monthly — " + label + " is the yearly plan with 3 free days",
+        r.json.ok && !!p && item(p).price_data.recurring.interval === "year" && p.subscription_data.trial_period_days === 3, JSON.stringify(p && item(p).price_data));
+    }
+
+    // ── once the fifty charter spots are gone ──
+    S.searchNoise = charterSold(50); CH._resetCharterMemo();
+    ({ r, p } = await buy({ plan: "annual" }));
+    ok("yearly, once the spots are gone: $99.99, stamped standard", !!p && item(p).price_data.unit_amount === 9999 && p.subscription_data.metadata.tier === "standard" && p.subscription_data.trial_period_days === 3, JSON.stringify(p && item(p).price_data));
+    ({ r, p } = await buy({ plan: "monthly" }));
+    ok("monthly does not move when the charter closes: still $9.99 a month, still no tier",
+      !!p && item(p).price_data.unit_amount === 999 && item(p).price_data.recurring.interval === "month" && !/tier|charter|standard/i.test(JSON.stringify(p)), JSON.stringify(p));
+
+    // ── a stale Stripe Price left in the environment ──
+    S.searchNoise = charterSold(3); CH._resetCharterMemo();
+    process.env.STRIPE_PRICE_ID_MONTHLY999 = "price_stale_from_august"; process.env.STRIPE_PRICE_ID_ANNUAL5999 = "price_annual_5999";
+    ({ r, p } = await buy({ plan: "monthly" }));
+    ok("monthly never charges a Price object from the environment (a stale one in Vercel would set its own amount)",
+      !!p && !item(p).price && item(p).price_data.unit_amount === 999 && !/price_stale/.test(JSON.stringify(p)), JSON.stringify(p && p.line_items));
+    ({ r, p } = await buy({ plan: "annual" }));
+    ok("…while the yearly plan still uses its environment Price, and only while the charter is open", !!p && item(p).price === "price_annual_5999", JSON.stringify(p && p.line_items));
+    delete process.env.STRIPE_PRICE_ID_MONTHLY999; delete process.env.STRIPE_PRICE_ID_ANNUAL5999;
+
+    // ── a plain link can never charge today ──
+    let n = created().length;
+    r = await call(CK, "GET", "/api/checkout?plan=monthly");
+    p = created().length > n ? created()[created().length - 1] : null;
+    ok("a plain link with ?plan=monthly (an old ad, an email) opens the YEARLY plan with its free days — never a pay-today checkout",
+      r.status === 303 && /^https:\/\/checkout\.stripe\.test\//.test(r.location || "") && !!p && item(p).price_data.recurring.interval === "year" && p.subscription_data.trial_period_days === 3, JSON.stringify({ status: r.status, loc: r.location, p: p && item(p).price_data }));
+
+    // ── and while Sona is free, neither plan can be bought ──
+    try {
+      const FREE_CK = loadCheckout(true);
+      n = created().length;
+      r = await call(FREE_CK, "POST", "/api/checkout", { body: { plan: "monthly" } });
+      const r2 = await call(FREE_CK, "POST", "/api/checkout", { body: { plan: "annual" } });
+      ok("while Sona is free the checkout refuses both plans before any Stripe call", r.status === 410 && r2.status === 410 && created().length === n, r.status + " " + r2.status);
+    } catch (e) { ok("the checkout route loads with the switch on free", false, String(e && e.stack)); }
+
+    S.searchNoise = savedNoise; CH._resetCharterMemo();
+  }
+  if (realPricing) cache.set(pricingFile, realPricing); else cache.delete(pricingFile);
+  cache.delete(checkoutFile);
+}
+
+// ═════════════════════════ the receipt: finished, and for which plan (1 Oct 2026) ═════════════════════════
+{
+  // A checkout session exists from the moment Stripe's form opens, and its id
+  // is in that form's address. The read-back answered ok for any id it knew,
+  // and the success page switches Premium on at ok.
+  S.sessions.set("cs_test_familyopen00001", { id: "cs_test_familyopen00001", status: "open", metadata: {}, subscription: null });
+  let r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_familyopen00001");
+  ok("a checkout that was opened and never finished is not a receipt", r.status === 402 && r.json.ok === false, JSON.stringify(r.json));
+  S.sessions.set("cs_test_familyexpired01", { id: "cs_test_familyexpired01", status: "expired", metadata: {}, subscription: null });
+  r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_familyexpired01");
+  ok("…nor is one that expired", r.status === 402 && r.json.ok === false, JSON.stringify(r.json));
+  S.subs.set("sub_family_monthly", { id: "sub_family_monthly", status: "active", customer: "cus_fam_mo", metadata: {}, trial_end: null,
+    items: { data: [{ current_period_end: nowS() + 30 * 86400, price: { unit_amount: 999, recurring: { interval: "month" } } }] } });
+  S.sessions.set("cs_test_familymonthly01", { id: "cs_test_familymonthly01", status: "complete", metadata: {}, customer_details: { email: "mom@example.com" }, subscription: "sub_family_monthly" });
+  r = await call(R.session, "GET", "/api/checkout/session?id=cs_test_familymonthly01");
+  ok("a finished monthly purchase reads back as monthly: $9.99, a month interval, no trial end",
+    r.status === 200 && r.json.ok && r.json.interval === "month" && r.json.amountCents === 999 && r.json.trialEnd === null && r.json.plan === null, JSON.stringify(r.json));
+  const succ = noComments(read("app/subscribe/success/page.tsx"));
+  ok("the success page takes the plan from Stripe's interval, not from the address",
+    /j\.interval === "month" \? "monthly" : j\.interval === "year" \? "annual" : planUrl/.test(succ) && succ.indexOf('j.interval === "month"') < succ.indexOf("setPaid(true)"), "a ?plan= in the URL once chose the sentence about what was charged");
+  ok("…and never tells a monthly buyer they hold the charter price", /charter && plan === "annual"/.test(succ));
+
+  S.customers.push({ id: "cus_fam_mo", email: "monthly.mom@example.com" });
+  r = await call(R.subscription, "GET", "/api/subscription?email=monthly.mom@example.com");
+  ok("a monthly family subscription restores by email, like a yearly one", r.status === 200 && r.json.active === true, JSON.stringify(r.json));
+  CH._resetCharterMemo();
+  const spots = await CH.charterSpots({ subscriptions: { search: async () => ({ data: [{ ...S.subs.get("sub_family_monthly"), metadata: { tier: "charter" } }], has_more: false }) } });
+  ok("…and is never one of the fifty charter spots, whatever it is stamped with", spots.taken === 0 && spots.source === "stripe", JSON.stringify(spots));
+  CH._resetCharterMemo();
+}
+
 // ═════════════════════════ the founder's view ═════════════════════════
 {
   const list = await F.readClinicians();
