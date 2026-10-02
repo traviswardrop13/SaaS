@@ -13,17 +13,25 @@
 //      WORDS, SOUND_SAY, EPISODES, the syllable and sentence generators.
 //   2. The pages are read as text. Every spoken line a page builds itself
 //      (charge.html's prompt, coaching, win and quiet-screen lines; Feed
-//      Echo's ask; the parked readers; Coach Call) is located by an anchor
-//      regex on the exact source, and where a page BUILDS a line (sayLine,
-//      soundName, the cue-shortening rule) the page's own function is lifted
-//      out and executed, so the printed text is the page's text.
+//      Echo's asks; the round games' say-it card, sound power and how-to-play
+//      line; the picture games; the books; the parked readers; Coach Call) is
+//      located by an anchor regex on the exact source, and where a page
+//      BUILDS a line (sayLine, soundName, soundSlot, the cue-shortening rule,
+//      a game's SLOW_HELP) the page's own code is lifted out and executed, so
+//      the printed text is the page's text.
 //
 // FAILS LOUDLY, on purpose. An anchor that no longer matches, a say() call
-// the anchors do not cover, a parked page that gained a link, a "dead" helper
+// or a voice request the anchors do not cover, a file that reaches the voice
+// and is not read here, a parked page that gained a link, a "dead" helper
 // that gained a caller — each throws, prints why, and exits 1 with nothing on
 // stdout. That is the point: a line cannot quietly vanish from or appear in
 // the app without this script being looked at. When it fires, read the
 // message, look at the diff, and update the anchor (and the sheet).
+//
+// Nothing runs this for you: it is not in tests/run-all.mjs. It sat broken
+// from 29 Sep to 2 Oct 2026 while the practice prompt, the books, Feed Echo
+// and Fruit Slice's card all changed what they say. Run --check after any
+// change to what Echo says.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -56,6 +64,24 @@ function liftFn(file, name, multiline) {
     : new RegExp(`^    function ${name}\\(\\)\\{.*\\}$`, "m");
   return find(file, re, `function ${name}()`);
 }
+// Every match of `re` in a file must sit inside one of the anchors given.
+// Skipped: a definition (`function say(`) and, unless emptyCounts, a call
+// with nothing in it (`say()` is how a comment names the function, and a real
+// say() of nothing speaks nothing).
+function coverAll(file, re, covered, what, emptyCounts) {
+  const text = src(file);
+  for (const h of allIdx(file, re)) {
+    if (/function $/.test(text.slice(Math.max(0, h.idx - 9), h.idx))) continue;
+    if (!emptyCounts && text[h.idx + h.m[0].length] === ")" && h.m[0].endsWith("(")) continue;
+    if (!covered.some((c) => h.idx >= c.idx && h.idx < c.end)) fail(`${file} has ${what || "a spoken line"} the script does not know at ${cite(file, h.idx)}: ${text.slice(h.idx, h.idx + 90).split("\n")[0]}\n  Add an anchor for it in tools/voicedoc.mjs.`);
+  }
+}
+// The ways a page reaches the voice with a line of its own: a request to the
+// voice service, and sona.js's speak()/speakNow() (an empty line is only a
+// stop). The browser's voice (speechSynthesis.speak) is each player's last
+// resort for the same text, so it is not a line of its own.
+const TTS_CALL = /fetch\(\s*["']\/api\/tts/;
+const SPEAK_CALL = /(?<!speechSynthesis)\.speak(?:Now)?\((?!""\))/;
 
 // ───────────────────────── the app's own tables ─────────────────────────
 globalThis.window = {};
@@ -67,6 +93,7 @@ const S = window.Sona;
 globalThis.Sona = S; // gamecontent.js reads the bare global
 (0, eval)(src("public/gamecontent.js"));
 const SC = window.SonaContent;
+const GC = "public/gamecontent.js";
 const SOUNDS = S.ALL_SOUNDS.slice();
 const STRETCH = new Set(["R", "S", "L", "F", "V", "SH", "TH", "THV", "Z", "M", "N"]);
 for (const s of SOUNDS) {
@@ -112,8 +139,15 @@ function sayLine(sound, item, need, cuedAlready) {
 }
 const TEMPLATE_ENV = { NUMWORD: { [NEED_DEFAULT]: "{n}" }, soundName: () => "{sound}", NEED: NEED_DEFAULT, CUESHORT: "{cue}" };
 const isoItem = (sound) => S.ladderContent(sound, 0)[0];
-const promptCall = find(CH, /return human\?queueSpeech\(null,false,human,sayLine\):say\(sayLine\(\)\);/, "playPrompt");
-const humanPath = find(CH, /var human=ITEM\.level==="isolation"&&HUMANCLIPS\?"\/coach\/say-echo\/"\+SOUND\+"\.mp3":null;/, "human clip path");
+const promptCall = find(CH, /function playPrompt\(\)\{\n\s*if\(mutedSpeech\(\)\)return Promise\.resolve\(\);\n\s*return say\(sayLine\(\)\);\n\s*\}/, "playPrompt");
+// Echo's words, Rachel's sound: on a sound round, wherever a line names the
+// sound ("make your R sound") ONE recorded take of it plays in the letter's
+// place. The page's own soundSlot() says where the line is cut.
+const soundSlotFn = find(CH, /^    function soundSlot\(text\)\{\n[\s\S]*?^    \}$/m, "function soundSlot()");
+const slotOf = (sound, text) => new Function("HUMANCLIPS", "ITEM", "SOUND", "soundName", soundSlotFn.m[0] + "\nreturn soundSlot;")(true, { level: "isolation" }, sound, () => soundNameOf(sound))(text);
+find(CH, /HUMANCLIPS=!!\(S&&S\.humanClipsOn&&S\.humanClipsOn\(\)\);/, "the practice page reads the shared sound-model switch");
+find(CH, /var packet=\{text:t,slow:!!slow,slot:soundSlot\(t\),epoch:practiceEpoch\};/, "every queued line is offered the sound slot");
+const voiceDown = find(CH, /if\(result==="voice-down"\)result=await playMedia\(packet\.slot\.whole,packet\.slow,job\);/, "her whole July line when the voice service is down");
 const promptStart = find(CH, /await playPrompt\(\);/, "the first prompt of a round");
 const promptTap = find(CH, /\$\("echoBuddy"\)\.onclick=function\(\)\{.*playPrompt\(\); \};/, "tap on Echo replays the prompt");
 const turtle = find(CH, /function turtleText\(\)\{ return ITEM\.level==="isolation" \? sayLine\(\) : String\(ITEM\.say\|\|ITEM\.display\|\|ITEM\.t\); \}/, "turtle text");
@@ -124,6 +158,15 @@ const idea = find(CH, /await say\("(I have an idea\. Let's try this one\. )"\+\(
 // The idea line's pieces: [1] prefix, [2] "Make your ", [3] " sound", [4] "Say ", [5] full stop.
 const ideaSound = (s) => idea.m[1] + idea.m[2] + soundNameOf(s) + idea.m[3] + idea.m[5];
 const ideaTemplate = idea.m[1] + idea.m[4] + "{target}" + idea.m[5];
+// Every line that names the sound must take her recording, and the recording
+// must be there: the first prompt, the prompt again, and Echo's idea.
+const SLOT = {};
+for (const s of SOUNDS) for (const line of [sayLine(s, isoItem(s), NEED_DEFAULT, false), sayLine(s, isoItem(s), NEED_DEFAULT, true), ideaSound(s)]) {
+  const slot = slotOf(s, line);
+  if (!slot) fail(`soundSlot() finds no place for ${s}'s recorded sound in "${line}" — that line would be spoken letter and all.`);
+  for (const f of [slot.clip, slot.whole]) if (!existsSync(join(ROOT, "public", f))) fail(`public${f} is missing.`);
+  SLOT[s] ??= slot;
+}
 const praise = find(CH, /await say\(\(S&&S\.praiseLine\)\?S\.praiseLine\(\):"([^"]*)"\);/, "praise after the easier target");
 const roundEnd = find(CH, /await say\("(Good practicing\. Let's play\.)"\);/, "round end after two misses");
 const win = find(CH, /await sayAfterChime\("(You did it\. Let's play\.)"\);/, "the win line");
@@ -150,7 +193,7 @@ find(CH, /ITEMS=\(S\.ladderContent\(SOUND,useRung\)\|\|\[\]\)\.filter\(function\
   const qs = allIdx(CH, /queueSpeech\(/).filter((h) => !/function $/.test(text.slice(h.idx - 9, h.idx)));
   for (const h of qs) {
     const s = text.slice(h.idx, h.idx + 60);
-    if (!/^queueSpeech\((null,false,human,sayLine|t,false,null,null|t,true,null,null)\)/.test(s)) fail(`charge.html has a queueSpeech() call the script does not know at ${cite(CH, h.idx)}: ${s}`);
+    if (!/^queueSpeech\(t,(false|true)\)/.test(s)) fail(`charge.html has a queueSpeech() call the script does not know at ${cite(CH, h.idx)}: ${s}`);
   }
 }
 
@@ -160,42 +203,159 @@ const feedAsk = find(FEED, /say\("(Where is the )"\+target\.w\+"(\? Say\.\.\. )"
 const feedPoolFn = find(FEED, /^    function pool\(sound\)\{.*\}$/m, "Feed Echo word pool");
 const feedPool = new Function("S", feedPoolFn.m[0] + "\nreturn pool;")(S);
 find(FEED, /var SOUND=\(S&&S\.rotSound\)\?S\.rotSound\(\):"R";/, "Feed Echo sound");
-{
-  const text = src(FEED); const re = /(?<![\w$.])say\(/g; let m;
-  while ((m = re.exec(text))) {
-    if (/function $/.test(text.slice(m.index - 9, m.index))) continue;
-    if (m.index < feedAsk.idx || m.index >= feedAsk.end) fail(`arcade-feed.html has a spoken line the script does not know at ${cite(FEED, m.index)}: ${text.slice(m.index, m.index + 80)}`);
-  }
-}
+// The mic button that waits after a quiet turn says the word again, alone.
+const feedAgain = find(FEED, /say\("(Say\.\.\. )"\+target\.w\+"(\.)"\)/, "Feed Echo's mic-button ask");
+const feedWait = find(FEED, /var LISTEN_MS=(\d+)/, "Feed Echo's listening window");
+const feedVoice = find(FEED, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:t,voice:profile\.voiceId\|\|"",stable:true\}\)\}\)/, "Feed Echo's voice request");
+coverAll(FEED, /(?<![\w$.])say\(/, [feedAsk, feedAgain]);
+coverAll(FEED, TTS_CALL, [feedVoice], "a voice request"); coverAll(FEED, SPEAK_CALL, [], "a voice call");
 const feedLine = (w) => feedAsk.m[1] + w + feedAsk.m[2] + w + feedAsk.m[3];
-// The five arcade games speak nothing; the keep-playing card is text.
-const ARCADE = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide"].map((n) => "public/" + n + ".html");
-const keepPlaying = ARCADE.map((f) => {
-  const h = find(f, /\$\("revTitle"\)\.textContent="Say \\u201C"\+SAYTXT\+"\\u201D to keep playing!";/, "keep-playing card title");
-  const text = src(f); const re = /(?<![\w$.])(say|speak|speakNow)\(/g; let m;
-  while ((m = re.exec(text))) fail(`${f} now speaks at ${cite(f, m.index)} — the arcade games were silent; add it to the script.`);
-  return h.cite;
-});
+
+// ───────────────────────── the five round games ─────────────────────────
+// Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide. Three
+// things can speak in them: the say-it card between rounds (Fruit Slice's
+// only — the other four cards are text), Echo's power button (all five), and
+// Sound Sprint's how-to-play line.
+const ROUND_KEYS = ["slice", "tiles", "stack", "run", "glide"];
+const roundFile = (k) => `public/arcade-${k}.html`;
+for (const k of ROUND_KEYS) if (!S.GAME_ACTS[k] || !String(S.GAME_ACTS[k].go).includes(`arcade-${k}.html`) || S.GAME_ACTS[k].comingSoon) fail(`GAME_ACTS.${k} is no longer a live round game at arcade-${k}.html — re-read the round games' section.`);
+const roundName = (k) => S.GAME_ACTS[k].name;
+const SLICE = roundFile("slice"), TILES = roundFile("tiles"), RUN = roundFile("run");
+// The card's title. Painted, never spoken: on Fruit Slice with what the card
+// asks (ASK), on the other four with the bare sound (SAYTXT).
+const cardTitle = { slice: find(SLICE, /function paintAsk\(\)\{ \$\("revTitle"\)\.innerHTML="Say \\u201C"\+ASK\.html\+"\\u201D "\+esc\(askTail\); \}/, "Fruit Slice's say-it card title") };
+find(SLICE, /askTail=tail\|\|"to keep playing!"; paintAsk\(\);/, "Fruit Slice's say-it card tail");
+for (const k of ROUND_KEYS.slice(1)) cardTitle[k] = find(roundFile(k), /\$\("revTitle"\)\.innerHTML=markTitle\(title\|\|\("Say \\u201C"\+SAYTXT\+"\\u201D to keep playing!"\)\);/, "say-it card title");
+
+// Fruit Slice's card, spoken (speakRevive). What it asks comes from one
+// reader, Sona.gameAsk: the bare sound, a syllable or a short word.
+const gameAskFn = find("public/sona.js", /function gameAsk\(sound, card, opts\) \{/, "gameAsk()");
+const gameAskVoice = find("public/sona.js", /clip: rung \? "" : "\/coach\/say-echo\/" \+ sound \+ "-sound\.wav", say: rung \? text : "",/, "gameAsk(): her recording for the bare sound, Echo's line past it");
+const sylOn = find(GC, /var GAME_SYL_ON = \[/, "GAME_SYL_ON");
+const gameSkip = find(GC, /var GAME_SKIP = \{/, "GAME_SKIP");
+const gameShort = find(GC, /var GAME_SHORT = \{/, "GAME_SHORT");
+find(SLICE, /var a=null; try\{ a=S\.gameAsk\(SND,n\); \}catch\(e\)\{\}/, "Fruit Slice's card reads Sona.gameAsk");
+const sliceAsk = find(SLICE, /L\.p=fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:"(To keep playing, say\.\.\. )"\+a\.say\+"(\.)",voice:profile\.voiceId\|\|"",stable:true\}\)/, "Fruit Slice's card: the syllable or word line");
+const sliceAskPlay = find(SLICE, /var said=!!\(askLine&&askLine\.say===ASK\.say&&askLine\.bytes\)&&await reviveBytes\(askLine\.bytes,gen\);/, "Fruit Slice's card plays the line it holds");
+const sliceLineFn = find(SLICE, /async function reviveLine\(text,gen\)\{[\s\S]*?fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:text,voice:profile\.voiceId\|\|"",stable:true\}\)/, "Fruit Slice's reviveLine()");
+const sliceLead = find(SLICE, /else if\(lead\)await reviveLine\(idea\?"(I have an idea\. Let's try this one\.)":"(To keep playing, say)",gen\);/, "Fruit Slice's card: Echo's words before the bare sound");
+const sliceSound = find(SLICE, /if\(!ASK\.say&&gen===reviveVoice&&S\.ALL_SOUNDS\.indexOf\(SND\)>=0&&S\.humanClipsOn&&S\.humanClipsOn\(\)\)await reviveAudio\(ASK\.clip,gen\);/, "Fruit Slice's card: Rachel's recording of the bare sound");
+const sliceBack = find(SLICE, /closeReviveMic\(\); askHeld=ASK; ASK=cardAsk\(0\); paintAsk\(\); speakRevive\(true\);/, "Fruit Slice's card steps back to the bare sound");
+const sliceWait = find(SLICE, /var ASK_WAIT_MS=(\d+), askT=0;/, "ASK_WAIT_MS");
+const sliceMuted = find(SLICE, /if\(voiceOff\(\)\)\{askNext=null;if\(ASK\.rung\)\{ASK=cardAsk\(0\);paintAsk\(\);\}openReviveMic\(\);return;\}/, "Fruit Slice's card says nothing while Sona's sound is off");
+coverAll(SLICE, TTS_CALL, [sliceAsk, sliceLineFn], "a voice request");
+coverAll(SLICE, /(?<![\w$.])reviveLine\(/, [sliceLead]);
+coverAll(SLICE, /(?<![\w$.])reviveBytes\(/, [sliceAskPlay]);
+const sliceAskLine = (ask) => sliceAsk.m[1] + ask + sliceAsk.m[2];
+// What a card may ask past the bare sound: the lists in gamecontent.js.
+const GAME_ON = SC.GAME_SYL_ON.slice();
+for (const s of GAME_ON) if (!SOUNDS.includes(s)) fail(`GAME_SYL_ON names ${s}, which is not one of the ${SOUNDS.length} sounds.`);
+const gameSteps = (s) => ({ syl: SC.gameSyllables(s).map((x) => x.t), word: SC.gameWord(s) });
+for (const s of SOUNDS) if (!existsSync(join(ROOT, "public/coach/say-echo", s + "-sound.wav"))) fail(`public/coach/say-echo/${s}-sound.wav is missing — the games and the practice page play it for ${s}.`);
+
+// Echo's power button: an instruction in Echo's voice, then her recording.
+// Four games share arcade-speech-help.js and set their own SLOW_HELP;
+// Piano Tiles carries its own copy.
+const HELP = "public/arcade-speech-help.js";
+const helpLine = find(HELP, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:(SLOW_HELP\.say\|\|\("To "\+SLOW_HELP\.action\+", say"\)),voice:p\.voiceId\|\|"",stable:true\}\)/, "the sound power's instruction");
+find(HELP, /var instruct=!\(SLOW_HELP\.sayOnce&&slowSaid\);/, "the sound power's say-it-once rule");
+const helpSound = find(HELP, /S\.humanClipsOn&&S\.humanClipsOn\(\)\)return slowAudio\("\/coach\/say-echo\/"\+SND\+"-sound\.wav",t\);/, "the sound power: Rachel's recording");
+const MUTED = /if\(p\.voiceOn===false\|\|Number\(p\.volume\)===0\)return Promise\.resolve\(\);/;
+const helpMuted = find(HELP, MUTED, "the sound power says nothing while Sona's sound is off");
+coverAll(HELP, TTS_CALL, [helpLine], "a voice request"); coverAll(HELP, SPEAK_CALL, [], "a voice call");
+const HELP_KEYS = ROUND_KEYS.filter((k) => src(roundFile(k)).includes("/arcade-speech-help.js"));
+for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html"))) {
+  if (src("public/" + f).includes("/arcade-speech-help.js") && !HELP_KEYS.some((k) => roundFile(k) === "public/" + f)) fail(`public/${f} loads arcade-speech-help.js — another page now has Echo's sound power. Add it to the script.`);
+}
+const power = {};
+for (const k of HELP_KEYS) {
+  const cfg = find(roundFile(k), /<script>window\.SLOW_HELP=(\{.*\});<\/script>/, "SLOW_HELP");
+  const opts = (0, eval)("(" + cfg.m[1] + ")");
+  power[k] = { text: new Function("SLOW_HELP", "return " + helpLine.m[1] + ";")(opts), once: !!opts.sayOnce, cite: cfg.cite };
+}
+const tilesLine = find(TILES, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:"([^"]*)",voice:p\.voiceId\|\|"",stable:true\}\)/, "Piano Tiles' sound power: the instruction");
+find(TILES, /S\.ALL_SOUNDS\.indexOf\(SND\)>=0\)return slowAudio\("\/coach\/say-echo\/"\+SND\+"-sound\.wav",t\);/, "Piano Tiles' sound power: Rachel's recording");
+find(TILES, MUTED, "Piano Tiles' sound power says nothing while Sona's sound is off");
+if (HELP_KEYS.includes("tiles")) fail("Piano Tiles now loads arcade-speech-help.js — it carried its own copy of the sound power. Re-read it.");
+power.tiles = { text: tilesLine.m[1], once: false, cite: tilesLine.cite };
+for (const k of ROUND_KEYS) if (!power[k]) fail(`${roundName(k)} has no sound power the script can read.`);
+
+// Sound Sprint says how to play, on the start card of a child's first races.
+const runLine = find(RUN, /var START_LINE="([^"]*)";/, "Sound Sprint's how-to-play line");
+const runRaces = find(RUN, /var START_RACES=(\d+), STARTKEY=/, "Sound Sprint's START_RACES");
+const runVoice = find(RUN, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:START_LINE,voice:S\.getProfile\(\)\.voiceId\|\|"",stable:true\}\)/, "Sound Sprint asks the voice for its line");
+const runFallback = find(RUN, /said=S\.speakNow\(START_LINE\);/, "Sound Sprint's fallback voice");
+const runMuted = find(RUN, /if\(!sc\.line\|\|!startVoiceOn\(\)\)\{ beginRace\(\); return; \}/, "Sound Sprint says nothing while Sona's sound is off");
+// Nothing else in the five pages reaches the voice.
+const roundKnown = { slice: [sliceAsk, sliceLineFn], tiles: [tilesLine], run: [runVoice, runFallback], stack: [], glide: [] };
+for (const k of ROUND_KEYS) {
+  const f = roundFile(k);
+  coverAll(f, TTS_CALL, roundKnown[k], "a voice request");
+  coverAll(f, SPEAK_CALL, roundKnown[k], "a voice call");
+  coverAll(f, /(?<![\w$.])(say|speak|speakNow)\(/, []);
+  coverAll(f, /SpeechSynthesisUtterance/, [], "a browser-voice line");
+}
+
+// ───────────────────────── the picture games (Say & Play) ─────────────────────────
+// One shared script, sayplay.js, and one spoken line: Echo models the word.
+const SAYPLAY = "public/sayplay.js";
+const spAsk = find(SAYPLAY, /say\("(Say\.\.\. )" \+ word\.w \+ "(\.)"\)/, "Say & Play's ask");
+const spPoolFn = find(SAYPLAY, /^  function pool\(sound\) \{\n[\s\S]*?^  \}$/m, "Say & Play's word pool");
+const spPool = new Function("S", spPoolFn.m[0] + "\nreturn pool;")(S);
+find(SAYPLAY, /SOUND = String\(\(S\.rotSound && S\.rotSound\(\)\) \|\| "R"\)\.toUpperCase\(\);/, "Say & Play's sound");
+const spVoice = find(SAYPLAY, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: profile\.voiceId \|\| "", stable: true \}\)/, "Say & Play's voice request");
+coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk]);
+coverAll(SAYPLAY, TTS_CALL, [spVoice], "a voice request"); coverAll(SAYPLAY, SPEAK_CALL, [], "a voice call");
+const spLine = (w) => spAsk.m[1] + w + spAsk.m[2];
+// Which game a page is, from the catalog. A page that loads a speaking
+// script and is in no catalog entry is a page the sheet cannot name.
+const gameOfPage = (f) => {
+  const key = Object.keys(S.GAME_ACTS).find((k) => String(S.GAME_ACTS[k].go).split("?")[0] === "/" + f);
+  if (!key) fail(`public/${f} loads a speaking game script but GAME_ACTS has no game at /${f}. Add it to the script.`);
+  return S.GAME_ACTS[key];
+};
+const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && src("public/" + f).includes(script)).sort();
+const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
+if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
-const PARKED_PAGES = ["story.html", "library.html", "chapter.html", "check.html", "coach-call.html", "arcade-bubbles.html", "arcade-peekaboo.html"];
+// simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.
+// Which pages still load it, and which of those are "coming soon", is read
+// from the pages and the catalog — a game moves between Part C and Part E on
+// its own when it is switched on, parked or rebuilt on another script.
+const SP = "public/simple-play.js";
+const spWord = find(SP, /body: JSON\.stringify\(\{ text: word, voice: profile\.voiceId \|\| "", stable: true \}\)/, "simple-play word request");
+find(SP, /S\.wordsFor\(sound, "i"\) \|\| \[\] : \[\]\)\.filter\(function \(w\) \{ return w && w\.w && w\.e; \}\)\n\s*\.sort\(function \(a, b\) \{ return a\.w\.length - b\.w\.length; \}\)\.slice\(0, 8\);/, "simple-play word pool (same rule as Feed Echo)");
+const simpleSay = find(SP, /render\(\); effect\("tap"\); sayWord\(\); focus\(\$\("hearWord"\)\);/, "simple-play says the word when the picture is revealed");
+const simpleHear = find(SP, /\$\("hearWord"\)\.onclick = sayWord;/, "simple-play 'Hear it'");
+const simpleVoice = find(SP, /fetch\("\/api\/tts", options\)/, "simple-play's voice request");
+coverAll(SP, /(?<![\w$.])sayWord\(/, [simpleSay], "a spoken line", true);
+coverAll(SP, TTS_CALL, [simpleVoice], "a voice request"); coverAll(SP, SPEAK_CALL, [], "a voice call");
+const simplePages = pagesLoading("/simple-play.js");
+const simpleGames = simplePages.map(gameOfPage);
+const simpleLive = simpleGames.filter((g) => !g.comingSoon), simpleSoon = simpleGames.filter((g) => g.comingSoon);
+
+// ───────────────────────── parked / unlinked pages ─────────────────────────
+// A "coming soon" simple-play page is parked with the readers; a live one is not.
+const PARKED_PAGES = ["story.html", "chapter.html", "check.html", "coach-call.html"].concat(simplePages.filter((f) => gameOfPage(f).comingSoon));
+// The Books page keeps the door to Your Adventure in its markup, hidden, and
+// nothing un-hides it. That one link is known; any other is a new door.
+const LB = "public/library.html";
+const advTile = find(LB, /<button id="advTile" hidden onclick="location\.href='\/story\.html'"/, "the Books page's hidden adventure tile");
+if (allIdx(LB, /advTile/).length !== 1) fail("library.html now mentions advTile more than once — if something un-hides the adventure tile, story.html is live: move E2 out of Part E.");
 function linkGuard() {
   const files = readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && !PARKED_PAGES.includes(f));
   for (const f of files) {
     const text = src("public/" + f);
     const re = new RegExp(`(href=|location\\.(href|replace|assign)\\s*[=(]\\s*|window\\.open\\()["']/?(${PARKED_PAGES.map((p) => p.replace(".", "\\.")).join("|")})`, "g");
-    let m; while ((m = re.exec(text))) fail(`public/${f} links to ${m[3]} at ${cite("public/" + f, m.index)} — that page was parked or unlinked. Move its lines out of Part E.`);
+    let m; while ((m = re.exec(text))) {
+      if ("public/" + f === LB && m.index >= advTile.idx && m.index < advTile.end) continue;
+      fail(`public/${f} links to ${m[3]} at ${cite("public/" + f, m.index)} — that page was parked or unlinked. Move its lines out of Part E.`);
+    }
   }
 }
 linkGuard();
-if (!S.GAME_ACTS.bubbles.comingSoon || !S.GAME_ACTS.peekaboo.comingSoon) fail("Bubble Pop / Peekaboo are no longer comingSoon in GAME_ACTS — move their line out of Part E.");
 find("public/coach-call.html", /if\(!DEVMODE\)\{\n\s*\$\("ringOvl"\)\.style\.display="none";\n\s*\$\("soonOvl"\)\.classList\.add\("show"\);/, "Coach Call 'coming soon' gate");
-
-// simple-play.js (Bubble Pop / Peekaboo): the bare word
-const SP = "public/simple-play.js";
-const spWord = find(SP, /body: JSON\.stringify\(\{ text: word, voice: profile\.voiceId \|\| "", stable: true \}\)/, "simple-play word request");
-find(SP, /S\.wordsFor\(sound, "i"\) \|\| \[\] : \[\]\)\.filter\(function \(w\) \{ return w && w\.w && w\.e; \}\)\n\s*\.sort\(function \(a, b\) \{ return a\.w\.length - b\.w\.length; \}\)\.slice\(0, 8\);/, "simple-play word pool (same rule as Feed Echo)");
-for (const p of ["public/arcade-bubbles.html", "public/arcade-peekaboo.html"]) if (!src(p).includes("simple-play.js")) fail(`${p} no longer loads simple-play.js`);
 
 // check.html (Speech Check)
 const CK = "public/check.html";
@@ -210,7 +370,6 @@ const storyPraise = find(ST, /await say\(Sona\.praiseLine\(\)\);/, "story praise
 const storyRetry = find(ST, /say\(p\.word\)\.then\(function\(\)\{ turn\(\); \}\);/, "story retry word");
 const storyHear = find(ST, /Sona\.speakNow\(p\.text\.replace\("___",p\.word\),SPEAK_OPTS\);/, "story 'Hear it'");
 find(ST, /var FALLBACK=\(window\.SonaContent\?SonaContent\.storyPages\(SOUND\):/, "story fallback pages");
-const GC = "public/gamecontent.js";
 const framesOf = (fn) => (0, eval)(find(GC, new RegExp(`function ${fn}\\(sound\\) \\{\\s*var frames = (\\[[^\\]]*\\]);`), `${fn}() frames`).m[1]);
 const SENTENCE_FRAMES = framesOf("sentences"), STORY_FRAMES = framesOf("storyPages"), CHAT_FRAMES = framesOf("chats");
 const storyFrames = find(GC, /function storyPages\(sound\) \{/, "storyPages()");
@@ -226,14 +385,47 @@ const chapDone = find(CP, /say\("(You did it! Three games are unlocked\.)"\);/, 
 const chapHear = find(CP, /S\.speakNow\(PAGES\[i\]\);/, "chapter 'Read it to me'");
 const episodes = find("public/sona.js", /const EPISODES = \[/, "EPISODES");
 
-// library.html (Books)
-const LB = "public/library.html";
-const bookCover = find(LB, /say\(BOOK\.title \+ "(! A story full of )" \+ BOOK\.sound \+ "( sounds\.)"\);/, "book cover line");
+// library.html (Books) — live since 26 Sep 2026. Echo reads the cover and
+// each page; a tapped word is said alone; and on a page with a key word he
+// asks for it (the key-word moment), through saycheck.js's say().
+const bookCover = find(LB, /readAlong\(BOOK\.title \+ "(! A story full of )" \+ sndLabel\(BOOK\.sound\)\.replace\(" \(v\)", ""\) \+ "( sounds\.)"\);/, "book cover line");
+find(LB, /function sndLabel\(s\)\{ return \(window\.Sona&&Sona\.soundLabel\)\?Sona\.soundLabel\(s\):s; \}/, "book cover: the sound's label");
 const bookEnd = find(LB, /say\("(The end! Great listening!)"\);/, "book end line");
-const bookPage = find(LB, /readAlong\(pg\.t\);/, "book page read-aloud");
-const bookWordTap = find(LB, /readAlong\(sp\.textContent\.replace\(\/\[\^a-zA-Z'\]\/g, ""\)\);/, "book word tap");
-const bookHear = find(LB, /say\(BOOK\.pages\[page\]\.t\); \};/, "book 'Hear it'");
-const wordBox = find(LB, /say\(w\.w\); \};/, "word box");
+const bookPage = find(LB, /readAlong\(pg\.t\)\.then\(function \(\) \{ if \(on && tok === momTok\) startMoment\(\); \}\);/, "book page read-aloud");
+const bookHear = find(LB, /readAlong\(pg\.t\)\.then\(function \(\) \{\n\s*if \(tok !== momTok\) return;/, "book 'Hear it'");
+find(LB, /var w = sp\.textContent\.replace\(\/\[\^a-zA-Z'\]\/g, ""\), tok = hush\(\);/, "book word tap: the word's letters");
+const bookWordTap = find(LB, /readAlong\(w\)\.then\(function \(\) \{ if \(tok !== momTok \|\| !M\) return;/, "book word tap");
+const bookAsk = find(LB, /SC\.say\(\(again \? "(One more time\.\.\. )" : "(Can you say\.\.\. )"\) \+ M\.word \+ "(\.)", function/, "book key-word ask");
+const bookBye = find(LB, /SC\.say\("(Great trying\. Let's turn the page\.)", function/, "book: Echo's line after three tries");
+const bookTries = find(LB, /if \(M\.tries < (\d+)\) return ask\(true\);/, "book: tries before the page turns");
+find(LB, /M = \{ word: keyShown\(BOOK\.keys\[page\]\), tries: 0, ok: false, leaving: false \};/, "book key word: one per page, from BOOK.keys");
+const bookAge = find(LB, /var age = parseInt\(profile\.childAge, 10\) \|\| 0, norm = \(window\.Sona && Sona\.soundNorm\) \? Sona\.soundNorm\(BOOK\.sound\) : null;\n\s*return !\(age && norm && age < norm\);/, "book key word: never asked below the sound's age");
+const bookVoice = find(LB, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: text, voice: profile\.voiceId \|\| "" \}\)/, "the Books page's voice request");
+const bookBrowser = find(LB, /var u = new SpeechSynthesisUtterance\(text\);/, "the Books page's browser-voice fallback");
+find(LB, /var p = say\(text\), tok = sayToken;/, "readAlong() forwards to say()");
+{
+  const inReadAlong = (h) => src(LB).startsWith("say(text)", h.idx);
+  const covered = [bookCover, bookEnd, bookPage, bookHear, bookWordTap, bookAsk, bookBye];
+  for (const h of allIdx(LB, /(?<![\w$.])(say|readAlong)\(|SC\.say\(/)) {
+    const text = src(LB);
+    if (/function $/.test(text.slice(h.idx - 9, h.idx)) || text[h.idx + h.m[0].length] === ")" || inReadAlong(h)) continue;
+    if (!covered.some((c) => h.idx >= c.idx && h.idx < c.end)) fail(`library.html has a spoken line the script does not know at ${cite(LB, h.idx)}: ${text.slice(h.idx, h.idx + 90).split("\n")[0]}\n  Add an anchor for it in tools/voicedoc.mjs.`);
+  }
+  coverAll(LB, TTS_CALL, [bookVoice], "a voice request"); coverAll(LB, SPEAK_CALL, [], "a voice call");
+  coverAll(LB, /SpeechSynthesisUtterance\(/, [bookBrowser], "a browser-voice line", true);
+}
+// The key word as Echo shows and says it: stored lower-case, a name keeps its capital.
+const keyShownFn = find(LB, /^    function keyShown\(word\) \{\n[\s\S]*?^    \}$/m, "function keyShown()");
+const keyShownOf = (book, word) => new Function("BOOK", keyShownFn.m[0] + "\nreturn keyShown;")(book)(word);
+// saycheck.js: the key-word moment's voice and mic. Only the Books page loads it.
+const SCK = "public/saycheck.js";
+const checkVoice = find(SCK, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: prof\(\)\.voiceId \|\| "", stable: true \}\)/, "saycheck.js's voice request");
+coverAll(SCK, TTS_CALL, [checkVoice], "a voice request"); coverAll(SCK, SPEAK_CALL, [], "a voice call");
+coverAll(SCK, /(?<![\w$.])say\(/, []);
+{
+  const users = pagesLoading("/saycheck.js");
+  if (users.join() !== "library.html") fail(`saycheck.js is now loaded by ${users.join(", ") || "no page"} — only the Books page spoke through it. Add the new page's lines to the script.`);
+}
 const STORIES = (0, eval)(find(LB, /var STORIES = (\[[\s\S]*?\n    \]);/, "STORIES table").m[1]);
 
 // coach-call.html — every line is built by concatenation; render them with the page's own pieces.
@@ -312,6 +504,24 @@ const ccLines = []; // {text, line, when}
   if (ccLines.length < 30) fail(`coach-call.html: only ${ccLines.length} lines rendered — the tables changed shape.`);
 }
 
+// A file that reaches the voice at all must be one this script reads: that is
+// what makes "a page that gains a spoken line is in the sheet" true. (The
+// picture games and the round games' power button speak through the shared
+// scripts read above; the pages themselves hold no voice call.)
+{
+  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, "public/sona.js"];
+  for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js"))) {
+    const text = src("public/" + f);
+    const m = /\/api\/tts|SpeechSynthesisUtterance/.exec(text) || SPEAK_CALL.exec(text);
+    if (m && !READ.includes("public/" + f)) fail(`public/${f} now reaches Echo's voice at ${cite("public/" + f, m.index)} (${m[0]}) and this script does not read it. Add its lines to the sheet.`);
+  }
+  // Rachel's held demos (<SOUND>-demo.mp3) play nowhere but the parked Coach Call.
+  for (const f of readdirSync(join(ROOT, "public")).filter((f) => (f.endsWith(".html") || f.endsWith(".js")) && "public/" + f !== CC)) {
+    const m = /-demo\.mp3/.exec(src("public/" + f));
+    if (m) fail(`public/${f} plays a <SOUND>-demo.mp3 at ${cite("public/" + f, m.index)} — only the parked Coach Call did. Part A says so; re-read it.`);
+  }
+}
+
 // Dead helpers must stay dead.
 {
   const pages = readdirSync(join(ROOT, "public")).filter((f) => (f.endsWith(".html") || f.endsWith(".js")) && f !== "sona.js" && f !== "gamecontent.js");
@@ -355,6 +565,7 @@ const cueOf = (s) => S.cue(s).tip;
 const spokenName = (s) => soundNameOf(s);
 const SOUND_TITLE = (s) => (s === "THV" ? "TH (voiced, as in 'the')" : s === "TH" ? "TH (as in 'thumb')" : s);
 const totals = { fixed: 0, expansions: 0, fillers: 0, words: 0, distinct: 0, parked: 0 };
+const bangLines = [roundEnd.m[1], win.m[1], chest.m[1], advEnd.m[1], quiet.m[1], sliceLead.m[2], sliceLead.m[1], ...ROUND_KEYS.map((k) => power[k].text), runLine.m[1], bookEnd.m[1], bookBye.m[1]].filter((l) => l.includes("!"));
 let bN = 0, cN = 0;
 
 P("# Echo's Recording Script");
@@ -367,8 +578,8 @@ P("appears, so this sheet cannot drift from the app.");
 P();
 P("Five parts. **A** — the 19 sound models Rachel already recorded. **B** — the fixed");
 P("lines to record, numbered. **C** — the lines with a blank in them (the prompt with a");
-P("sound name and a count, Feed Echo's ask) with every blank filled in. **D** — the");
-P("word bank. **E** — what NOT to record: parked, unlinked and dead lines.");
+P("sound name and a count, the games' asks, the books) with the blanks filled in. **D** —");
+P("the word bank. **E** — what NOT to record: parked, unlinked and dead lines.");
 P();
 P("## How to record");
 P();
@@ -377,8 +588,8 @@ P("  trimmed; a clipped word ending cannot be recovered.");
 P("- **Room tone matters more than the mic.** Soft furnishings, no fan, no laptop on");
 P("  the table, phone on silent. Same room, same distance, for the whole set.");
 P("- **Talk to one small child sitting next to you.** Calm, warm, unhurried. Full");
-P("  stops, not exclamation marks — every live line was rewritten on 24 Sep 2026 so");
-P("  the voice does not jump. The one \"!\" line left is the quiet screen (row noted).");
+P("  stops, not exclamation marks — the practice lines were rewritten on 24 Sep 2026 so");
+P(`  the voice does not jump. The fixed lines that still carry a "!": ${bangLines.map((l) => `"${l}"`).join(", ")}.`);
 P("- **These get re-voiced afterwards** (ElevenLabs speech-to-speech). That keeps your");
 P("  pacing, stress and warmth and changes only who it sounds like — so deliver for the");
 P("  child, not for the mic. Timbre does not matter; timing and kindness do.");
@@ -392,7 +603,7 @@ P("  `node tools/levelclips.mjs <folder>`: it brings every file to the loudness 
 P("  line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file");
 P("  plays as-is, and an unlevelled one is the one sound that can still jump.");
 P();
-P(`Switch state right now: \`HUMAN_CLIPS = ${HUMAN_ON}\` (${humanSwitch.cite}) — the re-voiced sound models of Part A are ${HUMAN_ON ? "ON, and replace the C1 prompt for their sound" : "OFF"}; every other line below is spoken through TTS.`);
+P(`Switch state right now: \`HUMAN_CLIPS = ${HUMAN_ON}\` (${humanSwitch.cite}) — Rachel's recorded sounds (Part A) are ${HUMAN_ON ? "ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' \"…say\" lines (B5)" : "OFF"}; every word below is spoken through TTS.`);
 
 // ── Part A ──
 P();
@@ -412,7 +623,7 @@ P("also run through ElevenLabs speech-to-speech into Echo's voice by `tools/revo
 P("`public/coach/say-echo/` (25 Sep 2026). With the");
 P("switch on, the C1 prompt for a sound is Echo's words with her one take in the letter's");
 P("place, and `say-echo/<SOUND>.mp3` plays in its stead only when the voice service is down");
-P(`(${humanPath.cite}); \`say-echo/<SOUND>-demo.mp3\` is used only by the parked Coach Call.`);
+P(`(${voiceDown.cite}); \`say-echo/<SOUND>-demo.mp3\` is used only by the parked Coach Call.`);
 P();
 P("Continuants are **stretched** (held about 1.5 s); stops are **popped** (one crisp");
 P("burst, never held — a held /p/ teaches a schwa the child then has to unlearn).");
@@ -460,10 +671,22 @@ B("adventure-end.mp3", advEnd.m[1], `Adventure end: when the fifth round's game 
 B("quiet.mp3", quiet.m[1], "The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: \"I couldn't hear you!\" / \"Say it big — I'm all ears!\" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt.", "Gentle and playful. This is the one line that kept its \"!\" on 24 Sep — \"Say it big\" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call.", quiet.cite);
 bTable("B4 — Round end, win, chest, adventure end, quiet screen (5)");
 P();
+{
+  const bare = S.soundSay("R"), secs = (ms) => Number(ms) / 1000;
+  B("card-say.mp3", sliceLead.m[2], `${roundName("slice")}'s say-it card (between rounds, and its keep-playing card), when the card asks for the sound alone: Echo says this, then Rachel's recording of the sound plays (\`say-echo/<SOUND>-sound.wav\`, Part A), then the mic opens. Screen: "Say “${bare}” for wave 2!" or "…to keep playing!". When the card asks for a syllable or a word, the whole ask is one line instead (C7).`, "Friendly and plain. It runs straight into the sound, so leave it open at the end.", `${sliceLead.cite}; her sound at ${sliceSound.cite}`);
+  B("card-idea.mp3", sliceLead.m[1], `${roundName("slice")}'s card, when a syllable or a word got no answer for ${secs(sliceWait.m[1])} s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording plays. The practice page's own words for the same move (B3).`, "As B3: a good idea just arrived. Not a consolation.", `${sliceLead.cite}; the step back at ${sliceBack.cite}`);
+  for (const k of ROUND_KEYS) B(`power-${k}.mp3`, power[k].text, `${roundName(k)}: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens.${power[k].once ? " Spoken the first time in a game only; after that the tap plays just the sound." : ""}`, `Short and bright. It runs straight into the sound, so leave it open at the end.${power[k].text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
+  B("sprint-howto.mp3", runLine.m[1], `${roundName("run")}'s start card, on a child's first ${NUMWORD[runRaces.m[1]] || runRaces.m[1]} races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early).`, 'Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout.', `${runLine.cite}; asked for at ${runVoice.cite}`);
+}
+bTable(`B5 — The round games (${2 + ROUND_KEYS.length + 1})`, `${roundName("slice")}'s say-it card, Echo's power button in all five round games (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sliceMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
+B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
+B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
+bTable("B6 — Books (2)");
+P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
-P("picker, the five arcade games (Fruit Slice, Piano Tiles, Block Stacker, Sound");
-P(`Sprint, Flappy Glide — their "Say “rrrr” to keep playing!" card is text only: ${keepPlaying.map((c) => c.replace("public/", "")).join(", ")}),`);
-P("the mic-permission screens, the chest captions and every in-round label. See E8.");
+P("picker, the mic-permission screens, the chest captions, every in-round label, and");
+P(`the say-it card between rounds of ${ROUND_KEYS.slice(1).map(roundName).join(", ")} — their`);
+P(`"Say “rrrr” to keep playing!" card is text only (${ROUND_KEYS.slice(1).map((k) => cardTitle[k].cite.replace("public/", "")).join(", ")}). See E8.`);
 
 // ── Part C ──
 P();
@@ -489,7 +712,7 @@ P(`\`${cuedTemplate}\` (${promptStart.cite}, built at ${sayLineFn.cite})`);
 P();
 P("Spoken once, into a closed mic, right after the mic opens and the room is measured.");
 P("Every session's first round is a sound-alone round, so a child hears this every day.");
-P(`With the sound models on, \`/coach/say-echo/{SOUND}.mp3\` (Part A) plays instead (${promptCall.cite}).`);
+P(`With the sound models on, Echo says the words and one take of Rachel's recorded sound (\`${SLOT.R.clip.replace("/R-", "/{SOUND}-")}\`, Part A) plays in the letter's place: "${SLOT.R.before} [${S.soundSay("R")}] ${SLOT.R.after}" (${soundSlotFn.cite}; spoken at ${promptCall.cite}).`);
 P();
 P("**Fillers.**");
 P();
@@ -512,7 +735,7 @@ P();
 P(`\`${plainTemplate}\` (tap: ${promptTap.cite}; built at ${sayLineFn.cite})`);
 P();
 P("Every later prompt of the same sound-alone round: the child taps Echo (\"Tap Echo to");
-P("hear it again\"). With Rachel's clips on, the tap replays her clip instead.");
+P("hear it again\"). With the sound models on, her take sits in the letter's place here too.");
 P(`**All ${SOUNDS.length * NEEDS.length} lines.**`);
 for (const n of NEEDS) SOUNDS.forEach((s) => C(`prompt-${s}-${n}.mp3`, sayLine(s, isoItem(s), n, true), n === NEED_DEFAULT ? `Repeat prompt, ${SOUND_TITLE(s)}.` : `Repeat prompt during a retry window (${needWord(n)} tries).`, sayLineFn.cite));
 cTable();
@@ -546,7 +769,7 @@ totals.fillers += SENTENCE_FRAMES.length;
 P();
 P("### C4 — Hear it slooow (the turtle)");
 P();
-P(`Not a separate recording. The turtle pill replays the current line slowed to ${turtleRate.m[1]}× by the app (${turtleRate.cite}); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (${turtle.cite}). Always the TTS text today, even with Rachel's clips on; if recordings ship, the turtle needs to slow the recording.`);
+P(`Not a separate recording. The turtle pill replays the current line slowed to ${turtleRate.m[1]}× by the app (${turtleRate.cite}); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (${turtle.cite}). On a sound-alone round with the sound models on, the slowed line has Rachel's take in the letter's place, slowed with it.`);
 
 P();
 P("### C5 — Echo's idea, with a syllable or a word");
@@ -564,8 +787,10 @@ P();
 P(`\`${feedLine("{word}")}\` (${feedAsk.cite})`);
 P();
 P("Live, free, opened straight from Home. Echo asks this at the start of each of the");
-P("five turns, before the child taps one of four pictures; nothing is spoken on a right");
-P("tap, a wrong tap or at the finish. The sound is the one the child's rotation is on that");
+P("five turns; the four pictures stay locked until he hears the word, and nothing is");
+P("spoken on a right tap, a wrong tap or at the finish. If nothing is heard for");
+P(`${Number(feedWait.m[1]) / 1000} s the mic closes and a mic button waits; a tap on it says \`${feedAgain.m[1]}{word}${feedAgain.m[2]}\``);
+P(`(${feedAgain.cite}) and listens again. The sound is the one the child's rotation is on that`);
 P("round (homework sounds first, else the child's focus sounds, else R); the pool is that sound's shortest");
 P(`eight Beginning-position words with a picture (${feedPoolFn.cite}). The screen says "Where's" while the voice says "Where is".`);
 P();
@@ -575,7 +800,92 @@ let feedCount = 0;
 SOUNDS.forEach((s) => { const pool = feedPool(s).map((w) => w.w); feedCount += pool.length; P(`| ${SOUND_TITLE(s)} | ${pool.join(", ")} |`); });
 totals.fillers += feedCount;
 P();
-P(`${feedCount} lines if recorded as fixed clips (\`feed-<word>.mp3\`); best left to TTS.`);
+P(`${feedCount} words, two lines each, if recorded as fixed clips (\`feed-<word>.mp3\`, \`feed-again-<word>.mp3\`); best left to TTS.`);
+
+// C7 Fruit Slice's card
+P();
+P(`### C7 — ${roundName("slice")}'s say-it card, with a syllable or a word`);
+P();
+P(`\`${sliceAskLine("{ask}")}\` (${sliceAsk.cite})`);
+P();
+P(`The card between rounds of ${roundName("slice")}. When it asks for more than the sound alone, Echo`);
+P("says the whole ask as ONE line in his own voice, the syllable or word last and after");
+P("a pause, because nothing past the bare sound is recorded. The line is downloaded before");
+P("the syllable is shown; if it does not come, or will not play, the card stays on the");
+P(`sound alone and "${sliceLead.m[2]}" plus Rachel's recording plays instead (B5). What a card`);
+P(`asks comes from one reader, \`Sona.gameAsk\` (${gameAskFn.cite}; which voice at ${gameAskVoice.cite}):`);
+P("the sound alone, then one syllable a card, then a short word, as far as that child's");
+P(`cards go. Screen: "Say “${(gameSteps(GAME_ON[0] || "R").syl[0]) || S.soundSay("R")}” for wave 2!". The card hears only a voice of the right`);
+P("kind — it cannot tell a syllable from the bare sound — and nothing here says \"correct\".");
+P(`The other four round games' cards are text and ask only the sound.`);
+P();
+P(`**{ask} = a syllable or the short word** — only for the sounds switched on in \`GAME_SYL_ON\` (${sylOn.cite}); today: ${GAME_ON.join(", ") || "none"}. One syllable a card, moving on one each day. The short word is \`GAME_SHORT\` (${gameShort.cite}). Never asked, \`GAME_SKIP\` (${gameSkip.cite}): ${Object.keys(SC.GAME_SKIP).map((s) => `${s} ${SC.GAME_SKIP[s].map((x) => `"${x}"`).join(", ")}`).join("; ")}.`);
+P();
+P("| Sound | Syllables, in order | Short word |");
+P("|---|---|---|");
+GAME_ON.forEach((s) => { const g = gameSteps(s); totals.fillers += g.syl.length + (g.word ? 1 : 0); P(`| ${SOUND_TITLE(s)} | ${g.syl.join(", ")} | ${g.word || "—"} |`); });
+P();
+P(`**{ask} can also be** a word from a speech therapist's homework for that sound, or the syllable or word the "Say it 5 times" page just ended on (it hands it over, so a card never asks below it). Those are C3's syllables and Part D's words; not expanded here.`);
+P();
+P(`Rachel's calls, built on defaults until she answers: which syllables and in what order, whether "${SC.GAME_SHORT.R || "rot"}" is the word, the lists for the other ${SOUNDS.length - GAME_ON.length} sounds, and Echo's TTS voice modelling a syllable at all.`);
+P();
+const cardLines = GAME_ON.reduce((a, s) => a + gameSteps(s).syl.length + (gameSteps(s).word ? 1 : 0), 0);
+P(`**All ${cardLines} lines for the sounds switched on.** Best left to TTS; listed so nothing is hidden.`);
+GAME_ON.forEach((s) => { const g = gameSteps(s); g.syl.concat(g.word ? [g.word] : []).forEach((a, i) => C(`card-${s}-${a}.mp3`, sliceAskLine(a), i < g.syl.length ? `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a syllable.` : `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a short word.`, sliceAsk.cite)); });
+cTable();
+
+// C8 the picture games
+const spLive = spGames.filter((g) => !g.comingSoon), spSoon = spGames.filter((g) => g.comingSoon);
+P();
+P("### C8 — The picture games (Say & Play)");
+P();
+P(`\`${spLine("{word}")}\` (${spAsk.cite})`);
+P();
+P(`One shared script (\`sayplay.js\`) runs every picture game. Each turn shows a picture and`);
+P("its word, Echo models the word with this line, then the mic opens. It is the only line");
+P("these games speak: the cheers (\"Yes!\", \"You did it!\") are text. The sound is the one the");
+P(`child's rotation is on (else R); the pool is up to ten of that sound's shortest`);
+P(`Beginning-position words with a picture (${spPoolFn.cite}). **Best left to TTS.**`);
+P();
+P(`Live today (${spLive.length}): ${spLive.map((g) => g.name).join(", ") || "none"}. Coming soon (${spSoon.length}), the same line when they open: ${spSoon.map((g) => g.name).join(", ") || "none"}.`);
+P();
+P("| Sound | {word} pool |");
+P("|---|---|");
+let spCount = 0;
+SOUNDS.forEach((s) => { const pool = spPool(s).map((w) => w.w); spCount += pool.length; P(`| ${SOUND_TITLE(s)} | ${pool.join(", ")} |`); });
+totals.fillers += spCount;
+
+// C9 Books
+const bookPages = STORIES.reduce((a, b) => a + b.pages.length, 0);
+const bookKeys = STORIES.reduce((a, b) => a + (b.keys || []).filter(Boolean).length, 0);
+const coverLine = (b) => b.title + bookCover.m[1] + S.soundLabel(b.sound).replace(" (v)", "") + bookCover.m[2];
+P();
+P(`### C9 — Books (\`library.html\`): ${STORIES.length} books, ${bookPages} pages`);
+P();
+P("Live: Home's Books card opens the shelf. Echo reads everything in a book aloud.");
+P("**Best left to TTS** — it is a lot of text, and it changes when a book does. Listed so");
+P("nothing is hidden. Four templates, and two fixed lines (B6):");
+P();
+P(`- **The cover:** \`{title}${bookCover.m[1]}{sound}${bookCover.m[2]}\` (${bookCover.cite}) — {sound} is read as its letters ("R", "SH", "TH"). Written out under each book below.`);
+P(`- **A page:** the page's text, read as the page opens (${bookPage.cite}) and again on "Hear it" (${bookHear.cite}).`);
+P(`- **A tapped word:** that word alone (${bookWordTap.cite}).`);
+P(`- **The key word:** ${bookKeys} of the ${bookPages} pages have one, shown in bold below. After reading the page Echo asks \`${bookAsk.m[2]}{word}${bookAsk.m[3]}\`; after a try that was a voice but not the book's kind of sound, \`${bookAsk.m[1]}{word}${bookAsk.m[3]}\` (${bookAsk.cite}); after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} of those, the B6 line and the page turns. A name keeps its capital. Silence never turns the page. A child younger than the age the book's sound usually arrives is never asked (${bookAge.cite}), and the first ask of a visit waits for a grown-up's yes to the mic. Screen: "Can you say {word}?".`);
+totals.fillers += bookPages;
+STORIES.forEach((b) => {
+  const at = src(LB).indexOf(`title: ${JSON.stringify(b.title)}`);
+  P(); P(`**${b.title}** — ${S.soundLabel(b.sound)}${b.season ? `, on the shelf ${b.season.startsOn} to ${b.season.endsOn}` : ""} (${cite(LB, at)}). Cover: "${coverLine(b)}"`); P();
+  b.pages.forEach((pg, i) => { const k = b.keys && b.keys[i]; P(`${i + 1}. ${pg.t}${k ? ` — **${keyShownOf(b, k)}**` : ""}`); });
+});
+
+// C10 simple-play, for the games on it that are live
+if (simpleLive.length) {
+  P();
+  P(`### C10 — ${simpleLive.map((g) => g.name).join(" and ")} (\`simple-play.js\`)`);
+  P();
+  P(`\`{word}\` — the bare word (${spWord.cite})`);
+  P();
+  P(`The only spoken line is the word alone, when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). **Best left to TTS.**`);
+}
 
 // ── Part D ──
 P();
@@ -617,7 +927,7 @@ const chapterLines = S.EPISODES.reduce((a, e) => a + 1 + (e.beats || []).length,
 P();
 P(`### E1 — Today's chapter (\`chapter.html\`, parked): ${S.EPISODES.length} chapters, ${chapterLines} spoken pages`);
 P();
-P(`The books were parked on 19 Sep 2026 ("coming soon" on Home); \`tests/day1.mjs\` pins that Home has no door. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (${chapPages.cite}, ${chapSay.cite}); "Read it to me" says the same page again (${chapHear.cite}). Tomorrow's hook is shown on the finish card, not spoken. The table is \`EPISODES\` (${episodes.cite}). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.`);
+P(`The chapter reader was parked on 19 Sep 2026 and stayed parked when the picture books came back (C9); \`tests/day1.mjs\` pins that Home has no door to it. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (${chapPages.cite}, ${chapSay.cite}); "Read it to me" says the same page again (${chapHear.cite}). Tomorrow's hook is shown on the finish card, not spoken. The table is \`EPISODES\` (${episodes.cite}). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.`);
 P();
 P(`One fixed line: "${chapDone.m[1]}" — the finish card (${chapDone.cite}). Still has its "!" — the parked pages never got the calm rewrite.`);
 totals.parked += 1;
@@ -631,28 +941,24 @@ S.EPISODES.forEach((ep, ei) => {
 P();
 P("### E2 — Your Adventure (`story.html`, parked)");
 P();
-P(`Reachable only from the parked books page and gated behind \`Sona.gated('story')\`. Each page is read aloud when it opens (${storyPage.cite}) and on "Hear it" (${storyHear.cite}); then "${storyNowYou.m[1]}{word}${storyNowYou.m[2]}" (${storyNowYou.cite}); a heard try gets one of the five praise lines (${storyPraise.cite}); a missed one gets the bare word again (${storyRetry.cite}). The pages are normally an AI-written story from \`/api/story\` — unbounded text that cannot be pre-recorded. The fallback pages are ${STORY_FRAMES.length} frames with a bank word (${storyFrames.cite}): ${STORY_FRAMES.map((f) => `"${f}"`).join(", ")}.`);
+P(`No page opens it: the Books page keeps its tile hidden (${advTile.cite}), and it is gated behind \`Sona.gated('story')\`. Each page is read aloud when it opens (${storyPage.cite}) and on "Hear it" (${storyHear.cite}); then "${storyNowYou.m[1]}{word}${storyNowYou.m[2]}" (${storyNowYou.cite}); a heard try gets one of the five praise lines (${storyPraise.cite}); a missed one gets the bare word again (${storyRetry.cite}). The pages are normally an AI-written story from \`/api/story\` — unbounded text that cannot be pre-recorded. The fallback pages are ${STORY_FRAMES.length} frames with a bank word (${storyFrames.cite}): ${STORY_FRAMES.map((f) => `"${f}"`).join(", ")}.`);
 totals.parked += 1 + STORY_FRAMES.length;
 
-// E3 library
-const bookPages = STORIES.reduce((a, b) => a + b.pages.length, 0);
+// E3 — the books moved out
 P();
-P(`### E3 — Books (\`library.html\`, parked): ${STORIES.length} books, ${bookPages} pages`);
+P("### E3 — Books: no longer parked");
 P();
-P(`Cover: "{title}${bookCover.m[1]}{sound}${bookCover.m[2]}" (${bookCover.cite}) — the sound is read as its letter, "R sounds". Each page is read aloud as it opens and on "Hear it" (${bookPage.cite}, ${bookHear.cite}); tapping any word says that word (${bookWordTap.cite}); the word box at the bottom says any bank word alone (${wordBox.cite}). Last page: "${bookEnd.m[1]}" (${bookEnd.cite}).`);
-totals.parked += STORIES.length + 1;
-STORIES.forEach((b) => {
-  const at = src(LB).indexOf(`title: ${JSON.stringify(b.title)}`);
-  P(); P(`**${b.title}** — ${b.sound} (${cite(LB, at)})`); P();
-  b.pages.forEach((pg, i) => { totals.parked++; P(`${i + 1}. ${pg.t}`); });
-});
+P("The picture books are live again; their lines are in B6 and C9. The number is kept so");
+P("the sections after it keep theirs.");
 
-// E4 simple-play
+// E4 simple-play, for the games on it that are still "coming soon"
 P();
-P("### E4 — Bubble Pop and Peekaboo (`simple-play.js`, parked)");
+P(`### E4 — ${simpleSoon.length ? simpleSoon.map((g) => g.name).join(" and ") + " (`simple-play.js`, coming soon)" : "`simple-play.js`: nothing parked"}`);
 P();
-P(`Both are "coming soon" in the catalog and their Home cards are disabled. The only spoken line is the bare **{word}** when the bubble pops or the door opens, and on "Hear it" (${spWord.cite}) — the same per-sound pools as Feed Echo (C6).`);
-totals.parked += 1;
+if (simpleSoon.length) {
+  P(`"Coming soon" in the catalog, with a disabled Home card. The only spoken line is the bare **{word}** when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6).${simpleLive.length ? ` ${simpleLive.map((g) => g.name).join(" and ")} runs on the same script and is live (C10).` : ""}`);
+  totals.parked += 1;
+} else P("Every page built on this script is live (C10) or has moved to another script.");
 
 // E5 check
 P();
@@ -702,7 +1008,9 @@ P("chest! Tap, tap, tap to open!\", \"Tap, tap!\", \"One more tap!\", \"You foun
 P("sticker!\"), the in-round labels (\"Say\", \"Almost! {cue} —\", \"Try again — you've got");
 P("this!\", \"Echo's idea — say\", \"YES! That's the one!\", \"Here we go!\", \"Say it {n}");
 P("times\", \"Just 1 more!\", \"Tap Echo to hear it again\", \"Your turn\", \"Listen to Echo\"),");
-P("the games' \"Say “rrrr” to keep playing!\" card and their end cards, and Feed Echo's");
+P("the round games' \"Say “rrrr” to keep playing!\" card title (only Fruit Slice's card is");
+P("also spoken: B5, C7) and their end cards, the picture games' cheers, the books' \"Can you");
+P("say {word}?\" bubble, \"Your turn!\" and \"I heard you!\", and Feed Echo's");
 P("\"Where's the {word}?\" / \"Say it out loud, then tap it!\" / \"Echo heard you!\".");
 
 // E9 retired
@@ -721,9 +1029,9 @@ P("folders; they were a wish-list. They are gone, and so is the old `tools/voice
 P();
 P("---");
 P();
-P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${bookPages} book pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
+P(`**Totals.** Part A: ${SOUNDS.length} sound models (${SOUNDS.length * 2} files, Rachel's). Part B: **${totals.fixed} fixed clips** to record. Part C: **${totals.expansions} template lines written out** (C1 ${SOUNDS.length * NEEDS.length} + C2 ${SOUNDS.length * NEEDS.length} + C7 ${cardLines}) plus ${totals.fillers} fillers listed (${SOUNDS.length} cues, ${SOUNDS.length} sound names, ${sylCount} syllables, ${SENTENCE_FRAMES.length} sentence frames, ${feedCount} Feed Echo words, ${cardLines} game-card asks, ${spCount} picture-game words, ${bookPages} book pages in ${STORIES.length} books). Part D: **${totals.words} bank entries, ${totals.distinct} distinct words** (TTS). Part E: ${totals.parked} parked/unlinked lines not to record (${chapterLines} chapter pages, ${ccLines.length} Coach Call, ${checkWords.length} Speech Check, the rest single lines).`);
 P();
-P(`Record B first (${totals.fixed} lines — an hour), then C1 and C2 (${SOUNDS.length * NEEDS.length * 2} lines, where you perform the sound), and stop there: Parts C3–C6 and D are words, and words are what TTS already does well.`);
+P(`Record B first (${totals.fixed} lines — an hour), then C1 and C2 (${SOUNDS.length * NEEDS.length * 2} lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.`);
 
 // ───────────────────────── write / check / print ─────────────────────────
 const text = out.join("\n") + "\n";
