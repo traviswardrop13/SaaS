@@ -203,6 +203,8 @@
     .bkovlCard p.small{font-size:12px;color:rgba(91,45,5,.62);}
     .bkovlCard button{width:100%;min-height:52px;font-size:18px;margin-top:2px;}
     @media (prefers-reduced-motion:reduce){ .bkpic,.bkmic.live,.bkmic.nudge,.bktext span.kw.yay{animation:none;} .bkecho{transition:none;} }
+      .shelfLetter{grid-column:1/-1;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:17px;color:var(--cream-ink,#5b2d05);margin:10px 0 -4px;}
+    .shelfLetter:first-child{margin-top:0;}
   </style>
 </head>
 <body>
@@ -1266,7 +1268,36 @@
       };
       host.appendChild(b);
     }
-    STORIES.forEach(function (st) { addBook(st, shelf); });
+    // BY LETTER (Travis, 2 Oct 2026: "organize the books by letter too"):
+    // each sound's books sit together under a small heading, on both shelves.
+    // Inside a sound the order is the shelf's own (readable, then Premium).
+    function soundOf(st) { return String(st.sound).toUpperCase(); }
+    function addGrouped(list, host, order) {
+      var sorted = list.slice().sort(function (a, b) {
+        var sa = order.indexOf(soundOf(a)), sb = order.indexOf(soundOf(b));
+        sa = sa === -1 ? 99 : sa; sb = sb === -1 ? 99 : sb;
+        return sa !== sb ? sa - sb : list.indexOf(a) - list.indexOf(b);
+      });
+      var last = "";
+      sorted.forEach(function (st) {
+        if (soundOf(st) !== last) {
+          last = soundOf(st);
+          var h = document.createElement("div"); h.className = "shelfLetter"; h.textContent = sndLabel(st.sound) + " books";
+          host.appendChild(h);
+        }
+        addBook(st, host);
+      });
+    }
+    // the child's sounds in their practice order (the one on now first);
+    // while other books are locked, the free one still leads on its own
+    var MAIN_ORDER = focusOrder.slice();
+    STORIES.forEach(function (st) { if (MAIN_ORDER.indexOf(soundOf(st)) === -1) MAIN_ORDER.push(soundOf(st)); });
+    var mainList = STORIES.slice(), lead = mainList[0];
+    if (lead && anyLocked && window.Sona && Sona.bookFree && Sona.bookFree(lead.title) && bookOpen(lead) && !LOCKED[lead.title]) {
+      var fh = document.createElement("div"); fh.className = "shelfLetter"; fh.textContent = "Free book"; shelf.appendChild(fh);
+      addBook(lead, shelf); mainList.shift();
+    }
+    addGrouped(mainList, shelf, MAIN_ORDER);
 
     // MORE BOOKS (Travis, 1 Oct 2026: "a kid, like they might be like wanting
     // to just do the Halloween one"). Every in-season book the shelf above
@@ -1301,7 +1332,7 @@
       btn.hidden = false;
       btn.onclick = function () {
         var open = btn.getAttribute("aria-expanded") !== "true";
-        if (open && !built) { built = true; MORE.forEach(function (st) { addBook(st, host); }); }
+        if (open && !built) { built = true; addGrouped(MORE, host, SOUND_ORDER); }
         btn.setAttribute("aria-expanded", open ? "true" : "false");
         box.hidden = !open;
         // a menu is silent: the page's own tap chime, never a voice
