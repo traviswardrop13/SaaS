@@ -179,8 +179,13 @@
     // (a level of zero is Sona's own mute: the media path has no volume to turn
     // down, so it must not play at all)
     function sound(name) { return function (ctx, vol) { if (!vol) return; var n = name === "pop" ? "pop" + (popN++ % POPS.length) : name; if (asMedia()) playMedia(n, ctx, vol); else playWeb(n, ctx, vol); }; }
+    // THE WORD IS SAID ONCE HERE (sayTimes: 1). The word games for ages 5-8
+    // ask for it two times (Travis, 1 Oct 2026), and that is the engine's own
+    // number. This is the littles' game, built to be said once; whether a
+    // three-year-old should say it twice is Rachel's call, so it stays at one
+    // until she says.
     SayPlay.start({
-      key: "bubbles", title: "Bubble Pop",
+      key: "bubbles", title: "Bubble Pop", sayTimes: 1,
       steps: [[], [], [], [], []], finale: [],
       done: { title: "You popped them all!", sub: "Five words, and five pictures in the basket." },
       play: window.Bubbles,
