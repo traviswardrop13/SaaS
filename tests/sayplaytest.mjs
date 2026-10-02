@@ -26,6 +26,12 @@
 //     up nothing, rubbing uncovers the bone, the help glows and then gives way
 //     only while the child rubs, a pause holds the brush, and eight bones wake
 //     the dinosaur;
+//   - BUBBLE POP (1 Oct 2026), a little kids' game rebuilt on this engine
+//     without being a catalog "say" game: no bubble before the word, the
+//     finger pops them all, the gold one drops the picture in the basket, the
+//     help grows until every round ends, one giant bubble finishes it, and in
+//     the iPhone app the pops are media. It runs as its own part
+//     (tests/bubblestest.mjs);
 //   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
 //     a parked game's card is greyed out, and its page sends a typed address
 //     back to Home before any mic or sound. The engine is still played through
@@ -159,7 +165,15 @@ function fakeDevice(cfg) {
     return an;
   };
   window.AudioContext = window.webkitAudioContext = AC;
-  HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  // A media element is a sound like any other (the iPhone app plays Echo's
+  // voice and Bubble Pop's pops this way): it joins the audit, so one that
+  // starts under a mic, or rings into the next one, is caught. cfg.refuseMedia
+  // models a phone that will not start one.
+  HTMLMediaElement.prototype.play = function () {
+    if (cfg.refuseMedia) return Promise.reject(new DOMException("refused", "NotAllowedError"));
+    const t = now(); h.sounds.push({ kind: "media", start: t, end: t + (isFinite(this.duration) && this.duration > 0 ? this.duration : 0.4), live: h.micOn() });
+    return Promise.resolve();
+  };
 
   if (window.speechSynthesis) {
     const pending = new Set();
@@ -275,10 +289,27 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   const dug = readFileSync(ROOT + "/dino.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   ok("the dig never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(dug));
 }
+{
+  // Bubble Pop is on this engine too (1 Oct 2026), but it is NOT a catalog
+  // "say" game: it keeps its own place on the little kids' shelf, its own
+  // Home card and its seat in their old five-round adventure.
+  const bp = readFileSync(ROOT + "/arcade-bubbles.html", "utf8");
+  ok("Bubble Pop is its own page: the engine for the word, the sky for the finger, five words",
+    /<script src="\/sayplay\.js"><\/script>/.test(bp) && /<script src="\/bubbles\.js"><\/script>/.test(bp) && /<canvas id="sky"/.test(bp) && /play: window\.Bubbles/.test(bp) && /steps: \[\[\], \[\], \[\], \[\], \[\]\]/.test(bp) && !/simple-play/.test(bp.replace(/<!--[\s\S]*?-->/g, "")));
+  ok("…and it keeps the little kids' old adventure: a finished round is banked, and the end button goes back to it",
+    /S\.simpleAdventure\("bubbles", true\)/.test(bp) && /S\.simpleAdventure\("bubbles", false\)/.test(bp) && /charge\.html\?daily=1&banked=0/.test(bp));
+  const sky = readFileSync(ROOT + "/bubbles.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("the bubbles never touch the mic, and write no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(sky));
+  const line = (readFileSync(ROOT + "/sona.js", "utf8").match(/^\s{4}bubbles:\s*\{[^\n]*/m) || [""])[0];
+  ok("…and the catalog keeps it a free little-kids game that is not a Say & Play card", /group: "simple"/.test(line) && /tier: "free"/.test(line) && /go: "\/arcade-bubbles\.html"/.test(line) && !/say: true/.test(line) && !/comingSoon/.test(line), line);
+}
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
 // The played games (Hoops, Soccer Goal, Dino Dig) run as their own suite,
 // tests/playgamestest.mjs, which sets SAYPLAY_PART=play and imports this file:
 // with every rebuilt game added, one file outgrew run-all's five minutes a suite.
+// Bubble Pop is a third part, "bubbles" (tests/bubblestest.mjs): three games
+// take about 160 s of those 300, so THE NEXT REBUILT GAME GOES IN ITS OWN PART
+// too, or run-all kills the suite with no failing assertion to read.
 const PART = process.env.SAYPLAY_PART || "engine";
 if (PART === "engine") {
 for (const g of GAMES) {
@@ -735,6 +766,305 @@ await scenario("dino dug up", async () => {
     clean("dino", errors);
   } finally { await context.close(); }
 });
+
+}
+// ── BUBBLE POP, rebuilt to be played (Travis, 1 Oct 2026: "yeah B": "Say it,
+// and Echo blows bubbles"). The word blows a cloud of bubbles; the finger pops
+// them all; the gold one drops the word's picture into the basket; five words,
+// then one giant bubble with Echo inside. For ages 3-4, so five steps. ──
+// Its own part and its own suite (tests/bubblestest.mjs): the three games above
+// already take most of run-all's five minutes a suite.
+if (PART === "bubbles") {
+async function sayForBubbles(page) {
+  if (!(await sayIt(page))) return false;
+  return until(page, () => window.__bubbles && window.__bubbles.state === "ready" && window.__bubbles.bubbles.length > 0 && window.__bubbles.bubbles.every((b) => b.out), 5000);
+}
+// pop every bubble that is out, the plain ones first; a fresh look each time,
+// because the bubbles bob and a remembered spot goes stale
+async function popBubbles(page) {
+  const box = await page.locator("#sky").boundingBox();
+  for (let i = 0; i < 40; i++) {
+    const s = await page.evaluate(() => window.Bubbles.snapshot()); if (!s.left) return true;
+    const b = s.bubbles.find((x) => x.out && !x.gold) || s.bubbles.find((x) => x.out);
+    if (b) await page.mouse.click(box.x + b.x, box.y + b.y);
+    await page.waitForTimeout(70);
+  }
+  return (await page.evaluate(() => window.Bubbles.snapshot())).left === 0;
+}
+await scenario("bubbles popped", async () => {
+  const { context, page, errors } = await fresh("arcade-bubbles.html", { age: "4", micok: true, permission: "granted" });
+  // a fresh look each time: the bubbles bob, so a remembered spot goes stale
+  const sky = () => page.evaluate(() => window.Bubbles.snapshot());
+  const tap = async (box, b) => { await page.mouse.click(box.x + b.x, box.y + b.y); await page.waitForTimeout(70); };
+  const popAll = async (box) => {
+    for (let i = 0; i < 40; i++) {
+      const s = await sky(); if (!s.left) return true;
+      const b = s.bubbles.find((x) => x.out && !x.gold) || s.bubbles.find((x) => x.out);
+      if (b) await tap(box, b); else await page.waitForTimeout(60);
+    }
+    return (await sky()).left === 0;
+  };
+  // a spot of sky with no bubble near it
+  const empty = (s, box) => { for (let y = 12; y < box.height * 0.7; y += 14) for (let x = 12; x < box.width - 12; x += 14) if (s.bubbles.every((b) => Math.hypot(b.x - x, b.y - y) > b.r * 1.9 + 16)) return { x, y }; return null; };
+  // a spot just OUTSIDE a plain bubble's rim (k radii from its middle), and
+  // well clear of every other bubble: a small finger that nearly hit it
+  const beside = (s, box, k) => {
+    for (const b of s.bubbles.filter((x) => !x.gold && x.out)) for (let d = 0; d < 12; d++) {
+      const a = d * Math.PI / 6, x = b.x + Math.cos(a) * b.r * k, y = b.y + Math.sin(a) * b.r * k;
+      if (x > 4 && y > 4 && x < box.width - 4 && y < box.height * 0.7 && s.bubbles.every((o) => o === b || Math.hypot(o.x - x, o.y - y) > o.r * 1.6 + 16)) return { x, y };
+    }
+    return null;
+  };
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    ok("bubbles: it is open on Home for little kids, free, with no day on it", await page.evaluate(() => { const a = Sona.GAME_ACTS.bubbles; return !a.comingSoon && !a.comingOn && !a.say && a.group === "simple" && a.tier === "free" && a.go === "/arcade-bubbles.html" && Sona.gameAccess("bubbles").allowed; }));
+    ok("bubbles: the start card says how to play: say the word, then pop them all", /Say the word and Echo blows bubbles/.test(await page.locator("#startOvl").innerText()) && /Pop them all/i.test(await page.locator("#startOvl").innerText()));
+    const before = await practiceState(page);
+    const repsBefore = await page.evaluate(() => Sona.weekReps(0));
+    await page.locator("#startBtn").click();
+    const box = await page.locator("#sky").boundingBox();
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    // NO WORD, NO BUBBLES: there is nothing to pop, and a tap makes none
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.3);
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(250);
+    let s = await sky();
+    ok("bubbles: before the word there are no bubbles, and a tap or a key makes none", s.state === "idle" && s.left === 0 && s.popped === 0, s);
+    await page.waitForTimeout(1500);
+    ok("bubbles: silence blows no bubbles", (await sky()).state === "idle" && (await game(page)).step === 0);
+    ok("bubbles: the child's word blows the bubbles, and the mic closes", await sayForBubbles(page) && (await live(page)) === 0);
+    s = await sky();
+    ok("bubbles: the word alone pops nothing: the step waits for the finger", (await game(page)).step === 0 && (await game(page)).phase === "play" && s.popped === 0 && s.left === 6, s);
+    ok("bubbles: it says what to do", /Pop the bubbles/.test(await page.locator("#micState").innerText()));
+    ok("bubbles: one of them is gold, with the word's picture inside it", s.bubbles.filter((b) => b.gold).length === 1 && await page.evaluate(() => { const p = document.getElementById("prize"); return !p.hidden && p.children.length > 0 && p.getBoundingClientRect().width > 8; }));
+    ok("bubbles: every bubble is on the sky, clear of the basket, and big enough for a small finger", await page.evaluate(() => { const c = document.getElementById("sky").getBoundingClientRect(), k = document.getElementById("basket").getBoundingClientRect(); return window.Bubbles.snapshot().bubbles.every((b) => b.r * 2 >= 44 && b.x - b.r >= -2 && b.x + b.r <= c.width + 2 && b.y - b.r >= -2 && c.top + b.y + b.r <= k.top + 2); }), s.bubbles);
+    // a tap on empty sky pops nothing
+    const gap = empty(s, box);
+    if (gap) { await page.mouse.click(box.x + gap.x, box.y + gap.y); await page.waitForTimeout(120); }
+    ok("bubbles: a tap on the empty sky pops nothing", !!gap && (await sky()).popped === 0 && (await sky()).left === 6, { gap });
+    // a small finger that lands just outside a bubble's rim still pops it
+    const edge = beside(await sky(), box, 1.1);
+    if (edge) { await page.mouse.click(box.x + edge.x, box.y + edge.y); await page.waitForTimeout(120); }
+    ok("bubbles: a touch just beside a bubble still pops it (a three-year-old's finger)", !!edge && (await sky()).popped === 1 && (await sky()).left === 5, { edge });
+    // one plain bubble, hit in the middle: a pop, not a step
+    s = await sky(); await tap(box, s.bubbles.find((b) => !b.gold));
+    s = await sky();
+    ok("bubbles: a tap on a bubble pops it, and the step still waits", s.popped === 2 && s.left === 4 && s.basket === 0 && (await game(page)).step === 0, s);
+    // the gold one: the picture flies to the basket, and the rest still need popping
+    await tap(box, s.bubbles.find((b) => b.gold));
+    ok("bubbles: the gold bubble drops the word's picture into the basket", await until(page, () => window.Bubbles.snapshot().basket === 1, 3000) && await page.evaluate(() => { const w = document.querySelector("#basket .well.full"); return !!w && w.children.length > 0 && document.getElementById("prize").hidden; }));
+    s = await sky();
+    ok("bubbles: …and with bubbles still out, that is not yet a step", s.left === 3 && (await game(page)).step === 0 && (await game(page)).phase === "play", s);
+    ok("bubbles: popping them all moves the game one step and fills a dot", await popAll(box) && await until(page, () => window.__sayplay.step === 1, 4000) && (await page.locator("#dots i.on").count()) === 1);
+    ok("bubbles: then the next word is asked for", await until(page, () => window.__sayplay.listening === true, 8000));
+    // THE HELP: bubbles left alone glow, then a touch anywhere pops the nearest.
+    // A bubble never pops by itself.
+    await sayForBubbles(page);
+    const turnsBefore = (await log(page)).speech.length;
+    await page.waitForTimeout(8400);
+    s = await sky();
+    ok("bubbles: left alone, the bubbles glow", s.help === true && s.left === 7 && s.popped === 6, s);
+    await page.waitForTimeout(7200);
+    s = await sky();
+    ok("bubbles: …and they never pop by themselves", s.left === 7 && s.popped === 6 && s.state === "ready" && (await game(page)).step === 1, s);
+    const far = empty(s, box);
+    if (far) { await page.mouse.click(box.x + far.x, box.y + far.y); await page.waitForTimeout(120); }
+    ok("bubbles: later still, a touch anywhere pops the nearest one", s.any === true && !!far && (await sky()).popped === 7, { far, any: s.any });
+    // …and that help stays on for the word: the child who needs it most does
+    // not wait the whole fourteen seconds again for every bubble. A beat
+    // between them, so one dragged finger cannot empty the sky.
+    const far0 = empty(await sky(), box);
+    if (far0) { await page.mouse.click(box.x + far0.x, box.y + far0.y); await page.waitForTimeout(120); }
+    ok("bubbles: the very next far touch pops nothing more (a beat between them)", !!far0 && (await sky()).popped === 7, await sky());
+    await page.waitForTimeout(1700);
+    const far2 = empty(await sky(), box);
+    if (far2) { await page.mouse.click(box.x + far2.x, box.y + far2.y); await page.waitForTimeout(120); }
+    ok("bubbles: a beat later the next far touch pops another: the help stays on for this word", !!far2 && (await sky()).popped === 8, await sky());
+    ok("bubbles: …and no new word was asked for on the way", (await log(page)).speech.length === turnsBefore);
+    // PAUSE with bubbles out: the same bubbles wait
+    const leftBefore = (await sky()).left;
+    await page.evaluate(() => __quiet.background());
+    await page.waitForTimeout(200);
+    ok("bubbles: hiding the page pauses the sky", (await page.locator("#pauseOvl.show").count()) === 1 && (await sky()).frozen === true);
+    await page.evaluate(() => __quiet.foreground());
+    await page.keyboard.press("Space");          // a key while paused pops nothing
+    await page.waitForTimeout(120);
+    ok("bubbles: nothing pops while it is paused", (await sky()).left === leftBefore && (await sky()).frozen === true);
+    await page.locator("#resume").click();
+    s = await sky();
+    ok("bubbles: Keep playing gives the same bubbles back, with no new word", s.state === "ready" && s.left === leftBefore && s.frozen === false && (await game(page)).phase === "play" && (await game(page)).step === 1, s);
+    ok("bubbles: …and says again what to do (the pause wipes the line beside Echo)", /Pop the bubbles/.test(await page.locator("#micState").innerText()));
+    ok("bubbles word 2: popped, and its picture is in the basket", await popAll(box) && await until(page, () => window.__sayplay.step === 2 && window.Bubbles.snapshot().basket === 2, 4000), await sky());
+    // the rest of the round: a finger dragged across the sky pops what it crosses
+    for (let n = 3; n <= 5; n++) {
+      await until(page, () => window.__sayplay.listening === true, 8000);
+      await sayForBubbles(page);
+      if (n === 3) {
+        s = await sky();
+        const a = s.bubbles.filter((b) => !b.gold).slice(0, 2);
+        await page.mouse.move(box.x + a[0].x, box.y + a[0].y); await page.mouse.down();
+        for (let i = 1; i <= 6; i++) { await page.mouse.move(box.x + a[0].x + (a[1].x - a[0].x) * i / 6, box.y + a[0].y + (a[1].y - a[0].y) * i / 6); await page.waitForTimeout(15); }
+        await page.mouse.up();
+        ok("bubbles: a finger dragged across the sky pops what it crosses", (await sky()).left <= s.left - 2, await sky());
+      }
+      ok("bubbles word " + n + ": every bubble popped", await popAll(box));
+      if (n < 5) ok("bubbles word " + n + ": the picture is in the basket and the dot is filled", await until(page, (k) => window.__sayplay.step === k && window.Bubbles.snapshot().basket === k, 4000, n), await sky());
+    }
+    // THE FINISH: Echo floats up in one giant bubble, and the last step waits for its pop
+    ok("bubbles: after the fifth word, Echo floats up inside one giant bubble", await until(page, () => window.__bubbles.state === "giant" && window.__bubbles.giant && window.__bubbles.giant.up, 6000) && (await sky()).basket === 5);
+    await page.waitForTimeout(6500);   // past the giant's own help: a gold ring at 5 s, any touch at 6 s
+    ok("bubbles: …and the round waits for it to be popped: it never pops by itself", (await sky()).state === "giant" && (await game(page)).step === 4 && (await game(page)).phase === "play" && (await page.locator("#endOvl.show").count()) === 0 && /big bubble/i.test(await page.locator("#micState").innerText()));
+    // left that long, a touch anywhere on the sky pops it
+    await page.mouse.click(box.x + 12, box.y + 12);
+    ok("bubbles: left that long, a touch anywhere on the sky pops the big bubble", await until(page, () => window.__bubbles.state !== "giant", 2000));
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    ok("bubbles: popping it ends the game on a win, five words and five pictures", (await game(page)).phase === "end" && (await game(page)).step === 5 && (await sky()).basket === 5 && /popped them all/i.test(await page.locator("#endTitle").innerText()));
+    ok("bubbles: far more to pop than the five the old game had", (await sky()).popped >= 30, (await sky()).popped);
+    await page.waitForTimeout(300);
+    const l = await log(page);
+    noOverlap("bubbles", l);
+    ok("bubbles: every chime and pop waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
+    ok("bubbles: the sky made its own sounds (the blow, the pops) through the engine", l.sounds.filter((x) => x.kind === "buf" && x.len > 1000).length >= 30, l.sounds.length);
+    ok("bubbles: Echo's words are one word each, calm, with no carrier phrase", l.speech.length >= 5 && l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("bubbles: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
+    ok("bubbles: each heard word is one rep on the week's count, and a pop is not", (await page.evaluate(() => Sona.weekReps(0))) === repsBefore + 5);
+    await page.locator("#again").click();
+    ok("bubbles: Play again starts over: no bubbles, an empty basket", (await game(page)).step === 0 && (await sky()).words === 0 && (await sky()).basket === 0 && (await sky()).state === "idle" && (await page.locator("#dots i.on").count()) === 0);
+    clean("bubbles", errors);
+  } finally { await context.close(); }
+});
+// Bubble Pop on the smallest phone: the sky, the basket and the word all fit
+await scenario("bubbles small phone", async () => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+  await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
+  await context.addInitScript(fakeDevice, { age: "4", micok: true, permission: "granted" });
+  const page = await context.newPage(); page.setDefaultTimeout(6000);
+  try {
+    await page.goto(BASE + "/arcade-bubbles.html");
+    await page.locator("#startBtn").click();
+    await sayForBubbles(page);
+    const fit = await page.evaluate(() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect(), sky = r("sky"), panel = r("turnPanel"), basket = r("basket"), echo = r("bubEcho");
+      return { wide: document.documentElement.scrollWidth <= innerWidth, sky: sky.top >= 0 && sky.bottom <= innerHeight, panel: panel.bottom <= innerHeight, basket: basket.bottom <= sky.bottom && basket.left >= sky.left && basket.right <= sky.right, echo: echo.right <= basket.left + 4,
+        bubbles: window.Bubbles.snapshot().bubbles.every((b) => b.r * 2 >= 40 && sky.top + b.y + b.r <= basket.top + 2) };
+    });
+    ok("bubbles on a 320 x 568 phone: the sky, the basket, Echo and the word panel all fit, with nothing off the side", Object.values(fit).every(Boolean), fit);
+  } finally { await context.close(); }
+});
+// IN THE IPHONE APP THE POPS ARE MEDIA, as Piano Tiles' notes are. A pop comes
+// seconds after the mic closes, and an iPhone plays Web Audio on a page that
+// just had the mic open as a quiet phone call (and not at all with the ringer
+// off): the pops are the game, and on the phone they would not be there.
+// the fake iPhone app: Capacitor says native, and every media element the page
+// makes is counted (how many times each was played)
+async function inApp(cfg) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
+  await context.addInitScript(fakeDevice, Object.assign({ age: "4", micok: true, permission: "granted" }, cfg || {}));
+  await context.addInitScript(() => {
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
+    window.__media = [];
+    const Real = window.Audio;
+    window.Audio = function (src) { const a = new Real(src); const rec = { src: String(src || ""), plays: 0 }; window.__media.push(rec); const play = a.play.bind(a); a.play = function () { rec.plays++; return play(); }; return a; };
+  });
+  const page = await context.newPage(); page.setDefaultTimeout(6000);
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(BASE + "/arcade-bubbles.html");
+  return { context, page, errors };
+}
+const mediaPlays = (page) => page.evaluate(() => { const m = window.__media.filter((x) => x.src.startsWith("blob:")); return { elements: m.length, plays: m.reduce((n, x) => n + x.plays, 0) }; });
+const webSounds = async (page) => (await log(page)).sounds.filter((x) => x.kind === "buf" && x.len > 1000).length;
+await scenario("bubbles in the app", async () => {
+  const { context, page, errors } = await inApp();
+  try {
+    await page.locator("#startBtn").click();
+    ok("bubbles in the app: the word blows the bubbles", await sayForBubbles(page));
+    ok("bubbles in the app: word one's bubbles popped", await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
+    // word one: the blow, five plain pops, the gold one, the drop into the basket
+    let m = await mediaPlays(page);
+    ok("bubbles in the app: the blow, each pop, the gold one and the drop all play as media elements", m.plays === 8, m);
+    ok("bubbles in the app: …and nothing goes through Web Audio, the blow included", (await webSounds(page)) === 0, await webSounds(page));
+    // the rest of the round, the giant bubble included
+    for (let n = 2; n <= 5; n++) { await until(page, () => window.__sayplay.listening === true, 8000); await sayForBubbles(page); await popBubbles(page); }
+    await until(page, () => window.__bubbles.state === "giant" && window.__bubbles.giant && window.__bubbles.giant.up, 6000);
+    const box = await page.locator("#sky").boundingBox(), g = (await page.evaluate(() => window.Bubbles.snapshot())).giant;
+    await page.mouse.click(box.x + g.x, box.y + g.y);
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    m = await mediaPlays(page);
+    // 36 small bubbles, five blows and five drops, then the giant's blow and its pop
+    ok("bubbles in the app: a whole round's sounds are media: every pop, and the giant bubble's own", m.plays === 48 && m.elements === 11, m);
+    ok("bubbles in the app: …still nothing through Web Audio", (await webSounds(page)) === 0, await webSounds(page));
+    await page.waitForTimeout(300);
+    noOverlap("bubbles in the app", await log(page));
+    clean("bubbles in the app", errors);
+  } finally { await context.close(); }
+});
+await scenario("bubbles in the app, media refused", async () => {
+  const { context, page, errors } = await inApp({ refuseMedia: true });
+  try {
+    await page.locator("#startBtn").click();
+    ok("bubbles in the app, media refused: the word still blows the bubbles", await sayForBubbles(page) && await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
+    const l = await log(page), web = l.sounds.filter((x) => x.kind === "buf" && x.len > 1000);
+    ok("bubbles in the app, media refused: a phone that will not start a media element gets the sounds through Web Audio, never silence", web.length >= 7, web.length);
+    ok("bubbles in the app, media refused: …and none of them under a mic", web.every((x) => x.live === 0), web.filter((x) => x.live));
+    clean("bubbles in the app, media refused", errors);
+  } finally { await context.close(); }
+});
+await scenario("bubbles in the app, sound off", async () => {
+  const { context, page, errors } = await inApp({ volume: 0 });
+  try {
+    await page.locator("#startBtn").click();
+    ok("bubbles in the app, sound off: the game still plays", await sayForBubbles(page) && await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
+    const m = await mediaPlays(page);
+    ok("bubbles in the app, sound off: a muted Sona stays silent: no pop plays, as media or any other way", m.plays === 0 && (await webSounds(page)) === 0, { m, web: await webSounds(page) });
+    clean("bubbles in the app, sound off", errors);
+  } finally { await context.close(); }
+});
+// THE QUARTER SECOND AFTER A WORD'S LAST BUBBLE (an engine race, found in
+// review): the next word is owed, the page is hidden, and "Keep playing" came
+// back to an empty sky with no word, no mic and no way on. The engine now
+// calls that moment "step", which resume() reads as "the next word".
+await scenario("bubbles hidden right after a word", async () => {
+  const { context, page, errors } = await fresh("arcade-bubbles.html", { age: "4", micok: true, permission: "granted" });
+  try {
+    await page.locator("#startBtn").click();
+    await sayForBubbles(page);
+    // hide the page the instant the step counts
+    const hidden = page.evaluate(() => new Promise((done) => { const t = setInterval(() => { if (window.__sayplay.step === 1) { clearInterval(t); const phase = window.__sayplay.phase; __quiet.background(); done(phase); } }, 4); }));
+    await popBubbles(page);
+    const phase = await hidden;
+    await page.waitForTimeout(400);
+    ok("bubbles hidden right after a word: the page was hidden while the next word was owed, and it paused", phase === "step" && (await page.locator("#pauseOvl.show").count()) === 1 && (await game(page)).listening === false, { phase });
+    const asked = (await log(page)).speech.length;
+    await page.evaluate(() => __quiet.foreground());
+    await page.locator("#resume").click();
+    ok("bubbles hidden right after a word: Keep playing asks for the next word and listens (it was an empty sky with no way on)", await until(page, () => window.__sayplay.listening === true, 8000) && (await game(page)).step === 1 && (await log(page)).speech.length === asked + 1, await game(page));
+    ok("bubbles hidden right after a word: …and the game goes on", await sayForBubbles(page) && await popBubbles(page) && await until(page, () => window.__sayplay.step === 2, 4000));
+    clean("bubbles hidden right after a word", errors);
+  } finally { await context.close(); }
+});
+// A SLOW MICROPHONE. An iPhone is recording before its mic request answers, so
+// a word that starts while a request is pending is already under the mic. The
+// old Bubble Pop had these on simple-play.js; nothing delayed a mic request on
+// this engine for any game.
+for (const gumDelay of [300, 500]) for (const tapAfter of [150, 300]) {
+  const label = "bubbles, a " + gumDelay + " ms mic request, Hear it " + tapAfter + " ms in";
+  await scenario(label, async () => {
+    const { context, page, errors } = await fresh("arcade-bubbles.html", { age: "4", micok: true, permission: "granted", gumDelay });
+    try {
+      await page.locator("#startBtn").click();
+      await page.waitForFunction(() => __quiet.requests === 1);
+      await page.waitForTimeout(tapAfter);
+      const pending = await page.evaluate(() => { const p = __quiet.inflight === 1; document.getElementById("hear").click(); return p; });
+      ok(label + ": the tap landed while the phone was still answering (or just after)", pending || tapAfter + 100 > gumDelay, { pending });
+      ok(label + ": Echo says the word again", await until(page, () => __quiet.speech.length >= 2, 6000));
+      ok(label + ": the mic reopens, the child is heard, and popping the bubbles moves the game", await sayForBubbles(page) && await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
+      await page.waitForTimeout(300);
+      noOverlap(label, await log(page));
+      clean(label, errors);
+    } finally { await context.close(); }
+  });
+}
 
 }
 if (PART === "engine") {

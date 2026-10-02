@@ -437,7 +437,12 @@
     if (phase !== "play" || paused) return;
     step++; paintDots();
     if (step >= G.steps.length) finish();
-    else nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250);
+    // "step" while the next word is owed (1 Oct 2026). It stayed "play", and a
+    // page hidden in this quarter second lost the round: pause() clears the
+    // timer, and resume() takes "play" to mean the same move goes on, so the
+    // next word was never asked for and nothing on screen could bring it.
+    // resume() already reads "step" as "the next word".
+    else { setPhase("step"); nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250); }
   }
   function finish() {
     micStop(); turnLive = false; face("cheer"); setPhase("finale");

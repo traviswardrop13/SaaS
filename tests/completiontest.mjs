@@ -225,10 +225,35 @@ await scenario("retained parked-game fixture completes the younger-child adventu
           await page.waitForFunction(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).round===1);
           ok("an explicit legacy resume preserves the completed simple game",await page.evaluate(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).scores.length===1));
         }else await page.locator("#again").click();
+      }else if(game==="bubbles"){
+        // Bubble Pop needs the word too (rebuilt 1 Oct 2026, on the Say & Play
+        // engine): say it, pop every bubble, five times, then the giant one.
+        // The engine knows nothing of this adventure; the page banks the round
+        // and sends the end card's button back to it.
+        await page.locator("#startBtn").click();
+        const box=await page.locator("#sky").boundingBox();
+        const sky=()=>page.evaluate(()=>window.Bubbles.snapshot());
+        for(let turn=0;turn<5;turn++){
+          await page.waitForFunction(()=>window.__sayplay&&window.__sayplay.listening===true,null,{timeout:8000});
+          await page.evaluate(()=>{window.__mic.voice=true;});
+          await page.waitForFunction(()=>window.__bubbles.state==="ready"&&window.__bubbles.bubbles.length>0&&window.__bubbles.bubbles.every(b=>b.out),null,{timeout:6000});
+          await page.evaluate(()=>{window.__mic.voice=false;});
+          for(let i=0;i<40;i++){
+            const s=await sky();if(!s.left)break;
+            const b=s.bubbles.find(x=>x.out&&!x.gold)||s.bubbles.find(x=>x.out);
+            if(b)await page.mouse.click(box.x+b.x,box.y+b.y);
+            await page.waitForTimeout(60);
+          }
+        }
+        await page.waitForFunction(()=>window.__bubbles.state==="giant"&&window.__bubbles.giant&&window.__bubbles.giant.up,null,{timeout:8000});
+        const big=(await sky()).giant;await page.mouse.click(box.x+big.x,box.y+big.y);
+        await page.locator("#endOvl.show").waitFor({timeout:9000});
+        ok("Bubble Pop banks its round for the adventure: the end card says Keep going",/Keep going/.test(await page.locator("#again").innerText()));
+        await page.locator("#again").click();
       }else{
         await page.locator("#startGame").click();
         for(let turn=0;turn<5;turn++){
-          await page.locator(game==="bubbles"?"#revealButton":"[data-door]").first().click();
+          await page.locator("[data-door]").first().click();
           await page.locator("#nextTurn").click();
         }
         await page.locator("#playAgain").click();
