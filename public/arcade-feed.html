@@ -351,6 +351,37 @@
         .then(function(){if(generation===audioGeneration)speaking=false;});
     }
 
+    // The ask, then "Go!" as its own short clip (2 Oct 2026). One request
+    // with both was a new take of every ask, fetched again on every phone on
+    // launch day with the practice word read fresh; this way the ask keeps
+    // the take each phone has saved. No "Go!" once the turn is over or a
+    // newer ask has begun. The voice tail starts at the end of the ask too,
+    // so nothing can open the mic in the moment between the two.
+    function sayGo(t){
+      var asked=target;
+      return say(t).then(function(){
+        quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
+        if(turnLive&&!heardThisTurn&&target===asked)return goLine();
+      });
+    }
+    // "Go!" is only Echo's own clip, from this page or this phone
+    // (Sona.goClip says why), and nothing when there is none: never the
+    // browser's robot voice, and never a wait on the network, except the
+    // first ask after Let's play, which waits GO_WAIT_MS at most (review, 2
+    // Oct 2026: fetched like the ask, with no time limit, every turn waited
+    // for the voice service twice while "Listen…" sat on screen).
+    var goWait=0;
+    function goLine(){
+      var generation=audioGeneration,wait=goWait;goWait=0;
+      if(!S||!S.goClip||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
+      speaking=true;   // nothing opens the mic while the clip is looked up
+      return Promise.resolve(S.goClip(profile.voiceId,wait)).then(function(b){
+        if(!b||!audioAllowed(generation))return;
+        return micQuiet().then(function(){ if(audioAllowed(generation))return playPCM(new Uint8Array(b),generation); });
+      }).catch(function(){})
+        .then(function(){ if(generation===audioGeneration)speaking=false; quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS); });
+    }
+
     // ── OPTIONAL mic cheer: loudness only, only if already granted elsewhere.
     // Never prompts, never records, never logs — a voice burst during the
     // child's turn = "Echo heard you! ⭐". (24 Sep 2026) The mic used to open
@@ -472,7 +503,7 @@
     $("micBtn").onclick=function(){
       if(!turnLive||heardThisTurn||micStream||micAsking)return;
       hideMicBtn(); echoPose("talk"); $("bSub").textContent="Listen…";
-      say("Say... "+target.w+".").then(function(){
+      sayGo("Say... "+target.w+".").then(function(){
         quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
         feedMicOpen();
       });
@@ -506,10 +537,14 @@
         g.appendChild(b);
       });
       turnLive=true;
-      // Calm: the ask ends on a period, not "!", which the voice reads as a
-      // burst of energy (24 Sep 2026). The practice word itself is unchanged.
+      // Calm: the word ends on a period, not "!", which the voice reads as a
+      // burst of energy (24 Sep 2026). Then one short "Go!", which is meant to
+      // sound like one: most of these children can't read "Your turn!", so it
+      // tells them by ear (Travis, 2 Oct 2026: "i also wanna try to have the
+      // 11 labs voice say 'Go!'"). The ask is unchanged and "Go!" is its own
+      // line after it (sayGo), so every phone keeps the ask it already saved.
       echoPose("talk");
-      say("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+      sayGo("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
         // back to resting only if nothing newer (a munch, a heard word) took over
         var e=$("echo"); if(e&&/echo-talk/.test(e.getAttribute("src")||"")) echoPose("welcome");
         // listenable() decides whether this is still somebody's turn, so an
@@ -634,11 +669,17 @@
     // Say & Play games) ──
     try{ $("startSound").textContent="Today’s sound: "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND); }catch(e){}
     $("startOvl").classList.add("show");
-    $("startBtn").onclick=function(){ $("startOvl").classList.remove("show"); micReady().then(nextTurn); };
+    $("startBtn").onclick=function(){ $("startOvl").classList.remove("show"); goWait=(S&&S.GO_WAIT_MS)||0; micReady().then(nextTurn); };
     function micReady(){ return new Promise(function(done){
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ bye("Echo can’t hear here","Feed Echo needs a microphone, and this browser doesn’t have one Echo can use."); return; }
       try{ if(localStorage.getItem("sona.micok")==="1")return done(); }catch(e){}
-      var q=(navigator.permissions&&navigator.permissions.query)?navigator.permissions.query({name:"microphone"}).catch(function(){return null;}):Promise.resolve(null);
+      // the iPhone app's web view may never answer this question (2 Oct
+      // 2026): after a beat, no answer means ask the grown-up, rather than a
+      // Let's play that does nothing
+      var q=new Promise(function(res){
+        setTimeout(function(){ res(null); },1000);
+        try{ if(navigator.permissions&&navigator.permissions.query)Promise.resolve(navigator.permissions.query({name:"microphone"})).then(res,function(){ res(null); }); else res(null); }catch(e){ res(null); }
+      });
       q.then(function(st){
         if(st&&st.state==="granted"){ try{ localStorage.setItem("sona.micok","1"); }catch(e){} return done(); }
         $("micPromise").textContent=(S&&S.MIC_PROMISE)||"";

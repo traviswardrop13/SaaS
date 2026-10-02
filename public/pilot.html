@@ -81,8 +81,16 @@
         <option value="f">End of word</option>
         <option value="v">Vocalic R (er, ar, or…)</option>
         <option value="b">Blends (tr, st, bl…)</option>
-        <option value="mix">Mixed — all positions</option>
+        <option value="mix">Mixed (all positions)</option>
       </select>
+      <script>
+        // Only the start of a word can be picked for now (see FAMILY_POSITIONS in sona.js).
+        (function () {
+          var el = document.getElementById("pos"), open = (window.Sona && Sona.FAMILY_POSITIONS) || ["i"];
+          Array.prototype.forEach.call(el.options, function (o) { if (open.indexOf(o.value) < 0) { o.disabled = true; o.textContent = o.textContent + " · coming soon"; } });
+          el.value = "i";
+        })();
+      </script>
 
       <!-- The credential. Enrolling used to need nothing but a URL, which made
            this page a self-serve free unlock for anyone who found it. The key

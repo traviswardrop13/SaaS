@@ -2,9 +2,12 @@
 // 2026: "The child repeats one key word on every page before the page turns
 // ... use the same speech check the games use").
 //
-// After Echo reads a page of a fuller book, its key word lights up, Echo asks
-// "Can you say... rabbit." and the teal mic listens with Say & Play's own
-// check (public/saycheck.js). What this holds:
+// After Echo reads a page, its key word lights up, Echo asks "Can you say...
+// rabbit." and the teal mic listens with Say & Play's own check
+// (public/saycheck.js). Every book does it: the twelve-page books since the
+// brief, and the six-page painted ones since 1 Oct 2026 (Travis: "we want to
+// make that something that is happening on every book"), under the same
+// rules, none of them loosened. What this holds:
 //   - the check IS Say & Play's: every timing, the loudness bar and the family
 //     test equal sayplay.js's, so the two can't drift apart;
 //   - a grown-up says yes before the phone is ever asked for the mic, inside
@@ -23,7 +26,11 @@
 //     line holding the mic shut, and a word tapped before the grown-up has
 //     answered never leaves the mic resting with nothing to wake it;
 //   - on a short phone Echo's question never sits on the picture;
-//   - a child younger than the sound's usual age is never asked to say it;
+//   - a child younger than the sound's usual age is never asked to say it,
+//     in a six-page book either;
+//   - a six-page book asks on every one of its six pages, a voice turns each
+//     and the sixth ends on The End; silence turns none of them; and a book
+//     with no key words still just reads with Next;
 //   - a book word is PLAY: no practice key changes, and neither file can log,
 //     record or upload anything.
 //
@@ -596,14 +603,214 @@ await scenario("age ok", async () => {
   await context.close();
 });
 
-// ── 9. the older six-page books keep reading with Next ──
-await scenario("older book", async () => {
+// ── 9. every book asks, the six-page ones too (Travis, 1 Oct 2026) ──
+// "It's doing it on some of the books. But we want to make that something that
+// is happening on every book." The thirteen six-page painted books carry six
+// key words now, so they get the same moment under the same rules. They used
+// to be this file's proof that a book without key words reads with Next; that
+// guard is still in the reader, and a made-up book pins it at the end.
+// Which word each page asks for is the book's own list (readtest holds every
+// one to its page and its sound); this plays the moment, whatever the words.
+const keysOf = (page, title) => page.evaluate((t) => STORIES.filter((b) => b.title === t)[0].keys.slice(), title);
+const asWord = (w) => String(w || "").toLowerCase().replace(/[^a-z']/g, "");
+const sceneLoaded = (page, ms = 6000) => until(page, () => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth > 0); }, ms);
+
+await scenario("six-page book", async () => {
+  const { context, page, errors } = await fresh({ micok: true, today: "2026-12-31" });
+  const before = await snapshot(page);
+  const keys = await keysOf(page, "Reba the Robot");
+  await openBook(page, "Reba the Robot");
+  const pages = [];
+  for (let i = 0; i < 6; i++) {
+    const went = await waitLive(page);
+    pages.push(Object.assign({ went }, await page.evaluate(() => ({ page: window.__book.page, word: window.__book.word, kw: [...document.querySelectorAll(".bktext .kw")].map((s) => s.textContent),
+      ask: document.getElementById("bkAsk").textContent, note: document.getElementById("bkMicState").textContent, line: document.querySelector(".bktext").textContent,
+      said: __quiet.speech.slice(), painted: !!document.querySelector("#bkStage .bkart.scene img[data-scene]") }))));
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    pages[i].turned = await until(page, (n) => window.__book && window.__book.page === n, 3000, i + 1);
+  }
+  const brief = pages.map((p) => ({ went: p.went, page: p.page, word: p.word, kw: p.kw, ask: p.ask, note: p.note, turned: p.turned }));
+  ok("a six-page book asks for its key word on every page: the word lights up in the line and the mic says \"Your turn!\"",
+    keys.length === 6 && pages.every((p, i) => p.went && p.page === i && p.kw.length === 1 && asWord(p.kw[0]) === keys[i] && asWord(p.word) === keys[i] && p.note === "Your turn!"), { keys, brief });
+  ok("…Echo reads the page first, then asks for that one word alone (\"Can you say... robot.\")",
+    pages.every((p) => p.ask === "Can you say " + p.word + "?" && p.said.includes("Can you say... " + p.word + ".") && p.said.includes(p.line))
+      && pages[0].said.indexOf(pages[0].line) < pages[0].said.indexOf("Can you say... " + pages[0].word + "."), { brief, said: pages[5].said });
+  ok("…on its own painted scene", pages.filter((p) => p.painted).length >= 5, pages.map((p) => p.painted));
+  ok("…a voice turns every one of the six pages", pages.every((p) => p.turned), brief);
+  const end = await until(page, () => /The End!/.test(document.getElementById("bkStage").textContent), 4000);
+  await page.waitForTimeout(400);
+  const l = await log(page);
+  ok("…and the sixth ends on The End, with a chime for each page heard", end && l.sfx.filter((x) => x.name === "correct").length === 6 && l.mics.length === 6, { end, sfx: l.sfx.map((x) => x.name), mics: l.mics.length });
+  const after = await snapshot(page);
+  const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey);
+  ok("…a six-page book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Reba the Robot/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
+  noOverlap("six-page book", l);
+  clean("six-page book", errors);
+  await context.close();
+});
+
+await scenario("six-page quiet", async () => {
   const { context, page, errors } = await fresh({ micok: true, today: "2026-12-31" });
   await openBook(page, "Reba the Robot");
+  await waitLive(page);
+  const nudged = await until(page, () => window.__book && window.__book.mode === "nudge", 16000);
+  await page.waitForTimeout(1200);
+  const st = await page.evaluate(() => ({ page: window.__book.page, tries: window.__book.tries, mode: window.__book.mode, live: __quiet.live(), requests: __quiet.requests, note: document.getElementById("bkMicState").textContent }));
+  ok("silence never turns a six-page page, and is never a try: the mic closes and waits for a tap", nudged && st.page === 0 && st.tries === 0 && st.mode === "nudge" && st.live === 0 && st.note === "Tap the mic, then say it", st);
+  await click(page, "bkMic");
+  const again = await waitLive(page, 4000);
+  ok("…the tap only listens again, on the same page", again && (await book(page)).page === 0, await book(page));
+  clean("six-page quiet", errors);
+  await context.close();
+});
+
+await scenario("six-page three tries", async () => {
+  // Reba is an R book (a low, voiced sound), so a hiss is the other family
+  const { context, page, errors } = await fresh({ micok: true, shape: "hiss", today: "2026-12-31" });
+  await openBook(page, "Reba the Robot");
+  for (let i = 1; i <= 3; i++) {
+    await waitLive(page);
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    await until(page, (n) => window.__book && (window.__book.tries >= n || window.__book.page > 0), 3000, i);
+  }
+  const turned = await until(page, () => window.__book && window.__book.page === 1, 5000);
+  const l = await log(page);
+  ok("three tries on a six-page page: Echo says something kind and the page turns, with no chime", turned && l.speech.includes("Great trying. Let's turn the page.") && !l.sfx.some((x) => x.name === "correct"), l.speech);
+  clean("six-page three tries", errors);
+  await context.close();
+});
+
+await scenario("six-page primer", async () => {
+  const { context, page, errors } = await fresh({ permission: "prompt", today: "2026-12-31" });
+  await openBook(page, "Reba the Robot");
+  const asked = await until(page, () => window.__book && window.__book.primer === true, 6000);
+  ok("a six-page book asks a grown-up first too, and the phone is never asked before that tap", asked && await page.evaluate(() => __quiet.requests) === 0, await book(page));
+  await click(page, "bkPrimerNo");
+  await page.waitForTimeout(200);
+  await click(page, "bkNext");
+  await page.waitForTimeout(2200);
+  const p2 = await page.evaluate(() => ({ page: window.__book.page, mode: window.__book.mode, primer: window.__book.primer, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw") }));
+  ok("…and after \"Not now\" it reads with Next, never asking again this visit", p2.page === 1 && p2.mode === "next" && !p2.primer && p2.requests === 0 && !p2.kw && await shown(page, "bkNext"), p2);
+  clean("six-page primer", errors);
+  await context.close();
+});
+
+// a painted scene is the same square as a drawn page, so the short phone
+// squeezes it the same way: the question below the picture, never on it
+await scenario("six-page short phone", async () => {
+  const { context, page, errors } = await fresh({ micok: true, viewport: { width: 320, height: 568 }, today: "2026-12-31" });
+  await openBook(page, "Reba the Robot");
+  const up = await sceneLoaded(page);   // cut out of the book's picture on the phone, a beat after the page shows
+  await waitLive(page);
+  const asking = await layout(page);
+  ok("320x568, a painted page: while Echo asks, his question sits below the picture, never on it, and the picture hasn't collapsed",
+    up && !asking.hidden && asking.picBottom <= asking.bubble.top + 1 && asking.picH > 120, asking);
+  clean("six-page short phone", errors);
+  await context.close();
+});
+
+// developmental order is unchanged: the rule reads the book's sound, not its length
+await scenario("six-page age", async () => {
+  const { context, page, errors } = await fresh({ micok: true, age: "6", today: "2026-12-31" });
+  await openBook(page, "Reba the Robot");
+  await page.waitForTimeout(2500);
+  const st = await page.evaluate(() => ({ mode: window.__book.mode, primer: window.__book.primer, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw"), speech: __quiet.speech.slice(), norm: Sona.soundNorm("R") }));
+  ok("a 6-year-old reading a six-page R book (R comes by 7) hears it read, and is never asked to say its words",
+    st.norm === 7 && st.mode === "next" && !st.primer && st.requests === 0 && !st.kw && !st.speech.some((t) => /Can you say/.test(t)) && await shown(page, "bkNext"), st);
+  clean("six-page age", errors);
+  await context.close();
+});
+await scenario("six-page age ok", async () => {
+  const { context, page, errors } = await fresh({ micok: true, age: "4", focus: ["K"], today: "2026-12-31" });
+  const keys = await keysOf(page, "Kiki the Koala");
+  await openBook(page, "Kiki the Koala");
+  const went = await waitLive(page);
+  const b = await book(page);
+  ok("…while a 4-year-old on the six-page K book (K comes by 4) gets the moment", went && asWord(b.word) === keys[0] && b.page === 0, { b, keys });
+  clean("six-page age ok", errors);
+  await context.close();
+});
+
+// the guard the six-page books used to prove: no key words, no moment. No
+// book on the shelf lacks them now, so a made-up one is handed to the reader.
+await scenario("no key words", async () => {
+  const { context, page, errors } = await fresh({ micok: true });
+  await page.evaluate(() => openBook({ sound: "R", emoji: "🐰", title: "A Book With No Key Words", colors: ["#ff7a6e", "#8a6fc4"], pages: [{ e: "🐰", t: "A rabbit runs." }, { e: "🌈", t: "The rain stops." }] }));
+  await page.waitForTimeout(150);
+  await click(page, "bkNext");
   await page.waitForTimeout(1800);
-  const st = await page.evaluate(() => ({ mode: window.__book.mode, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw") }));
-  ok("a book without key words has no moment: Next, no mic", st.mode === "next" && st.requests === 0 && !st.kw && await shown(page, "bkNext"), st);
-  clean("older book", errors);
+  const st = await page.evaluate(() => ({ page: window.__book.page, mode: window.__book.mode, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw"), speech: __quiet.speech.slice() }));
+  ok("a book without key words has no moment: Next, no mic, nothing asked", st.page === 0 && st.mode === "next" && st.requests === 0 && !st.kw && !st.speech.some((t) => /Can you say/.test(t)) && await shown(page, "bkNext"), st);
+  // …and a page whose key is missing reads with Next while its neighbours ask
+  await page.evaluate(() => { closeBook(); openBook({ sound: "R", emoji: "🐰", title: "A Book With One Key Word", colors: ["#ff7a6e", "#8a6fc4"], keys: ["", "rain"], pages: [{ e: "🐰", t: "A rabbit runs." }, { e: "🌈", t: "The rain stops." }] }); });
+  await page.waitForTimeout(150);
+  await click(page, "bkNext");
+  await page.waitForTimeout(1800);
+  const gap = await page.evaluate(() => ({ page: window.__book.page, mode: window.__book.mode, requests: __quiet.requests }));
+  await click(page, "bkNext");
+  const went = await waitLive(page);
+  ok("…and a page with no key of its own reads with Next, while the next page asks for its word", gap.page === 0 && gap.mode === "next" && gap.requests === 0 && went && (await book(page)).word === "rain", { gap, b: await book(page) });
+  clean("no key words", errors);
+  await context.close();
+});
+
+// ── 10. a book from behind "More books" is the same book (Travis, 1 Oct 2026) ──
+// The other sounds' books wait closed under the child's own shelf. One opened
+// from there reads and asks exactly as it would on a child's own shelf, and
+// the age rule is still the BOOK's sound, not the child's: a six-year-old on
+// R is asked an S book's words (S, by 5); a four-year-old is not.
+async function openFromMore(page, title) {
+  await click(page, "moreBtn");
+  await page.evaluate((t) => [...document.querySelectorAll("#moreShelf .bookBtn")].find((b) => b.querySelector(".bt").textContent === t).click(), title);
+  await page.waitForTimeout(150);
+  await click(page, "bkNext");   // the title page's Start
+}
+await scenario("more books", async () => {
+  // an S is a hiss: the check is the book's own sound family, wherever the book stood
+  const { context, page, errors } = await fresh({ micok: true, age: "6", shape: "hiss", today: "2026-10-05" });
+  const shut = await page.evaluate(() => ({ open: document.getElementById("moreBtn").getAttribute("aria-expanded"), n: document.querySelectorAll("#moreShelf .bookBtn").length, sfx: __quiet.sfx.length, speech: __quiet.speech.length }));
+  await openFromMore(page, "Sid the Seagull");
+  const went = await waitLive(page);
+  const st = await page.evaluate(() => ({ word: window.__book.word, ask: document.getElementById("bkAsk").textContent, norm: Sona.soundNorm("S") }));
+  ok("a book opened from behind More books asks for its own word, like any book on the shelf", shut.open === "false" && shut.n === 0 && went && st.word === "seagull" && st.ask === "Can you say seagull?" && st.norm === 5, { shut, st });
+  ok("…and the shelf made no sound of its own before it was touched", shut.sfx === 0 && shut.speech === 0, { shut });
+  await voice(page, 260);
+  ok("…and a voice of that book's kind (an S is a hiss) turns its page", await until(page, () => window.__book && window.__book.page === 1, 3000));
+  noOverlap("more books", await log(page));
+  clean("more books", errors);
+  await context.close();
+});
+// Menus are silent: the More books button makes the page's tap chime and
+// nothing else, opening and closing. Counted with NO book opened afterwards:
+// opening one stops any line in flight and drops a waiting chime, so a count
+// taken after a book cannot tell a button that spoke, or one that never
+// chimed, from the real one.
+await scenario("more books silent", async () => {
+  const { context, page, errors } = await fresh({ age: "6", today: "2026-10-05" });
+  const tts = []; page.on("request", (q) => { if (/\/api\/tts/.test(q.url())) tts.push(q.url()); });
+  const heard = () => page.evaluate(() => ({ sfx: __quiet.sfx.map((x) => x.name), speech: __quiet.speech.slice(), voices: __quiet.sounds.filter((x) => x.kind !== "osc").map((x) => x.kind), mics: __quiet.requests,
+    open: document.getElementById("moreBtn").getAttribute("aria-expanded"), books: [...document.querySelectorAll("#moreShelf .bookBtn")].filter((b) => b.offsetParent !== null).length, reader: document.getElementById("book").classList.contains("show") }));
+  const quiet = (x, taps) => JSON.stringify(x.sfx) === JSON.stringify(taps) && x.speech.length === 0 && x.voices.length === 0 && x.mics === 0 && !x.reader;
+  const before = await heard();
+  await click(page, "moreBtn"); await page.waitForTimeout(900);
+  const opened = await heard(), ttsOpened = tts.length;
+  await click(page, "moreBtn"); await page.waitForTimeout(900);
+  const closed = await heard();
+  ok("opening More books makes exactly one sound, the page's tap chime: no voice, no line asked of the voice service, no mic", quiet(before, []) && opened.open === "true" && opened.books > 0 && quiet(opened, ["tap"]) && ttsOpened === 0, { before, opened, ttsOpened });
+  ok("…and closing it is the same one chime, and still no voice", closed.open === "false" && closed.books === 0 && quiet(closed, ["tap", "tap"]) && tts.length === 0, { closed, tts });
+  clean("more books silent", errors);
+  await context.close();
+});
+await scenario("more books age", async () => {
+  const { context, page, errors } = await fresh({ micok: true, age: "4", today: "2026-10-05" });
+  await openFromMore(page, "Sid the Seagull");
+  await page.waitForTimeout(2500);
+  const st = await page.evaluate(() => ({ mode: window.__book.mode, primer: window.__book.primer, requests: __quiet.requests, kw: !!document.querySelector(".bktext .kw"), speech: __quiet.speech.slice() }));
+  ok("a 4-year-old who opens an S book from behind More books hears it read, and is never asked to say its words", st.mode === "next" && !st.primer && st.requests === 0 && !st.kw && !st.speech.some((t) => /Can you say/.test(t)) && await shown(page, "bkNext"), st);
+  clean("more books age", errors);
   await context.close();
 });
 

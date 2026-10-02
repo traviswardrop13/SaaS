@@ -184,14 +184,17 @@ await scenario("a locked game opens the plan screen on that game", async () => {
       summary: getComputedStyle(document.getElementById("planCard")).display,
       buy: document.getElementById("buyLife").getBoundingClientRect().bottom,
       decline: getComputedStyle(document.getElementById("declineRow")).display,
-      note: document.getElementById("declineNote").textContent,
+      declineText: document.getElementById("declineRow").innerText,
+      noteShown: getComputedStyle(document.getElementById("declineNote")).display !== "none",
       rachel: document.getElementById("offerRachel").textContent,
     }));
     ok("…opened on that game: its picture, its name in the headline", s.title === "Unlock Block Stacker, and every other game" && JSON.stringify(s.art) === '["/assets/crafted/home-stack.webp"]', s);
     ok("…and one line about the child who tapped it", s.pill === "🎮 Mia wants to play Block Stacker", s.pill);
     ok("the offer sheds the Settings furniture: tabs, page head and summary box", s.tabs === "none" && s.head === "none" && s.summary === "none", s);
     ok("the button is on the first screen of an iPhone", s.buy > 0 && s.buy <= 844, s.buy);
-    ok("a stated way out, saying the free games are still there", s.decline !== "none" && s.note === "Your free games are still ready to play.", s);
+    // the line that sat under it steps aside in the offer (Travis, 2 Oct 2026:
+    // "there's still too much information"): the button names the free version
+    ok("a stated way out, naming the free version, with nothing under it", s.decline !== "none" && /Not now — keep the free version/.test(s.declineText) && !s.noteShown, s);
     ok("Rachel's credential is still on the page, word for word", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(s.rachel), s.rachel);
     ok("locked game → plan screen: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -293,7 +296,7 @@ await scenario("a late answer from the price check, with the charter spots gone"
   try {
     await page.goto(BASE + "/subscribe.html");
     await page.locator("#pickCard").waitFor();
-    const read = () => page.evaluate(() => { const g = (id) => document.getElementById(id); return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, title: g("webTitle").innerText, renew: g("webRenew").innerText, line: g("planLine").innerText, save: document.querySelector("#planLife .save").innerText, month: g("planMonth").innerText }; });
+    const read = () => page.evaluate(() => { const g = (id) => document.getElementById(id); return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, title: g("webTitle").innerText, renew: g("webRenew").innerText, bill: g("webTL").innerText, line: g("planLine").innerText, save: document.querySelector("#planLife .save").innerText, month: g("planMonth").innerText }; });
     let s = await read();
     ok("while the price check is out, the button waits and says so", s.disabled && /Checking today/.test(s.button), s);
     await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // 2.5 s: the button lets go
@@ -301,8 +304,8 @@ await scenario("a late answer from the price check, with the charter spots gone"
     ok("after 2.5 s the button lets go at the price the page opened with", s.button === "Start 3 days free" && /\$59\.99/.test(s.title), s);
     await page.waitForFunction(() => /99\.99/.test(document.getElementById("webTitle").innerText));   // the late answer lands
     s = await read();   // NOTHING is tapped: a tap repaints, and would hide the stale small print this is here to catch
-    ok("a late answer re-prices EVERY yearly figure with no tap: the title, the per-month line, the small print and the header line",
-      /\$99\.99\/yr/.test(s.title) && /under \$8\.50 a month, billed once a year/i.test(s.save) && /renews at \$99\.99 a year/.test(s.renew) && !/59\.99/.test(s.renew) && /\$99\.99\/yr/.test(s.line) && !/59\.99/.test(s.line) && /under \$8\.50 a month/.test(s.line), s);
+    ok("a late answer re-prices EVERY yearly figure with no tap: the title, the per-month line, the billing line, the small print and the header line",
+      /\$99\.99\/yr/.test(s.title) && /under \$8\.50 a month, billed once a year/i.test(s.save) && /then \$99\.99 a year/.test(s.bill) && !/59\.99/.test(s.bill) && /renews at \$99\.99 a year/.test(s.renew) && !/59\.99/.test(s.renew) && /\$99\.99\/yr/.test(s.line) && !/59\.99/.test(s.line) && /under \$8\.50 a month/.test(s.line), s);
     ok("…and the monthly figure does not move with the charter", /\$9\.99\/mo/.test(s.month) && /\$9\.99 a month, charged today/.test(s.line), s);
     ok("late price answer: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }

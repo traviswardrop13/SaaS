@@ -436,7 +436,7 @@
   "kind": "inline-svg",
   "count": 2,
   "live": "live",
-  "evidence": "Both are in #book's static markup. 'Hear it' shows on every page. The mic shows on key-word pages: all 19 drawn books have `keys`, and momentOn() needs a mic and a child at or above the sound's age norm. The close \u2715, back \u2190 and 'Next \u2192' are text characters, not pictures.",
+  "evidence": "Both are in #book's static markup. 'Hear it' shows on every page. The mic shows on key-word pages: every book has `keys` (the six-page painted ones since 1 Oct 2026), and momentOn() needs a mic and a child at or above the sound's age norm. The close \u2715, back \u2190 and 'Next \u2192' are text characters, not pictures.",
   "area": "books"
  },
  {

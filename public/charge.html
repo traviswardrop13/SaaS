@@ -624,8 +624,20 @@
       // and the child who obeyed it at once was talking before anything was
       // listening. The turn is handed over by the glowing mic, which lights
       // only once the window can actually hear them (listenReady).
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
-      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
+      // "GO!" IS BACK, ON THE HAND-OVER ONLY (Travis, 2 Oct 2026: "i also
+      // wanna try to have the 11 labs voice say 'Go!'"). Most of these kids
+      // can't read, and nothing they could hear told them it was their turn.
+      // So every line that hands the turn over ends "… five times. Go!": the
+      // ask, a tap on Echo, the turtle, and the two retry lines below. Its
+      // "!" is the only one in the line, and every line that hands nothing
+      // over (praise, the win, the quiet screen) keeps its full stop. "Go!"
+      // is Echo's clip of its own, joined on after the line (GO, ON ITS OWN,
+      // below). Still true: the mic opens about half a second after Echo
+      // stops, so a child who answers "Go!" at once may start before it can
+      // hear; the next of their five tries is heard. If it sounds jumpy,
+      // taking it back out is one line here.
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
     }
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
@@ -778,7 +790,9 @@
       // The sound slot is read NOW, against the item on screen: Echo's idea
       // swaps the item just before it speaks, and a line waiting in the queue
       // must not pick up a later round's sound.
-      var packet={text:t,slow:!!slow,slot:soundSlot(t),epoch:practiceEpoch};
+      // A hand-over line's words and its "Go!" are asked for apart (GO, ON
+      // ITS OWN); the sound slot is found in the words.
+      var words=goSplit(t),packet={text:t,line:words,slow:!!slow,slot:soundSlot(words!=null?words:t),epoch:practiceEpoch};
       _sayN++; updateTurn();
       var run=function(){return _say1(packet);};
       _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);updateTurn();},function(){_sayN=Math.max(0,_sayN-1);updateTurn();});
@@ -859,6 +873,45 @@
       if(atEnd){for(i=n-1;i>0&&Math.abs(v.getInt16(i*2,true))<floor;i--);return buf.slice(0,Math.min(n,i+1+keep)*2);}
       for(i=0;i<n&&Math.abs(v.getInt16(i*2,true))<floor;i++);return buf.slice(Math.max(0,i-keep)*2);
     }
+    // GO, ON ITS OWN (2 Oct 2026). Every hand-over line ends "… Go!"
+    // (sayLine). Asked for in the same request as the words, it would change
+    // the text of every hand-over line, so every phone's saved copy of each
+    // (ttsGet) would miss on launch day and every line would be asked for
+    // again, its words read fresh. So a line that ends " Go!" asks for its
+    // words exactly as before, and "Go!" is Echo's one shared clip
+    // (Sona.goClip, which the games use too): this page's copy or this
+    // phone's saved one, never a wait on the network after the first line of
+    // a visit (that one waits Sona.GO_WAIT_MS at most), and never the
+    // browser's robot voice. The phone joins it on the way Rachel's sound is
+    // joined (playSlot): ONE clip, so the 250 ms-and-settle quiet before the
+    // mic (ECHO_TAIL_MS, micSettled) still starts at its very end. Between
+    // them, each piece's 50 ms of kept quiet and GO_GAP more: a short breath,
+    // as the voice leaves between two sentences. No "Go!" to be had: the
+    // line plays without it.
+    var GO=" Go!", GO_GAP=4800, goWait=(S&&S.GO_WAIT_MS)||0; // 4,800 samples: 0.2 s at 24 kHz
+    function goSplit(t){return typeof t==="string"&&t.length>GO.length&&t.slice(-GO.length)===GO?t.slice(0,-GO.length):null;}
+    function joinPcm(parts){
+      var n=0,at=0,out;parts.forEach(function(p){n+=p.byteLength;});out=new Uint8Array(n);
+      parts.forEach(function(p){out.set(new Uint8Array(p),at);at+=p.byteLength;});return out;
+    }
+    // Echo's "Go!" bytes for this line, or null; AUDIO_CANCEL if the line
+    // was stopped while it was looked up.
+    function goBytes(job){
+      var wait=goWait;goWait=0;
+      return audioWait(job,function(done){
+        if(!S||!S.goClip){done(null);return;}
+        Promise.resolve(S.goClip(profile.voiceId,wait)).then(function(b){done(b&&b.byteLength?b:null);},function(){done(null);});
+      });
+    }
+    // A line's words then its "Go!", trimmed and joined: one clip; the words
+    // alone without a "Go!"; null when the words could not be had.
+    async function goLine(words,job){
+      var parts=await Promise.all([speechBytes(words,job),goBytes(job)]);
+      if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
+      if(!parts[0])return null;
+      if(!parts[1])return new Uint8Array(parts[0]);
+      return joinPcm([trimQuiet(parts[0],true),new ArrayBuffer(GO_GAP*2),trimQuiet(parts[1],false)]);
+    }
     // One line, three pieces, played as ONE clip: Echo's words up to the
     // sound, the recorded take, Echo's words after it. Everything is fetched
     // first and joined, so the line plays with no gaps, pauses and resumes as
@@ -867,16 +920,21 @@
     // If her sound is here but the voice service is not (credits, an outage,
     // a timeout), the answer is "voice-down": the caller plays her whole July
     // line rather than ask the same failing service for the whole line too.
-    async function playSlot(slot,slow,job){
-      var parts=await Promise.all([speechBytes(slot.before,job),clipPcm(slot.clip,job),speechBytes(slot.after,job)]);
+    // go: the line hands over, so its "Go!" is joined on after the words
+    // after her sound (GO, ON ITS OWN); without one, the line plays as it is.
+    async function playSlot(slot,slow,job,go){
+      var asks=[speechBytes(slot.before,job),clipPcm(slot.clip,job),speechBytes(slot.after,job)];
+      if(go)asks.push(goBytes(job));
+      var parts=await Promise.all(asks);
       if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
       if(parts[1]&&(!parts[0]||!parts[2]))return "voice-down";
       if(!parts[0]||!parts[1]||!parts[2])return null;
       // Each half arrives with its own quiet lead-in and tail; left in, the
       // sentence stops twice around her sound. Keep 50 ms either side.
       parts[0]=trimQuiet(parts[0],true);parts[2]=trimQuiet(parts[2],false);
-      var words=job.voiceEvent||{},line=new Uint8Array(parts[0].byteLength+parts[1].byteLength+parts[2].byteLength),at=0;
-      parts.forEach(function(p){line.set(new Uint8Array(p),at);at+=p.byteLength;});
+      if(parts[3])parts=[parts[0],parts[1],trimQuiet(parts[2],true),new ArrayBuffer(GO_GAP*2),trimQuiet(parts[3],false)];
+      else parts=parts.slice(0,3);
+      var words=job.voiceEvent||{},line=joinPcm(parts);
       job.voiceEvent={source:"human",cache:words.cache,model:words.model,revision:words.revision};
       return slow?await playSlowClip(line,job):await playPCM(line,job);
     }
@@ -951,16 +1009,19 @@
         var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
           if(packet.slot){
-            result=await playSlot(packet.slot,packet.slow,job);
+            result=await playSlot(packet.slot,packet.slow,job,packet.line!=null);
             if(result==="voice-down")result=await playMedia(packet.slot.whole,packet.slow,job);
           }
           if(result!==true&&result!==AUDIO_CANCEL){
-            var bytes=await speechBytes(packet.text,job);
+            // A hand-over line: its words and its "Go!", joined (GO, ON ITS
+            // OWN). The browser's voice, if it comes to that, says the words
+            // alone: "Go!" is only ever Echo's.
+            var bytes=packet.line!=null?await goLine(packet.line,job):await speechBytes(packet.text,job);
             if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
             else if(bytes)result=packet.slow?await playSlowClip(new Uint8Array(bytes),job):await playPCM(new Uint8Array(bytes),job);
-            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
+            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.line!=null?packet.line:packet.text,packet.slow,job);
           }
-        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
+        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback((packet.line!=null?packet.line:packet.text)||"",packet.slow,job);}
         finally{job.finish();speaking=false;appSoundEnded();updateTurn();}
         if(result!==AUDIO_CANCEL||practiceTerminal)return;
       }
@@ -1500,6 +1561,51 @@
     // (a voice, or a hum/fan too loud to be one). Only then does a reopened
     // window with no room start in learn-first mode.
     var roomLoud=false;
+    // ── MIC NUMBERS (2 Oct 2026) ──
+    // Travis, in the iPhone app: "I have to say the word super close to the
+    // phone or else it won't seem to hear it". Before any bar moves, the
+    // numbers: with the switch on (five taps on "Account" in Settings, behind
+    // the grown-ups check, sona.micnumbers) a small box at the top of this
+    // page shows, while the mic listens, the level now, the loudest moment of
+    // the last two seconds, how loud a sound has to be to count (the bar),
+    // the room, and for each sound that cleared the bar how loud it was and
+    // whether it counted; then the frame rate, the audio rate and what the
+    // phone says it does to the mic (echo cancelling, noise suppression,
+    // automatic gain). They are the detector's own numbers, read from the
+    // same frames, in dB below full scale. It counts nothing, changes
+    // nothing, and the numbers are never saved or sent.
+    var micNums={on:false,box:null,hist:[],ev:null,last:null,stream:null,ctx:null,paintAt:0,frames:[]};
+    try{micNums.on=localStorage.getItem("sona.micnumbers")==="1";}catch(e){}
+    function micDb(x){return x>0?Math.round(20*Math.log(x)/Math.LN10)+" dB":"silent";}
+    function micNumsFrame(now,rms,thr,roomRms,repsNow,stream,ctx){
+      var m=micNums;if(!m.on)return;
+      m.stream=stream;m.ctx=ctx;
+      m.frames.push(now);while(m.frames.length&&now-m.frames[0]>1000)m.frames.shift();
+      m.hist.push({t:now,r:rms});while(m.hist.length&&now-m.hist[0].t>2000)m.hist.shift();
+      // a sound: frames over the bar, ended by eight frames under it (the
+      // detector's own end), counted if a try was counted while it lasted
+      if(thr&&rms>thr){if(!m.ev)m.ev={from:now,levels:[],reps:repsNow,quiet:0};m.ev.levels.push(rms);m.ev.quiet=0;m.ev.to=now;}
+      else if(m.ev&&++m.ev.quiet>=8){
+        var lv=m.ev.levels.slice().sort(function(a,b){return a-b;}),route=null;
+        try{var ev=window.__evid||[];route=ev.length?ev[ev.length-1]:null;}catch(e){}
+        m.last={peak:lv[lv.length-1],mid:lv[Math.floor(lv.length/2)],ms:m.ev.to-m.ev.from,counted:repsNow>m.ev.reps,route:route};
+        m.ev=null;
+      }
+      if(now-m.paintAt<200)return;
+      m.paintAt=now;
+      if(!m.box){m.box=document.createElement("div");m.box.id="micNumbers";m.box.setAttribute("aria-hidden","true");
+        m.box.style.cssText="position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 4px);z-index:9999;pointer-events:none;background:rgba(0,0,0,.78);color:#fff;font:11px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border-radius:8px;white-space:pre-wrap;";
+        document.body.appendChild(m.box);}
+      var loud=0;m.hist.forEach(function(h){if(h.r>loud)loud=h.r;});
+      var set={};try{var tr=stream&&stream.getAudioTracks()[0];set=tr&&tr.getSettings?tr.getSettings():{};}catch(e){}
+      function yn(v){return v===true?"on":v===false?"off":"?";}
+      var L=["Mic numbers (Settings: tap Account 5 times to hide)",
+        "now "+micDb(rms)+" · loudest in 2 s "+micDb(loud),
+        "counts above "+(thr?micDb(thr):"(reading the room)")+" · room "+(roomRms?micDb(roomRms):"not read yet")];
+      if(m.last)L.push("last sound: loudest "+micDb(m.last.peak)+", middle "+micDb(m.last.mid)+", "+(m.last.ms/1000).toFixed(2)+" s, "+(m.last.counted?"counted"+(m.last.route?" ("+m.last.route+")":""):"not counted"));
+      L.push(m.frames.length+" fps · "+(ctx?ctx.sampleRate:"?")+" Hz · echo cancel "+yn(set.echoCancellation)+" · noise "+yn(set.noiseSuppression)+" · auto gain "+yn(set.autoGainControl));
+      m.box.textContent=L.join("\n");
+    }
     function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
     // The pct-th percentile of the non-zero readings (exact zeros are the
     // audio path still starting, never a room); 0 when there are none.
@@ -1785,6 +1891,7 @@
                 if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
                 if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
               }
+              if(micNums.on)micNumsFrame(now,rms,thr,room&&room.rms,reps,micStream,ctx);
               seg.raf=requestAnimationFrame(tick);
             }
             // This window's own reading of the room: the page's first, if the
@@ -2098,13 +2205,12 @@
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(v==="pass" && useRung>=RUNG && S && S.recordRung && !DEMO_REPLAY){
-        try{
-          // KIDS1: rung wins belong to the child who earned them
-        var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
-          if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
-          else localStorage.setItem(wk,String(w));
-        }catch(e){}
+      if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){
+        // KIDS1: rung wins belong to the child who earned them. The count is
+        // kept inside that child's progress by Sona.rungWin(); this page holds
+        // no key of its own, because a key built from the sound and rung is
+        // one kkey() cannot make per-child (sona.js, rungWin).
+        try{ S.rungWin(SOUND,useRung); }catch(e){}
       }
       if(v==="fail"){
         // The scorer really heard a different sound — the charge is NOT given
@@ -2123,7 +2229,9 @@
         showTurtle(true); // already on since the prompt; harmless if the round stepped down
         // Calm (24 Sep 2026): no "Hmm … !" before the tip, no "Try again!"
         // after it. The tip itself is Rachel's CUES text, word for word.
-        await say("Let's try that one again. "+tip+".");
+        // The mic opens straight after it, so it ends on the hand-over's
+        // "Go!" (2 Oct 2026, see sayLine).
+        await say("Let's try that one again. "+tip+". Go!");
         if(!(await practiceReady()))return;
         v=await burstAndVerify(3);
         if(v===null || !(await practiceReady()))return;
@@ -2144,7 +2252,8 @@
             // Calm (24 Sep 2026), and "this one" rather than "something
             // easier": the child hears an idea, not a demotion. The target
             // itself (ITEM.say||ITEM.t) is untouched.
-            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+".");
+            // A hand-over too: "… Go!" (2 Oct 2026, see sayLine).
+            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+". Go!");
             if(!(await practiceReady()))return;
             v=await burstAndVerify(3);
             if(v===null || !(await practiceReady()))return;
@@ -2284,6 +2393,10 @@
         _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
+      // The step this page ended on, and its item (a sentence hands over its
+      // practice word), so the game's say-it cards never ask below what was
+      // just asked here (Sona.gameAsk). Nothing this page asks or records changes.
+      try{ sessionStorage.setItem("sona.boost.level",ITEM.level||"isolation"); sessionStorage.setItem("sona.boost.ask",String(ITEM.word||ITEM.t||"")); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
       // Calm, and after the chime rather than on top of it (24 Sep 2026).

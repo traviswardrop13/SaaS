@@ -70,4 +70,4 @@ export const FREE_MODE = false; // mirrors sona.js — Travis, 30 Sep 2026: "we 
  * Mirrors `WEB_SALES` in `public/sona.js`, which the static pages read;
  * `tests/freetest.mjs` fails if the two disagree.
  */
-export const WEB_SALES = true; // mirrors sona.js — built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell
+export const WEB_SALES = false; // mirrors sona.js — off on Travis's word (2 Oct 2026: "turn off payments on website"), with 1.0.5, the first build that can sell, waiting for App Review

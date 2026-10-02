@@ -271,7 +271,15 @@ npx cap open android   # Android Studio
 ```
 Same config; Google Play is $25 once and reviews faster.
 
-## Making the app the only shop for families (built 1 Oct 2026; not switched on)
+## Making the app the only shop for families (built 1 Oct 2026; switched on 2 Oct 2026)
+
+**2 Oct 2026: `WEB_SALES` is `false`** (Travis: "turn off payments on
+website"). That day both products were attached to RevenueCat's `full`
+entitlement, the yearly price was set to $59.99 from 4 Oct with a 3-day free
+trial, `com.speaksona.app.monthly` was created at $9.99, a sandbox purchase on
+his iPhone unlocked Premium, and 1.0.5 (build 8, with the purchase plugin)
+went to App Review. Until 1.0.5 is live nobody can buy Premium anywhere. The
+rest of this section is the 1 Oct record of why it first shipped `true`.
 
 Travis: "i dont want them paying on the website". `WEB_SALES`
 (`lib/pricing.ts`, `public/sona.js`) set to `false` switches the family web

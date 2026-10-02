@@ -120,7 +120,8 @@ let t = await page.evaluate(() => ({
   monthPicked: document.getElementById("iapPlanMo").getAttribute("aria-checked"),
   button: document.getElementById("iapBuy").textContent,
   buttons: document.querySelectorAll("#iapCard button.go").length,
-  legal: document.getElementById("iapLegal").innerText,
+  bill: document.getElementById("iapTL").innerText,
+  moLine: document.getElementById("iapMathMo").textContent,
   payToday: getComputedStyle(document.getElementById("iapMathMo")).display !== "none",   // painted, not the attribute
   area: document.querySelector("#iapCard .planbuy").innerText,
   restore: !!document.getElementById("iapRestore"),
@@ -130,7 +131,7 @@ ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding ==
 ok("…nor the 'it's in the iPhone app' card, which is for browsers: this IS the app", t.app === "none", String(t.app));
 ok("the live App Store price is painted onto the card", /\$59\.99/.test(t.price), String(t.price));
 ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
-  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/.test(t.body));
+  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/i.test(t.body));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
   /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
@@ -148,9 +149,15 @@ ok("the yearly plan is the one picked on arrival, and the button starts its free
 ok("one button serves both plans", t.buttons === 1, String(t.buttons));
 ok("…and the 'charged today' line is not on screen under a button that starts free days",
   t.payToday === false && !/charged to your Apple\s*ID today/i.test(t.area), t.area.slice(0, 200));
-// Apple requires each plan's price, period and renewal terms on the paywall
-ok("the small print states both plans: yearly's trial, and monthly charged today",
-  /yearly\) starts with a 3-day free trial/.test(t.legal) && /monthly\) is charged today/.test(t.legal) && /renews every month/.test(t.legal) && /renews unless canceled/.test(t.legal), t.legal);
+// Apple requires each plan's price, period and renewal terms on the paywall.
+// Since 2 Oct 2026 (Travis: "there's still too much information ... just
+// briefly say like what day they'll be billed") that is one line under the
+// button per plan, not a paragraph of small print: the yearly line names the
+// day the free days end, the STORE's price after them, and where to cancel.
+ok("the yearly billing line: the day the free days end, the store's price after them, and that it renews",
+  /^Free until [A-Z][a-z]+ \d{1,2}, then \$59\.99 a year\. Renews unless canceled in Settings\s*→\s*Subscriptions\.$/.test(t.bill.trim()), t.bill);
+ok("…and the monthly one: charged today, then every month, renewing unless canceled",
+  /Charged to your Apple\s*ID today, then every month\. Renews unless canceled in Settings\s*→\s*Subscriptions\./.test(t.moLine), t.moLine);
 ok("no dollar saving and no was-price on the Apple card — the store owns those figures",
   !/119\.88|59\.89|save \$|half/i.test(t.seen), t.seen.slice(0, 200));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
@@ -211,7 +218,7 @@ ok("paywall dismisses on success", t.card === "none");
     const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
     return { button: g("iapBuy").textContent, monthShown: seen(g("iapPlanMo")), yearPicked: g("iapPlan").getAttribute("aria-checked"), monthPicked: g("iapPlanMo").getAttribute("aria-checked"),
       timeline: seen(g("iapTL")), noChargeToday: seen(g("iapMath")), payToday: seen(g("iapMathMo")), area: document.querySelector("#iapCard .planbuy").innerText,
-      legalMo: seen(g("iapLegalMo")), msg: g("iapMsg").textContent, line: g("planLine").textContent,
+      msg: g("iapMsg").textContent, line: g("planLine").textContent,
       bought: window.__iap.bought, ev: window.__ev, card: g("iapCard").style.display, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") };
   });
 
@@ -220,13 +227,13 @@ ok("paywall dismisses on success", t.card === "none");
   let m = await look();
   ok("picking monthly on the Apple card: the button names the store's price, charged monthly",
     m.monthPicked === "true" && m.yearPicked === "false" && m.button === "Subscribe — $9.99 a month", JSON.stringify([m.monthPicked, m.button]));
-  ok("…the free-days timeline and 'no charge today' leave the screen: nothing under the button says 'free'",
+  ok("…the free days' billing line and 'no charge today' leave the screen: nothing under the button says 'free'",
     !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
   ok("…and 'charged today, then every month' is what is under the button",
     m.payToday && /charged to your Apple\s*ID today, then every month/i.test(m.area), m.area.slice(0, 200));
   await page.locator("#iapPlan").click(); await page.waitForTimeout(150);
   m = await look();
-  ok("picking yearly again puts the free-days button and timeline back",
+  ok("picking yearly again puts the free-days button and its billing line back",
     m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday, JSON.stringify([m.yearPicked, m.button, m.timeline, m.payToday]));
   await page.locator("#iapPlanMo").click(); await page.waitForTimeout(100);
   await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
@@ -240,7 +247,7 @@ ok("paywall dismisses on success", t.card === "none");
   await fresh({ __iapNoMonthly: "1" });
   m = await look();
   ok("a store with no monthly product: the monthly row never appears, and nothing about it is said",
-    !m.monthShown && !m.legalMo && !/month by month/i.test(m.line) && m.button === "Start 3 days free", JSON.stringify([m.monthShown, m.legalMo, m.line]));
+    !m.monthShown && !/month/i.test(m.area) && !/month by month/i.test(m.line) && m.button === "Start 3 days free", JSON.stringify([m.monthShown, m.area, m.line]));
   await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
   m = await look();
   ok("…and the yearly plan still buys", JSON.stringify(m.bought) === '["com.speaksona.app.annual"]' && m.sub.active === true, JSON.stringify(m.bought));
@@ -248,7 +255,7 @@ ok("paywall dismisses on success", t.card === "none");
   await fresh({ __iapMonthlyTrial: "1" });
   m = await look();
   ok("a monthly product with a free trial attached in the store is not offered: 'charged today' would be false",
-    !m.monthShown && !m.legalMo, JSON.stringify([m.monthShown, m.legalMo]));
+    !m.monthShown && !/month/i.test(m.area), JSON.stringify([m.monthShown, m.area]));
 
   await fresh({ __iapWrongProduct: "1" });
   m = await look();
@@ -283,11 +290,17 @@ t = await page.evaluate(() => ({
   line: document.getElementById("planLine").textContent,
 }));
 ok("web-bought sub pairs into the shell: no paywall anywhere", t.iap !== "block" && t.pick !== "block" && /Active/.test(t.line));
-// tripwires on the funnel's app half: code entry exists on onboarding's first
-// screen, and goHome routes subscribers straight home (never the paywall)
+// tripwires on the funnel's app half. Setup asks for no move-in code (Travis,
+// 2 Oct 2026: "take off moving from another phone enter your code"): a family
+// who paid on the website gets their plan in the app by Restore with their
+// email (Settings › Account), which is what the success page now tells them.
+// And goHome routes subscribers straight home (never the paywall).
 {
   const obSrc = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("onboarding offers device-code entry", /moveLink/.test(obSrc) && /Moving from another phone/.test(obSrc));
+  const okSrc = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
+  ok("setup has no move-in code box on any screen", !/moveLink|moveSheet|Moving from another phone|Enter your code/.test(obSrc));
+  ok("…and the success page sends a web buyer to Restore by email, never to a code setup no longer takes",
+    /Grown-ups<\/strong>, then <strong>Restore<\/strong>/.test(okSrc) && !/\/api\/pair/.test(okSrc));
   ok("onboarding goHome skips paywall for subscribers", /!\(Sona\.isSubscribed&&Sona\.isSubscribed\(\)\)/.test(obSrc));
 }
 
@@ -320,8 +333,8 @@ t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerT
 // false at family fifty-one. The per-month reading stands on its own.
 ok("web picker states the yearly plan honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
-// read the monthly BOX: the card's yearly timeline says "Nothing is charged
-// today", which would satisfy a "charged today" check on the whole card
+// read the monthly BOX: the yearly side of the card says "No charge today",
+// which would satisfy a "charge today" check on the whole card
 ok("…and the monthly one, in its own box: $9.99, charged today",
   /\$9\.99\/mo/.test(t.month) && /^[^\n]*\n\s*Charged today/i.test(t.month) && !/free/i.test(t.month), JSON.stringify(t.month));
 ok("…with no was-price and no 'you save' figure",
@@ -330,32 +343,32 @@ ok("…with no was-price and no 'you save' figure",
 ok("…and the honest per-month reading in its place",
   /under \$5 a month/i.test(t.body), t.body.slice(0, 200));
 
-// ── the dated trial timeline, and the promises inside it ──
-// A 3-row dated timeline is the strongest defuser of "I'll forget and get
-// billed" (Blinkist/Monarch both lead with it). The rows are only worth having
-// if every one of them is true, so this pins the SHAPE and the two claims that
-// could go false: a reminder we cannot send, and a price that is not ours.
+// ── the day they are billed, and the promise inside it ──
+// One line under the button (Travis, 2 Oct 2026: "just briefly say like what
+// day they'll be billed on the bottom"). It replaced a dated three-row
+// timeline. The line is only worth having if every word of it is true, so
+// this pins the date, the price the web card charges after the free days,
+// and the two claims that could go false: a reminder we cannot send, and a
+// charge today.
 {
   const tl = await web.evaluate(() => {
     const el = document.getElementById("webTL");
     return {
-      rows: el ? [...el.querySelectorAll(".tli")].map((r) => r.textContent.replace(/\s+/g, " ").trim()) : [],
+      line: el ? el.textContent.replace(/\s+/g, " ").trim() : "",
+      rows: el ? el.querySelectorAll(".tli").length : -1,
       prose: (document.getElementById("trialMath") || {}).style?.display,
     };
   });
-  ok("the trial is a dated 3-step timeline, not a sentence", tl.rows.length === 3, JSON.stringify(tl.rows));
-  const all = tl.rows.join(" ");
-  const dated = (tl.rows[0] || "").match(/[A-Z][a-z]+ \d{1,2}/) && (tl.rows[2] || "").match(/[A-Z][a-z]+ \d{1,2}/);
-  ok("…with real dates on the first and last rows", !!dated, JSON.stringify(tl.rows));
-  ok("…saying nothing is charged today, and naming what starts on day 3",
-    /nothing is charged today/i.test(all) && /\$59\.99/.test(all), all.slice(0, 200));
+  ok("the billing day is one line, not a timeline", tl.rows === 0 && !!tl.line, JSON.stringify(tl));
+  ok("…naming the day the free days end and the yearly price after them",
+    /^Free until [A-Z][a-z]+ \d{1,2}, then \$59\.99 a year\. Cancel anytime\.$/.test(tl.line), tl.line);
   ok("…and the prose line steps aside so the page says it once", tl.prose === "none", String(tl.prose));
   // THE LOAD-BEARING ONE. There is no trial webhook and no trial mailer in
-  // this repo: a "we'll email you before it starts" row would be a promise the
-  // code cannot keep, on the screen that takes the money.
-  ok("the timeline never promises a reminder Sona cannot send",
-    !/(email|e-mail|text|notify|remind)/i.test(all),
-    "no Stripe trial_will_end handler and no trial mailer exists — ship one FIRST, then say it: " + all.slice(0, 160));
+  // this repo: a "we'll email you before it starts" line would be a promise
+  // the code cannot keep, on the screen that takes the money.
+  ok("the billing line never promises a reminder Sona cannot send",
+    !/(email|e-mail|text|notify|remind)/i.test(tl.line),
+    "no Stripe trial_will_end handler and no trial mailer exists — ship one FIRST, then say it: " + tl.line.slice(0, 160));
 }
 await web.close();
 
@@ -1368,7 +1381,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 
   // The replay's writes are exercised below with a positive detected burst
   // and an actual completed run. Ladder gating keeps its separate source pin.
-  ok("a replay banks no ladder advancement", /S\.recordRung && !DEMO_REPLAY/.test(chg));
+  ok("a replay banks no ladder advancement", /S\.rungWin && !DEMO_REPLAY/.test(chg));
   ok("…and the replay flag is read before demoFinish can change it",
     chg.indexOf("var DEMO_REPLAY") < chg.indexOf("S.demoFinish"),
     "decided at load, or the answer flips underneath the page");
