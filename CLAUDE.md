@@ -667,25 +667,17 @@ grown-up to help open …", naming the free one) with the button to
 too. A child whose own books are all locked or coming sees the free book first.
 Rename Rory and the Rainbow and `FREE_BOOKS` must follow (`readtest` pins it).
 
-**Every queued book opens next Friday, 9 Oct** (Travis, 27 Sep 2026: "a
-solid book for the top four or five most popular letters... everything else,
-we can just set a date on it"; then 1 Oct 2026: "I don't want all these books
-and games to have different dates ... everything that is currently in queue
-to just say for next Friday"). R, S, L, SH and TH are open, three books each.
-Every other book in `STORIES` carries `opens: "2026-10-09"` (one day for all
-27; the old Monday-a-few-a-week schedule is gone) and waits on the shelf
-greyed, "Coming Oct 9", until that day on the phone's own calendar; a tap or
-`openBook()` does nothing before it, and on the day every one opens by
-itself. The six-page books (painted, see below) sit after every twelve-page
-one in `STORIES`, and with one day for all the shelf keeps that order: they
-put the sound anywhere in a word and are last in line to be redone. A child
-whose sounds have nothing open yet sees every open book first, then their
-own, coming. Home's card, the website and the Premium page say "new ones on
-the way" (the families pricing page: "as they come out"), never "every week":
-once the queue opens on 9 Oct no book is scheduled after it and no game after
-16 Oct, so a weekly promise would have nothing behind it. Never "a book for
-every sound", and never a weekday.
-`readtest` pins the dates and the shelf; `landingtest` the website's count.
+**Every book that is made is live** (Travis, 1 Oct 2026: "if anything is
+made ... let's just make it live", replacing the 9 Oct opening day). No book
+in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
+book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
+see below) sit after every twelve-page one in `STORIES`: they put the sound
+anywhere in a word and are last in line to be redone. A limited-time book
+carries `season` instead and is on every shelf, and Home's Limited time row,
+only inside its window (Boo the Bat on Halloween, October 2026). Home's card,
+the website and the Premium page say "new ones on the way", never "every
+week", "a book for every sound" or a weekday. `readtest` pins that nothing
+waits; `landingtest` the website's count.
 
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
@@ -921,17 +913,40 @@ keys, so it ends in a win. A tile that slips by fades and the song plays on
 on the keys until tapped; and a tile takes the song's fall time on every
 screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
+**The notes are the music, and in the iPhone app they are media** (Travis, 1
+Oct 2026: "there's no music with the tiles game. We want it to like play
+little songs while you're playing"). Each tile was a thin beep through Web
+Audio, which an iPhone's ring/silent switch silences and which a page that has
+had the mic open plays as a quiet phone call, so on the phone the songs were
+not there. Each note is now a piano note built on the phone (0.55 s, so the
+mic's quiet window still holds), and the app plays it as a media element, one
+kept per key, with the level in the samples (`MEDIA_PEAK`: an iPhone gives a
+media element no volume). A refused element falls back to Web Audio, never to
+silence. A browser keeps Web Audio at the level it had, so iPhone Safari with
+the ringer off is still silent. The loudness in the app was set without a
+phone to listen on: it is that one number.
 `tests/tilestest.mjs` plays a whole round.
 
-**The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
-her July demo by ear: "use number 4"). Every game's one-take sound
-(`/coach/say-echo/<S>-sound.wav`, cut by `tools/soundclips.mjs`) was her take
-re-voiced into Echo's voice, and for R the voice changer moved her third
-formant from about 1,430 Hz to about 2,900, toward /w/: the "wabbit" error the
-child is here to fix. A gentler setting still left it near 1,850. So R alone
-plays her own take (`OWN` in the tool), at the same loudness as the rest; the
-other voiced sounds stay re-voiced until a listen says otherwise. Piano Tiles
-plays the same one take now (it played the three-take re-voiced demo).
+**Every sound is Rachel's own voice** (Travis, 1 Oct 2026, of the L on Fruit
+Slice's practice page: "it said the weirdest sound. But it didn't say the
+actual one ... we need to either insert her voice right there or re-record";
+R went first that morning, "use number 4"). The one-take sound that plays in
+the letter's place ("…and make your [lll] sound, five times."), on every
+say-it card and in every sound power (`/coach/say-echo/<S>-sound.wav`) is cut
+by `tools/soundclips.mjs` from her July recordings in `/coach/say/`: her short
+demo of the sound where it is clean, else the same sound inside her whole July
+line ("… — p! p! p!"), whose room noise is 20–30 dB lower. They used to be her
+takes re-voiced into Echo's voice, and the voice changer bent the very cue a
+child copies: her L became an "ee", her R moved toward W (the "wabbit" error),
+her N and Z took a vowel's shape and Z lost its hiss; v4 Turbo's F (used for
+the voiceless sounds) came out voiced. All 19 now come from her, R still the
+take Travis picked, levelled to Echo's words to the ear. `storytest` holds
+every take to her recordings and checks each still sounds like its sound:
+voiced sounds voiced, hisses hissing, the L not an "ee". A new take is a new
+window in the tool's `TAKES`, read off a spectrogram; which take is the model
+is Rachel's call. Piano Tiles plays the same one take (it played the
+three-take re-voiced demo). Her whole lines stay re-voiced: practice plays
+one only when the voice service is down.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
@@ -1246,6 +1261,7 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
   Play games and Bubble Pop all do; a new page that speaks does too. The
   browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
-  The chimes are still Web Audio.
+  The chimes are still Web Audio; Piano Tiles' notes are not (see "The notes
+  are the music").
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
