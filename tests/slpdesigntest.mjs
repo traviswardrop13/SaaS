@@ -223,6 +223,34 @@ try {
       else ok("family price "+label+": the line stands with no figure",/can buy Premium themselves\.$/.test(line)&&!/\$/.test(line),line);
       await ctx.close();
     }
+    // Families no longer pay on the website (Travis, 1 Oct 2026: "i dont want
+    // them paying on the website"). While /api/charter says so, "on the web,
+    // $59.99 a year" is a price no parent can pay, and a clinician repeats
+    // what she reads: the line names the place and no figure (the App Store's
+    // price is Apple's to print). Only an explicit `webSales:false` counts —
+    // every reply above has no such field and still prints the web price —
+    // so both states of the switch are played here whichever way it ships.
+    for(const [label,reply] of [
+      ["as the route answers it, with no figure to print",{ok:true,free:false,webSales:false,cap:50,taken:0,left:0,open:false,source:"off"}],
+      ["even from an answer that still carries the web figures",{...CHARTER_OPEN,webSales:false}],
+    ]){
+      PLAN=plan("none");CHARTER=reply;
+      const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
+      const line=await pg.locator("#premiumParentPrice").innerText();
+      ok("family price while the website does not sell, "+label+": bought in the Sona app, and no figure",/^Families you don't cover can buy Premium themselves in the Sona app on iPhone and iPad\.$/.test(line.trim())&&!/\$|on the web|\d/.test(line),line);
+      await ctx.close();
+    }
+    for(const [label,reply,want] of [
+      ["and the website sells",{...CHARTER_OPEN,webSales:true},/can buy Premium themselves — on the web, \$59\.99 a year for the first 50 families\.$/],
+      // a free Sona sells nothing anywhere: the bare line, whatever the web switch says
+      ["and families pay nothing",{ok:true,free:true,webSales:false,cap:50,taken:0,left:0,open:false,source:"free"},/can buy Premium themselves\.$/],
+    ]){
+      PLAN=plan("none");CHARTER=reply;
+      const {ctx,pg}=await open("#premium");await pg.waitForTimeout(150);
+      const line=await pg.locator("#premiumParentPrice").innerText();
+      ok("family price when the route names the switch "+label,want.test(line)&&!/in the Sona app/.test(line),line);
+      await ctx.close();
+    }
     CHARTER=CHARTER_OPEN;
   });
   await run("Caseload Premium states",async()=>{

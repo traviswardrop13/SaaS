@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/sona.css" />
   <link rel="stylesheet" href="/action.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -192,6 +192,7 @@
     .bkovlCard p.small{font-size:12px;color:rgba(91,45,5,.62);}
     .bkovlCard button{width:100%;min-height:52px;font-size:18px;margin-top:2px;}
     @media (prefers-reduced-motion:reduce){ .bkpic,.bkmic.live,.bkmic.nudge,.bktext span.kw.yay{animation:none;} .bkecho{transition:none;} }
+      .moreBooks{margin:18px 0 6px;}.moreBooks>summary{list-style:none;cursor:pointer;display:inline-block;padding:9px 16px;border-radius:999px;background:var(--cream);border:1.5px solid var(--cream-line);color:var(--cream-ink);font-weight:800;font-size:13px;box-shadow:0 3px 0 var(--cream-line);}.moreBooks>summary::-webkit-details-marker{display:none;}.moreBooks .shelf{margin-top:14px;}
   </style>
 </head>
 <body>
@@ -1147,11 +1148,19 @@
     var ALL_STORIES = STORIES.slice();
     var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
     var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
+    // the books for other sounds aren't dropped: they wait behind a small
+    // "More books" link under the shelf (Travis, 1 Oct 2026: "less easy to
+    // find or less in your face ... the kids just seeing books based on their
+    // letter/s"). With more than one sound, the one practice is on now leads.
+    var OTHERS = [];
+    try { var nowSnd = window.Sona && Sona.rotSound && Sona.rotSound(); if (nowSnd && focusOrder.indexOf(String(nowSnd).toUpperCase()) > 0) { focusOrder.splice(focusOrder.indexOf(String(nowSnd).toUpperCase()), 1); focusOrder.unshift(String(nowSnd).toUpperCase()); } } catch (e) {}
     if (!playMode && focusOrder.length) {
       var SEASON_MINE = (window.Sona && Sona.seasonPick) ? Sona.seasonPick(STORIES.filter(function (st) { return st.season; }), focusOrder) : null;
       var mine = STORIES.filter(function (st) { return st.season ? (!SEASON_MINE || SEASON_MINE.indexOf(st) !== -1) : focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
+      var ALL_SHELF = STORIES;
       if (mine.some(readable)) STORIES = mine;
       else if (mine.length) STORIES = STORIES.filter(readable).concat(mine);
+      OTHERS = ALL_SHELF.filter(function (st) { return STORIES.indexOf(st) === -1 && bookOpen(st); });
     }
     // readable first, then the Premium books, then the coming ones
     function shelfRank(st){ return !bookOpen(st) ? 2 : LOCKED[st.title] ? 1 : 0; }
@@ -1174,7 +1183,7 @@
       try { if (libRead()[st.title]) return true; } catch (e) {}
       try { var g = JSON.parse(localStorage.getItem((window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
-    STORIES.forEach(function (st) {
+    function bookButton(st, host) {
       var b = document.createElement("button"), open = bookOpen(st), locked = open && LOCKED[st.title];
       // while other books are locked, the free one says it is free
       var free = open && !locked && anyLocked && !!(window.Sona && Sona.bookFree && Sona.bookFree(st.title));
@@ -1194,8 +1203,21 @@
         if (bookLocked(st)) { showLocked(st); return; }
         clearLocked(); chime("tap"); openBook(st);
       };
-      shelf.appendChild(b);
-    });
+      host.appendChild(b);
+    }
+    STORIES.forEach(function (st) { bookButton(st, shelf); });
+    if (OTHERS.length) {
+      var more = document.createElement("details"); more.className = "moreBooks"; more.id = "moreBooks";
+      more.innerHTML = '<summary>More books</summary><div class="shelf" id="moreShelf"></div>';
+      shelf.parentNode.insertBefore(more, shelf.nextSibling);
+      // drawn only once a grown-up or child opens it: a closed "More books"
+      // costs the page nothing, not even a cover
+      more.addEventListener("toggle", function () {
+        var host = document.getElementById("moreShelf");
+        if (!more.open || host.childElementCount) return;
+        OTHERS.forEach(function (st) { bookButton(st, host); });
+      });
+    }
     // THE GROWN-UP MESSAGE for a Premium book, worded like Home's for a game.
     var bookNotice = document.getElementById("bookNotice");
     function clearLocked(){ bookNotice.hidden = true; document.getElementById("bookMessage").textContent = ""; }

@@ -50,9 +50,10 @@ const SUITES = [
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
+  "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
   "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
-  "simpleplaytest.mjs", // Bubble Pop and Peekaboo: deliberate play, honest voice feedback, safe interruption
+  "simpleplaytest.mjs", // Peekaboo (the simple-play engine; Bubble Pop left it on 1 Oct 2026): deliberate play, honest voice feedback, safe interruption
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
@@ -75,6 +76,7 @@ const SUITES = [
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
+  "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership

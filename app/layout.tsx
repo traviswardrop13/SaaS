@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "A friendly, game-style app that helps kids practice tricky speech sounds — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
   manifest: "/manifest.webmanifest",
-  icons: { apple: "/apple-touch-icon.png", icon: "/icon-192.png" },
+  icons: { apple: "/apple-touch-icon.png?v=2", icon: "/icon-192.png?v=2" },
   appleWebApp: { capable: true, title: "Sona", statusBarStyle: "default" },
 };
 

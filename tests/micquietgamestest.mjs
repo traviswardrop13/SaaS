@@ -797,7 +797,7 @@ await scenario("feed quiet turn", async () => {
 
 // ── Bubble Pop and Peekaboo: the mic opens after the word, closes on Next,
 // on "Hear it", once heard, and at the finish ──
-for (const game of ["bubbles", "peekaboo"]) {
+for (const game of ["peekaboo"]) {
   await scenario(game, async () => {
     const { context, page, errors } = await fresh("arcade-" + game + ".html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
     const phase = (v) => page.locator('body[data-phase="' + v + '"]').waitFor();
@@ -847,7 +847,7 @@ for (const game of ["bubbles", "peekaboo"]) {
 // why the audit above now counts a mic from the moment it is asked for. The
 // word now waits for the answer, closes it, settles SETTLE_MS, and the turn
 // still hears the child afterwards. ──
-for (const game of ["bubbles", "peekaboo"]) for (const gumDelay of [300, 500]) for (const tapAfter of [150, 300]) {
+for (const game of ["peekaboo"]) for (const gumDelay of [300, 500]) for (const tapAfter of [150, 300]) {
   const label = game + ": \"Hear it\" " + tapAfter + " ms into a " + gumDelay + " ms mic request";
   await scenario(label, async () => {
     const { context, page, errors } = await fresh("arcade-" + game + ".html", { age: "4", micok: true, permission: "granted", volume: 0.6, gumDelay });
