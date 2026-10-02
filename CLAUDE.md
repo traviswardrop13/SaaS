@@ -541,9 +541,13 @@ else goes to `/api/lead` with their email and role. An ad aimed at speech
 therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
 both pages.
 
-**While the app is not ready, nobody is sent to the App Store** (Travis, 25
-Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
-`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in `parents.html`
+**The app is live: the websites send people to the App Store** (Travis, 2
+Oct 2026, launch day: the App Store shows Get). `APP_READY = true` in all three
+places; the badge on speaksona.com says "Now on iPhone and iPad". Before that,
+**while the app was not ready, nobody was sent to the App Store** (Travis, 25
+Sep 2026: "the app launches next week"; the iOS 27 build closed on launch),
+and this is what `APP_READY = false` still does if it is ever set back:
+`APP_READY` in `lib/launch.ts` and `var APP_READY` in `parents.html`
 and `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
 on the page ("Sona launches Friday, October 2. We'll email you the moment it's
 ready.", the date Travis emailed the list on 30 Sep) and emailed the same once through Resend (`/api/lead`,
