@@ -211,6 +211,33 @@ ok("exactly one child is marked as practicing now", ui.active === 1, "active=" +
 ok("it offers adding a kid", ui.addBtn);
 ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
 
+// ── Word position: every position is listed, only the start of a word can be
+// picked (Travis, 1 Oct 2026: "have the options listed but to not let them
+// select other positioning because it's not built yet ... make it clear that
+// it's just the initial position"). The switch is Sona.FAMILY_POSITIONS. ──
+{
+  // this child saved End of word before the others were closed
+  const before = await page.evaluate(() => { const was = Sona.getProfile().practicePosition; Sona.saveProfile({ practicePosition: "f" }); return was; });
+  await page.reload(); await page.waitForTimeout(700);
+  const pos = await page.evaluate(() => {
+    const el = document.getElementById("practicePos"), note = document.getElementById("posNote");
+    return {
+      open: (Sona.FAMILY_POSITIONS || []).slice(), value: el.value, saved: Sona.getProfile().practicePosition,
+      opts: [...el.options].map((o) => ({ v: o.value, off: o.disabled, text: o.textContent.trim() })),
+      note: note && !note.hidden && note.getBoundingClientRect().height > 0 ? note.textContent.trim() : "",
+      practice: Sona.practicePos(),
+    };
+  });
+  const off = pos.opts.filter((o) => o.v !== "i");
+  ok("Settings lists all six word positions", pos.opts.map((o) => o.v).join() === "i,m,f,v,b,mix", JSON.stringify(pos.opts));
+  ok("only Beginning of word can be picked", pos.open.join() === "i" && !pos.opts[0].off && off.every((o) => o.off), JSON.stringify(pos.opts));
+  ok("each of the others says it is coming soon, and Beginning does not", off.every((o) => /coming soon$/i.test(o.text)) && !/coming soon/i.test(pos.opts[0].text), JSON.stringify(pos.opts.map((o) => o.text)));
+  ok("a line under the list says practice is at the beginning of a word for now", /beginning of a word/i.test(pos.note) && /coming soon/i.test(pos.note), pos.note);
+  ok("a child whose saved position was End sees Beginning selected, and practice asks for the start of a word",
+    pos.saved === "f" && pos.value === "i" && pos.practice === "i", JSON.stringify({ saved: pos.saved, value: pos.value, practice: pos.practice }));
+  await page.evaluate((was) => Sona.saveProfile({ practicePosition: was || "i" }), before);
+}
+
 // ── Remove and Add leave the page only once the saved tries are dealt with ──
 // (30 Sep 2026) Both reload or move on at once, and leaving a page aborts an
 // IndexedDB delete still in flight: Settings' Remove reloaded before the

@@ -562,6 +562,11 @@ ok("proof strip: named SLP credential above the plan",
 // practice page — homework's first, then the family's setting. A position
 // with no words for that sound falls back to start-of-word words rather than
 // an empty round. (hwtest holds the sentence step to the same rule.)
+//
+// 1 Oct 2026 (Travis: "have the options listed but to not let them select
+// other positioning because it's not built yet"): a FAMILY can pick only the
+// start of a word for now (Sona.FAMILY_POSITIONS). Homework still names its
+// own position; a family's Middle saved earlier reads as the start of a word.
 {
   const HW = (pos) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "hwpos", title: "R at the end", note: "", sounds: ["R"], pos: "${pos}", repsPerDay: 20, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, at: Date.now() }))`;
   const pw = await page.evaluate((hw) => {
@@ -581,7 +586,8 @@ ok("proof strip: named SLP credential above the plan",
   }, HW("f"));
   ok("with no homework and no setting, the word step asks for start-of-word words", pw.none.pos === "i" && pw.none.words === pw.iR, JSON.stringify(pw.none));
   ok("homework at End: every word at the word step is an End word, over the family's Middle", pw.hw.pos === "f" && pw.hw.words === pw.fR, JSON.stringify(pw.hw));
-  ok("no homework, family on Middle: every word at the word step is a Middle word", pw.fam.pos === "m" && pw.fam.words === pw.mR, JSON.stringify(pw.fam));
+  ok("no homework, family's old Middle setting: the word step asks for start-of-word words (Middle is not open to families yet)",
+    pw.fam.pos === "i" && pw.fam.words === pw.iR && pw.mR && pw.mR !== pw.iR, JSON.stringify(pw.fam));
   ok("a position with no words for the sound falls back to start-of-word words", pw.noneForK === pw.iK, pw.noneForK);
 
   // …and on the real page: round 3 of a child with words earned, homework at End

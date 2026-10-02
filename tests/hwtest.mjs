@@ -98,6 +98,9 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
 // homework still asked for "rabbit" and "I see a rabbit." Travis, 30 Sep 2026:
 // the position must actually drive the practice page, homework first, then the
 // family's setting. The games keep start-of-word words on purpose.
+// 1 Oct 2026: a family can pick only the start of a word for now
+// (Sona.FAMILY_POSITIONS), so a Middle saved earlier asks for start-of-word
+// words; homework's own position is untouched.
 {
   const { ctx, pg } = await page();
   await pg.addScriptTag({ url: "/gamecontent.js" });   // charge.html loads it; today.html does not
@@ -111,7 +114,7 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
     eval(c);                                         // homework: S at End; the family is on Beginning
     out.hw = read("S");
     localStorage.removeItem(Sona.kkey("sona.homework.v1"));
-    Sona.saveProfile({ practicePosition: "m" });     // no homework; the family picks Middle
+    Sona.saveProfile({ practicePosition: "m" });     // no homework; the family's setting says Middle, from before it was closed
     out.fam = read("R");
     return out;
   }, CACHE());
@@ -123,8 +126,8 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   ok("the sentence step is gamecontent.js's, not the bare-word fallback", st.sc && framed(st.hw.sent) && framed(st.fam.sent), show(st.hw.sent));
   ok("homework at End: every sentence is built on an End word", st.hw.pos === "f" && all(st.hw.sent, "f"), show(st.hw.sent));
   ok("…and so is every word at the word step", all(st.hw.word, "f"), show(st.hw.word));
-  ok("no homework, family on Middle: every sentence is built on a Middle word", st.fam.pos === "m" && all(st.fam.sent, "m"), show(st.fam.sent));
-  ok("…and so is every word at the word step", all(st.fam.word, "m"), show(st.fam.word));
+  ok("no homework, family's old Middle setting: every sentence is built on a start-of-word word (Middle is not open to families yet)", st.fam.pos === "i" && all(st.fam.sent, "i"), show(st.fam.sent));
+  ok("…and so is every word at the word step", all(st.fam.word, "i"), show(st.fam.word));
   await ctx.close();
 
   // Feed Echo, Bubble Pop and the Say & Play games (Hoops) ask for

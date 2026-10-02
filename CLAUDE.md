@@ -1229,6 +1229,15 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   (homework position first, then the family's setting); a position with no
   words for that sound falls back to start-of-word words. The games keep
   start-of-word words until Rachel says otherwise (`progtest`, `hwtest`).
+  **A family can pick only the start of a word for now** (Travis, 1 Oct 2026:
+  "have the options listed but to not let them select other positioning
+  because it's not built yet ... make it clear that it's just the initial
+  position"). Settings and the pilot page list all six positions; the ones not
+  in `FAMILY_POSITIONS` (sona.js, today just `"i"`) are greyed out and say
+  "coming soon", with one line under the list saying so. A position a family
+  saved before reads as the start of a word. A speech therapist's homework
+  still names its own position. Add an id to that list to open one
+  (`kidtest`).
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).

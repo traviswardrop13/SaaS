@@ -222,15 +222,21 @@
         Picking sounds below switches to focus mode. <a href="#" id="playKeep">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
+      <!-- ONLY THE START OF A WORD CAN BE PICKED FOR NOW (Travis, 1 Oct 2026:
+           "have the options listed but to not let them select other
+           positioning because it's not built yet"). Every position stays on
+           the list so a parent sees what is coming; the script below greys
+           out the ones Sona.FAMILY_POSITIONS does not open yet. -->
       <label class="field" for="practicePos">Word position</label>
-      <select id="practicePos">
+      <select id="practicePos" aria-describedby="posNote">
         <option value="i">Beginning of word</option>
         <option value="m">Middle of word</option>
         <option value="f">End of word</option>
         <option value="v">Vocalic R (er, ar, or…)</option>
         <option value="b">Blends (tr, st, bl…)</option>
-        <option value="mix">Mixed — all positions</option>
+        <option value="mix">Mixed (all positions)</option>
       </select>
+      <p class="muted set-lead" id="posNote">For now, Sona practices each sound at the beginning of a word. The other positions are coming soon.</p>
     </section>
 
     <!-- NO VOLUME SLIDER (Travis, 30 Sep 2026: "why can't we just use our
@@ -379,7 +385,16 @@
 
     childEl.value = p.childName || "";
     ageEl.value = p.childAge || "";
-    posEl.value = p.practicePosition || "i";
+    // Grey out the positions a family cannot pick yet, and show the one in
+    // use: a position saved before the others were closed reads as Beginning,
+    // which is what the practice page now asks for (Sona.practicePos).
+    var openPos = (Sona.FAMILY_POSITIONS || ["i"]);
+    Array.prototype.forEach.call(posEl.options, function (o) {
+      if (openPos.indexOf(o.value) >= 0) return;
+      o.disabled = true; o.textContent = o.textContent + " · coming soon";
+    });
+    posEl.value = openPos.indexOf(p.practicePosition) >= 0 ? p.practicePosition : "i";
+    document.getElementById("posNote").hidden = openPos.length > 1;
 
     // Sound: the phone's own buttons set the level now. Sona's mute is the one
     // thing they can't undo (a volume of 0, or voice or effects off: every page
