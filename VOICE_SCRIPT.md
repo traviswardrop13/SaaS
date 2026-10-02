@@ -44,11 +44,13 @@ recorded them in July (`git show 7ad8219`): 19 practice prompts and 19 bare-soun
 demos in `public/coach/say/`. Each prompt clip is the whole opening line with the
 sound actually performed in it (her "Ready?" stitched on the front, a "Go" at the
 end — July wording, before the calm rewrite), because TTS cannot perform a stretched
-or popped sound. Her raw voice plays for one sound only, R (1 Oct 2026: re-voicing moved
-her R toward W, so the games play take 1 of her own R). For the rest, `tools/revoice.mjs` runs each take through
-ElevenLabs speech-to-speech into Echo's voice, into `public/coach/say-echo/` (25 Sep
-2026) — her pacing and the performed sound survive, the timbre is Echo's. With the
-switch on, `say-echo/<SOUND>.mp3` plays *in place of* the C1 prompt for that sound
+or popped sound. The one take of each sound that every game and the practice page play
+is cut from these, in her own voice (`tools/soundclips.mjs`, all 19 since 2 Oct 2026:
+re-voicing turned her L into an "ee" and her R toward W). Her whole lines and demos are
+also run through ElevenLabs speech-to-speech into Echo's voice by `tools/revoice.mjs`, into
+`public/coach/say-echo/` (25 Sep 2026). With the
+switch on, the C1 prompt for a sound is Echo's words with her one take in the letter's
+place, and `say-echo/<SOUND>.mp3` plays in its stead only when the voice service is down
 (public/charge.html:628); `say-echo/<SOUND>-demo.mp3` is used only by the parked Coach Call.
 
 Continuants are **stretched** (held about 1.5 s); stops are **popped** (one crisp

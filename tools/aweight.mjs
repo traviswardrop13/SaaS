@@ -14,7 +14,7 @@
 // −50 dBFS, then those within 20 dB of their mean.
 
 const N = 512;
-function fftPower(re) {
+export function fftPower(re) { // 512 samples in, power per bin out
   const im = new Float64Array(N);
   for (let i = 1, j = 0; i < N; i++) {
     let bit = N >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;

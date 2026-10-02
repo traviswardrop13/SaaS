@@ -642,14 +642,15 @@
     // Turbo says every word, and where a line on a sound round names the
     // target sound ("make your R sound") ONE recorded take of that sound
     // plays in the letter's place: "…and make your [rrrr] sound, five times."
-    // The takes are built by tools/soundclips.mjs: voiced sounds are Rachel's
-    // re-voiced takes; voiceless ones are v4 Turbo's own, because the voice
-    // changer buzzed them (the tool has the measurements). It covers every
-    // line that names the sound: the first prompt, a tap on Echo, the turtle,
-    // and Echo's idea when it steps down to the sound. Her raw take
-    // (/coach/say/) never plays. If the take is missing, the whole line is
-    // spoken by TTS as before, letter and all; if the voice service is down,
-    // her whole July line plays, as it did before.
+    // The takes are built by tools/soundclips.mjs, every one cut from Rachel's
+    // own July recordings (2 Oct 2026: re-voicing turned her L into an "ee"
+    // and her R toward W, and v4 Turbo voiced the F; the tool has the
+    // measurements). It covers every line that names the sound: the first
+    // prompt, a tap on Echo, the turtle, and Echo's idea when it steps down to
+    // the sound. Her recordings themselves (/coach/say/) never play: only the
+    // one cut take does. If the take is missing, the whole line is spoken by
+    // TTS as before, letter and all; if the voice service is down, her whole
+    // July line plays, as it did before.
     function soundSlot(text){
       if(!HUMANCLIPS||!ITEM||ITEM.level!=="isolation"||typeof text!=="string")return null;
       var mark="your "+soundName()+" sound",i=text.indexOf(mark);
