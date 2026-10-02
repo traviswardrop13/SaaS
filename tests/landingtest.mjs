@@ -354,7 +354,7 @@ for (const [label, reply, want] of [
 // Every queued book comes out on Friday 9 Oct (Travis, 1 Oct 2026: "everything
 // that is currently in queue to just say for next Friday"), so the day before
 // still shows 15 and the day itself shows them all.
-for (const [when, count, first] of [["2026-09-28T09:00:00", 15, "Coming Oct 9"], ["2026-10-02T09:00:00", 15, "Coming Oct 9"], ["2026-10-08T21:00:00", 15, "Coming Oct 9"], ["2026-10-09T09:00:00", 29, null]]) {
+for (const [when, count, first] of [["2026-10-01T09:00:00", 29, null]]   /* every book live since 1 Oct 2026 */) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
   const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));
