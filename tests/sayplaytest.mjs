@@ -974,16 +974,21 @@ async function inApp(cfg) {
 }
 const mediaPlays = (page) => page.evaluate(() => { const m = window.__media.filter((x) => x.src.startsWith("blob:")); return { elements: m.length, plays: m.reduce((n, x) => n + x.plays, 0) }; });
 const webSounds = async (page) => (await log(page)).sounds.filter((x) => x.kind === "buf" && x.len > 1000).length;
+// Sona's chimes are oscillators when they go through Web Audio (2 Oct 2026:
+// in the app the "heard you" chime and the win chime are media too)
+const webChimes = async (page) => (await log(page)).sounds.filter((x) => x.kind === "osc").length;
 await scenario("bubbles in the app", async () => {
   const { context, page, errors } = await inApp();
   try {
     await page.locator("#startBtn").click();
     ok("bubbles in the app: the word blows the bubbles", await sayForBubbles(page));
     ok("bubbles in the app: word one's bubbles popped", await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
-    // word one: the blow, five plain pops, the gold one, the drop into the basket
+    // word one: the "heard you" chime, the blow, five plain pops, the gold one,
+    // the drop into the basket
     let m = await mediaPlays(page);
-    ok("bubbles in the app: the blow, each pop, the gold one and the drop all play as media elements", m.plays === 8, m);
+    ok("bubbles in the app: the heard chime, the blow, each pop, the gold one and the drop all play as media elements", m.plays === 9, m);
     ok("bubbles in the app: …and nothing goes through Web Audio, the blow included", (await webSounds(page)) === 0, await webSounds(page));
+    ok("bubbles in the app: …nor the heard chime: no oscillator ever starts", (await webChimes(page)) === 0, await webChimes(page));
     // the rest of the round, the giant bubble included
     for (let n = 2; n <= 5; n++) { await until(page, () => window.__sayplay.listening === true, 8000); await sayForBubbles(page); await popBubbles(page); }
     await until(page, () => window.__bubbles.state === "giant" && window.__bubbles.giant && window.__bubbles.giant.up, 6000);
@@ -991,9 +996,10 @@ await scenario("bubbles in the app", async () => {
     await page.mouse.click(box.x + g.x, box.y + g.y);
     await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
     m = await mediaPlays(page);
-    // 36 small bubbles, five blows and five drops, then the giant's blow and its pop
-    ok("bubbles in the app: a whole round's sounds are media: every pop, and the giant bubble's own", m.plays === 48 && m.elements === 11, m);
-    ok("bubbles in the app: …still nothing through Web Audio", (await webSounds(page)) === 0, await webSounds(page));
+    // 36 small bubbles, five blows and five drops, then the giant's blow and its
+    // pop; and Sona's own two chimes: five words heard, and the win
+    ok("bubbles in the app: a whole round's sounds are media: every pop, the giant bubble's own, each heard chime and the win chime", m.plays === 54 && m.elements === 13, m);
+    ok("bubbles in the app: …still nothing through Web Audio", (await webSounds(page)) === 0 && (await webChimes(page)) === 0, { bufs: await webSounds(page), oscs: await webChimes(page) });
     await page.waitForTimeout(300);
     noOverlap("bubbles in the app", await log(page));
     clean("bubbles in the app", errors);
@@ -1007,6 +1013,8 @@ await scenario("bubbles in the app, media refused", async () => {
     const l = await log(page), web = l.sounds.filter((x) => x.kind === "buf" && x.len > 1000);
     ok("bubbles in the app, media refused: a phone that will not start a media element gets the sounds through Web Audio, never silence", web.length >= 7, web.length);
     ok("bubbles in the app, media refused: …and none of them under a mic", web.every((x) => x.live === 0), web.filter((x) => x.live));
+    const chimes = l.sounds.filter((x) => x.kind === "osc");
+    ok("bubbles in the app, media refused: the heard chime reaches the child through Web Audio too, and not under a mic", chimes.length > 0 && chimes.every((x) => x.live === 0), chimes.length);
     clean("bubbles in the app, media refused", errors);
   } finally { await context.close(); }
 });
@@ -1016,7 +1024,7 @@ await scenario("bubbles in the app, sound off", async () => {
     await page.locator("#startBtn").click();
     ok("bubbles in the app, sound off: the game still plays", await sayForBubbles(page) && await popBubbles(page) && await until(page, () => window.__sayplay.step === 1, 4000));
     const m = await mediaPlays(page);
-    ok("bubbles in the app, sound off: a muted Sona stays silent: no pop plays, as media or any other way", m.plays === 0 && (await webSounds(page)) === 0, { m, web: await webSounds(page) });
+    ok("bubbles in the app, sound off: a muted Sona stays silent: no pop and no chime plays, as media or any other way", m.plays === 0 && (await webSounds(page)) === 0 && (await webChimes(page)) === 0, { m, web: await webSounds(page), chimes: await webChimes(page) });
     clean("bubbles in the app, sound off", errors);
   } finally { await context.close(); }
 });

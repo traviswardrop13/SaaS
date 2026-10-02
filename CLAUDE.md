@@ -1504,7 +1504,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
   Play games and Bubble Pop all do; a new page that speaks does too. The
   browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
-  The chimes are still Web Audio; Piano Tiles' notes are not (see "The notes
-  are the music").
+- **So do Sona's chimes** (2 Oct 2026): the "heard you" chime rings the moment
+  the mic closes, exactly when Web Audio is a quiet phone call. `Sona.sfx`
+  decides, once, for every page: in the app each chime is written down from
+  its own recipe as a short recording and played as a media element (one
+  element a chime, the level in the samples, `CHIME_MEDIA` in `sona.js`, set
+  without a phone to listen on); a refused element falls back to Web Audio,
+  never to silence; a muted Sona plays none; the browser keeps Web Audio. When
+  a chime may ring is still each page's own rule (never over a mic). Piano
+  Tiles' notes and Bubble Pop's pops are media in their own pages. **Still Web
+  Audio in the app:** the sounds Hoops, Soccer Goal, Dino Dig and Fruit Slice
+  make themselves (the swish, the kick, the roar, the splat).
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.

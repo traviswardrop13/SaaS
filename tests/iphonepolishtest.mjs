@@ -13,8 +13,12 @@ try{
  await context.addInitScript(()=>{
   localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['P'],voiceOn:true,soundOn:false,volume:.6,earlyAdopter:true}));sessionStorage.setItem('sona.play.token','arcade-slice.html');
   window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
-  window.h={media:[],mic:0,hidden:false};Object.defineProperty(document,'hidden',{get:()=>h.hidden});
-  window.Audio=function(src){const a={src,play(){h.media.push(a);return Promise.resolve();},pause(){a.paused=true;},removeAttribute(){},load(){}};return a;};
+  // h.media is Echo's voice and Rachel's clips: the page waits for each to end.
+  // A chime is media in the app too since 2 Oct 2026 (the last block below),
+  // played and not waited on, and is kept apart in h.chimes. (The seed's
+  // soundOn:false is healed to on by getProfile, so the chimes do ring here.)
+  window.h={media:[],chimes:[],mic:0,hidden:false};Object.defineProperty(document,'hidden',{get:()=>h.hidden});
+  window.Audio=function(src){const a={src,play(){(a.onended||a.onplaying?h.media:h.chimes).push(a);return Promise.resolve();},pause(){a.paused=true;},removeAttribute(){},load(){}};return a;};
   navigator.mediaDevices.getUserMedia=()=>{h.mic++;return new Promise(()=>{});};
  });
  const page=await context.newPage(),errors=[],texts=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/tts'))texts.push(JSON.parse(r.postData()).text);});await page.goto(base+'/arcade-slice.html?from=charge');
@@ -53,8 +57,8 @@ try{
   await ctx2.addInitScript(()=>{
    localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['R'],childAge:'4',voiceOn:true,soundOn:false,volume:.6,earlyAdopter:true}));localStorage.setItem('sona.micok','1');
    window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
-   window.h={media:[],mic:0,synth:[],refuse:false,pcm:0};
-   window.Audio=function(src){const a={src,paused:false,play(){h.media.push(a);if(h.refuse)return Promise.reject(new Error('NotAllowedError'));setTimeout(()=>a.onplaying&&a.onplaying(),0);return Promise.resolve();},pause(){a.paused=true;},removeAttribute(){},load(){}};return a;};
+   window.h={media:[],chimes:[],mic:0,synth:[],refuse:false,pcm:0};
+   window.Audio=function(src){const a={src,paused:false,play(){(a.onended||a.onplaying?h.media:h.chimes).push(a);if(h.refuse)return Promise.reject(new Error('NotAllowedError'));setTimeout(()=>a.onplaying&&a.onplaying(),0);return Promise.resolve();},pause(){a.paused=true;},removeAttribute(){},load(){}};return a;};
    window.SpeechSynthesisUtterance=function(t){this.text=t;};
    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{speaking:false,paused:false,speak(u){h.synth.push(u.text);setTimeout(()=>u.onend&&u.onend(),20);},cancel(){},resume(){},getVoices:()=>[]}});
    // a voice line through Web Audio is a buffer longer than the 1-sample unlock
@@ -86,6 +90,77 @@ try{
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('Bubble Pop says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
+ }
+ // 2 Oct 2026: THE CHIMES ARE MEDIA IN THE APP TOO. The "heard you" chime lands
+ // the moment the mic closes, exactly when an iPhone plays Web Audio as a quiet
+ // phone call (and not at all with the ringer off). Hoops is played for real
+ // here: a tone stands in for the child's voice, the game hears it, closes the
+ // mic and chimes. Every media element the page plays is logged with how many
+ // mics were live at that instant; every Web Audio oscillator and buffer the
+ // page makes is counted.
+ {
+  const ctx3=await browser.newContext({reducedMotion:'reduce'});await ctx3.route('**/api/tts',route=>route.fulfill({body:Buffer.alloc(4800),contentType:'application/octet-stream'}));
+  await ctx3.addInitScript(()=>{
+   // t.mute / t.web: the same seed with Sona muted (a level of zero is the
+   // only mute there is: getProfile heals soundOn:false), or in a plain browser
+   localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['R'],childAge:'4',voiceOn:true,soundOn:true,volume:localStorage.getItem('t.mute')==='1'?0:.6,earlyAdopter:true}));localStorage.setItem('sona.micok','1');
+   if(localStorage.getItem('t.web')!=='1')window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
+   window.h={media:[],tracks:[],mic:0,osc:0,pcm:0,refuse:false,hang:false,last:null};
+   h.live=()=>h.tracks.filter(t=>t.readyState==='live').length;
+   // refuse: the phone will not start a media element. hang: play() is still
+   // being answered when the element is paused, which rejects it (AbortError).
+   // a.voice: a line the page waits on to end (Echo); a chime is not waited on.
+   window.Audio=function(src){const a={src,paused:true,currentTime:0,plays:0,
+    play(){a.plays++;a.paused=false;a.micLive=h.live();h.last=a;if(!h.media.includes(a)){a.voice=!!(a.onended||a.onplaying);h.media.push(a);}
+     if(h.refuse)return Promise.reject(new DOMException('refused','NotAllowedError'));
+     if(h.hang)return new Promise((_,no)=>{a.cut=()=>no(new DOMException('cut short','AbortError'));});
+     setTimeout(()=>a.onplaying&&a.onplaying(),0);setTimeout(()=>a.onended&&a.onended(),40);return Promise.resolve();},
+    pause(){a.paused=true;if(a.cut){const cut=a.cut;a.cut=null;cut();}},removeAttribute(){},load(){}};return a;};
+   const AC=window.AudioContext,mkOsc=AC.prototype.createOscillator,mkBuf=AC.prototype.createBuffer;
+   AC.prototype.createOscillator=function(){h.osc++;return mkOsc.call(this);};
+   AC.prototype.createBuffer=function(c,n,r){if(n>1)h.pcm++;return mkBuf.call(this,c,n,r);};
+   // the microphone: a real stream carrying a 300 Hz tone, silent until h.talk()
+   navigator.mediaDevices.getUserMedia=()=>{h.mic++;const c=h.micCtx||(h.micCtx=new AC());c.resume();const o=mkOsc.call(c),g=c.createGain(),d=c.createMediaStreamDestination();o.frequency.value=300;g.gain.value=0;o.connect(g);g.connect(d);o.start();h.micGain=g;h.tracks.push(d.stream.getTracks()[0]);return Promise.resolve(d.stream);};
+   h.talk=()=>{h.micGain.gain.value=.5;};
+  });
+  const pg=await ctx3.newPage(),errs=[];pg.on('pageerror',e=>errs.push(e.message));
+  const tick=()=>pg.waitForTimeout(60);
+  await pg.goto(base+'/arcade-hoops.html');await pg.locator('#startBtn').click();
+  const listening=await pg.waitForFunction(()=>window.__sayplay&&__sayplay.listening===true&&h.live()===1,{},{timeout:9000}).then(()=>true,()=>false);
+  const n=await pg.evaluate(()=>{const n=h.media.length;h.talk();return n;});
+  await pg.waitForFunction(n=>h.media.length>n,n,{timeout:5000}).catch(()=>{});
+  const heard=await pg.evaluate(async n=>{const a=h.media[n];if(!a)return {phase:__sayplay.phase,media:h.media.length,osc:h.osc,mic:h.mic};
+   const b=new DataView(await(await fetch(a.src)).arrayBuffer());let peak=0;for(let i=44;i+1<b.byteLength;i+=2)peak=Math.max(peak,Math.abs(b.getInt16(i,true)));
+   return {phase:__sayplay.phase,blob:a.src.startsWith('blob:'),micLive:a.micLive,osc:h.osc,pcm:h.pcm,riff:String.fromCharCode(b.getUint8(0),b.getUint8(1),b.getUint8(2),b.getUint8(3)),rate:b.getUint32(24,true),secs:+((b.byteLength-44)/2/b.getUint32(24,true)).toFixed(2),peak:+(peak/32767).toFixed(3)};},n);
+  ok('the app, Hoops: Echo asks, the mic opens, and the child\'s word is heard',listening&&heard.phase==='play',heard);
+  ok('the app plays the "heard you" chime as a media element, once the mic has closed',heard.blob===true&&heard.micLive===0,heard);
+  ok('…and never through Web Audio: not one oscillator or buffer was made for it',heard.osc===0&&heard.pcm===0,heard);
+  ok('the chime is a short recording with its level in the samples (an iPhone gives a media element no volume): 0.34 s, peaking near 0.4 of full level',heard.riff==='RIFF'&&heard.rate===24000&&heard.secs===.34&&heard.peak>.3&&heard.peak<.6,heard);
+  const again=await pg.evaluate(async n=>{const a=h.media[n],els=h.media.length,plays=a.plays;Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));return {els:h.media.length-els,plays:a.plays-plays,osc:h.osc};},n);
+  ok('one element a chime: the same chime again replays it from the top',again.els===0&&again.plays===1&&again.osc===0,again);
+  const all=await pg.evaluate(()=>{const names=Object.keys(Sona.sfx).filter(k=>k!=='stop');names.forEach(k=>Sona.sfx[k]());names.forEach(k=>Sona.sfx[k]());const chimes=h.media.filter(a=>!a.voice);return {names,elements:chimes.length,blobs:chimes.every(a=>a.src.startsWith('blob:')),osc:h.osc};});
+  ok('every Sona chime (tap, the win, the coin…) plays as media in the app, one element each however often it rings',all.names.length>=8&&all.elements===all.names.length&&all.blobs&&all.osc===0,all);
+  // a page going to the background stops a chime in flight (Sona.sfx.stop),
+  // and the play() that pause cuts short is not a refusal
+  const cut=await pg.evaluate(async()=>{h.hang=true;Sona.sfx.complete();const a=h.last;Sona.sfx.stop();await new Promise(r=>setTimeout(r,30));h.hang=false;const plays=h.media.reduce((s,x)=>s+x.plays,0);Sona.sfx.tap();await new Promise(r=>setTimeout(r,30));return {paused:a.paused,osc:h.osc,next:h.media.reduce((s,x)=>s+x.plays,0)-plays};});
+  ok('a chime stopped in flight is paused, makes no Web Audio, and the next chime is still media',cut.paused===true&&cut.osc===0&&cut.next===1,cut);
+  const refused=await pg.evaluate(async()=>{h.refuse=true;Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));const first=h.osc;h.refuse=false;const plays=h.media.reduce((s,x)=>s+x.plays,0);Sona.sfx.tap();await new Promise(r=>setTimeout(r,30));return {first,after:h.osc-first,plays:h.media.reduce((s,x)=>s+x.plays,0)-plays};});
+  ok('a chime the phone refuses to start as media is played through Web Audio instead, never silence, and so is every chime after it',refused.first>0&&refused.after>0&&refused.plays===0,refused);
+  // the books' word moment and Feed Echo ring the same chimes
+  for(const [name,file] of [['Feed Echo','arcade-feed.html'],['the book reader','library.html']]){
+   await pg.goto(base+'/'+file);await pg.waitForFunction(()=>!!(window.Sona&&Sona.sfx));
+   const r=await pg.evaluate(async()=>{const els=h.media.length;Sona.sfx.tap();Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));return {made:h.media.length-els,blobs:h.media.slice(els).every(a=>a.src.startsWith('blob:')),osc:h.osc};});
+   ok(name+' in the app: its chimes are media, never Web Audio',r.made===2&&r.blobs&&r.osc===0,r);
+  }
+  const src=f=>readFileSync(path.join(root,f),'utf8');
+  ok('the word games, the books\' word moment and Feed Echo all ring Sona\'s chimes (one switch, in sona.js)',/S\.sfx\[n\]\(\)/.test(src('sayplay.js'))&&/S\.sfx\[name\]\(\)/.test(src('saycheck.js'))&&/S\.sfx\[n\]\(\)/.test(src('arcade-feed.html')));
+  await pg.evaluate(()=>localStorage.setItem('t.mute','1'));await pg.goto(base+'/arcade-feed.html');await pg.waitForFunction(()=>!!(window.Sona&&Sona.sfx));
+  const muted=await pg.evaluate(async()=>{Sona.sfx.correct();Sona.sfx.tap();await new Promise(r=>setTimeout(r,30));return {media:h.media.length,osc:h.osc};});
+  ok('a muted Sona plays no chime in the app, as media or any other way',muted.media===0&&muted.osc===0,muted);
+  await pg.evaluate(()=>{localStorage.removeItem('t.mute');localStorage.setItem('t.web','1');});await pg.goto(base+'/arcade-feed.html');await pg.waitForFunction(()=>!!(window.Sona&&Sona.sfx));
+  const web=await pg.evaluate(async()=>{Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));return {media:h.media.length,osc:h.osc};});
+  ok('a browser keeps Web Audio for its chimes',web.media===0&&web.osc>0,web);
+  await tick();ok('chimes in the app: no runtime errors',errs.length===0,errs);await ctx3.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}
 process.exitCode=failed?1:0;

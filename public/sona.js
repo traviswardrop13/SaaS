@@ -2538,6 +2538,7 @@
   // files to ship and nothing to wait on.
   let _ac = null, _master = null;
   const _sfxNodes = new Set();
+  let _chimeNotes = null;   // set while a chime is being written down for the iPhone app (chimeBytes below)
   function ac() {
     try { if (!_ac) { _ac = new (window.AudioContext || window.webkitAudioContext)(); _master = _ac.createGain(); _master.gain.value = 0.9; _master.connect(_ac.destination); } if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
     return _ac;
@@ -2547,6 +2548,8 @@
   // attack: seconds to reach the peak (default 15 ms). The win chimes pass a
   // slower one so they swell in rather than snap.
   function note(freq, start, dur, type, gain, attack) {
+    // a chime being written down for the iPhone app (chimeBytes below), not played
+    if (_chimeNotes) { _chimeNotes.push({ f: freq, at: start, dur: dur, type: type || "sine", gain: gain || 0.18, attack: attack || 0.015 }); return; }
     const a = ac(); const v = sfxVol(); if (!a || v === 0) return;
     const t0 = a.currentTime + start;
     const o = a.createOscillator(), g = a.createGain();
@@ -2563,9 +2566,7 @@
   const tone = note; // back-comat
   const WIN_ATTACK = 0.025;
   // richer than plain beeps: core note + a soft octave/overtone shimmer
-  const sfx = {
-    // Stop scheduled notes too, so they cannot play when an audio context wakes.
-    stop() { for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear(); },
+  const CHIMES = {
     tap()      { note(660, 0, 0.06, "triangle", 0.10); note(990, 0.005, 0.05, "sine", 0.04); },
     // CALMER WINS (24 Sep 2026). correct and complete are the two loudest
     // chimes and they land on the big moments, right beside Echo's voice. Each
@@ -2580,6 +2581,78 @@
     coin()     { note(988, 0, 0.07, "square", 0.09); note(1319, 0.06, 0.12, "square", 0.09); },           // coin "ching"
     drop()     { note(210, 0, 0.16, "sine", 0.16); note(120, 0.04, 0.18, "sine", 0.10); },                // soft thunk
   };
+  // IN THE IPHONE APP THE CHIMES ARE MEDIA TOO (2 Oct 2026), as Echo's voice,
+  // Piano Tiles' notes and Bubble Pop's pops already are (mediaPCM, at the top
+  // of this file, says why). The "heard you" chime lands the moment the mic
+  // closes, exactly when an iPhone plays Web Audio as a quiet phone call, and
+  // not at all with the ringer switched off. So the app writes each chime down
+  // once, from the same recipe above, as a short recording, and plays it as a
+  // media element: one element a chime, replayed from the top. The level is in
+  // the samples (an iPhone gives a media element no volume): CHIME_MEDIA puts
+  // the win chime's main notes (0.113) at 0.4 of full level, where a Piano
+  // Tiles note and a bubble's pop sit. It was set without a phone to listen
+  // on. A muted Sona plays none. A browser keeps Web Audio. An element the
+  // phone refuses sends that chime, and every one after it, to Web Audio
+  // rather than to silence. When a chime may play is still each page's own
+  // rule (never over a mic); nothing here changes when, only how.
+  const CHIME_RATE = 24000, CHIME_MEDIA = 3.6;   // the rate is what pcmWave's header says
+  let _chimeBroken = false, _chimeGen = 0;
+  const _chimePlayers = {};
+  function chimeShape(type, ph, f) {
+    if (type === "triangle") return Math.asin(Math.sin(ph)) * 0.636619772;
+    if (type === "square") {
+      // only the harmonics a 24 kHz recording can hold: a bare square rings false notes
+      let s = 0; for (let k = 1; k * f < CHIME_RATE * 0.45; k += 2) s += Math.sin(k * ph) / k;
+      return s * 1.273239545;
+    }
+    return Math.sin(ph);
+  }
+  function chimeBytes(name) {
+    let notes; _chimeNotes = [];
+    try { CHIMES[name](); } finally { notes = _chimeNotes; _chimeNotes = null; }
+    let secs = 0; notes.forEach((n) => { secs = Math.max(secs, n.at + n.dur); });
+    const total = Math.ceil(secs * CHIME_RATE), a = new Float32Array(total);
+    notes.forEach((n) => {
+      const i0 = Math.round(n.at * CHIME_RATE), len = Math.round(n.dur * CHIME_RATE), up = Math.max(1, Math.round(n.attack * CHIME_RATE));
+      for (let i = 0; i < len && i0 + i < total; i++) {
+        // the envelope note() asks Web Audio for: up from near nothing to the
+        // peak over the attack, then down to near nothing at the note's end
+        const env = i < up ? 0.0001 * Math.pow(n.gain / 0.0001, i / up) : n.gain * Math.pow(0.0001 / n.gain, (i - up) / Math.max(1, len - up));
+        a[i0 + i] += env * chimeShape(n.type, 6.283185307 * n.f * i / CHIME_RATE, n.f);
+      }
+    });
+    const bytes = new Uint8Array(total * 2), dv = new DataView(bytes.buffer);
+    for (let i = 0; i < total; i++) dv.setInt16(i * 2, Math.round(Math.max(-1, Math.min(1, a[i] * CHIME_MEDIA)) * 32767), true);
+    return bytes;
+  }
+  function chime(name) {
+    if (_chimeBroken || !voiceAsMedia()) { CHIMES[name](); return; }
+    if (sfxVol() === 0) return;   // nothing to turn down on a media element, so a muted Sona must not start one
+    const gen = _chimeGen;
+    // (a chime stopped by sfx.stop(), or asked for by a page already hidden,
+    // also lands here, its play() cut short: that is not a refusal)
+    function web() { if (gen !== _chimeGen || document.hidden) return; _chimeBroken = true; try { CHIMES[name](); } catch (e) {} }
+    try {
+      let p = _chimePlayers[name];
+      if (!p) {
+        p = new Audio(URL.createObjectURL(pcmWave(chimeBytes(name)))); p.preload = "auto";
+        p.onerror = function () { _chimeBroken = true; };
+        _chimePlayers[name] = p;
+      }
+      try { if (p.currentTime) p.currentTime = 0; } catch (e) {}
+      const r = p.play();
+      if (r && r.then) r.then(null, web);
+    } catch (e) { web(); }
+  }
+  const sfx = {
+    // Stop scheduled notes too, so they cannot play when an audio context wakes.
+    stop() {
+      for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear();
+      _chimeGen++;
+      for (const k in _chimePlayers) { try { _chimePlayers[k].pause(); } catch (e) {} }
+    },
+  };
+  Object.keys(CHIMES).forEach((k) => { sfx[k] = function () { chime(k); }; });
   // Optional background music — plays a real track if /sfx/music.mp3 is added,
   // gated on a profile toggle (off by default). No synth music (would sound cheap).
   let _music = null;
