@@ -206,6 +206,9 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
+    // how many races this child has started from Sound Sprint's start card
+    // (Echo's how-to-play, shown for the first three): a sibling gets their own
+    "sona.sprintintro.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
