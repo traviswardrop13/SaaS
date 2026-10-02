@@ -328,7 +328,8 @@ if (appFree) {
   await pg.goto("http://localhost:8211/charge.html?daily=1"); await pg.waitForTimeout(900);
   ok("the daily run opens for a family with no plan", /charge\.html\?daily=1/.test(pg.url()), pg.url());
 
-  // the plan screen: ONE plan card, and what stays free right under it
+  // the plan screen: Premium's two ways to pay (yearly and, since 1 Oct 2026,
+  // monthly), and what stays free right under them
   await pg.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now())));
   await pg.goto("http://localhost:8211/subscribe.html"); await pg.waitForTimeout(900);
   const plan = await pg.evaluate(() => ({
@@ -338,8 +339,8 @@ if (appFree) {
     freeText: (document.getElementById("freeTierCard") || {}).innerText || "",
     line: document.getElementById("planLine").innerText,
   }));
-  ok("the plan screen offers exactly one plan to a family on the free version",
-    plan.pick === "block" && plan.plans === 1, JSON.stringify(plan));
+  ok("the plan screen offers Premium two ways, yearly and monthly, to a family on the free version — and no third",
+    plan.pick === "block" && plan.plans === 2, JSON.stringify(plan));
   // The free-version promise must not count games that are still parked.
   ok("…and says what they keep if they don't buy it, in the one phrase",
     plan.free === "block" && /daily practice and free games/i.test(plan.freeText) && !/\btwo games\b/i.test(plan.freeText), JSON.stringify(plan));

@@ -17,7 +17,10 @@ body[data-crafted] .ovlEcho{object-fit:contain;width:132px;height:132px;top:-75p
 body[data-crafted] .btn,body[data-crafted] .btn.blue{background:linear-gradient(#19b6bb,#078e9d);box-shadow:inset 0 2px 0 #ffffff88,0 5px 0 #056c7c,0 8px 15px #16565720;border:1px solid #068a98;color:#fff;text-transform:none;letter-spacing:0;min-height:48px;}
 body[data-crafted] .btn:active,body[data-crafted] .btn.blue:active{box-shadow:inset 0 2px 0 #ffffff88,0 2px 0 #056c7c;}
 body[data-crafted] .btn.ghost,body[data-crafted] button.ghost{background:#f5e9d0;color:#6a4829;border:1px solid #ead9bd;box-shadow:0 3px 0 #c5ac8640;min-height:44px;border-radius:22px;padding:10px 20px;text-transform:none;}
-body[data-crafted] .echoWin{height:120px;overflow:visible;}
+/* Echo's box holds his whole hop: 132px of bird, the 14px echoHop lifts him,
+   and 6px for the tilt at the top of it. At 120px he stood 12px proud of the
+   box, so he hopped into the line above him and hid part of it. */
+body[data-crafted] .echoWin{height:152px;overflow:visible;}
 body[data-crafted] .echoWin img{bottom:0;width:132px;height:132px;object-fit:contain;margin-left:-66px;}
 body[data-crafted] #endTitle{background:transparent;box-shadow:none;}
 body[data-crafted] #endTitle:after{display:none;}

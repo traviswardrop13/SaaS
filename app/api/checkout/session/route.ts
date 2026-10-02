@@ -36,7 +36,17 @@ export async function GET(req: NextRequest) {
   const stripe = new Stripe(key);
   try {
     const s = await stripe.checkout.sessions.retrieve(id, { expand: ["subscription"] });
-    const sub = (s.subscription && typeof s.subscription !== "string" ? s.subscription : null) as Stripe.Subscription | null;
+    // A FINISHED CHECKOUT, OR NOTHING (1 Oct 2026). This answer is what the
+    // success page unlocks Premium on, and a session exists from the moment
+    // someone opens Stripe's form — its id is in that form's address. Until
+    // now any known id answered ok, paid or not. Stripe marks a session
+    // "complete" only once the form is submitted: the first month charged
+    // (monthly), or the card saved for the trial (yearly). An open or expired
+    // one is a receipt for nothing.
+    if (s.status !== "complete") {
+      return NextResponse.json({ ok: false, error: "That checkout wasn't finished." }, { status: 402 });
+    }
+    const sub =(s.subscription && typeof s.subscription !== "string" ? s.subscription : null) as Stripe.Subscription | null;
     const item = sub?.items?.data?.[0];
     // current_period_end lives on the subscription in older API versions and on
     // the subscription item in newer ones — read both, prefer the item.

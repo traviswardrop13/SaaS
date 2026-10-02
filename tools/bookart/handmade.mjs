@@ -12,4 +12,4 @@
 // builder refuses that folder rather than write old pictures beside the new.
 export const HANDMADE = ["rory-rainbow", "sid-the-seagull", "shay-the-shy-shark", "chip-the-chipmunk", "mia-makes-muffins", "leo-lucky-leaf", "theo-thunder-day", "kip-kite", "zoe-and-the-zipper", "goldie-guitar", "jax-and-the-jam-jar", "this-bear-that-bee", "toby-tiny-tuba", "finn-finds-a-feather", "val-the-van", "penny-pebble-party", "ned-needs-a-net", "dot-digs-a-pool", "bo-beach-day",
   "rosie-red-wagon", "ray-lost-ring", "sam-sailboat", "sophie-silly-soup", "libby-lemon", "leon-lantern", "shane-shiny-shell", "shawn-shadow", "thor-thank-you", "thelma-thirsty-plant",
-  "boo-bat-halloween"];
+  "boo-bat-halloween", "rory-halloween", "sid-halloween", "leon-halloween", "zoe-halloween", "finn-halloween"];

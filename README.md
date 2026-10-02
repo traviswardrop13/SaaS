@@ -81,9 +81,11 @@ was live.
 
 ## Pricing
 
-One plan: **$59.99/year after a 3-day free trial** ($59.99 ÷ 12, so every
-surface says "under $5 a month"). Monthly was retired in September 2026;
-existing monthly subscribers keep their plan and can still restore it.
+Two ways to pay for Premium: **$59.99/year after a 3-day free trial**
+($59.99 ÷ 12, so every surface says "under $5 a month, billed once a year"),
+picked by default, or **$9.99/month, charged today with no trial**. Monthly
+was retired on 18 September 2026 and put back on sale on 1 October; anyone
+holding a monthly subscription from any window keeps it and can restore it.
 
 Free regardless: families referred by an SLP (free forever, in writing), plus
 pilots, founders, and three grandfathered cohorts from earlier free windows.

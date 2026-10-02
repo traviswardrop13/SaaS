@@ -136,7 +136,12 @@ it, never before.
 **Before families can buy on the iPhone** (Travis's App Store Connect task,
 not this repo): the yearly subscription must be approved in App Store Connect
 at $59.99. Until Apple approves it, the in-app purchase fails on the iPhone
-and only the web checkout sells.
+and only the web checkout sells. **The monthly one too** (1 Oct 2026):
+`com.speaksona.app.monthly` must be approved there, at the monthly price,
+with **no introductory offer on it**, and sit in RevenueCat's `full`
+entitlement. Until all of that is true the iPhone shows the yearly plan alone:
+the monthly row appears only when the store hands back that product, priced,
+with no free trial attached.
 
 **THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
 (19 Sep 2026).** This repo already threw out one struck-through price
@@ -167,23 +172,81 @@ The native card shows none of this. App Store Connect owns the iOS price;
 mirroring the charter tier there is an ASC introductory offer, not a change in
 this repo — `NATIVE.md` says what and why.
 
-**MONTHLY IS RETIRED** (18 Sep 2026). There is one plan. What went with it, and
-must not come back as decoration: **$119.88** and **"save $59.89"** were only
-ever 12 × $9.99, so with no monthly plan to buy, a struck-through price is an
-anchor against a number nobody can pay — an invented was-price, not a discount.
-`tests/progtest.mjs` fails if a second plan card or either figure returns.
+**TWO WAYS TO PAY: YEARLY, AND MONTHLY AGAIN** (Travis, 1 Oct 2026: "we need to
+add to the paywall a $10 a month option. So that does not have a free trial.
+That's a pay today, but the $59.99 has a three-day trial. And have that as the
+default option selected"). Monthly was retired on 18 Sep 2026 and is back on
+sale: **$9.99 a month, charged at purchase, no trial** (`MONTHLY_CENTS` /
+`MONTHLY_PRICE` in `lib/charter.ts`, the one figure checkout, `/api/charter`,
+the pages and the Terms use). The yearly plan keeps its 3 free days and the
+charter price, and **it is the one picked when the plan screen opens**.
+- **The plan screen** (`subscribe.html`, web and Apple cards, offer and
+  Settings views): two boxes that are radios, yearly picked, **one button**
+  under both. Everything true of only one plan follows the pick, from one
+  paint function per card: the button ("Start 3 days free" / "Subscribe —
+  $9.99 a month"), the free-days timeline and "no charge today" (yearly only),
+  "charged today" (monthly only), the small print and the heading. Nothing
+  yearly stays on screen beside a button that charges today. The monthly box
+  says **"Charged today"**, never "no free trial" (Travis, 1 Oct 2026: "dont
+  say no free trial at the bottom"), and never the word "free" at all.
+- **Monthly never touches the charter.** `/api/checkout` has its own short
+  branch for it — its own amount, a month interval, no `trial_period_days`,
+  **no `tier` stamp**, inline `price_data` only (never an env Price), and it
+  does not even call `charterSpots()`. Routed through the yearly block it
+  would be charged $59.99 or $99.99 every month. Its price does not move when
+  the charter closes, and no surface calls it "charter" or gives it a
+  spots-left number.
+- **Only the plan screen can ask for it, by the exact word.** `pickPlan` sells
+  monthly for `"monthly"` and nothing else; a missing plan, a typo or "month"
+  is the yearly plan. **A plain GET link is always yearly**, whatever its
+  `?plan=` says: an old ad or email link has no plan screen and no grown-ups
+  gate in front of it, and must never open a pay-today checkout.
+- **On the iPhone the store owns every figure.** The monthly row ships hidden
+  with no price in the markup; it appears only when RevenueCat returns the
+  monthly product itself (`Sona.iapProduct` refuses any other id), with a
+  price string and **no introductory offer**. No dollar saving and no ratio on
+  the Apple card.
+- **The comparison figures did NOT come back with it.** **$119.88** and
+  **"save $59.89"** are still banned, on every surface, in both pricing
+  states (`chartertest`). Twelve months of $9.99 is a real price again, but
+  the saving is $59.89 only while the charter price lasts: at family
+  fifty-one the yearly plan is $99.99 and the saving is $19.89, and on the
+  iPhone the numbers are Apple's.
+- **The receipt is Stripe's.** `/api/checkout/session` answers only a session
+  Stripe marks `complete` (an opened, unpaid form used to unlock Premium), and
+  the success page takes the plan from the subscription's interval, never
+  from the address: a monthly buyer is never told "$0 charged" or shown the
+  charter line.
+`caseloadtest` plays the checkout route against a fake Stripe (what each plan
+is charged, charter open and closed); `progtest` and `iaptest` play the pick on
+both cards; `firstgametest` keeps both boxes and the button on the first
+screen at seven phone sizes with the charter line showing, and re-prices
+every yearly figure when the price check answers late.
 
 What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
 surface says "**under $5 a month**" and never "$4.99 a month" (which would
-imply $59.88 a year).
+imply $59.88 a year) — and **always with "billed once a year"**, because
+beside a real monthly plan a bare "under $5 a month" reads as a cheaper one.
 
-**Retiring a plan does not cancel a subscription.** Anyone still on $9.99/month
-keeps it. So: `/api/subscription` must go on recognising `month` intervals,
-`IAP_PRODUCTS.monthly` stays in `sona.js` so RevenueCat can restore them on a
-reinstall, and the Terms still describe the monthly plan for the people holding
-one. Only the PURCHASE path lost it. Old `?plan=monthly` links resolve quietly
-to yearly rather than erroring, because a stale link belongs to someone
-actively trying to pay.
+**A plan off sale is not a cancelled subscription.** Anyone who bought
+$9.99/month, in August or today, keeps it. So: `/api/subscription` must go on
+recognising every interval, `IAP_PRODUCTS.monthly` stays in `sona.js` so
+RevenueCat can restore them on a reinstall, and the Terms describe both plans.
+**And a flip to free now leaves monthly buyers charged every month, not once a
+year**, in an app that is free: stopping those subscriptions in Stripe and
+App Store Connect is the first operations task of any flip (see "The iOS
+price does not live in this repo").
+
+**Known, and not fixed by the monthly change (1 Oct 2026) — Travis's call when:**
+(1) A family who paid on the WEB has no cancel button: `/api/portal` (Stripe's
+billing page) is built but nothing links to it. So the monthly plan's small
+print says what is true ("To cancel, email hello@speaksona.com and we'll stop
+it", pinned in `progtest`), as the Terms do; the yearly card still says
+"cancel anytime in your account", which is the older, looser wording. A
+pay-today monthly plan is the one people cancel most. (2) A web purchase is never re-checked on the
+device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
+on Restore asks Stripe, so a web plan that was cancelled, or a trial that
+never became a charge, stays unlocked on that phone.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const
@@ -196,7 +259,7 @@ into a page, stop — you are undoing this.
 
 **The iOS price does not live in this repo.** `subscribe.html` overwrites the
 figures with whatever RevenueCat reports from App Store Connect, so the native
-card states the saving as a RATIO ("roughly half"), never as dollars. Change
+card never states a saving at all, in dollars or as a ratio. Change
 ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
 subscription** — anyone who bought during a paid window keeps being billed
 until it is stopped in those dashboards. That is an operations task.
@@ -230,9 +293,28 @@ grown-ups tabs, crumb, "Your plan" head and summary box step aside, and the page
 leads with the Premium games in Home's own art (`Sona.CRAFTED_CARDS`, one map
 for both pages), one line built only from what the device recorded ("Milo just
 practiced the R sound — 12 words out loud!") or the tapped game ("Milo wants to
-play Hoops"), a headline, three checks, then the unchanged plan card with the
-button on the first screen at 375×667 and up. Counts come from the catalog and
-no date is promised ("new ones on the way"). Rachel's line moves under the
+play Hoops"), a headline, three checks, then the plan card (two ways to pay
+since 1 Oct 2026, above) with the button on the first screen at 360×740,
+375×667 and up. **The fit is measured, never guessed from the screen's
+height:** `fitOffer()` looks at where the button actually landed and takes
+one step at a time (`body.fit1`…`fit5`: a smaller picture, a strip, tighter
+type and boxes, then the third check gives way to the "What stays free" card
+under the offer, and only last the picture goes) until it is on screen. A
+height rule failed between 701 and 855 px tall with the charter line showing.
+Everything it resizes has `transition:none`, because `sona.css` gives every
+property a near-instant transition under Reduce Motion and a box
+mid-transition reports the size it WAS. **The line under the headline says
+who Premium's games are for, never how many** (Travis, 1 Oct 2026: "a
+different way to say 6 more games today, like more games for littles and for
+bigs ... new ones on the way is fine"), and it is read from the catalog so it
+is true for the parent reading it: "More games for little kids and big kids,
+and new ones on the way." only once BOTH age groups have a Premium game a
+child can open. On 1 Oct every playable Premium game was a big-kid (Arcade)
+one, so it says "More games for big kids, and new ones for little kids on the
+way." and changes by itself the day a little-kid Premium game is released. No
+date is promised. **Anything switched with the `hidden` attribute is hidden**
+(`[hidden]{display:none !important}` on this page): a display rule on the same
+element once showed an empty win pill and Rachel's line twice. Rachel's line moves under the
 decline, word for word. Settings › Your plan (no flag) is the page as it was.
 Every pricing rule in this section still applies to the card itself.
 
@@ -446,7 +528,14 @@ game count (every game Home opens, never a Coming soon one), its book count
 and the page counts and tags them on the visitor's own calendar) and "19
 speech sounds" are pinned to the catalog by `shiptest`, and its game strip
 shows only games a child can open: bring a game back and the test fails until
-the page says so.
+the page says so. **The strip's game tiles are the app's own painted Home
+cards** (1 Oct 2026; they were the old flat stickers and three frames of a
+canvas court beside painted book covers): `python3 tools/art/site-tiles.py`
+cuts each `public/assets/crafted/home-<name>.webp` to a square in
+`public/assets/site/games/<key>.webp`. A new game on the strip is one line in
+that script's `TILES`. The two phone screens (`/assets/site/slice.webp`,
+`piano.webp`) are still the ads' flat pictures; fresh captures of the painted
+games are owed.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
@@ -459,10 +548,18 @@ else goes to `/api/lead` with their email and role. An ad aimed at speech
 therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
 both pages.
 
-**While the app is not ready, nobody is sent to the App Store** (Travis, 25
-Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
-`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in `parents.html`
-and `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
+**The app is live, and the websites send people to the App Store** (Travis,
+1 Oct 2026: "yeah send people to app store now!", with the listing checked:
+a free download, not a pre-order). `APP_READY = true` in `lib/launch.ts` and
+`var APP_READY` in `parents.html` and `for-slps.html`, pinned equal by
+`shiptest`: the top line reads "Now on iPhone and iPad", Start free takes the
+email and opens the App Store (Android: the web app), and the "launches
+Friday" welcome email and the clinician's P.S. stop. **Nobody on the waiting
+list is emailed by this**: they were promised an email "the moment it's
+ready", and that is a Kit broadcast Travis sends. The switch stays, both
+states built, for the next time the app is not ready (25 Sep 2026: "the app
+launches next week"; the iOS 27 build closed on launch). While it is `false`,
+nobody is sent to the App Store: a parent or "other" is thanked
 on the page ("Sona launches Friday, October 2. We'll email you the moment it's
 ready.", the date Travis emailed the list on 30 Sep) and emailed the same once through Resend (`/api/lead`,
 `launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
@@ -667,25 +764,25 @@ grown-up to help open …", naming the free one) with the button to
 too. A child whose own books are all locked or coming sees the free book first.
 Rename Rory and the Rainbow and `FREE_BOOKS` must follow (`readtest` pins it).
 
-**Every queued book opens next Friday, 9 Oct** (Travis, 27 Sep 2026: "a
-solid book for the top four or five most popular letters... everything else,
-we can just set a date on it"; then 1 Oct 2026: "I don't want all these books
-and games to have different dates ... everything that is currently in queue
-to just say for next Friday"). R, S, L, SH and TH are open, three books each.
-Every other book in `STORIES` carries `opens: "2026-10-09"` (one day for all
-27; the old Monday-a-few-a-week schedule is gone) and waits on the shelf
-greyed, "Coming Oct 9", until that day on the phone's own calendar; a tap or
-`openBook()` does nothing before it, and on the day every one opens by
-itself. The six-page books (painted, see below) sit after every twelve-page
-one in `STORIES`, and with one day for all the shelf keeps that order: they
-put the sound anywhere in a word and are last in line to be redone. A child
-whose sounds have nothing open yet sees every open book first, then their
-own, coming. Home's card, the website and the Premium page say "new ones on
-the way" (the families pricing page: "as they come out"), never "every week":
-once the queue opens on 9 Oct no book is scheduled after it and no game after
-16 Oct, so a weekly promise would have nothing behind it. Never "a book for
-every sound", and never a weekday.
-`readtest` pins the dates and the shelf; `landingtest` the website's count.
+**Every book that is made is live** (Travis, 1 Oct 2026: "if anything is
+made ... let's just make it live", replacing the 9 Oct opening day). No book
+in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
+book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
+see below) sit after every twelve-page one in `STORIES`: they put the sound
+anywhere in a word and are last in line to be redone. A limited-time book
+carries `season` instead and is on the shelf, and Home's Limited time row,
+only inside its window. **Halloween (October 2026) has one for six sounds**
+(Travis, 2 Oct 2026: "take a popular book like the halloween and make a
+version for other letter even just the popular ones like r s l z f"): Boo the
+Bat (B, `anySound`), Rory the Rabbit (R), Sid the Seagull (S), Leon's
+Trick-or-Treat Night (L), Zoe the Zebra (Z) and Finn the Fish (F), each
+starring that sound's own hero under the same sound rule. A child sees the
+one in their own sound; a child whose sounds have none sees Boo
+(`Sona.seasonPick`, which the shelf and Home both ask); play mode and a child
+with no sounds yet see them all. Home's card,
+the website and the Premium page say "new ones on the way", never "every
+week", "a book for every sound" or a weekday. `readtest` pins that nothing
+waits; `landingtest` the website's count.
 
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
@@ -856,9 +953,9 @@ the ball goes. What it keeps, as Hoops does:
 - **Its sounds** (kick, net, save, bounce, whoosh, roll) go through the
   engine, and **nothing is practice data**.
 Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
-from main's covers, 1 Oct 2026); the sticker and the website tile are still a
-frame of the pitch (`public/assets/games/soccer.webp`, through `PLAYED`), and
-painted art drops in at that name. Bo's own picture drops in by setting
+from main's covers, 1 Oct 2026), and the website tile is cut from it; the
+sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
+through `PLAYED`), and painted art drops in at that name. Bo's own picture drops in by setting
 `KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
 neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
 whole game.
@@ -879,9 +976,9 @@ roars. What it keeps:
 - **Its sounds** (brush, pop, whoosh, clack, roar) go through the engine, and
   **nothing is practice data**.
 Home's wide card is the painted one (`public/assets/crafted/home-dino.webp`,
-from main's covers); the sticker and the website tile are still a frame of the
-woken dinosaur (`public/assets/games/dino.webp`), replaced by painted art at
-that name. `sayplaytest` plays a whole dig.
+from main's covers), and the website tile is cut from it; the sticker is still
+a frame of the woken dinosaur (`public/assets/games/dino.webp`), replaced by
+painted art at that name. `sayplaytest` plays a whole dig.
 
 **Dino Dig has four dinosaurs** (Travis, 1 Oct 2026: "i want to build different
 types of dinosaurs to look for not just one"): T. rex, Triceratops,
@@ -958,17 +1055,40 @@ keys, so it ends in a win. A tile that slips by fades and the song plays on
 on the keys until tapped; and a tile takes the song's fall time on every
 screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
+**The notes are the music, and in the iPhone app they are media** (Travis, 1
+Oct 2026: "there's no music with the tiles game. We want it to like play
+little songs while you're playing"). Each tile was a thin beep through Web
+Audio, which an iPhone's ring/silent switch silences and which a page that has
+had the mic open plays as a quiet phone call, so on the phone the songs were
+not there. Each note is now a piano note built on the phone (0.55 s, so the
+mic's quiet window still holds), and the app plays it as a media element, one
+kept per key, with the level in the samples (`MEDIA_PEAK`: an iPhone gives a
+media element no volume). A refused element falls back to Web Audio, never to
+silence. A browser keeps Web Audio at the level it had, so iPhone Safari with
+the ringer off is still silent. The loudness in the app was set without a
+phone to listen on: it is that one number.
 `tests/tilestest.mjs` plays a whole round.
 
-**The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
-her July demo by ear: "use number 4"). Every game's one-take sound
-(`/coach/say-echo/<S>-sound.wav`, cut by `tools/soundclips.mjs`) was her take
-re-voiced into Echo's voice, and for R the voice changer moved her third
-formant from about 1,430 Hz to about 2,900, toward /w/: the "wabbit" error the
-child is here to fix. A gentler setting still left it near 1,850. So R alone
-plays her own take (`OWN` in the tool), at the same loudness as the rest; the
-other voiced sounds stay re-voiced until a listen says otherwise. Piano Tiles
-plays the same one take now (it played the three-take re-voiced demo).
+**Every sound is Rachel's own voice** (Travis, 1 Oct 2026, of the L on Fruit
+Slice's practice page: "it said the weirdest sound. But it didn't say the
+actual one ... we need to either insert her voice right there or re-record";
+R went first that morning, "use number 4"). The one-take sound that plays in
+the letter's place ("…and make your [lll] sound, five times."), on every
+say-it card and in every sound power (`/coach/say-echo/<S>-sound.wav`) is cut
+by `tools/soundclips.mjs` from her July recordings in `/coach/say/`: her short
+demo of the sound where it is clean, else the same sound inside her whole July
+line ("… — p! p! p!"), whose room noise is 20–30 dB lower. They used to be her
+takes re-voiced into Echo's voice, and the voice changer bent the very cue a
+child copies: her L became an "ee", her R moved toward W (the "wabbit" error),
+her N and Z took a vowel's shape and Z lost its hiss; v4 Turbo's F (used for
+the voiceless sounds) came out voiced. All 19 now come from her, R still the
+take Travis picked, levelled to Echo's words to the ear. `storytest` holds
+every take to her recordings and checks each still sounds like its sound:
+voiced sounds voiced, hisses hissing, the L not an "ee". A new take is a new
+window in the tool's `TAKES`, read off a spectrogram; which take is the model
+is Rachel's call. Piano Tiles plays the same one take (it played the
+three-take re-voiced demo). Her whole lines stay re-voiced: practice plays
+one only when the voice service is down.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
@@ -1033,6 +1153,24 @@ left or right half of the screen). A golden coin is a coin magnet. The top
 bar shows coins and the stretch; the end card counts metres (it said
 "treats"). `tests/runtest.mjs` runs a whole race.
 
+**Sound Sprint opens on Echo's how-to-play** (Travis, 1 Oct 2026: "when a kid
+is about to start playing sound sprint, we want the voice ... to say
+instructions ... so that they have instruction on what to do"). A child's
+first three races open on a start card: Echo waving, three pictures from the
+race itself (the runner in the lanes, a rock and a cactus, a gold coin) and one
+teal button, "Let's run!". An iPhone plays nothing on a new page until a tap,
+so the tap is the button: Echo says "Tap a lane to move side to side. Dodge
+the rocks and the cactus, and grab the gold coins!" (true to the race: there
+is no gold star), the button becomes a cream "Skip", and the race starts the
+moment he stops. The race is held behind the card (nothing moves, spawns or
+counts; both clocks start with the race). Three races, counted per child
+(`sona.sprintintro.v1`); a suite that needs the race running seeds it to 3.
+The line plays as media inside the tap (`Sona.mediaPCM`), with the browser
+voice as the fallback, and never leaves a dead end: sound off starts the race
+at once, a voice that never comes starts it within seven seconds, and locking
+the phone mid-line stops Echo and keeps the race held. No microphone, no rep,
+no practice data. `tests/runtest.mjs` plays all of it.
+
 **Flappy Glide is the same round, as a flight** (27 Sep 2026): three legs of
 6, 7 and 8 gaps, a rest on a cloud between each with the say-it card ("Say
 “rrrr” to fly on!"), and a fireworks landing that always ends the flight in a
@@ -1050,7 +1188,7 @@ remains in the repo. **Bubble Pop is back** (Travis, 30 Sep 2026), free, the
 second game for ages 3-4 beside Feed Echo: the same engine
 (`simple-play.js`), a full-width Home card like Feed Echo's
 (`crafted-home.css`), no release date so no New shelf, and a website tile
-drawn from its own sticker (`/assets/site/games/bubbles.webp`). The adventure
+cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
@@ -1266,6 +1404,7 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
   Play games and Bubble Pop all do; a new page that speaks does too. The
   browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
-  The chimes are still Web Audio.
+  The chimes are still Web Audio; Piano Tiles' notes are not (see "The notes
+  are the music").
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.

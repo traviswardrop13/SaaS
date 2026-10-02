@@ -125,11 +125,13 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
 // ── the beat must FINISH SPEAKING before the round's prompt plays ──
 {
   const src = readFileSync(ROOT + "/charge.html", "utf8");
-  // Rachel's RAW takes (/coach/say/) never play on any surface: what plays is
-  // the set re-voiced into Echo's voice (/coach/say-echo/, tools/revoice.mjs),
-  // switched ON on 25 Sep 2026 so the mirrored sounds can be heard in the app.
-  // The switch stays shared: charge.html gating its own local copy is exactly
-  // how coach-call.html kept playing her raw voice.
+  // Rachel's July recordings (/coach/say/) never play whole on any surface:
+  // what plays is /coach/say-echo/ — one take of each sound cut from them
+  // (tools/soundclips.mjs, her own voice since 2 Oct 2026), and her lines
+  // re-voiced into Echo's voice (tools/revoice.mjs) where a whole line is
+  // still needed. Switched ON on 25 Sep 2026. The switch stays shared:
+  // charge.html gating its own local copy is exactly how coach-call.html
+  // kept playing her raw lines.
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   const call = readFileSync(ROOT + "/coach-call.html", "utf8");
   ok("the human-clip switch is shared, not per-page, and on",
@@ -141,11 +143,11 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     ok("no page plays Rachel's raw takes from /coach/say/", raw.length === 0, raw.join(", "));
     // 29 Sep 2026: practice and Fruit Slice play ONE cut take of her sound
     // (tools/soundclips.mjs) inside Echo's v4 Turbo words; parked Coach Call
-    // still reaches for the demos. Since 1 Oct 2026 R's cut take is her own
-    // voice, cut by the tool from her raw demo: re-voicing moved her R
-    // toward W. It still plays from /coach/say-echo/, so this pin holds.
+    // still reaches for the demos. The cut takes are her own voice (R since
+    // 1 Oct, every sound since 2 Oct 2026), and still play from
+    // /coach/say-echo/, so this pin holds.
     const slice = readFileSync(ROOT + "/arcade-slice.html", "utf8");
-    ok("practice, Fruit Slice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
+    ok("practice, Fruit Slice and Coach Call play from /coach/say-echo/", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
     // Her whole July line is kept for ONE case: the voice service is down
     // (it needs no TTS). It is never the prompt otherwise.
     ok("her whole July line plays in practice only when the voice service is down", (src.match(/"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/g) || []).length === 1 && /whole:"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src) && /result==="voice-down"\)result=await playMedia\(packet\.slot\.whole/.test(src));
@@ -206,6 +208,50 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     const top = Math.max(...aLevels.map((l) => l.a));
     const uneven = aLevels.filter((l) => top - l.a > 1 || l.peak > -2.95);
     ok("every cut take sounds as loud as the others to the ear, peaks under -3 dB", uneven.length === 0, uneven.map((l) => `${l.n} ${l.a.toFixed(1)}A pk${l.peak.toFixed(1)}`).join("; "));
+    // Every take is Rachel's OWN voice (Travis, 1 Oct 2026, of the L on the
+    // practice page: "it said the weirdest sound ... insert her voice right
+    // there"). The voice changer had turned her L into an "ee" and her Z into
+    // a vowel with no hiss, and v4 Turbo's F came out voiced. So: every take
+    // is cut from her recordings, and each one still sounds like its sound,
+    // measured as the tool's notes measure it.
+    const { TAKES } = await import("../tools/soundclips.mjs");
+    const { fftPower } = await import("../tools/aweight.mjs");
+    const SOUNDS = cuts.map((n) => n.replace("-sound.wav", ""));
+    const notHers = SOUNDS.filter((k) => !TAKES[k] || !existsSync(ROOT + "/coach/say/" + TAKES[k][0]));
+    ok("every sound's one take is cut from Rachel's own recordings (tools/soundclips.mjs), never re-voiced or TTS", notHers.length === 0, notHers.join(", "));
+    const take = (k) => { const b = readFileSync(ROOT + "/coach/say-echo/" + k + "-sound.wav"); return Float64Array.from({ length: (b.length - 44) >> 1 }, (_, i) => b.readInt16LE(44 + i * 2) / 32768); };
+    // Voicing: the share of 30 ms windows (within 30 dB of the loudest) whose
+    // autocorrelation peaks over 0.5 between 70 and 400 Hz.
+    const voicedShare = (x) => {
+      const W = 720, H = 240, lo = 60, hi = 343, e = [];
+      for (let s = 0; s + W <= x.length; s += H) { let t = 0; for (let i = s; i < s + W; i++) t += x[i] * x[i]; e.push(t); }
+      const floor = Math.max(...e) / 1000; let n = 0, v = 0;
+      e.forEach((t, f) => {
+        if (t < floor) return; n++; const s = f * H; let best = 0;
+        for (let L = lo; L <= hi; L++) { let num = 0, d1 = 0, d2 = 0; for (let i = s; i + L < s + W; i++) { num += x[i] * x[i + L]; d1 += x[i] * x[i]; d2 += x[i + L] * x[i + L]; } best = Math.max(best, num / Math.sqrt(d1 * d2 + 1e-12)); }
+        if (best > 0.5) v++;
+      });
+      return n ? v / n : 0;
+    };
+    const VOICED = ["B", "M", "N", "D", "G", "V", "Z", "J", "L", "R", "THV"];
+    const wrongVoice = SOUNDS.map((k) => ({ k, v: voicedShare(take(k)) })).filter(({ k, v }) => (VOICED.includes(k) ? v < 0.8 : v > 0.25));
+    ok("every voiced sound's take is voiced, and every hiss and pop is not", wrongVoice.length === 0, wrongVoice.map(({ k, v }) => `${k} ${(v * 100).toFixed(0)}% voiced`).join("; "));
+    // Where the energy sits (512-point frames, dB of one band over another).
+    const bandsOf = (x) => {
+      const acc = new Float64Array(257), hann = Array.from({ length: 512 }, (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / 511));
+      for (let s = 0; s + 512 <= x.length; s += 256) { const re = new Float64Array(512); for (let i = 0; i < 512; i++) re[i] = x[s + i] * hann[i]; fftPower(re).forEach((p, k) => (acc[k] += p)); }
+      const band = (a, b) => { let t = 0; for (let k = Math.ceil((a * 512) / 24000); k < (b * 512) / 24000; k++) t += acc[k]; return t; };
+      return { low: band(500, 1500), mid: band(1800, 2800), high: band(3000, 8000) };
+    };
+    const db = (a, b) => 10 * Math.log10(a / b);
+    // F, S, Z, SH, CH and TH hiss: more energy above 3 kHz than at 0.5–1.5 kHz,
+    // by 6 dB (the re-voiced Z sat 16 dB under, v4 Turbo's F 15 dB under).
+    const noHiss = ["F", "S", "Z", "SH", "CH", "TH"].map((k) => ({ k, d: db(bandsOf(take(k)).high, bandsOf(take(k)).low) })).filter(({ d }) => d < 6);
+    ok("every hissing sound's take hisses", noHiss.length === 0, noHiss.map(({ k, d }) => `${k} ${d.toFixed(1)} dB`).join("; "));
+    // An L keeps 1.8–2.8 kHz quiet, 20 dB under 0.5–1.5 kHz: the re-voiced L
+    // put an "ee"'s second formant there (9 dB under).
+    const l = bandsOf(take("L"));
+    ok("the L take sounds like an L, not an \"ee\"", db(l.mid, l.low) < -20, db(l.mid, l.low).toFixed(1) + " dB");
   }
   // Locking the phone fires visibilitychange, NOT pagehide. Every page holding
   // a mic must release on both, or the recording indicator stays lit in a

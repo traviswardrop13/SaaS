@@ -160,8 +160,12 @@ function fakeDevice(cfg) {
     return an;
   };
   window.AudioContext = window.webkitAudioContext = AC;
+  // cfg.native: the page is inside the iPhone app. cfg.refuse: the phone
+  // refuses every media element.
+  if (cfg.native) window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
   HTMLMediaElement.prototype.play = function () {
-    const media=this,rec={kind:"media",start:now(),end:Infinity,live:h.micOn()};h.sounds.push(rec);media.__quietRecord=rec;
+    if (cfg.refuse) return Promise.reject(new DOMException("refused", "NotAllowedError"));
+    const media=this,rec={kind:"media",start:now(),end:Infinity,live:h.micOn(),src:String(media.src)};h.sounds.push(rec);media.__quietRecord=rec;
     media.__quietTimer=setTimeout(()=>{rec.end=now();if(media.onended)media.onended();},cfg.speechMs||400);return Promise.resolve();
   };
   HTMLMediaElement.prototype.pause = function(){clearTimeout(this.__quietTimer);if(this.__quietRecord)this.__quietRecord.end=Math.min(this.__quietRecord.end,now());};
@@ -194,6 +198,10 @@ function fakeDevice(cfg) {
       voiceOn: cfg.voiceOn !== false, soundOn: cfg.soundOn !== false, volume: cfg.volume == null ? 0.6 : cfg.volume }));
     if (cfg.micok) localStorage.setItem("sona.micok", "1");
     if (cfg.token) sessionStorage.setItem("sona.play.token", cfg.token);
+    // Past Sound Sprint's start card (Echo's how-to-play, a child's first
+    // three races, 1 Oct 2026), so the race these scenarios need is running
+    // from the first frame; the card itself is runtest's.
+    localStorage.setItem("sona.sprintintro.v1", "3");
   }
 }
 
@@ -333,6 +341,17 @@ for (const [key, file] of ARCADE) {
       }).catch((e) => ({ error: String(e) }));
       ok(key + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
       ok(key + ": \u2026and offers Next and Back home", /Next/.test(end.next || "") && end.home === "Back home", end);
+      // Echo hops under the round's count line, and his box has to hold the
+      // whole hop: at 120px he stood proud of it and hid "notes" at the top of
+      // every hop (1 Oct 2026). Measured at rest, plus the hop's own reach.
+      const hop = /@keyframes echoHop\{[^@]*?translateY\(-(\d+)px\) rotate\(-(\d+)deg\)/.exec(code) || [];
+      const gap = await page.evaluate(([px, deg]) => {
+        const img = document.querySelector("#endOvl .echoWin img"), above = img.parentNode.previousElementSibling, was = img.style.animation;
+        img.style.animation = "none"; const r = img.getBoundingClientRect(); img.style.animation = was;
+        const a = deg * Math.PI / 180, reach = px + r.height / 2 * (Math.cos(a) + Math.sin(a) - 1), line = above.getBoundingClientRect();
+        return { above: above.id, text: above.textContent, shown: line.height > 0, reach, clear: r.top - reach - line.bottom };
+      }, [+hop[1], +hop[2]]).catch((e) => ({ error: String(e) }));
+      ok(key + ": at the top of his hop, Echo stays clear of the count line above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, gap);
       await page.waitForTimeout(500);
       l = await log(page);
       ok(key + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
@@ -551,8 +570,10 @@ async function tapTile(page) {
     tiles.push({ lane: 0, y: HITY() - 40, h: 88, hit: false, gone: false, note: 440 });
     const r = document.getElementById("cv").getBoundingClientRect();
     document.getElementById("cv").dispatchEvent(new PointerEvent("pointerdown", { clientX: r.left + W / 8, clientY: r.top + HITY(), bubbles: true }));
-    const peaks = __quiet.gains.map((g) => g.gain.sets.filter((s) => s[0] === "exp").map((s) => s[1])).flat().filter((v) => v > 0.001);
-    return { sounds: __quiet.sounds.length - n, peak: peaks.length ? Math.max(...peaks) : 0, hit: tiles.some((t) => t.hit) };
+    const peaks = __quiet.gains.map((g) => g.gain.sets.filter((s) => s[0] === "exp" || s[0] === "value").map((s) => s[1])).flat().filter((v) => v > 0.001);
+    const made = __quiet.sounds.slice(n);
+    return { sounds: made.length, kinds: made.map((s) => s.kind), secs: made.map((s) => +(s.end - s.start).toFixed(2)), src: made.map((s) => s.src || ""),
+      peak: peaks.length ? Math.max(...peaks) : 0, hit: tiles.some((t) => t.hit) };
   });
 }
 // "muted" is what the old Sound slider wrote at zero (volume 0, voice and
@@ -569,11 +590,60 @@ for (const [label, cfg, expect] of [["muted", { volume: 0, soundOn: false, voice
       await page.waitForFunction(() => window.gameEntryAllowed === true && typeof tone === "function");
       const t = await tapTile(page);
       if (expect === 0) ok("tiles " + label + ": a tapped note makes no sound at all", t.hit && t.sounds === 0, t);
-      else ok("tiles " + label + ": a tapped note peaks at 0.10 × the normal level (" + expect + "), not the old fixed 0.24 and not the old saved level", t.hit && t.sounds === 1 && Math.abs(t.peak - expect) < 1e-6, t);
+      else {
+        ok("tiles " + label + ": a tapped note peaks at 0.10 × the normal level (" + expect + "), not the old fixed 0.24 and not the old saved level", t.hit && t.sounds === 1 && Math.abs(t.peak - expect) < 1e-6, t);
+        ok("tiles " + label + ": …and it is the piano note, ringing 0.55 s, not the old beep", t.kinds[0] === "buf" && t.secs[0] === 0.55, t);
+      }
       clean("tiles " + label, errors);
     } finally { await context.close(); }
   });
 }
+// IN THE IPHONE APP THE NOTES ARE MEDIA (Travis, 1 Oct 2026: "there's no music
+// with the tiles game"). Web Audio is what an iPhone's ring/silent switch
+// silences, and what a page that has had the mic open plays as a quiet phone
+// call, so the songs were not there on the phone. The app plays each note the
+// way it plays Echo's voice: a media element, the level in the samples
+// (an iPhone gives a media element no volume of its own).
+const wav = (page, src) => page.evaluate(async (u) => {
+  const b = new DataView(await (await fetch(u)).arrayBuffer()); let peak = 0;
+  for (let i = 44; i + 1 < b.byteLength; i += 2) peak = Math.max(peak, Math.abs(b.getInt16(i, true)));
+  return { riff: String.fromCharCode(b.getUint8(0), b.getUint8(1), b.getUint8(2), b.getUint8(3)), rate: b.getUint32(24, true), secs: +((b.byteLength - 44) / 2 / b.getUint32(24, true)).toFixed(2), peak: +(peak / 32767).toFixed(3) };
+}, src);
+await scenario("tiles in the iPhone app", async () => {
+  const { context, page, errors } = await fresh("arcade-tiles.html?from=charge", { token: "arcade-tiles.html", native: true });
+  try {
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof tone === "function");
+    ok("tiles in the app: a player for every key and the wrong-key thud is ready before the first tile", (await page.evaluate(() => Object.keys(notePlayers).length)) === 8);
+    const t = await tapTile(page);
+    ok("tiles in the app: a tapped note plays as media, and nothing goes to Web Audio", t.hit && t.sounds === 1 && t.kinds[0] === "media" && /^blob:/.test(t.src[0]) && t.peak === 0, t);
+    const w = await wav(page, t.src[0]);
+    ok("tiles in the app: the note is a 0.55 s recording at 0.4 of full level", w.riff === "RIFF" && w.rate === 24000 && w.secs === 0.55 && Math.abs(w.peak - 0.4) < 0.005, w);
+    const again = await tapTile(page);
+    ok("tiles in the app: the same key again replays its one player", again.sounds === 1 && again.src[0] === t.src[0] && (await page.evaluate(() => Object.keys(notePlayers).length)) === 8, again);
+    clean("tiles in the app", errors);
+  } finally { await context.close(); }
+});
+await scenario("tiles in the iPhone app, muted", async () => {
+  const { context, page, errors } = await fresh("arcade-tiles.html?from=charge", { token: "arcade-tiles.html", native: true, volume: 0, soundOn: false, voiceOn: false });
+  try {
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof tone === "function");
+    const t = await tapTile(page);
+    ok("tiles in the app, muted: a tapped note makes no sound at all", t.hit && t.sounds === 0, t);
+    clean("tiles in the app, muted", errors);
+  } finally { await context.close(); }
+});
+await scenario("tiles in the iPhone app, media refused", async () => {
+  const { context, page, errors } = await fresh("arcade-tiles.html?from=charge", { token: "arcade-tiles.html", native: true, refuse: true });
+  try {
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof tone === "function");
+    const first = await tapTile(page);
+    await page.waitForFunction(() => __quiet.sounds.some((s) => s.kind === "buf"), null, { timeout: 2000 }).catch(() => {});
+    const fell = await page.evaluate(() => __quiet.sounds.filter((s) => s.kind === "buf").length);
+    const next = await tapTile(page);
+    ok("tiles in the app: a phone that refuses the media still gets the note, through Web Audio, never silence", first.hit && fell === 1 && next.sounds === 1 && next.kinds[0] === "buf" && Math.abs(next.peak - 0.08) < 1e-6, { first, fell, next });
+    clean("tiles in the app, media refused", errors);
+  } finally { await context.close(); }
+});
 
 // ── Feed Echo: the mic opens after Echo asks, closes before every chime ──
 // Since 1 Oct 2026 the word comes first (Travis: "we need to get the kid to

@@ -71,6 +71,30 @@
     #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
+    /* ── the start card: three pictures from the race itself (1 Oct 2026) ──
+       Each picture sits on the road's own blue, so the card shows the race the
+       child is about to run; the words under them are for whoever can read. */
+    #startTips{display:flex;gap:8px;width:100%;margin:2px 0 2px;}
+    .tip{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;line-height:1.1;color:#44270f;}
+    .tipPic{position:relative;display:flex;align-items:center;justify-content:center;gap:3px;width:100%;height:76px;border-radius:17px;background:#7591c1;border:2px solid #fffdf5;box-shadow:0 3px 0 #cbb694;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+    .tipPic img{display:block;object-fit:contain;filter:drop-shadow(0 3px 2px rgba(40,47,57,.25));}
+    .tipPic .rock{width:42%;height:34px;margin-top:20px;}
+    .tipPic .cactus{width:38%;height:50px;}
+    .tipPic .coin{width:52%;height:46px;}
+    /* the lanes: two dashed lines, the child's own runner, an arrow each way */
+    .tipPic .dash{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:repeating-linear-gradient(180deg,rgba(255,255,255,.9) 0 9px,transparent 9px 17px);}
+    .tipPic .arrow{position:absolute;bottom:16px;width:16px;height:16px;}
+    #tipBuddy{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);width:32px;height:32px;line-height:0;}
+    #tipBuddy .crafted-buddy{width:100%!important;height:100%!important;}
+    /* the fox is the race's own runner, seen from behind: the same crop the canvas draws */
+    #tipBuddy.fox{width:27px;height:47px;bottom:5px;background:url('/assets/crafted/fox-runner.webp') 50.4% 49.5%/261.25% auto no-repeat;}
+    /* Echo names each picture as he says it */
+    .tip.on .tipPic{transform:translateY(-4px);box-shadow:0 7px 0 #cbb694,0 0 0 3px #19b6bb;}
+    #startAct{display:flex;align-items:center;justify-content:center;width:100%;min-height:62px;}
+    #startGo{margin-top:0;}
+    #startGo svg{width:17px;height:17px;vertical-align:-2px;margin-right:5px;fill:#fff;}
+    @media (max-width:350px){ .tipPic .arrow{width:14px;height:14px;bottom:15px;} #tipBuddy{width:27px;height:27px;} #tipBuddy.fox{width:24px;height:42px;} }
+    @media (prefers-reduced-motion: reduce){ .tipPic{transition:none;} .tip.on .tipPic{transform:none;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
   <link href="/arcade-speech-help.css" rel="stylesheet">
@@ -102,6 +126,22 @@
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
       <button class="btn ghost" id="needHome">Back home</button>
+    </div>
+  </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" id="startEcho" src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2 id="startTitle">Ready to run?</h2>
+      <div id="startTips">
+        <div class="tip"><span class="tipPic"><i class="dash" style="left:33.3%"></i><i class="dash" style="left:66.7%"></i>
+          <svg class="arrow" style="left:6%" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5 7 12l8.5 7.5" fill="none" stroke="#fff9ea" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="arrow" style="right:6%" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5 17 12l-8.5 7.5" fill="none" stroke="#fff9ea" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="tipBuddy" class="fox"></span></span>Tap a lane</div>
+        <div class="tip"><span class="tipPic"><img class="rock" src="/assets/crafted/run-rock-v2.webp" alt="" /><img class="cactus" src="/assets/crafted/run-cactus-v2.webp" alt="" /></span>Dodge</div>
+        <div class="tip"><span class="tipPic"><img class="coin" src="/assets/crafted/run-coin-v2.webp" alt="" /></span>Grab coins</div>
+      </div>
+      <div id="startAct"><button class="btn" id="startGo" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>Let's run!</button></div>
     </div>
   </div>
 
@@ -144,7 +184,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on;}};</script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script>
     if(gameEntryAllowed){
@@ -184,8 +224,22 @@
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
     fit(); window.addEventListener("resize",fit);
 
+    // ── the start card: Echo says how to play (1 Oct 2026) ──
+    // Travis: "when a kid is about to start playing sound sprint, we want the
+    // voice ... to say instructions like move side to side, avoid the cactus,
+    // go after the gold star ... so that they have instruction on what to do."
+    // A child's first three races open on a card (three pictures from the race
+    // and one button) and the race is HELD behind it: nothing moves, spawns or
+    // counts until it starts. The count is the child's own (Sona.kkey), and it
+    // goes up when a race starts from the card, so a card nobody answered is
+    // shown again. A page without the earned ticket shows its own card instead.
+    var START_RACES=3, STARTKEY=(S&&S.kkey)?S.kkey("sona.sprintintro.v1"):"sona.sprintintro.v1";
+    // (a phone that won't let the page read its storage could never count to three: no card there)
+    function startSeen(){ try{ return Math.max(0,parseInt(localStorage.getItem(STARTKEY)||"0",10)||0); }catch(e){ return START_RACES; } }
+    var raceHeld=tok&&startSeen()<START_RACES;
+
     // ---- the runner: 3 lanes, dodge rocks, grab coins ----
-    var LANES=3, ROADF=0.74, playing=true, dist=0, coins=0, speed0=H*0.0029, speed=speed0, lane=1, laneX=1;
+    var LANES=3, ROADF=0.74, playing=!raceHeld, dist=0, coins=0, speed0=H*0.0029, speed=speed0, lane=1, laneX=1;
     var BESTK="sona.best.run", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     var REV=3, reviveWait=false;   // say-the-sound cards: one at each checkpoint
 
@@ -337,15 +391,20 @@
     var PLAYY=function(){ return H-170; };
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
 
-    var distSlowRemainder=0;
-    var distIv=setInterval(function(){
-      if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
-      distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
-      dist+=metres; $("score").textContent=dist+"m"; hud();
-      if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
-    },100);
-    // a touch faster through a stretch, unless the child keeps tumbling
-    var rampIv=setInterval(function(){ if(document.hidden)return; if(playing&&phase==="run"&&tumbles<2&&speed<speed0*1.6) speed*=1.04; },8000);
+    // Both clocks start with the race (startClocks), not with the page: under
+    // the start card the metres would not count, but the ramp's eight seconds
+    // would already be running out.
+    var distSlowRemainder=0, distIv=0, rampIv=0;
+    function startClocks(){
+      distIv=setInterval(function(){
+        if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
+        distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
+        dist+=metres; $("score").textContent=dist+"m"; hud();
+        if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
+      },100);
+      // a touch faster through a stretch, unless the child keeps tumbling
+      rampIv=setInterval(function(){ if(document.hidden)return; if(playing&&phase==="run"&&tumbles<2&&speed<speed0*1.6) speed*=1.04; },8000);
+    }
 
     // Mario-Kart fall: hit something → tumble off the map (~1.1s), get rescued
     // back onto the road, keep running. Funny, never punishing.
@@ -439,14 +498,131 @@
           ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,66*(1-ft*0.45))){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill(); } ctx.restore();
         }
       } else {
-        var blink=(now-hurtT<1200)&&(((now/120)|0)%2===0), bob=phase==="done"?0:Math.abs(Math.sin(now/110))*7;
+        var blink=(now-hurtT<1200)&&(((now/120)|0)%2===0), bob=phase==="done"||raceHeld?0:Math.abs(Math.sin(now/110))*7;
         if(magnet){ ctx.strokeStyle="rgba(255,214,51,"+(0.55+0.3*Math.sin(now/90))+")"; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(px,py-20,40,0,7); ctx.stroke(); }
         if(!blink){ if(!drawBuddy(px,py-20-bob,66)){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(px,py-bob,18,0,Math.PI*2);ctx.fill(); } }
       }
-      requestAnimationFrame((playing||slowTurn)?draw:function(){});
+      // held behind the start card the still scene keeps painting, so the
+      // runner and the roadside are there when their pictures arrive
+      requestAnimationFrame((playing||slowTurn||raceHeld)?draw:function(){});
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-    startStretch(0);
+    // ── the race starts: at once, or from the start card ──
+    var raceBegun=false;
+    function beginRace(){
+      if(raceBegun) return; raceBegun=true;
+      if(raceHeld){
+        // (guarded: raceBegun is already set, so a throw here would leave the card up for good)
+        try{ stopStartVoice(); }catch(e){}
+        raceHeld=false; $("startOvl").classList.remove("show");
+        try{ localStorage.setItem(STARTKEY,String(startSeen()+1)); }catch(e){}
+      }
+      playing=true; startClocks(); startStretch(0);
+    }
+    // What Echo says, true to the race: the things to dodge are a rock, a
+    // cactus, a cone and a log, a golden coin is the coin magnet, and there is
+    // no gold star. An iPhone plays nothing on a new page until a tap, so the
+    // tap is "Let's run!": Echo says the line while the card stays, and the
+    // race starts the moment he stops.
+    var START_LINE="Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins!";
+    // Never a dead end, never a long silence. Echo has START_WAIT_MS to
+    // begin: the voice service gets that long to answer from when the card
+    // shows, and the race never waits longer than that after the tap. A line
+    // that did not come in time is not asked for again after the tap; the
+    // race just starts.
+    // Once his line is playing it gets its own length and a beat (it runs
+    // about eight seconds, so one cap counted from the tap would cut him off
+    // mid-sentence). The fallback gives no sign of when it begins, so it gets
+    // one allowance that fits a second ask of the voice service and the whole
+    // line. And a double tap must not skip what its first tap asked for:
+    // "Skip" counts only after START_GUARD_MS.
+    var START_WAIT_MS=7000, START_TAIL_MS=1500, START_FALLBACK_MS=12000, START_GUARD_MS=600;
+    var sc={gen:0,saying:false,saidAt:0,cap:0,tips:[],media:null,fallback:false,line:null,ready:false,bytes:null,late:false};
+    var START_BTN=$("startGo").innerHTML;
+    function startVoiceOn(){ var p=S.getProfile(); return !(p.voiceOn===false||Number(p.volume)===0); }
+    // Echo's own voice (/api/tts), asked for as the card shows so the tap
+    // finds it ready: no wait between the tap and his first word.
+    function loadStartLine(){
+      sc.ready=false; sc.late=false; sc.bytes=null;
+      var ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ sc.late=true; if(ctl)ctl.abort(); },START_WAIT_MS), ask;
+      try{ ask=fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:START_LINE,voice:S.getProfile().voiceId||"",stable:true}),signal:ctl?ctl.signal:undefined}); }catch(e){ ask=Promise.reject(e); }
+      sc.line=ask.then(function(r){ return r.ok?r.arrayBuffer():null; })
+        .then(function(b){ return b&&b.byteLength?b:null; },function(){ return null; })
+        .then(function(b){ clearTimeout(to); sc.bytes=b; sc.ready=true; return b; });
+    }
+    function tipOn(i){ var t=$("startTips").children; for(var k=0;k<t.length;k++) t[k].classList.toggle("on",k===i); }
+    function paintStart(){
+      var b=$("startGo");
+      // While Echo talks, the one button is the way past him: a cream second
+      // choice, so the teal one stays the button that asked for him.
+      b.className=sc.saying?"btn ghost":"btn"; if(sc.saying) b.textContent="Skip"; else b.innerHTML=START_BTN;
+      echoPose($("startEcho"),sc.saying?"talk":"wave"); if(!sc.saying) tipOn(-1);
+    }
+    function startCap(my,ms){ clearTimeout(sc.cap); sc.cap=setTimeout(function(){ if(my===sc.gen&&raceHeld) beginRace(); },ms); }
+    function stopStartVoice(){
+      var was=sc.saying; sc.gen++; sc.saying=false; clearTimeout(sc.cap); sc.tips.forEach(clearTimeout); sc.tips=[];
+      if(sc.media){ var m=sc.media; sc.media=null; m.stop(); }
+      // sona.js's own stop: an empty line strands whatever its pipeline was saying
+      if(sc.fallback){ sc.fallback=false; try{ S.speakNow(""); }catch(e){} }
+      // his line was a sound like any other: the mic waits it out (QUIET_MS, above)
+      if(was) quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      paintStart();
+    }
+    // The line plays as media (Sona.mediaPCM), on every phone and browser. The
+    // iPhone app needs that (the ring/silent switch silences Web Audio there,
+    // sona.js says why), and a browser allows it because the line starts
+    // inside the tap. If it can't play, or the voice service gave no line,
+    // sona.js's own pipeline says it: Echo through Web Audio, which the tap
+    // woke (speakUnlock), and the browser's voice as the last resort.
+    function sayStart(my,bytes){
+      if(my!==sc.gen||!sc.saying) return;
+      if(!bytes&&sc.late){ beginRace(); return; }   // the voice service never answered: no second wait
+      if(!bytes||!S.mediaPCM){ sayStartFallback(my); return; }
+      var ms=Math.ceil(bytes.byteLength/48), m=S.mediaPCM(bytes,{volume:S.getProfile().volume});   // 24 kHz, 16-bit: 48 bytes a millisecond
+      sc.media=m;
+      // mediaPCM gives up on a line that never starts after four seconds, and
+      // ends one that plays at its length and a beat; this is the backstop
+      startCap(my,Math.max(4000,ms+START_TAIL_MS)+500);
+      // Echo names each picture about when he says it (the three parts of the line)
+      [0,0.38,0.73].forEach(function(at,i){ sc.tips.push(setTimeout(function(){ if(my===sc.gen) tipOn(i); },ms*at)); });
+      m.done.then(function(how){ if(my!==sc.gen) return; sc.media=null; if(how==="failed") sayStartFallback(my); else beginRace(); });
+    }
+    function sayStartFallback(my){
+      if(my!==sc.gen||!sc.saying) return;
+      sc.tips.forEach(clearTimeout); sc.tips=[]; tipOn(-1);
+      sc.fallback=true; startCap(my,START_FALLBACK_MS);
+      var said=null; try{ said=S.speakNow(START_LINE); }catch(e){}
+      function over(){ if(my===sc.gen) beginRace(); }
+      Promise.resolve(said).then(over,over);
+    }
+    $("startGo").onclick=function(){
+      if(!raceHeld) return;
+      if(sc.saying){ if(performance.now()-sc.saidAt>=START_GUARD_MS) beginRace(); return; }   // "Skip"
+      // sound is off: there is no line to wait for
+      if(!sc.line||!startVoiceOn()){ beginRace(); return; }
+      var my=++sc.gen; sc.saying=true; sc.saidAt=performance.now(); paintStart();
+      try{ if(S.speakUnlock)S.speakUnlock(); }catch(e){}
+      startCap(my,START_WAIT_MS);
+      // in hand already: say it inside this tap. Still on its way: the moment it lands.
+      if(sc.ready) sayStart(my,sc.bytes); else sc.line.then(function(b){ sayStart(my,b); });
+    };
+    // Locked or switched away mid-line: Echo stops (a hidden page never keeps
+    // talking) and the race stays held. The card is still up on the way back,
+    // with its button, because the phone needs a new tap before it speaks.
+    function startBackground(){ if(raceHeld&&sc.saying) stopStartVoice(); }
+    if(S.onBackground) S.onBackground(startBackground); else window.addEventListener("pagehide",startBackground);
+    // Back on screen with the card still waiting and no line in hand: a phone
+    // locked while the line was on its way drops the ask, and the tap that is
+    // coming would then start the race with nothing said. So it is asked for
+    // once more, here, where the wait is behind the card and not after a tap.
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&raceHeld&&!sc.saying&&sc.line&&sc.ready&&!sc.bytes&&startVoiceOn()) loadStartLine(); });
+    if(raceHeld){
+      // the lane picture shows the child's own runner, as the race draws it
+      (function(){ var id=(S.getProfile()||{}).character||"fox", el=$("tipBuddy"), face=id!=="fox"&&window.SonaCraftedBuddies?SonaCraftedBuddies.markup(id,36):"";
+        if(face){ el.className=""; el.innerHTML=face; } })();
+      if(startVoiceOn()) loadStartLine();
+      $("startOvl").classList.add("show");
+    } else beginRace();
     requestAnimationFrame(draw);
 
     // ── Shared short listening path for checkpoints and sound-powered help ──
@@ -470,7 +646,7 @@
     function echoPose(img,p){ if(img&&img.getAttribute("src")!==POSE+p+".webp")img.src=POSE+p+".webp"; }
     // Held in a variable: a preload nobody holds is collected, and the pose
     // then loads late instead of swapping in at once.
-    var POSE_KEEP=["talk","listen","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
+    var POSE_KEEP=["talk","listen","welcome","wave"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
     var slowLine=slowAudio;
     slowAudio=function(url,t){ var img=$("slowKeys").querySelector("img"); echoPose(img,"talk"); var p=slowLine(url,t); p.then(function(){ echoPose(img,"welcome"); }); return p; };
     // It listens while the turn's mic hears ("I'm listening…") and rests
