@@ -48,15 +48,22 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://127.0.0.1:8233";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
-// Echo's voice server is down (503) in every scenario but the stand-in one,
-// which answers real PCM marked X-Sona-Voice-Keep "1" or "0" (28 Sep 2026).
-const tts = { mode: "down", calls: 0 };
+// Echo's voice server is down (503) in every scenario but the voice ones,
+// which answer real PCM marked X-Sona-Voice-Keep "1" ("keep") or "0"
+// ("standin", 28 Sep 2026); tts.delay holds each answer that long (a voice
+// service that is slow, as v4 Turbo can be on launch day).
+const tts = { mode: "down", calls: 0, texts: [], delay: 0 };
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
   if (url.pathname === "/api/tts" && tts.mode !== "down") {
     tts.calls++;
-    res.writeHead(200, { "content-type": "audio/L16; rate=24000; channels=1", "X-Sona-Voice-Provider": "elevenlabs", "X-Sona-Voice-Model": tts.mode === "standin" ? "eleven_multilingual_v2" : "eleven_v4_turbo", "X-Sona-Voice-Keep": tts.mode === "standin" ? "0" : "1" });
-    res.end(Buffer.alloc(9600)); return;
+    const standin = tts.mode === "standin";
+    let body = ""; req.on("data", (c) => (body += c)); req.on("end", () => { try { tts.texts.push(JSON.parse(body).text); } catch (e) { tts.texts.push(null); } });
+    setTimeout(() => {
+      res.writeHead(200, { "content-type": "audio/L16; rate=24000; channels=1", "X-Sona-Voice-Provider": "elevenlabs", "X-Sona-Voice-Model": standin ? "eleven_multilingual_v2" : "eleven_v4_turbo", "X-Sona-Voice-Keep": standin ? "0" : "1" });
+      res.end(Buffer.alloc(9600));
+    }, tts.delay || 0);
+    return;
   }
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
@@ -251,6 +258,15 @@ function noOverlap(label, l) {
 function clean(label, errors) { ok(label + ": no runtime errors", errors.length === 0, errors); }
 // what would make a spoken move practice data, or spend the family's things
 const PRACTICE = /^sona\.(?:progress|reps|charge|tickets|rotation|today|coins|stickers|outcomes|rung|attempts|clips|hw|streak)/;
+// Echo's ask: the word alone, calm, a sentence of its own. Nothing is glued
+// onto the word, and nothing else is said. "Go!" follows it (Travis, 2 Oct
+// 2026: "i also wanna try to have the 11 labs voice say 'Go!'"), but only in
+// Echo's own voice, from a clip this page or this phone already has: in
+// these scenarios the voice service is down, so the browser's voice says each
+// word and never a robot "Go!" (review, 2 Oct 2026). The voice scenarios
+// below play the clip.
+const ASK = /^Say\.\.\. [a-z]+\.$/i;
+const asksRight = (speech) => speech.length > 0 && speech.every((t) => ASK.test(t));
 const practiceState = (page) => page.evaluate((src) => { const re = new RegExp(src); return Object.keys(localStorage).filter((k) => re.test(k)).sort().map((k) => [k, localStorage.getItem(k)]); }, PRACTICE.source);
 // one turn: wait for the mic to be listening, then say it
 async function sayIt(page) {
@@ -380,18 +396,21 @@ for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((rea
 // X-Sona-Voice-Keep: 0. The phone keys saved clips by voice|revision|text, so a
 // saved stand-in would replay the old voice for that word forever. Control: an
 // ordinary clip ("1") IS saved and "Hear it" replays it without asking again.
+// Each ask is two clips since 2 Oct 2026: the word, then "Go!" as its own
+// clip. A stand-in "Go!" is kept for this page only (Sona.goClip), so "Hear
+// it" asks again for the word alone.
 for (const mode of ["keep", "standin"]) {
   await scenario("racecar voice " + mode, async () => {
-    tts.mode = mode; tts.calls = 0;
+    tts.mode = mode; tts.calls = 0; tts.texts = [];
     const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
     try {
       await page.locator("#startOvl.show").waitFor();
       await page.locator("#startBtn").click();
-      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 1);
+      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 2);
       await page.waitForFunction(() => window.__sayplay.listening === true);
       const first = tts.calls;
       await page.locator("#hear").click();
-      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 2);
+      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 4);
       await page.waitForFunction(() => window.__sayplay.listening === true);
       const saved = await page.evaluate(() => new Promise((done) => {
         const r = indexedDB.open("sona-tts", 1);
@@ -399,18 +418,50 @@ for (const mode of ["keep", "standin"]) {
         r.onerror = () => done(-1);
         r.onsuccess = () => { try { const q = r.result.transaction("clips", "readonly").objectStore("clips").count(); q.onsuccess = () => done(q.result); q.onerror = () => done(-1); } catch (e) { done(-1); } };
       }));
-      ok("racecar " + mode + ": Echo's word comes from the voice server", first === 1, { first });
+      ok("racecar " + mode + ": Echo's word and its \"Go!\" come from the voice server, one request each", first === 2 && tts.texts.slice(0, 2)[1] === "Go!" && ASK.test(tts.texts[0]), { first, texts: tts.texts });
       if (mode === "keep") {
-        ok("racecar keep: an ordinary clip is saved on the phone", saved === 1, { saved });
-        ok("racecar keep: \"Hear it\" replays the saved clip without asking again", tts.calls === 1, { calls: tts.calls });
+        ok("racecar keep: ordinary clips are saved on the phone (the word and \"Go!\")", saved === 2, { saved });
+        ok("racecar keep: \"Hear it\" replays the saved clips without asking again", tts.calls === 2, { calls: tts.calls });
       } else {
         ok("racecar stand-in: nothing is saved on the phone", saved === 0, { saved });
-        ok("racecar stand-in: \"Hear it\" asks the server again instead of replaying the old voice", tts.calls === 2, { calls: tts.calls });
+        ok("racecar stand-in: \"Hear it\" asks the server again for the word instead of replaying the old voice, and plays this page's \"Go!\"", tts.calls === 3 && tts.texts[2] !== "Go!" && (await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "buf" && x.len === 4800).length)) >= 4, { calls: tts.calls, texts: tts.texts });
       }
       clean("racecar voice " + mode, errors);
     } finally { tts.mode = "down"; await context.close(); }
   });
 }
+
+// ── "Go!" never holds a turn up (review, 2 Oct 2026) ──
+// "Go!" used to be fetched like the word, so every turn waited on the voice
+// service twice before the mic opened, with "Listen" on screen and nothing
+// playing: up to 8 s more on a slow service, on every turn while it sent
+// stand-ins (never saved, so fetched again each time). Here the service takes
+// 3 s and sends only stand-ins. The first ask waits for "Go!" no longer than
+// Sona.GO_WAIT_MS (1.5 s); every later one plays this page's copy at once.
+await scenario("racecar slow stand-in voice", async () => {
+  tts.mode = "standin"; tts.delay = 3000; tts.calls = 0; tts.texts = [];
+  const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    await page.locator("#startBtn").click();
+    for (let i = 0; i < 3; i++) {
+      const heard = await (async () => { const on = await until(page, () => window.__sayplay && window.__sayplay.listening === true, 15000); if (!on) return false; await page.waitForTimeout(80); await voice(page, 260); return true; })();
+      ok("racecar slow stand-in, word " + (i + 1) + ": the mic opens and the child is heard", heard && await until(page, (n) => window.__sayplay.step === n, 3000, i + 1));
+    }
+    const l = await log(page);
+    // per turn: Echo's clips between the last mic and this one; the first is the word
+    const gaps = l.mics.map((m, i) => {
+      const from = i ? l.mics[i - 1].end : 0, clips = l.sounds.filter((x) => x.kind === "buf" && x.len === 4800 && x.start >= from && x.start < m.start);
+      return clips.length ? { wait: +(m.start - clips[0].end).toFixed(3), go: clips.length === 2 } : null;
+    });
+    ok("racecar slow stand-in: each turn's word came from the slow service (the pin is not vacuous)", gaps.length >= 3 && gaps.every(Boolean) && tts.texts.filter((t) => t !== "Go!").length >= 3, { gaps, texts: tts.texts });
+    ok("racecar slow stand-in: the first turn's mic opens within 2 s of the word's end (Go! waits 1.5 s at most)", !!gaps[0] && gaps[0].wait <= 2.0, gaps);
+    ok("racecar slow stand-in: every later turn's mic opens within 1.5 s of the word's end, after Echo's own \"Go!\"", gaps.slice(1).every((g) => g && g.go && g.wait <= 1.5), gaps);
+    ok("racecar slow stand-in: \"Go!\" was asked for once, never once a turn", tts.texts.filter((t) => t === "Go!").length === 1, tts.texts);
+    noOverlap("racecar slow stand-in", l);
+    clean("racecar slow stand-in", errors);
+  } finally { tts.mode = "down"; tts.delay = 0; await context.close(); }
+});
 
 // ── a whole game, twice: once small (five words), once big (eight) ──
 for (const key of ["balloon", "racecar"]) {
@@ -451,7 +502,7 @@ for (const key of ["balloon", "racecar"]) {
       l = await log(page);
       noOverlap(key, l);
       ok(key + ": every chime waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
-      ok(key + ": Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+      ok(key + ": Echo's words are one word each, calm, with no carrier phrase, and never a robot \"Go!\"", asksRight(l.speech), l.speech);
       ok(key + ": nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
       await page.locator("#again").click();
       ok(key + ": Play again starts over on a fresh scene", (await game(page)).step === 0 && (await page.locator("#dots i.on").count()) === 0);
@@ -569,7 +620,7 @@ await scenario("hoops played through", async () => {
     noOverlap("hoops", l);
     ok("hoops: every chime and court sound waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
     ok("hoops: the court made its own sounds (swish, bounce) through the engine", l.sounds.some((s) => s.kind === "buf" && s.len > 1000), l.sounds.length);
-    ok("hoops: Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("hoops: Echo's words are one word each, calm, with no carrier phrase, and never a robot \"Go!\"", asksRight(l.speech), l.speech);
     ok("hoops: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     await page.locator("#again").click();
     ok("hoops: Play again starts over: no baskets, no ball", (await game(page)).step === 0 && (await hoops(page)).baskets === 0 && (await page.locator("#dots i.on").count()) === 0);
@@ -667,7 +718,7 @@ await scenario("soccer played through", async () => {
     noOverlap("soccer", l);
     ok("soccer: every chime and pitch sound waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
     ok("soccer: the pitch made its own sounds (kick, net) through the engine", l.sounds.some((x) => x.kind === "buf" && x.len > 1000), l.sounds.length);
-    ok("soccer: Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("soccer: Echo's words are one word each, calm, with no carrier phrase, and never a robot \"Go!\"", asksRight(l.speech), l.speech);
     ok("soccer: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     await page.locator("#again").click();
     ok("soccer: Play again starts over: no goals, no ball", (await game(page)).step === 0 && (await soccer(page)).goals === 0 && (await soccer(page)).state === "idle" && (await page.locator("#dots i.on").count()) === 0);
@@ -759,7 +810,7 @@ await scenario("dino dug up", async () => {
     noOverlap("dino", l);
     ok("dino: every chime and dig sound waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
     ok("dino: the dig made its own sounds (brush, pop) through the engine", l.sounds.some((x) => x.kind === "buf" && x.len > 1000), l.sounds.length);
-    ok("dino: Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("dino: Echo's words are one word each, calm, with no carrier phrase, and never a robot \"Go!\"", asksRight(l.speech), l.speech);
     ok("dino: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     await page.locator("#again").click();
     ok("dino: Play again starts over: no bones, no brush", (await game(page)).step === 0 && (await dig()).found === 0 && (await dig()).state === "idle" && (await page.locator("#dots i.on").count()) === 0);
@@ -925,7 +976,7 @@ await scenario("bubbles popped", async () => {
     noOverlap("bubbles", l);
     ok("bubbles: every chime and pop waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
     ok("bubbles: the sky made its own sounds (the blow, the pops) through the engine", l.sounds.filter((x) => x.kind === "buf" && x.len > 1000).length >= 30, l.sounds.length);
-    ok("bubbles: Echo's words are one word each, calm, with no carrier phrase", l.speech.length >= 5 && l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("bubbles: Echo's words are one word each, calm, with no carrier phrase, and never a robot \"Go!\"", l.speech.length >= 5 && asksRight(l.speech), l.speech);
     ok("bubbles: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     ok("bubbles: each heard word is one rep on the week's count, and a pop is not", (await page.evaluate(() => Sona.weekReps(0))) === repsBefore + 5);
     await page.locator("#again").click();

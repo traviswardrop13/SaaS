@@ -76,7 +76,11 @@ function phone(cfg) {
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
   let tts=0;
-  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
+  // The say-it card's own two lines are asked for as the page loads (2 Oct
+  // 2026, /arcade-sayit.js): they are answered, and never counted here, so
+  // "the first ask" is still the sound power's instruction.
+  const CARD_LINES=['To keep playing, say','Go!'];
+  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}if(!CARD_LINES.includes(text)){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});}return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
   await context.addInitScript(phone,cfg);
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(BASE+'/arcade-slice.html?from=charge');

@@ -163,6 +163,23 @@
       .catch(function () { if (audioAllowed(generation)) return speakFallback(t, generation); })
       .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });
   }
+  // "Go!" after the word: only Echo's own clip, from this page or this phone
+  // (Sona.goClip says why), and nothing when there is none: never the
+  // browser's robot voice, and never a wait on the network, except the first
+  // ask after Let's play, which waits GO_WAIT_MS at most (review, 2 Oct
+  // 2026: fetched like the word, every turn waited for the voice service
+  // twice, with "Listen" on screen and nothing playing).
+  var goWait = 0;
+  function sayGo() {
+    var generation = audioGeneration, wait = goWait; goWait = 0;
+    if (!S || !S.goClip || !audioAllowed(generation) || profile.voiceOn === false || volume() === 0 || speaking) return Promise.resolve();
+    speaking = true;   // nothing opens the mic while the clip is looked up
+    return Promise.resolve(S.goClip(profile.voiceId, wait)).then(function (b) {
+      if (!b || !audioAllowed(generation)) return;
+      return micQuiet().then(function () { if (audioAllowed(generation)) return playPCM(new Uint8Array(b), generation); });
+    }).catch(function () {})
+      .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });
+  }
   // A chime never plays over an open mic. One asked for while the phone is
   // still answering a mic request, or inside SETTLE_MS of a close, waits.
   function sfx(n, then, due) {
@@ -293,7 +310,13 @@
     return new Promise(function (done) {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { noMic(); return; }
       try { if (localStorage.getItem("sona.micok") === "1") return done(); } catch (e) {}
-      var q = (navigator.permissions && navigator.permissions.query) ? navigator.permissions.query({ name: "microphone" }).catch(function () { return null; }) : Promise.resolve(null);
+      // The iPhone app's web view may never answer this question (2 Oct
+      // 2026): after a beat, no answer means ask the grown-up, rather than a
+      // Play button that does nothing.
+      var q = new Promise(function (res) {
+        setTimeout(function () { res(null); }, 1000);
+        try { if (navigator.permissions && navigator.permissions.query) Promise.resolve(navigator.permissions.query({ name: "microphone" })).then(res, function () { res(null); }); else res(null); } catch (e) { res(null); }
+      });
       q.then(function (st) {
         if (st && st.state === "granted") { try { localStorage.setItem("sona.micok", "1"); } catch (e) {} return done(); }
         try { $("micPromise").textContent = (S && S.MIC_PROMISE) || ""; } catch (e) {}
@@ -395,8 +418,18 @@
       $("turnPanel").classList.remove("yay");
     } catch (e) {}
     turnLive = true; setPhase("turn"); showTurn(false);
-    // Echo models the word, alone and calm, then the mic opens for the child
+    // Echo models the word, alone and calm, then says "Go!" so a child who
+    // can't read hears that it is their turn (Travis, 2 Oct 2026: "i also
+    // wanna try to have the 11 labs voice say 'Go!'"). "Go!" is its own
+    // short clip after the word line, never in the same request: the word
+    // keeps the take every phone already has saved (one line with both was a
+    // new take of every word, fetched again on launch day, the word read
+    // fresh). It never waits on the network (sayGo). Then the mic opens,
+    // after the same voice tail as before.
+    var asked = word;
     say("Say... " + word.w + ".").then(function () {
+      if (turnLive && word === asked) return sayGo();
+    }).then(function () {
       if (!turnLive) return;
       quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS);
       micOpen();
@@ -489,6 +522,7 @@
   function begin() {
     if (phase !== "ready") return;
     $("startOvl").classList.remove("show"); setPhase("starting");
+    goWait = (S && S.GO_WAIT_MS) || 0;   // the first "Go!" of the visit may wait for its clip
     micReady().then(function () { if (!paused) nextTurn(); });
   }
   function start(game) {

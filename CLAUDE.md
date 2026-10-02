@@ -1194,7 +1194,62 @@ one only when the voice service is down.
 
 **Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
 
-**Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask: it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
+**Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask (and, since 2 Oct 2026, his "Go!"): it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened; a permissions question that has not answered within a second now means "ask the grown-up" (Say & Play too), never a Let's play that does nothing. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
+
+**Echo says the say-it card out loud, and "Go!" hands over the turn** (Travis,
+2 Oct 2026: "when a game will pause and ask them to say the target sound, I
+want the 11 Labs voice to say out loud ... to keep playing ... Most of these
+kids can't read", and "i also wanna try to have the 11 labs voice say
+"Go!""). Only Fruit Slice spoke its card; now all five round games do, from
+one copy, `public/arcade-sayit.js` (`SayIt.voice`): "To keep playing, say",
+Rachel's one take of the sound, then "Go!", and only then the mic, 250 ms
+after his last word (`VOICE_TAIL_MS`, the tail every listening page keeps),
+never into a sound. It can never look frozen: the two lines are asked for as
+the page loads and kept in the phone's voice cache; a line still on its way
+gets 2.5 s, a media element that never starts 4 s, her take 3 s, then the card
+goes on without it; on the website the lines play through the page's own Web
+Audio (a browser refuses an `<audio>` started between rounds), in the app as
+media; a mic the phone has refused gets no ask at all. "Go!" also follows
+every ask that hands a child the turn: the practice page's prompt, a tap on
+Echo, the turtle and its two retry lines ("… five times. Go!", joined on as
+one clip after the words, so the quiet before the mic still starts at its
+end), every Say & Play word (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+Feed Echo's ask. Not the books (their ask is pinned) and not parked Peekaboo.
+"Go!" is ONE clip, `Sona.goClip`: this page's copy or the phone's saved one,
+asked for on its own so every saved ask stays valid, never a wait on the
+network after a visit's first ask (that one waits `GO_WAIT_MS`, 1.5 s, at
+most), and never the browser's robot voice (no clip, no "Go!"). Known and
+kept: the mic opens after "Go!", so a child who answers the instant they hear
+it can be talking before the mic listens (`micquietgamestest` pins that a
+word said over "Go!" is not heard; on the practice page the next of their
+five tries is). The 24 Sep 2026 calm rule took "Go!" out for sounding jumpy;
+it is back as Travis's try, and whether it stays is his ear and Rachel's
+call (a turn cue): taking it out is one line in each place. What counts as
+the child is unchanged by any of this. `sayitcardtest` plays the card in all
+five games, `voicetest3`, `chargepacingtest`, `sayplaytest`, `feedtest`,
+`micquietgamestest` and `iphonepolishtest` the "Go!".
+
+**Hearing a child from further away: paused, numbers first** (Travis, 2 Oct
+2026: "I have to say the word super close to the phone or else it won't seem
+to hear it ... Sock.", then, about 13 hours of helper work later, stop and
+ship only the safe parts). Every bar is as it was. What the work found: every
+way of hearing a quieter voice also let quieter noise count (a fan, a tap or
+shower, a clap, a machine's hum, Echo's own ring after "Go!"), because the
+web pages hear loudness and rough sound shape only. A likely cause, still
+unchecked on a phone, is not a bar at all: in the iPhone app, Apple's
+listening check (SonaSpeech) sets the audio session to `.measurement` mode,
+which turns off the phone's automatic gain (`SPEECH_PLUGIN.md` lists the
+audio session as the known risk; a fix there needs an App Store build). So
+measure before changing anything: say "sock" at arm's length on speaksona.com in
+Safari, then in the app, then in the app with Speech Recognition off for Sona
+(iPhone Settings, Privacy & Security; quit the app first). **The mic numbers**
+show what the phone hears: five quick taps on "Account" in Settings (behind
+the grown-ups check, because the app keeps its own storage) switch on a box
+at the top of the practice page with the level now, the loudest moment of the
+last two seconds, the bar, the room, each sound that cleared the bar (how loud,
+counted or not), the frame rate and what the phone says it does to the mic.
+It changes nothing that counts, never takes a tap, and nothing it shows is
+saved or sent (`micquietpracticetest`, `familynavtest`).
 
 **Super Slice: Fruit Slice's sound power** (Travis, 29 Sep 2026: "give them an
 option to say the sound to slow the game down ... they go into some frenzy

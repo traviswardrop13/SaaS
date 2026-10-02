@@ -29,8 +29,18 @@ try{
   ok('leaving retry cancels audio without opening microphone',await page.evaluate(()=>h.media[1].paused&&h.mic===0));
   await page.evaluate(()=>{playing=true;crash();});await page.waitForFunction(()=>h.media.length===3);await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});
   ok('backgrounding cancels retry narration',await page.evaluate(()=>h.media[2].paused&&h.mic===0));
-  await page.evaluate(()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await page.waitForFunction(()=>h.media.length===4);await page.evaluate(()=>h.media[3].onended());await page.waitForFunction(()=>h.media.length===5);await page.evaluate(()=>h.media[4].onended());await page.waitForTimeout(300);
+  await page.evaluate(()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await page.waitForFunction(()=>h.media.length===4);await page.evaluate(()=>h.media[3].onended());await page.waitForFunction(()=>h.media.length===5);await page.evaluate(()=>h.media[4].onended());
+  // 2 Oct 2026 (Travis: "i also wanna try to have the 11 labs voice say
+  // 'Go!'"): after Rachel's take Echo says "Go!", in the same media voice,
+  // and the mic still waits for it and for the quiet tail after it.
+  await page.waitForFunction(()=>h.media.length===6,{},{timeout:2500}).catch(()=>{});
+  ok('after her sound, Echo says "Go!" as media, with no microphone yet',await page.evaluate(()=>h.media.length===6&&h.media[5].src.startsWith('blob:')&&h.mic===0)&&texts.includes('Go!'),{texts});
+  // The mic waits the 250 ms tail every listening page keeps after a voice
+  // line (2 Oct 2026, review: the 900 ms chime window left a child who
+  // answered right on "Go!" talking to a closed mic), then opens promptly.
+  if(await page.evaluate(()=>h.media.length===6))await page.evaluate(()=>h.media[5].onended());const goEnd=await page.evaluate(()=>performance.now());await page.waitForTimeout(150);
   ok('microphone waits for the sound tail',await page.evaluate(()=>h.mic===0));await page.waitForFunction(()=>h.mic===1);
+  ok('microphone opens within a moment of the tail, not the old 900 ms window',await page.evaluate((t)=>performance.now()-t<800,goEnd));
   ok('microphone starts after completed spoken retry',await page.evaluate(()=>h.mic===1));
  }
  const wav=await page.evaluate(async()=>{if(!Sona.pcmWave)return null;var bytes=new Uint8Array([0,128,0,0,255,127]),blob=Sona.pcmWave(bytes),data=new Uint8Array(await blob.arrayBuffer()),v=new DataView(data.buffer);return {type:blob.type,rate:v.getUint32(24,true),channels:v.getUint16(22,true),samples:Array.from(data.slice(44))};});
@@ -49,7 +59,10 @@ try{
  // as media in the app too, never Web Audio, and a voice that won't start
  // still reaches the child as the browser voice.
  {
-  const ctx2=await browser.newContext({reducedMotion:'reduce'});await ctx2.route('**/api/tts',route=>route.fulfill({body:Buffer.alloc(48000),contentType:'application/octet-stream'}));
+  // ttsTexts: what each voice request asked to be said (2 Oct 2026: "Go!"
+  // follows the word as its own line, and plays as media too)
+  const ttsTexts=[];
+  const ctx2=await browser.newContext({reducedMotion:'reduce'});await ctx2.route('**/api/tts',route=>{try{ttsTexts.push(JSON.parse(route.request().postData()).text);}catch(e){}route.fulfill({body:Buffer.alloc(48000),contentType:'application/octet-stream'});});
   await ctx2.addInitScript(()=>{
    localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,focusSounds:['R'],childAge:'4',voiceOn:true,soundOn:false,volume:.6,earlyAdopter:true}));localStorage.setItem('sona.micok','1');
    window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
@@ -79,12 +92,21 @@ try{
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('a word game (Hoops) says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
+  await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
+  await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
+  ok('…then "Go!", as its own line, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts[ttsTexts.length-1]==='Go!'&&/^Say\.\.\. [a-z]+\.$/i.test(ttsTexts[ttsTexts.length-2]),{texts:ttsTexts.slice(-2),media:await pg.evaluate(()=>h.media.length)});
+  const bubblesFrom=ttsTexts.length;
   // Bubble Pop is a word game on the same engine since 1 Oct 2026: Echo asks
   // for the word straight after Let's play, before any bubble exists
   await pg.goto(base+'/arcade-bubbles.html');await pg.waitForFunction(()=>!!document.getElementById('startBtn'));
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
   ok('Bubble Pop says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
+  await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
+  await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
+  // "Go!" is one clip per phone: Hoops above already saved it, so Bubble Pop
+  // asks the voice service for its word alone and plays "Go!" from the phone
+  ok('Bubble Pop: …then "Go!", as its own line from the clip this phone already saved, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts.length===bubblesFrom+1&&ttsTexts[bubblesFrom]!=='Go!',{texts:ttsTexts.slice(bubblesFrom),media:await pg.evaluate(()=>h.media.length)});
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}

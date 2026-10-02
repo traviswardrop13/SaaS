@@ -170,6 +170,30 @@ try {
       ok('no page errors on the way', errors.length === 0, errors);
     } finally { await context.close(); }
   });
+  // MIC NUMBERS (2 Oct 2026): five quick taps on "Account" in Settings turn
+  // on the practice page's mic-level box, and five more turn it off. It sits
+  // behind the grown-ups check because the iPhone app keeps its own storage
+  // and has no address bar for ?debug=1. One tap, or four, does nothing.
+  await scenario('five taps on Account switch the mic numbers on and off', async () => {
+    const { page, context, errors } = await fresh({ width: 375, height: 812 });
+    try {
+      await page.goto(origin + '/settings.html');
+      await page.waitForFunction(() => window.Sona && document.getElementById('acctTitle'));
+      const sw = () => page.evaluate(() => ({ on: localStorage.getItem('sona.micnumbers'), note: document.getElementById('micNumsNote').hidden ? '' : document.getElementById('micNumsNote').textContent }));
+      ok('the switch starts off, with no note', JSON.stringify(await sw()) === JSON.stringify({ on: null, note: '' }), await sw());
+      for (let i = 0; i < 4; i++) await page.click('#acctTitle');
+      ok('four taps change nothing', (await sw()).on === null, await sw());
+      await page.click('#acctTitle');
+      const on = await sw();
+      ok('the fifth tap turns the mic numbers on, and says where they show and how to turn them off', on.on === '1' && /Mic numbers are on\. They show at the top of the practice page\./.test(on.note) && /five times to turn them off/.test(on.note), on);
+      await page.reload(); await page.waitForFunction(() => window.Sona && document.getElementById('acctTitle'));
+      ok('…and Settings still says so after a reload', /Mic numbers are on/.test((await sw()).note), await sw());
+      for (let i = 0; i < 5; i++) await page.click('#acctTitle');
+      const off = await sw();
+      ok('five more taps turn them off', off.on === null && /Mic numbers are off/.test(off.note), off);
+      ok('mic numbers switch: no page errors', errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
 } finally {
   await browser.close(); server.close();
 }
