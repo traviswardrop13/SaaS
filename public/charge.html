@@ -2098,13 +2098,12 @@
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(v==="pass" && useRung>=RUNG && S && S.recordRung && !DEMO_REPLAY){
-        try{
-          // KIDS1: rung wins belong to the child who earned them
-        var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
-          if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
-          else localStorage.setItem(wk,String(w));
-        }catch(e){}
+      if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){
+        // KIDS1: rung wins belong to the child who earned them. The count is
+        // kept inside that child's progress by Sona.rungWin(); this page holds
+        // no key of its own, because a key built from the sound and rung is
+        // one kkey() cannot make per-child (sona.js, rungWin).
+        try{ S.rungWin(SOUND,useRung); }catch(e){}
       }
       if(v==="fail"){
         // The scorer really heard a different sound — the charge is NOT given

@@ -9,7 +9,7 @@
 // needs no migration. That is the case most likely to break silently, so it is
 // asserted directly.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
@@ -171,6 +171,81 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   await c2.close();
 }
 
+// ── a level is earned by ONE child's two passes, never two siblings' one each ──
+// (1 Oct 2026) The practice page counted "two clean first-listen passes at the
+// stretch level" under a key named for the sound and rung
+// ("sona.rungwins.R.0") and ran it through kkey() — but PER_KID holds fixed
+// names, so that key was never suffixed and the count belonged to the device.
+// Milo's one pass plus Ana's one pass moved a level for whichever of them
+// passed second. The count lives in each child's own progress now
+// (Sona.rungWin). When a level is earned is Rachel's rule and is not what
+// this pins; this pins whose passes are counted.
+{
+  const c2 = await browser.newContext(); const p2 = await c2.newPage();
+  const e2 = []; p2.on("pageerror", (e) => e2.push(e.message));
+  await p2.goto("http://localhost:8153/today.html"); await p2.waitForTimeout(400);
+  await p2.evaluate(() => {
+    localStorage.clear();
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    // what a real device may still hold from the build before this one: a
+    // device-wide pass. It is not read, so it can complete nobody's level.
+    localStorage.setItem("sona.rungwins.R.0", "1");
+    Sona.addKid("Ana", "7"); Sona.saveProfile({ focusSounds: ["R"], onboarded: true });
+    Sona.switchKid("");
+  });
+  const level = () => p2.evaluate(() => {
+    const was = Sona.activeKid().slot, out = {};
+    Sona.switchKid(""); out.milo = Sona.rungOf("R");
+    Sona.switchKid("k2"); out.ana = Sona.rungOf("R");
+    Sona.switchKid(was);
+    return out;
+  });
+  const pass = (slot, rung) => p2.evaluate(([slot, rung]) => { Sona.switchKid(slot); return Sona.rungWin("R", rung); }, [slot, rung || 0]);
+
+  await pass("");                                   // Milo: one clean stretch round on R
+  st = await level();
+  ok("one pass alone earns no level, whatever an older build left on the device", st.milo === 0 && st.ana === 0, JSON.stringify(st));
+  await pass("k2");                                 // Ana: one clean stretch round on R
+  st = await level();
+  ok("one pass from each of two siblings moves NEITHER child's earned level", st.milo === 0 && st.ana === 0, JSON.stringify(st));
+  await pass("");                                   // Milo's second
+  st = await level();
+  ok("the child who passes a second time earns the level — and only that child", st.milo === 1 && st.ana === 0, JSON.stringify(st));
+  await pass("k2");                                 // Ana's own second
+  st = await level();
+  ok("the sibling still needs, and gets, a second pass of their own", st.milo === 1 && st.ana === 1, JSON.stringify(st));
+  await pass("", 0); await pass("", 0);             // two passes a level BELOW what Milo has earned
+  st = await level();
+  ok("an earned level never moves down", st.milo === 1, JSON.stringify(st));
+
+  // half-earned travels with the child in a backup, and stays theirs
+  await pass("", 1);                                // Milo: one pass at the next stretch
+  st = await p2.evaluate(() => {
+    const backup = Sona.exportString();
+    const stray = Object.keys(localStorage).filter((k) => k.indexOf("sona.rungwins") === 0 && k !== "sona.rungwins.R.0");
+    const old = localStorage.getItem("sona.rungwins.R.0");
+    localStorage.clear();
+    const r = Sona.importData(backup);
+    Sona.switchKid("k2"); const anaFirst = Sona.rungWin("R", 1);   // Ana's first at that level
+    Sona.switchKid(""); const miloSecond = Sona.rungWin("R", 1);   // Milo's second
+    return { stray, old, restored: r.ok, anaFirst, miloSecond };
+  });
+  ok("the count is kept in the child's progress — no key of its own, old one untouched", st.stray.length === 0 && st.old === "1", JSON.stringify(st));
+  ok("a restored backup keeps each child's half-earned level with that child", st.restored && st.miloSecond === 2 && st.anaFirst === 1, JSON.stringify(st));
+
+  // removing a child removes their count with the rest of their progress
+  st = await p2.evaluate(() => {
+    Sona.switchKid("k2"); Sona.rungWin("S", 0);
+    const had = /"rungWins":\{[^}]*"S\.0":1/.test(localStorage.getItem("sona.progress.v1@k2") || "");
+    Sona.removeKid("k2");
+    return { had, left: Object.keys(localStorage).filter((k) => k.indexOf("@k2") > -1) };
+  });
+  ok("removing a child removes their half-earned levels too", st.had && st.left.length === 0, JSON.stringify(st));
+  ok("no pageerrors (levels)", e2.length === 0, e2.join(" | "));
+  await c2.close();
+}
+
 // ── per-kid keys that pages own directly must be namespaced too ──
 // PER_KID is a promise; a key listed there but read with a raw localStorage call
 // keeps none of it. These are the live surfaces that keep their own key.
@@ -183,6 +258,17 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   ok("library's story-done check is per child", /kkey\("sona\.games\.v1"\)/.test(lib));
   ok("Echo's size is per child", /Sona\.kkey\("sona\.feed\.v1"\)/.test(feed));
   ok("Story Time's finished flag is per child", /kkey\("sona\.games\.v1"\)/.test(story));
+  // …and the reverse: kkey() only suffixes the fixed names in PER_KID, so a
+  // key BUILT at run time ("sona.rungwins." + sound + …) passes straight
+  // through un-suffixed while reading as if it were per-child.
+  {
+    const built = readdirSync(ROOT).filter((f) => /\.(html|js)$/.test(f))
+      .filter((f) => /kkey\(\s*(?:"[^"]*"|'[^']*')\s*\+/.test(readFileSync(ROOT + "/" + f, "utf8")));
+    ok("no page hands kkey() a key built at run time", built.length === 0, built.join(", "));
+    const charge = readFileSync(ROOT + "/charge.html", "utf8");
+    ok("the practice page counts level passes through Sona.rungWin, with no key of its own",
+      /S\.rungWin\(SOUND,useRung\)/.test(charge) && !/sona\.rungwins/.test(charge));
+  }
   // the comeback greeting was removed on Travis's call — nothing should write
   // its key or resurrect the overlay
   ok("the comeback popup stays gone", !/cbOvl|sona\.comeback\.v1/.test(today));
