@@ -528,7 +528,14 @@ game count (every game Home opens, never a Coming soon one), its book count
 and the page counts and tags them on the visitor's own calendar) and "19
 speech sounds" are pinned to the catalog by `shiptest`, and its game strip
 shows only games a child can open: bring a game back and the test fails until
-the page says so.
+the page says so. **The strip's game tiles are the app's own painted Home
+cards** (1 Oct 2026; they were the old flat stickers and three frames of a
+canvas court beside painted book covers): `python3 tools/art/site-tiles.py`
+cuts each `public/assets/crafted/home-<name>.webp` to a square in
+`public/assets/site/games/<key>.webp`. A new game on the strip is one line in
+that script's `TILES`. The two phone screens (`/assets/site/slice.webp`,
+`piano.webp`) are still the ads' flat pictures; fresh captures of the painted
+games are owed.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
@@ -541,10 +548,18 @@ else goes to `/api/lead` with their email and role. An ad aimed at speech
 therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
 both pages.
 
-**While the app is not ready, nobody is sent to the App Store** (Travis, 25
-Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
-`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in `parents.html`
-and `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
+**The app is live, and the websites send people to the App Store** (Travis,
+1 Oct 2026: "yeah send people to app store now!", with the listing checked:
+a free download, not a pre-order). `APP_READY = true` in `lib/launch.ts` and
+`var APP_READY` in `parents.html` and `for-slps.html`, pinned equal by
+`shiptest`: the top line reads "Now on iPhone and iPad", Start free takes the
+email and opens the App Store (Android: the web app), and the "launches
+Friday" welcome email and the clinician's P.S. stop. **Nobody on the waiting
+list is emailed by this**: they were promised an email "the moment it's
+ready", and that is a Kit broadcast Travis sends. The switch stays, both
+states built, for the next time the app is not ready (25 Sep 2026: "the app
+launches next week"; the iOS 27 build closed on launch). While it is `false`,
+nobody is sent to the App Store: a parent or "other" is thanked
 on the page ("Sona launches Friday, October 2. We'll email you the moment it's
 ready.", the date Travis emailed the list on 30 Sep) and emailed the same once through Resend (`/api/lead`,
 `launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
@@ -930,9 +945,9 @@ the ball goes. What it keeps, as Hoops does:
 - **Its sounds** (kick, net, save, bounce, whoosh, roll) go through the
   engine, and **nothing is practice data**.
 Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
-from main's covers, 1 Oct 2026); the sticker and the website tile are still a
-frame of the pitch (`public/assets/games/soccer.webp`, through `PLAYED`), and
-painted art drops in at that name. Bo's own picture drops in by setting
+from main's covers, 1 Oct 2026), and the website tile is cut from it; the
+sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
+through `PLAYED`), and painted art drops in at that name. Bo's own picture drops in by setting
 `KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
 neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
 whole game.
@@ -953,9 +968,9 @@ roars. What it keeps:
 - **Its sounds** (brush, pop, whoosh, clack, roar) go through the engine, and
   **nothing is practice data**.
 Home's wide card is the painted one (`public/assets/crafted/home-dino.webp`,
-from main's covers); the sticker and the website tile are still a frame of the
-woken dinosaur (`public/assets/games/dino.webp`), replaced by painted art at
-that name. `sayplaytest` plays a whole dig.
+from main's covers), and the website tile is cut from it; the sticker is still
+a frame of the woken dinosaur (`public/assets/games/dino.webp`), replaced by
+painted art at that name. `sayplaytest` plays a whole dig.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
@@ -1109,7 +1124,7 @@ remains in the repo. **Bubble Pop is back** (Travis, 30 Sep 2026), free, the
 second game for ages 3-4 beside Feed Echo: the same engine
 (`simple-play.js`), a full-width Home card like Feed Echo's
 (`crafted-home.css`), no release date so no New shelf, and a website tile
-drawn from its own sticker (`/assets/site/games/bubbles.webp`). The adventure
+cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
