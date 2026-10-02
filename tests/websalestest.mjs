@@ -303,6 +303,66 @@ try {
       await ctx.close();
     });
   }
+
+  // ── the plan screen: three states a review of this change found unplayed ──
+  const PLAN = () => {
+    const seen = (el) => { if (!el) return false; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0; };
+    const g = (id) => document.getElementById(id), t = (id) => (seen(g(id)) ? g(id).innerText : "");
+    return { line: t("planLine"), pick: seen(g("pickCard")), iap: seen(g("iapCard")), app: seen(g("appCard")), free: seen(g("freeTierCard")), decline: seen(g("declineRow")), founding: seen(g("foundingCard")),
+      cancel: t("planCancel"), title: t("webTitle"), renew: t("webRenew"), charter: seen(g("charterLine")), offer: document.body.classList.contains("offer"), text: document.body.innerText,
+      eligible: Sona.planEligible(), spent: localStorage.getItem("sona.planmoment.v1") };
+  };
+  // 1. The web card forced on (the seam) against a server that is not selling:
+  //    the route's off answer carries no figures, and the card once re-priced
+  //    itself to "undefined/yr" from it.
+  await scenario("plan screen, web card on, server not selling", async () => {
+    CHARTER = CHARTER_OFF;
+    const { ctx, pg, errors } = await open({ seam: "1" });
+    await pg.goto(BASE + "/subscribe.html"); await settle(pg);
+    await pg.waitForFunction(() => !document.getElementById("buyLife").disabled);
+    const p = await pg.evaluate(PLAN);
+    ok("the web card, shown by the seam against a server that is not selling, prints no \"undefined\" and keeps its own figures", p.pick && !/undefined|NaN/.test(p.text) && /\$59\.99\/yr/.test(p.title) && /renews at \$59\.99 a year/.test(p.renew) && !p.charter, { title: p.title, renew: p.renew, line: p.line });
+    ok("…no page errors", errors.length === 0, errors);
+    await ctx.close(); CHARTER = CHARTER_OPEN;
+  });
+  // 2. An iPhone app build with NO purchase plugin (the build on the App Store
+  //    on 1 Oct 2026 was one): it cannot sell, so it makes no offer, and its
+  //    plan screen says so instead of "you're a founding family" over nothing.
+  for (const door of ["", "?first=1", "?from=stack"]) {
+    await scenario("plan screen in an app with no purchase plugin " + door, async () => {
+      const { ctx, pg, errors } = await open({ native: true });
+      await pg.goto(BASE + "/subscribe.html" + door); await settle(pg);
+      const p = await pg.evaluate(PLAN);
+      ok("app with no purchase plugin " + (door || "(Settings)") + ": the header is true (the free version; Premium can't be bought in this version yet), never \"founding family\"",
+        /free version/.test(p.line) && /can.t be bought in this version of the app yet/.test(p.line) && !/founding family/.test(p.text) && !/\$/.test(p.line), p.line);
+      ok("…no Apple card, no web card, no App Store card, and what stays free is shown", !p.iap && !p.pick && !p.app && p.free, p);
+      ok("…nothing was offered, so there is nothing to decline, no offer view, and the one-time ask is neither due nor spent", !p.decline && !p.offer && p.eligible === false && p.spent === null, { decline: p.decline, offer: p.offer, eligible: p.eligible, spent: p.spent });
+      ok("…no page errors", errors.length === 0, errors);
+      await ctx.close();
+    });
+  }
+  // 3. Settings' "Manage →" lands a paying family here. The page said only
+  //    "thank you"; it now says how to cancel, in both shops' words.
+  for (const who of [{ tag: "a browser, the website selling", seam: "1" }, { tag: "a browser, the website not selling", seam: "0" }, { tag: "the iPhone app", native: true }]) {
+    await scenario("plan screen, a paying family in " + who.tag, async () => {
+      SUB = { ok: true, active: true };
+      const { ctx, pg, errors } = await open({ seam: who.seam === undefined ? null : who.seam, native: !!who.native, store: { "sona.sub.v1": { active: true, email: "parent@example.com", source: who.native ? "apple" : "stripe", since: Date.now(), checked: Date.now() } } });
+      await pg.goto(BASE + "/subscribe.html"); await settle(pg);
+      const p = await pg.evaluate(PLAN);
+      ok("a paying family in " + who.tag + " reads Active, and how to cancel: by email for a plan bought on speaksona.com, in the phone's Settings for Apple's",
+        /Active ✓/.test(p.line) && /To cancel a plan bought on speaksona\.com, email \S+@speaksona\.com/.test(p.cancel) && /Subscriptions/.test(p.cancel), { line: p.line, cancel: p.cancel });
+      ok("…and is sold nothing: no card of any kind, and no \"nothing to cancel\" card", !p.pick && !p.iap && !p.app && !p.founding && !p.decline, p);
+      ok("…no page errors", errors.length === 0, errors);
+      await ctx.close(); SUB = { ok: true, active: false };
+    });
+  }
+  await scenario("plan screen, a family with no plan", async () => {
+    const { ctx, pg } = await open({ seam: "0" });
+    await pg.goto(BASE + "/subscribe.html"); await settle(pg);
+    const p = await pg.evaluate(PLAN);
+    ok("a family with no plan is not told how to cancel one", p.cancel === "" && p.app, { cancel: p.cancel, app: p.app });
+    await ctx.close();
+  });
 } finally {
   await browser.close(); srv.close();
 }

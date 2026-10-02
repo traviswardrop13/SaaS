@@ -302,8 +302,18 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   const terms = src("/app/terms/page.tsx").replace(/\{" "\}/g, " ").replace(/\s+/g, " ");
   const off = between(terms, "{!WEB_SALES && (", "<PlanTerms />");
   ok("the Terms, with the website not selling, lead with who sells new subscriptions, and quote no Apple price",
-    /New Sona Premium subscriptions are sold in the Sona app on iPhone and iPad, by Apple, at the price and free-trial length shown in the App Store\./.test(off) &&
-    /We are not selling new subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
+    /New family subscriptions to Sona Premium are sold in the Sona app on iPhone and iPad, by Apple, at the price and free-trial length shown in the App Store\./.test(off) &&
+    /We are not selling new family subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
+  // "family", every time: a clinician's plans ARE new Sona Premium
+  // subscriptions sold on speaksona.com, two sections down the same page
+  ok("…and say FAMILY subscriptions, pointing a clinician at the plans still sold here",
+    !/New Sona Premium subscriptions are sold/.test(terms) && !/We are not selling new subscriptions on/.test(terms) && /A clinician(?:&apos;|')s plans are still sold here: see Premium for clinicians below\./.test(off));
+  // the charter paragraph is an offer only while the website sells
+  const charterOff = between(terms, ") : ( <> <strong>Charter price.</strong>", "</>");
+  ok("…and with the website not selling, the charter paragraph is what a charter plan costs, not an offer",
+    /\{WEB_SALES \? \( <> <strong>Charter price\.<\/strong> The first 50 families/.test(terms) &&
+    /A yearly subscription bought on speaksona\.com at the charter price is/.test(charterOff) && /keeps that price/.test(charterOff) &&
+    !/first 50|at checkout|new subscriptions/.test(charterOff), charterOff.slice(0, 240));
   ok("…then say a subscription already bought on speaksona.com keeps working and renewing, and that the plan terms govern those",
     /A subscription already bought on speaksona\.com keeps working\./.test(off) && /keeps renewing at the price it was bought at until you cancel it/.test(off) && /The terms that follow govern those subscriptions\./.test(off));
   ok("…and drop the confirmation-page sentence, which describes a checkout that refuses",

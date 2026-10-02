@@ -2738,7 +2738,11 @@
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
     // free version's games for ages 3-4. No release date, so no New shelf.
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Pop a bubble. Find a little surprise." },
+    // Rebuilt on 1 Oct 2026 ("Say it, and Echo blows bubbles") on the Say &
+    // Play engine, but NOT a `say` game: that flag would list it twice on
+    // Home, point its sticker at one that does not exist, and take it out of
+    // the little kids' adventure deck. Its page keeps that adventure's hand-off.
+    bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
     peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-09", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
@@ -3827,6 +3831,7 @@
     try {
       if (isFree()) return false;                    // nothing to sell
       if (!isNativeApp() && !webSales()) return false;   // a browser that cannot sell has nothing to offer
+      if (isNativeApp() && !iapAvailable()) return false;   // nor has an app build with no purchase plugin
       if (localStorage.getItem(PLANSEEN)) return false;
       // anyone who already has every game is never asked: subscribers,
       // founders, founding pilots, a covered clinician's families, and all
@@ -4475,7 +4480,11 @@
   //   !!(Sona.webSales && Sona.webSales())
   // so a stale page beside a new sona.js shows no web card rather than a card
   // whose button the server refuses.
-  const WEB_SALES = false;  // Travis, 1 Oct 2026: "i dont want them paying on the website"
+  //
+  // IT SHIPPED true, AND WAITS FOR TRAVIS'S WORD (lib/pricing.ts says why):
+  // the app on the App Store that night had no purchase plugin, so with the
+  // website off as well nobody could have bought Premium anywhere.
+  const WEB_SALES = true;  // built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell
   // QA seam, the sona.paidui rule again: SESSION-scoped ("1" shows the web
   // rails, "0" hides them, anything else is the constant), so both states stay
   // played by the tests whichever way this ships. sessionStorage only, and no

@@ -834,9 +834,15 @@ document.documentElement.className += " js";
     try {
       fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
         if (!j || !j.ok || typeof j.free !== "boolean") return;
+        // webSales false (1 Oct 2026): families buy in the iPhone and iPad
+        // app only. A parent on Android is sent to the web version, where
+        // "the app shows its price" would be the website, which then shows
+        // none: say where Premium is bought. Only an explicit false counts.
         $("costText").textContent = j.free
           ? "Right now, all of Sona is free: daily practice, every game and every book, with no card."
-          : "Daily practice and free games are free, plus a picture book, with no card. Premium unlocks every game and every book, and the app shows its price before you pay anything.";
+          : j.webSales === false
+            ? "Daily practice and free games are free, plus a picture book, with no card. Premium unlocks every game and every book. You buy it in the Sona app on iPhone and iPad, which shows its price before you pay anything."
+            : "Daily practice and free games are free, plus a picture book, with no card. Premium unlocks every game and every book, and the app shows its price before you pay anything.";
       }).catch(function () {});
     } catch (e) {}
 

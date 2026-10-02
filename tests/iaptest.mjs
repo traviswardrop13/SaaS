@@ -387,7 +387,7 @@ await web.close();
       }
       if (!sessionStorage.getItem("iap.nosale.seed")) {
         sessionStorage.setItem("iap.nosale.seed", "1");
-        ["", "2", "3", "4"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+        ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
         localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Milo", focusSounds: ["R"], onboarded: true }, prof)));
         Object.keys(local).forEach((k) => localStorage.setItem(k, local[k]));
         sessionStorage.setItem("sona.gate.v1", String(Date.now()));

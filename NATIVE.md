@@ -271,16 +271,29 @@ npx cap open android   # Android Studio
 ```
 Same config; Google Play is $25 once and reviews faster.
 
-## The app is the only shop for families (1 Oct 2026)
+## Making the app the only shop for families (built 1 Oct 2026; not switched on)
 
-Travis: "i dont want them paying on the website". `WEB_SALES = false`
-(`lib/pricing.ts`, `public/sona.js`) switches the family web checkout off:
-the website refuses to start a purchase, and a browser family is told Premium
-is in the iPhone and iPad app. Nothing in the app reads that switch. What it
-means for this build:
+Travis: "i dont want them paying on the website". `WEB_SALES`
+(`lib/pricing.ts`, `public/sona.js`) set to `false` switches the family web
+checkout off: the website refuses to start a purchase, and a browser family
+is told Premium is in the iPhone and iPad app. Nothing in the app reads that
+switch. **It shipped `true`**, because on 1 Oct 2026 the app could not sell at
+all, and switching the website off too would have left no way to buy. What has
+to be true of this build before it goes `false`:
 
-1. **Every purchase is Apple's**, so the two checks that used to matter only
-   for iPhone families now decide whether anyone can buy at all:
+1. **Every purchase is Apple's**, so three checks that used to matter only
+   for iPhone families decide whether anyone can buy at all:
+   - **The build carries the purchase plugin.** `subscribe.html` shows the
+     Apple card only when `Capacitor.Plugins.Purchases` exists
+     (`Sona.iapAvailable()`). The App Store's 1.0.4 does not have it: the iOS
+     project in `~/Documents/SaaS` lists only `@capacitor/keyboard` in
+     `package.json` and `ios/App/CapApp-SPM/Package.swift`, and the 1.0.4
+     archives hold no RevenueCat code (1.0.3 build 6 did, so it was dropped
+     between 25 and 28 Sep). The fix is in that project, then a new build
+     through App Review: `npm i @revenuecat/purchases-capacitor`, `npx cap
+     sync ios`, check `packageClassList` in the built app's
+     `capacitor.config.json` names `PurchasesPlugin`. To check any archive:
+     `strings <App.app>/App | grep -ci revenuecat` (0 means no buy button).
    - **App Store Connect:** the product is approved and on sale, at the price
      Travis wants. On 1 Oct 2026 the App Store listing showed "Sona Yearly" at
      **$79.99**, while its description said $59.99 a year.

@@ -34,17 +34,27 @@ export const FREE_MODE = false; // mirrors sona.js — Travis, 30 Sep 2026: "we 
 /**
  * May a FAMILY start a Premium purchase on the website?
  *
- * `false` since 1 Oct 2026 (Travis, told that a family who pays on the
- * website has no cancel button and that a cancelled web plan stays unlocked
- * on the phone: "i dont want them paying on the website"). A family buys
- * Premium in the iPhone and iPad app, through Apple, and nowhere else.
+ * Built on 1 Oct 2026 to be turned OFF (Travis, told that a family who pays
+ * on the website has no cancel button and that a cancelled web plan stays
+ * unlocked on the phone: "i dont want them paying on the website"): with it
+ * `false` a family buys Premium in the iPhone and iPad app, through Apple,
+ * and nowhere else.
+ *
+ * IT SHIPPED `true`, AND WAITS FOR TRAVIS'S WORD. The same night's review
+ * found that the app on the App Store (1.0.4) carries no purchase plugin: it
+ * has no buy button at all. With this false as well, no family could have
+ * bought Premium anywhere, on the night his ad started. So the website keeps
+ * selling until a build that can sell is in the store (and its product is
+ * attached to RevenueCat's `full` entitlement; see NATIVE.md), or until he
+ * says to turn it off anyway. Flipping it is this boolean and its mirror.
  *
  * It only means anything while FREE_MODE is false. While it is false:
  * /api/checkout refuses both plans before it touches Stripe (on the server,
  * for the reason given above: a bookmark, a stale tab or an old ad link
  * reaches the endpoint without any button), /api/charter answers with no
- * price, and /subscribe, /families and the Terms say where Premium is bought
- * instead of quoting the web price. Every one of them keeps its selling state
+ * price, /subscribe and /families say where Premium is bought instead of
+ * quoting the web price, and the Terms say it first and keep the web plans'
+ * figures only as the terms of subscriptions already bought. Every one of them keeps its selling state
  * whole: turning the website back on is this boolean and its mirror, never a
  * copy rewrite.
  *
@@ -60,4 +70,4 @@ export const FREE_MODE = false; // mirrors sona.js — Travis, 30 Sep 2026: "we 
  * Mirrors `WEB_SALES` in `public/sona.js`, which the static pages read;
  * `tests/freetest.mjs` fails if the two disagree.
  */
-export const WEB_SALES = false; // mirrors sona.js — Travis, 1 Oct 2026: "i dont want them paying on the website"
+export const WEB_SALES = true; // mirrors sona.js — built to go false (Travis, 1 Oct 2026: "i dont want them paying on the website"); on until the app can sell

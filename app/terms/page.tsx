@@ -128,12 +128,18 @@ export default function TermsPage() {
                 they are still sold, by Apple. */}
             {!WEB_SALES && (
               <>
+                {/* "family", every time: two sections down, a clinician's
+                    plans ARE new Sona Premium subscriptions sold on
+                    speaksona.com, and a lead that says none are contradicts
+                    its own page. */}
                 <strong>
-                  New Sona Premium subscriptions are sold in the Sona app on
-                  iPhone and iPad, by Apple, at the price and free-trial length
-                  shown in the App Store.
+                  New family subscriptions to Sona Premium are sold in the Sona
+                  app on iPhone and iPad, by Apple, at the price and free-trial
+                  length shown in the App Store.
                 </strong>{" "}
-                We are not selling new subscriptions on speaksona.com.
+                We are not selling new family subscriptions on speaksona.com. A
+                clinician&apos;s plans are still sold here: see Premium for
+                clinicians below.
                 <br />
                 <br />
               </>
@@ -226,10 +232,10 @@ export default function TermsPage() {
             say, and this repo never types it. */}
         {!FREE_MODE && !WEB_SALES && (
           <>
-            A yearly plan bought on speaksona.com and canceled during its 3
-            free days is never charged. A monthly plan bought there has no free
-            days: it was charged when it was bought and is charged at the start
-            of each month after that. For a subscription bought in the app, the
+            A yearly family plan bought on speaksona.com and canceled during
+            its 3 free days is never charged. A monthly family plan bought there
+            has no free days: it was charged when it was bought and is charged
+            at the start of each month after that. For a subscription bought in the app, the
             free-trial length is the one the App Store showed at the time of
             purchase.{" "}
           </>
@@ -339,13 +345,32 @@ function PlanTerms() {
       the first charge lands on day 3, and only if you keep Premium.
       <br />
       <br />
-      <strong>Charter price.</strong> The first 50 families to subscribe pay a
-      charter price of <strong>$59.99 per year</strong> (under $5 a month)
-      instead, and keep that price for as long as their subscription continues
-      without a break. The price you see at checkout is the price you will be
-      charged; once the 50 charter places are taken, new subscriptions are
-      $99.99 per year (under $8.50 a month). The charter price is for the
-      yearly plan only.
+      {/* THE CHARTER PARAGRAPH IS AN OFFER ONLY WHILE THE WEBSITE SELLS. With
+          WEB_SALES false there is no checkout and nobody new can take a
+          charter place, so "the price you see at checkout" and "new
+          subscriptions are $99.99" would describe a sale that cannot happen,
+          four paragraphs under a lead saying Apple sells new plans at Apple's
+          price. The off twin keeps only what is still true: what a charter
+          subscription costs, and that it keeps its price. The selling
+          paragraph stays whole (chartertest reads it as text). */}
+      {WEB_SALES ? (
+        <>
+          <strong>Charter price.</strong> The first 50 families to subscribe pay a
+          charter price of <strong>$59.99 per year</strong> (under $5 a month)
+          instead, and keep that price for as long as their subscription continues
+          without a break. The price you see at checkout is the price you will be
+          charged; once the 50 charter places are taken, new subscriptions are
+          $99.99 per year (under $8.50 a month). The charter price is for the
+          yearly plan only.
+        </>
+      ) : (
+        <>
+          <strong>Charter price.</strong> A yearly subscription bought on
+          speaksona.com at the charter price is <strong>$59.99 per year</strong>{" "}
+          (under $5 a month), and keeps that price for as long as it continues
+          without a break. The charter price was for the yearly plan only.
+        </>
+      )}
       <br />
       <br />
       <strong>Sona Premium, monthly</strong> (called Sona Monthly before
