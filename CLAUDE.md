@@ -755,8 +755,16 @@ in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
 book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
 see below) sit after every twelve-page one in `STORIES`: they put the sound
 anywhere in a word and are last in line to be redone. A limited-time book
-carries `season` instead and is on every shelf, and Home's Limited time row,
-only inside its window (Boo the Bat on Halloween, October 2026). Home's card,
+carries `season` instead and is on the shelf, and Home's Limited time row,
+only inside its window. **Halloween (October 2026) has one for six sounds**
+(Travis, 2 Oct 2026: "take a popular book like the halloween and make a
+version for other letter even just the popular ones like r s l z f"): Boo the
+Bat (B, `anySound`), Rory the Rabbit (R), Sid the Seagull (S), Leon's
+Trick-or-Treat Night (L), Zoe the Zebra (Z) and Finn the Fish (F), each
+starring that sound's own hero under the same sound rule. A child sees the
+one in their own sound; a child whose sounds have none sees Boo
+(`Sona.seasonPick`, which the shelf and Home both ask); play mode and a child
+with no sounds yet see them all. Home's card,
 the website and the Premium page say "new ones on the way", never "every
 week", "a book for every sound" or a weekday. `readtest` pins that nothing
 waits; `landingtest` the website's count.
