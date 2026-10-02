@@ -12,8 +12,9 @@
  *
  * Since 24 Sep 2026 "off" means a FREE VERSION plus PREMIUM, not a wall:
  * daily speech practice (and released free-tier games) stays free for
- * every family, and what a family can buy here is Premium — every game — on
- * the one yearly plan, at the price lib/charter.ts decides. While this is
+ * every family, and what a family can buy here is Premium — every game — by
+ * the year (3 free days first) or by the month (charged at purchase; back on
+ * sale 1 Oct 2026), at the prices lib/charter.ts holds. While this is
  * true instead, /api/checkout refuses to create a Stripe session. Refusing on
  * the SERVER is the point: hiding a button still leaves the endpoint reachable
  * from a bookmark, a stale tab, an old ad, or a shared link, and a free app

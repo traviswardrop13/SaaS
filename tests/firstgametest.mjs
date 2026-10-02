@@ -49,8 +49,8 @@ function phone(cfg) {
   if (cfg.first) sessionStorage.setItem("sona.firstgame.v1", cfg.first);
   if (cfg.token) sessionStorage.setItem("sona.play.token", cfg.token);
 }
-async function open(url, cfg = {}) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+async function open(url, cfg = {}, viewport = { width: 390, height: 844 }) {
+  const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
   await context.addInitScript(phone, cfg);
   const page = await context.newPage(); page.setDefaultTimeout(8000);
@@ -196,20 +196,140 @@ await scenario("the plan screen after a first run", async () => {
       sub: document.getElementById("offerSub").textContent,
       pill: !document.getElementById("offerPill").hidden,
       art: document.querySelectorAll("#offerArt .oc img").length,
-      open: Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].tier !== "free" && !Sona.GAME_ACTS[k].comingSoon).length,
+      pillSeen: getComputedStyle(document.getElementById("offerPill")).display !== "none",
+      // who Premium's playable games are for, straight from the catalog
+      groups: [...new Set(Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].tier !== "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => Sona.GAME_ACTS[k].group))].sort(),
+      littleSoon: Object.keys(Sona.GAME_ACTS).some((k) => Sona.GAME_ACTS[k].group === "simple" && Sona.GAME_ACTS[k].tier !== "free" && Sona.GAME_ACTS[k].comingSoon),
     }));
     ok("after a first run: every Premium game in Home's art, fanned, and the child's name in the headline", s.title === "Unlock every game for Mia" && s.art >= 2 && s.art <= 4, s);
-    ok("the count is the catalog's, and no date is promised", s.sub === s.open + " more games today, and new ones on the way.", s);
-    ok("nothing recorded on this device, so no line about what the child did", s.pill === false, s);
+    // Travis, 1 Oct 2026: "a different way to say 6 more games today, like
+    // more games for littles and for bigs ... new ones on the way is fine".
+    // The line names who the games are for, and only the age groups that have
+    // a Premium game a child can open today: a parent of a three-year-old
+    // must not read "more games for little kids" on a day there are none.
+    const both = s.groups.includes("arcade") && s.groups.includes("simple");
+    const want = both ? "More games for little kids and big kids, and new ones on the way."
+      : s.groups.includes("arcade") ? "More games for big kids, and new ones " + (s.littleSoon ? "for little kids " : "") + "on the way." : null;
+    ok("the line under the headline says who Premium's games are for, from the catalog, with no count and no date", want !== null && s.sub === want && !/\d/.test(s.sub), s);
+    ok("nothing recorded on this device, so no line about what the child did — and no empty pill either", s.pill === false && s.pillSeen === false, s);
     ok("first run → plan screen: no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+// TWO WAYS TO PAY, IN THE OFFER (1 Oct 2026). The offer view hides the plan
+// boxes' long descriptions, so this reads what is actually on the screen: the
+// monthly box and its "charged today" must be visible there, and two boxes
+// must not push the one button off the first screen — on a full-size iPhone
+// or on a small one (CLAUDE.md promises 375×667).
+//
+// It is measured the way a real family meets it: with the CHARTER LINE in the
+// yearly box (two more lines; the first version of this test had no price
+// answer, so the line never showed and the test passed on a page whose button
+// was cut off on every phone between 701 and 855 tall), from a locked game
+// (the tall picture, a pill, a two-line headline), and at the heights in
+// between — a 736, a 780 and an 812, not just the two ends. The page fits
+// itself by measuring (fitOffer), so each size is checked, not assumed.
+const CHARTER_OPEN = { ok: true, free: false, cap: 50, taken: 12, left: 38, open: true, source: "stripe", price: "$59.99", standard: "$99.99", label: "Charter", monthly: "$9.99" };
+const answerCharter = (page, body, delayMs = 0) => page.route("**/api/charter", async (r) => { if (delayMs) await new Promise((res) => setTimeout(res, delayMs)); await r.fulfill({ contentType: "application/json", body: JSON.stringify(body) }).catch(() => {}); });
+for (const [w, h] of [[375, 667], [360, 740], [414, 736], [360, 780], [375, 812], [390, 844], [430, 932]]) {
+  const label = w + "×" + h;
+  await scenario("two ways to pay in the offer, " + label, async () => {
+    const context = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: "reduce" });
+    await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
+    await context.addInitScript(phone, { profile: kid("7"), paid: true });
+    const page = await context.newPage(); page.setDefaultTimeout(8000);
+    const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+    await answerCharter(page, CHARTER_OPEN);
+    try {
+      await page.goto(BASE + "/subscribe.html?from=stack");
+      await page.locator("body.offer").waitFor();
+      await page.locator("#charterLine").waitFor({ state: "visible" });
+      await page.waitForFunction(() => !document.getElementById("buyLife").disabled);
+      const read = () => page.evaluate(() => {
+        const g = (id) => document.getElementById(id);
+        // by what is PAINTED, never by the hidden attribute the page sets
+        const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+        const note = document.querySelector("#planMonth .paynote");
+        return { year: seen(g("planLife")), month: seen(g("planMonth")), note: seen(note) ? note.innerText : "", yearPicked: g("planLife").getAttribute("aria-checked"),
+          charter: seen(g("charterLine")) ? g("charterLine").innerText : "", button: g("buyLife").textContent,
+          buy: Math.round(g("buyLife").getBoundingClientRect().bottom), monthBottom: Math.round(g("planMonth").getBoundingClientRect().bottom),
+          payToday: seen(g("monthMath")), art: seen(g("offerArt")), wide: document.documentElement.scrollWidth > innerWidth, h: innerHeight, fit: document.body.className };
+      });
+      const s = await read();
+      ok(label + ": both ways to pay are on screen in the offer, yearly picked, with the charter line a real family sees",
+        s.year && s.month && s.yearPicked === "true" && /38 spots left/.test(s.charter), s);
+      ok(label + ": the monthly box's 'charged today' is visible there, not hidden with the long descriptions", /charged today/i.test(s.note), s);
+      ok(label + ": both boxes and the one button fit on the first screen, and nothing runs off the side", s.monthBottom < s.buy && s.buy > 0 && s.buy <= s.h && !s.wide, s);
+      ok(label + ": 'charged today' is not under a button that starts free days", s.payToday === false && s.button === "Start 3 days free", s);
+      if (h >= 667) ok(label + ": the game's picture is still there — the fit shrinks it before it would drop it", s.art, s);
+      await page.locator("#planMonth").click();
+      const b = await read();
+      ok(label + ": picking monthly keeps the button on the first screen and names $9.99 a month", /\$9\.99 a month/.test(b.button) && b.buy <= b.h && b.payToday, b);
+      ok(label + ": no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+}
+
+// THE PRICE CHECK, ANSWERED FOR REAL (1 Oct 2026). Every browser suite
+// answered /api/charter with an error, so no test had ever watched the plan
+// screen take an answer — and a slow one, arriving after the 2.5 s the button
+// waits, re-priced the yearly box to $99.99 and left "$59.99 a year" in the
+// small print beneath it.
+await scenario("a late answer from the price check, with the charter spots gone", async () => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
+  await context.addInitScript(phone, { profile: kid("7"), paid: true });
+  const page = await context.newPage(); page.setDefaultTimeout(9000);
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  await answerCharter(page, { ...CHARTER_OPEN, taken: 50, left: 0, open: false }, 3300);
+  try {
+    await page.goto(BASE + "/subscribe.html");
+    await page.locator("#pickCard").waitFor();
+    const read = () => page.evaluate(() => { const g = (id) => document.getElementById(id); return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, title: g("webTitle").innerText, renew: g("webRenew").innerText, line: g("planLine").innerText, save: document.querySelector("#planLife .save").innerText, month: g("planMonth").innerText }; });
+    let s = await read();
+    ok("while the price check is out, the button waits and says so", s.disabled && /Checking today/.test(s.button), s);
+    await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // 2.5 s: the button lets go
+    s = await read();
+    ok("after 2.5 s the button lets go at the price the page opened with", s.button === "Start 3 days free" && /\$59\.99/.test(s.title), s);
+    await page.waitForFunction(() => /99\.99/.test(document.getElementById("webTitle").innerText));   // the late answer lands
+    s = await read();   // NOTHING is tapped: a tap repaints, and would hide the stale small print this is here to catch
+    ok("a late answer re-prices EVERY yearly figure with no tap: the title, the per-month line, the small print and the header line",
+      /\$99\.99\/yr/.test(s.title) && /under \$8\.50 a month, billed once a year/i.test(s.save) && /renews at \$99\.99 a year/.test(s.renew) && !/59\.99/.test(s.renew) && /\$99\.99\/yr/.test(s.line) && !/59\.99/.test(s.line) && /under \$8\.50 a month/.test(s.line), s);
+    ok("…and the monthly figure does not move with the charter", /\$9\.99\/mo/.test(s.month) && /\$9\.99 a month, charged today/.test(s.line), s);
+    ok("late price answer: no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+await scenario("a pick made while the price check is out", async () => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
+  await context.addInitScript(phone, { profile: kid("7"), paid: true });
+  const page = await context.newPage(); page.setDefaultTimeout(9000);
+  await answerCharter(page, { ...CHARTER_OPEN, taken: 50, left: 0, open: false }, 3300);
+  try {
+    await page.goto(BASE + "/subscribe.html");
+    await page.locator("#pickCard").waitFor();
+    await page.waitForFunction(() => document.getElementById("buyLife").disabled);
+    await page.locator("#planMonth").click();                       // the parent picks monthly during the wait
+    const waiting = await page.evaluate(() => ({ b: document.getElementById("buyLife").textContent, d: document.getElementById("buyLife").disabled }));
+    ok("picking a plan during the wait does not let the button go early", waiting.d && /Checking today/.test(waiting.b), waiting);
+    await page.waitForFunction(() => !document.getElementById("buyLife").disabled);
+    const let1 = await page.evaluate(() => document.getElementById("buyLife").textContent);
+    ok("the button comes back saying what the plan picked NOW does, not a label remembered from before the wait", let1 === "Subscribe — $9.99 a month", let1);
+    await page.waitForFunction(() => /99\.99/.test(document.getElementById("webTitle").innerText));   // the late answer lands
+    const after = await page.evaluate(() => ({ b: document.getElementById("buyLife").textContent, renew: document.getElementById("webRenew").innerText, tl: getComputedStyle(document.getElementById("webTL")).display }));
+    ok("…and the late answer does not put yearly words back over the monthly pick", after.b === "Subscribe — $9.99 a month" && /\$9\.99 a month/.test(after.renew) && !/a year/.test(after.renew) && after.tl === "none", after);
   } finally { await context.close(); }
 });
 await scenario("Settings › Your plan", async () => {
   const { context, page } = await open("/subscribe.html", { profile: kid("7"), paid: true });
   try {
     await page.locator("#pickCard").waitFor();
-    const s = await page.evaluate(() => ({ offer: document.body.classList.contains("offer"), hero: document.getElementById("offerHero").hidden, tabs: getComputedStyle(document.querySelector(".family-tabs")).display }));
+    const s = await page.evaluate(() => ({ offer: document.body.classList.contains("offer"), hero: document.getElementById("offerHero").hidden, tabs: getComputedStyle(document.querySelector(".family-tabs")).display,
+      rachel: [...document.querySelectorAll("#pickCard .proof, #offerRachel")].filter((e) => getComputedStyle(e).display !== "none").length,
+      plans: [...document.querySelectorAll("#pickCard .plan")].filter((e) => getComputedStyle(e).display !== "none").length }));
     ok("opened from Settings, the plan page is the page it was: no offer framing, tabs showing", !s.offer && s.hero && s.tabs !== "none", s);
+    // the offer's copy of Rachel's line carried a display rule that beat its
+    // hidden attribute, so Settings showed her line twice
+    ok("…Rachel's line shows once there, and both ways to pay", s.rachel === 1 && s.plans === 2, s);
   } finally { await context.close(); }
 });
 await scenario("the gate carries the game", async () => {

@@ -2923,8 +2923,23 @@
     { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
     { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
     { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
-    { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "leon-halloween", title: "Leon's Trick-or-Treat Night", sound: "L", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "zoe-halloween", title: "Zoe the Zebra on Halloween", sound: "Z", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
+    { slug: "finn-halloween", title: "Finn the Fish on Halloween", sound: "F", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
   ];
+  // Halloween has a limited-time book for several sounds (Travis, 2 Oct 2026:
+  // "take a popular book like the halloween and make a version for other
+  // letter"). A child gets the one in their own sound; a child whose sounds
+  // have none gets the one written for everyone (anySound: Boo the Bat).
+  // Home's Limited time row and the bookshelf both ask here, so they agree.
+  function seasonPick(list, sounds) {
+    var want = (sounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var mine = list.filter(function (b) { return want.indexOf(String(b.sound).toUpperCase()) !== -1; });
+    return mine.length ? mine : list.filter(function (b) { return b.anySound; });
+  }
   function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
@@ -2992,7 +3007,12 @@
     function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
     var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
       .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
-    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); }).map(bookEntry);
+    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
+    // the limited-time book in this child's sound (seasonPick); play mode,
+    // which rotates every sound, and a child with no sounds yet see them all
+    var sounds = getProfile().focusSounds || [];
+    if (sounds.length && !playMode()) limitedBooks = seasonPick(limitedBooks, sounds);
+    limitedBooks = limitedBooks.map(bookEntry);
     // At most five across, so a row never becomes a long side-scroll.
     var ROW = 5, newRow = fresh.concat(freshBooks).slice(0, ROW), limitedRow = seasonal.concat(limitedBooks).slice(0, ROW);
     var featured = [];
@@ -4442,10 +4462,12 @@
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
-  // Monthly was retired from SALE on 18 Sep 2026 — no surface offers it — but
-  // its product id STAYS here. RevenueCat needs it to recognise an existing
-  // monthly subscriber on restore or reinstall, and dropping it would strand
-  // every one of them behind a paywall they are already paying for.
+  // Monthly was retired from SALE on 18 Sep 2026 and is on sale again since
+  // 1 Oct 2026 (the plan screen offers it only when the App Store hands the
+  // product back). Either way its product id STAYS here: RevenueCat needs it
+  // to recognise an existing monthly subscriber on restore or reinstall, and
+  // dropping it would strand every one of them behind a paywall they are
+  // already paying for.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
@@ -4466,12 +4488,22 @@
   function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
   // fetch the live product (price string comes from the App Store, locale-
   // correct). kind: "annual" (default) | "monthly".
+  // THE PRODUCT ASKED FOR, OR NOTHING (1 Oct 2026). This took the first
+  // product in the answer whatever it was. With two on sale that is how a
+  // "Monthly" button buys the yearly plan: a store that has no monthly product
+  // but answers with the yearly one would have priced and sold it under the
+  // wrong name. A product that names itself must name the id asked for; only
+  // an answer with no identifier at all (an old plugin) is taken on trust.
   function iapProduct(kind) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
       Promise.resolve(P.getProducts({ productIdentifiers: [id], type: IAP_TYPE }))
         .catch(() => P.getProducts({ productIdentifiers: [id] }))
-        .then((r) => (r && r.products && r.products[0]) || null)
+        .then((r) => {
+          const list = (r && r.products) || [];
+          for (let i = 0; i < list.length; i++) if (list[i] && list[i].identifier === id) return list[i];
+          return (list.length === 1 && list[0] && list[0].identifier == null) ? list[0] : null;
+        })
     );
   }
   // buy: try the modern API first, fall back across plugin versions
@@ -4709,5 +4741,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

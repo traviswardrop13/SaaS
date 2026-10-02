@@ -273,7 +273,7 @@ Same config; Google Play is $25 once and reviews faster.
 
 ## The charter price on iOS
 
-The web sells one yearly plan at two tiers — $59.99 for the first 50 families,
+The web sells the yearly plan at two tiers — $59.99 for the first 50 families,
 $99.99 after — and `/api/checkout` decides which at the moment of purchase
 from a live Stripe count (`lib/charter.ts`). None of that reaches the App
 Store build, and it must not try to: the native paywall's figure comes from
@@ -291,6 +291,28 @@ does, iOS simply sells the annual product at whatever ASC lists, and the
 native card describes exactly that. Do not add charter copy to the native
 card ahead of the ASC change: a card that says "first 50 families" over a
 price ASC controls is the same untrue promise the web half was built to avoid.
+
+## The monthly plan on iOS (1 Oct 2026)
+
+Monthly is on sale again beside the yearly plan (Travis: "a $10 a month
+option ... that does not have a free trial. That's a pay today"). On the
+iPhone it exists only if App Store Connect and RevenueCat say so — nothing in
+this repo can make it appear:
+
+1. **App Store Connect:** `com.speaksona.app.monthly` approved and on sale, at
+   the monthly price, in the same subscription group as the annual product,
+   with **no introductory offer** (no free trial) on it.
+2. **RevenueCat:** that product attached to the `full` entitlement, the one
+   the annual product unlocks. If it is not, Apple takes the payment and the
+   app stays locked (the card then says to tap Restore Purchases, never
+   "nothing was charged").
+
+Until both are true the app shows the yearly plan alone, exactly as before:
+`subscribe.html`'s monthly row ships hidden with no price in its markup, and
+is shown only when `Sona.iapProduct("monthly")` returns that very product
+with a price string and no `introPrice`. A product that carries a free trial
+is not offered, because the row says "Charged today". The card never states a
+saving, in dollars or as a ratio: both prices are Apple's.
 
 ## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026)
 
@@ -310,7 +332,7 @@ web subscription is recognised. The clinician's link opens in Safari, and the
 app keeps separate storage, so the link state (the code and the enrolment
 ticket) travels into the app through the move-in code; the app then asks
 `/api/slp/covered` itself. The cached answer never travels. A parent's own Premium in the app stays the
-existing annual in-app purchase, priced in App Store Connect. Apple accepts
+existing in-app purchases (yearly, and monthly when the store sells it), priced in App Store Connect. Apple accepts
 access bought elsewhere only while the app also sells Premium itself and never
 points a parent at buying outside it — so no page inside the app may mention
 the clinician plan or a web price.

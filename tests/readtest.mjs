@@ -312,7 +312,22 @@ async function waitSpoke(pg, ms) {
     JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf)); await r.ctx.close();
   r = await shelfAt("2026-10-01T09:00:00-06:00", []);
   ok("every book on the shelf is open, nothing still coming",
-    r.shelf.length === 43 /* 42 + October's Halloween book */ && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
+    r.shelf.length === 48 /* 42 + October's six Halloween books */ && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
+  // HALLOWEEN IN YOUR OWN SOUND (Travis, 2 Oct 2026: "take a popular book
+  // like the halloween and make a version for other letter"): a child gets
+  // the Halloween book in their sound, and Boo only when their sounds have
+  // none (Sona.seasonPick); Home's Limited time row asks the same rule.
+  r = await shelfAt("2026-10-02T09:00:00-06:00", ["S"]);
+  const sHome = await r.pg.evaluate(() => { const row = (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games; return row.map((g) => g.name); });
+  ok("an S child gets Sid's Halloween book, not Boo, on the shelf and on Home",
+    r.shelf.some((b) => b.t === "Sid the Seagull on Halloween") && !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t) && b.t !== "Sid the Seagull on Halloween") &&
+    JSON.stringify(sHome) === JSON.stringify(["Sid the Seagull on Halloween"]), JSON.stringify({ shelf: r.shelf.map((b) => b.t), home: sHome })); await r.ctx.close();
+  r = await shelfAt("2026-10-02T09:00:00-06:00", ["K"]);
+  const kHome = await r.pg.evaluate(() => (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games.map((g) => g.name));
+  ok("…a K child, whose sound has none, gets Boo the Bat on both",
+    r.shelf.filter((b) => /Halloween|Trick-or-Treat/.test(b.t)).map((b) => b.t).join() === "Boo the Bat on Halloween" && JSON.stringify(kHome) === JSON.stringify(["Boo the Bat on Halloween"]), JSON.stringify({ home: kHome })); await r.ctx.close();
+  r = await shelfAt("2026-11-01T09:00:00-06:00", ["S"]);
+  ok("…and after October no child has one", !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t))); await r.ctx.close();
 
   // ── ONE FREE BOOK, THE REST PREMIUM (Travis, 30 Sep 2026) ──
   // "one book uh so like the letter r book ... to be free and the rest is
@@ -403,7 +418,7 @@ async function waitSpoke(pg, ms) {
   const fitsNow = (pg) => pg.evaluate(() => { const t = document.querySelector(".bktext").getBoundingClientRect(), n = document.getElementById("bkNext").getBoundingClientRect(), c = document.querySelector(".bkcard").getBoundingClientRect(), img = document.querySelector("#bkStage .bkart.scene img"), a = img && img.getBoundingClientRect();
     return t.bottom <= n.top && n.bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth && !!a && a.height > 150 && a.top < c.top; });
   let r = await reader("2026-10-09T10:00:00");
-  await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click();
+  await r.pg.locator(".bookBtn", { has: r.pg.locator(".bt", { hasText: /^Rory the Rabbit$/ }) }).click();
   // the title page swaps the shelf's small copy for the full-size first scene once it is cut
   const sharp = await r.pg.waitForFunction(() => /^(blob|data):/.test((document.querySelector("#bkStage img.bkcover") || {}).src || ""), null, { timeout: 4000 }).then(() => true, () => false);
   const seen = [await scene(r.pg, "rory")];
@@ -437,7 +452,7 @@ async function waitSpoke(pg, ms) {
   const ends = [];
   for (const [w, h] of [[375, 667], [320, 693]]) {
     r = await reader("2026-10-09T10:00:00", { width: w, height: h });
-    await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click(); await r.pg.waitForTimeout(250);
+    await r.pg.locator(".bookBtn", { has: r.pg.locator(".bt", { hasText: /^Rory the Rabbit$/ }) }).click(); await r.pg.waitForTimeout(250);
     for (let i = 0; i < 7; i++) { await r.pg.click("#bkNext"); await r.pg.waitForTimeout(120); }
     // Measure only once The End is on screen and its fonts have loaded: a
     // slower runner, or a fallback font still showing, is not the bug.
