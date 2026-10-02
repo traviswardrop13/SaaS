@@ -322,6 +322,7 @@
         </div>
       </div>
       <p class="set-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/talk.html">Help</a></p>
+      <p class="muted" id="micNumsNote" hidden></p>
     </section>
 
     <!-- SLP corner: only for clinicians (profile.role === "slp"). Their job
@@ -802,6 +803,34 @@
       };
     })();
 
+    // MIC NUMBERS (2 Oct 2026). Travis, in the iPhone app: "I have to say
+    // the word super close to the phone or else it won't seem to hear it".
+    // Five quick taps on "Account" turn on a small box at the top of the
+    // practice page with the microphone's own levels: how loud the room is,
+    // how loud a sound has to be to count, and how loud each sound was. It is
+    // here, behind the grown-ups check, because the iPhone app keeps its own
+    // storage and has no address bar for ?debug=1, and the app is where the
+    // problem is. It changes nothing about what counts. The numbers stay on
+    // the screen: never saved, never sent.
+    (function () {
+      var t = document.getElementById("acctTitle"), note = document.getElementById("micNumsNote"), taps = [];
+      function on() { try { return localStorage.getItem("sona.micnumbers") === "1"; } catch (e) { return false; } }
+      function paint(changed) {
+        if (on()) { note.textContent = "Mic numbers are on. They show at the top of the practice page. Tap \u201cAccount\u201d five times to turn them off."; note.hidden = false; }
+        else if (changed) { note.textContent = "Mic numbers are off."; note.hidden = false; }
+        else note.hidden = true;
+      }
+      if (!t || !note) return;
+      t.addEventListener("click", function () {
+        var now = Date.now(); taps.push(now);
+        while (taps.length && now - taps[0] > 3000) taps.shift();
+        if (taps.length < 5) return;
+        taps = [];
+        try { if (on()) localStorage.removeItem("sona.micnumbers"); else localStorage.setItem("sona.micnumbers", "1"); } catch (e) {}
+        paint(true);
+      });
+      paint(false);
+    })();
     // account / subscription
     // Founder unlock: owner's key, prompt-entry, server-verified. Shows as a
     // quiet link under Account; once unlocked the line just says so.

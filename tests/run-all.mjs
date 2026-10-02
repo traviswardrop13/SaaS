@@ -73,6 +73,7 @@ const SUITES = [
   "tilestest.mjs", // TILES2: Piano Tiles is a round: three songs a child knows, the same speed on every screen, a finale that waits
   "runtest.mjs", // RUN2: Sound Sprint is a race: park, beach, forest, a checkpoint card between, a finish line that always wins; a child's first three races open on Echo's how-to-play card
   "glidetest.mjs", // GLIDE2: Flappy Glide is a flight: three legs, a cloud rest card between, a fireworks landing; the balloon floats
+  "sayitcardtest.mjs", // SAYIT1: the five round games' say-it card speaks (ask, Rachel's take, "Go!") before it listens, and is never frozen; a child answering right on "Go!" is heard
   "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win

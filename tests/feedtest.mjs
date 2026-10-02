@@ -41,7 +41,9 @@ ok("kid page carries no tracking", !/pixel\.js|analytics\.js|fbevents|posthog/i.
 // to say it!"). The mic here is a stand-in: window.__mic.voice is the child
 // talking, and it is all the page can hear.
 function fakeMic() {
-  const h = window.__mic = { voice: false, opens: 0, live: 0 };
+  const h = window.__mic = { voice: false, opens: 0, live: 0, said: [] };
+  // what the browser's own voice was asked to say (it still speaks)
+  if (window.speechSynthesis) { const speak = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = (u) => { h.said.push(String(u.text)); return speak(u); }; }
   navigator.mediaDevices.getUserMedia = () => { h.opens++; h.live++; const t = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; h.live--; } } }; return Promise.resolve({ getTracks: () => [t], getAudioTracks: () => [t] }); };
   const AC = window.AudioContext || window.webkitAudioContext;
   AC.prototype.createMediaStreamSource = function () { return { connect() {}, disconnect() {} }; };
@@ -93,8 +95,21 @@ ok("round starts 0/5", /0\/5/.test(t.fed));
 await page.waitForTimeout(400);
 ok("Echo speaks the ask", ttsAsks.some((x) => new RegExp("Where is the " + target1, "i").test(x)), JSON.stringify(ttsAsks));
 // Calm, not hype (24 Sep 2026): the voice reads "!" as a burst of energy, so
-// the ask ends on a period. The practice word inside it is unchanged.
-ok("Echo's ask ends calmly, on a period", ttsAsks.length > 0 && ttsAsks.every((x) => !/!/.test(x) && /\.$/.test(x)), JSON.stringify(ttsAsks));
+// the word ends on a period. The practice word inside it is unchanged. Then
+// one "Go!", which is meant to sound like one: it tells a child who can't
+// read that it is their turn (Travis, 2 Oct 2026: "i also wanna try to have
+// the 11 labs voice say 'Go!'"). "Go!" is its own clip, never glued onto the
+// ask: one line with both was a new take of every ask, fetched again on
+// every phone, with the practice word read fresh. It is only ever Echo's own
+// voice: this voice service is down, so the browser says the ask, and no
+// "Go!" at all.
+{
+  const asks = ttsAsks.filter((x) => x !== "Go!");
+  ok("Echo's ask is unchanged: the word ends calmly on a period, with no \"!\" in it", asks.length > 0 && asks.every((x) => /^(?:Where is the ([a-z ]+)\? )?Say\.\.\. [a-z ]+\.$/i.test(x)), JSON.stringify(ttsAsks));
+  ok("…then \"Go!\", asked for as its own clip after the ask, never before it", ttsAsks.includes("Go!") && ttsAsks.indexOf("Go!") > ttsAsks.findIndex((x) => x !== "Go!") && !ttsAsks.some((x) => x !== "Go!" && /Go!/.test(x)), JSON.stringify(ttsAsks));
+  const said = await page.evaluate(() => window.__mic.said.slice());
+  ok("…and with the voice service down, never a robot \"Go!\": the browser's voice says the ask alone", said.some((x) => /^Where is the /.test(x)) && !said.includes("Go!"), JSON.stringify(said));
+}
 
 // ── the word comes first: a tap before it feeds nothing ──
 ok("the pictures wait, locked, until the word is said", await page.evaluate(() => document.getElementById("grid").classList.contains("locked")));

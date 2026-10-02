@@ -492,6 +492,78 @@
       events: _voiceEvents.map(function (item) { return Object.assign({}, item); }) };
   }
 
+  // ── "Go!": Echo's turn cue after a game's ask (2 Oct 2026) ──
+  // Travis: "i also wanna try to have the 11 labs voice say 'Go!'". Feed
+  // Echo, the Say & Play games (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
+  // Peekaboo say it straight after the word, as its own short clip, so a child
+  // who can't read hears that it is their turn. It is a nicety, so it never
+  // holds up a turn (review, 2 Oct 2026). Fetched like the word, every turn
+  // waited on the voice service a second time while "Listen…" sat on screen
+  // in silence: up to 8 s more when the service was slow, on every turn while
+  // it sent stand-ins (those are never saved, so "Go!" was fetched again each
+  // time), and a "Go!" the service could not send came in the browser's robot
+  // voice after Echo's word. So each game asks goClip() for the clip it can
+  // play right now, and plays nothing when there is none:
+  // - this page's copy, or this phone's saved copy (read from the phone, not
+  //   the network); if neither, nothing this turn, and the voice service is
+  //   asked in the background, so the next turn has it;
+  // - only the first ask of a visit waits for that request (waitMs, the
+  //   game's GO_WAIT_MS: 1.5 s at most after the word), so a new phone hears
+  //   "Go!" from the start;
+  // - an ordinary answer is saved on the phone; a stand-in (X-Sona-Voice-Keep
+  //   "0") is kept for this page only and never saved, so the next visit asks
+  //   again, the rule every voice line keeps (28 Sep 2026);
+  // - never the browser voice: no clip, no "Go!".
+  // Resolves with the clip's bytes (an ArrayBuffer of 24 kHz PCM) or null.
+  const GO_LINE = "Go!", GO_WAIT_MS = 1500, _go = { mem: {}, job: {} };
+  function _goStore(key, bytes) {
+    return new Promise(function (done) {
+      // a phone that never answers is the same as one without the clip
+      const timer = setTimeout(function () { done(null); }, 500);
+      const fin = function (v) { clearTimeout(timer); done(v || null); };
+      try {
+        const rq = indexedDB.open("sona-tts", 1);
+        rq.onupgradeneeded = function () { try { if (!rq.result.objectStoreNames.contains("clips")) rq.result.createObjectStore("clips"); } catch (e) {} };
+        rq.onerror = function () { fin(null); };
+        rq.onsuccess = function () {
+          try {
+            const tx = rq.result.transaction("clips", bytes ? "readwrite" : "readonly"), st = tx.objectStore("clips");
+            if (bytes) { st.put(bytes, key); tx.oncomplete = function () { fin(bytes); }; tx.onerror = function () { fin(null); }; return; }
+            const q = st.get(key); q.onsuccess = function () { fin(q.result); }; q.onerror = function () { fin(null); };
+          } catch (e) { fin(null); }
+        };
+      } catch (e) { fin(null); }
+    });
+  }
+  function _goFetch(voice) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 8000); } catch (e) {}
+    return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: GO_LINE, voice: voice || "", stable: true }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) return null;
+        const keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b && b.byteLength ? { bytes: b, keep: keep } : null; });
+      })
+      .then(function (v) { clearTimeout(to); return v; }, function () { clearTimeout(to); return null; });
+  }
+  function goClip(voice, waitMs) {
+    const key = (voice || "echo") + "|" + TTS_CACHE_VERSION + "|" + GO_LINE;
+    if (_go.mem[key]) return Promise.resolve(_go.mem[key]);
+    let job = _go.job[key];
+    if (!job) {
+      job = _go.job[key] = {};
+      job.phone = _goStore(key);
+      job.all = job.phone.then(function (b) {
+        if (b) return b;
+        return _goFetch(voice).then(function (v) { if (!v) return null; if (v.keep) _goStore(key, v.bytes); return v.bytes; });
+      }).then(function (b) { if (b) _go.mem[key] = b; if (_go.job[key] === job) delete _go.job[key]; return b; },
+        function () { if (_go.job[key] === job) delete _go.job[key]; return null; });
+    }
+    if (!(waitMs > 0)) return job.phone.then(function (b) { return b || _go.mem[key] || null; });
+    return Promise.race([job.all, new Promise(function (done) { setTimeout(function () { done(null); }, waitMs); })])
+      .then(function (b) { return b || _go.mem[key] || null; });
+  }
+
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {
@@ -4966,5 +5038,5 @@
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

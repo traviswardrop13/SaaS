@@ -23,13 +23,17 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // Echo's voice service, as each scenario needs it: "ok" answers a line of
 // TTS.ms of 24 kHz PCM (after TTS.delay), "fail" answers 503, "hang" never
 // answers. Every ask is kept, so a scenario can count them and read the text.
-const TTS = { mode: "fail", ms: 900, delay: 0, asks: [], open: [] };
+// The say-it card's own two lines are asked for as the page loads (2 Oct
+// 2026, /arcade-sayit.js), so they are kept apart (card) and never counted
+// as the start card's asks.
+const TTS = { mode: "fail", ms: 900, delay: 0, asks: [], card: [], open: [] };
+const CARD_LINES = ["To keep playing, say", "Go!"];
 const server = createServer((req, res) => {
   const u = new URL(req.url, BASE), f = path.join(ROOT, u.pathname);
   if (u.pathname === "/api/tts") {
     let body = ""; req.on("data", (c) => (body += c)); req.on("end", () => {
       let text = null; try { text = JSON.parse(body).text; } catch (e) {}
-      TTS.asks.push(text);
+      (CARD_LINES.includes(text) ? TTS.card : TTS.asks).push(text);
       if (TTS.mode === "hang") { TTS.open.push(res); return; }
       if (TTS.mode === "fail") { res.writeHead(503); res.end("{}"); return; }
       setTimeout(() => { res.writeHead(200, { "content-type": "application/octet-stream" }); res.end(Buffer.alloc(48 * TTS.ms)); }, TTS.delay);

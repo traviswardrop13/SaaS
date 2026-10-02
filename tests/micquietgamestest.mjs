@@ -43,10 +43,26 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://127.0.0.1:8231";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
+// "Go!" (2 Oct 2026) is only ever Echo's own clip, never the browser voice,
+// so the voice service here answers that one line: GO_BYTES of PCM, a
+// GO_LEN-sample clip (0.21 s) no chime has, so the log can tell it apart.
+// goVoice.delay holds the answer that long and goVoice.keep "0" makes it a
+// stand-in (one scenario); every other line gets 503.
+const GO_BYTES = 10000, GO_LEN = GO_BYTES / 2, goVoice = { delay: 0, keep: "1", asked: 0 };
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
-  // no voice service: Echo speaks through the (fake) browser voice, which the
-  // log times exactly
+  if (url.pathname === "/api/tts") {
+    let body = ""; req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      let text = null; try { text = JSON.parse(body).text; } catch (e) {}
+      if (text !== "Go!") { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
+      goVoice.asked++;
+      setTimeout(() => { res.writeHead(200, { "content-type": "audio/L16; rate=24000; channels=1", "X-Sona-Voice-Keep": goVoice.keep }); res.end(Buffer.alloc(GO_BYTES)); }, goVoice.delay);
+    });
+    return;
+  }
+  // no voice service for anything else: Echo speaks through the (fake)
+  // browser voice, which the log times exactly
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
@@ -563,6 +579,8 @@ await scenario("slice: no microphone", async () => {
   } finally { await context.close(); }
 });
 
+// the say-it card's own two lines (/arcade-sayit.js), asked for as the page loads
+const HELPER_LINES = new Set(["To keep playing, say", "Go!"]);
 // ── Fruit Slice: a card that asks a syllable (Travis, 1 Oct 2026: "start with
 // isolation then ree rah roh then rot") ──
 // The card after a wave now asks one syllable for a child on R, in ONE line
@@ -573,9 +591,14 @@ await scenario("slice: no microphone", async () => {
 // Echo speaks again; and backgrounding, "I'm done playing" and Echo's power
 // button each leave nothing waiting to speak.
 await scenario("slice: a syllable card", async () => {
-  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
-  // Echo's voice service answers here (it is down for the rest of this suite)
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  // Inside the app, where each of Echo's lines and Rachel's take is a media
+  // element (the card's voice, /arcade-sayit.js, plays the website's lines
+  // through Web Audio: sayitcardtest plays that path).
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", native: true });
+  // Echo's voice service answers here (it is down for the rest of this suite).
+  // The card's voice asks for its own two lines, "To keep playing, say" and
+  // "Go!", as the page loads: `said` is what the card itself asks for.
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   const card = () => page.evaluate(() => { const b = [...document.querySelectorAll("#revTitle .snd")];
     return { title: document.getElementById("revTitle").textContent, snd: b.map((x) => x.textContent), sound: b[0] && getComputedStyle(b[0]).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rung: ASK.rung, text: ASK.text, rev: REV }; });
@@ -590,8 +613,10 @@ await scenario("slice: a syllable card", async () => {
     await page.waitForFunction(() => __quiet.live() === 1);
     let l = await log(page);
     const line = l.sounds.filter((x) => x.kind === "media").pop(), mic = l.mics[l.mics.length - 1];
-    ok("slice syllable card: Echo says it in one line, with no recording after it", said.join("|") === "To keep playing, say... " + c.text + "." && l.sounds.filter((x) => x.kind === "media").length === 1, { said, sounds: l.sounds.filter((x) => x.kind === "media").length });
-    ok("slice syllable card: the mic opens only after his line and its quiet tail", !!line && !line.live && mic.start - line.end >= 0.85, { line, mic });
+    ok("slice syllable card: Echo says it in one line, then \"Go!\", with no recording after it", said.join("|") === "To keep playing, say... " + c.text + "." && l.sounds.filter((x) => x.kind === "media").length === 2, { said, sounds: l.sounds.filter((x) => x.kind === "media").length });
+    // the tail after his last word is SayIt.VOICE_TAIL_MS (250 ms), as on
+    // every listening page; a chime's tail (QUIET_MS) is timed from its start
+    ok("slice syllable card: the mic opens only after his \"Go!\" and its quiet tail", !!line && !line.live && mic.start - line.end >= 0.24, { line, mic });
     // nobody answers: the mic closes, then Echo offers the bare sound, then it listens again
     await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
     await page.waitForFunction(() => ASK.rung === 0, null, { timeout: 6000 });
@@ -600,7 +625,7 @@ await scenario("slice: a syllable card", async () => {
     l = await log(page);
     const after = l.sounds.filter((x) => x.kind === "media").slice(1), srcs = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => x.src.replace(/^.*(\/coach\/)/, "$1").replace(/^blob:.*/, "voice")));
     ok("slice syllable card: Echo's idea and Rachel's recording play between the two mics, never under one",
-      said[1] === "I have an idea. Let's try this one." && srcs.join() === "voice,voice,/coach/say-echo/R-sound.wav" && after.every((x) => !x.live) && l.mics.length === 2, { said, srcs, after, mics: l.mics.length });
+      said[1] === "I have an idea. Let's try this one." && srcs.join() === "voice,voice,voice,/coach/say-echo/R-sound.wav,voice" && after.every((x) => !x.live) && l.mics.length === 2, { said, srcs, after, mics: l.mics.length });
     await voice(page, 450);
     await page.waitForFunction(() => REV === 2 && phase === "wave" && wave === 1);
     // the second card: backgrounding stops the line and leaves nothing waiting.
@@ -610,17 +635,17 @@ await scenario("slice: a syllable card", async () => {
     await nextCard();
     c = await card();
     ok("slice syllable card: the card after a step back repeats that syllable, never a harder ask", c.rung === 1 && c.text === first && c.snd.join() === "r", { first, c });
-    await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "media").length === 4);
+    await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "media").length === 6);
     await page.evaluate(() => __quiet.background());
     const cut = await page.evaluate(() => { const m = __quiet.sounds.filter((x) => x.kind === "media").pop(); return m.end !== Infinity && m.end <= __quiet.now(); });
     await page.waitForTimeout(2200);
     let st = await page.evaluate(() => ({ rung: ASK.rung, live: __quiet.live(), media: __quiet.sounds.filter((x) => x.kind === "media").length, requests: __quiet.requests }));
-    ok("slice syllable card: backgrounding mid-line stops Echo, opens no mic and steps nothing back while away", cut && st.rung === 1 && st.live === 0 && st.media === 4 && st.requests === 2 && said.length === 2, { cut, st, said });
+    ok("slice syllable card: backgrounding mid-line stops Echo, opens no mic and steps nothing back while away", cut && st.rung === 1 && st.live === 0 && st.media === 6 && st.requests === 2 && said.length === 2, { cut, st, said });
     await page.evaluate(() => __quiet.foreground());
     await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
     const back = await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "media").map((x) => ({ voice: /^blob:/.test(x.src), live: x.live })));
     ok("slice syllable card: coming back says the ask as it stands (the line it already holds, no new download), then listens",
-      said.length === 2 && back.length === 5 && back[4].voice && !back[4].live && (await card()).rung === 1 && (await card()).text === c.text, { said, back });
+      said.length === 2 && back.length === 8 && back[6].voice && back[7].voice && !back[6].live && !back[7].live && (await card()).rung === 1 && (await card()).text === c.text, { said, back });
     // backgrounding while it listens cancels the eight-second wait with the mic
     await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
     await page.evaluate(() => __quiet.background());
@@ -648,8 +673,8 @@ await scenario("slice: a syllable card", async () => {
 });
 
 await scenario("slice: done on a syllable card", async () => {
-  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html" });
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) said.push(JSON.parse(r.postData()).text); });
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", native: true });
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   try {
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
@@ -768,8 +793,17 @@ await scenario("feed", async () => {
     await page.waitForFunction(() => __quiet.speaking > 0);
     ok("feed: no mic is open while Echo asks", (await live(page)) === 0);
     await page.waitForFunction(() => __quiet.live() === 1);
-    const asked = await page.evaluate(() => __quiet.speech[0]);
-    ok("feed: Echo's ask ends calmly, on a period, with the word unchanged", /^Where is the (.+)\? Say\.\.\. \1\.$/.test(asked) && !/!/.test(asked), asked);
+    const asked = await page.evaluate(() => __quiet.speech.slice());
+    // the word ends calmly on a period, then one "Go!" so a child who can't
+    // read hears that it is their turn (Travis, 2 Oct 2026: "i also wanna try
+    // to have the 11 labs voice say 'Go!'"). "Go!" is its own clip after the
+    // unchanged ask, never the browser voice, and the mic waits for it, then
+    // the same 250 ms voice tail.
+    ok("feed: Echo's ask: the word unchanged, ending calmly on a period, and nothing else in the browser voice", asked.length === 1 && /^Where is the (.+)\? Say\.\.\. \1\.$/.test(asked[0]), asked);
+    {
+      const l0 = await log(page), ask = l0.sounds.find((s) => s.kind === "speech"), go = l0.sounds.find((s) => s.kind === "buf" && s.len === GO_LEN);
+      ok("feed: then Echo's \"Go!\" clip, after the ask, and the mic is asked for only after it has ended and the voice tail has passed", !!ask && !!go && go.start >= ask.end && l0.mics.length === 1 && l0.mics[0].start - go.end >= 0.24, { ask, go, mic: l0.mics[0] });
+    }
     // a tap while listening, before the word, is answered by the wobble, not a sound over the mic, and feeds nothing
     await feedPick(page);
     await page.waitForTimeout(200);
@@ -797,7 +831,7 @@ await scenario("feed", async () => {
     await page.waitForTimeout(3200);
     l = await log(page);
     const complete = l.sfx.find((c) => c.name === "complete");
-    const plucks = l.sounds.filter((s) => s.kind === "buf" && s.len > 1000);
+    const plucks = l.sounds.filter((s) => s.kind === "buf" && s.len > 1000 && s.len !== GO_LEN);   // Echo's "Go!" clip is not a pluck
     ok("feed: the concert plays", !!complete && plucks.length >= 20, { complete, plucks: plucks.length });
     ok("feed: the ukulele waits ~0.5 s after the chime instead of landing on it", !!complete && plucks.length > 0 && Math.min(...plucks.map((p) => p.start)) - complete.at >= 0.45, { chime: complete && complete.at, first: plucks.length && Math.min(...plucks.map((p) => p.start)) });
     const gains = await page.evaluate(() => __quiet.gains.map((g) => g.gain.sets));
@@ -821,7 +855,10 @@ await scenario("feed eager", async () => {
   try {
     await feedStart(page);
     await page.waitForFunction(() => __quiet.speaking > 0);
-    await page.waitForFunction(() => __quiet.speaking === 0);
+    // the ask, then Echo's "Go!" clip (2 Oct 2026); the child answers just
+    // after "Go!" (a word said over "Go!" itself is not heard: see "feed: a
+    // word said over Go!" below)
+    await page.waitForFunction((n) => __quiet.speaking === 0 && __quiet.sounds.some((s) => s.kind === "buf" && s.len === n && s.end <= __quiet.now()), GO_LEN);
     await page.waitForTimeout(100);
     await talk(page, true);   // answering straight after Echo's word…
     await page.waitForFunction(() => __quiet.live() === 1);
@@ -836,6 +873,61 @@ await scenario("feed eager", async () => {
   } finally { await context.close(); }
 });
 
+// ── Feed Echo: a word said over "Go!" is not heard (2 Oct 2026). Nothing
+// plays into an open mic, so the mic opens only after "Go!" and the voice
+// tail. A child who copies Echo's word the instant it ends talks over "Go!"
+// and has finished before the mic is open: that try is lost, and the turn
+// waits for the next one. Known and kept, not fixed: whether "Go!" stays is
+// a turn-cue call for Rachel, and Travis is to try both on the phone. ──
+await scenario("feed: a word said over Go!", async () => {
+  const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
+  try {
+    await feedStart(page);
+    await page.waitForFunction((n) => __quiet.sounds.some((s) => s.kind === "buf" && s.len === n && s.start <= __quiet.now()), GO_LEN);
+    await talk(page, true);   // copying Echo's word as "Go!" starts…
+    await page.waitForFunction((n) => __quiet.sounds.some((s) => s.kind === "buf" && s.len === n && s.end + 0.15 <= __quiet.now()), GO_LEN);
+    const openWhileTalking = await live(page);
+    await talk(page, false);  // …and finished just after it, before the mic opens
+    await page.waitForFunction(() => __quiet.live() === 1);
+    await page.waitForTimeout(600);
+    ok("feed: a word said over \"Go!\" is not heard: the mic was not open yet, and the pictures stay locked", openWhileTalking === 0 && !(await page.evaluate(() => window.__heard)) && (await page.evaluate(() => document.getElementById("grid").classList.contains("locked"))), { openWhileTalking, heard: await page.evaluate(() => window.__heard) });
+    await voice(page, 300);
+    ok("feed: …and the same word said again, once the mic is open, is", await until(page, () => window.__heard === 1, 1500));
+    noOverlap("feed: a word said over Go!", await log(page));
+    clean("feed: a word said over Go!", errors);
+  } finally { await context.close(); }
+});
+
+// ── Feed Echo: "Go!" never holds a turn up (review, 2 Oct 2026). It used to
+// be fetched like the ask, with no time limit, so every turn waited on the
+// voice service twice before the mic opened, with "Listen…" on screen and
+// nothing playing; a stand-in "Go!" is never saved, so that was every turn
+// while the service was busy. Here "Go!" takes 3 s and comes as a stand-in:
+// the first ask waits for it 1.5 s at most (Sona.GO_WAIT_MS), and every
+// later one plays the copy this page already has at once. ──
+await scenario("feed slow stand-in Go!", async () => {
+  goVoice.delay = 3000; goVoice.keep = "0"; goVoice.asked = 0;
+  const { context, page, errors } = await fresh("arcade-feed.html", { age: "4", micok: true, permission: "granted", volume: 0.6 });
+  try {
+    await feedStart(page);
+    for (let i = 0; i < 3; i++) {
+      const opened = await until(page, () => __quiet.live() === 1, 6000);
+      await page.waitForTimeout(400); await voice(page, 300);
+      const heard = await until(page, (n) => window.__heard === n, 1500, i + 1);
+      await feedPick(page);
+      ok("feed slow stand-in Go!, turn " + (i + 1) + ": the mic opens and the child is heard", opened && heard);
+      await page.waitForTimeout(i ? 400 : 2000);
+    }
+    const l = await log(page), asks = l.sounds.filter((s) => s.kind === "speech");
+    const gaps = l.mics.slice(0, 3).map((m, i) => { const go = l.sounds.find((s) => s.kind === "buf" && s.len === GO_LEN && s.start >= asks[i].end && s.start < m.start); return { wait: +(m.start - asks[i].end).toFixed(3), go: !!go }; });
+    ok("feed slow stand-in Go!: the first turn's mic opens within 2 s of the ask's end (Go! waits 1.5 s at most)", gaps.length === 3 && gaps[0].wait <= 2.0, gaps);
+    ok("feed slow stand-in Go!: every later turn's mic opens within 1.5 s of the ask's end, after Echo's own \"Go!\"", gaps.slice(1).every((g) => g.go && g.wait <= 1.5), gaps);
+    ok("feed slow stand-in Go!: \"Go!\" was asked for once, never once a turn", goVoice.asked === 1, goVoice.asked);
+    noOverlap("feed slow stand-in Go!", l);
+    clean("feed slow stand-in Go!", errors);
+  } finally { goVoice.delay = 0; goVoice.keep = "1"; await context.close(); }
+});
+
 // ── Feed Echo on a slow phone: the mic request takes a while to answer
 // (24 Sep 2026). A tap while it is pending makes no sound and feeds nothing;
 // the child who waits out the slow mic is still heard; every pick's chime
@@ -845,7 +937,8 @@ await scenario("feed slow mic", async () => {
   try {
     await feedStart(page);
     for (let i = 0; i < 5; i++) {
-      await page.waitForFunction((n) => __quiet.speech.length === n && __quiet.speaking === 0, i + 1);
+      // each turn is the ask, then Echo's "Go!" clip (2 Oct 2026)
+      await page.waitForFunction(([n, len]) => __quiet.speech.length === n && __quiet.speaking === 0 && __quiet.sounds.filter((s) => s.kind === "buf" && s.len === len && s.end <= __quiet.now()).length === n, [i + 1, GO_LEN]);
       await page.waitForTimeout(350);
       const asking = await page.evaluate(() => __quiet.inflight === 1 && __quiet.live() === 0);
       if (i === 0) {
@@ -868,7 +961,7 @@ await scenario("feed slow mic", async () => {
     await page.waitForTimeout(3500);
     const l = await log(page);
     const complete = l.sfx.find((c) => c.name === "complete");
-    const plucks = l.sounds.filter((s) => s.kind === "buf" && s.len > 1000);
+    const plucks = l.sounds.filter((s) => s.kind === "buf" && s.len > 1000 && s.len !== GO_LEN);   // Echo's "Go!" clip is not a pluck
     ok("feed slow mic: the round keeps its chime and its concert", !!complete && complete.live === 0 && plucks.length >= 20, { complete, plucks: plucks.length });
     ok("feed slow mic: the concert still waits ~0.5 s after the chime", !!complete && plucks.length > 0 && Math.min(...plucks.map((p) => p.start)) - complete.at >= 0.45);
     noOverlap("feed slow mic", l);
@@ -886,10 +979,12 @@ await scenario("feed quiet turn", async () => {
     await page.waitForFunction(() => __quiet.live() === 1);
     const closed = await until(page, () => __quiet.live() === 0 && !document.getElementById("micBtn").hidden, 10000);
     ok("feed quiet turn: silence closes the mic after the listening window, and the mic button waits", closed && /Tap the mic/.test(await page.locator("#bSub").innerText()) && (await page.evaluate(() => document.getElementById("grid").classList.contains("locked"))));
-    const spoken = await page.evaluate(() => __quiet.speech.length);
+    const spoken = await page.evaluate(() => __quiet.speech.length), gos = await page.evaluate((n) => __quiet.sounds.filter((s) => s.kind === "buf" && s.len === n).length, GO_LEN);
     await page.evaluate(() => document.getElementById("micBtn").click());
-    await page.waitForFunction((n) => __quiet.speech.length > n, spoken);
-    ok("feed quiet turn: the mic button says the word again with no mic open", (await live(page)) === 0 && /^Say\.\.\. [a-z]+\.$/i.test(await page.evaluate(() => __quiet.speech[__quiet.speech.length - 1])));
+    await page.waitForFunction((n) => __quiet.speech.length >= n + 1, spoken);
+    const again = await page.evaluate((n) => __quiet.speech.slice(n), spoken);
+    const goAgain = await until(page, ([n, len]) => __quiet.sounds.filter((s) => s.kind === "buf" && s.len === len).length > n, 2000, [gos, GO_LEN]);
+    ok("feed quiet turn: the mic button says the word again, then \"Go!\" (Echo's clip, which this page already has), with no mic open", (await live(page)) === 0 && again.length === 1 && /^Say\.\.\. [a-z]+\.$/i.test(again[0]) && goAgain, { again, goAgain });
     await page.waitForFunction(() => __quiet.live() === 1);
     await page.waitForTimeout(400);
     await voice(page, 300);

@@ -142,7 +142,11 @@ for(const edge of ['cache','fetch'])await scenario('late '+edge+' response',asyn
     await page.waitForFunction(()=>__audioHarness.pcm.some(p=>p.starts));
     const resumed=await state(page);ok('Resume plays one fresh '+edge+' result',resumed.pcm===1&&resumed.pcmLive===1,resumed);
     const requests=await page.evaluate(edge=>edge==='cache'?__audioHarness.cacheKeys:__audioHarness.fetches.map(f=>f.text),edge);
-    ok('Resume retains the captured prompt for '+edge,requests.length===2&&requests.every(t=>t===original),requests);
+    // 2 Oct 2026: the prompt ends on "Go!", Echo's own clip, looked up once
+    // on its own (charge.html, GO, ON ITS OWN); the prompt's words are what
+    // a pause must not lose or change.
+    const own=requests.filter(t=>!/(^|\|)Go!$/.test(t));
+    ok('Resume retains the captured prompt for '+edge+' (and "Go!", its own clip, is asked for once at most)',own.length===2&&own.every(t=>t===original)&&requests.length-own.length<=1,requests);
     await page.evaluate(()=>__audioHarness.pcm.find(p=>p.active).end());await page.waitForFunction(()=>__audioDone===1);
     ok('resumed '+edge+' playback releases the speaker guard',!(await state(page)).guard);noErrors(edge+' cancellation',errors);
   }finally{await context.close();}
