@@ -667,25 +667,17 @@ grown-up to help open …", naming the free one) with the button to
 too. A child whose own books are all locked or coming sees the free book first.
 Rename Rory and the Rainbow and `FREE_BOOKS` must follow (`readtest` pins it).
 
-**Every queued book opens next Friday, 9 Oct** (Travis, 27 Sep 2026: "a
-solid book for the top four or five most popular letters... everything else,
-we can just set a date on it"; then 1 Oct 2026: "I don't want all these books
-and games to have different dates ... everything that is currently in queue
-to just say for next Friday"). R, S, L, SH and TH are open, three books each.
-Every other book in `STORIES` carries `opens: "2026-10-09"` (one day for all
-27; the old Monday-a-few-a-week schedule is gone) and waits on the shelf
-greyed, "Coming Oct 9", until that day on the phone's own calendar; a tap or
-`openBook()` does nothing before it, and on the day every one opens by
-itself. The six-page books (painted, see below) sit after every twelve-page
-one in `STORIES`, and with one day for all the shelf keeps that order: they
-put the sound anywhere in a word and are last in line to be redone. A child
-whose sounds have nothing open yet sees every open book first, then their
-own, coming. Home's card, the website and the Premium page say "new ones on
-the way" (the families pricing page: "as they come out"), never "every week":
-once the queue opens on 9 Oct no book is scheduled after it and no game after
-16 Oct, so a weekly promise would have nothing behind it. Never "a book for
-every sound", and never a weekday.
-`readtest` pins the dates and the shelf; `landingtest` the website's count.
+**Every book that is made is live** (Travis, 1 Oct 2026: "if anything is
+made ... let's just make it live", replacing the 9 Oct opening day). No book
+in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
+book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
+see below) sit after every twelve-page one in `STORIES`: they put the sound
+anywhere in a word and are last in line to be redone. A limited-time book
+carries `season` instead and is on every shelf, and Home's Limited time row,
+only inside its window (Boo the Bat on Halloween, October 2026). Home's card,
+the website and the Premium page say "new ones on the way", never "every
+week", "a book for every sound" or a weekday. `readtest` pins that nothing
+waits; `landingtest` the website's count.
 
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
