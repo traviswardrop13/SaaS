@@ -156,9 +156,9 @@
           return;
         }
         if(allOpen)return;   // a live trial: every game is already open
-        el("premiumPrice").textContent="3 days free, then one yearly plan";
+        el("premiumPrice").textContent="Yearly with 3 days free, or month by month";
         el("premiumTerms").textContent="Daily practice and free games stay free either way.";
-        buy.disabled=false;buy.textContent="See the plan";
+        buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
       }
       function simulate(state){

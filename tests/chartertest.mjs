@@ -20,7 +20,7 @@ if (!process.execArgv.includes("--experimental-strip-types")) {
 }
 
 const APP = path.resolve(path.dirname(self), "..");
-const { charterSpots, _resetCharterMemo, CHARTER_CAP, CHARTER_CENTS, STANDARD_CENTS, CHARTER_LABEL } = await import(APP + "/lib/charter.ts");
+const { charterSpots, _resetCharterMemo, CHARTER_CAP, CHARTER_CENTS, STANDARD_CENTS, CHARTER_LABEL, MONTHLY_CENTS, MONTHLY_PRICE } = await import(APP + "/lib/charter.ts");
 
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
@@ -37,7 +37,7 @@ _resetCharterMemo();
 let s = await charterSpots(client([{ data: [
   sub("year", "charter"), sub("year", "charter", "trialing"), sub("year", "charter", "canceled"),
   sub("year"),                              // no tier: sold before the offer existed, or a test purchase
-  sub("month", "charter"),                  // the retired monthly plan
+  sub("month", "charter"),                  // the monthly plan, even wrongly stamped
   sub("year", "standard"),                  // sold at full price, after the cap
   sub("year", "charter", "incomplete"),     // never finished paying
   sub("year", "charter", "incomplete_expired"),
@@ -45,7 +45,7 @@ let s = await charterSpots(client([{ data: [
 ok("a yearly subscription checkout stamped as a charter sale is a spot", s.taken === 3, JSON.stringify(s));
 ok("…a trial still inside its free days is one, and a cancelled one still consumed its spot", s.taken === 3);
 ok("…a subscription with NO tier stamp — from before the offer existed, or a test purchase — is NOT (Travis: 'dont count')", s.taken === 3);
-ok("…the retired monthly plan is not", s.taken === 3 && s.source === "stripe");
+ok("…a monthly subscription is not, whatever it is stamped with (monthly is on sale again since 1 Oct 2026)", s.taken === 3 && s.source === "stripe");
 ok("…one sold at the standard price, after the cap, is not", s.taken === 3);
 ok("…and a checkout that never finished paying is not", s.taken === 3);
 ok("the count says what is left, and that the door is open", s.left === CHARTER_CAP - 3 && s.open === true, JSON.stringify(s));
@@ -161,6 +161,78 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   const succ = strip(readFileSync(APP + "/app/subscribe/success/page.tsx", "utf8"));
   ok("the success page says which price was locked, and takes the amount from Stripe, not a constant",
     /q\.get\("tier"\) === "charter"/.test(succ) && /Charter price, locked in/.test(succ) && /j\.amountCents/.test(succ));
+}
+
+// ── THE MONTHLY PLAN: one figure, and it never touches the charter (1 Oct 2026) ──
+// Travis: "add to the paywall a $10 a month option ... that does not have a
+// free trial. That's a pay today, but the $59.99 has a three-day trial." What
+// checkout really charges is played in caseloadtest; this pins that every
+// surface that PRINTS the monthly price prints the one checkout charges, that
+// only the plan screen can ask for it, and that the two comparison figures
+// banned on 18 Sep did not ride back in with it.
+{
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const src = (f) => strip(readFileSync(APP + f, "utf8"));
+  ok("the monthly price is $9.99, and its two spellings agree", MONTHLY_CENTS === 999 && MONTHLY_PRICE === "$" + (MONTHLY_CENTS / 100).toFixed(2), MONTHLY_PRICE + " / " + MONTHLY_CENTS);
+  const esc = MONTHLY_PRICE.replace(/[$.]/g, "\\$&");
+
+  const co = src("/app/api/checkout/route.ts");
+  ok("checkout charges the monthly plan from that one constant", /cents: MONTHLY_CENTS/.test(co) && !/\b999\b/.test(co));
+  ok("…sells it only for the exact word \"monthly\"", /return v === "monthly" \? "monthly" : "annual";/.test(co));
+  ok("…and a plain GET link is always the yearly plan, whatever its ?plan= says",
+    /JSON\.stringify\(\{ plan: "annual" \}\)/.test(co) && !/searchParams\.get\("plan"\)/.test(co),
+    "an old ?plan=monthly ad link must never open a pay-today checkout");
+  ok("…the yearly branch still decides the tier, and the monthly branch returns before it",
+    co.indexOf('if (planKey === "monthly")') > 0 && co.indexOf('if (planKey === "monthly")') < co.indexOf("charterSpots(stripe)"));
+  ok("/api/charter hands the plan screen the monthly price, from the same constant", /monthly: MONTHLY_PRICE/.test(src("/app/api/charter/route.ts")));
+
+  const sub = src("/public/subscribe.html");
+  const typed = [...sub.matchAll(/id="(monthPrice|monthMathPrice)">([^<]*)</g)].map((m) => m[2]);
+  ok("the plan screen's typed monthly figure is the one checkout charges", typed.length === 2 && typed.every((t) => t === MONTHLY_PRICE), JSON.stringify(typed));
+  ok("…and the answer from /api/charter can only replace it with a well-formed price", /typeof j\.monthly === "string" && \/\^\\\$\\d\{1,3\}\\\.\\d\\d\$\/\.test\(j\.monthly\)/.test(sub));
+  ok("the Apple card's monthly row carries no typed price at all", /<span id="iapPriceMo"><\/span>/.test(sub));
+  ok("the charter line is written into the YEARLY box only", /id="planLife"[\s\S]*?id="charterLine"[\s\S]*?<\/div>\s*<!--|id="planLife"[\s\S]*?id="charterLine"/.test(readFileSync(APP + "/public/subscribe.html", "utf8")) &&
+    !/id="planMonth"[^>]*>[\s\S]{0,400}charter/i.test(sub));
+
+  for (const f of ["/public/trial.html", "/app/subscribe/page.tsx"]) {
+    const t = src(f);
+    // "Under $8.50 a month" is the YEARLY plan's per-month reading, not a monthly price
+    const figs = [...t.matchAll(/(?<![Uu]nder )(\$\d+\.\d\d) a month/g)].map((m) => m[1]);
+    ok(f + " names the monthly plan at the price checkout charges, and no other", figs.length >= 1 && figs.every((x) => x === MONTHLY_PRICE), JSON.stringify(figs));
+  }
+  ok("the families page prints the monthly price from the constant, never a typed figure",
+    /\{MONTHLY_PRICE\} a month, charged today/.test(src("/app/families/page.tsx")) && !new RegExp(esc).test(src("/app/families/page.tsx")));
+
+  const terms = src("/app/terms/page.tsx");
+  ok("the Terms sell the monthly plan: its price, charged at purchase, no free trial, renewing each month",
+    // read inside the monthly paragraph itself: the Terms say "no free trial"
+    // about the free version and the clinician plans too, and any of those
+    // would have passed a loose search
+    new RegExp("Sona Premium, monthly[\\s\\S]{0,160}" + esc + " per month[\\s\\S]{0,120}no free trial[\\s\\S]{0,120}charged when you buy\\s+it").test(terms) && /the monthly plan each month/.test(terms), terms.slice(terms.indexOf("Sona Premium, monthly"), terms.indexOf("Sona Premium, monthly") + 260));
+  ok("…and no longer say it is not sold", !/no\s+longer sold|plan was retired/i.test(terms));
+  // This block prints while Sona is free too, under a sentence saying nothing
+  // is being sold: "is sold two ways" would be false there.
+  ok("…and describe two plans rather than claim a sale", /There are two Sona Premium plans/.test(terms) && !/is sold two ways/.test(terms));
+  // "Under $5 a month" beside a real $9.99-a-month plan, with nothing saying
+  // it is the yearly plan's reading, is a cheaper monthly plan that isn't sold.
+  ok("the families page's footnote says its per-month figure is billed once a year",
+    /Premium \$\{perMonthNow\}, billed once a year/.test(src("/app/families/page.tsx")));
+  ok("…and keep the charter price for the yearly plan only", /charter price is for the\s+yearly plan only/.test(terms));
+
+  // BOTH pricing states, comments stripped. freetest's ban on these figures
+  // runs only while Sona is free; this one always runs.
+  const surfaces = ["/public/subscribe.html", "/public/trial.html", "/public/premium.html", "/app/subscribe/page.tsx", "/app/subscribe/success/page.tsx", "/app/families/page.tsx", "/app/terms/page.tsx", "/app/api/checkout/route.ts"];
+  const anchored = surfaces.filter((f) => /119\.88|59\.89/.test(src(f)));
+  ok("no purchase surface brought back $119.88 or \"save $59.89\" with the monthly plan", anchored.length === 0, anchored.join(", ") + " — the saving is only true while the charter price lasts");
+  // "Under $5 a month" is the yearly plan's per-month reading. Beside a real
+  // $9.99-a-month plan it must always say it is billed once a year, or it
+  // reads as a cheaper monthly plan. (What a parent actually sees on the plan
+  // screen is read in progtest; these are the places the words are built.)
+  ok("the plan screen's per-month reading always says it is billed once a year",
+    /Under \$5 a month, billed once a year\./.test(sub) && /Under \$8\.50 a month, billed once a year\./.test(sub) && /yearPer \+ "<\/b>, billed once a year\./.test(sub));
+  ok("…and so does the web /subscribe page, which now names the monthly plan beside it",
+    /\{perMonth\}, billed once a year/.test(src("/app/subscribe/page.tsx")));
+  ok("…and the trial page", /Under \$5 a month, billed once a year\./.test(src("/public/trial.html")) && /Under \$8\.50 a month, billed once a year\./.test(src("/public/trial.html")));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

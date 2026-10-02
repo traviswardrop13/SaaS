@@ -187,22 +187,77 @@
     // zero at the one normal 0.8, and the phone's buttons do the rest.)
     var actx=null;
     function noteVol(){ try{ var p=(S&&S.getProfile)?S.getProfile():{}; if(p.soundOn===false)return 0; var v=p.volume!=null?Number(p.volume):0.6; return isFinite(v)?Math.max(0,Math.min(1,v)):0.6; }catch(e){ return 0.6; } }
+    // A PIANO NOTE, AND IN THE IPHONE APP IT PLAYS AS MEDIA (Travis, 1 Oct
+    // 2026: "there's no music with the tiles game. We want it to like play
+    // little songs"). Each tile was a bare triangle beep through Web Audio. An
+    // iPhone's ring/silent switch silences Web Audio, and a page that has had
+    // the mic open (the practice page before this one, the say-it card between
+    // songs) plays it as a quiet phone call, so on the phone the songs were
+    // not there. Now each note is built once, on the phone, as a short
+    // recording of a struck string (its harmonics, the higher ones dying away
+    // first), and the app plays it the way it plays Echo's voice (sona.js
+    // mediaPCM says why). A browser keeps Web Audio, at the level it had.
+    var NOTE_RATE=24000;        // what Sona.pcmWave's header says
+    var MEDIA_PEAK=0.4;         // a media element has no volume on an iPhone, so the level is in the samples
+    // a note rings 0.55 s, as the beep did: the mic's quiet window (QUIET_MS)
+    // is timed to it. The thud is a wrong key: low, short and a quarter as loud.
+    var NOTE_SECS=0.55, NOTE_GAIN=0.10, THUD_HZ=130.8, THUD_SECS=0.18, THUD_GAIN=0.025;
+    var noteWaves={}, noteBufs={}, notePlayers={}, mediaBroken=false;
+    function noteWave(f,secs){
+      var key=f+"/"+secs; if(noteWaves[key]) return noteWaves[key];
+      var n=Math.round(NOTE_RATE*secs), a=new Float32Array(n), HARM=[1,0.5,0.28,0.14,0.07], peak=0, i, k;
+      for(i=0;i<n;i++){
+        var t=i/NOTE_RATE, s=0;
+        for(k=0;k<HARM.length;k++) s+=HARM[k]*Math.exp(-t*(4+2.2*k))*Math.sin(6.283185307*f*(k+1)*t);
+        s*=Math.min(1,t/0.006)*Math.min(1,(secs-t)/0.05);   // no click going in, none going out
+        a[i]=s; if(Math.abs(s)>peak) peak=Math.abs(s);
+      }
+      for(i=0;i<n;i++) a[i]/=peak||1;
+      return noteWaves[key]=a;
+    }
+    function noteWeb(f,secs,level){
+      try{
+        if(!actx){var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();}
+        if(actx.state==="suspended")actx.resume();
+        var key=f+"/"+secs, b=noteBufs[key];
+        if(!b){ var w=noteWave(f,secs); b=actx.createBuffer(1,w.length,NOTE_RATE); b.getChannelData(0).set(w); noteBufs[key]=b; }
+        var src=actx.createBufferSource(), g=actx.createGain();
+        src.buffer=b; g.gain.value=level;
+        src.connect(g); g.connect(actx.destination); src.start(0);
+      }catch(e){}
+    }
+    // One media element a pitch, made the first time and kept: a tap replays
+    // it from the top. If the phone refuses one, that note and every note
+    // after it go to Web Audio rather than to silence.
+    function asMedia(){ return !mediaBroken&&!!(S&&S.pcmWave&&S.voiceAsMedia&&S.voiceAsMedia()); }
+    function notePlayer(f,secs,level){
+      var key=f+"/"+secs, p=notePlayers[key];
+      if(!p){
+        var w=noteWave(f,secs), bytes=new Uint8Array(w.length*2), dv=new DataView(bytes.buffer), i;
+        for(i=0;i<w.length;i++) dv.setInt16(i*2,Math.round(w[i]*level*32767),true);
+        p=new Audio(URL.createObjectURL(S.pcmWave(bytes))); p.preload="auto";
+        p.onerror=function(){ mediaBroken=true; };
+        notePlayers[key]=p;
+      }
+      return p;
+    }
+    function noteMedia(f,secs,level,webLevel){
+      try{
+        var p=notePlayer(f,secs,level);
+        try{ if(p.currentTime) p.currentTime=0; }catch(e){}
+        var r=p.play();
+        if(r&&r.then) r.then(null,function(){ mediaBroken=true; noteWeb(f,secs,webLevel); });
+      }catch(e){ mediaBroken=true; noteWeb(f,secs,webLevel); }
+    }
     function tone(f,dur,gain){
       // the same guard as sfx(): never over the keep-playing mic, never under
       // the phone's switch back from it (a dropped note there is one tap)
       if(slowTurn||rv.st||rv.pending||performance.now()<micClosedAt+SETTLE_MS) return;
       var v=noteVol(); if(!v) return;
-      try{
-        if(!actx){var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();}
-        if(actx.state==="suspended")actx.resume();
-        var o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;
-        o.type="triangle"; o.frequency.value=f;
-        g.gain.setValueAtTime(0.0001,t);
-        g.gain.exponentialRampToValueAtTime((gain||0.10)*v,t+0.015);
-        g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.5));
-        o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(dur||0.5)+0.05);
-        quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
-      }catch(e){}
+      var secs=dur||NOTE_SECS, g=gain||NOTE_GAIN;
+      if(asMedia()) noteMedia(f,secs,MEDIA_PEAK*g/NOTE_GAIN,g*v);
+      else noteWeb(f,secs,g*v);
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
     }
 
     // ---- game state ----
@@ -225,6 +280,9 @@
     // every round ends in a win.
     var HZ={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00,B:493.88};
     var LANE_OF={C:0,D:0,E:1,F:1,G:2,A:3,B:3};   // the tune's shape: higher notes further right
+    // the app builds its players before the first tile lands, so the first
+    // tap of each pitch is not late
+    try{ if(asMedia()){ for(var _hz in HZ) notePlayer(HZ[_hz],NOTE_SECS,MEDIA_PEAK); notePlayer(THUD_HZ,THUD_SECS,MEDIA_PEAK*THUD_GAIN/NOTE_GAIN); } }catch(e){}
     var SONGS=[
       {name:"Twinkle Twinkle", notes:"CCGGAAG FFEEDDC", beat:760, fall:2.5},
       {name:"Mary Had a Little Lamb", notes:"EDCDEEE DDD EGG", beat:700, fall:2.3},
@@ -322,14 +380,14 @@
       if(best){
         best.hit=true; comboN++; missRun=0; NOTESN++;
         score+=best.gold?3:1; $("score").textContent=score; hud();
-        tone(best.note,0.5,0.10);   // one note: the song's own
+        tone(best.note,NOTE_SECS,NOTE_GAIN);   // one note: the song's own
         var fin=!!SONGS[song].finale, lw=W/LANES;
         for(var k=0;k<(fin?22:best.gold?16:8);k++){ var a=Math.random()*6.28, v=(fin?3:2)+Math.random()*(fin?5:3);
           sparks.push({x:best.lane*lw+lw/2,y:fin?best.y:HITY()-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(fin?4:2),life:1,c:best.gold?"#ffd21c":fin?LCOL[(Math.random()*4)|0]:LCOL[best.lane]}); }
         if(best.gold){ flash("GOLDEN NOTE! +3"); echoT=performance.now(); }
         else if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); echoT=performance.now(); }
       } else {
-        comboN=0; shakeT=performance.now(); tone(130.8,0.18,0.025); // soft low thud, never a death
+        comboN=0; shakeT=performance.now(); tone(THUD_HZ,THUD_SECS,THUD_GAIN); // soft low thud, never a death
       }
     });
 
@@ -517,8 +575,9 @@
         .catch(function(){})
         .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
           // Use the existing recorded sound, never ask TTS to guess a phoneme:
-          // ONE take of it (tools/soundclips.mjs), as every other game plays.
-          // The demo held three re-voiced takes, and its R drifted toward W.
+          // ONE take of it in Rachel's own voice (tools/soundclips.mjs), as
+          // every other game plays. The demo held three re-voiced takes, and
+          // its R drifted toward W.
           if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0)return slowAudio("/coach/say-echo/"+SND+"-sound.wav",t);
         });
     }

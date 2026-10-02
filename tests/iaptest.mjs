@@ -1,6 +1,8 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial), the
-// only plan since monthly was retired — with no Stripe cards (3.1.1 hygiene), the required
+// subscribe.html must show the Apple paywall — the yearly plan (3-day trial),
+// picked on arrival, and since 1 Oct 2026 the monthly one (charged today, no
+// trial) whenever the store sells it as described — with no Stripe cards
+// (3.1.1 hygiene), the required
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
@@ -43,7 +45,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 await page.addInitScript(() => {
   // entitlement state persists across navigations via localStorage (init
   // scripts re-run per page load and would otherwise reset the mock)
-  window.__iap = { purchases: 0, restores: 0, configured: 0 };
+  window.__iap = { purchases: 0, restores: 0, configured: 0, bought: [] };
   const entitled = () => localStorage.getItem("__iapEntitled") === "1";
   const setEnt = (v) => localStorage.setItem("__iapEntitled", v ? "1" : "0");
   const info = () => ({ customerInfo: { entitlements: { active: entitled() ? { full: { isActive: true } } : {} } } });
@@ -52,12 +54,21 @@ await page.addInitScript(() => {
     Plugins: {
       Purchases: {
         configure: async () => { window.__iap.configured++; },
+        // The App Store, as three switches a test can throw (1 Oct 2026):
+        // __iapNoMonthly = the store has no monthly product; __iapMonthlyTrial
+        // = it has one, with an introductory offer attached; __iapWrongProduct
+        // = it answers a request for monthly with the YEARLY product.
         getProducts: async ({ productIdentifiers }) => {
           const id = (productIdentifiers || [])[0] || "com.speaksona.app.annual";
-          const price = id.indexOf("monthly") > -1 ? "$9.99" : "$59.99";
-          return { products: [{ identifier: id, priceString: price }] };
+          const monthly = id.indexOf("monthly") > -1;
+          if (monthly && localStorage.getItem("__iapNoMonthly") === "1") return { products: [] };
+          if (monthly && localStorage.getItem("__iapWrongProduct") === "1") return { products: [{ identifier: "com.speaksona.app.annual", priceString: "$59.99", price: 59.99 }] };
+          return { products: [{ identifier: id, priceString: monthly ? "$9.99" : "$59.99", price: monthly ? 9.99 : 59.99,
+            introPrice: monthly && localStorage.getItem("__iapMonthlyTrial") === "1" ? { price: 0, periodNumberOfUnits: 3 } : null }] };
         },
-        purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
+        // records WHICH product Apple's sheet was opened on; __iapNoGrant
+        // makes Apple take the order without the entitlement arriving
+        purchaseStoreProduct: async (a) => { window.__iap.purchases++; window.__iap.bought.push(a && a.product && a.product.identifier); if (localStorage.getItem("__iapNoGrant") !== "1") setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
         // __iapFail lets a test make Apple UNREACHABLE, which is a different
         // answer from "not entitled" and must be treated differently.
@@ -78,6 +89,16 @@ let t = await page.evaluate(() => ({
   founding: getComputedStyle(document.getElementById("foundingCard")).display,
   price: document.getElementById("iapPrice").textContent,
   body: document.getElementById("iapCard").textContent,
+  seen: document.getElementById("iapCard").innerText,   // what a parent reads: nothing hidden
+  month: document.getElementById("iapPlanMo").innerText,
+  monthShown: getComputedStyle(document.getElementById("iapPlanMo")).display !== "none",
+  yearPicked: document.getElementById("iapPlan").getAttribute("aria-checked"),
+  monthPicked: document.getElementById("iapPlanMo").getAttribute("aria-checked"),
+  button: document.getElementById("iapBuy").textContent,
+  buttons: document.querySelectorAll("#iapCard button.go").length,
+  legal: document.getElementById("iapLegal").innerText,
+  payToday: getComputedStyle(document.getElementById("iapMathMo")).display !== "none",   // painted, not the attribute
+  area: document.querySelector("#iapCard .planbuy").innerText,
   restore: !!document.getElementById("iapRestore"),
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
@@ -88,12 +109,25 @@ ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
   /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
-// Monthly was retired 18 Sep 2026. Apple's paywall must not show a product a
-// tap cannot buy, and the retirement must not quietly drag the yearly price
-// down with it — so this pins the ABSENCE of the tier and the survival of the
-// one that is left.
-ok("no retired monthly tier on the Apple paywall",
-  !/\$9\.99/.test(t.body) && !/Subscribe monthly/i.test(t.body), t.body.slice(0, 140));
+// MONTHLY IS BACK ON THE APPLE CARD (1 Oct 2026), as the second way to pay.
+// Its price is the store's own string, it says what makes it different
+// (charged today — Travis, 1 Oct 2026: "dont say no free trial at the
+// bottom"), and it is NOT the one picked on arrival: the yearly plan and its
+// free days still lead.
+ok("the monthly way to pay is on the Apple card, at the store's price",
+  t.monthShown && /\$9\.99\/mo/.test(t.month), JSON.stringify(t.month));
+ok("…saying it is charged today, and never the word 'free'",
+  /charged today/i.test(t.month) && !/free/i.test(t.month), JSON.stringify(t.month));
+ok("the yearly plan is the one picked on arrival, and the button starts its free days",
+  t.yearPicked === "true" && t.monthPicked === "false" && t.button === "Start 3 days free", JSON.stringify([t.yearPicked, t.monthPicked, t.button]));
+ok("one button serves both plans", t.buttons === 1, String(t.buttons));
+ok("…and the 'charged today' line is not on screen under a button that starts free days",
+  t.payToday === false && !/charged to your Apple\s*ID today/i.test(t.area), t.area.slice(0, 200));
+// Apple requires each plan's price, period and renewal terms on the paywall
+ok("the small print states both plans: yearly's trial, and monthly charged today",
+  /yearly\) starts with a 3-day free trial/.test(t.legal) && /monthly\) is charged today/.test(t.legal) && /renews every month/.test(t.legal) && /renews unless canceled/.test(t.legal), t.legal);
+ok("no dollar saving and no was-price on the Apple card — the store owns those figures",
+  !/119\.88|59\.89|save \$|half/i.test(t.seen), t.seen.slice(0, 200));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 // THE PLAN IS SONA PREMIUM (24 Sep 2026). With a free version, "Sona Yearly"
 // and "only if you keep Sona" read as buying Sona itself — which nobody has
@@ -106,25 +140,105 @@ await page.evaluate(() => document.getElementById("iapBuy").click());
 await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
   n: window.__iap.purchases,
+  bought: window.__iap.bought,
   sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"),
   card: document.getElementById("iapCard").style.display,
 }));
 ok("purchase drives Apple's sheet once", t.n === 1);
+ok("…on the YEARLY product, because nothing was picked", JSON.stringify(t.bought) === '["com.speaksona.app.annual"]', JSON.stringify(t.bought));
 ok("entitlement unlocks the app (source: apple)", t.sub.active === true && t.sub.source === "apple");
 ok("paywall dismisses on success", t.card === "none");
 
-// The monthly BUTTON is gone, but the monthly PRODUCT ID is not: RevenueCat
-// needs it to recognise someone who bought monthly before it was retired.
-// Dropping it from sona.js would strand a paying subscriber behind a paywall.
+// The monthly PRODUCT ID never left sona.js: RevenueCat needs it to recognise
+// someone who bought monthly, whenever they bought it. And the monthly row
+// ships with NO price in the markup and hidden: the figure is Apple's, and
+// the row only appears once the store has handed back that very product.
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("the monthly product id survives for RESTORE, though nothing sells it",
+  ok("the monthly product id is in sona.js, for purchase and for RESTORE",
     /monthly: "com\.speaksona\.app\.monthly"/.test(sona),
     "an existing monthly subscriber must still be recognised on a reinstall");
   const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
-  ok("…and no surface offers it any more",
-    !/iapBuyMo|buyMonth|planMonth|iapPlanMo/.test(sub),
-    "a button that buys a retired plan is worse than no button");
+  ok("the Apple card's monthly row ships hidden, with no figure typed into it",
+    /id="iapPlanMo"[^>]*style="display:none;"/.test(sub) && /<span id="iapPriceMo"><\/span>/.test(sub),
+    "a typed monthly price on the iPhone would out-argue App Store Connect");
+  ok("…and there is one buy button per rail, not one per plan", !/iapBuyMo|buyMonth/.test(sub));
+}
+
+// ── THE PICK, ON THE APPLE CARD (1 Oct 2026) ──
+// Every line that is only true of one plan follows the pick, the button buys
+// the product that is picked, and a store that does not sell monthly as
+// described never shows it.
+{
+  const fresh = async (flags = {}) => {
+    await page.evaluate((flags) => {
+      localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0");
+      ["__iapNoMonthly", "__iapMonthlyTrial", "__iapWrongProduct", "__iapNoGrant"].forEach((k) => localStorage.removeItem(k));
+      Object.keys(flags).forEach((k) => localStorage.setItem(k, flags[k]));
+    }, flags);
+    await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+    // read what the page reports as bought, after analytics.js has loaded
+    await page.evaluate(() => { window.__ev = []; const A = window.SonaAnalytics; if (A) { A.track = (e, p) => window.__ev.push([e, p]); } });
+  };
+  const look = () => page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    // by what is PAINTED, never by the hidden attribute the page sets
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return { button: g("iapBuy").textContent, monthShown: seen(g("iapPlanMo")), yearPicked: g("iapPlan").getAttribute("aria-checked"), monthPicked: g("iapPlanMo").getAttribute("aria-checked"),
+      timeline: seen(g("iapTL")), noChargeToday: seen(g("iapMath")), payToday: seen(g("iapMathMo")), area: document.querySelector("#iapCard .planbuy").innerText,
+      legalMo: seen(g("iapLegalMo")), msg: g("iapMsg").textContent, line: g("planLine").textContent,
+      bought: window.__iap.bought, ev: window.__ev, card: g("iapCard").style.display, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") };
+  });
+
+  await fresh();
+  await page.locator("#iapPlanMo").click(); await page.waitForTimeout(150);
+  let m = await look();
+  ok("picking monthly on the Apple card: the button names the store's price, charged monthly",
+    m.monthPicked === "true" && m.yearPicked === "false" && m.button === "Subscribe — $9.99 a month", JSON.stringify([m.monthPicked, m.button]));
+  ok("…the free-days timeline and 'no charge today' leave the screen: nothing under the button says 'free'",
+    !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
+  ok("…and 'charged today, then every month' is what is under the button",
+    m.payToday && /charged to your Apple\s*ID today, then every month/i.test(m.area), m.area.slice(0, 200));
+  await page.locator("#iapPlan").click(); await page.waitForTimeout(150);
+  m = await look();
+  ok("picking yearly again puts the free-days button and timeline back",
+    m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday, JSON.stringify([m.yearPicked, m.button, m.timeline, m.payToday]));
+  await page.locator("#iapPlanMo").click(); await page.waitForTimeout(100);
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
+  m = await look();
+  ok("with monthly picked, Apple's sheet opens on the MONTHLY product, once",
+    JSON.stringify(m.bought) === '["com.speaksona.app.monthly"]', JSON.stringify(m.bought));
+  ok("…it unlocks the app like the yearly plan does", m.sub.active === true && m.sub.source === "apple" && m.card === "none", JSON.stringify(m.sub));
+  ok("…and the sale is reported as monthly, never as the yearly plan",
+    m.ev.some((e) => e[0] === "purchase completed" && e[1] && e[1].plan === "monthly" && e[1].source === "apple") && !m.ev.some((e) => e[0] === "purchase completed" && e[1] && e[1].plan === "annual"), JSON.stringify(m.ev));
+
+  await fresh({ __iapNoMonthly: "1" });
+  m = await look();
+  ok("a store with no monthly product: the monthly row never appears, and nothing about it is said",
+    !m.monthShown && !m.legalMo && !/month by month/i.test(m.line) && m.button === "Start 3 days free", JSON.stringify([m.monthShown, m.legalMo, m.line]));
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
+  m = await look();
+  ok("…and the yearly plan still buys", JSON.stringify(m.bought) === '["com.speaksona.app.annual"]' && m.sub.active === true, JSON.stringify(m.bought));
+
+  await fresh({ __iapMonthlyTrial: "1" });
+  m = await look();
+  ok("a monthly product with a free trial attached in the store is not offered: 'charged today' would be false",
+    !m.monthShown && !m.legalMo, JSON.stringify([m.monthShown, m.legalMo]));
+
+  await fresh({ __iapWrongProduct: "1" });
+  m = await look();
+  ok("a store that answers 'monthly' with the yearly product: no monthly row, so nothing sells yearly under monthly's name",
+    !m.monthShown, JSON.stringify(m.monthShown));
+
+  // Apple took the order but the unlock never arrived. "Nothing was charged"
+  // would be a guess, and a wrong one sends a charged family to buy again.
+  await fresh({ __iapNoGrant: "1" });
+  await page.locator("#iapPlanMo").click(); await page.waitForTimeout(100);
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(900);
+  m = await look();
+  ok("an order Apple took without the unlock arriving is never called 'nothing was charged'",
+    !/nothing was charged/i.test(m.msg) && /Restore Purchases/.test(m.msg) && m.card !== "none", m.msg);
+  await page.evaluate(() => ["__iapNoMonthly", "__iapMonthlyTrial", "__iapWrongProduct", "__iapNoGrant"].forEach((k) => localStorage.removeItem(k)));
 }
 
 // ── restore path ──
@@ -168,15 +282,19 @@ await web.addInitScript(() => {
 await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
-t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
-// ONE plan on the web card too. The two figures that left with monthly
-// ($119.88, "save $59.89") were 12 x $9.99 and cannot be stated once nobody
-// can buy the plan behind them — a strike-through against an unbuyable price
-// is a fabricated anchor. The per-month reading survives on its own.
-ok("web picker states the one plan honestly",
+t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText, month: document.getElementById("planMonth").innerText }));
+// TWO ways to pay on the web card too (1 Oct 2026). The two figures that left
+// with monthly on 18 Sep ($119.88, "save $59.89") did NOT come back with it:
+// the saving is only true while the charter price lasts, so it would turn
+// false at family fifty-one. The per-month reading stands on its own.
+ok("web picker states the yearly plan honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
-ok("…with no retired monthly tier and no invented was-price",
-  !/\$9\.99/.test(t.body) && !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
+// read the monthly BOX: the card's yearly timeline says "Nothing is charged
+// today", which would satisfy a "charged today" check on the whole card
+ok("…and the monthly one, in its own box: $9.99, charged today",
+  /\$9\.99\/mo/.test(t.month) && /^[^\n]*\n\s*Charged today/i.test(t.month) && !/free/i.test(t.month), JSON.stringify(t.month));
+ok("…with no was-price and no 'you save' figure",
+  !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
   t.body.slice(0, 200));
 ok("…and the honest per-month reading in its place",
   /under \$5 a month/i.test(t.body), t.body.slice(0, 200));

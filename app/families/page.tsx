@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { FREE_MODE } from "@/lib/pricing";
-import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, type Spots } from "@/lib/charter";
+import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, MONTHLY_PRICE, type Spots } from "@/lib/charter";
 
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
@@ -51,11 +51,13 @@ const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
 // on every surface. $59.99 / 12 = $4.9991, which is why the copy reads "under
 // $5 a month" and never "$4.99 a month": the rounded figure implies $59.88 a
 // year and is not true. Do not swap one in.
-// ONE PLAN as of 18 Sep 2026. $119.88 and "save $59.89" are gone with the
-// monthly tier: both existed ONLY as 12 x $9.99, so with no monthly plan to
-// compare against, a struck-through price would be an anchor against a number
-// nobody can buy. "Under $5 a month" survives because it is just $59.99 / 12
-// ($4.9991) — true with no second plan in sight, and never written as "$4.99".
+// TWO WAYS TO PAY since 1 Oct 2026: the yearly plan this card leads with, and
+// $9.99 a month charged today (MONTHLY_PRICE, the figure checkout charges),
+// named in one plain line under it. $119.88 and "save $59.89" did NOT come
+// back with monthly: the saving is $59.89 only while the charter price lasts,
+// so it would turn false at family fifty-one. "Under $5 a month" stays because
+// it is just $59.99 / 12 ($4.9991), never written as "$4.99" — and it always
+// says "billed once a year", so it cannot be read as the monthly plan's price.
 // THE PRICE IS NOT A CONSTANT ANY MORE — it is whichever tier the next buyer
 // will actually be charged, read from the same count /api/checkout reads. The
 // charter price for the first fifty families, then the standard price. A
@@ -252,14 +254,15 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 52px/1 ${B}` }}>{price}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
         </div>
-        {/* With one plan there is nothing to compare against, so the block
-            carries the per-month reading instead of a saving — the same
-            arithmetic a parent can do in their head, and the only claim here
-            that is not a price. */}
+        {/* The block carries the yearly plan's per-month reading, not a
+            saving — the same arithmetic a parent can do in their head. The
+            monthly plan gets its own plain line under it: its price, that it
+            is charged today, and that it has no free days. */}
         <div style={{ background: "#f2fbe4", border: "2px solid #58cc02", borderRadius: 16, padding: "11px 13px", margin: "12px 0 14px" }}>
           <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>{perMonth[0].toUpperCase() + perMonth.slice(1)}</div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>Billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
+        <div style={{ fontSize: 13, lineHeight: 1.45, fontWeight: 700, color: MUTED, margin: "-4px 0 14px" }}>Or pay month by month: {MONTHLY_PRICE} a month, charged today.</div>
         <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books as they come out, included", "Upgrade inside the app, whenever you want"]} />
         <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade inside Sona. On the web, secure checkout by Stripe; in the iPhone and iPad app, through the App Store at the price shown there.</div>
       </div>
@@ -315,7 +318,9 @@ export default async function Landing() {
   // charter tier; the reading now comes with the tier it belongs to.
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
-    : `No card to start · Premium ${perMonthNow} · Cancel anytime`;
+    // "billed once a year" rides with it (1 Oct 2026): this page names a real
+    // $9.99-a-month plan too, and a bare "under $5 a month" reads as that.
+    : `No card to start · Premium ${perMonthNow}, billed once a year · Cancel anytime`;
   const stickyTitle = FREE_MODE ? "Free to play" : "Start free";
   const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + free games";
   const faq: [string, string][] = [

@@ -9,8 +9,13 @@
  * which are static and cannot import this. tests/shiptest.mjs fails if they
  * disagree. When the app is live, set all three to true: the pages send people
  * to the App Store again and these emails stop.
+ *
+ * LIVE since 1 Oct 2026 (Travis: "yeah send people to app store now!", with
+ * the App Store listing checked: a free download, not a pre-order). The
+ * people already on the list were promised an email "the moment it's ready";
+ * nothing here sends it, that is a Kit broadcast.
  */
-export const APP_READY = false;
+export const APP_READY = true;
 
 /** Travis's words, the same on the page, in the welcome and in the SLP's email.
  *  The date is the one he emailed the list (30 Sep 2026: "the official V1 of

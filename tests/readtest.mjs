@@ -267,7 +267,7 @@ async function waitSpoke(pg, ms) {
   const all = await pg.evaluate(() => STORIES.map((b) => ({ sound: b.sound, title: b.title, six: !!b.painted, listed: !!b.words, keys: b.keys || [], pages: b.pages.map((p) => p.t) })));
   const six = all.filter((b) => b.six);
   ok("every book on the shelf has one key word per page, the six-page books too",
-    all.length === books.length + six.length && six.length === 13 && all.every((b) => b.keys.length === b.pages.length && b.keys.every(Boolean)),
+    all.length === 48 /* 35 twelve-page books, October's six Halloween ones among them, and 13 six-page */ && all.length === books.length + six.length && six.length === 13 && all.every((b) => b.keys.length === b.pages.length && b.keys.every(Boolean)),
     all.filter((b) => b.keys.length !== b.pages.length).map((b) => b.title + ": " + b.keys.length + " keys, " + b.pages.length + " pages").join(" | "));
   const spanWord = (w) => w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "");   // the reader's markKey, word for word
   // the rule itself, so the made-up words below go through the same lines
@@ -347,9 +347,9 @@ async function waitSpoke(pg, ms) {
   const show = (r) => r.at + ": " + r.key + " line=" + JSON.stringify(r.line) + " bubble=" + JSON.stringify(r.bubble);
   const dark = lit.filter((r) => r.lit !== r.key);
   ok("…and the reader lights up every key word on its page, in every book (" + lit.length + " pages)",
-    lit.length === all.reduce((n, b) => n + b.pages.length, 0) && lit.length >= 438 && dark.length === 0, dark.slice(0, 8).map(show).join(" | "));
+    lit.length === all.reduce((n, b) => n + b.pages.length, 0) && lit.length >= 498 /* 35 × 12 + 13 × 6 */ && dark.length === 0, dark.slice(0, 8).map(show).join(" | "));
   const apart = lit.filter((r) => !r.line || !r.bubble || r.line[0] !== r.bubble[0] || r.line[1] !== r.bubble[1]);
-  ok("…with the same orange letters in the lit word as in Echo's bubble beside it, in every book", lit.length >= 438 && apart.length === 0, apart.slice(0, 8).map(show).join(" | "));
+  ok("…with the same orange letters in the lit word as in Echo's bubble beside it, in every book", lit.length >= 498 && apart.length === 0, apart.slice(0, 8).map(show).join(" | "));
   const sixLit = lit.filter((r) => r.six);
   const off = sixLit.filter((r) => !r.line || r.orange !== 1 || !(SPELLS[r.sound] || []).includes(r.line[1]) || r.line[1] === r.key
     || (ELSEWHERE[r.at] === r.key ? r.line[0] === "" : r.line[0] !== ""));
@@ -403,19 +403,9 @@ async function waitSpoke(pg, ms) {
 // phone's own, not London's. The day is Friday 9 Oct, for every one of them.
 {
   const lib = readFileSync(ROOT + "/library.html", "utf8");
-  const dated = [...lib.matchAll(/opens: "([\d-]+)", title: "([^"]+)"/g)].map((m) => ({ opens: m[1], title: m[2] }));
-  const open12 = [...lib.matchAll(/\{ sound: "(\w+)", emoji: "[^"]*", title: "([^"]+)"[^\n]*\n\s*cover: "\/assets\/books\//g)].map((m) => m[1]);
-  // two more each for R, S, L, SH and TH, open now (Travis, 1 Oct 2026)
-  ok("R, S, L, SH and TH are the twelve-page books open now, three of each", JSON.stringify([...new Set(open12)].sort()) === JSON.stringify(["L", "R", "S", "SH", "TH"]) && open12.length === 15, open12.join(" "));
-  open12.splice(0, open12.length, ...new Set(open12)); open12.sort();
-  ok("…and no other sound has one open", JSON.stringify(open12) === JSON.stringify(["L", "R", "S", "SH", "TH"]), open12.join(" "));
-  // the six-page ones sit after every twelve-page one in STORIES, and with
-  // one day for all of them the shelf keeps that order
-  const sixLast = /^(Rory the Rabbit|Reba the Robot|Ruby the Rooster|Remy the Raccoon|Rex the Rhino|Sunny the Seal|Lily the Lion|Kiki the Koala|Shelly the Sheep|Charlie the Chick|Theo the Sloth|Gus the Goat|Fifi the Fox)$/;
-  ok("every other book (27) comes out on one day, Friday 9 Oct, the six-page ones last on the shelf",
-    dated.length === 27 && dated.every((d) => d.opens === "2026-10-09") && new Date("2026-10-09T12:00:00").getDay() === 5 &&
-    dated.slice(0, 14).every((d) => !sixLast.test(d.title)) && dated.slice(14).every((d) => sixLast.test(d.title)),
-    JSON.stringify([...new Set(dated.map((d) => d.opens))]));
+  // Every book is live (Travis, 1 Oct 2026: "if anything is made ... let's
+  // just make it live"): no book carries a day any more.
+  ok("no book waits for a day: every one on the shelf is out", !/opens: "/.test(lib));
   // premium: false is a family on the free version, paywall on: every free
   // era already judged (so no sweep adopts them), the demonstration over, no
   // trial, no subscription. The books then lock one by one.
@@ -436,25 +426,31 @@ async function waitSpoke(pg, ms) {
     const shelf = await pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")].map((b) => ({ t: b.querySelector(".bt").textContent, off: b.disabled, s: b.querySelector(".bs").textContent, locked: b.classList.contains("locked") })));
     return { ctx, pg, errs, shelf };
   };
-  let r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"]);
-  ok("a child on R: Rory and the Rainbow first and open, the six-page R books greyed with their day",
-    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf.length === 8 && r.shelf.slice(1, 3).every((b) => !b.off) && r.shelf.slice(3).every((b) => b.off && b.s === "Coming Oct 9"), JSON.stringify(r.shelf));
-  await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][3].click());
-  const shut = await r.pg.evaluate(() => { openBook(STORIES.filter((b) => b.title === "Rex the Rhino")[0]); return !document.getElementById("book").classList.contains("show"); });
-  ok("…and a coming book can't be opened, by a tap or by the reader itself", shut && !(await r.pg.evaluate(() => document.getElementById("book").classList.contains("show"))));
-  ok("…no page errors on a dated shelf", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
-  r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
-  ok("a child whose sound has nothing open yet gets every open book first, then their own, coming",
-    r.shelf.slice(0, 15).every((b) => !b.off) && JSON.stringify(r.shelf.slice(15).map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.slice(15).every((b) => b.off) && r.shelf[15].s === "Coming Oct 9" && r.shelf[16].s === "Coming Oct 9",
-    JSON.stringify(r.shelf)); await r.ctx.close();
-  r = await shelfAt("2026-10-08T23:55:00-06:00", ["K"]);
-  ok("late on Thursday where the family is (already Friday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
-  r = await shelfAt("2026-10-09T00:05:00-06:00", ["K"]);
-  ok("…and on Friday it opens, first on a K child's shelf, with Kiki the Koala open beside it (and October's Halloween book, which sits on every shelf)",
-    r.shelf[0].t === "Kip's Kite" && JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf)); await r.ctx.close();
-  r = await shelfAt("2026-10-09T09:00:00-06:00", []);
-  ok("on Friday 9 Oct every book on the shelf is open, nothing still coming",
-    r.shelf.length === 43 /* 42 + October's Halloween book */ && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
+  let r = await shelfAt("2026-10-01T09:00:00-06:00", ["R"]);
+  ok("a child on R: Rory and the Rainbow first, and every R book open",
+    r.shelf[0].t === "Rory and the Rainbow" && r.shelf.length === 9 /* 8 R books + October's Halloween book */ && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf));
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  r = await shelfAt("2026-10-01T09:00:00-06:00", ["K"]);
+  ok("a K child's shelf is their own books, open, and October's Halloween book",
+    JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && r.shelf.every((b) => !b.off), JSON.stringify(r.shelf)); await r.ctx.close();
+  r = await shelfAt("2026-10-01T09:00:00-06:00", []);
+  ok("every book on the shelf is open, nothing still coming",
+    r.shelf.length === 48 /* 42 + October's six Halloween books */ && r.shelf.every((b) => !b.off && !/^Coming/.test(b.s)), JSON.stringify(r.shelf.filter((b) => b.off))); await r.ctx.close();
+  // HALLOWEEN IN YOUR OWN SOUND (Travis, 2 Oct 2026: "take a popular book
+  // like the halloween and make a version for other letter"): a child gets
+  // the Halloween book in their sound, and Boo only when their sounds have
+  // none (Sona.seasonPick); Home's Limited time row asks the same rule.
+  r = await shelfAt("2026-10-02T09:00:00-06:00", ["S"]);
+  const sHome = await r.pg.evaluate(() => { const row = (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games; return row.map((g) => g.name); });
+  ok("an S child gets Sid's Halloween book, not Boo, on the shelf and on Home",
+    r.shelf.some((b) => b.t === "Sid the Seagull on Halloween") && !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t) && b.t !== "Sid the Seagull on Halloween") &&
+    JSON.stringify(sHome) === JSON.stringify(["Sid the Seagull on Halloween"]), JSON.stringify({ shelf: r.shelf.map((b) => b.t), home: sHome })); await r.ctx.close();
+  r = await shelfAt("2026-10-02T09:00:00-06:00", ["K"]);
+  const kHome = await r.pg.evaluate(() => (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games.map((g) => g.name));
+  ok("…a K child, whose sound has none, gets Boo the Bat on both",
+    r.shelf.filter((b) => /Halloween|Trick-or-Treat/.test(b.t)).map((b) => b.t).join() === "Boo the Bat on Halloween" && JSON.stringify(kHome) === JSON.stringify(["Boo the Bat on Halloween"]), JSON.stringify({ home: kHome })); await r.ctx.close();
+  r = await shelfAt("2026-11-01T09:00:00-06:00", ["S"]);
+  ok("…and after October no child has one", !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t))); await r.ctx.close();
 
   // ── ONE FREE BOOK, THE REST PREMIUM (Travis, 30 Sep 2026) ──
   // "one book uh so like the letter r book ... to be free and the rest is
@@ -465,17 +461,17 @@ async function waitSpoke(pg, ms) {
   ok("the free book is named once, in sona.js, and it is a book on the shelf",
     JSON.stringify(free) === JSON.stringify(["Rory and the Rainbow"]) && free.every((t) => lib.includes('title: "' + t + '"')), JSON.stringify(free));
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"], false);
-  ok("without Premium, a child on R: Rory and the Rainbow first, open and marked Free, the six-page R books still dated",
-    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf[0].s === "Free" && r.shelf.length === 8 && r.shelf.slice(1, 3).every((b) => !b.off && b.locked && b.s === "Premium") && r.shelf.slice(3).every((b) => b.off && b.s === "Coming Oct 9"), JSON.stringify(r.shelf));
+  ok("without Premium, a child on R: Rory and the Rainbow first, open and marked Free, every other R book Premium",
+    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf[0].s === "Free" && r.shelf.length === 8 && r.shelf.slice(1).every((b) => !b.off && b.locked && b.s === "Premium"), JSON.stringify(r.shelf));
   await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][0].click());
   ok("…and the free book opens", await r.pg.waitForFunction(() => document.getElementById("book").classList.contains("show"), null, { timeout: 3000 }).then(() => true, () => false));
   ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["S"], false);
-  ok("without Premium, a child on S: the free book first, then Sid the Seagull greyed and marked Premium, then Sunny the Seal with its day",
+  ok("without Premium, a child on S: the free book first, then Sid the Seagull greyed and marked Premium, then the other S books, Premium too",
     JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Rory and the Rainbow", "Sid the Seagull", "Sam's Sailboat", "Sophie's Silly Soup", "Sunny the Seal"])
       && r.shelf[0].s === "Free" && !r.shelf[0].locked
       && r.shelf[1].s === "Premium" && r.shelf[1].locked && !r.shelf[1].off
-      && r.shelf[4].off && r.shelf[4].s === "Coming Oct 9", JSON.stringify(r.shelf));
+      && r.shelf.slice(1).every((b) => !b.off && b.locked && b.s === "Premium"), JSON.stringify(r.shelf));
   await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][1].click());
   await r.pg.waitForTimeout(100);
   const asked = await r.pg.evaluate(() => ({ open: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden,
@@ -499,9 +495,21 @@ async function waitSpoke(pg, ms) {
   // be like wanting to just do the Halloween one." The top shelf (#shelf,
   // every check above) is chosen exactly as before; every other in-season
   // book waits on #moreShelf behind one closed control.
+  //
+  // What "as before" means changed under this on the same day. Every book
+  // that is made is out, so nothing behind the button is "coming" any more.
+  // And Halloween has a book for six sounds (B, R, S, L, Z and F): the top
+  // shelf keeps the one(s) Sona.seasonPick gives this child (their own
+  // sound's; Boo the Bat only when their sounds have none), and the other
+  // sounds' Halloween books are behind the button with the rest. The counts
+  // are stated AND added up: 42 books all year, 48 in October, and the two
+  // shelves together are that list, each book once.
+  const HALLOWEEN = /Halloween|Trick-or-Treat/;
+  const SIX_HALLOWEEN = ["Boo the Bat on Halloween", "Finn the Fish on Halloween", "Leon's Trick-or-Treat Night", "Rory the Rabbit on Halloween", "Sid the Seagull on Halloween", "Zoe the Zebra on Halloween"];
   const more = (pg) => pg.evaluate(() => {
     const btn = document.getElementById("moreBtn"), box = document.getElementById(btn.getAttribute("aria-controls") || "x");
     const seen = (e) => !!(e && !e.hidden && e.offsetParent !== null);
+    const soundOf = (t) => (ALL_STORIES.filter((x) => x.title === t)[0] || {}).sound;
     return { tag: btn.tagName, type: btn.type, cream: btn.classList.contains("cream-pill"), shown: seen(btn), label: btn.textContent.trim(), open: btn.getAttribute("aria-expanded"),
       box: seen(box), head: box ? (box.querySelector(".shelfhead h2") || {}).textContent : null, chev: !!btn.querySelector("svg"), h: btn.getBoundingClientRect().height,
       // what the browser paints it with, beside a bare cream pill put next to it
@@ -509,24 +517,35 @@ async function waitSpoke(pg, ms) {
         const of = (e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.backgroundImage, c.color, c.borderTopColor, c.borderBottomColor, c.borderLeftColor, c.borderRightColor, c.boxShadow, c.textShadow, c.opacity, c.filter].join(" | "); };
         const out = { pill: of(btn), bare: of(bare) }; bare.remove(); return out; })(),
       top: [...document.querySelectorAll("#shelf .bookBtn")].map((b) => b.querySelector(".bt").textContent),
+      topSounds: [...document.querySelectorAll("#shelf .bookBtn")].map((b) => soundOf(b.querySelector(".bt").textContent)),
+      topMarks: [...document.querySelectorAll("#shelf .bookBtn")].map((b) => b.querySelector(".bs").textContent),
       // every book button on the page that is not on the top shelf, and whether a child can see it
       rest: [...document.querySelectorAll(".bookBtn")].filter((b) => !b.closest("#shelf")).map((b) => ({ t: b.querySelector(".bt").textContent, off: b.disabled, s: b.querySelector(".bs").textContent,
-        locked: b.classList.contains("locked"), seen: seen(b), in: !!b.closest("#moreShelf"), sound: (ALL_STORIES.filter((x) => x.title === b.querySelector(".bt").textContent)[0] || {}).sound })),
+        locked: b.classList.contains("locked"), soon: b.classList.contains("soon"), seen: seen(b), in: !!b.closest("#moreShelf"), sound: soundOf(b.querySelector(".bt").textContent), at: ALL_STORIES.map((x) => x.title).indexOf(b.querySelector(".bt").textContent) })),
       all: ALL_STORIES.map((x) => x.title), sounds: ALL_STORIES.map((x) => x.sound).filter((x, i, a) => a.indexOf(x) === i), wide: document.documentElement.scrollWidth > innerWidth };
   });
   const sameSet = (a, b) => a.length === b.length && new Set(a).size === a.length && a.every((t) => b.includes(t));
+  // the two shelves together are the whole in-season list, each book once
+  const whole = (m) => m.rest.every((b) => b.in && !m.top.includes(b.t)) && sameSet(m.top.concat(m.rest.map((b) => b.t)), m.all);
+  const spooky = (list) => list.filter((t) => HALLOWEEN.test(t)).sort();
+  const others = (mine) => SIX_HALLOWEEN.filter((t) => !mine.includes(t));
   // A tap that answers instead of throwing: a control that is missing, hidden
   // or not taking taps must be a FAIL line with its own name, not a stack
   // trace that ends the suite before the checks below it have run. (For a
   // beat after More books opens or closes the page takes no tap, see "a small
-  // finger taps twice" below; a real tap waits that beat out.)
-  const tap = (pg, sel, text) => pg.locator(sel, text ? { hasText: text } : undefined).first().click({ timeout: 4000 }).then(() => true, () => false);
+  // finger taps twice" below; a real tap waits that beat out.) A book is
+  // named by its whole title: "Sid the Seagull" is not "Sid the Seagull on
+  // Halloween", which now stands right before it.
+  const tap = (pg, sel, title) => (title ? pg.locator(sel, { has: pg.locator(".bt", { hasText: new RegExp("^" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$") }) }) : pg.locator(sel))
+    .first().click({ timeout: 4000 }).then(() => true, () => false);
   r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"]);
   let m = await more(r.pg);
-  ok("a child on R in October: the top shelf is their R books and the Halloween one, nothing else",
-    m.top.length === 9 && m.top.includes("Boo the Bat on Halloween") && m.top.every((t) => /^R|^Boo the Bat on Halloween$/.test(t)) && m.all.length === 43, JSON.stringify(m.top));
-  ok("…under it one closed More books control: a real button, a cream pill tall enough for a small finger, saying how many books are behind it",
-    m.tag === "BUTTON" && m.type === "button" && m.cream && m.shown && m.open === "false" && m.label === "More books (34)" && m.chev && m.h >= 48 && !m.wide, JSON.stringify(m, ["tag", "type", "cream", "shown", "open", "label", "chev", "h", "wide"]));
+  ok("October has 48 books in season: the 42 that are always there and the six Halloween ones", m.all.length === 48 && JSON.stringify(spooky(m.all)) === JSON.stringify(SIX_HALLOWEEN), JSON.stringify(spooky(m.all)));
+  ok("a child on R in October: the top shelf is their eight R books and their own Halloween book, Rory the Rabbit on Halloween, nothing else",
+    m.top.length === 9 && m.topSounds.every((x) => x === "R") && JSON.stringify(spooky(m.top)) === JSON.stringify(["Rory the Rabbit on Halloween"]), JSON.stringify(m.top));
+  ok("…under it one closed More books control: a real button, a cream pill tall enough for a small finger, saying how many books are behind it (48 less the 9 on top)",
+    m.tag === "BUTTON" && m.type === "button" && m.cream && m.shown && m.open === "false" && m.label === "More books (39)" && m.label === "More books (" + (m.all.length - m.top.length) + ")" && m.chev && m.h >= 48 && !m.wide,
+    JSON.stringify(m, ["tag", "type", "cream", "shown", "open", "label", "chev", "h", "wide"]));
   // "Never paste the hex values into a page": the tests above and loadtest
   // only ask whether it has the class and looks light and warm, which a cream
   // hex pasted onto it would pass. So the page may size and place the pill
@@ -550,27 +569,29 @@ async function waitSpoke(pg, ms) {
   ok("…and none of the other sounds' books on the page until it is opened", !m.box && m.rest.length === 0, JSON.stringify(m.rest.map((b) => b.t)));
   let tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
   m = await more(r.pg);
-  ok("a tap opens it: \"Books for other sounds\", every in-season book that is not on the top shelf, each exactly once",
-    tapped && m.open === "true" && m.box && m.head === "Books for other sounds" && m.rest.length === 34 && m.rest.every((b) => b.in && b.seen && !m.top.includes(b.t)) && sameSet(m.top.concat(m.rest.map((b) => b.t)), m.all) && !m.wide,
+  ok("a tap opens it: \"Books for other sounds\", every in-season book that is not on the top shelf (39), each exactly once",
+    tapped && m.open === "true" && m.box && m.head === "Books for other sounds" && m.rest.length === 39 && m.rest.every((b) => b.seen) && whole(m) && !m.wide,
     JSON.stringify({ open: m.open, head: m.head, n: m.rest.length }));
-  ok("…the Halloween book stays on the top shelf, never behind it", m.top.includes("Boo the Bat on Halloween") && !m.rest.some((b) => b.t === "Boo the Bat on Halloween"));
-  // readable, then coming; inside each the sounds in the order STORIES names
-  // them, each sound's books side by side
-  const inOrder = (list) => { const at = list.map((b) => m.sounds.indexOf(b.sound)); return at.every((x, i) => x >= 0 && (!i || at[i - 1] <= x)); };
-  const ready = m.rest.filter((b) => !b.off), coming = m.rest.filter((b) => b.off);
-  ok("…the ones a child can read first (S, SH, L and TH, three each), then the coming ones with their day, each sound's books together",
-    JSON.stringify(ready.map((b) => b.sound)) === JSON.stringify(["S", "S", "S", "SH", "SH", "SH", "L", "L", "L", "TH", "TH", "TH"]) && ready[0].t === "Sid the Seagull" && ready.every((b) => /pages$/.test(b.s))
-      && m.rest.slice(0, 12).every((b) => !b.off) && coming.length === 22 && coming.every((b) => b.s === "Coming Oct 9") && inOrder(ready) && inOrder(coming)
-      && coming.findIndex((b) => b.t === "Kiki the Koala") === coming.findIndex((b) => b.t === "Kip's Kite") + 1, JSON.stringify(m.rest.map((b) => b.sound + ":" + b.t)));
-  // the first book there that says "Coming": a real, greyed-out button
-  const comingBook = await r.pg.evaluate(() => { const b = [...document.querySelectorAll("#moreShelf .bookBtn")].find((x) => /^Coming /.test(x.querySelector(".bs").textContent)); if (!b) return null; b.click(); return { t: b.querySelector(".bt").textContent, off: b.disabled, soon: b.classList.contains("soon") }; });
-  ok("…a coming book behind it is switched off, and can't be opened", !!comingBook && comingBook.off && comingBook.soon && !(await r.pg.evaluate(() => document.getElementById("book").classList.contains("show"))), JSON.stringify(comingBook));
+  ok("…the other five Halloween books are behind it, Boo the Bat too (an R child has their own), and Rory's is on the top shelf only",
+    JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Rory the Rabbit on Halloween"])) && m.rest.length - spooky(m.rest.map((b) => b.t)).length === 34,
+    JSON.stringify(spooky(m.rest.map((b) => b.t))));
+  // every one of them can be read (with Premium); the sounds in the order
+  // STORIES names them, each sound's books side by side and in STORIES' order
+  const inOrder = (list) => { const at = list.map((b) => m.sounds.indexOf(b.sound)); return at.every((x, i) => x >= 0 && (!i || at[i - 1] < x || (at[i - 1] === x && list[i - 1].at < list[i].at))); };
+  ok("…each sound's books together, the sounds in the shelf's own order (in October the ones with a Halloween book first), no R among them",
+    JSON.stringify(m.rest.map((b) => b.sound).filter((x, i, a) => a.indexOf(x) === i)) === JSON.stringify(["B", "S", "L", "Z", "F", "P", "M", "N", "T", "D", "K", "G", "V", "SH", "CH", "J", "TH", "THV"]) && inOrder(m.rest)
+      && JSON.stringify(m.rest.slice(0, 7).map((b) => b.t)) === JSON.stringify(["Boo the Bat on Halloween", "Bo's Beach Day", "Sid the Seagull on Halloween", "Sid the Seagull", "Sam's Sailboat", "Sophie's Silly Soup", "Sunny the Seal"])
+      && m.rest.findIndex((b) => b.t === "Kiki the Koala") === m.rest.findIndex((b) => b.t === "Kip's Kite") + 1, JSON.stringify(m.rest.map((b) => b.sound + ":" + b.t)));
+  // Every book that is made is out (the check that used to stand here found
+  // a greyed "Coming Oct 9" button and proved it could not be opened).
+  ok("…every book behind it is out: a real button that takes a tap and says its pages, none switched off, none \"Coming\"",
+    m.rest.length === 39 && m.rest.every((b) => !b.off && !b.soon && !b.locked && /^(6|12) pages$/.test(b.s)) && m.topMarks.every((x) => /^(6|12) pages$/.test(x)), JSON.stringify(m.rest.filter((b) => b.off || b.soon || !/pages$/.test(b.s))));
   tapped = await tap(r.pg, "#moreShelf .bookBtn", "Sid the Seagull");
   const read = await r.pg.waitForFunction(() => document.getElementById("book").classList.contains("show"), null, { timeout: 3000 }).then(() => true, () => false);
-  ok("…and an open one opens its reader, on its own title page", tapped && read && await r.pg.evaluate(() => (document.querySelector("#bkStage .bktitle") || {}).textContent) === "Sid the Seagull", JSON.stringify({ tapped, read }));
+  ok("…and a tap on one opens its reader, on its own title page", tapped && read && await r.pg.evaluate(() => (document.querySelector("#bkStage .bktitle") || {}).textContent) === "Sid the Seagull", JSON.stringify({ tapped, read }));
   await r.pg.evaluate(() => document.getElementById("bkClose").click());
   m = await more(r.pg);
-  ok("…closing the book comes back to the shelf still open", m.open === "true" && m.box && m.rest.length === 34);
+  ok("…closing the book comes back to the shelf still open", m.open === "true" && m.box && m.rest.length === 39 && m.rest.every((b) => b.seen));
   tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(100);
   m = await more(r.pg);
   ok("a second tap closes it: no other sound's book left showing", tapped && m.open === "false" && !m.box && m.rest.every((b) => !b.seen) && m.top.length === 9, JSON.stringify({ tapped, open: m.open, box: m.box }));
@@ -581,26 +602,70 @@ async function waitSpoke(pg, ms) {
   ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"], true, "play");
   m = await more(r.pg);
-  ok("play mode keeps the whole shelf on top, so there is no More books control", m.top.length === 43 && !m.shown && !m.box && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
+  ok("play mode keeps the whole shelf on top, all 48 and all six Halloween books, so there is no More books control",
+    m.top.length === 48 && sameSet(m.top, m.all) && spooky(m.top).length === 6 && !m.shown && !m.box && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
   r = await shelfAt("2026-10-01T10:00:00-06:00", []);
   m = await more(r.pg);
-  ok("…nor for a child with no sounds picked: every book is already on the shelf", m.top.length === 43 && !m.shown && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
-  // the escape hatch above (every open book first, then their own) leaves only coming books behind it
+  ok("…nor for a child with no sounds picked: every book is already on the shelf", m.top.length === 48 && sameSet(m.top, m.all) && spooky(m.top).length === 6 && !m.shown && m.rest.length === 0, JSON.stringify({ top: m.top.length, shown: m.shown })); await r.ctx.close();
+  // WHOSE HALLOWEEN BOOK (Sona.seasonPick, checked on the top shelf further
+  // up): here, that the ones it leaves off are behind the button and not
+  // gone. K has no Halloween book, so a K child's is Boo the Bat, the one
+  // written for everyone; B has one, and it is that same Boo, there by its
+  // sound; a child on two sounds has both of theirs.
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["K"]);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("a child on K in October: Kip's Kite, Kiki the Koala and Boo the Bat on top, the other 45 behind More books, the five other Halloween books among them",
+    tapped && JSON.stringify(m.top) === JSON.stringify(["Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && m.label === "More books (45)" && m.rest.length === 45 && m.rest.every((b) => b.seen && !b.off) && whole(m) && m.all.length === 48
+      && JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Boo the Bat on Halloween"])),
+    JSON.stringify({ top: m.top, label: m.label, rest: m.rest.length, all: m.all.length, spooky: spooky(m.rest.map((b) => b.t)) })); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["B"]);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("a child on B: Boo the Bat is their own sound's Halloween book, on top beside Bo's Beach Day, and the other 46 are behind",
+    tapped && sameSet(m.top, ["Boo the Bat on Halloween", "Bo's Beach Day"]) && m.label === "More books (46)" && m.rest.length === 46 && whole(m)
+      && JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Boo the Bat on Halloween"])), JSON.stringify({ top: m.top, label: m.label })); await r.ctx.close();
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"]);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("a child on R and S has both their Halloween books on top (14 books) and the other four behind (34 books), never Boo on top",
+    tapped && m.top.length === 14 && JSON.stringify(spooky(m.top)) === JSON.stringify(["Rory the Rabbit on Halloween", "Sid the Seagull on Halloween"]) && m.label === "More books (34)" && m.rest.length === 34 && whole(m)
+      && JSON.stringify(spooky(m.rest.map((b) => b.t))) === JSON.stringify(others(["Rory the Rabbit on Halloween", "Sid the Seagull on Halloween"])), JSON.stringify({ top: m.top, label: m.label })); await r.ctx.close();
+  // outside October the six are on neither shelf (before it and after it)
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
   tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
   m = await more(r.pg);
-  ok("a child on K in September: the 17 books on top and the 25 behind More books make the whole shelf, with no Halloween book on either",
-    tapped && m.top.length === 17 && m.label === "More books (25)" && m.rest.length === 25 && m.rest.every((b) => b.off && b.seen) && sameSet(m.top.concat(m.rest.map((b) => b.t)), m.all) && m.all.length === 42 && !m.all.includes("Boo the Bat on Halloween"),
+  ok("a child on K in September: their 2 books on top and the 40 behind More books make the whole shelf of 42, with no Halloween book on either",
+    tapped && JSON.stringify(m.top) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && m.label === "More books (40)" && m.rest.length === 40 && m.rest.every((b) => !b.off && b.seen) && whole(m) && m.all.length === 42 && spooky(m.all).length === 0,
     JSON.stringify({ top: m.top.length, label: m.label, rest: m.rest.length, all: m.all.length })); await r.ctx.close();
+  r = await shelfAt("2026-11-01T09:00:00-06:00", ["R"]);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("…and a child on R in November: 8 on top, 34 behind, 42 in all, Halloween gone from both",
+    tapped && m.top.length === 8 && m.topSounds.every((x) => x === "R") && m.label === "More books (34)" && m.rest.length === 34 && whole(m) && m.all.length === 42 && spooky(m.all).length === 0,
+    JSON.stringify({ top: m.top.length, label: m.label, rest: m.rest.length, all: m.all.length })); await r.ctx.close();
+  // WITHOUT PREMIUM every book but the free one is locked, on either shelf.
   r = await shelfAt("2026-10-01T10:00:00-06:00", ["R"], false);
   tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
   m = await more(r.pg);
-  ok("without Premium, the open books behind More books are greyed and marked Premium", tapped && m.rest.length === 34 && m.rest.slice(0, 12).every((b) => b.locked && !b.off && b.s === "Premium") && m.rest.slice(12).every((b) => b.off && !b.locked), JSON.stringify(m.rest.slice(0, 13)));
+  ok("without Premium, all 39 books behind More books are greyed and marked Premium, none switched off; the free book is on top, marked Free",
+    tapped && m.rest.length === 39 && m.rest.every((b) => b.locked && !b.off && !b.soon && b.s === "Premium") && whole(m)
+      && m.top[0] === "Rory and the Rainbow" && m.topMarks[0] === "Free" && m.topMarks.slice(1).every((x) => x === "Premium"), JSON.stringify(m.rest.filter((b) => !b.locked || b.off || b.s !== "Premium")));
   tapped = await tap(r.pg, "#moreShelf .bookBtn", "Sid the Seagull"); await r.pg.waitForTimeout(100);
   const asked2 = await r.pg.evaluate(() => ({ open: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden, msg: document.getElementById("bookMessage").textContent, url: location.pathname }));
   ok("…and a tap on one shows the same grown-up message, naming the book and the free one, and opens nothing",
-    tapped && !asked2.open && asked2.notice && asked2.url === "/library.html" && /grown-up/.test(asked2.msg) && /Sid the Seagull/.test(asked2.msg) && /Rory and the Rainbow is free/.test(asked2.msg), JSON.stringify(asked2));
+    tapped && !asked2.open && asked2.notice && asked2.url === "/library.html" && /grown-up/.test(asked2.msg) && /open Sid the Seagull\./.test(asked2.msg) && /Rory and the Rainbow is free/.test(asked2.msg), JSON.stringify(asked2));
   ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  // The shelf's escape hatch (a child whose own books are all locked sees the
+  // free book first) puts a book on top that is not in their sound. It must
+  // not ALSO be behind the button.
+  r = await shelfAt("2026-10-01T10:00:00-06:00", ["K"], false);
+  tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
+  m = await more(r.pg);
+  ok("without Premium, a child on K: the free book leads the top shelf (4 books) and is not behind More books as well (44 books)",
+    tapped && JSON.stringify(m.top) === JSON.stringify(["Rory and the Rainbow", "Kip's Kite", "Kiki the Koala", "Boo the Bat on Halloween"]) && JSON.stringify(m.topMarks) === JSON.stringify(["Free", "Premium", "Premium", "Premium"])
+      && m.label === "More books (44)" && m.rest.length === 44 && !m.rest.some((b) => b.t === "Rory and the Rainbow") && m.rest.every((b) => b.locked && b.s === "Premium") && whole(m),
+    JSON.stringify({ top: m.top, marks: m.topMarks, label: m.label, rest: m.rest.length })); await r.ctx.close();
 
   // A SMALL FINGER TAPS TWICE (found in review, 1 Oct 2026). Opening slides
   // the button to the top of the screen, and closing lets the page spring
@@ -720,7 +785,7 @@ async function waitSpoke(pg, ms) {
   // gives the book back its Next for the rest of the visit
   const question = (pg) => pg.waitForFunction(() => window.__book && window.__book.primer === true, null, { timeout: 6000 }).then(() => true, () => false);
   let r = await reader("2026-10-09T10:00:00");
-  await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click();
+  await r.pg.locator(".bookBtn", { has: r.pg.locator(".bt", { hasText: /^Rory the Rabbit$/ }) }).click();
   // the title page swaps the shelf's small copy for the full-size first scene once it is cut
   const sharp = await r.pg.waitForFunction(() => /^(blob|data):/.test((document.querySelector("#bkStage img.bkcover") || {}).src || ""), null, { timeout: 4000 }).then(() => true, () => false);
   const seen = [await scene(r.pg, "rory")];
@@ -770,7 +835,7 @@ async function waitSpoke(pg, ms) {
   const ends = [];
   for (const [w, h] of [[375, 667], [320, 693]]) {
     r = await reader("2026-10-09T10:00:00", { width: w, height: h });
-    await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click(); await r.pg.waitForTimeout(250);
+    await r.pg.locator(".bookBtn", { has: r.pg.locator(".bt", { hasText: /^Rory the Rabbit$/ }) }).click(); await r.pg.waitForTimeout(250);
     // Start; "Not now" to the grown-ups' question on page 1; Next six times
     await tap(r.pg, "#bkNext"); await question(r.pg); await tap(r.pg, "#bkPrimerNo");
     for (let i = 0; i < 6; i++) { await tap(r.pg, "#bkNext"); await r.pg.waitForTimeout(120); }

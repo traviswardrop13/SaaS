@@ -1,48 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { FREE_MODE } from "@/lib/pricing";
-import { charterSpots, CHARTER_CENTS, STANDARD_CENTS, CHARTER_CAP, CHARTER_LABEL } from "@/lib/charter";
+import { charterSpots, CHARTER_CENTS, STANDARD_CENTS, CHARTER_CAP, CHARTER_LABEL, MONTHLY_CENTS } from "@/lib/charter";
 
 /**
  * Creates a Stripe Checkout Session for Sona.
  *
- * TWO offers: $59.99/year with a 3-day free trial, or $9.99/month billed
- * immediately (no trial — the trial is the yearly plan's perk). Charging on
- * the web (Stripe) keeps ~97% of revenue vs Apple's cut. `plan` picks the
- * tier ("monthly"/"month" → monthly, anything else → annual, so every old
- * link still resolves). Existing $39.99 subscribers keep renewing at their
- * price — a Stripe subscription carries its own price forever.
+ * TWO offers (again, since 1 Oct 2026): the yearly plan with a 3-day free
+ * trial at the charter or standard price, or $9.99 a month charged at
+ * purchase with no trial — the trial is the yearly plan's perk. Only the
+ * plan screen's POST can ask for monthly, and only by the exact word
+ * "monthly"; everything else, and every plain GET link, is the yearly plan.
+ * Existing subscribers keep renewing at their price — a Stripe subscription
+ * carries its own price forever.
  *
- * Deliberately NOT reading the old STRIPE_PRICE_ID_ANNUAL79 env: a stale
- * Price object in Vercel would silently override this file's amounts. New
- * env names or inline price_data only.
+ * Deliberately NOT reading the old STRIPE_PRICE_ID_ANNUAL79 env, and NOT
+ * reading any env Price for monthly: a stale Price object in Vercel would
+ * silently override this file's amounts. Monthly is inline price_data only.
  *
- * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_MONTHLY999,
- * STRIPE_PRICE_ID_ANNUAL5999.
+ * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_ANNUAL5999.
  */
 export const runtime = "nodejs";
 
 const TRIAL_DAYS = 3;
-// ONE PLAN. Monthly ($9.99) was retired on 18 Sep 2026 — Sona sells the yearly
-// plan only. Anyone still holding a monthly subscription from an earlier window
-// keeps it: this table is the PURCHASE path, and removing a plan from it does
-// not cancel a live Stripe subscription. /api/subscription must go on
-// recognising `month` intervals, or an existing subscriber loses their access
-// the moment they reinstall.
+// TWO PLANS. Monthly ($9.99) was retired on 18 Sep 2026 and put back on sale
+// on 1 Oct 2026 (Travis: "add to the paywall a $10 a month option ... that
+// does not have a free trial. That's a pay today, but the $59.99 has a
+// three-day trial"). This table is the PURCHASE path; /api/subscription goes
+// on recognising every interval, so nobody's access depends on what is sold
+// today.
 const PLANS = {
   annual: {
     cents: 5999,
     interval: "year" as const,
-    name: "Sona — Yearly",
+    // What Stripe prints on its page and on the receipt. "Sona Premium" since
+    // 1 Oct 2026, like every surface that sells it: it read "Sona — Yearly"
+    // a week after the plan was renamed.
+    name: "Sona Premium — Yearly",
     desc: "At-home speech-practice games, built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Every game, every sound, every update. 3 days free — cancel anytime.",
     env: "STRIPE_PRICE_ID_ANNUAL5999",
   },
+  monthly: {
+    cents: MONTHLY_CENTS,
+    interval: "month" as const,
+    name: "Sona Premium — Monthly",
+    // No "free": this plan charges today. The words a parent reads on Stripe's
+    // page must match what the plan screen told them.
+    desc: "At-home speech-practice games, built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Every game, every sound, every update. Charged today, then every month — cancel anytime.",
+  },
 } as const;
-// Every old ?plan=monthly link — ads, emails, bookmarks — still resolves,
-// quietly, to the only plan there is. A 400 here would turn a stale link into
-// a dead end for someone actively trying to pay.
-function pickPlan(_v: unknown): keyof typeof PLANS {
-  return "annual";
+// Monthly is sold only to someone who asked for it by name, on the plan
+// screen, behind the grown-ups gate. Anything else — a missing plan, a typo,
+// "month" from an August ad — is the yearly plan with its free days, because
+// the one mistake this function must never make is charging someone today who
+// expected three days free.
+function pickPlan(v: unknown): keyof typeof PLANS {
+  return v === "monthly" ? "monthly" : "annual";
 }
 
 export async function POST(req: NextRequest) {
@@ -73,13 +86,50 @@ export async function POST(req: NextRequest) {
   } catch {
     // no body — fine; Checkout will collect the email
   }
-  const PLAN = PLANS[planKey];
-
   const origin =
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     new URL(req.url).origin;
 
+  // MONTHLY NEVER TOUCHES THE CHARTER. The block below this one prices a sale
+  // from the charter count, which is right for the yearly plan and would be a
+  // disaster for this one: $59.99 or $99.99 charged every month. So monthly
+  // has its own, shorter path — its own amount, a month interval, no trial
+  // (Stripe then charges the first month at checkout), and no `tier` stamp,
+  // on the subscription or the session: it is not one of the fifty, and its
+  // buyer must never be told they got the charter price.
+  if (planKey === "monthly") {
+    const M = PLANS.monthly;
+    try {
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "usd",
+              unit_amount: M.cents,
+              recurring: { interval: M.interval },
+              product_data: { name: M.name, description: M.desc },
+            },
+          },
+        ],
+        customer_email: email,
+        allow_promotion_codes: true,
+        billing_address_collection: "auto",
+        success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=monthly`,
+        cancel_url: `${origin}/subscribe.html?canceled=1`,
+      });
+      return NextResponse.json({ ok: true, url: session.url });
+    } catch (e: unknown) {
+      return NextResponse.json(
+        { ok: false, error: e instanceof Error ? e.message : "Checkout failed." },
+        { status: 502 },
+      );
+    }
+  }
+
+  const PLAN = PLANS.annual;
   const priceId = process.env[PLAN.env];
   // THE TIER IS DECIDED HERE, FROM THE REAL COUNT, at the moment of purchase.
   // Every price surface in the product says "$59.99 for the first 50 families,
@@ -115,17 +165,17 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items,
-      // the 3-day trial is the YEARLY plan's perk; monthly bills at purchase
+      // the 3-day trial is the YEARLY plan's perk (monthly returned above).
       // metadata.tier on the SUBSCRIPTION is what lib/charter.ts counts: only
       // a charter-tier sale is one of the fifty — a standard-tier sale is not,
       // and neither is anything without the stamp (sold before the offer
-      // existed). On the session too, so the success page can say which.
-      subscription_data: planKey === "annual" ? { trial_period_days: TRIAL_DAYS, metadata: { tier } } : { metadata: { tier } },
+      // existed, or monthly). On the session too, so the success page can say which.
+      subscription_data: { trial_period_days: TRIAL_DAYS, metadata: { tier } },
       metadata: { tier },
       customer_email: email,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=${planKey}&tier=${tier}`,
+      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=annual&tier=${tier}`,
       cancel_url: `${origin}/subscribe.html?canceled=1`,
     });
     return NextResponse.json({ ok: true, url: session.url });
@@ -139,15 +189,18 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/checkout — plain-link checkout for landing-page CTAs (no client
- * JS): creates the session and 303s straight to Stripe. Any ?plan= value,
- * including the retired ?plan=monthly, resolves to the yearly plan.
+ * JS): creates the session and 303s straight to Stripe. ALWAYS the yearly
+ * plan, whatever ?plan= says. A link can be clicked by anyone, from an ad or
+ * an email written in August, with no plan screen and no grown-ups gate in
+ * front of it; the yearly plan charges nothing for three days, and monthly
+ * charges on the spot. So monthly is sold by the plan screen's POST and by
+ * nothing else — an old ?plan=monthly link still resolves, quietly, to yearly.
  */
 export async function GET(req: NextRequest) {
   // A click on an old ad or a stale "Start 3 days free" link lands on the
   // marketing page, which now says the app is free — never on a Stripe form.
   if (FREE_MODE) return NextResponse.redirect(new URL("/", req.url), 303);
-  const plan = new URL(req.url).searchParams.get("plan") || "";
-  const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan }) });
+  const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan: "annual" }) });
   const res = await POST(proxied);
   const j = (await res.json()) as { ok?: boolean; url?: string };
   if (j?.ok && j.url) return NextResponse.redirect(j.url, 303);
