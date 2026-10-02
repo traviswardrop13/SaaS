@@ -206,6 +206,9 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
+    // Dino Dig's round of dinosaurs: which one is next and the ones found
+    // (arcade-dino.html keeps it). A collection, never practice data.
+    "sona.dino.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
