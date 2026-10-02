@@ -2922,11 +2922,16 @@
   // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
   // under Limited time for that window instead. Folder = public/assets/books/<slug>.
   const HOME_BOOKS = [
-    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", releasedOn: "2026-10-01" },
-    { slug: "sam-sailboat", title: "Sam's Sailboat", releasedOn: "2026-10-01" },
-    { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
-    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
-    { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
+    { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "sophie-silly-soup", title: "Sophie's Silly Soup", sound: "S", releasedOn: "2026-10-01" },
+    { slug: "libby-lemon", title: "Libby and the Lemon", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "leon-lantern", title: "Leon's Lantern", sound: "L", releasedOn: "2026-10-01" },
+    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "shawn-shadow", title: "Shawn and His Shadow", sound: "SH", releasedOn: "2026-10-01" },
+    { slug: "thor-thank-you", title: "Thor Says Thank You", sound: "TH", releasedOn: "2026-10-01" },
+    { slug: "thelma-thirsty-plant", title: "Thelma's Thirsty Plant", sound: "TH", releasedOn: "2026-10-01" },
     { slug: "boo-bat-halloween", title: "Boo the Bat on Halloween", sound: "B", anySound: true, season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "rory-halloween", title: "Rory the Rabbit on Halloween", sound: "R", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
     { slug: "sid-halloween", title: "Sid the Seagull on Halloween", sound: "S", season: { startsOn: "2026-10-01", endsOn: "2026-10-31" } },
@@ -3009,8 +3014,13 @@
     // games"). HOME_BOOKS names each book's day out and, for a limited-time
     // one, its window; a book is still opened (or not) by the shelf's rules.
     function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
-    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
-      .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
+    // only the child's own sounds, the one practised now first (Travis, 1 Oct
+    // 2026: "the kids just seeing books based on their letter/s")
+    var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var nowSound = ""; try { nowSound = String(rotSound() || "").toUpperCase(); } catch (e) {}
+    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000 && (!mySounds.length || playMode() || mySounds.indexOf(b.sound) !== -1); })
+      .sort(function (a, b) { return (b.sound === nowSound) - (a.sound === nowSound); })
+      .map(bookEntry);
     var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); });
     // the limited-time book in this child's sound (seasonPick); play mode,
     // which rotates every sound, and a child with no sounds yet see them all
