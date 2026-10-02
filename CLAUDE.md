@@ -921,6 +921,18 @@ keys, so it ends in a win. A tile that slips by fades and the song plays on
 on the keys until tapped; and a tile takes the song's fall time on every
 screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
+**The notes are the music, and in the iPhone app they are media** (Travis, 1
+Oct 2026: "there's no music with the tiles game. We want it to like play
+little songs while you're playing"). Each tile was a thin beep through Web
+Audio, which an iPhone's ring/silent switch silences and which a page that has
+had the mic open plays as a quiet phone call, so on the phone the songs were
+not there. Each note is now a piano note built on the phone (0.55 s, so the
+mic's quiet window still holds), and the app plays it as a media element, one
+kept per key, with the level in the samples (`MEDIA_PEAK`: an iPhone gives a
+media element no volume). A refused element falls back to Web Audio, never to
+silence. A browser keeps Web Audio at the level it had, so iPhone Safari with
+the ringer off is still silent. The loudness in the app was set without a
+phone to listen on: it is that one number.
 `tests/tilestest.mjs` plays a whole round.
 
 **The R sound is Rachel's own voice** (Travis, 1 Oct 2026, picking take 1 of
@@ -1228,6 +1240,7 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
   Play games and Bubble Pop all do; a new page that speaks does too. The
   browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
-  The chimes are still Web Audio.
+  The chimes are still Web Audio; Piano Tiles' notes are not (see "The notes
+  are the music").
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
