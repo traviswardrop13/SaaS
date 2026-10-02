@@ -33,7 +33,12 @@ const games = ["slice", "stack", "tiles", "run", "glide"];
 // Default completion fixtures hold grandfathered access in either pricing
 // state. `paid: true` uses the paid-state seam for a post-era family, keeping
 // the parent handoff covered while the production family app remains free.
-async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false, voicedMic = false } = {}) {
+// `web` is the second seam (1 Oct 2026, Travis: "i dont want them paying on
+// the website"): these pages run in a browser, and a browser is only asked to
+// fetch a grown-up while the website sells. "1" forces that on, so the handoff
+// stays covered whichever way WEB_SALES ships; "0" plays the browser that
+// cannot sell.
+async function fresh({ paid = false, web = "1", replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false, voicedMic = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const u = new URL(route.request().url());
@@ -64,15 +69,16 @@ async function fresh({ paid = false, replay = false, sound = "R", width = 390, h
   page.setDefaultTimeout(5000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(origin + "/__seed");
-  await page.evaluate(({ paid, replay, sound, games }) => {
+  await page.evaluate(({ paid, web, replay, sound, games }) => {
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
     localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: [sound], onboarded: true, volume: 0, voiceOn: false, soundOn: false, earlyAdopter: !paid }));
     if (paid) sessionStorage.setItem("sona.paidui", "1");
+    if (paid) sessionStorage.setItem("sona.websalesui", web);
     if (replay) localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));
     sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, tries: 25, round: 4, sum: 40, scores: [10, 10, 10, 10], pending: true, sound, level: 1, demo: replay, games }));
-  }, { paid, replay, sound, games });
+  }, { paid, web, replay, sound, games });
   return { context, page, errors };
 }
 async function finish(page) {
@@ -155,6 +161,23 @@ await scenario("paid-state parent handoff",async()=>{
     const url=new URL(page.url());
     ok("the adult gate preserves the intended destination",url.pathname==="/today.html"&&url.searchParams.get("gate")==="1"&&url.searchParams.get("to")==="/subscribe.html?first=1",page.url());
     ok("arrival at the gate does not spend the offer",await page.evaluate(()=>!localStorage.getItem("sona.planmoment.v1")));
+  }finally{await context.close();}
+});
+// The same finished run in a browser whose website does not sell: there is no
+// plan to show a grown-up, so the child is not sent to fetch one. Without this
+// the one-time ask could never be spent on the web (only a purchase card on
+// screen spends it), and "Show a grown-up" would follow every run, forever.
+await scenario("a browser that cannot sell: no parent handoff",async()=>{
+  const {context,page,errors}=await fresh({paid:true,web:"0",width:320,height:568});
+  try{
+    await finish(page);await openAndClaim(page);
+    const end=await page.evaluate(()=>({premium:Sona.premium(),due:Sona.planEligible(),label:document.getElementById("runDone").textContent,line:document.getElementById("runPractice").textContent}));
+    ok("web sales off: a family on the free version ends the run on a plain Done",end.premium===false&&end.due===false&&end.label==="Done"&&!/grown-up|show them/i.test(end.label+" "+end.line),end);
+    await page.locator("#runDone").click();await page.waitForURL(/today\.html/);
+    const url=new URL(page.url());
+    ok("…which goes Home: no grown-ups gate, no plan screen",url.pathname==="/today.html"&&!url.searchParams.has("gate")&&!url.searchParams.has("to"),page.url());
+    ok("…and the one-time ask is unspent, for the day they open the app",await page.evaluate(()=>!localStorage.getItem("sona.planmoment.v1")));
+    ok("web sales off: completion has no page errors",errors.length===0,errors);
   }finally{await context.close();}
 });
 await scenario("replays and empty sessions never add practice",async()=>{

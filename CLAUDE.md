@@ -248,6 +248,57 @@ device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
 on Restore asks Stripe, so a web plan that was cancelled, or a trial that
 never became a charge, stays unlocked on that phone.
 
+**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE** (Travis, 1 Oct 2026, told
+that a family who pays on the website has no cancel button and that a
+cancelled web plan stays unlocked on the phone: "i dont want them paying on
+the website"). One switch, two copies, like `FREE_MODE`: `WEB_SALES = false`
+in `lib/pricing.ts` and `public/sona.js` (`Sona.webSales()`), pinned equal by
+`freetest`. It is the FAMILY web checkout only; everything else in this
+section still describes what happens when it is `true`, and stays in the code.
+- **The server refuses.** `/api/checkout` answers 410 ("Sona Premium is bought
+  in the Sona app on iPhone and iPad.") before it touches Stripe, and its
+  plain-link GET goes to the home page. `/api/charter` answers with no price
+  and no Stripe call. A hidden button is not a closed door: an old tab, a
+  bookmark or an old ad link reaches the same refusal.
+- **A browser family sees where Premium is, never a price.** The plan screen
+  shows one card, "Sona Premium is in the iPhone and iPad app", with the App
+  Store button (`#appCard`); so do `trial.html`, the Next `/subscribe` page,
+  the old `/families` page and the Terms. No dollar figure, no "3 days free",
+  no charter line and no spots-left number in that state: the iPhone price is
+  Apple's (App Store Connect), and the charter offer was a web price. It says
+  Premium "opens there": **a purchase in the app does not unlock the
+  website**, because nothing links an Apple purchase to a browser.
+- **No offer in a browser.** `planEligible()` is false in a browser that
+  cannot sell, so the practice win screen says "Done", the one-time ask is not
+  spent, and no "paywall viewed" is logged for a page that sells nothing. In
+  the app nothing changes: the Apple card never reads this switch.
+- **People who already pay on the web keep everything.** Restore by email
+  (Settings, `trial.html`), `/api/subscription`, the receipt for a checkout
+  opened before the flip, the billing page route and the success page never
+  read the switch. They still cancel by email.
+- **Clinicians still buy on the web.** `/api/slp/plan`, the dashboard's buy
+  buttons and `for-slps.html` never read it. The dashboard's one line about
+  what families pay says "in the Sona app on iPhone and iPad", with no figure.
+- **Settings › Account's plan links go to the plan screen** (`/subscribe.html`),
+  in both states. They went to the Next `/subscribe` page, which threw the
+  iPhone app back to Home: in the app, "See Premium" never reached the Apple
+  card.
+- **Tests play both states** through a session-only seam,
+  `sessionStorage["sona.websalesui"]` = `"1"` / `"0"` (never localStorage, never
+  a URL flag; it changes only what a page shows, since the server refuses
+  whatever a page shows). `websalestest` plays the pages; `caseloadtest` plays
+  the refusal against the fake Stripe.
+
+**What this leaves, and is Travis's to know:** (1) a family on Android or a
+computer can use the free version and can no longer buy Premium anywhere;
+(2) Premium bought in the app is the app's, not the website's; (3) nobody new
+can take a charter spot, so "$59.99 for the first 50 families" is no longer an
+offer anyone meets (the families who hold it keep it); (4) what a family pays
+is whatever App Store Connect says, and the in-app purchase works only once
+the product is approved there AND attached to the `full` entitlement in
+RevenueCat. On 1 Oct 2026 the yearly product was listed at $79.99 and was not
+attached to `full`, so a purchase would not have unlocked Premium.
+
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const
 FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on

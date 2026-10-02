@@ -4,7 +4,23 @@ import Link from "next/link";
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
 
+// The one App Store address the websites use (parents.html, for-slps.html,
+// the families page). This page cannot import it from anywhere: there is no
+// shared constant, and lib/launch.ts is not for a client page.
+const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+
+// THREE STATES, one page (the default export at the foot chooses):
+//   Sona is free ............ FreeNotice
+//   the website sells ....... PaidPicker (everything from here to its end)
+//   it does not ............. AppOnlyNotice — since 1 Oct 2026 (Travis: "i
+//                             dont want them paying on the website"). Premium
+//                             is bought in the iPhone and iPad app.
+// The picker stays in this file whole. Selling here again is WEB_SALES in
+// lib/pricing.ts and its mirror in sona.js, not a rewrite of this page.
+//
 // THIS PAGE SELLS THE YEARLY PLAN, and only that one. Since 1 Oct 2026 there
 // is a monthly plan too ($9.99, charged today, no free trial); it is bought on
 // the plan screen (subscribe.html), which this page points to in one line. So
@@ -94,12 +110,14 @@ function PaidPicker() {
   const yearPrice = open ? "$59.99" : "$99.99";
   const perMonth = open ? "Under $5 a month" : "Under $8.50 a month";
 
-  // Native app (App Store build): Apple forbids non-IAP checkout, so the iOS app
-  // ships with no in-app payment. If this page is reached inside the app, bounce
-  // to the app home instead of showing Stripe. Web checkout is unaffected.
+  // Native app (App Store build): Apple forbids non-IAP checkout, so this
+  // page's Stripe card must never show inside the app. If it is reached there
+  // (an older Settings linked here), go to the plan screen, which shows the
+  // Apple card in the app. It used to bounce to Home, which told a parent who
+  // had tapped "See Premium" nothing at all. Web checkout is unaffected.
   useEffect(() => {
     if (typeof window !== "undefined" && (window as { Capacitor?: unknown }).Capacitor) {
-      window.location.replace("/today.html");
+      window.location.replace("/subscribe.html");
     }
   }, []);
 
@@ -276,7 +294,84 @@ function PaidPicker() {
   );
 }
 
+// The website does not sell Premium to families (Travis, 1 Oct 2026: "i dont
+// want them paying on the website"). /api/checkout refuses, so the picker
+// above could only show a price and then an error. A parent who lands here
+// from Settings, the trial page or an old link is told where Premium is
+// bought, and nothing here names a price: the iPhone's price is App Store
+// Connect's, and this repo must not type it.
+//
+// "In the app … it opens there" is deliberate. Nothing links an Apple
+// purchase to a web browser, so buying in the app does not open the games on
+// this website, and the page must never suggest it does.
+function AppOnlyNotice() {
+  // Inside the iPhone app this page would tell a parent to go and get the app
+  // they are holding. The plan screen is the right place there (it shows the
+  // Apple card), so nothing is drawn until we know this is a browser.
+  const [inBrowser, setInBrowser] = useState(false);
+  useEffect(() => {
+    if ((window as { Capacitor?: unknown }).Capacitor) {
+      window.location.replace("/subscribe.html");
+      return;
+    }
+    setInBrowser(true);
+  }, []);
+  if (!inBrowser) return null;
+
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
+      <div className="mx-auto max-w-md px-5 py-20 text-center">
+        <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="mx-auto h-20 w-20 object-contain" />
+        <h1 className="font-display mt-4 text-3xl font-extrabold text-gray-900">
+          Sona Premium is in the iPhone and iPad app
+        </h1>
+        <p className="mt-3 text-base font-bold text-gray-600">
+          Premium opens every game and every book in the Sona app. You buy it there, through
+          the App Store, and it opens there. Daily practice and the free games stay free here.
+        </p>
+        <a
+          href={APP_STORE_URL}
+          target="_blank"
+          rel="noopener"
+          className="mt-7 inline-block rounded-2xl bg-orange-400 px-7 py-4 font-display text-lg font-extrabold text-white shadow-chunky"
+        >
+          Get Sona on the App Store
+        </a>
+        <p className="mt-4 text-sm font-bold">
+          {/* the free version, in this browser (a browser with no child set up
+              is taken through setup first) */}
+          <a className="text-sky-700 underline" href="/today.html">Open Sona</a>
+        </p>
+        {/* Settings sent an ACTIVE web subscriber here ("Manage →") until 1 Oct
+            2026, and old links still do. Turning the website's checkout off
+            cancels nobody's subscription, so this page owes them three things
+            and never a dead end: it keeps working, how to get it back on a
+            device, and how to stop it. The cancel sentence is the Terms' own
+            (no cancel button exists for a web plan: that is Travis's open
+            call), at the address FreeNotice gives. */}
+        <p className="mt-8 text-sm font-bold leading-relaxed text-gray-500">
+          Already paid on speaksona.com? Your plan keeps working. It keeps renewing at the
+          price you bought it at until you cancel it. To open it on this device,{" "}
+          <a className="text-sky-700 underline" href="/trial.html">restore it with your email</a>;
+          inside Sona, that is Grown-ups &rarr; Settings &rarr; Restore. To cancel a plan
+          bought on speaksona.com,{" "}
+          <a className="text-sky-700 underline" href="mailto:wardroptravis@gmail.com?subject=Sona%20subscription">
+            email us
+          </a>{" "}
+          and we will cancel it for you. A plan bought on iPhone or iPad:{" "}
+          <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>.
+        </p>
+      </div>
+    </main>
+  );
+}
+
 export default function SubscribePage() {
+  // Chosen HERE, not inside SubscribeInner (freetest pins those two lines word
+  // for word): while the website is not selling, the picker never mounts, so
+  // its hooks, its /api/charter fetch and its checkout button do not exist.
+  // FREE_MODE still wins: when both are true, "Sona is free" is the truer page.
+  if (!FREE_MODE && !WEB_SALES) return <AppOnlyNotice />;
   return (
     <Suspense fallback={null}>
       <SubscribeInner />

@@ -40,6 +40,13 @@
       color:var(--muted); line-height:1.45; }
     .resBox{ margin-top:10px; display:none; }
     .resBox.show{ display:block; }
+    /* Anything switched with the hidden attribute is hidden. Nothing shared
+       says so (sona.css, crafted-family.css, action.css), and any rule that
+       sets a display beats the attribute, as .btn, .save and .proof do here:
+       one such rule landing on the price block, from this page or a sheet
+       loaded after it, and the price shows beside "it's in the app". The
+       plan screen met this bug once (an empty pill, Rachel's line twice). */
+    [hidden]{display:none !important;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -49,14 +56,34 @@
     <div class="hero">
       <img src="/assets/crafted/echo-welcome.webp" alt="Echo" />
       <h1 id="headline">Every game, with Sona Premium</h1>
-      <!-- "your first 3 days are free" described the old local no-card trial,
-           which no longer exists for anyone new: the 3 days belong to the
-           plan. And since 24 Sep 2026 "the free session is done" is not true
-           either — daily practice is the free version and never ends, so this
-           page sells what Premium actually adds (every game) and says what a
-           family keeps if they do not buy it. -->
-      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Daily practice and free games stay free — Sona Premium opens every game, starting with <b>3 free days</b>, and nothing is charged until day 3.</p>
     </div>
+
+    <!-- TWO STATES, BOTH IN THE FILE, NEITHER SHOWN UNTIL THE SWITCH ANSWERS
+         (Travis, 1 Oct 2026: "i dont want them paying on the website"). A
+         family buys Premium only in the iPhone and iPad app now, so a browser
+         reads #tApp: where it is bought, and no figure. #tSell is the page as
+         it sold (the free days, the price, the charter line, the button, the
+         monthly line, the renewal terms), kept whole for the day
+         Sona.webSales() says yes again: flipping the switch is one boolean in
+         sona.js and lib/pricing.ts, never an edit here.
+         Both ship with the hidden attribute and the script under /sona.js
+         shows exactly one. A price that shipped visible and was hidden by a
+         later script would flash on every visit, and stay for good on the
+         visit where sona.js never loads.
+         What is true in both states sits OUTSIDE both, below: Rachel's line
+         and Restore access. The success page sends "Restore my access" here
+         because this is the one restore-by-email box with no grown-ups check
+         and no set-up child in front of it, so a family who already pays must
+         find it whichever state the page is in. -->
+    <div id="tSell" hidden>
+    <!-- "your first 3 days are free" described the old local no-card trial,
+         which no longer exists for anyone new: the 3 days belong to the
+         plan. And since 24 Sep 2026 "the free session is done" is not true
+         either — daily practice is the free version and never ends, so this
+         page sells what Premium actually adds (every game) and says what a
+         family keeps if they do not buy it. (It sat under the headline, in
+         the hero; it promises free days, so it is part of the selling block.) -->
+    <p class="muted" style="font-weight:700;text-align:center;">Echo loved practicing with you. Daily practice and free games stay free — Sona Premium opens every game, starting with <b>3 free days</b>, and nothing is charged until day 3.</p>
 
     <div class="card" style="margin-top:16px;text-align:center;">
       <span class="circle">Sona Premium · 3 days free</span>
@@ -78,24 +105,9 @@
       <span class="save" id="tSave">Under $5 a month, billed once a year.</span>
       <span class="save" id="tCharter" style="display:none;background:#f2fbe4;color:#3f8f00;"></span>
       <p class="muted" id="tThen" style="font-weight:800;margin-top:9px;"><span style="color:#46a302;">3 days free</span> · then <span id="tThenPrice">$59.99</span> a year, billed once · cancel anytime</p>
-      <script>
-        // same count the checkout reads; the button here is a plain link to
-        // /subscribe, which re-checks before it lets anyone pay
-        (function () {
-          fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
-            if (!j || !j.ok || j.free) return;
-            var c = document.getElementById("tCharter");
-            if (j.open) {
-              if (c) { c.textContent = j.label + " price for the first " + j.cap + " families — regular price " + j.standard + "/yr"
-                + (j.source === "stripe" ? " · " + j.left + " spot" + (j.left === 1 ? "" : "s") + " left" : ""); c.style.display = "block"; }
-            } else {
-              var n = document.getElementById("tNow"); if (n) n.textContent = j.standard;
-              var sv = document.getElementById("tSave"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
-              var tp = document.getElementById("tThenPrice"); if (tp) tp.textContent = j.standard;
-            }
-          }).catch(function () {});
-        })();
-      </script>
+      <!-- the charter line and the price once the spots are gone are painted
+           by the script under /sona.js, and only while this block is the one
+           on screen -->
       <ul class="perks" style="max-width:330px;margin-left:auto;margin-right:auto;">
         <li>Every game in the library, for both age groups</li>
         <li>Nothing is charged during your 3 free days — cancel before day 3 and you pay nothing</li>
@@ -108,12 +120,39 @@
            together); it is bought on the plan screen, behind the grown-ups
            check, never from a plain link. -->
       <p class="muted" style="margin-top:10px;font-size:13px;font-weight:700;">Rather pay month by month? $9.99 a month, charged today. <a href="/subscribe.html" id="moLink" hidden>Choose it on the plan screen →</a><span id="moWords">You can choose it inside Sona once your child is set up.</span></p>
-      <div class="proof">
+      <!-- The renewal terms in one place, in the plainest words we have. The
+           dated day-by-day timeline lives on subscribe.html and is built from
+           the same +3 days the charge uses; it is deliberately NOT duplicated
+           here, because two copies of a date calculation drift. It sat at the
+           foot of the page; it is a sentence about a purchase, so it lives
+           with the button and leaves with it. -->
+      <p class="muted" style="margin-top:12px;font-size:11.5px;line-height:1.5;">Sona Premium renews at <span id="tRenewPrice">$59.99</span> a year after the 3-day free trial. Cancel anytime in your account.</p>
+    </div>
+    </div>
+
+    <!-- WHEN THE WEBSITE DOES NOT SELL. No figure, no free days, no charter
+         line and no spots-left count: the price in the app is App Store
+         Connect's, and a number typed here would be a claim about one this
+         repo does not own. "It opens there" is the honest half: nothing links
+         an Apple purchase to this browser, so a parent who buys in the app and
+         comes back here still sees the free version. Never promise otherwise. -->
+    <div id="tApp" hidden>
+    <div class="card" style="margin-top:16px;text-align:center;">
+      <h2 id="tAppTitle">Sona Premium is in the iPhone and iPad app</h2>
+      <p class="muted" style="margin-top:8px;font-weight:700;">Premium opens every game and every book in the Sona app. You buy it there, through the App Store, and it opens there. Daily practice and the free games stay free here.</p>
+      <a class="btn" id="tAppGo" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener" style="margin-top:18px;">Get Sona on the App Store</a>
+    </div>
+    </div>
+
+    <!-- In BOTH states: who built it, and the way back in for a family who
+         already pays. -->
+    <div class="card" style="margin-top:16px;text-align:center;">
+      <div class="proof" style="margin-top:0;">
         <span><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></span>
         <span><b>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship</b>, and Sona&rsquo;s co-founder. Real speech practice, disguised as games kids ask to play — practice, not therapy, and never an evaluation.</span>
       </div>
       <p class="muted" style="margin-top:12px;font-size:13px;font-weight:700;">
-        Already subscribed? <a href="#" id="restoreLink">Restore access</a>
+        <span id="resAsk">Already subscribed?</span> <a href="#" id="restoreLink">Restore access</a>
       </p>
       <div class="resBox" id="resBox">
         <input id="resEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
@@ -127,12 +166,7 @@
     <p class="muted" style="text-align:center;margin-top:16px;font-size:13.5px;font-weight:700;">
       Families who practiced with Sona while it was free keep it free.
     </p>
-    <!-- The renewal terms in one place, in the plainest words we have. The
-         dated day-by-day timeline lives on subscribe.html and is built from
-         the same +3 days the charge uses; it is deliberately NOT duplicated
-         here, because two copies of a date calculation drift. -->
     <p class="muted" style="text-align:center;margin-top:10px;font-size:11.5px;line-height:1.5;">
-      Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.<br/>
       Practice is scored on your device — recordings are never uploaded.
     </p>
     <p class="muted" style="text-align:center;margin-top:8px;font-size:12.5px;">
@@ -148,6 +182,56 @@
        while pricing is live, and it is how the next free window would work. */
     (function () {
       try { if (window.Sona && Sona.isFree && Sona.isFree()) location.replace("/today.html"); } catch (e) {}
+    })();
+  </script>
+  <script>
+    /* WHICH OF THE TWO BLOCKS A BROWSER READS (Travis, 1 Oct 2026: "i dont
+       want them paying on the website"). Sona.webSales() is the one switch,
+       read guarded and failing CLOSED: a sona.js that did not load, or an
+       older cached one without the function, shows where Premium is bought
+       and never a price. Nobody who is on the way out is shown either block:
+       the iPhone app (the line at the top has already sent it to the plan
+       screen), a visit while Sona is free (the bounce above), and a family
+       who already has every game (sent home below). Showing a block opens
+       nothing and hiding one closes nothing: /subscribe and /api/checkout
+       refuse by themselves. */
+    (function () {
+      var S = window.Sona, sells = false, leaving = !!window.Capacitor;
+      try { sells = !!(S && S.webSales && S.webSales()); } catch (e) {}
+      try {
+        if (S && ((S.isFree && S.isFree()) || (S.premium && S.premium()) || (S.isSubscribed && S.isSubscribed()))) leaving = true;
+      } catch (e) {}
+      if (leaving) return;
+      if (!sells) {
+        document.getElementById("tApp").hidden = false;
+        // A plan off sale is not a cancelled subscription: whoever already
+        // pays through the website keeps Premium, and the box under this line
+        // is how a new browser learns of it.
+        document.getElementById("resAsk").textContent = "Already paid on speaksona.com? Your plan keeps working.";
+        return;
+      }
+      document.getElementById("tSell").hidden = false;
+      // same count the checkout reads; the button here is a plain link to
+      // /subscribe, which re-checks before it lets anyone pay. Asked only
+      // while this block is on screen, so the app-only state never paints a
+      // price or a spots-left number; and an answer that says the website is
+      // not selling, or that carries no figure, repaints nothing.
+      var money = /^\$\d+(\.\d\d)?$/;
+      fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok || j.free || j.webSales === false) return;
+        var c = document.getElementById("tCharter");
+        if (j.open) {
+          if (c) { c.textContent = j.label + " price for the first " + j.cap + " families — regular price " + j.standard + "/yr"
+            + (j.source === "stripe" ? " · " + j.left + " spot" + (j.left === 1 ? "" : "s") + " left" : ""); c.style.display = "block"; }
+        } else if (typeof j.standard === "string" && money.test(j.standard)) {
+          var n = document.getElementById("tNow"); if (n) n.textContent = j.standard;
+          var sv = document.getElementById("tSave"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
+          var tp = document.getElementById("tThenPrice"); if (tp) tp.textContent = j.standard;
+          // the renewal sentence went on naming the charter price to a family
+          // who would be charged the regular one
+          var rp = document.getElementById("tRenewPrice"); if (rp) rp.textContent = j.standard;
+        }
+      }).catch(function () {});
     })();
   </script>
 

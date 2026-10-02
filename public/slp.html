@@ -2029,11 +2029,20 @@
     // the charter price carries its cap (the route's, not a typed 50), both
     // carry "on the web" (App Store Connect prices the app), and a charter
     // answer without a usable cap prints nothing rather than the bare figure.
+    // FAMILIES NO LONGER PAY ON THE WEBSITE (Travis, 1 Oct 2026: "i dont want
+    // them paying on the website"). While the route says so (`webSales:false`)
+    // an "on the web" figure is a price no parent can pay, so the line names
+    // the place and no figure: the App Store's price is Apple's to print, not
+    // ours to type. Only an explicit false counts: an answer without the field
+    // is the selling state, and both of its branches stay below for the day
+    // the switch flips back. This is the FAMILY's purchase only; the
+    // clinician's own plans on this page never read it.
     function loadParentPrice(){
       if(PARENT_ASKED)return;PARENT_ASKED=true;
       fetch("/api/charter").then(answer).then(function(res){
         var j=res.j, money=/^\$\d+(\.\d\d)?$/, cap=typeof j.cap==="number"&&j.cap>0&&j.cap%1===0?j.cap:0;
         if(!j.ok||j.free)PARENT_PRICE="";
+        else if(j.webSales===false)PARENT_PRICE=" in the Sona app on iPhone and iPad";
         else if(j.open)PARENT_PRICE=typeof j.price==="string"&&money.test(j.price)&&cap?" — on the web, "+j.price+" a year for the first "+cap+" families":"";
         else PARENT_PRICE=typeof j.standard==="string"&&money.test(j.standard)?" — on the web, "+j.standard+" a year":"";
         paintPremium();

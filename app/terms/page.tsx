@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import BackLink from "@/app/components/BackLink";
 import { FREE_MODE } from "@/lib/pricing";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
 import {
   CASELOAD_NAME, CASELOAD_PRICE, CASELOAD_PER_MONTH, COVERED_REDEEM_CAP,
   SELF_NAME, SELF_PRICE, SELF_PER_MONTH, LEGACY_CASELOAD_PRICE,
@@ -111,11 +113,50 @@ export default function TermsPage() {
                 "Daily practice and free games" is the one phrase every surface
                 uses, never a count: the free games have changed more than once
                 (three and a free book since 30 Sep 2026). */}
+            {/* A SECOND SWITCH UNDER THE FIRST: WEB_SALES (Travis, 1 Oct 2026:
+                "i dont want them paying on the website"). While it is false
+                /api/checkout refuses both family plans before it touches
+                Stripe (410 on POST, 303 to "/" on GET), and a family buys
+                Premium only in the iPhone and iPad app, from Apple. So the
+                Terms say that first, name no Apple price (App Store Connect
+                owns it), and then do what the free branch above does: nobody's
+                Stripe subscription was cancelled by this, so the plan terms
+                stay, as the terms of the subscriptions already bought here and
+                not as an offer. Both inserts sit inside this one arm, so the
+                selling state is this arm with nothing added. Never write that
+                the plans stopped being sold (chartertest bans the phrase):
+                they are still sold, by Apple. */}
+            {!WEB_SALES && (
+              <>
+                <strong>
+                  New Sona Premium subscriptions are sold in the Sona app on
+                  iPhone and iPad, by Apple, at the price and free-trial length
+                  shown in the App Store.
+                </strong>{" "}
+                We are not selling new subscriptions on speaksona.com.
+                <br />
+                <br />
+              </>
+            )}
             <strong>Sona has a free version and Premium.</strong> The free version
             — daily practice and free games, plus a free picture book — costs
             nothing and needs no card. Premium adds every game and every book.
             <br />
             <br />
+            {!WEB_SALES && (
+              <>
+                <strong>
+                  A subscription already bought on speaksona.com keeps working.
+                </strong>{" "}
+                It stays active and keeps renewing at the price it was bought at
+                until you cancel it — see Canceling &amp; refunds below for how.
+                The terms that follow govern those subscriptions. Their prices
+                and free days are the ones speaksona.com sold them at, not the
+                App Store&apos;s.
+                <br />
+                <br />
+              </>
+            )}
             <PlanTerms />
             <br />
             <br />
@@ -171,11 +212,26 @@ export default function TermsPage() {
             billing portal for the clinician's plans (app/api/slp/plan/portal). */}
         <br />
         <br />
-        {!FREE_MODE && (
+        {!FREE_MODE && WEB_SALES && (
           <>
             A yearly family plan canceled during its 3 free days is never
             charged. The monthly plan has no free days: it is charged when you
             buy it and at the start of each month after that.{" "}
+          </>
+        )}
+        {/* The two sentences above are the website's checkout: its free days
+            and its charge-at-purchase. While the website is not selling they
+            are still true of the plans already bought here, and only of
+            those: how long a free trial bought in the app runs is Apple's to
+            say, and this repo never types it. */}
+        {!FREE_MODE && !WEB_SALES && (
+          <>
+            A yearly plan bought on speaksona.com and canceled during its 3
+            free days is never charged. A monthly plan bought there has no free
+            days: it was charged when it was bought and is charged at the start
+            of each month after that. For a subscription bought in the app, the
+            free-trial length is the one the App Store showed at the time of
+            purchase.{" "}
           </>
         )}
         Canceling stops the next renewal and leaves your access — or, for a
@@ -248,7 +304,11 @@ export default function TermsPage() {
 /**
  * The subscription terms themselves. Rendered in BOTH states: while Sona is
  * priced they are the terms of sale, and while it is free they still govern
- * everyone holding a plan bought before the flip, until they cancel.
+ * everyone holding a plan bought before the flip, until they cancel. A third
+ * case since 1 Oct 2026: priced, but not sold on the website (WEB_SALES false
+ * in lib/pricing.ts). They render then too, under a sentence saying they are
+ * the terms of subscriptions already bought on speaksona.com; every figure
+ * below is what those were sold at, never Apple's.
  *
  * TWO PLANS again as of 1 Oct 2026 (Travis: "add to the paywall a $10 a month
  * option ... that does not have a free trial"). Monthly was retired on 18 Sep
@@ -306,7 +366,7 @@ function PlanTerms() {
       least 24 hours before the current period ends. A monthly subscription
       bought before 1 October 2026 is unaffected: it renews at $9.99 each
       month under these same terms until you cancel it.{" "}
-      {!FREE_MODE && (
+      {!FREE_MODE && WEB_SALES && (
         <>
           After checkout, your confirmation page shows what you were charged:
           for the yearly plan, the exact date and amount of your first charge;
@@ -317,7 +377,9 @@ function PlanTerms() {
           reads trial_end and the amount back off the real Stripe subscription.
           We deliberately do NOT promise a reminder email: nothing in this repo
           sends one, and a promise no code keeps is the kind that gets found.
-          It is dropped while free because there is no checkout to land on. */}
+          It is dropped while free because there is no checkout to land on, and
+          while the website is not selling (WEB_SALES false) for the same
+          reason: /api/checkout refuses, so nobody reaches that page anew. */}
       <br />
       <br />
       Subscriptions started inside the iOS app are sold and billed by Apple, at

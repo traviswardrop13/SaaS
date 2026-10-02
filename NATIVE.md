@@ -271,7 +271,36 @@ npx cap open android   # Android Studio
 ```
 Same config; Google Play is $25 once and reviews faster.
 
+## The app is the only shop for families (1 Oct 2026)
+
+Travis: "i dont want them paying on the website". `WEB_SALES = false`
+(`lib/pricing.ts`, `public/sona.js`) switches the family web checkout off:
+the website refuses to start a purchase, and a browser family is told Premium
+is in the iPhone and iPad app. Nothing in the app reads that switch. What it
+means for this build:
+
+1. **Every purchase is Apple's**, so the two checks that used to matter only
+   for iPhone families now decide whether anyone can buy at all:
+   - **App Store Connect:** the product is approved and on sale, at the price
+     Travis wants. On 1 Oct 2026 the App Store listing showed "Sona Yearly" at
+     **$79.99**, while its description said $59.99 a year.
+   - **RevenueCat:** the product is attached to the `full` entitlement. On
+     1 Oct 2026 `com.speaksona.app.annual` was attached to **no** entitlement
+     (only `com.speaksona.app.lifetime` unlocked `full`), so a purchase would
+     have been taken by Apple and left the app locked. Anyone can check this
+     without the dashboard: `GET https://api.revenuecat.com/v1/product_entitlement_mapping`
+     with the app's public key (`IAP_KEY` in `sona.js`) as the bearer token.
+2. **A purchase in the app unlocks the app, not the website.** The browser
+   only ever learns of a purchase from Stripe.
+3. **Settings › Account's "See Premium" opens the plan screen**
+   (`/subscribe.html`, the Apple card). It used to open the web `/subscribe`
+   page, which sent the app back to Home.
+
 ## The charter price on iOS
+
+(With web sales off, see above, nobody new can take a charter spot: the
+charter was a web price. What follows is how the tiers worked while the
+website sold, and still does if the switch goes back.)
 
 The web sells the yearly plan at two tiers — $59.99 for the first 50 families,
 $99.99 after — and `/api/checkout` decides which at the moment of purchase

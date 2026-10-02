@@ -50,6 +50,7 @@ const SUITES = [
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
+  "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
   "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
   "simpleplaytest.mjs", // Bubble Pop and Peekaboo: deliberate play, honest voice feedback, safe interruption

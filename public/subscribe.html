@@ -420,6 +420,27 @@
       <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
     </div>
 
+    <!-- WHERE THE WEB CARD SAT, WHEN THE WEBSITE DOES NOT SELL (Travis, 1 Oct
+         2026: "i dont want them paying on the website"). A family buys Premium
+         only in the iPhone and iPad app, through Apple; a browser on the free
+         version reads this instead of the card above, which stays in the file,
+         untouched, for the day Sona.webSales() says yes again. It carries NO
+         figure, no free-days promise and no spots-left count: the price in the
+         app is App Store Connect's, and a number typed here would be a claim
+         about one this repo does not own. And it says "it opens there": nothing
+         links an Apple purchase to this browser, so a parent who buys in the
+         app and comes back here still sees the free version. Never shown to a
+         family with Premium, in the app itself, or while Sona is free. -->
+    <div class="card" id="appCard" style="display:none;">
+      <h2 id="appTitle">Sona Premium is in the iPhone and iPad app</h2>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Premium opens every game and every book in the Sona app. You buy it there, through the App Store, and it opens there. Daily practice and the free games stay free here.</p>
+      <a class="btn" id="appStoreGo" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener" style="margin-top:14px;text-decoration:none;">Get Sona on the App Store</a>
+      <!-- A plan off sale is not a cancelled subscription: whoever already
+           pays through the website keeps Premium, and Settings › Restore is
+           still how a new browser learns of it. -->
+      <p class="muted" id="appPaid" style="margin-top:12px;font-size:12.5px;font-weight:700;line-height:1.5;">Already paid on speaksona.com? Your plan keeps working. <a href="/settings.html" style="color:var(--blue-d);font-weight:800;">Open Settings and tap Restore</a>.</p>
+    </div>
+
     <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
       <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — keep the free version</a>
       <span class="muted" id="declineNote" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
@@ -546,6 +567,11 @@
     // stay in the DOM (and under test) but neither is shown — one flag, so a
     // clinician handing Sona to a family never hits a wall.
     var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
+    // WHERE A FAMILY CAN BUY (Travis, 1 Oct 2026: "i dont want them paying on
+    // the website"). Read once, failing closed: a sona.js that cannot answer
+    // means the web card stays hidden. Only the BROWSER rails below read it;
+    // the Apple card never does.
+    var WEB_SELLS=false; try{ WEB_SELLS=!!(Sona.webSales&&Sona.webSales()); }catch(e){}
 
     // Which door the grown-up came through (30 Sep 2026): the end of a first
     // practice run (?first=1), a tap on a locked game (?from=<game>), a locked
@@ -890,6 +916,12 @@
       // for them to decline
       var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.premium && Sona.premium()); } catch (e) {}
       if (!asked) return;
+      // Nor is a browser that does not sell: the card there points at the App
+      // Store, the header already says "Back to play", and "offer dismissed"
+      // for an offer nobody was made would be a false line in the funnel. The
+      // iPhone app never reads the web switch.
+      var inApp = false; try { inApp = !!(Sona.isNativeApp && Sona.isNativeApp()); } catch (e) {}
+      if (!inApp && !WEB_SELLS) return;
       if (!OFFER_FIRST) { var dn = document.getElementById("declineNote"); if (dn) dn.textContent = "Your free games are still ready to play."; }
       row.style.display = "block";
       a.addEventListener("click", function () {
@@ -911,9 +943,27 @@
         if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
         if (hasPremium && !subbed) premiumLine();
         if (!hasPremium) {
-          document.getElementById("pickCard").style.display = "block";
-          var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
-          var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          if (WEB_SELLS) {
+            document.getElementById("pickCard").style.display = "block";
+            var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
+            var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          } else {
+            // THE WEBSITE DOES NOT SELL (see #appCard). The web card stays
+            // hidden, and everything below that keys on it switches itself
+            // off: no price check, no "paywall viewed", no planShown() (a card
+            // that points at the App Store is not a paywall impression, and
+            // must not spend the one ask), no offer view. What this branch
+            // must do by hand is the header line: its markup default says
+            // "you're a founding family", which is false for this family, and
+            // paintWeb only rewrites it while the web card is showing.
+            document.getElementById("appCard").style.display = "block";
+            // (the gap is set here because the two cards are not neighbours in
+            // the markup, the decline row sits between, so the stylesheet's
+            // card-after-card spacing never reaches this one)
+            var ft2 = document.getElementById("freeTierCard"); if (ft2) { ft2.style.display = "block"; ft2.style.marginTop = "16px"; }
+            var fc2 = document.getElementById("foundingCard"); if (fc2) fc2.style.display = "none";
+            document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium is bought in the iPhone and iPad app.";
+          }
         }
       } catch (e) {}
 
