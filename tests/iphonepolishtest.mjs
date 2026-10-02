@@ -109,5 +109,39 @@ try{
   ok('Bubble Pop: …then "Go!", as its own line from the clip this phone already saved, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts.length===bubblesFrom+1&&ttsTexts[bubblesFrom]!=='Go!',{texts:ttsTexts.slice(bubblesFrom),media:await pg.evaluate(()=>h.media.length)});
   ok('books and word games: no runtime errors',errs.length===0,errs);await ctx2.close();
  }
+ // 1 Oct 2026 ("start with isolation then ree rah roh then rot"): for a child
+ // on R the card between waves asks one syllable. Nothing past the bare sound
+ // is recorded, so Echo says it himself: ONE line, as media like every voice
+ // line in the app, with no recording after it, and the mic waits for it. A
+ // line that will not load, or that the phone refuses to start, puts the card
+ // on the bare sound and Rachel's recording at once: never a syllable on
+ // screen that nobody said.
+ {
+  const ctx3=await browser.newContext();let down=false;
+  await ctx3.route('**/api/tts',route=>down?route.fulfill({status:503,body:'{}'}):route.fulfill({body:Buffer.alloc(4800),contentType:'application/octet-stream'}));
+  await ctx3.addInitScript(()=>{
+   localStorage.setItem('sona.profile.v1',JSON.stringify({onboarded:true,childAge:'7',focusSounds:['R'],voiceOn:true,soundOn:false,volume:.6,earlyAdopter:true}));sessionStorage.setItem('sona.play.token','arcade-slice.html');
+   window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>"ios",Plugins:{}};
+   window.h={media:[],mic:0,refuse:sessionStorage.getItem('test.refuse')==='1'};
+   window.Audio=function(src){const a={src,play(){h.media.push(a);return h.refuse&&/^blob:/.test(src)?Promise.reject(new Error('NotAllowedError')):Promise.resolve();},pause(){a.paused=true;},removeAttribute(){},load(){}};return a;};
+   navigator.mediaDevices.getUserMedia=()=>{h.mic++;return new Promise(()=>{});};
+  });
+  const pg=await ctx3.newPage(),errs=[],lines=[];pg.on('pageerror',e=>errs.push(e.message));pg.on('request',r=>{if(r.url().endsWith('/api/tts'))lines.push(JSON.parse(r.postData()).text);});
+  const card=async()=>{await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===1,{},{timeout:8000}).catch(()=>{});};
+  const title=()=>pg.evaluate(()=>document.getElementById('revTitle').textContent);
+  await pg.goto(base+'/arcade-slice.html?from=charge');await card();
+  ok('a syllable card says its ask in ONE line, as native media, before any microphone',lines.length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(lines[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
+  ok('…and the card shows that same syllable',(await title())==='Say “'+(lines[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());
+  await pg.evaluate(()=>h.media[0].onended());await pg.waitForTimeout(300);
+  ok('no recording follows a syllable, and the microphone waits for the line\'s tail',await pg.evaluate(()=>h.media.length===1&&h.mic===0));
+  await pg.waitForFunction(()=>h.mic===1);
+  ok('the microphone starts after the syllable line',lines.length===1&&await pg.evaluate(()=>h.mic===1&&h.media.length===1));
+  down=true;await pg.goto(base+'/arcade-slice.html?from=charge');await card();
+  ok('a syllable line that will not load: the card asks the bare sound and plays Rachel\'s recording at once, with no second line',(await title())==='Say “rrrr” for wave 2!'&&lines.length===2&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  down=false;await pg.evaluate(()=>sessionStorage.setItem('test.refuse','1'));await pg.goto(base+'/arcade-slice.html?from=charge');
+  await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===2,{},{timeout:8000}).catch(()=>{});
+  ok('a syllable line the phone refuses to start: the same, the bare sound and its recording',(await title())==='Say “rrrr” for wave 2!'&&lines.length===3&&await pg.evaluate(()=>h.media.length===2&&h.media[0].src.startsWith('blob:')&&h.media[1].src==='/coach/say-echo/R-sound.wav'&&h.mic===0),{title:await title(),lines});
+  ok('syllable card: no runtime errors',errs.length===0,errs);await ctx3.close();
+ }
 }finally{await browser.close();await new Promise(r=>server.close(r));}
 process.exitCode=failed?1:0;

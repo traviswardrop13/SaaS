@@ -115,6 +115,13 @@
   // ctx() is the page's own Web Audio context (the website's voice);
   // listen(spoke) opens the mic once Echo is done, VOICE_TAIL_MS after his
   // last word if he spoke.
+  // ask(t), optional: the page's own ask, for a card that asks more than the
+  // bare sound (Fruit Slice's syllable and word cards, 1 Oct 2026). It is
+  // handed live(), line(text) (one of Echo's lines, cached, as the ask above
+  // plays it), bytes(buf) (a line the page already holds, resolving true only
+  // if it played to its end, with no browser voice standing in) and take()
+  // (Rachel's take), and returns a promise. Echo's "Go!" and the mic follow
+  // it, as they follow the usual ask.
   function voice(page) {
     var gen = 0, speaking = false, halts = [];
     function live(g) { return g === gen && !document.hidden && page.up(); }
@@ -219,6 +226,19 @@
         });
       });
     }
+    // a line the page already holds (its own ask): true only if it played to
+    // its end. No browser voice stands in: the page shows the bare sound
+    // instead, which IS recorded, so a child never sees an ask nobody said.
+    function sayBytes(b, g, st) {
+      if (!b || !live(g) || st.stuck) return Promise.resolve(false);
+      if (!asMedia()) return playBuffer(pcmBuffer(b), g).then(function (how) { return how === "ended"; });
+      var t0 = Date.now(), m = global.Sona.mediaPCM(b, { volume: volume() }), off = onHalt(function () { m.stop(); });
+      return m.done.then(function (how) {
+        off();
+        if (how === "failed" && live(g) && Date.now() - t0 > FAST_FAIL_MS) st.stuck = true;
+        return how === "ended";
+      });
+    }
     // Rachel's take, only while the shared switch says so (sona.js
     // HUMAN_CLIPS), as practice reads it
     function sayTake(g, st) {
@@ -293,8 +313,17 @@
           var st = { deadline: Date.now() + LINE_WAIT_MS, stuck: false };
           // a line that fails in any way is skipped: the card never waits on it
           function skip() {}
-          sayLine(ASK, g, st).then(null, skip)
-            .then(function () { return sayTake(g, st); }).then(null, skip)
+          var asked = page.ask
+            ? Promise.resolve().then(function () {
+                return page.ask({
+                  live: function () { return live(g); },
+                  line: function (text) { return sayLine(text, g, st).then(null, skip); },
+                  bytes: function (b) { return sayBytes(b, g, st).then(null, function () { return false; }); },
+                  take: function () { return sayTake(g, st).then(null, skip); }
+                });
+              })
+            : sayLine(ASK, g, st).then(null, skip).then(function () { return sayTake(g, st); });
+          asked.then(null, skip)
             .then(function () { return sayLine(GO, g, st); }).then(null, skip)
             .then(function () {
               if (g !== gen) return;

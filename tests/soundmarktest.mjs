@@ -121,6 +121,32 @@ const isoBad = iso.filter(([t, s]) => S.soundMark(t, s) !== '<b class="snd">' + 
 ok("an isolation target (rrrr, sh sh, kuh) is wrapped whole", isoBad.length === 0, isoBad);
 ok("a syllable marks its onset (rah, shoo)", markOf(S.soundMark("rah", "R"))[0] === "r" && markOf(S.soundMark("shoo", "SH"))[0] === "sh");
 
+// ── what a game's say-it card asks (Travis, 1 Oct 2026: the sound, then one
+// syllable, then a short word): Sona.gameAsk hands the card its HTML, so the
+// same rule holds there. Every sound is switched on here (only R ships on),
+// so a sound added later is already held to it. ──
+{
+  vm.runInContext(readFileSync(ROOT + "/gamecontent.js", "utf8"), ctx, { filename: "gamecontent.js" });
+  const SC = ctx.SonaContent, shipped = [...SC.GAME_SYL_ON];
+  S.ALL_SOUNDS.forEach((x) => { if (!SC.GAME_SYL_ON.includes(x)) SC.GAME_SYL_ON.push(x); });
+  S.saveProfile({ gameLevel: "word" });
+  const bad = []; let n = 0;
+  for (const snd of S.ALL_SOUNDS) {
+    const bare = S.gameAsk(snd, 0);
+    n++; if (bare.html !== '<b class="snd">' + bare.text + "</b>" || bare.text !== S.soundSay(snd)) bad.push(snd + " bare: " + bare.html);
+    const asks = SC.gameSyllables(snd).map((x) => ({ text: x.t, html: S.soundMark(x.t, snd) }));
+    for (const c of [1, 2]) asks.push(S.gameAsk(snd, c));
+    for (const a of asks) {
+      n++; const mk = marks(a.html), [m, at] = markOf(a.html);
+      if (unesc(a.html) !== a.text || mk.length !== 1 || at !== 0 || m === a.text || !SPELL[snd].includes(String(m).toLowerCase())) bad.push(snd + " " + a.text + ": " + a.html);
+    }
+  }
+  ok("every game ask, all 19 sounds: the bare sound is orange whole; a syllable or word marks only the sound's letters, once (" + n + " asks)", bad.length === 0, bad);
+  const r = S.gameAsk("R", 2);
+  ok("R's short word marks only its r", r.text === "rot" && r.html === '<b class="snd">r</b>ot', r);
+  SC.GAME_SYL_ON.length = 0; shipped.forEach((x) => SC.GAME_SYL_ON.push(x)); S.saveProfile({ gameLevel: "" });
+}
+
 // ── sentences: only the practice words ──
 const sent = S.soundMark("I see a rabbit.", "R", "i");
 ok("a sentence marks only its practice word", marks(sent).join() === "r" && unesc(sent) === "I see a rabbit." && /a <b class="snd">r<\/b>abbit\./.test(sent), sent);

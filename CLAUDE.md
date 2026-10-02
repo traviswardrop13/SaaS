@@ -811,7 +811,7 @@ Each puts its sound at the start of a word, before a vowel, on every page, and
 nowhere else in the book (not mid-word, not at the end, not in a blend).
 Spelling can't check that, so `readtest` checks every line against
 `tests/booklex.json` (pronouncing-dictionary entries); a new word needs its
-entry there. The reader tints only the start of each book's listed `words`.
+entry there (so does a six-page book's key word). The reader tints only the start of each book's listed `words`.
 Every page is a picture in the crafted style: **all 19 fuller books were
 redrawn on 1 Oct 2026** (Travis: "every design done by claude we will be done
 with") as `cover.webp` + `p01..p12.webp` in `public/assets/books/<slug>/`.
@@ -868,6 +868,62 @@ the website and the Premium page say "new ones on the way", never "every
 week", "a book for every sound" or a weekday. `readtest` pins that nothing
 waits; `landingtest` the website's count.
 
+**The other sounds' books wait behind "More books"** (Travis, 1 Oct 2026: "it
+displays the ones that are selected for the target letter and sound ... and
+the other ones ... they're still there, but like closed up ... there's like a
+button you can press to like drop down and then it shows the books for the
+other letters ... a kid, like they might be like wanting to just do the
+Halloween one"). They are closed, not gone, so a child meets their own first
+(Travis, the same day: "less easy to find or less in your face ... the kids
+just seeing books based on their letter/s"). The top shelf is chosen as
+before: the child's own sounds' books, plus the limited-time book(s)
+`Sona.seasonPick` gives them (in October the Halloween book in their own
+sound, or Boo the Bat when their sounds have none; see "Every book that is
+made is live"), and the free book first when their own have nothing to read.
+**With more than one sound, the one practice is on now leads** (main's #184,
+1 Oct 2026): a child on R and S whose practice is on S today
+(`Sona.rotSound()`) sees the S books first, then the R ones. Only the order
+moves, inside "readable, then Premium", so without Premium the free book
+still leads; a homework sound that is not one of the child's own brings no
+books up. Home's What's new row
+follows the same rule: books in the child's own sounds only, that sound's
+first (`HOME_BOOKS` in sona.js names each book's sound; play mode and a child
+with no sounds yet see them all). Under the shelf sits one cream pill, "More
+books (N)", N being how many books are behind it for this child, closed on every
+load with nothing remembered; a tap opens "Books for other sounds", every
+in-season book the top shelf left off, and a second tap closes it. **The other
+sounds' Halloween books are behind it too**, so the Halloween one a child
+"might be wanting to just do" is always one tap away, and the two shelves
+together are the whole in-season list, each book once: 48 books in October
+(42 and the six Halloween ones), so a child on R has 9 on top and 39 behind,
+a child on K 3 on top (their two and Boo) and 45 behind; 42 the rest of the
+year (8 and 34 for R). Play mode, or a child with no sounds picked, already
+has the whole shelf, so the pill is not there. Behind it: readable first, then
+Premium (nothing is "coming" since every book that is made is live), each
+sound's books together in the order `STORIES` names the sounds. Both shelves
+are built by one function (`addBook` in `library.html`), so a book there
+opens, locks and asks for its word exactly as it would on top; never a second
+copy of the button. **And never a second More books:** two sessions each built
+one on 1 Oct 2026 (this pill, and a `<details>` drop-down under the same
+shelf), and with both on the page every other book was there twice. The pill
+is the one that stayed; `readtest` fails if a second control comes back.
+The second shelf's buttons are made on the first open, because a cover on the
+page is downloaded whether or not it shows. Menus stay silent: the page's tap
+chime, no voice. **A double tap opens it once, and opens no book:** opening
+slides the pill to the top of the screen and closing lets the page spring
+back, so a second quick tap used to land on whatever had moved under the
+finger: a book the child never picked or, without Premium, "Ask a grown-up to
+help open …" for one, a push toward the plan screen nobody asked for. So for
+700 ms after either tap nothing on the page takes a tap, the pill included
+(`.wrap.settling`, lifted by a timer; scrolling and the keyboard still work).
+The pill's colours are action.css's cream pill and nothing else: the page's
+own rules for `#moreBtn` set its size and place only, and `readtest` fails on
+a colour, border or shadow there. **What this changes for a child is Rachel's
+to know:** a child on R can now open an S book, and it asks them to say that
+book's words if they are old enough for that sound (`Sona.soundNorm` of the
+BOOK's sound, not the child's). Still play, never practice data. `readtest`
+pins both shelves; `booktest` the word moment from the second one.
+
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
 holding its six scenes, three across and two down, in reading order, plus a
@@ -881,13 +937,37 @@ the screen's edges, the cream card over its foot. The title page is scene 1
 way a page shows its wash and fills in; if it never comes, the old emoji
 sticker, never a blank page. The art was drawn for those exact 78 sentences,
 so `readtest` pins them (change a sentence and redraw its scene) and checks,
-by comparing pixels, that each page shows its own scene. They have no `keys`,
-so no say-the-word moment: they put the sound anywhere in a word. Codex's own
+by comparing pixels, that each page shows its own scene. Codex's own
 say-a-word-to-turn-the-page prototype was not brought over; the books
 branch's version below was, and it is ON for the twelve-page books (Travis,
 29 Sep 2026: "On now", after being told it changes what a child is asked to
-say). Rachel's review is still owed: the words, Echo's lines and what counts
-as a try are listed in that PR's body.
+say) **and, since 1 Oct 2026, for these thirteen too** (Travis: "It's doing
+it on some of the books. But we want to make that something that is happening
+on every book"). Each carries six `keys`, one a page, and no `words`. They
+put the sound anywhere in a word and their sentences can't change, but a key
+is the one word the child is asked to say, so the keys keep the twelve-page
+rule: a whole word on its own page, lower-case, that starts with the book's
+sound before a vowel by its `tests/booklex.json` entry. Where a page had such
+a word it is the key ("she", not "milkshake"; "ruby", not "rooster"). Two
+words can't, and `readtest` lists them by name so the next one is a decision:
+**"bath"** on the TH book's fifth page, where no word starts with that sound
+(the one key in the app that isn't start-of-word, while Settings tells parents
+"Sona practices each sound at the beginning of a word"; true of practice, and
+a book word is play), and **"rory"**, an R on both sides of "or", on a page
+with nothing easier. A key the reader can't find fails silently (Echo asks,
+nothing glows), so `readtest` runs every key of every book through the
+reader's own highlighter. Nothing about the moment changed for them, the age
+rule least of all: a child of 6 is not asked on the five R books, and a child
+of 4 only on the K, G and F ones. **On a six-page line only the key word has
+orange letters**, the same ones Echo's bubble shows (`tintKey`, through
+`Sona.soundMark`): those lines used to colour every letter equal to the
+sound's first letter, which on 21 of the 78 words put the orange on the wrong
+letters ("[s]heep", "[c]hi[c]k", "ba[t]h", "ca[k]e", a plain "cow") beside a
+bubble marking the right ones. `readtest` holds the lit word and the bubble to
+the same letters in every book. **Rachel's review is still owed**: the
+twelve-page words, Echo's lines and what counts as a try are listed in that
+PR's body, and these 78 words, the two named ones and the line's colouring in
+this one's.
 
 **The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
 concept boards, in `design/crafted-world/references/`). Painted scenes and game
@@ -909,9 +989,12 @@ stretched to the edges. `#bkStage .bkart.scene img` stays the only picture
 what is still missing; its box must never animate, because sona.css makes
 transitions near-instant under Reduce Motion and a box mid-transition reports
 where it WAS (that once collapsed the picture to nothing).
-Each fuller book has `keys`, one word per page (the brief's list; readtest
-holds every key to the book's sound rule). After Echo reads a page the key
-word glows, Echo asks "Can you say... <word>." and the teal mic listens:
+Every book has `keys`, one word per page (Travis, 1 Oct 2026: "we want to
+make that something that is happening on every book"). A twelve-page book's
+are the brief's list, and readtest holds each to that book's rule: the sound
+starts the word, before a vowel. A six-page book's keep the same rule but for
+two words listed by name (see "The six-page books are painted"). After Echo
+reads a page the key word glows, Echo asks "Can you say... <word>." and the teal mic listens:
 - **The check is Say & Play's**, copied into `public/saycheck.js`
   (`window.SayCheck`) because `sayplaytest` pins `sayplay.js`'s source as it
   stands. `tests/booktest.mjs` fails if a timing, the loudness bar or the
@@ -1170,8 +1253,9 @@ solid one at a time, and this is the first:
   counts three) or after 45 seconds of play, whatever the count.
 - **A missed fruit just falls.** Nothing stops and nothing is lost; after two
   misses in a row the fruit come one at a time, bigger and slower.
-- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!"),
-  never after a miss. Its listening and quiet rules are the ones every arcade
+- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!";
+  for a child on R it may ask a syllable or a short word, see "Games ask for
+  more than the sound"), never after a miss. Its listening and quiet rules are the ones every arcade
   card shares (`micquietgamestest`); `crash()` is kept as the card's old name
   because those suites open it through it.
 - **The fruit are thrown from the stand** at the bottom of the screen. The first
@@ -1254,7 +1338,11 @@ the page loads and kept in the phone's voice cache; a line still on its way
 gets 2.5 s, a media element that never starts 4 s, her take 3 s, then the card
 goes on without it; on the website the lines play through the page's own Web
 Audio (a browser refuses an `<audio>` started between rounds), in the app as
-media; a mic the phone has refused gets no ask at all. "Go!" also follows
+media; a mic the phone has refused gets no ask at all. Fruit Slice's cards
+that ask a syllable or a word (see "Games ask for more than the sound") say
+Echo's one line for it in place of the first two, through the helper's
+`ask` hook, then "Go!"; its step-back says "I have an idea. Let's try this
+one.", her take, then "Go!". "Go!" also follows
 every ask that hands a child the turn: the practice page's prompt, a tap on
 Echo, the turtle and its two retry lines ("… five times. Go!", joined on as
 one clip after the words, so the quiet before the mic still starts at its
@@ -1323,6 +1411,95 @@ games copy it one at a time:
   FRUIT FRENZY, SLOW-MO…) stay banned. `tests/superslicetest.mjs` plays it;
   Block Stacker, Sound Sprint and Flappy Glide keep the eight-second slow
   help (now with the same one-take sound) until each gets its own mode.
+
+**Games ask for more than the sound: Fruit Slice first, R first** (Travis, 1
+Oct 2026, by voice: "we need to add back the increase of complexity to the
+sounds in the games and start with isolation then ree rah roh then rot. and
+maybe have that be something to update in settings"). "Add back": in June the
+old speech games asked for the level a child had earned; they were deleted in
+August, and since then only the "Say it 5 times" page climbed. Every say-it
+card between rounds said the bare sound. What is built is the first slice:
+- **One reader, `Sona.gameAsk(sound, card)`** (and `gameTop`). Card 0 is the
+  bare sound; cards 1 and 2 are the two cards between rounds. The steps: the
+  sound alone ("rrrr"), then **one syllable a card** ("ree", "rah" or "roh",
+  moving on one each calendar day, so nothing is stored; never three in a
+  breath, which confused children in July), then **a short word** ("rot",
+  Travis's word: it is in no word bank and has no picture, so only a text
+  card may ask it).
+- **How far a child's cards go:** one step past what they have earned on the
+  practice page (so a new child gets a syllable on both cards, and the word
+  after two clean practice rounds), or what a grown-up picked in Settings.
+  Never below what the "Say it 5 times" page just asked: that page hands over
+  the step it ended on and its item (`sona.boost.level`, `sona.boost.ask`),
+  and a card repeats that syllable or word instead of adding a new target.
+- **Two kinds of child never get the harder cards** (`Sona.gameHold` says which, and
+  the Settings line reads it): **a child aged 2 to 4**, whatever was earned
+  or saved (Home shows a four-year-old Fruit Slice too, and Settings hides
+  the picker for that age, so the cards had to stay on the bare sound for
+  hiding it to be honest), and **any child while Sona's sound is off**
+  (only Echo's voice can model a syllable).
+- **Switched on one sound at a time.** `gamecontent.js` holds three lists
+  Rachel can read: `GAME_SYL_ON` (today `["R"]`), `GAME_SKIP` (never asked:
+  "pee"; "gee", which Echo's voice reads "jee"; the quiet th's "thee", which
+  it reads as the loud th) and `GAME_SHORT` (today `R: "rot"`). A sound goes
+  into `GAME_SYL_ON` only after someone has **listened** to its lines on a
+  phone. A sound that is not in it asks the bare sound exactly as before, so
+  nothing changed for any child who is not on R.
+- **An SLP's homework wins.** Its own words are the word card's words. When
+  its position is not the start of a word (end of word, "er, ar, or") there
+  is no syllable step, because "ree" is a start-of-word R, not her target:
+  the sound, then one of the homework's words if it names any.
+- **Fruit Slice's card is the only one that does it.** It shows the ask with
+  only the sound's letters orange and says it in ONE line of Echo's own voice
+  ("To keep playing, say... ree."), because nothing past the bare sound is
+  recorded. **A harder ask is never shown unless Echo says it.** His line
+  starts downloading as the wave ends (about 2.6 seconds before the card),
+  and the syllable is painted only once the line is in hand, just before it
+  plays. Until then the card shows the bare sound; if the line has not come
+  about three seconds after the card opens, or will not play, it stays on
+  the bare sound and plays Rachel's recording. (The first cut painted "ree"
+  and then waited up to seven seconds for a voice.) **A card nobody
+  answers** for about eight seconds closes its mic and steps back to the bare
+  sound ("I have an idea. Let's try this one.", then her recording), **and
+  the next card that round does not climb**: it asks that same syllable or
+  word again, never the next step. Echo's power button (Super Slice) still
+  asks the bare sound: Travis wanted it quick, and Apple's listener would
+  turn away a good "ree" it wrote down as "we".
+- **Honest limits.** A card hears only "a voice of the right kind". It cannot
+  tell "ree" from "rrrr" or "rot", so harder means what Echo asks, never what
+  is checked, and Echo never says "correct". Nothing said in a game moves the
+  earned level, and a heard card is exactly one game rep, never practice data.
+- **Settings has one picker** under Word position: "Between rounds in a game,
+  Echo asks for" (Sona decides · Just the sound · Sound, then syllables ·
+  Sound, syllables, word), saved per child as `profile.gameLevel`. It is a
+  ceiling for the cards and never writes the earned level. The choices are
+  short on purpose: a phone's closed picker cut the longer ones off ("Sona
+  decides (starts easy, gets h…") and two of them then read the same;
+  `kidtest` measures them at 320 px. The wording is Travis's to change. Its
+  grey line is painted from the same reader, for the sound a game will
+  really ask (the homework's sound first), so it shows only what will be
+  asked, and it names Fruit Slice because that is the only game that does
+  this yet. When something holds the cards to the bare sound the line says
+  what: Sona's sound is off, the sound is not switched on yet, or a speech
+  therapist's homework is for another part of the word. Hidden for a child
+  aged 2 to 4, whose cards keep the bare sound whatever is saved.
+- **Not built yet:** the other four round games (Piano Tiles, Block Stacker,
+  Sound Sprint, Flappy Glide: their cards are silent, so each page's mic must
+  first learn to wait for Echo's voice); the other 18 sounds; the picture
+  games, which keep whole words. Travis plays Fruit Slice on his phone and
+  hears "ree", "rah", "roh" and "rot" before any of that starts.
+- **Rachel's calls, built on defaults until she answers:** which syllables
+  and in what order; whether "rot" is the word (and the list for the other
+  sounds); the pace (syllables from day one, the word once earned, the
+  eight-second step back, and whether the card after a step back should
+  repeat the same ask, as built, or go lower); Echo's computer voice
+  modelling "ree" and "rot" rather than her own recordings; that a card asks
+  for "rot" but cannot check it; whether a grown-up may set the step by hand;
+  what the cards ask under end-of-word homework; and whether a child aged 2
+  to 4 should ever be asked a syllable (today: never).
+`tests/gameasktest.mjs` holds the reader to these rules; `slicetest`,
+`micquietgamestest` and `iphonepolishtest` play the card; `soundmap` pins the
+three lists and `kidtest` the picker.
 
 **The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows this
 week's reps, the parent corner and Progress say the same number, and
@@ -1580,6 +1757,15 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   (homework position first, then the family's setting); a position with no
   words for that sound falls back to start-of-word words. The games keep
   start-of-word words until Rachel says otherwise (`progtest`, `hwtest`).
+  **A family can pick only the start of a word for now** (Travis, 1 Oct 2026:
+  "have the options listed but to not let them select other positioning
+  because it's not built yet ... make it clear that it's just the initial
+  position"). Settings and the pilot page list all six positions; the ones not
+  in `FAMILY_POSITIONS` (sona.js, today just `"i"`) are greyed out and say
+  "coming soon", with one line under the list saying so. A position a family
+  saved before reads as the start of a word. A speech therapist's homework
+  still names its own position. Add an id to that list to open one
+  (`kidtest`).
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).

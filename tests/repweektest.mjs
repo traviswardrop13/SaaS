@@ -355,6 +355,53 @@ await scenario("sounds said in games are reps too", async () => {
   await context.close();
 });
 
+await scenario("a syllable or word card in a game is one rep too", async () => {
+  // GAMEASK1 (Travis, 1 Oct 2026: "start with isolation then ree rah roh then
+  // rot"): Fruit Slice's card between waves may now ask a syllable or a short
+  // word. The card cannot tell "ree" from "rrrr", so a heard one counts as
+  // what the bare sound always did: one rep in the game ledger, and nothing a
+  // pass rate, a clinician or the earned level ever sees.
+  const { context, page, errors } = await fresh({ at: THU });
+  await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
+  await context.addInitScript(() => {
+    window.__mic = 0;
+    window.Audio = function (src) { const a = { src, play() { setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() {}, removeAttribute() {}, load() {} }; return a; };
+    // slicetest's fake phone: a mic that hears silence (the card's own success path is called below, as there)
+    navigator.mediaDevices.getUserMedia = () => { window.__mic++; const t = { readyState: "live", stop() { this.readyState = "ended"; } }; return Promise.resolve({ getTracks: () => [t], getAudioTracks: () => [t] }); };
+    const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {} });
+    const node = () => ({ gain: param(), frequency: param(), Q: param(), type: "", buffer: null, connect() {}, disconnect() {}, start() {}, stop() {} });
+    function AC() { this.state = "running"; this.sampleRate = 48000; this.currentTime = 0; this.destination = {}; }
+    AC.prototype = { resume() { return Promise.resolve(); }, suspend() { return Promise.resolve(); }, close() { return Promise.resolve(); },
+      createGain: node, createOscillator: node, createBufferSource: node, createBiquadFilter: node,
+      createBuffer(c, n, sr) { return { length: n, sampleRate: sr, duration: n / sr, getChannelData: () => new Float32Array(n) }; },
+      createMediaStreamSource() { return { connect() {}, disconnect() {} }; },
+      createAnalyser() { return { fftSize: 2048, frequencyBinCount: 1024, connect() {}, disconnect() {}, getByteTimeDomainData(a) { a.fill(128); }, getByteFrequencyData(a) { a.fill(0); } }; } };
+    window.AudioContext = window.webkitAudioContext = AC;
+    sessionStorage.setItem("sona.play.token", "arcade-slice.html");
+  });
+  await seed(page, HISTORY);
+  await page.evaluate(() => { localStorage.setItem("sona.freeera5.v1", "done"); const p = JSON.parse(localStorage.getItem("sona.profile.v1")); Object.assign(p, { childAge: "7", volume: 0.8, voiceOn: true, gameLevel: "word" }); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+  await page.goto(origin + "/arcade-slice.html?from=charge");
+  await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
+  const snap = () => page.evaluate(() => ({ week: Sona.weekReps(0), practice: Sona.weekReps(0, null, true), outcomes: localStorage.getItem("sona.outcomes.v1"), attempts: localStorage.getItem("sona.attempts.v1"), stage: JSON.stringify(Sona.getProgress().stage), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}")["2026-10-15"] || {} }));
+  const before = await snap(), asked = [];
+  for (const n of [1, 2]) {
+    await page.evaluate(() => { waveGot = WAVES[wave].goal; });
+    // Echo has said the ask, and the card's mic is open
+    await page.waitForFunction((k) => document.getElementById("revOvl").classList.contains("show") && window.__mic === k && !!rv.st, n, { timeout: 12000 });
+    asked.push(await page.evaluate(() => ({ rung: ASK.rung, text: ASK.text })));
+    await page.evaluate(() => { closeReviveMic(); doRevive(); });
+    await page.waitForFunction((k) => phase === "wave" && wave === k, n);
+  }
+  const after = await snap();
+  ok("the two cards asked a syllable, then the short word", asked[0].rung === 1 && asked[1].rung === 2 && asked[1].text === "rot", asked);
+  ok("each heard card is exactly one rep on the week's count, in the game ledger", after.week === before.week + 2 && after.ledger.R === 2, { before, after });
+  ok("…and touches no practice record: not the tries, the pass-rate records, the attempts or the earned level",
+    after.practice === before.practice && after.outcomes === before.outcomes && after.attempts === before.attempts && after.stage === before.stage, { before, after });
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
 await scenario("Progress keeps practice apart from game sounds", async () => {
   // What Progress hands a clinician (the summary and its card) says free play
   // is not included, so its tries stay the practice page's; the game sounds
