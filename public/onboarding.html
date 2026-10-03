@@ -860,7 +860,15 @@
           // Straight into the first game (Travis, 27 Sep 2026): Feed Echo for
           // ages 3-4, Fruit Slice (its practice page first) from 5. A
           // clinician setting up their own phone still lands on Home.
+          // TRIAL FIRST (Travis, 3 Oct 2026: "lets add the paywall before they
+          // try anything in the app"): where Sona can sell and nothing opens
+          // the games yet, setup ends on the plan screen instead, and that
+          // screen opens the first game once the free days start. (A family
+          // who joined through their speech therapist's link keeps the free
+          // version, so it goes straight to the game: Sona.freeVersion.)
           var first="/today.html";try{if(draft.role!=="slp"&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
+          var wall=false;try{wall=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
+          if(wall){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){} first="/subscribe.html?setup=1";}
           location.href=first;
         };
         document.getElementById("skipEmail").onclick=function(){document.getElementById("achEmailInput").value="";nextBtn.onclick();};

@@ -120,6 +120,9 @@
         var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;})
           .concat((S.FREE_BOOKS||[]).map(function(title){return "the book "+title;}));
         el("premiumFreeNote").textContent=(freeNames.length>1?freeNames.slice(0,-1).join(", ")+" and "+freeNames[freeNames.length-1]:freeNames.join(""))+" stay free.";
+        // trial first (3 Oct 2026): a family without the free version is told
+        // nothing stays free, because nothing does
+        var freeVer=true;try{freeVer=!S.freeVersion||S.freeVersion();}catch(e){}
         el("premiumPreviewNotice").hidden=!preview;
         el("previewTrial").hidden=!preview||plan.state==="trial";
         el("previewExpire").hidden=!preview||plan.state!=="trial";
@@ -130,8 +133,8 @@
         el("premiumEyebrow").textContent=allOpen?"Ready to play":"Sona Premium";
         el("premiumTitle").textContent=allOpen?(preview?"Every game is unlocked.":"You’re all set."):game?"More to explore with "+game.name+".":"More ways to play.";
         el("premiumLead").textContent=allOpen?(preview?"Your trial preview is active. Try any game, or see what happens when the trial ends.":"Your family already has access to every game. Head back to the library and pick a favorite."):plan.state==="expired"?"The trial preview has ended. Your free games are still available, and all your practice stays with you.":"Unlock the full game library, with simple discoveries for little ones and more adventure for bigger kids.";
-        el("keepFree").textContent=allOpen?"Back to the library":"Keep playing free";
-        el("premiumFreeNote").hidden=allOpen;
+        el("keepFree").textContent=allOpen?"Back to the library":freeVer?"Keep playing free":"Not now";
+        el("premiumFreeNote").hidden=allOpen||!freeVer;
         el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
         if(!preview&&!S.isFree())paintOffer(allOpen);
         var art=S.gameSticker(key||"feed");S.paintSticker(el("premiumArt"),art[0],art[1]);
@@ -157,7 +160,7 @@
         }
         if(allOpen)return;   // a live trial: every game is already open
         el("premiumPrice").textContent="Yearly with 3 days free, or month by month";
-        el("premiumTerms").textContent="Daily practice and free games stay free either way.";
+        el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
         buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
       }

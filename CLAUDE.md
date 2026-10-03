@@ -121,7 +121,77 @@ Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
 disabled "Coming …" cards (see "Two Fridays") regardless of subscription,
-trial or earned access.
+trial or earned access. **Since 3 Oct 2026 the free version is not every
+family's:** where Sona can sell, a family set up from then on starts with the
+trial (see "TRIAL FIRST" right below).
+
+**TRIAL FIRST: THE PRICE BEFORE THE FIRST GAME, NOTHING FREE WHERE SONA CAN
+SELL** (Travis, 3 Oct 2026: "lets add the paywall before they try anything in
+the app. and then they unlock everything. so fruit slice and piano tiles and
+feed echo and bubble pop are all part of paid or needing to start a trial";
+then, with ReciMe's onboarding screenshots, "something like this. yeah home
+locked", and "using chatgpt art"). One rule in `sona.js`, `freeVersion()`:
+the free version (the free-tier games, `FREE_BOOKS`, and the practice that
+opens them) is open only to
+- **a phone that cannot buy:** an app build with no purchase plugin (the App
+  Store's 1.0.4) or a browser while the website does not sell
+  (`canSellHere()`). A wall nobody can pass is a broken app, not a paywall;
+- **a household already set up on this build's first load:** the one-shot
+  sweep `_keepFreeVersion()` stamps `sona.freever.v1` "kept" (set up: it was
+  told those games were free) or "post" (not set up yet: it starts with the
+  trial). It keeps the free version, never Premium; it reads no free era's
+  stamp; and it is on `NO_IMPORT`, so a backup never brings it;
+- **a family who joined through their speech therapist** (`slpVerified()`):
+  every clinician page promises those families the free version. A pasted
+  backup can carry `sona.slpok` and with it the free version (never Premium):
+  accepted, since that is what those pages promise.
+Premium from any source, a trial, or Sona being free open everything, as
+before. These three were defaults Travis did not pick; ask him before
+changing one. What follows from the rule:
+- **Setup's last tap** ("Let's play!") goes to `/subscribe.html?setup=1` when
+  `trialFirst()` says so (the grown-ups check is marked passed: a grown-up just
+  set Sona up), else to the first game as before; a clinician's own setup
+  still ends on Home. `?setup=1` rides the grown-ups check (`gateDest`).
+- **The plan screen opens on two screens first**, ReciMe's shape: "We offer 3
+  days free so every kid can practice with Echo." and "Nothing to pay until
+  October 6. Cancel anytime before then, in Settings → Subscriptions.", each
+  with Continue, then the price as the offer. **Only when the store says the
+  yearly plan starts with free days** (`freeDays()` reads the product's
+  introductory offer; the web's are this repo's 3), and the number is that
+  answer, the date the clock's. No answer within 2.5 s, or a plan that
+  charges today, and the price shows straight away: these screens exist to
+  say "free". **ReciMe's reminder screen is made true, not copied:** Sona
+  sends no reminder (there is no trial mailer), so the second screen names
+  the day and where to cancel. A real reminder (an email, or a phone
+  notification, which needs a new App Store build) is Travis's call. "Paywall
+  viewed" and the one-shot (`planShown`) count only once the price is on
+  screen. **The pictures are ChatGPT's crafted art:** until Travis's two drawn
+  for these screens land (`INTRO_ART` in `subscribe.html`, a path each), the
+  first shows games in Home's own art with Echo cheering, the second Echo
+  waving.
+- **"Not now" goes to Home with everything locked:** every game and book is
+  "Premium", the Books card says "Premium", and a tap asks a grown-up without
+  pointing at free games there are none of. The free days starting (or a
+  restore) on the hand-off opens the first game setup chose, not Home
+  (`nextAfterBuy()`).
+- **No surface tells such a family something stays free.** Home's "Free"
+  label and "1 free book", the plan screen's third check, its card lines, its
+  header line, "What stays free", the decline ("Not now", never "keep the free
+  version"), the Premium page's notes: each asks the rule. The website's cost
+  answer (`parents.html`) no longer promises free games ("Sona is free to
+  download …"), and the Terms say who keeps the free version. The old
+  `/families` page, the Next `/subscribe` page and `trial.html` still describe
+  the free version: true in a browser (which cannot sell), and nothing in the
+  app links to them.
+- **Known and left for Travis:** a family sent by a speech therapist who
+  opens the iPhone app (not the website) meets the trial too, unless they
+  bring their link across (Settings › Moving to a new phone?), though the
+  clinician pages promise them the free version; and the Apple card's own
+  "3 days free" tag and button are still typed, not read from the store (only
+  the two screens read it).
+`tests/trialfirsttest.mjs` plays the rule on every kind of phone, setup's last
+tap, both screens, "Not now", the first game after the free days start, a
+store that sells no free days or never answers, and the smallest phones.
 
 `premium()` recognizes subscriptions, founders, free-era families, founding
 pilots, and covered caseloads. Never a fixed count of free games: the plan
@@ -368,7 +438,9 @@ ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
 subscription** — anyone who bought during a paid window keeps being billed
 until it is stopped in those dashboards. That is an operations task.
 
-**The ask happens after the product proves itself.** Setup goes straight into
+**The ask happens after the product proves itself** (for a family who keeps
+the free version; since 3 Oct 2026 a family set up where Sona can sell meets
+the price at the end of setup instead: see "TRIAL FIRST"). Setup goes straight into
 the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
 and fruit slice for ages five and up"): Feed Echo for ages 3-4, Fruit Slice (its
 practice page first) from 5, a clinician's own setup still ends on Home.
@@ -565,7 +637,10 @@ the earlier ones and belongs to no earlier cohort.
 **Test seeds must set EVERY era stamp.** An onboarded seed missing the newest
 `sona.freeeraN.v1` looks exactly like that era's cohort, gets grandfathered,
 and silently disables the paywall inside that test. This has bitten once per
-era across `iaptest`, `progtest`, `loadtest` and `hwtest`.
+era across `iaptest`, `progtest`, `loadtest` and `hwtest`. The trial-first
+stamp works the other way round: an onboarded seed without `sona.freever.v1`
+is judged "kept" and has the free version, as every suite before it assumed;
+a test about trial first seeds "post".
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -575,7 +650,8 @@ reads the live state from source where a suite genuinely needs it.
 
 Free regardless of the switch: practice, the free games (Fruit Slice, Piano
 Tiles, Feed Echo and Bubble Pop) and the free book (Rory and the Rainbow), for every
-family; founding pilots (`ff-` codes) and founders; every device onboarded, or
+family that keeps the free version (since 3 Oct 2026 not every family: see
+"TRIAL FIRST"); founding pilots (`ff-` codes) and founders; every device onboarded, or
 that redeemed a clinician's link, before the Caseload Premium build; every
 device onboarded before the paywall build of 30 Sep 2026. **Not**
 an SLP-code pilot: "Yes, share progress" makes every consenting family a
