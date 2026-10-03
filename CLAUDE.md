@@ -1344,9 +1344,53 @@ is Rachel's call. Piano Tiles plays the same one take (it played the
 three-take re-voiced demo). Her whole lines stay re-voiced: practice plays
 one only when the voice service is down.
 
-**Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
+**Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). Since 3 Oct 2026 Echo asks for it by himself mid-song, and the song keeps going while he asks and listens (see "Echo asks, then listens"); a tap on Echo still asks at once. Its notes are silent from his first word until the mic closes. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence and timeout earn nothing. No ask in the Ode to Joy finale. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. It runs on the shared helper (`arcade-speech-help.js`) since that day; `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
-**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: Echo asks (by himself since 3 Oct 2026, see "Echo asks, then listens"; a tap still asks at once), the child hears the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene keeps going during speech; only its sounds hold. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
+
+**Echo asks, then listens: nobody taps for a sound power** (Travis, 3 Oct
+2026: "I don't want them to have to tap echo to then say the sound ... I want
+them to be able to just be playing the game and at any given point say the
+sound to slow the game ... have 11 Labs voice maybe say that like mid game").
+All five round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint,
+Flappy Glide), from one copy in `arcade-speech-help.js`:
+- **Echo asks by himself, mid-round:** after about 10 seconds of play, then
+  every 20 seconds of play (`SLOW_ASK`). The first ask in a visit is the
+  game's line ("Super Slice! Say", "To slow the keys, say"), then Rachel's one
+  take of the sound, then "Go!"; later asks are her take and "Go!". It is the
+  say-it card's voice (`SayIt.voice`, through its `ask` hook): media in the
+  app, Web Audio on the website, the mic only after "Go!" and its tail.
+- **The game keeps going.** Nothing holds, dims or waits, and the game's
+  banners still show; Echo's button breathes while he asks and listens. Only
+  the game's own sounds (its chimes, Piano Tiles' notes) stop, from his first
+  word until the mic has closed, so nothing plays over him or into the mic.
+- **He listens 8 seconds** (`SLOW_ASK.listen`). One heard sound earns the
+  power at once, exactly as before (Super Slice ten seconds, the others eight
+  at 55%) and is one rep. Nothing heard: the mic closes quietly and play goes
+  on. Two quiet asks in a row and the next waits 40 seconds
+  (`SLOW_ASK.quiet`), so a child who isn't playing along isn't asked every
+  20 seconds; a heard one goes back to 20.
+- **Play time only.** No ask during a say-it card, a break, a finale, while
+  the power is on, on a hidden page, or once the phone has refused the mic
+  (then not again that visit). A round that ends while he asks ends his turn
+  first, and that turn is not counted as a quiet one.
+- **A tap on Echo still asks at once**, the same way: a shortcut, never
+  needed. "Keep playing" is gone: there is nothing to cancel.
+- **What Travis chose, and its cost.** A mic left open the whole game would
+  make an iPhone play everything like a phone call (quieter, the side buttons
+  moving call volume), so he chose this over that. The cost is about eleven
+  quiet seconds (his ask and his listening) in every half minute or so of
+  play: no swish, no piano notes. The timings are the four numbers in
+  `SLOW_ASK`.
+- **Rachel's to rule on:** a child is now asked for the bare sound about
+  every 20 seconds inside these games, on top of the cards between rounds;
+  whether that is too often, and whether "Go!" belongs there. What counts is
+  unchanged ("a voice of the right kind", Apple's check where it can; "taco"
+  and "wow" still fail), and it is still play, never practice data.
+`arcadespeechhelptest` plays the ask in all five games, with
+`tilesspeechtest`, `superslicetest` and `micquietgamestest`; the five round
+suites, `sayitcardtest` and `micquietgamestest` hold it so each plays just its
+round (`micquietgamestest` then makes one ask due on purpose).
 
 **Feed Echo needs the word** (Travis, 1 Oct 2026: "all that it does is ask you to click. we need to get the kid to have to say it!"). "Let's play" starts the round (so the first ask is heard on an iPhone), and a grown-up says yes to the mic first, the Say & Play way; "Not now" goes home, because Echo needs to hear the word to eat. Each turn the pictures wait, locked, until a voice burst of the right broad sound family is heard ("Echo heard you!", never "correct"); then the asked picture glows and a tap feeds it. A tap before the word wobbles and says "Say it first!"; silence never unlocks anything: after 8 seconds the mic closes and a mic button waits, which says the word again and listens again. The mic now opens straight after Echo's ask (and, since 2 Oct 2026, his "Go!"): it used to wait for `navigator.permissions` to say "granted", which the iPhone app's web view does not reliably say, so on the phone it never listened; a permissions question that has not answered within a second now means "ask the grown-up" (Say & Play too), never a Let's play that does nothing. Still play, never practice data: one rep per heard word. `feedtest` and `micquietgamestest` play it.
 
@@ -1415,13 +1459,15 @@ mode or easy mode or beast mode when they say their target sounds ... one at
 a time", then "1 time to get it slow mode is fine ... or just to say it and
 hold"). Fruit Slice's help became a mode a child wants to earn, and the other
 games copy it one at a time:
-- **Tap Echo and say the sound once**, quick or held. The board holds and
-  dims (the mic may only open while nothing plays). The first turn Echo says
-  "Super Slice! Say" and then plays one take of Rachel's recorded sound
-  (`{SND}-sound.wav`, as the say-it card does); later turns play only the
-  sound. A heard try shows "Got it!" and ends the turn after the 550 ms
-  Apple's recognizer gets. Silence, "Keep playing" and (on the iPhone) a
-  clearly different word earn nothing. **"wow" for "rrrr" does not count**
+- **Echo asks mid-wave and the child says the sound once**, quick or held
+  (since 3 Oct 2026 nobody taps: see "Echo asks, then listens"; a tap on
+  him still asks at once). The fruit keep flying; the page's own sounds stop
+  while he asks and listens (the mic may only open while nothing plays). The
+  first ask in a visit Echo says "Super Slice! Say", then one take of
+  Rachel's recorded sound (`{SND}-sound.wav`, as the say-it card does), then
+  "Go!"; later asks play only the sound and "Go!". A heard try shows "Got
+  it!" and ends the turn after the 550 ms Apple's recognizer gets. Silence
+  and (on the iPhone) a clearly different word earn nothing. **"wow" for "rrrr" does not count**
   (Travis, 29 Sep 2026: "no wow should not count"): `hearVerdict` keeps
   failing it.
 - **Ten seconds of Super Slice:** the fruit slow to 55%, the stand throws

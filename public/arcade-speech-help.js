@@ -1,61 +1,92 @@
-/* Short, optional sound-powered help for the live arcade games. */
-    // A deliberate, short listening turn stays inside the active game. Holding
-    // the scene keeps game sounds out of the mic and preserves the child's progress.
+/* Echo's sound power in the five round games: Fruit Slice (Super Slice),
+   Piano Tiles (slow keys), Block Stacker, Sound Sprint and Flappy Glide (slow
+   help). Each page sets window.SLOW_HELP and keeps its own microphone
+   (openReviveMic, closeReviveMic, listenFor) and its own ear; this file holds
+   the turn, the ask and the reward, once.
+
+   ECHO ASKS, THEN LISTENS (Travis, 3 Oct 2026: "I don't want them to have to
+   tap echo to then say the sound ... I want them to be able to just be
+   playing the game and at any given point say the sound ... have 11 Labs
+   voice maybe say that like mid game"). He was told that on an iPhone a page
+   holding the mic plays everything like a phone call (quieter, and the
+   volume buttons change call volume), and chose "Echo asks, then listens"
+   over a mic that stays on the whole game. So:
+     - nobody taps: after about SLOW_ASK.first ms of play, then every
+       SLOW_ASK.every ms of play, Echo asks: the game's own line the first
+       time in a visit ("To slow the keys, say", "Super Slice! Say"), then
+       just Rachel's take of the sound, then "Go!" (the say-it card's voice,
+       /arcade-sayit.js: media in the app, Web Audio on the website);
+     - THE GAME KEEPS GOING while he asks and while he listens. Nothing freezes;
+       the game's own sounds pause (sfx and the piano's notes stand down while a
+       turn is on), so nothing plays over his voice or into the open mic;
+     - he listens for SLOW_ASK.listen ms; one heard try, quick or held, earns
+       the power at once, exactly as before (Super Slice ten seconds, the others
+       eight seconds at 55%), and is one rep on the week's count (Sona.gameRep),
+       never practice data;
+     - nothing heard: the mic closes quietly and the game goes on. Two asks in a
+       row with nothing heard and the next waits SLOW_ASK.quiet ms instead, so a
+       child who isn't playing along isn't asked every twenty seconds;
+     - a tap on Echo still asks at once, the same way: a shortcut, never needed.
+   Play time only: no ask during a say-it card, a break, a finale, the power
+   itself, a hidden page or a phone that has said no to the mic. A round that
+   ends while he is asking ends the turn first (the card never meets a live
+   turn). */
     var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid=false;
+    var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000};
+    var slowAskPlay=0, slowAskAt=SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;
     function slowFactor(){ return slowMs>0?0.55:1; }
-    // Optional, per page (SLOW_HELP): ms is the earned time (else eight
-    // seconds), onEarn() starts the page's own show, say/sayOnce replace Echo's
-    // instruction and speak it only on the first turn, earnSfx is the chime,
-    // and idle is the resting status. One heard try earns it, a quick sound or
-    // a long, held one (Travis, 29 Sep 2026: "1 time to get it slow mode is
-    // fine"), and every earned turn is one rep on the week's count
-    // (Sona.gameRep) — never practice data.
-    function slowIdle(){ return SLOW_HELP.idle||("Tap Echo to "+SLOW_HELP.action); }
+    function slowIdle(){ return SLOW_HELP.idle||("Say "+(SAYTXT||"rrrr")+" when Echo asks"); }
+    function slowLineText(){ return SLOW_HELP.say||("To "+SLOW_HELP.action+", say"); }
+    // The page's mic is wanted by the say-it card (reviveWait) or by a sound
+    // turn still listening. A turn never sets reviveWait: that is the card's,
+    // and a turn that ended under a card must not take it away.
+    function micWanted(){ return reviveWait||(!!slowTurn&&!slowTurn.finishing); }
     function paintSlowKeys(){
-      var visible=tok&&!window.__speechLeaving&&phase===SLOW_HELP.phase&&!window.__ended&&(!reviveWait||!!slowTurn)&&(!!slowTurn||!SLOW_HELP.eligible||SLOW_HELP.eligible());
+      var visible=tok&&!window.__speechLeaving&&!window.__pianoLeaving&&phase===SLOW_HELP.phase&&!window.__ended&&(!reviveWait||!!slowTurn)&&(!!slowTurn||!SLOW_HELP.eligible||SLOW_HELP.eligible());
       $("slowControl").hidden=!visible;
       document.body.classList.toggle("speech-help-active",!!slowTurn);
+      $("slowControl").classList.toggle("asking",!!slowTurn&&!slowTurn.finishing);
       $("slowKeys").disabled=!!slowTurn||slowMs>0;
-      $("slowCancel").hidden=!slowTurn;
       $("slowControl").classList.toggle("earned",slowMs>0);
       document.body.classList.toggle("speech-help-earned",slowMs>0&&!slowTurn&&phase===SLOW_HELP.phase);
       $("slowSound").textContent=SAYTXT||"rrrr";
       $("slowKeys").setAttribute("aria-label","Say "+(SAYTXT||"rrrr")+" to "+SLOW_HELP.action);
       $("slowMeter").style.width=(slowMs/slowTotal*100)+"%";
     }
-    function stopSlowVoice(t){
-      if(t.abort){t.abort.abort();t.abort=null;}
-      if(t.audioStop){var stop=t.audioStop;t.audioStop=null;stop();}
+    // Echo's voice for the ask: the say-it card's (/arcade-sayit.js), made the
+    // first time it is needed, when the page's own mic and context exist.
+    function slowVoiceGet(){
+      if(slowVoice||!window.SayIt) return slowVoice;
+      slowVoice=SayIt.voice({
+        up:function(){ return !!slowTurn&&!slowTurn.finishing&&!slowTurn.listening; },
+        wait:function(){ return rv.pending||rv.st?40:Math.max(typeof chimeEnd==="number"?chimeEnd:0,micClosedAt+SETTLE_MS)-performance.now(); },
+        note:function(t){
+          if(!slowTurn||slowTurn.finishing||slowTurn.listening) return;
+          $("slowStatus").textContent=t;
+          if(typeof echoPose==="function") echoPose($("slowKeys").querySelector("img"),"talk");
+        },
+        clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
+        ctx:function(){ if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); } return rv.ctx; },
+        // the game's own line once a visit, said to its end; after that the
+        // sound alone (Rachel's take), which a child has already heard asked for
+        ask:function(t){
+          var first=!slowSaid;
+          return (first?t.line(slowLineText()):Promise.resolve(false)).then(function(said){
+            if(said===true) slowSaid=true;
+            return t.take();
+          });
+        },
+        listen:slowListen
+      });
+      return slowVoice;
     }
-    function slowAudio(url,t){return new Promise(function(resolve){
-      if(slowTurn!==t||t.finishing||document.hidden)return resolve();
-      var a=new Audio(url),timer,done=false,p=S.getProfile();
-      a.volume=p.volume!=null?Math.max(0,Math.min(1,Number(p.volume)||0)):0.8;
-      function finish(){if(done)return;done=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}if(t.audioStop===finish)t.audioStop=null;resolve();}
-      t.audioStop=finish;a.onended=finish;a.onerror=finish;timer=setTimeout(finish,10000);
-      try{var result=a.play();if(result&&result.catch)result.catch(finish);}catch(e){finish();}
-    });}
-    function slowPrompt(t){
-      var p=S.getProfile();
-      if(p.voiceOn===false||Number(p.volume)===0)return Promise.resolve();
-      // A child who has heard the instruction once hears only the sound after
-      // it: a second try should cost a second, not a sentence and a download.
-      var instruct=!(SLOW_HELP.sayOnce&&slowSaid);
-      var controller=new AbortController();t.abort=controller;
-      var timeout=setTimeout(function(){controller.abort();},5000),url;
-      return (instruct?fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:SLOW_HELP.say||("To "+SLOW_HELP.action+", say"),voice:p.voiceId||"",stable:true}),signal:controller.signal}):Promise.resolve({ok:false}))
-        .then(function(response){return response.ok?response.arrayBuffer():null;})
-        .then(function(bytes){if(bytes&&slowTurn===t&&!t.finishing&&!document.hidden){url=URL.createObjectURL(S.pcmWave(bytes));return slowAudio(url,t).then(function(){
-          // Heard only if it played out in a turn still running: a failed
-          // download or a "Keep playing" mid-line leaves it for the next turn.
-          if(slowTurn===t&&!t.finishing&&!t.cancelled&&!document.hidden)slowSaid=true;});}})
-        .catch(function(){})
-        .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
-          // Model the sound from Rachel's recording, never a TTS guess at a
-          // phoneme: ONE take of it, as the say-it card between rounds plays
-          // (her demo holds it up to seven times; S ran 15 s of held game).
-          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0&&S.humanClipsOn&&S.humanClipsOn())return slowAudio("/coach/say-echo/"+SND+"-sound.wav",t);
-        });
+    function slowListen(spoke){
+      var t=slowTurn; if(!t||t.finishing||t.listening) return;
+      t.listening=true;
+      // the tail every listening page keeps after a voice line
+      if(spoke) quietUntil=Math.max(quietUntil,performance.now()+(window.SayIt?SayIt.VOICE_TAIL_MS:250));
+      $("slowStatus").textContent="Say "+(SAYTXT||"rrrr")+"!";
+      openReviveMic();
     }
     function stopSlowRecognition(t){
       if(t.stopping)return t.stopping;
@@ -72,8 +103,8 @@
     }
     function finishSlowKeys(heard,message){
       var t=slowTurn;if(!t)return Promise.resolve();if(t.finishing)return t.done;
-      t.finishing=true;clearTimeout(t.timer);stopSlowVoice(t);reviveWait=false;closeReviveMic();
-      $("slowStatus").textContent=heard?"Listening check…":(message||"Tap Echo to try again");
+      t.finishing=true;clearTimeout(t.timer);if(slowVoice)slowVoice.stop();closeReviveMic();
+      $("slowStatus").textContent=heard?"Listening check…":(message||slowIdle());
       // A cancelled permission request can still return a stream. Its page's
       // generation guard closes that stream before any gameplay audio resumes.
       t.done=new Promise(function(resolve){(function waitForMic(){if(rv.pending)setTimeout(waitForMic,30);else resolve();})();}).then(function(){return stopSlowRecognition(t);}).then(function(result){
@@ -85,31 +116,45 @@
         return new Promise(function(resolve){setTimeout(function(){
           if(slowTurn!==t){resolve();return;}
           accepted=accepted&&!t.cancelled&&!document.hidden&&!window.__ended;
-          slowTurn=null;
-          if(accepted){slowTotal=slowMs=SLOW_HELP.ms||8000;$("slowStatus").textContent=SLOW_HELP.earned;sfx(SLOW_HELP.earnSfx||"complete");try{if(S.gameRep)S.gameRep(SND);}catch(e){}}
-          else $("slowStatus").textContent=message||(heard?"Try your sound again":"Tap Echo to try again");
-          if(!window.__ended&&phase===SLOW_HELP.phase)playing=true;
+          slowTurn=null; slowAskPlay=0;
+          if(accepted){
+            slowMissed=0; slowAskAt=SLOW_ASK.every;
+            slowTotal=slowMs=SLOW_HELP.ms||8000;$("slowStatus").textContent=SLOW_HELP.earned;sfx(SLOW_HELP.earnSfx||"complete");try{if(S.gameRep)S.gameRep(SND);}catch(e){}
+          }else{
+            // a turn the round, the page or the phone ended is not a miss
+            if(!t.cancelled) slowMissed++;
+            slowAskAt=slowMissed>=2?SLOW_ASK.quiet:SLOW_ASK.every;
+            $("slowStatus").textContent=message||slowIdle();
+          }
           paintSlowKeys();if(accepted&&SLOW_HELP.onEarn)SLOW_HELP.onEarn();resolve();
         },Math.max(0,micClosedAt+SETTLE_MS-performance.now()));});
       });
       return t.done;
     }
+    // the phone said no to the mic, or has none: the turn ends and Echo stops
+    // asking for this visit (he would only be asking a child he can't hear)
+    function slowMicFailed(message){ slowNoMic=true; return finishSlowKeys(false,message); }
     function beginSlowKeys(){
-      if(!tok||!playing||phase!==SLOW_HELP.phase||(SLOW_HELP.eligible&&!SLOW_HELP.eligible())||slowTurn||slowMs>0||rv.pending||window.__ended)return;
-      if(!CAN_LISTEN){$("slowStatus").textContent="Microphone unavailable";return;}
-      var t={finishing:false,cancelled:false,native:null,nativeSettled:false,nativeStarted:false};slowTurn=t;
-      playing=false;reviveWait=true;$("slowStatus").textContent="Listen to Echo…";paintSlowKeys();
-      function prompt(){
-        if(slowTurn!==t||t.finishing||document.hidden)return;
-        var wait=Math.max(quietUntil,micClosedAt+SETTLE_MS)-performance.now();
-        if(wait>0){t.timer=setTimeout(prompt,wait);return;}
-        slowPrompt(t).then(function(){
-          if(slowTurn!==t||t.finishing||document.hidden)return;
-          quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
-          $("slowStatus").textContent="Get ready…";openReviveMic();
-        });
-      }
-      prompt();
+      if(!tok||!playing||phase!==SLOW_HELP.phase||(SLOW_HELP.eligible&&!SLOW_HELP.eligible())||slowTurn||slowMs>0||rv.pending||rv.st||reviveWait||window.__ended)return;
+      if(!CAN_LISTEN||slowNoMic){$("slowStatus").textContent="Microphone unavailable";return;}
+      var t={finishing:false,cancelled:false,listening:false,native:null,nativeSettled:false,nativeStarted:false};slowTurn=t;slowAskPlay=0;
+      $("slowStatus").textContent="Listen to Echo…";paintSlowKeys();
+      var v=slowVoiceGet();
+      if(v) v.speak(); else slowListen(false);
     }
+    // The ask clock: play time only. It also ends a turn whose round ended
+    // under it (the wave's last fruit, the song's last note), well before the
+    // break's say-it card, which waits about two seconds more.
+    function slowAskReady(){
+      return !!tok&&playing&&phase===SLOW_HELP.phase&&!window.__ended&&!window.__speechLeaving&&!window.__pianoLeaving&&!document.hidden&&!reviveWait&&!slowTurn&&!(slowMs>0)&&!rv.pending&&!rv.st&&CAN_LISTEN&&!slowNoMic&&(!SLOW_HELP.eligible||SLOW_HELP.eligible());
+    }
+    setInterval(function(){
+      var now=performance.now(), dt=slowAskLast?Math.min(now-slowAskLast,1000):0; slowAskLast=now;
+      try{
+        if(slowTurn&&!slowTurn.finishing&&(phase!==SLOW_HELP.phase||window.__ended)){ slowTurn.cancelled=true; finishSlowKeys(false); return; }
+        if(!slowAskReady()) return;
+        slowAskPlay+=dt;
+        if(slowAskPlay>=slowAskAt) beginSlowKeys();
+      }catch(e){}
+    },200);
     document.getElementById("slowKeys").onclick=beginSlowKeys;
-    document.getElementById("slowCancel").onclick=function(){if(slowTurn)slowTurn.cancelled=true;finishSlowKeys(false,"Tap Echo to try again");};

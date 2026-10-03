@@ -80,10 +80,10 @@
     #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} #sliceEcho.hop{animation:none;} }
-    /* ── Super Slice: a golden edge while the power lasts. The board dims
-       while Echo listens and it holds still, so the pause reads as a
-       charge-up, not a freeze. ── */
-    body.speech-help-active #app::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:rgba(40,24,60,.3);}
+    /* ── Super Slice: a golden edge while the power lasts. The board no
+       longer dims while Echo asks (3 Oct 2026): the fruit keep flying then,
+       and a child playing on needs to see them. His breathing button is the
+       cue. ── */
     body.speech-help-earned #app::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 0 6px #ffd21c,inset 0 0 70px rgba(255,190,30,.85);animation:superGlow .7s ease-in-out infinite alternate;}
     @keyframes superGlow{from{opacity:.55}to{opacity:1}}
     @media (prefers-reduced-motion: reduce){ body.speech-help-earned #app::after{animation:none;} }
@@ -97,8 +97,7 @@
     <canvas id="cv"></canvas>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
-      <p id="slowStatus" role="status">Tap Echo for Super Slice!</p><span class="slowTrack"><i id="slowMeter"></i></span>
-      <button id="slowCancel" type="button" hidden>Keep playing</button>
+      <p id="slowStatus" role="status">Say rrrr when Echo asks</p><span class="slowTrack"><i id="slowMeter"></i></span>
     </div>
     <div id="top">
       <button id="close">✕</button>
@@ -152,9 +151,11 @@
   <!-- SUPER SLICE (Travis, 29 Sep 2026: "give them an option to say the sound
        to slow the game down ... they go into some frenzy mode or easy mode or
        beast mode when they say their target sounds"; then "1 time to get it
-       slow mode is fine ... or just to say it and hold"). Tap Echo and say the
-       sound once, quick or held, for ten seconds of Super Slice. -->
-  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",idle:"Tap Echo for Super Slice!",earned:"SUPER SLICE!",say:"Super Slice! Say",sayOnce:true,ms:10000,earnSfx:"reward"};</script>
+       slow mode is fine ... or just to say it and hold"). Since 3 Oct 2026
+       nobody taps: Echo asks mid-wave ("Super Slice! Say rrrr. Go!") and the
+       fruit keep flying while he listens; the sound once, quick or held, is
+       ten seconds of Super Slice (/arcade-speech-help.js). -->
+  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",ms:10000,earnSfx:"reward"};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -346,7 +347,7 @@
     // thrown while the power lasts carries `extra`: slicing it adds to the
     // row, but not to the wave, and dropping it costs nothing. They used to count toward the wave, so saying the sound ended
     // the wave sooner and the burst of five made a drop more likely: a child
-    // chasing a best would have learned NOT to tap Echo. Now the sound is the
+    // chasing a best would have learned NOT to answer Echo. Now the sound is the
     // best way to a longer row. A wave still ends on its own count of
     // ordinary fruit, or at WAVE_CAP_MS of play, so no round runs forever.
     function toss(opts){
@@ -554,8 +555,6 @@
     // Held in a variable: a preload nobody holds is collected, and the pose
     // then loads late instead of swapping in at once.
     var POSE_KEEP=["talk","listen","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
-    var slowLine=slowAudio;
-    slowAudio=function(url,t){ var img=$("slowKeys").querySelector("img"); echoPose(img,"talk"); var p=slowLine(url,t); p.then(function(){ echoPose(img,"welcome"); }); return p; };
     // It listens while the turn's mic hears ("I'm listening…") and rests
     // again once the turn is over.
     var slowPaint=paintSlowKeys;
@@ -625,6 +624,8 @@
       listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
     }):null;
     function speakRevive(idea){
+      // a sound turn still closing hands the card the speaker once it has
+      if(slowTurn){ slowTurn.cancelled=true; finishSlowKeys(false).then(function(){ if(reviveWait&&!document.hidden) speakRevive(idea); }); return; }
       reviveIdea=!!idea;
       if(sayVoice&&!voiceOff()){ sayVoice.speak(); return; }
       // Sona muted: the card says nothing at all and just listens, on the
@@ -664,9 +665,9 @@
     // it is asking: the ask made on the way back finds that request still
     // pending and stands down, so without this the card waited on "Get
     // ready…" for good and only "I'm done playing" got the child out.
-    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function askAgain(){ if(micWanted()&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
+      if(!micWanted()||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
@@ -674,21 +675,21 @@
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        if(gen!==rv.gen||!micWanted()||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
         rv.st=st;
         if(slowTurn){
           var turn=slowTurn;
-          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:SLOW_ASK.listen}):false);}catch(e){turn.native=Promise.resolve(false);}
           turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
           // a sound heard just before the limit still earns it: "Got it!" is a promise
-          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt,turn.heardAt?null:"Tap Echo to try again");},6500);
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt);},SLOW_ASK.listen);
         }
         listenFor(st,gen);
       }).catch(function(){
         rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
-        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
+        if(gen!==rv.gen||!micWanted()||document.hidden){ askAgain(); return; }
+        if(slowTurn){slowMicFailed("Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -718,7 +719,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -923,9 +924,11 @@
     var lastT=performance.now();
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
-      // Keep the exact board still while Echo models and listens; no game
-      // time, falling object or earned help is spent while the page is hidden.
-      if(document.hidden||slowTurn){paintSlowKeys();requestAnimationFrame(draw);return;}
+      // No game time, falling object or earned help is spent while the page
+      // is hidden. Echo's sound turn no longer holds the board: since 3 Oct
+      // 2026 he asks mid-game and the game keeps going while he listens
+      // (/arcade-speech-help.js); only its sounds pause.
+      if(document.hidden){paintSlowKeys();requestAnimationFrame(draw);return;}
       if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
       paintSlowKeys();
       if(playing&&phase==="wave"){

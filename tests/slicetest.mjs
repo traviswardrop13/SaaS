@@ -79,7 +79,7 @@ ok("what the card asks comes from the one reader, Sona.gameAsk, for the card it 
 ok("a syllable or word is painted only with Echo's line in hand: the card opens on it only if the bytes are there, else on the bare sound",
   /ASK=line&&line\.bytes\?want:cardAsk\(0\); askNext=want\.say&&ASK!==want\?want:null;/.test(code) && /if\(bytes\)\{ASK=askNext;paintAsk\(\);\}else\{askLineDrop\(\);lead=false;\}/.test(code) && /if\(!last\) askReady\(wave\+1\);/.test(code));
 ok("Echo's power button still asks the bare sound: SAYTXT is soundSay, and the helper is untouched by the card's ask",
-  /SAYTXT=\(S&&S\.soundSay\)\?S\.soundSay\(SND\):"rrrr"/.test(code) && !/ASK/.test(readFileSync(ROOT + "/arcade-speech-help.js", "utf8")));
+  /SAYTXT=\(S&&S\.soundSay\)\?S\.soundSay\(SND\):"rrrr"/.test(code) && !/(^|[^\w])ASK\b|gameAsk|cardAsk|askHeld/.test(strip(readFileSync(ROOT + "/arcade-speech-help.js", "utf8"))));
 ok("a heard card is one game rep and nothing else: nothing on the page says \"correct\"",
   /function doRevive\(\)\{[\s\S]{0,260}S\.gameRep\(SND\)/.test(code) && (code.match(/gameRep\(/g) || []).length === 1 && !/correct/i.test(code));
 ok("nothing in the round is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code));
@@ -110,6 +110,9 @@ ok("the \"Say it 5 times\" stand drops each fruit onto the counter, and stills i
 
 // ── a fake phone: a mic that hears silence, audio that records what plays ──
 function fakePhone(cfg) {
+  // Echo's mid-round ask for the sound power (3 Oct 2026) is
+  // arcadespeechhelptest's: held here, so a round is just the round.
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
   cfg = cfg || {};
   const f = window.__f = { mics: 0, live: 0, sfx: [], media: [] };
   // cfg.native: inside the iPhone app, where Echo's lines play as media

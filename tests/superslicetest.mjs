@@ -2,10 +2,17 @@
 // Sep 2026: "give them an option to say the sound to slow the game down ...
 // they go into some frenzy mode or easy mode or beast mode when they say
 // their target sounds", then "1 time to get it slow mode is fine ... and
-// yeah count as reps ... no wow should not count"). Tap Echo, the board holds,
-// one heard sound (quick or held) earns ten seconds of slow fruit, a burst
-// from the stand, more fruit per toss and a wide rainbow blade, and adds one
-// rep to the week's count without touching practice data.
+// yeah count as reps ... no wow should not count"). One heard sound (quick or
+// held) earns ten seconds of slow fruit, a burst from the stand, more fruit
+// per toss and a wide rainbow blade, and adds one rep to the week's count
+// without touching practice data.
+//
+// ECHO ASKS, THEN LISTENS (3 Oct 2026: "I don't want them to have to tap
+// echo"). Nobody taps: mid-wave Echo asks by himself ("Super Slice! Say",
+// Rachel's R, "Go!") and listens while the fruit keep flying. Nothing holds
+// and nothing waits for a "Keep playing". A tap on him still asks at once.
+// arcadespeechhelptest has the ask clock itself (10 s, then 20, then 40 after
+// two quiet asks) in all five games; here turn() just makes the next ask due.
 //
 // BEAT YOUR BEST (1-2 Oct 2026) made the sound the best way to a longer row
 // of fruit (slicetest has the row itself), with two rules: every fruit thrown
@@ -40,6 +47,9 @@ const browser = await chromium.launch(launchOpts());
 // A phone whose mic hears loud, voiced frames only while h.voice is set, and
 // whose speaker, Apple recognizer and practice records are all watched.
 function phone(cfg) {
+  // cfg.native: inside the iPhone app, where Echo's lines are media elements
+  // the fake speaker can name (on the website they are Web Audio)
+  if(cfg.native)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{}};
   const h=window.__ss={voice:false,text:cfg.text==null?'rrrr':cfg.text,web:0,webPending:0,native:0,starts:0,stops:0,requests:0,sounds:[],practice:[]};
   Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});
   h.audio=(kind)=>{h.sounds.push({kind,at:performance.now(),web:h.web,native:h.native});};
@@ -83,27 +93,32 @@ function phone(cfg) {
 }
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
-  let tts=0;
+  let tts=0;const said=[];
   // The say-it card's own two lines are asked for as the page loads (2 Oct
   // 2026, /arcade-sayit.js): they are answered, and never counted here, so
   // "the first ask" is still the sound power's instruction.
   const CARD_LINES=['To keep playing, say','Go!'];
-  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}if(!CARD_LINES.includes(text)){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});}return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
+  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}said.push(text);if(!CARD_LINES.includes(text)){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});}return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
   await context.addInitScript(phone,cfg);
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(BASE+'/arcade-slice.html?from=charge');
   await page.waitForFunction(()=>window.gameEntryAllowed===true&&typeof draw==='function');
   // When "Got it!" shows (the sound was heard), for the recognizer's tail check.
   await page.evaluate(()=>{const st=document.getElementById('slowStatus');new MutationObserver(()=>{if(!__ss.gotAt&&st.textContent==='Got it!')__ss.gotAt=performance.now();}).observe(st,{subtree:true,childList:true,characterData:true});});
-  return{context,page,errors};
+  return{context,page,errors,said};
 }
 // One fruit, well away from the edges, and no toss for a while: the board is
 // then something a test can watch hold still or move.
 async function quietBoard(page){await page.evaluate(()=>{fruits=[{e:'🍎',x:60,y:H*.45,vx:1.5,vy:-0.5,g:.0005,rot:0,vr:.01,r:26,sliced:false}];nextToss=waveMs+60000;});}
-// turn() waits for the room level so the try starts on a quiet floor; eager()
-// starts talking the moment the mic opens, as a child copying Echo does.
-async function turn(page){await page.locator('#slowKeys').click();await page.waitForFunction(()=>__ss.web===1&&__ss.native===1&&rv.floor>=0);await page.waitForTimeout(100);}
-async function eager(page){await page.locator('#slowKeys').click();await page.waitForFunction(()=>__ss.web===1&&__ss.native===1);}
+// Echo's next ask, made due now (nobody taps; listen: a shorter window, for
+// the scenarios about its end). turn() waits for the room level so the try
+// starts on a quiet floor; eager() starts talking the moment the mic opens,
+// as a child copying Echo does.
+async function due(page,listen){await page.evaluate(ms=>{if(ms)SLOW_ASK.listen=ms;slowAskAt=Math.min(slowAskAt,150);},listen||0);}
+async function turn(page,listen){await due(page,listen);await page.waitForFunction(()=>__ss.web===1&&__ss.native===1&&rv.floor>=0);await page.waitForTimeout(100);}
+async function eager(page){await due(page);await page.waitForFunction(()=>__ss.web===1&&__ss.native===1);}
+// what Echo said, in order: his lines (media made from his voice) and Rachel's take
+const voices=(page)=>page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>/^blob:/.test(s.url)?'line':s.url.replace(/^.*\/coach/,'/coach')));
 async function say(page,{on=380,tail=320}={}){await page.evaluate(()=>{__ss.voice=true;});await page.waitForTimeout(on);await page.evaluate(()=>{__ss.voice=false;});await page.waitForTimeout(tail);}
 async function earned(page){await page.waitForFunction(()=>!slowTurn&&slowMs>0);return page.evaluate(()=>({ms:slowMs,total:slowTotal,status:document.getElementById('slowStatus').textContent}));}
 const reps=(page)=>page.evaluate(()=>({week:Sona.weekReps(0),game:JSON.parse(localStorage.getItem('sona.gamereps.v1')||'{}'),outcomes:localStorage.getItem('sona.outcomes.v1')}));
@@ -125,10 +140,10 @@ try {
       await quietBoard(page);
       const r0=await reps(page);
       await turn(page);
-      const s0=await page.evaluate(()=>({dim:document.body.classList.contains('speech-help-active'),x:fruits[0].x,y:fruits[0].y,clock:waveMs,got:waveGot}));
+      const s0=await page.evaluate(()=>({asking:document.getElementById('slowControl').classList.contains('asking'),cancel:!document.getElementById('slowCancel'),x:fruits[0].x,y:fruits[0].y,clock:waveMs}));
       await page.waitForTimeout(300);
-      const s1=await page.evaluate(()=>({x:fruits[0].x,y:fruits[0].y,clock:waveMs,got:waveGot,ms:slowMs}));
-      ok('a tap on Echo dims the board, and it holds still while Echo listens',s0.dim&&s1.x===s0.x&&s1.y===s0.y&&s1.clock===s0.clock&&s1.got===s0.got&&s1.ms===0,{s0,s1});
+      const s1=await page.evaluate(()=>({x:fruits[0].x,y:fruits[0].y,clock:waveMs,ms:slowMs,playing}));
+      ok('nobody taps: Echo asks, and the fruit keep flying while he listens',s0.asking&&s0.cancel&&s1.playing&&(s1.x!==s0.x||s1.y!==s0.y)&&s1.clock>s0.clock&&s1.ms===0,{s0,s1});
       const before=await page.evaluate(()=>fruits.length);
       await page.evaluate(()=>{__ss.voice=true;});
       await page.waitForFunction(()=>document.getElementById('slowStatus').textContent==='Got it!');
@@ -235,8 +250,9 @@ try {
 
   await scenario('a sound just before the limit',async()=>{
     const{context,page,errors}=await fresh();try{
-      await quietBoard(page);await turn(page);
-      await page.waitForFunction(()=>performance.now()-__ss.openedAt>=5950,null,{timeout:9000});
+      await quietBoard(page);await turn(page,3000);
+      // in its last 550 ms, so Apple's half second after "Got it!" outlasts the window
+      await page.waitForFunction(()=>performance.now()-__ss.openedAt>=2450,null,{timeout:6000});
       await page.evaluate(()=>{__ss.voice=true;});
       await page.waitForFunction(()=>document.getElementById('slowStatus').textContent==='Got it!');
       const e=await earned(page);await page.evaluate(()=>{__ss.voice=false;});
@@ -247,8 +263,8 @@ try {
 
   await scenario('a hiss for an R',async()=>{
     const{context,page,errors}=await fresh({hiss:true});try{
-      await quietBoard(page);await turn(page);await say(page);await say(page);
-      await page.waitForFunction(()=>!slowTurn,null,{timeout:9000});
+      await quietBoard(page);await turn(page,3000);await say(page);await say(page);
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:6000});
       ok('an R child\'s hiss earns nothing',await page.evaluate(()=>slowMs===0&&playing));
       await nothing(page,'hiss');
       await clean('hiss',page,errors);
@@ -257,22 +273,27 @@ try {
 
   await scenario('silence',async()=>{
     const{context,page,errors}=await fresh();try{
-      await quietBoard(page);await turn(page);
-      await page.waitForFunction(()=>!slowTurn,null,{timeout:9000});
+      await quietBoard(page);await turn(page,3000);
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:6000});
       const s=await page.evaluate(()=>({ms:slowMs,playing,status:document.getElementById('slowStatus').textContent}));
-      ok('saying nothing earns nothing, and play carries on',s.ms===0&&s.playing&&s.status==='Tap Echo to try again',s);
+      ok('saying nothing earns nothing, and play carries on',s.ms===0&&s.playing&&s.status==='Say rrrr when Echo asks',s);
       await nothing(page,'silence');
       await clean('silence',page,errors);
     }finally{await context.close();}
   });
 
-  await scenario('keep playing',async()=>{
+  // the tap is a shortcut now, never needed: it asks at once, the same way
+  await scenario('a tap on Echo',async()=>{
     const{context,page,errors}=await fresh();try{
-      await quietBoard(page);await turn(page);
-      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
-      ok('"Keep playing" leaves with no Super Slice',await page.evaluate(()=>slowMs===0&&playing));
-      await nothing(page,'keep playing');
-      await clean('keep playing',page,errors);
+      await quietBoard(page);
+      const left=await page.evaluate(()=>slowAskAt-slowAskPlay);
+      await page.locator('#slowKeys').click();
+      await page.waitForFunction(()=>__ss.web===1&&__ss.native===1&&rv.floor>=0);await page.waitForTimeout(100);
+      const s=await page.evaluate(()=>({turn:!!slowTurn,cancel:!document.getElementById('slowCancel'),playing}));
+      ok('a tap on Echo still asks at once, long before his own ask, and there is no "Keep playing" to press',left>5000&&s.turn&&s.cancel&&s.playing,{left,s});
+      await say(page);const e=await earned(page);
+      ok('…and the sound then earns Super Slice as it does when he asks',e.total===10000&&(await reps(page)).week===1,e);
+      await clean('tap',page,errors);
     }finally{await context.close();}
   });
 
@@ -286,28 +307,33 @@ try {
     }finally{await context.close();}
   });
 
+  // In the app, where each of Echo's lines is a media element this phone can
+  // name. Each ask here ends unanswered, in a short window.
   await scenario('Echo\'s instruction',async()=>{
-    const{context,page,errors}=await fresh({voiceOn:true});try{
-      await quietBoard(page);await turn(page);
-      const first=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url));
-      ok('the first turn: Echo says the instruction, then one take of the recorded R',first.length===2&&/^blob:/.test(first[0])&&/\/coach\/say-echo\/R-sound\.wav$/.test(first[1]),first);
-      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);await page.waitForTimeout(300);
+    const{context,page,errors,said}=await fresh({voiceOn:true,native:true});try{
+      await quietBoard(page);await turn(page,1500);
+      const first=await voices(page);
+      ok('the first ask: Echo says "Super Slice! Say", one take of the recorded R, then "Go!"',first.join()==='line,/coach/say-echo/R-sound.wav,line'&&said.includes('Super Slice! Say')&&said.includes('Go!'),{first,said});
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:5000});
+      const asked=said.length;
       await turn(page);
-      const second=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url).slice(2));
-      ok('the next turn is quicker: only the recorded R',second.length===1&&/\/coach\/say-echo\/R-sound\.wav$/.test(second[0]),second);
-      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
+      const second=(await voices(page)).slice(first.length);
+      ok('the next ask is quicker: only the recorded R and "Go!", nothing new downloaded',second.join()==='/coach/say-echo/R-sound.wav,line'&&said.length===asked,{second,said});
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:5000});
       await clean('instruction',page,errors);
     }finally{await context.close();}
   });
 
   await scenario('Echo\'s instruction, when it could not load',async()=>{
-    const{context,page,errors}=await fresh({voiceOn:true,ttsFailFirst:true});try{
-      await quietBoard(page);await turn(page);
-      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);await page.waitForTimeout(300);
-      await turn(page);
-      const voices=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url));
-      ok('an instruction that failed to load is tried again on the next turn',voices.length===3&&/^blob:/.test(voices[1])&&/R-sound\.wav$/.test(voices[2]),voices);
-      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
+    const{context,page,errors}=await fresh({voiceOn:true,native:true,ttsFailFirst:true});try{
+      await quietBoard(page);await turn(page,1500);
+      const first=await voices(page);
+      ok('an instruction that could not load is left out: the R and "Go!" still play',first.join()==='/coach/say-echo/R-sound.wav,line',first);
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:5000});
+      await turn(page,1500);
+      const second=(await voices(page)).slice(first.length);
+      ok('…and it is tried again on the next ask',second.join()==='line,/coach/say-echo/R-sound.wav,line',second);
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:5000});
       await clean('instruction retry',page,errors);
     }finally{await context.close();}
   });
@@ -343,7 +369,7 @@ try {
   // to get it"), and Apple's listener, which judges it, would turn away a
   // good "ree" it wrote down as "we" or "read".
   await scenario('the card asks a syllable; Super Slice stays the sound',async()=>{
-    const{context,page,errors}=await fresh({voiceOn:true});try{
+    const{context,page,errors}=await fresh({voiceOn:true,native:true});try{
       await page.evaluate(()=>{waveGot=WAVES[wave].goal;});
       await page.waitForFunction(()=>document.getElementById('revOvl').classList.contains('show')&&/listening/i.test(document.getElementById('revListen').textContent),null,{timeout:12000});
       const a=await page.evaluate(()=>({title:document.getElementById('revTitle').textContent,rung:ASK.rung,say:SAYTXT,pill:document.getElementById('slowSound').textContent,label:document.getElementById('slowKeys').getAttribute('aria-label')}));
@@ -352,10 +378,10 @@ try {
       await page.evaluate(()=>{closeReviveMic();doRevive();});
       await page.waitForFunction(()=>phase==='wave'&&wave===1);
       await page.waitForTimeout(400);await quietBoard(page);
-      const n=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').length);
+      const n=(await voices(page)).length;
       await turn(page);
-      const v=await page.evaluate((n)=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url).slice(n),n);
-      ok('…and its turn after that card models the recorded R, never the syllable',v.length===2&&/^blob:/.test(v[0])&&/\/coach\/say-echo\/R-sound\.wav$/.test(v[1])&&await page.evaluate(()=>document.getElementById('slowSound').textContent==='rrrr'),v);
+      const v=(await voices(page)).slice(n);
+      ok('…and its ask after that card models the recorded R, never the syllable',v.join()==='line,/coach/say-echo/R-sound.wav,line'&&await page.evaluate(()=>document.getElementById('slowSound').textContent==='rrrr'),v);
       await say(page);const e=await earned(page);
       ok('a heard syllable card and a Super Slice turn are one rep each',e.total===10000&&(await reps(page)).week===w0+2,{e,w0});
       await clean('syllable card',page,errors);
@@ -365,8 +391,8 @@ try {
   for(const width of [320,393])await scenario('phone '+width,async()=>{
     const{context,page,errors}=await fresh({width});try{
       await quietBoard(page);await turn(page);
-      const fit=await page.evaluate(()=>{const r=document.getElementById('slowControl').getBoundingClientRect(),t=document.getElementById('top').getBoundingClientRect(),c=document.getElementById('slowCancel').getBoundingClientRect();return{l:r.left,r:r.right,t:r.top,b:r.bottom,w:innerWidth,h:innerHeight,hud:t.bottom,cancel:c.height};});
-      ok(width+'px: Echo\'s turn and "Keep playing" fit under the HUD, on screen',fit.l>=0&&fit.r<=fit.w&&fit.t>=fit.hud&&fit.b<=fit.h&&fit.cancel>=36,fit);
+      const fit=await page.evaluate(()=>{const r=document.getElementById('slowControl').getBoundingClientRect(),t=document.getElementById('top').getBoundingClientRect();return{l:r.left,r:r.right,t:r.top,b:r.bottom,w:innerWidth,h:innerHeight,hud:t.bottom,cancel:!document.getElementById('slowCancel')};});
+      ok(width+'px: Echo asking fits under the HUD, on screen, with no "Keep playing" under him',fit.l>=0&&fit.r<=fit.w&&fit.t>=fit.hud&&fit.b<=fit.h&&fit.cancel,fit);
       await page.screenshot({path:OUT+'/superslice-listening-'+width+'.png'});
       await say(page);const e=await earned(page);await page.waitForTimeout(250);
       await page.screenshot({path:OUT+'/superslice-on-'+width+'.png'});
@@ -377,7 +403,7 @@ try {
   // The other games keep their eight-second help, now with the one-take sound.
   const HELP=readFileSync(ROOT+'/arcade-speech-help.js','utf8');
   ok('the shared helper keeps eight seconds for pages that set no time',/SLOW_HELP\.ms\|\|8000/.test(HELP)&&/-sound\.wav/.test(HELP)&&!/-demo\.mp3/.test(HELP));
-  ok('the shared helper counts every earned turn as a rep',/if\(accepted\)\{[^\n]*S\.gameRep\(SND\)/.test(HELP));
+  ok('the shared helper counts every earned turn as a rep',/if\(accepted\)\{[^}]*S\.gameRep\(SND\)/.test(HELP));
   for(const g of ['stack','run','glide']){
     const src=readFileSync(ROOT+'/arcade-'+g+'.html','utf8');
     ok(g+': still eight seconds (no ms set)',/window\.SLOW_HELP=\{/.test(src)&&!/SLOW_HELP=\{[^}]*\bms:/.test(src));

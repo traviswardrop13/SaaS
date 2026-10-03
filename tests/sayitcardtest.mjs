@@ -46,6 +46,9 @@ const TAKE_SAMPLES = 12345;   // what the fake website decodes Rachel's take to
 // never settles. cfg.refuse: the phone refuses every media element at once.
 // cfg.denied: the phone has said no to the mic.
 function voicePhone(cfg) {
+  // Echo's mid-round ask for the sound power (3 Oct 2026) is
+  // arcadespeechhelptest's: held here, so a round is just the round.
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
   const h = window.__card = { media: [], web: [], synth: [], mics: [], voice: false, hidden: false, sizes: {}, practice: [] };
   if (cfg.native) window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
   Object.defineProperty(document, "hidden", { configurable: true, get: () => h.hidden });

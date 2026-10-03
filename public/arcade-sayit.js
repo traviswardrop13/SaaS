@@ -118,10 +118,12 @@
   // ask(t), optional: the page's own ask, for a card that asks more than the
   // bare sound (Fruit Slice's syllable and word cards, 1 Oct 2026). It is
   // handed live(), line(text) (one of Echo's lines, cached, as the ask above
-  // plays it), bytes(buf) (a line the page already holds, resolving true only
-  // if it played to its end, with no browser voice standing in) and take()
-  // (Rachel's take), and returns a promise. Echo's "Go!" and the mic follow
-  // it, as they follow the usual ask.
+  // plays it, resolving true once it was said to its end), bytes(buf) (a
+  // line the page already holds, resolving true only if it played to its
+  // end, with no browser voice standing in) and take() (Rachel's take), and
+  // returns a promise. Echo's "Go!" and the mic follow it, as they follow
+  // the usual ask. The sound powers' mid-game ask uses it too
+  // (/arcade-speech-help.js, 3 Oct 2026).
   function voice(page) {
     var gen = 0, speaking = false, halts = [];
     function live(g) { return g === gen && !document.hidden && page.up(); }
@@ -207,22 +209,24 @@
     }
     // one of Echo's lines: wait for its bytes until the deadline, then play
     // them; a line the phone refused at once goes to the browser's voice, one
-    // that never started ends the ask's media (st.stuck)
+    // that never started ends the ask's media (st.stuck). Resolves true only
+    // when the line was said to its end (a page's ask hook may need to know).
     function sayLine(text, g, st) {
-      if (!live(g) || st.stuck) return Promise.resolve();
+      if (!live(g) || st.stuck) return Promise.resolve(false);
       var left = st.deadline - Date.now();
+      function said(how) { return how === "ended" || how === "capped"; }
       return new Promise(function (got) {
         var t = setTimeout(function () { got(null); }, Math.max(0, left));
         line(text).then(function (b) { clearTimeout(t); got(b); });
       }).then(function (b) {
-        if (!b || !live(g)) return;
-        if (!asMedia()) return playBuffer(pcmBuffer(b), g).then(function (how) { if (how === "failed") return synth(text, g, st); });
+        if (!b || !live(g)) return false;
+        if (!asMedia()) return playBuffer(pcmBuffer(b), g).then(function (how) { return how === "failed" ? synth(text, g, st).then(said) : how === "ended"; });
         var t0 = Date.now(), m = global.Sona.mediaPCM(b, { volume: volume() }), off = onHalt(function () { m.stop(); });
         return m.done.then(function (how) {
           off();
-          if (how !== "failed" || !live(g)) return;
-          if (Date.now() - t0 > FAST_FAIL_MS) { st.stuck = true; return; }
-          return synth(text, g, st);
+          if (how !== "failed" || !live(g)) return how === "ended";
+          if (Date.now() - t0 > FAST_FAIL_MS) { st.stuck = true; return false; }
+          return synth(text, g, st).then(said);
         });
       });
     }
@@ -317,7 +321,7 @@
             ? Promise.resolve().then(function () {
                 return page.ask({
                   live: function () { return live(g); },
-                  line: function (text) { return sayLine(text, g, st).then(null, skip); },
+                  line: function (text) { return sayLine(text, g, st).then(null, function () { return false; }); },
                   bytes: function (b) { return sayBytes(b, g, st).then(null, function () { return false; }); },
                   take: function () { return sayTake(g, st).then(null, skip); }
                 });
