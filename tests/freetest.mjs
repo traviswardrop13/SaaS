@@ -243,12 +243,15 @@ ok("gated() still short-circuits on the switch before anything else",
 // …and PRACTICE comes straight after it (24 Sep 2026). "Paid" no longer means
 // "walled": the free version is daily practice, so nothing that could close
 // the door — a finished demonstration, a dead trial, a lapsed plan — may be
-// consulted before the gate has said practice is open.
+// consulted before the gate has said practice is open. Since 3 Oct 2026
+// (trial first) practice opens with the free version, Premium or a trial
+// (Sona.freeVersion: a family set up where Sona can sell starts with the
+// trial), and still never on the demonstration or an old local trial.
 {
   const g = (sona.match(/function gated\(\w*\) \{[\s\S]*?\n  \}/) || [""])[0];
-  const practice = g.indexOf("PRACTICE_ASKS.indexOf(what) !== -1) return false;");
-  ok("practice is answered before any entitlement, demo or trial check",
-    practice > 0 && practice < g.indexOf("premium()") && practice < g.indexOf("demoDone()") && practice < g.indexOf("getTrial()"),
+  const practice = g.indexOf("PRACTICE_ASKS.indexOf(what) !== -1) return !(freeVersion() ||");
+  ok("practice is answered before any demo or old-trial check: open with the free version, Premium or a trial",
+    practice > 0 && practice < g.indexOf("demoDone()") && practice < g.indexOf("getTrial()"),
     g.slice(0, 300));
   ok("…and every practice door is on the list",
     /const PRACTICE_ASKS = \["practice", "daily", "session", "demo"\];/.test(sona));
@@ -349,6 +352,10 @@ if (appFree) {
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
     localStorage.setItem("sona.micok", "1");
+    // a household that keeps the free version (trial first, 3 Oct 2026: set
+    // up before that build). A family set up after it, where Sona can sell,
+    // starts with the trial instead: trialfirsttest plays that one.
+    localStorage.setItem("sona.freever.v1", "kept");
   });
   await seedNew();
   const st = await pg.evaluate(() => {
