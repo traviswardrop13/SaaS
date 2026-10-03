@@ -212,6 +212,12 @@
     // how many races this child has started from Sound Sprint's start card
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
+    // the dated "Firsts" shelf on the Progress page. progress.html always
+    // asked kkey() for it, but kkey() only splits a key that is listed HERE,
+    // so until 2 Oct 2026 every child on a device read and wrote one list:
+    // each saw the other's firsts, and a sibling's lower level made the page
+    // date, today, a level the other child had held for weeks.
+    "sona.firsts.v1",
     // each child's own best in each game (BESTS1, Sona.gameBest): a brother
     // or sister starts with none, and it goes when the child is removed. The
     // old "sona.best.<game>" keys were one per phone, so siblings overwrote
