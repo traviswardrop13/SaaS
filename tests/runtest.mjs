@@ -148,7 +148,8 @@ const card = (page) => page.evaluate(() => ({ shown: document.getElementById("st
     banner: document.getElementById("bnBig").textContent, slow: !document.getElementById("slowControl").hidden }) }));
 const STILL = JSON.stringify({ dist: 0, things: 0, sideOff: 0, dashOff: 0, spawnGap: 0, speed: 1, distIv: 0, rampIv: 0, lane: 1, score: "0m", banner: "", slow: false });
 // everything the phone keeps, but for the card's own count
-const stored = (page) => page.evaluate(() => { const grab = (st) => { const o = {}; for (let i = 0; i < st.length; i++) { const k = st.key(i); if (k !== "sona.sprintintro.v1") o[k] = st.getItem(k); } return o; }; return JSON.stringify([grab(localStorage), grab(sessionStorage)]); });
+// (sorted: the order a browser lists its keys in can change when one is added)
+const stored = (page) => page.evaluate(() => { const grab = (st) => { const ks = []; for (let i = 0; i < st.length; i++) { const k = st.key(i); if (k !== "sona.sprintintro.v1") ks.push(k); } const o = {}; ks.sort().forEach((k) => { o[k] = st.getItem(k); }); return o; }; return JSON.stringify([grab(localStorage), grab(sessionStorage)]); });
 const shown = async (page) => { await page.locator("#startOvl.show").waitFor(); };
 const started = (page, timeout = 8000) => page.waitForFunction(() => raceHeld === false && playing === true, null, { timeout });
 const voice = (mode, more = {}) => Object.assign(TTS, { mode, ms: 900, delay: 0, asks: [] }, more);
@@ -186,7 +187,10 @@ await scenario("the start card", async () => {
     ok("the race starts the moment his line ends", took >= 850 && took < 1900, took);
     ok("…with the card gone, stretch 1's banner up and both clocks running", !c.shown && c.playing && !c.saying && JSON.parse(c.still).banner === "Stretch 1" && JSON.parse(c.still).distIv > 0 && JSON.parse(c.still).rampIv > 0, c);
     ok("the line was said once, never cut, and no microphone was asked for", c.voice === 1 && c.cut === 0 && c.pcm === 0 && c.synth.length === 0 && c.mics === 0 && TTS.asks.length === 1, c);
-    ok("that race is counted for this child, and nothing else is stored: no rep, no practice", c.seen === "1" && (await stored(page)) === before, { seen: c.seen });
+    const after = await stored(page);
+    // (the detail names every key that changed, so a failure says which)
+    const diff = (() => { try { const a = JSON.parse(before), b = JSON.parse(after), out = []; [0, 1].forEach((i) => { const ks = new Set(Object.keys(a[i]).concat(Object.keys(b[i]))); ks.forEach((k) => { if (a[i][k] !== b[i][k]) out.push((i ? "session:" : "local:") + k + " " + JSON.stringify(a[i][k]) + " → " + JSON.stringify(b[i][k])); }); }); return out; } catch (e) { return [String(e)]; } })();
+    ok("that race is counted for this child, and nothing else is stored: no rep, no practice", c.seen === "1" && after === before, { seen: c.seen, diff });
     await page.waitForFunction(() => dist > 0 && sideOff > 0 && !document.getElementById("slowControl").hidden);
     ok("then the race runs, and the slow-down button is there", true);
 
