@@ -2,6 +2,8 @@
 
 28 September 2026. Follow-up to the crafted-world redesign and Piano Tiles slow keys.
 
+**Update, 3 October 2026:** nobody taps Echo any more, and nothing holds still. In all five round games he asks by himself mid-round ("Super Slice! Say", Rachel's take of the sound, "Go!") and listens while the game keeps going; a tap on him is a shortcut, and "Keep playing" is gone. See "Echo asks, then listens" in CLAUDE.md. Below is the 28 September design as it was.
+
 ## What the child does
 
 - Fruit Slice: tap Echo, say the selected sound, earn slower flying fruit.

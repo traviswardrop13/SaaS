@@ -111,8 +111,7 @@
     </div>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
-      <p id="slowStatus" role="status">Tap Echo to slow the course</p><span class="slowTrack"><i id="slowMeter"></i></span>
-      <button id="slowCancel" type="button" hidden>Keep playing</button>
+      <p id="slowStatus" role="status">Say rrrr when Echo asks</p><span class="slowTrack"><i id="slowMeter"></i></span>
     </div>
     <div id="flash"></div>
     <div id="tapHint">Tap a lane to run there!</div>
@@ -448,10 +447,9 @@
     var lastT=performance.now(),dashOff=0;
     function draw(){
       var now=performance.now(),dt=document.hidden?0:Math.min(100,now-lastT);lastT=now;
-      if(playing&&phase==="run"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the course";}
+      if(playing&&phase==="run"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
       paintSlowKeys();
       var step=playing&&!document.hidden?speed*(phase==="run"?slowFactor():1):0;
-      if(slowTurn){if(magnetUntil>now-dt)magnetUntil+=dt;hurtT+=dt;}
       ctx.clearRect(0,0,W,H);
       var road=W*ROADF, rx=(W-road)/2, lw=road/LANES, S0=STRETCHES[stretch];
       // Keep the painted roadside visible. The world tint and moving trees
@@ -660,8 +658,6 @@
     // Held in a variable: a preload nobody holds is collected, and the pose
     // then loads late instead of swapping in at once.
     var POSE_KEEP=["talk","listen","welcome","wave"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
-    var slowLine=slowAudio;
-    slowAudio=function(url,t){ var img=$("slowKeys").querySelector("img"); echoPose(img,"talk"); var p=slowLine(url,t); p.then(function(){ echoPose(img,"welcome"); }); return p; };
     // It listens while the turn's mic hears ("I'm listening…") and rests
     // again once the turn is over.
     var slowPaint=paintSlowKeys;
@@ -692,7 +688,11 @@
       ctx:function(){ if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); } return rv.ctx; },
       listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
     }):null;
-    function speakRevive(){ if(sayVoice)sayVoice.speak(); else openReviveMic(); }
+    function speakRevive(){
+      // a sound turn still closing hands the card the speaker once it has
+      if(slowTurn){ slowTurn.cancelled=true; finishSlowKeys(false).then(function(){ if(reviveWait&&!document.hidden) speakRevive(); }); return; }
+      if(sayVoice)sayVoice.speak(); else openReviveMic();
+    }
     function reviveSpeaking(){ return !!sayVoice&&sayVoice.speaking(); }
     function closeReviveMic(){
       if(sayVoice)sayVoice.stop();
@@ -706,9 +706,9 @@
     // it is asking: the ask made on the way back finds that request still
     // pending and stands down, so without this the card waited on "Get
     // ready…" for good and only "I'm done playing" got the child out.
-    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function askAgain(){ if(micWanted()&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
+      if(!micWanted()||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
@@ -716,16 +716,16 @@
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        if(gen!==rv.gen||!micWanted()||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
         rv.st=st;
         if(slowTurn){
           var turn=slowTurn;
-          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:SLOW_ASK.listen}):false);}catch(e){turn.native=Promise.resolve(false);}
           turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
           // a sound heard just before the limit still earns it (2 Oct 2026,
           // as Fruit Slice): heard, the mic stays open 550 ms more for
           // Apple's recognizer, and the limit must not throw that try away
-          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt,turn.heardAt?null:"Tap Echo to try again");},6500);
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt);},SLOW_ASK.listen);
         }
         listenFor(st,gen);
       }).catch(function(){
@@ -733,8 +733,8 @@
         // it answers): Echo's voice waits SETTLE_MS after it, as Fruit Slice's
         rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
-        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
+        if(gen!==rv.gen||!micWanted()||document.hidden){ askAgain(); return; }
+        if(slowTurn){slowMicFailed("Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -764,7 +764,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
