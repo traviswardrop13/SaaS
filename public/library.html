@@ -1364,6 +1364,9 @@
     var bookNotice = document.getElementById("bookNotice");
     function clearLocked(){ bookNotice.hidden = true; document.getElementById("bookMessage").textContent = ""; }
     function showLocked(st){
+      // a grey book opens the price at once where Sona can sell (Travis, 4 Oct
+      // 2026, of a grey game; a book is the same tap); elsewhere the note
+      try { if (window.Sona && Sona.offerOnLock && Sona.offerOnLock()) { location.href = "/subscribe.html?from=library"; return; } } catch (e) {}
       var frees = STORIES.filter(function (x) { return readable(x) && window.Sona && Sona.bookFree && Sona.bookFree(x.title); }).map(function (x) { return x.title; });
       document.getElementById("bookMessage").textContent = "Ask a grown-up to help open " + st.title + "."
         + (frees.length ? " " + frees.join(" and ") + (frees.length > 1 ? " are" : " is") + " free to read!" : "");

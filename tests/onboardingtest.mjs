@@ -378,4 +378,25 @@ await scenario('phone fit and optional email close',async()=>{
   clean('phone fit and skip',errors);
  }finally{await context.close();}
 });
+// The iPhone keyboard plugin (autoBackdropColor: "dom") paints the area
+// behind the keyboard's rounded corners from the BODY's background colour; a
+// gradient alone reads as transparent and showed black corners while a parent
+// typed the name (Travis, 4 Oct 2026). Every screen with typing keeps a solid
+// colour under its gradient: setup's steps here, the grown-ups' pages by the
+// rule in crafted-family.css.
+await scenario('a solid colour behind the keyboard',async()=>{
+ const{context,page,errors}=await fresh();
+ try{
+  const opaque=(c)=>{const m=/rgba?\(([^)]+)\)/.exec(c||'');if(!m)return false;const p=m[1].split(',').map(Number);return p.length<4||p[3]>0.99;};
+  const seen={};
+  await next(page);await page.locator('[data-step="who"].on').waitFor();
+  seen.who=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
+  await page.locator('.who-pick[data-role="parent"]').click();await page.locator('[data-step="name"].on').waitFor();
+  seen.name=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
+  ok('while a grown-up types in setup, the body has a solid colour for the keyboard\'s corners to show',opaque(seen.who)&&opaque(seen.name),seen);
+  const fam=readFileSync(ROOT+'/crafted-family.css','utf8');
+  ok('…and the grown-ups\' pages (Settings, Talk to us, the plan screen) put a solid colour under their gradient',/body\.crafted-family\{[\s\S]*?background:#[0-9a-f]{3,6} radial-gradient\(/i.test(fam));
+  clean('keyboard backdrop',errors);
+ }finally{await context.close();}
+});
 await browser.close();await new Promise(resolve=>server.close(resolve));console.log(failures?failures+' FAILURES / '+checks+' assertions':'ALL GREEN — '+checks+' assertions');process.exit(failures?1:0);

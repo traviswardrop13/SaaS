@@ -170,10 +170,22 @@ changing one. What follows from the rule:
   first shows games in Home's own art with Echo cheering, the second Echo
   waving.
 - **"Not now" goes to Home with everything locked:** every game and book is
-  "Premium", the Books card says "Premium", and a tap asks a grown-up without
-  pointing at free games there are none of. The free days starting (or a
+  "Premium" and the Books card says "Premium". The free days starting (or a
   restore) on the hand-off opens the first game setup chose, not Home
   (`nextAfterBuy()`).
+- **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
+  2026: "I want it to open automatically if they click on a game that is
+  grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the
+  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`),
+  for any family Sona can sell to (`offerOnLock()`), free version or not. The
+  plan screen asks no check for a `?from=` visit that shows the offer: Apple
+  wants a parental gate before a buy screen only in its Kids category, which
+  Sona is not in, and Apple's own sheet asks for Face ID or the password
+  before anything is bought. A `?from=` visit that shows no offer (Premium
+  already, a phone that cannot buy, an unknown game) is Settings › Your plan
+  and goes through the check. On a phone that cannot buy, the note stays:
+  there is nothing to open. A typed address to a grey game (`?locked=` from a
+  bounce) still shows the note: it is not a tap.
 - **No surface tells such a family something stays free.** Home's "Free"
   label and "1 free book", the plan screen's third check, its card lines, its
   header line, "What stays free", the decline ("Not now", never "keep the free
@@ -455,7 +467,10 @@ the first completed practice run ("Show a grown-up →" to
 `/subscribe.html?first=1` while `planEligible()` says so), and **whenever** a
 grown-up answers a child's tap on a locked game or book ("Ask a grown-up" →
 `premium.html`, which forwards a family it would offer to
-`/subscribe.html?from=<game>` or `?from=library`). Never during onboarding,
+`/subscribe.html?from=<game>` or `?from=library`). Since 4 Oct 2026, wherever
+Sona can sell, the tap itself opens that offer, with no note and no check in
+between (see "A tap on a grey game or book opens the price at once" under
+"TRIAL FIRST"); the note and `premium.html` remain for a phone that cannot buy. Never during onboarding,
 which used to end at a price screen before the child had said a word. It is an
 offer, not a wall, it is inert while free, and it never fires for anyone
 already entitled. Declining leaves Home with every game but the free ones
@@ -942,8 +957,9 @@ open in every pricing state, marked "Free" while others are locked; every
 other book that is out is Premium and opens exactly when a Premium game does
 (`booksOpen()`: Sona free, Premium from any source, or a trial; never the
 three-day demonstration window `gated()` honours, or a new family would watch
-the shelf lock under them), greyed and marked "Premium", and a tap shows the
-grown-up message ("Ask a
+the shelf lock under them), greyed and marked "Premium", and a tap opens the
+plan screen at once where Sona can sell (4 Oct 2026, see "TRIAL FIRST"), or
+elsewhere shows the grown-up message ("Ask a
 grown-up to help open …", naming the free one) with the button to
 `premium.html`, behind the grown-ups gate. `openBook()` refuses a locked book
 too. A child whose own books are all locked or coming sees the free book first.
@@ -1985,8 +2001,10 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
     0.8; a volume of 0 stays muted, and only then Settings shows "Sound is off
     in Sona." with "Turn sound on". Never bring back a level control: a saved
     level nobody can change is how families got stuck at 30% once.
-  - No parent code: the grown-ups check is always four number words (it stays:
-    the paywall is on, and Apple wants a check before a buy screen).
+  - No parent code: the grown-ups check is always four number words (it stays
+    for Settings, Progress and Talk to us). Apple wants a check before a buy
+    screen only in its Kids category, which Sona is not in, so since 4 Oct
+    2026 the offer a grey game or book opens skips it (see "TRIAL FIRST").
   - Focus-sound buttons show a grey "by ~Ny" and nothing else. Nothing in the
     code gates a sound by age, despite "Developmental order is real" below;
     building a real gate is Rachel's call.

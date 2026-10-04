@@ -245,7 +245,14 @@
       function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name));return {allowed:ok,tier:game.tier,reason:ok?"book":"premium"};}
       function launch(game){
         if(game.kind==="book"){clearMessage();location.href=game.go;return;}
-        if(!access(game).allowed){showLocked(game);return;}
+        if(!access(game).allowed){
+          // a grey game opens the price at once where Sona can sell (Travis,
+          // 4 Oct 2026); a Coming soon one, or a phone that cannot buy, keeps
+          // the grown-up note
+          var soon=game.comingSoon||access(game).reason==="coming-soon",offer=false;try{offer=!soon&&!!(S.offerOnLock&&S.offerOnLock());}catch(e){}
+          if(offer){clearMessage();location.href="/subscribe.html?from="+encodeURIComponent(game.key);return;}
+          showLocked(game);return;
+        }
         clearMessage();
         location.href=game.go;
       }
