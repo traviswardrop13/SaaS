@@ -69,7 +69,7 @@ function phone(cfg) {
   if (cfg.setUp) once("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: cfg.age || "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false }));
   if (cfg.slp) once("sona.slpok", "1");
   if (cfg.webSells) sessionStorage.setItem("sona.websalesui", "1");
-  sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  if (!cfg.noGate) sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 }
 async function fresh(cfg = {}, viewport = { width: 390, height: 844 }) {
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
@@ -255,9 +255,13 @@ try {
         h.every((c) => c.locked === "true" && c.label === "Premium"), h);
       const books = await page.evaluate(() => document.getElementById("booksTag").textContent);
       ok("…and the Books card says Premium, not \"1 free book\"", books === "Premium", books);
+      // a grey game opens the price at once (Travis, 4 Oct 2026: "I want it
+      // to open automatically if they click on a game that is grayed out")
       await page.locator('.game-card[data-game="slice"]').click();
-      const msg = await page.evaluate(() => document.getElementById("libraryMessage") ? document.getElementById("libraryMessage").textContent : document.querySelector("#libraryNotice p, #libraryNotice").textContent);
-      ok("a tap on Fruit Slice asks for a grown-up, and points at no free games, since there are none", /^Ask a grown-up to help open Fruit Slice\.$/.test(msg.trim()), msg);
+      await page.waitForURL(/\/subscribe\.html\?from=slice$/);
+      await page.waitForFunction(() => document.body.classList.contains("offer"));
+      const o = await page.evaluate(() => ({ title: document.getElementById("offerTitle").textContent, card: getComputedStyle(document.getElementById("iapCard")).display !== "none", decline: document.getElementById("declineLink").textContent }));
+      ok("a tap on grey Fruit Slice opens the price at once, on that game, with \"Not now\" under it", /^Unlock Fruit Slice, and every other game$/.test(o.title) && o.card && o.decline === "Not now", o);
       ok("Not now: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
@@ -284,6 +288,53 @@ try {
       const fit2 = await page.evaluate(() => { const b = document.getElementById("tiDateGo").getBoundingClientRect(); return { bottom: b.bottom, h: innerHeight }; });
       ok(w + "x" + h + ": and the second screen's Continue", fit2.bottom <= fit2.h, fit2);
       ok(w + ": no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+
+  // ── a grey game or book, with no grown-up check this session ──
+  await scenario("a grey game, no check", async () => {
+    const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro: "free3", noGate: true });
+    try {
+      await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator('.game-card[data-game="stack"]').click();
+      await page.waitForURL(/\/subscribe\.html\?from=stack$/);
+      await page.waitForFunction(() => document.body.classList.contains("offer") && getComputedStyle(document.getElementById("iapCard")).display !== "none");
+      await page.waitForTimeout(400);
+      const v = await page.evaluate(() => ({ path: location.pathname + location.search, shown: getComputedStyle(document.documentElement).display !== "none" && getComputedStyle(document.documentElement).visibility !== "hidden",
+        tabs: getComputedStyle(document.querySelector(".family-tabs")).display === "none", gate: !!sessionStorage.getItem("sona.gate.v1") }));
+      ok("a grey game opens the price with no grown-up check in between, and opens nothing else of the grown-ups' pages", v.path === "/subscribe.html?from=stack" && v.shown && v.tabs && !v.gate, v);
+      ok("grey game, no check: no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+  await scenario("a grey book", async () => {
+    const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro: "free3", noGate: true });
+    try {
+      await page.goto(BASE + "/library.html"); await page.waitForFunction(() => document.querySelectorAll(".bookBtn.locked").length > 0);
+      await page.locator(".bookBtn.locked").first().click();
+      await page.waitForURL(/\/subscribe\.html\?from=library$/, { timeout: 6000 });
+      ok("a grey book opens the price at once too", /\/subscribe\.html\?from=library$/.test(page.url()), page.url());
+      ok("grey book: no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+  await scenario("a phone that cannot buy", async () => {
+    const { context, page, errors } = await fresh({ app: "nobuy", stamp: "post", setUp: true });
+    try {
+      await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator('.game-card[data-game="stack"]').click();
+      await page.waitForTimeout(500);
+      const v = await page.evaluate(() => ({ path: location.pathname, notice: !document.getElementById("libraryNotice").hidden, msg: document.getElementById("libraryMessage").textContent }));
+      ok("on a phone that cannot buy, a grey game still shows the grown-up note: there is nothing to open", v.path === "/today.html" && v.notice && /^Ask a grown-up to help open Block Stacker\./.test(v.msg), v);
+      ok("cannot buy: no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
+  await scenario("the plan page by address, with Premium", async () => {
+    const { context, page } = await fresh({ app: "buy", stamp: "post", setUp: true, noGate: true });
+    try {
+      await page.goto(BASE + "/today.html"); await page.waitForFunction(() => window.Sona && Sona.premium);
+      await page.evaluate(() => localStorage.setItem("sona.founder", "1"));
+      await page.goto(BASE + "/subscribe.html?from=stack");
+      await page.waitForURL(/\/today\.html\?gate=1/, { timeout: 6000 }).catch(() => {});
+      ok("a ?from= visit that shows no offer (this family has Premium) is Settings › Your plan, and asks the grown-up check", /\/today\.html\?gate=1/.test(page.url()), page.url());
     } finally { await context.close(); }
   });
 
