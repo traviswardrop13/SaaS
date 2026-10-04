@@ -247,6 +247,32 @@
     body.fit5 .offer-art { display:none; }
     body.fit5 .offer-pill { margin-top:0; }
 
+
+    /* ── THE PLAN PICK, REIMAGINED (Travis, 4 Oct 2026: "I don't love the look
+       of the paywall ... let's reimagine it a bit"). In the offer the two ways
+       to pay stand side by side as two tiles: the plan's name small on top,
+       its price big, one line under it. The words are the same words (the
+       "Sona Premium — " and "Monthly — " lead-ins and the tag's second half
+       are only folded away, so every reader of the text still finds them);
+       the radio dot gives way to a check badge on the picked tile. */
+    body.offer .planpick { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:stretch; padding-top:12px; }
+    body.offer .planpick .plan, body.offer #planMonth, body.offer #iapPlanMo { margin:0; padding:22px 10px 13px !important; text-align:center;
+      border-radius:22px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+    body.offer .planpick .plan:after { top:-9px; right:-7px; margin:0; width:26px; height:26px; border-width:3px; border-color:#fffaf0; background:#e9dcc6; }
+    body.offer .planpick .plan[aria-checked="true"]:after { border-color:#fffaf0; background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat; }
+    body.offer .planpick .plan[aria-checked="false"] { background:#fffaf2; border-color:#eadcc4; box-shadow:none; }
+    body.offer .planpick .plan[aria-checked="true"] { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
+    body.offer .plan .tag { position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap; margin:0; }
+    body.offer .plan .tagmore { display:none; }
+    body.offer .plan b .pname { font-size:0; display:block; }
+    body.offer .plan b .pname:before { content:attr(data-short); display:block; font-family:Nunito,sans-serif; font-size:14px; font-weight:800;
+      letter-spacing:.02em; color:#8a6f52; text-transform:uppercase; margin-bottom:3px; }
+    body.offer .plan b { display:block; font-family:"Baloo 2"; font-size:25px; line-height:1.05; letter-spacing:-.3px; }
+    body.crafted-family.offer .plan .save, body.offer .plan .paynote { font-size:12.5px; line-height:1.3; margin-top:6px; font-weight:700; color:#7a6047; }
+    body.offer .planbuy { margin-top:14px; }
+    body.offer .planbuy .go { font-size:21px; padding-top:17px; padding-bottom:17px; }
+    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:18px 8px 10px !important; }
+    body.fit3.offer .plan b { font-size:22px; }
     /* ── TRIAL FIRST: the two screens before the price (3 Oct 2026) ──
        Only on the hand-off from setup, and only once the store has said the
        yearly plan starts with free days. While they are up, nothing else on
@@ -378,13 +404,13 @@
            starts with free days. -->
       <div class="planpick" id="iapPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="iapPlan" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
-        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b>Sona Premium — <span id="iapPrice">$59.99/yr</span></b>
+        <span class="tag">3 DAYS FREE<span class="tagmore"> · EVERYTHING INCLUDED</span></span>
+        <b><span class="pname" data-short="Yearly">Sona Premium — </span><span id="iapPrice">$59.99/yr</span></b>
         <span class="save">Billed once a year.</span>
         <span class="sub">Nothing is charged during your 3 free days. Sona Premium: every game and every book. Daily practice and free games stay free either way.</span>
       </div>
       <div class="plan" id="iapPlanMo" role="radio" aria-checked="false" tabindex="-1" data-plan="monthly" style="display:none;">
-        <b>Monthly — <span id="iapPriceMo"></span></b>
+        <b><span class="pname" data-short="Monthly">Monthly — </span><span id="iapPriceMo"></span></b>
         <span class="paynote">Charged today. Cancel anytime.</span>
       </div>
       </div>
@@ -434,8 +460,8 @@
            #planLine and trialTimeline()'s billing line move with it. -->
       <div class="planpick" id="webPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="planLife" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
-        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b id="webTitle">Sona Premium — $59.99/yr</b>
+        <span class="tag">3 DAYS FREE<span class="tagmore"> · EVERYTHING INCLUDED</span></span>
+        <b id="webTitle"><span class="pname" data-short="Yearly">Sona Premium — </span><span id="webPrice">$59.99/yr</span></b>
         <!-- CHARTER. Filled by /api/charter at load: while the first fifty
              spots last, this names the standard price and how many are left
              (the count only when Stripe answered it — a guessed scarcity
@@ -455,7 +481,7 @@
            the bottom"): the first says the same thing as a fact about the
            plan rather than as something it lacks. -->
       <div class="plan" id="planMonth" role="radio" aria-checked="false" tabindex="-1" data-plan="monthly">
-        <b>Monthly — <span id="monthPrice">$9.99</span>/mo</b>
+        <b><span class="pname" data-short="Monthly">Monthly — </span><span class="pfig"><span id="monthPrice">$9.99</span>/mo</span></b>
         <span class="paynote">Charged today. Cancel anytime.</span>
       </div>
       </div>
@@ -1268,7 +1294,7 @@
             // paintWeb, from yearPrice and yearPer). Monthly does not move.
             yearValue = 99.99; window.__yearPrice = j.standard;
             yearPrice = j.standard; yearPer = "under $8.50 a month";
-            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Premium — " + j.standard + "/yr";
+            var t = document.getElementById("webPrice"); if (t) t.textContent = j.standard + "/yr";
             var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
             trialTimeline("webTL", false);
           }
