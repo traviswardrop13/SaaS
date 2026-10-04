@@ -197,15 +197,21 @@ try{
   await pg.goto(base+'/arcade-hoops.html');await pg.locator('#startBtn').click();
   const listening=await pg.waitForFunction(()=>window.__sayplay&&__sayplay.listening===true&&h.live()===1,{},{timeout:9000}).then(()=>true,()=>false);
   const n=await pg.evaluate(()=>{const n=h.media.length;h.talk();return n;});
-  await pg.waitForFunction(n=>h.media.length>n,n,{timeout:10000}).catch(()=>{});
-  const heard=await pg.evaluate(async n=>{const a=h.media[n];if(!a)return {phase:__sayplay.phase,media:h.media.length,osc:h.osc,mic:h.mic};
-   const b=new DataView(await(await fetch(a.src)).arrayBuffer());let peak=0;for(let i=44;i+1<b.byteLength;i+=2)peak=Math.max(peak,Math.abs(b.getInt16(i,true)));
-   return {phase:__sayplay.phase,blob:a.src.startsWith('blob:'),micLive:a.micLive,osc:h.osc,pcm:h.pcm,riff:String.fromCharCode(b.getUint8(0),b.getUint8(1),b.getUint8(2),b.getUint8(3)),rate:b.getUint32(24,true),secs:+((b.byteLength-44)/2/b.getUint32(24,true)).toFixed(2),peak:+(peak/32767).toFixed(3)};},n);
+  // Hoops rings two chimes at that same moment, Sona's "heard you" (0.34 s)
+  // and the ball dropping in (0.22 s), and either may start first: the heard
+  // one is found by its length, never by being first.
+  await pg.waitForFunction(n=>h.media.slice(n).filter(a=>!a.voice).length>=2,n,{timeout:10000}).catch(()=>{});
+  const heard=await pg.evaluate(async n=>{const out={phase:__sayplay.phase,media:h.media.length,osc:h.osc,pcm:h.pcm,mic:h.mic,lengths:[]};
+   for(let i=n;i<h.media.length;i++){const a=h.media[i];if(a.voice)continue;
+    const b=new DataView(await(await fetch(a.src)).arrayBuffer()),secs=+((b.byteLength-44)/2/b.getUint32(24,true)).toFixed(2);out.lengths.push(secs);if(secs!==.34)continue;
+    let peak=0;for(let j=44;j+1<b.byteLength;j+=2)peak=Math.max(peak,Math.abs(b.getInt16(j,true)));
+    return Object.assign(out,{at:i,blob:a.src.startsWith('blob:'),micLive:a.micLive,riff:String.fromCharCode(b.getUint8(0),b.getUint8(1),b.getUint8(2),b.getUint8(3)),rate:b.getUint32(24,true),secs,peak:+(peak/32767).toFixed(3)});}
+   return out;},n);
   ok('the app, Hoops: Echo asks, the mic opens, and the child\'s word is heard',listening&&heard.phase==='play',heard);
   ok('the app plays the "heard you" chime as a media element, once the mic has closed',heard.blob===true&&heard.micLive===0,heard);
   ok('…and never through Web Audio: not one oscillator or buffer was made for it',heard.osc===0&&heard.pcm===0,heard);
   ok('the chime is a short recording with its level in the samples (an iPhone gives a media element no volume): 0.34 s, peaking near 0.4 of full level',heard.riff==='RIFF'&&heard.rate===24000&&heard.secs===.34&&heard.peak>.3&&heard.peak<.6,heard);
-  const again=await pg.evaluate(async n=>{const a=h.media[n],els=h.media.length,plays=a.plays;Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));return {els:h.media.length-els,plays:a.plays-plays,osc:h.osc};},n);
+  const again=await pg.evaluate(async at=>{const a=h.media[at];if(!a)return {};const els=h.media.length,plays=a.plays;Sona.sfx.correct();await new Promise(r=>setTimeout(r,30));return {els:h.media.length-els,plays:a.plays-plays,osc:h.osc};},heard.at);
   ok('one element a chime: the same chime again replays it from the top',again.els===0&&again.plays===1&&again.osc===0,again);
   const all=await pg.evaluate(()=>{const names=Object.keys(Sona.sfx).filter(k=>k!=='stop');names.forEach(k=>Sona.sfx[k]());names.forEach(k=>Sona.sfx[k]());const chimes=h.media.filter(a=>!a.voice);return {names,elements:chimes.length,blobs:chimes.every(a=>a.src.startsWith('blob:')),osc:h.osc};});
   ok('every Sona chime (tap, the win, the coin…) plays as media in the app, one element each however often it rings',all.names.length>=8&&all.elements===all.names.length&&all.blobs&&all.osc===0,all);
