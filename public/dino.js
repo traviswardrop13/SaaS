@@ -28,11 +28,14 @@
    keeps rubbing somewhere else the sand over it gives way as they rub
    (Rachel's rule: end every round on a success). It never digs by itself.
 
-   Its pictures are drawn here, plainly, until the art arrives. When a
-   dinosaur's painted picture lands (the whole animal, facing right, on a
-   transparent 440 x 230 picture with its feet near the bottom), set its
-   address in ART below and it is drawn in place of the drawn body, on the
-   cliff when it wakes and on the cards once it is found; nothing else changes.
+   Its pictures are painted (Travis, 4 Oct 2026: "add the ChatGPT art"),
+   from tools/art/game-sprites.json: the dig site, the sand and earth, and
+   each dinosaur (the whole animal, facing right). A dinosaur's picture is
+   fitted to its skeleton's outline and drawn in place of the drawn body, on
+   the cliff when it wakes and on the cards once it is found; its bones fade
+   away as it wakes, because a painting and a drawn skeleton never line up
+   bone for bone. The skeleton, its outline and the bones stay drawn: they are
+   what the child places. Each falls back to the drawn one until it loads.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
@@ -155,7 +158,7 @@
   var SKULL_LONG = [[-26, 6], [-23, -15], [-3, -23], [18, -18], [37, -7], [41, 6], [31, 15], [4, 17], [-18, 14]];
 
   var DINOS = [
-    { id: "trex", name: "T. rex", a: "a", fill: "#8BD07A", edge: "#5FA04F", far: "#74BA63",
+    { id: "trex", name: "T. rex", a: "a", fill: "#8BD07A", paint: "#9CC454", edge: "#5FA04F", far: "#74BA63",
       look: [
         { as: "far", pts: [[266, 152], [278, 174], [268, 186], [296, 195, 1], [248, 197, 1], [246, 184], [238, 158]] },
         { as: "body", pts: [[62, 98, 1], [108, 86], [158, 78], [200, 74], [240, 74], [264, 62], [272, 38], [294, 16], [330, 13], [364, 22], [392, 36], [394, 58], [374, 67], [326, 70, 1],
@@ -177,7 +180,7 @@
       ],
       spots: [[0.3, 0.5], [0.72, 0.5], [0.5, 0.62], [0.28, 0.42], [0.66, 0.6], [0.4, 0.4], [0.62, 0.45], [0.42, 0.55]] },
 
-    { id: "tri", name: "Triceratops", a: "a", fill: "#B8A2F2", edge: "#8671CC", far: "#A28BE3", accent: "#A28BE3", light: "#D8CBFA",
+    { id: "tri", name: "Triceratops", a: "a", fill: "#B8A2F2", paint: "#DCC4EC", edge: "#8671CC", far: "#A28BE3", accent: "#A28BE3", light: "#D8CBFA",
       look: [
         { as: "far", pts: [[276, 160], [310, 160], [312, 195, 1], [280, 195, 1]] },
         { as: "far", pts: [[162, 160], [196, 160], [200, 195, 1], [166, 195, 1]] },
@@ -203,7 +206,7 @@
       ],
       spots: [[0.7, 0.5], [0.3, 0.5], [0.52, 0.4], [0.5, 0.62], [0.26, 0.45], [0.74, 0.55], [0.36, 0.55], [0.6, 0.5]] },
 
-    { id: "steg", name: "Stegosaurus", a: "a", fill: "#79C9DD", edge: "#4A9BB3", far: "#62B6CC", accent: "#FF8F86", accentEdge: "#D9655E",
+    { id: "steg", name: "Stegosaurus", a: "a", fill: "#79C9DD", paint: "#ECCCF4", edge: "#4A9BB3", far: "#62B6CC", accent: "#FF8F86", accentEdge: "#D9655E",
       look: [
         { as: "far", pts: [[292, 158], [322, 158], [326, 195, 1], [296, 195, 1]] },
         { as: "far", pts: [[170, 152], [208, 152], [212, 195, 1], [176, 195, 1]] },
@@ -229,7 +232,7 @@
       ],
       spots: [[0.5, 0.45], [0.26, 0.5], [0.72, 0.6], [0.4, 0.6], [0.66, 0.42], [0.3, 0.45], [0.5, 0.55], [0.7, 0.5]] },
 
-    { id: "bronto", name: "Brontosaurus", a: "a", fill: "#F3A2C3", edge: "#C8709A", far: "#E58DB2",
+    { id: "bronto", name: "Brontosaurus", a: "a", fill: "#F3A2C3", paint: "#9CDCEC", edge: "#C8709A", far: "#E58DB2",
       look: [
         { as: "far", pts: [[276, 154], [312, 154], [314, 195, 1], [282, 195, 1]] },
         { as: "far", pts: [[178, 154], [216, 154], [220, 195, 1], [184, 195, 1]] },
@@ -258,7 +261,19 @@
 
   // painted pictures, when they arrive (see the top of this file). No address
   // until then, so no page asks for a file that isn't there.
-  var ART = { trex: "", tri: "", steg: "", bronto: "" }, art = {};
+  // paint: the main body colour of each painted picture below, so a reader
+  // (the tests) can find the woken body whichever picture is drawn
+  var ART = { trex: "/assets/crafted/game/dino-trex.webp", tri: "/assets/crafted/game/dino-tri.webp", steg: "/assets/crafted/game/dino-steg.webp", bronto: "/assets/crafted/game/dino-bronto.webp" }, art = {};
+  var SITE = new Image(), SAND = new Image(), SOIL = new Image();
+  SITE.src = "/assets/crafted/game/dino-site.webp"; SOIL.src = "/assets/crafted/game/dino-soil.webp";
+  SAND.onload = function () { if (sand && grid) remakeSand(true); };
+  SAND.src = "/assets/crafted/game/dino-sand.webp";
+  // a dinosaur's painted picture, fitted to its drawn outline (d.box, in board
+  // units) so it stands where its skeleton is, its feet on the same line
+  function drawArt(c, d, k, ox, oy) {
+    var img = art[d.id], b = d.box, sc = Math.min(b.w / img.naturalWidth, b.h / img.naturalHeight) * k, w = img.naturalWidth * sc, h = img.naturalHeight * sc;
+    c.drawImage(img, ox + b.x * k - w / 2, oy + (b.y + b.h / 2) * k - h, w, h);   // b.x, b.y: the outline's centre
+  }
   DINOS.forEach(function (d) {
     if (!ART[d.id]) return;
     var img = new Image(); img.onload = function () { art[d.id] = img; paintCards(); }; img.src = ART[d.id];
@@ -339,6 +354,10 @@
   function boardPt(b) { return { x: board.x + b.at[0] * board.s, y: board.y + b.at[1] * board.s }; }
 
   function drawScene() {
+    if (SITE.complete && SITE.naturalWidth) {
+      var sc = Math.max(W / SITE.naturalWidth, H / SITE.naturalHeight), sw = SITE.naturalWidth * sc, sh = SITE.naturalHeight * sc;
+      ctx.drawImage(SITE, (W - sw) / 2, 0, sw, sh); return;
+    }
     // sky and sun
     var g = ctx.createLinearGradient(0, 0, 0, H * 0.55);
     g.addColorStop(0, "#FFE2B8"); g.addColorStop(1, "#FFF3DF");
@@ -362,7 +381,7 @@
   // and a cheek) or "todo" (a dashed outline: one still to find).
   function drawLook(c, d, k, ox, oy, how, lw) {
     var todo = how === "todo";
-    if (!todo && art[d.id]) { c.drawImage(art[d.id], ox, oy, 440 * k, 230 * k); return; }
+    if (!todo && art[d.id]) { drawArt(c, d, k, ox, oy); return; }
     c.lineJoin = "round"; c.lineWidth = lw;
     if (todo) {
       // One still to find is ONE dashed line round the whole animal. Every
@@ -413,7 +432,7 @@
     if (wake > 0) { ctx.save(); ctx.globalAlpha = wake; drawLook(ctx, cur, board.s, board.x, board.y, "awake", 3); ctx.restore(); }
     for (var i = 0; i < cur.bones.length; i++) {
       var b = cur.bones[i], p = boardPt(b), k = board.s * (b.size || 1);
-      if (i < found) drawBone(ctx, b, p.x, p.y, k, b.rot, wake > 0 ? 1 - wake * 0.62 : 1, false, 1 - wake);
+      if (i < found) drawBone(ctx, b, p.x, p.y, k, b.rot, wake > 0 ? 1 - wake * (art[cur.id] ? 1 : 0.62) : 1, false, 1 - wake);
       else if (!(fly && i === found)) drawBone(ctx, b, p.x, p.y, k, b.rot, 0.9, true);
     }
     if (wake > 0 && !art[cur.id]) { ctx.save(); ctx.globalAlpha = wake; drawFace(ctx, cur, board.s, board.x, board.y); ctx.restore(); }
@@ -429,7 +448,8 @@
     sand = document.createElement("canvas"); sand.width = Math.max(1, Math.round(pit.w)); sand.height = Math.max(1, Math.round(pit.h));
     sandCtx = sand.getContext("2d");
     sandCtx.fillStyle = "#EBC48A"; sandCtx.fillRect(0, 0, sand.width, sand.height);
-    for (var i = 0; i < 260; i++) {
+    if (SAND.complete && SAND.naturalWidth) { sandCtx.fillStyle = sandCtx.createPattern(SAND, "repeat"); sandCtx.fillRect(0, 0, sand.width, sand.height); }
+    else for (var i = 0; i < 260; i++) {
       var sx = ((i * 97) % 1000) / 1000 * sand.width, sy = ((i * 61 + 13) % 1000) / 1000 * sand.height, s = 1 + (i % 4);
       sandCtx.fillStyle = i % 3 ? "#D9A866" : "#F6DCA8"; sandCtx.beginPath(); sandCtx.arc(sx, sy, s, 0, Math.PI * 2); sandCtx.fill();
     }
@@ -475,6 +495,7 @@
     ctx.fillStyle = "rgba(120,72,30,.25)"; rr(ctx, pit.x - 6, pit.y + 6, pit.w + 12, pit.h + 6, 26); ctx.fill();
     rr(ctx, pit.x, pit.y, pit.w, pit.h, 22); ctx.clip();
     ctx.fillStyle = "#B97A45"; ctx.fillRect(pit.x, pit.y, pit.w, pit.h);
+    if (SOIL.complete && SOIL.naturalWidth) { ctx.fillStyle = ctx.createPattern(SOIL, "repeat"); ctx.fillRect(pit.x, pit.y, pit.w, pit.h); }
     for (var i = 0; i < 40; i++) { ctx.fillStyle = "rgba(90,52,20,.18)"; ctx.beginPath(); ctx.arc(pit.x + ((i * 53) % 100) / 100 * pit.w, pit.y + ((i * 37 + 7) % 100) / 100 * pit.h, 2 + (i % 3), 0, Math.PI * 2); ctx.fill(); }
     if (dig && state !== "flying" && state !== "placed") {
       var pop = state === "found" ? Math.sin(Math.min(1, (clock - dig.foundAt) / 0.4) * Math.PI) * 10 : 0;
@@ -627,7 +648,6 @@
     var c = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = Math.max(3, w * 0.05);
     var k = Math.min((w - pad * 2) / d.box.w, (h - pad * 2) / d.box.h);
     c.clearRect(0, 0, w, h);
-    if (how !== "todo" && art[d.id]) { var ak = Math.min(w / 440, h / 230); c.drawImage(art[d.id], (w - 440 * ak) / 2, (h - 230 * ak) / 2, 440 * ak, 230 * ak); return; }
     drawLook(c, d, k, w / 2 - d.box.x * k, h / 2 - d.box.y * k, how, Math.max(3.2, w / 70));
   }
   function names(list) { return list.map(function (d) { return d.name; }).join(", "); }
@@ -658,8 +678,8 @@
   // ── what the engine calls ──
   function publish() {
     try { window.__dino = { state: state, found: found, count: count, rubs: rubs, frozen: frozen, revealed: +revealed().toFixed(3),
-      dino: cur.id, name: cur.name, fill: cur.fill, got: kept.got.slice(), bones: cur.bones.map(function (b) { return b.id; }),
-      dinos: DINOS.map(function (d) { return { id: d.id, name: d.name, fill: d.fill }; }),
+      dino: cur.id, name: cur.name, fill: cur.fill, paint: cur.paint, got: kept.got.slice(), bones: cur.bones.map(function (b) { return b.id; }),
+      dinos: DINOS.map(function (d) { return { id: d.id, name: d.name, fill: d.fill, paint: d.paint }; }),
       pit: { x: +pit.x.toFixed(1), y: +pit.y.toFixed(1), w: +pit.w.toFixed(1), h: +pit.h.toFixed(1) },
       bone: dig ? { id: dig.bone.id, x: +dig.x.toFixed(1), y: +dig.y.toFixed(1), w: +dig.w.toFixed(1), h: +dig.h.toFixed(1) } : null,
       glow: !!(dig && state === "ready" && clock >= glowAt), awake: wakeAt >= 0 }; } catch (e) {}

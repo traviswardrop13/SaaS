@@ -170,10 +170,22 @@ changing one. What follows from the rule:
   first shows games in Home's own art with Echo cheering, the second Echo
   waving.
 - **"Not now" goes to Home with everything locked:** every game and book is
-  "Premium", the Books card says "Premium", and a tap asks a grown-up without
-  pointing at free games there are none of. The free days starting (or a
+  "Premium" and the Books card says "Premium". The free days starting (or a
   restore) on the hand-off opens the first game setup chose, not Home
   (`nextAfterBuy()`).
+- **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
+  2026: "I want it to open automatically if they click on a game that is
+  grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the
+  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`),
+  for any family Sona can sell to (`offerOnLock()`), free version or not. The
+  plan screen asks no check for a `?from=` visit that shows the offer: Apple
+  wants a parental gate before a buy screen only in its Kids category, which
+  Sona is not in, and Apple's own sheet asks for Face ID or the password
+  before anything is bought. A `?from=` visit that shows no offer (Premium
+  already, a phone that cannot buy, an unknown game) is Settings › Your plan
+  and goes through the check. On a phone that cannot buy, the note stays:
+  there is nothing to open. A typed address to a grey game (`?locked=` from a
+  bounce) still shows the note: it is not a tap.
 - **No surface tells such a family something stays free.** Home's "Free"
   label and "1 free book", the plan screen's third check, its card lines, its
   header line, "What stays free", the decline ("Not now", never "keep the free
@@ -455,7 +467,10 @@ the first completed practice run ("Show a grown-up →" to
 `/subscribe.html?first=1` while `planEligible()` says so), and **whenever** a
 grown-up answers a child's tap on a locked game or book ("Ask a grown-up" →
 `premium.html`, which forwards a family it would offer to
-`/subscribe.html?from=<game>` or `?from=library`). Never during onboarding,
+`/subscribe.html?from=<game>` or `?from=library`). Since 4 Oct 2026, wherever
+Sona can sell, the tap itself opens that offer, with no note and no check in
+between (see "A tap on a grey game or book opens the price at once" under
+"TRIAL FIRST"); the note and `premium.html` remain for a phone that cannot buy. Never during onboarding,
 which used to end at a price screen before the child had said a word. It is an
 offer, not a wall, it is inert while free, and it never fires for anyone
 already entitled. Declining leaves Home with every game but the free ones
@@ -942,8 +957,9 @@ open in every pricing state, marked "Free" while others are locked; every
 other book that is out is Premium and opens exactly when a Premium game does
 (`booksOpen()`: Sona free, Premium from any source, or a trial; never the
 three-day demonstration window `gated()` honours, or a new family would watch
-the shelf lock under them), greyed and marked "Premium", and a tap shows the
-grown-up message ("Ask a
+the shelf lock under them), greyed and marked "Premium", and a tap opens the
+plan screen at once where Sona can sell (4 Oct 2026, see "TRIAL FIRST"), or
+elsewhere shows the grown-up message ("Ask a
 grown-up to help open …", naming the free one) with the button to
 `premium.html`, behind the grown-ups gate. `openBook()` refuses a locked book
 too. A child whose own books are all locked or coming sees the free book first.
@@ -1199,6 +1215,8 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 - **Its sounds go through the engine** (`game.sounds`: swish, whoosh, clank,
   bounce, made on the phone), so each waits for a closed mic like a chime.
 - **Nothing is practice data**, as in every Say & Play game.
+Its gym wall, ball and (since 4 Oct 2026) backboard are painted
+(`public/assets/crafted/game/`); the rim, net and floor stay drawn.
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
 `tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
@@ -1223,8 +1241,10 @@ the ball goes. What it keeps, as Hoops does:
 Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
 from main's covers, 1 Oct 2026), and the website tile is cut from it; the
 sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
-through `PLAYED`), and painted art drops in at that name. Bo's own picture drops in by setting
-`KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
+through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
+painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
+`public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
+drawn, because they move and carry the perspective. On Home the eight big-kid games fill four even rows of two, so
 neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
 whole game.
 
@@ -1253,7 +1273,11 @@ types of dinosaurs to look for not just one"): T. rex, Triceratops,
 Stegosaurus, Brontosaurus, dug in that order, a new one each finished round,
 round again after the last. Each has its own skeleton outline, its own eight
 bones and places in the pit, and its own body and colour when it wakes (data in
-`DINOS` in `dino.js`, drawn from one small kit; painted art drops in at `ART`).
+`DINOS` in `dino.js`, drawn from one small kit). Since 4 Oct 2026 the dig
+site, the sand, the earth and each woken dinosaur are painted (`ART`,
+`public/assets/crafted/game/dino-*.webp`); a painted dinosaur is fitted to its
+skeleton's outline and its bones fade as it wakes, since a painting never
+lines up bone for bone. The skeleton, its outline and the bones stay drawn.
 The round is the child's (`sona.dino.v1`, one of `PER_KID`, kept by the page
 through `Sona.kkey`; `dino.js` never touches storage): a brother or sister
 starts at the T. rex, and one left half dug waits, from its first bone. The
@@ -1330,9 +1354,9 @@ on the same play-game hook as Hoops. What it keeps:
   quiet phone call (and not at all with the ringer off). A browser keeps Web
   Audio. How loud they are on a real phone is `MEDIA_PEAK` in the page: it was
   set without a phone to listen on. A muted Sona (volume 0) plays none.
-- **Its wand, basket and sky are drawn plainly in code** until painted ones
-  arrive (`WAND_PIC` in `bubbles.js` is the drop-in); the bubble is the
-  painted one, the word pictures are Feed Echo's.
+- **Its sky, wand, bubble and basket are painted** (4 Oct 2026,
+  `public/assets/crafted/game/bubbles-*.webp`; the basket is
+  `crafted-bubbles.css`'s background); the word pictures are Feed Echo's.
 - **Nothing is practice data**; each heard word is one rep on the week's
   count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
   <word>." with start-of-word words for the child's sound, and "heard" is a
@@ -1985,8 +2009,10 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
     0.8; a volume of 0 stays muted, and only then Settings shows "Sound is off
     in Sona." with "Turn sound on". Never bring back a level control: a saved
     level nobody can change is how families got stuck at 30% once.
-  - No parent code: the grown-ups check is always four number words (it stays:
-    the paywall is on, and Apple wants a check before a buy screen).
+  - No parent code: the grown-ups check is always four number words (it stays
+    for Settings, Progress and Talk to us). Apple wants a check before a buy
+    screen only in its Kids category, which Sona is not in, so since 4 Oct
+    2026 the offer a grey game or book opens skips it (see "TRIAL FIRST").
   - Focus-sound buttons show a grey "by ~Ny" and nothing else. Nothing in the
     code gates a sound by age, despite "Developmental order is real" below;
     building a real gate is Rachel's call.

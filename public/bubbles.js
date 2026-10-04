@@ -23,8 +23,8 @@
    take a wider touch, and later still a touch anywhere pops the nearest one.
    A bubble never pops by itself.
 
-   Its wand, basket and sky are drawn here, plainly, until the art arrives
-   (the bubble itself is the painted one). The word pictures are the painted
+   Its sky, wand, bubble and basket are painted (Travis, 4 Oct 2026), from
+   tools/art/game-sprites.json; each falls back to a drawn one until it loads. The word pictures are the painted
    ones Feed Echo uses; they are HTML, laid over the canvas.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
@@ -50,7 +50,8 @@
   var BUB = new Image(), INSIDE = new Image();
   BUB.src = "/assets/crafted/game/bubble.webp"; INSIDE.src = "/assets/crafted/echo-cheer.webp";
   // Drop-ins for painted art when it arrives: a wand and a basket picture.
-  var WAND_PIC = "", wandImg = null;
+  var WAND_PIC = "/assets/crafted/game/bubbles-wand.webp", wandImg = null;
+  var SKY = new Image(); SKY.src = "/assets/crafted/game/bubbles-sky.webp";
 
   function el(id) { return document.getElementById(id); }
   function resize() {
@@ -66,6 +67,12 @@
 
   // ── drawing ──
   function drawSky() {
+    // the painted sky and hill (Travis, 4 Oct 2026), covering the board; the
+    // drawn one until it loads
+    if (SKY.complete && SKY.naturalWidth) {
+      var sc = Math.max(W / SKY.naturalWidth, H / SKY.naturalHeight), sw = SKY.naturalWidth * sc, sh = SKY.naturalHeight * sc;
+      ctx.drawImage(SKY, (W - sw) / 2, H - sh, sw, sh); return;
+    }
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, "#BFE6F7"); g.addColorStop(0.62, "#E6F6F4"); g.addColorStop(1, "#F4F1D6");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -81,7 +88,10 @@
   // the wand: a stick from Echo's wing to a ring with a soap film in it
   function drawWand() {
     if (pose !== "wave" || state === "giant" || state === "burst") return;
-    if (wandImg && wandImg.complete && wandImg.naturalWidth) { ctx.drawImage(wandImg, (RING.x - 40) * s, (RING.y - 24) * s, 96 * s, 96 * s); return; }
+    // the painted wand: its ring's centre sits at (221.5, 72) of its 300 x 282
+    // picture, 77 out to the rim, so it is scaled to put that ring on RING;
+    // the handle's end then lands on Echo's wing (GRIP)
+    if (wandImg && wandImg.complete && wandImg.naturalWidth) { var wk = (RING.r + 2.5) / 77; ctx.drawImage(wandImg, (RING.x - 221.5 * wk) * s, (RING.y - 72 * wk) * s, 300 * wk * s, 282 * wk * s); return; }
     ctx.lineCap = "round";
     ctx.strokeStyle = "#B98450"; ctx.lineWidth = 6 * s;
     ctx.beginPath(); ctx.moveTo(GRIP.x * s, GRIP.y * s); ctx.lineTo((RING.x - 9) * s, (RING.y + 12) * s); ctx.stroke();

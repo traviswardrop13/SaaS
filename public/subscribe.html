@@ -16,20 +16,26 @@
         ok = !!t && age >= 0 && age < 10 * 60 * 1000;
       } catch (e) { ok = false; }
       if (!ok) {
+        // A TAP ON A GREY GAME OR BOOK OPENS THIS PAGE AT ONCE (Travis, 4 Oct
+        // 2026: "I want it to open automatically if they click on a game that
+        // is grayed out"), so the offer it opens (?from=) asks no grown-ups
+        // check: Sona is not in Apple's Kids category, whose rules want one,
+        // and Apple's own sheet asks for Face ID or the password before
+        // anything is bought. The script below sends any ?from= visit that
+        // shows no offer back through the check (Sona.requireGate, which
+        // carries ?from= along), so Settings › Your plan keeps it.
+        if (/[?&]from=[a-z]+(&|$)/.test(location.search)) return;
         document.documentElement.style.display = "none";
         // Carry where they were going. This guard runs BEFORE sona.js (that
         // is the point of it — no flash of a parent page), so it cannot call
         // Sona.gateDest; it names its own page literally instead. today.html
         // re-checks ?to= against the allowlist on arrival, which is the side
         // that reads an untrusted URL.
-        // ?first=1 is the hand-off from a completed run, ?setup=1 the one
-        // from the end of setup (trial first, 3 Oct 2026) and ?from=<game>
-        // the tap on a locked game; each changes the copy here, so they are
-        // the flags worth carrying home and back (Home re-checks ?from=
-        // against the catalog).
-        var fm = location.search.match(/[?&]from=([a-z]+)(&|$)/);
+        // ?first=1 is the hand-off from a completed run and ?setup=1 the one
+        // from the end of setup (trial first, 3 Oct 2026); each changes the
+        // copy here, so they are the flags worth carrying home and back.
         location.replace("/today.html?gate=1&to=" + encodeURIComponent(
-          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : /[?&]setup=1(&|$)/.test(location.search) ? "?setup=1" : fm ? "?from=" + fm[1] : "")));
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : /[?&]setup=1(&|$)/.test(location.search) ? "?setup=1" : "")));
       }
     })();
   </script>
@@ -626,8 +632,11 @@
   <script>
     // Parent-only page: re-check the gate once the shared helper is loaded, and
     // again on bfcache restores (back-swipe re-shows the page without scripts).
-    if (window.Sona && Sona.requireGate) Sona.requireGate();
-    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+    // (the offer a tap on a grey game or book opens, ?from=, asks no check;
+    // the end of the script sends this page through it if no offer showed)
+    var FROM_TAP = /[?&]from=[a-z]+(&|$)/.test(location.search);
+    if (!FROM_TAP && window.Sona && Sona.requireGate) Sona.requireGate();
+    window.addEventListener("pageshow", function (e) { if (e.persisted && !FROM_TAP && window.Sona && Sona.requireGate) Sona.requireGate(); });
 
     // The free games, named from the catalog (27 Sep 2026): a fixed "Four
     // free games" went stale the day Bubble Pop was parked.
@@ -1428,6 +1437,11 @@
       };
       paint();
     })();
+
+    // A ?from= visit that is not showing the offer (a family that already has
+    // Premium, a phone that cannot buy, an unknown game in the address) is
+    // Settings › Your plan, a grown-ups page: it asks the check after all.
+    try { if (FROM_TAP && !document.body.classList.contains("offer") && window.Sona && Sona.requireGate) Sona.requireGate(); } catch (e) {}
 
     // card icons from the shared icon kit (the inline SVG stays as fallback)
     (function () { try {

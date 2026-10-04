@@ -48,7 +48,11 @@ body[data-setup-screen="welcome"] .obfoot { background: none; }
 /* The remaining setup pages share the quieter cream-card side of the boards.
    The scroll area stays separate from the fixed controls for native keyboards. */
 html { background: #fff6e9; }
-body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at 75% 0, #fffdf7, #fff6e9 75%); color: #48280f; }
+/* The colour under the gradient is load-bearing (4 Oct 2026): the iPhone
+   keyboard plugin (autoBackdropColor: "dom") paints the area behind the
+   keyboard's rounded corners from the body's background COLOUR, and a gradient
+   alone reads as transparent, which showed black corners while typing a name. */
+body:not([data-setup-screen="welcome"]) { background: #fff6e9 radial-gradient(ellipse at 75% 0, #fffdf7, #fff6e9 75%); color: #48280f; }
 .ob { max-width: 480px; padding-left: 22px; padding-right: 22px; scroll-padding-block: 18px 24px; }
 .ob .seg { margin: 6px 0 24px; gap: 7px; flex-shrink: 0; }
 .ob .seg > i { height: 5px; background: #e6ded0; }
