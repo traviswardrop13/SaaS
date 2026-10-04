@@ -353,7 +353,11 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   // sona.js's per-child keys, so a brother or sister starts at the first
   const perKid = (readFileSync(ROOT + "/sona.js", "utf8").match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("the round of dinosaurs is kept per child: the page's key goes through Sona.kkey, and sona.js lists it", /Sona\.kkey\("sona\.dino\.v1"\)/.test(dp) && perKid.includes('"sona.dino.v1"') && !/localStorage\.\w+\((?!DINOKEY)/.test(dp));
-  ok("the dinosaurs are drawn, not downloaded, and none is an emoji", !/\.(?:png|jpe?g|svg|gif)\b/.test(dug) && (dug.match(/\.webp/g) || []).length === 2 && !/[\u{1F300}-\u{1FAFF}]/u.test(dug));
+  // the dinosaurs and the dig are painted since 4 Oct 2026 (Travis: "add the
+  // ChatGPT art"): every picture is a webp in the crafted game folder that is
+  // really there, each dinosaur has its own, and none is an emoji
+  const pics = [...dug.matchAll(/"(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+  ok("the dinosaurs are painted pictures that exist, one each, and none is an emoji", !/\.(?:png|jpe?g|svg|gif)\b/.test(dug) && pics.length > 0 && pics.every((u) => /^\/assets\/crafted\/(?:game\/)?[\w-]+\.webp$/.test(u) && existsSync(ROOT + u)) && ["trex", "tri", "steg", "bronto"].every((id) => pics.includes("/assets/crafted/game/dino-" + id + ".webp")) && !/[\u{1F300}-\u{1FAFF}]/u.test(dug), pics);
 }
 {
   // Bubble Pop is on this engine too (1 Oct 2026), but it is NOT a catalog
