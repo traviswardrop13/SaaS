@@ -45,26 +45,28 @@ async function fresh(config={}){
   page.on('dialog',dialog=>dialog.dismiss());await page.goto(base+'/onboarding.html');return {context,page,errors,requests};
 }
 async function next(page){await page.locator('#nextBtn').click();}
-// The first screen asks who is setting Sona up (Travis, 1 Oct 2026); either
-// answer goes straight on, so a parent's one tap reaches the name.
-async function who(page,role='parent'){await page.locator('.who-pick[data-role="'+role+'"]').click();}
+// The first screen is a hello with one Continue, and the second asks who is
+// setting Sona up (Travis, 1 Oct 2026; its own page since 2 Oct); either answer
+// goes straight on, so a parent's one tap reaches the name.
+async function who(page,role='parent'){if(await page.evaluate(()=>document.body.dataset.setupScreen==='welcome'))await next(page);await page.locator('[data-step="who"].on').waitFor();await page.locator('.who-pick[data-role="'+role+'"]').click();}
 async function toName(page){await who(page);await page.locator('[data-step="name"].on').waitFor();}
 async function enter(page,{mode='speech',age='4',name='Milo'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
 async function choose(page,sound='R'){
   const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
-async function notNow(page){const b=page.locator('#micNotNow');if(await b.count())await b.click();else await next(page);await pastRachel(page);}
-// Meet Rachel is the last screen before the game for a parent's first child
-// (1 Oct 2026): it asks nothing, so the walks that are not about her pass it.
+async function notNow(page){await pastRachel(page);await page.locator('[data-step="mic"].on').waitFor();await page.locator('#micNotNow').click();}
+// Meet Rachel comes right before the microphone for a parent's first child
+// (2 Oct 2026): it asks nothing, so the walks that are not about her pass it.
 async function pastRachel(page){if(await page.locator('[data-step="rachel"].on').waitFor({timeout:700}).then(()=>true,()=>false))await next(page);}
-async function atHandoff(page){await pastRachel(page);await page.locator('[data-step="achieve"].on').waitFor();}
+async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
 function clean(name,errors){ok(name+': no runtime errors',errors.length===0,errors);}
 function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair'&&r.method==='POST');}
 
 await scenario('sound selection and private paced handoff',async()=>{
  const {context,page,errors,requests}=await fresh();try{
-  ok('welcome uses the moving-phone link without a website purchase pitch',/Moving from another phone/.test(await page.locator('#moveLink').innerText())&&!/Bought Sona/.test(await page.locator('[data-step="welcome"]').innerText()));
+  // Travis, 2 Oct 2026: "take off moving from another phone enter your code"
+  ok('the first screen is a hello with one Continue: no question, no move-in code, no purchase pitch',await page.evaluate(()=>document.body.dataset.setupScreen==='welcome'&&!document.getElementById('moveLink')&&!document.getElementById('moveSheet')&&!/Moving from another phone|Enter your code|Bought Sona/.test(document.body.innerText)&&getComputedStyle(document.querySelector('.obfoot')).display!=='none'&&document.getElementById('nextBtn').textContent.trim()==='Continue'&&document.getElementById('backBtn').style.display==='none'));
   ok('three progress groups match the three setup questions',await page.locator('#seg i').count()===3);
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   await enter(page);
@@ -76,9 +78,12 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('sound buttons remain easy to tap without overflowing a small phone',!choices.overflow&&choices.labels.every(b=>b.width>=44&&b.height>=44),choices);
   await choose(page);ok('selecting a target enables Continue',await page.locator('#nextBtn').isEnabled());
   await page.locator('#obSounds [data-sound="R"]').click();ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
-  await choose(page,'S');await next(page);
+  await choose(page,'S');await next(page);await pastRachel(page);
+  // Travis, 2 Oct 2026: "the grown-ups explanation ... is still too long ... just
+  // say audio is never recorded or uploaded". Short, and still true: one try a
+  // day IS saved on the phone for a parent to play back, so never "never recorded".
   const promise=await page.evaluate(()=>({visible:document.getElementById('micPromise')?.textContent||'',shared:Sona.MIC_PROMISE||''}));
-  ok('setup renders the shared accurate microphone promise',!!promise.shared&&promise.visible===promise.shared&&/listens only after asking/.test(promise.visible)&&/stay on this device/.test(promise.visible)&&promise.visible.split(/\s+/).length<=30);
+  ok('setup renders the shared accurate microphone promise, in a couple of short lines',!!promise.shared&&promise.visible===promise.shared&&/never uploaded/.test(promise.visible)&&/saved on this phone/.test(promise.visible)&&!/never recorded/i.test(promise.visible)&&promise.visible.split(/\s+/).length<=20,promise.visible);
   ok('microphone action is explicit and offers a quiet skip',/Turn on Echo's ears/.test(await page.locator('#nextBtn').innerText())&&await page.locator('#micNotNow').count()===1);
   const began=Date.now();await notNow(page);
   const build=await page.evaluate(()=>({shown:!!document.querySelector('#obBuild.show'),text:document.getElementById('obBuild')?.textContent||'',color:document.getElementById('obBuild')?getComputedStyle(document.getElementById('obBuild')).backgroundColor:'',complete:__setup.complete,confetti:__setup.confetti}));
@@ -109,19 +114,27 @@ await scenario('sound selection and private paced handoff',async()=>{
  }finally{await context.close();}
 });
 
-// The first screen asks who is setting Sona up (Travis, 1 Oct 2026: "have the
-// very first step in onboarding ask if they are a parent/caregiver or an
-// slp/slpa"). Two answers, each one tap; no Continue to press.
-await scenario('the first screen asks who is setting Sona up',async()=>{
+// The first screen is a hello, the second the question (Travis, 2 Oct 2026:
+// "that first page with the bird just have that be a fun page and then they can
+// just press a button on the bottom that says continue and then the second
+// slide is who's setting up Sona"; the question since 1 Oct: "have the very
+// first step in onboarding ask if they are a parent/caregiver or an
+// slp/slpa"). Two answers, each one tap; no Continue to press on the question.
+await scenario('a hello first, then the question of who is setting Sona up',async()=>{
  {const {context,page,errors,requests}=await fresh();try{
-  const first=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,title:document.getElementById('whoTitle').textContent,picks:[...document.querySelectorAll('.who-pick')].map(b=>b.innerText.replace(/\s+/g,' ').trim()),footer:getComputedStyle(document.querySelector('.obfoot')).display,words:document.querySelector('[data-step="welcome"]').innerText.trim().split(/\s+/).length}));
-  ok('the very first screen is the question, in a few words',first.screen==='welcome'&&/Who's setting up Sona\?/.test(first.title)&&first.words<=32,first);
+  const hello=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.querySelector('[data-step="welcome"]').innerText.replace(/\s+/g,' ').trim(),cta:document.getElementById('nextBtn').textContent.trim(),footer:getComputedStyle(document.querySelector('.obfoot')).display,seg:document.getElementById('seg').hidden}));
+  ok('the very first screen is a hello: Sona\'s name and one Continue, no question',hello.screen==='welcome'&&/^Sona/.test(hello.text)&&!/\?/.test(hello.text)&&hello.cta==='Continue'&&hello.footer!=='none'&&hello.seg,hello);
+  await next(page);
+  const first=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,title:document.getElementById('whoTitle').textContent,picks:[...document.querySelectorAll('.who-pick')].map(b=>b.innerText.replace(/\s+/g,' ').trim()),cta:getComputedStyle(document.getElementById('nextBtn')).display,back:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,words:document.querySelector('[data-step="who"]').innerText.trim().split(/\s+/).length}));
+  ok('Continue opens the question, in a few words, on a page of its own',first.screen==='who'&&/Who's setting up Sona\?/.test(first.title)&&first.words<=32&&first.seg,first);
   ok('…with two answers: a parent or caregiver, or an SLP or SLPA',first.picks.length===2&&/^Parent or caregiver/.test(first.picks[0])&&/^SLP or SLPA/.test(first.picks[1])&&/speech-language pathologist or assistant/i.test(first.picks[1]),first.picks);
-  ok('…and the answers are the buttons: no Continue to press',first.footer==='none',first.footer);
+  ok('…and the answers are the buttons: no Continue to press, and Back to the hello',first.cta==='none'&&first.back!=='none',first);
   await who(page,'parent');
   ok('a parent goes straight to the child\'s name, the first of three progress segments',await page.locator('[data-step="name"].on').count()===1&&/Who's practicing/.test(await page.locator('[data-step="name"] .qh').innerText())&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1&&await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
   await page.locator('#backBtn').click();
-  ok('Back returns to the question',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  ok('Back returns to the question',await page.locator('[data-step="who"].on').count()===1&&await page.locator('#backBtn').isVisible());
+  await page.locator('#backBtn').click();
+  ok('…and Back again to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
   await who(page,'slp');
   ok('in a browser an SLP or SLPA gets the clinician setup, in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
   ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
@@ -140,26 +153,29 @@ await scenario('the first screen asks who is setting Sona up',async()=>{
  }finally{await context.close();}}
 });
 
-// Meet Rachel (Travis, 29 Sep 2026; moved 1 Oct 2026: "add the rachel slide
-// right before it goes to the game ... even just saying and spelling out that
-// she is a pediatric speech language pathologist is enough"): one tap, no
-// question, after the microphone: her photo, "Built with", her name with her
-// letters, and one sentence. The fellowship is named here because it is true;
-// never CCC or certified (CLAUDE.md). Clinicians skip it; parents still count three.
-async function toRachel(page){await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);await page.locator('#micNotNow').click();}
-await scenario('Meet Rachel is the last screen before the game',async()=>{
+// Meet Rachel (Travis, 29 Sep 2026; moved 2 Oct 2026: "put the Rachel slide
+// not as the last step, but the step right before the let echo hear you ...
+// have the let echo hear you be right before the game"): one tap, no
+// question, after the sounds and before the microphone: her photo, "Built
+// with", her name with her letters, and one sentence. The fellowship is named
+// here because it is true; never CCC or certified (CLAUDE.md). Clinicians skip
+// it; parents still count three.
+async function toRachel(page){await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);}
+await scenario('Meet Rachel comes right before the microphone',async()=>{
  {const {context,page,errors}=await fresh();try{
   await toRachel(page);const card=page.locator('[data-step="rachel"]');
-  ok('after the microphone, Meet Rachel comes before the game',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>document.body.dataset.setupScreen)==='rachel');
+  ok('after the sounds, Meet Rachel comes before the microphone',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>document.body.dataset.setupScreen)==='rachel');
   const shown=await card.evaluate(async el=>{const img=el.querySelector('img');return {photo:await img.decode().then(()=>img.naturalWidth,()=>0),src:img.getAttribute('src'),alt:img.alt,text:el.innerText,page:document.body.innerText,asks:el.querySelectorAll('input,select,textarea,button').length};});
   ok('her photo actually loads',shown.photo>0&&/\/rachel-wardrop-profile\.jpg$/.test(shown.src)&&/Rachel/.test(shown.alt),shown);
   ok('the card says "Built with Rachel Wardrop, MS, CF-SLP" and that she is a pediatric speech-language pathologist in her clinical fellowship',shown.text.replace(/\s+/g,' ').trim()==='BUILT WITH Rachel Wardrop, MS, CF-SLP She is a pediatric speech-language pathologist in her clinical fellowship.',shown.text);
   ok('no CCC, certification or claim that the fellowship is behind her',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page+' '+shown.alt),shown.page);
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
-  await page.locator('#backBtn').click();ok('Back from Meet Rachel returns to the microphone',await page.locator('[data-step="mic"].on').count()===1&&await page.locator('#seg').isVisible());
-  await page.locator('#micNotNow').click();await page.locator('[data-step="rachel"].on').waitFor();
-  await next(page);await atHandoff(page);
-  ok('Continue goes on to the hand-off, then the game',await page.locator('[data-step="achieve"].on').count()===1&&await page.evaluate(()=>Sona.getProfile().onboarded));
+  await page.locator('#backBtn').click();ok('Back from Meet Rachel returns to the sounds',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('#seg').isVisible());
+  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
+  await next(page);
+  ok('Continue goes on to the microphone, the last screen before the game',await page.locator('[data-step="mic"].on').count()===1&&!await page.evaluate(()=>Sona.getProfile().onboarded));
+  await page.locator('#micNotNow').click();await atHandoff(page);
+  ok('…and the microphone to the hand-off, then the game',await page.locator('[data-step="achieve"].on').count()===1&&await page.evaluate(()=>Sona.getProfile().onboarded));
   clean('meet rachel',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
@@ -168,7 +184,7 @@ await scenario('Meet Rachel is the last screen before the game',async()=>{
   await who(page,'slp');await page.locator('#backBtn').click();await who(page,'slp');
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician setup never shows Meet Rachel, forward or back',screens[0]==='name'&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
+  ok('the clinician setup never shows Meet Rachel, forward or back',screens.includes('name')&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
   clean('clinician skips rachel',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
@@ -192,9 +208,9 @@ await scenario('Meet Rachel is the last screen before the game',async()=>{
 await scenario('exploring sounds stays optional and can be changed before finishing',async()=>{
  const {context,page,errors}=await fresh();try{
   await enter(page);await choose(page,'R');await page.locator('#obExploreSounds').click();
-  ok('Explore all sounds opens microphone permission without inventing targets',await page.locator('[data-step="mic"].on').count()===1&&await page.evaluate(()=>draft.mode==='play'&&draft.pathReason==='unsure'&&draft.focusSounds.length===0));
+  ok('Explore all sounds goes on (to Meet Rachel, then the microphone) without inventing targets',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>draft.mode==='play'&&draft.pathReason==='unsure'&&draft.focusSounds.length===0));
   await page.locator('#backBtn').click();
-  ok('Back from microphone returns to the same sound choices after exploring',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
+  ok('Back from Meet Rachel returns to the same sound choices after exploring',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
   ok('choosing a sound replaces the general-play choice',await page.evaluate(()=>draft.mode==='speech'&&draft.pathReason===''&&JSON.stringify(draft.focusSounds)==='["S"]'));
   await page.locator('#backBtn').click();await page.locator('#backBtn').click();
@@ -226,7 +242,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
-async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'||s==='who'){await who(page);continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -250,10 +266,10 @@ await scenario('clinician setup survives a reload',async()=>{
 await scenario('a parent can back out of clinician setup',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#backBtn').click();
-  ok('Back to welcome returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
+  ok('Back to the question returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='who'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
   await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
   const seen=await walk(page);
-  ok('answering again walks the family path to the mic, never the clinician email',seen.join()==='welcome,name,sounds,mic',seen);
+  ok('answering again walks the family path to the mic, never the clinician email',seen.join()==='welcome,name,sounds,rachel,mic',seen);
   await notNow(page);await atHandoff(page);
   ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
   clean('clinician back-out',errors);
@@ -294,7 +310,7 @@ await scenario('native iPhone keyboard integration and safe fallbacks',async()=>
 
 await scenario('granted microphone in native setup',async()=>{
  const {context,page,errors,requests}=await fresh({permission:'grant',native:true});try{
-  await enter(page,{mode:'play',age:'6',name:'Ava'});await next(page);
+  await enter(page,{mode:'play',age:'6',name:'Ava'});await pastRachel(page);await next(page);
   await page.waitForFunction(()=>__setup.requests.length>0).catch(()=>{});
   const result=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__setup.order,tracks:__setup.tracks.map(t=>t.readyState)}));
   ok('the setup tap makes the real mic request and remembers only a grant',result.order[0]==='microphone'&&result.mic==='1',result);
@@ -307,7 +323,7 @@ await scenario('granted microphone in native setup',async()=>{
 
 await scenario('denied permission stays optional',async()=>{
  const {context,page,errors}=await fresh({permission:'deny'});try{
-  await enter(page,{mode:'unsure'});await next(page);
+  await enter(page,{mode:'unsure'});await pastRachel(page);await next(page);
   const denial=page.locator('#sonaMicDenied');await denial.waitFor({state:'visible'}).catch(()=>{});
   ok('denied permission shows recovery and never sets micok',await denial.count()===1&&await page.evaluate(()=>localStorage.getItem('sona.micok')!=='1'));
   if(await denial.count()){await page.locator('#sonaMicBack').click();await notNow(page);await atHandoff(page);ok('the grown-up can still finish with Not now',await page.locator('#nextBtn').isEnabled()&&await page.evaluate(()=>Sona.getProfile().onboarded));}
@@ -317,33 +333,13 @@ await scenario('denied permission stays optional',async()=>{
 
 await scenario('permission finishes after backgrounding',async()=>{
  const {context,page,errors}=await fresh({permission:'pending'});try{
-  await enter(page,{mode:'play'});await next(page);await page.waitForFunction(()=>__setup.requests.length===1).catch(()=>{});
+  await enter(page,{mode:'play'});await pastRachel(page);await next(page);await page.waitForFunction(()=>__setup.requests.length===1).catch(()=>{});
   const count=await page.evaluate(()=>__setup.requests.length);ok('only one permission request can be outstanding',count===1&&await page.locator('#nextBtn').isDisabled());
   if(count){await page.evaluate(()=>{__setup.background();__setup.requests[0].grant();});await page.waitForTimeout(60);const late=await page.evaluate(()=>({tracks:__setup.tracks.map(t=>t.readyState),mic:localStorage.getItem('sona.micok'),finished:Sona.getProfile().onboarded}));ok('a late grant is released without advancing hidden setup',late.tracks.every(t=>t==='ended')&&late.mic!=='1'&&!late.finished,late);await page.evaluate(()=>__setup.foreground());await notNow(page);await atHandoff(page);ok('an interrupted permission ask leaves a working skip',await page.locator('#nextBtn').isEnabled());}
   clean('late microphone',errors);
  }finally{await context.close();}
 });
 
-await scenario('move-in code sheet',async()=>{
- const {context,page,errors,requests}=await fresh();try{
-  await page.locator('#moveLink').click();const sheet=page.locator('#moveSheet');
-  ok('the returning-family door opens a labeled sheet instead of a prompt',await sheet.count()===1&&await sheet.isVisible());
-  if(await sheet.count()){
-   ok('code entry receives keyboard focus',await page.evaluate(()=>document.activeElement.id==='moveInput'));
-   await page.keyboard.press('Escape');ok('Escape closes and returns focus',!await sheet.isVisible()&&await page.evaluate(()=>document.activeElement.id==='moveLink'));
-   await page.locator('#moveLink').click();await page.locator('#moveInput').fill('abc');ok('an incomplete code cannot be submitted',await page.locator('#moveSubmit').isDisabled());
-   await context.route('**/api/pair?code=ABC234',route=>route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({ok:false,error:'That code is no longer available.'})}));
-   await page.locator('#moveInput').fill('abc234');await page.locator('#moveSubmit').click();await page.waitForFunction(()=>document.getElementById('moveError').textContent.includes('no longer'));
-   ok('a failed code stays in the sheet with a useful error',await sheet.isVisible()&&await page.locator('#moveSubmit').isEnabled());
-   const backup=JSON.stringify({app:'sona',v:1,data:{'sona.profile.v1':JSON.stringify({childName:'Restored',childAge:'7',onboarded:true,focusSounds:['S'],volume:0,voiceOn:false})}});
-   await context.route('**/api/pair?code=XYZ789',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,data:backup})}));
-   await page.locator('#moveInput').fill('XYZ789');await page.locator('#moveInput').press('Enter');await page.waitForURL('**/today.html');
-   ok('explicit code redemption restores the save and returns Home',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).childName)==='Restored');
-  }
-  ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
-  clean('code sheet',errors);
- }finally{await context.close();}
-});
 await scenario('sound picker fits iPhone safe areas',async()=>{
  for(const device of [{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}},{viewport:{width:375,height:812},safeArea:{top:50,bottom:34}},{viewport:{width:375,height:667},safeArea:{top:20,bottom:0}}]){
   const {context,page,errors}=await fresh({...device,native:true});try{
@@ -380,6 +376,27 @@ await scenario('phone fit and optional email close',async()=>{
   await page.locator('#skipEmail').click();await page.waitForURL('**/arcade-feed.html');
   ok('X skips email and still completes setup',!requests.some(r=>new URL(r.url).pathname==='/api/lead'&&r.method==='POST')&&await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email));
   clean('phone fit and skip',errors);
+ }finally{await context.close();}
+});
+// The iPhone keyboard plugin (autoBackdropColor: "dom") paints the area
+// behind the keyboard's rounded corners from the BODY's background colour; a
+// gradient alone reads as transparent and showed black corners while a parent
+// typed the name (Travis, 4 Oct 2026). Every screen with typing keeps a solid
+// colour under its gradient: setup's steps here, the grown-ups' pages by the
+// rule in crafted-family.css.
+await scenario('a solid colour behind the keyboard',async()=>{
+ const{context,page,errors}=await fresh();
+ try{
+  const opaque=(c)=>{const m=/rgba?\(([^)]+)\)/.exec(c||'');if(!m)return false;const p=m[1].split(',').map(Number);return p.length<4||p[3]>0.99;};
+  const seen={};
+  await next(page);await page.locator('[data-step="who"].on').waitFor();
+  seen.who=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
+  await page.locator('.who-pick[data-role="parent"]').click();await page.locator('[data-step="name"].on').waitFor();
+  seen.name=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
+  ok('while a grown-up types in setup, the body has a solid colour for the keyboard\'s corners to show',opaque(seen.who)&&opaque(seen.name),seen);
+  const fam=readFileSync(ROOT+'/crafted-family.css','utf8');
+  ok('…and the grown-ups\' pages (Settings, Talk to us, the plan screen) put a solid colour under their gradient',/body\.crafted-family\{[\s\S]*?background:#[0-9a-f]{3,6} radial-gradient\(/i.test(fam));
+  clean('keyboard backdrop',errors);
  }finally{await context.close();}
 });
 await browser.close();await new Promise(resolve=>server.close(resolve));console.log(failures?failures+' FAILURES / '+checks+' assertions':'ALL GREEN — '+checks+' assertions');process.exit(failures?1:0);

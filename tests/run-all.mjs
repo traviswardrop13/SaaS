@@ -58,6 +58,7 @@ const SUITES = [
   "simpleplaytest.mjs", // Peekaboo (the simple-play engine; Bubble Pop left it on 1 Oct 2026): deliberate play, honest voice feedback, safe interruption
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
+  "trialfirsttest.mjs", // trial first: the price before the first game, nothing free where Sona can sell
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true

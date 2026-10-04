@@ -82,6 +82,10 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 // sound the page makes (oscillators, buffers, browser speech) logged as an
 // interval on that clock ──
 function fakeDevice(cfg) {
+  // Echo's mid-round ask for the sound power (3 Oct 2026) is
+  // arcadespeechhelptest's: held here, so a round is just the round (the syllable
+  // card scenario makes one due, as Echo's own ask after a card).
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
   const T0 = performance.now();
   const now = () => (performance.now() - T0) / 1000;
   const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], gains: [], speech: [], requests: 0, inflight: 0, gumPlan: [], voice: false, hidden: false, speaking: 0, voicedFrames: 0, leakFrames: 0 };
@@ -596,8 +600,8 @@ const HELPER_LINES = new Set(["To keep playing, say", "Go!"]);
 // more thing that can be in flight: the eight-second wait before a card
 // nobody answers steps back to the bare sound. So: the mic never opens under
 // his line or inside its quiet tail; the step back closes the mic before
-// Echo speaks again; and backgrounding, "I'm done playing" and Echo's power
-// button each leave nothing waiting to speak.
+// Echo speaks again; and backgrounding, "I'm done playing" and Echo's own
+// mid-wave ask for his power each leave nothing waiting to speak.
 await scenario("slice: a syllable card", async () => {
   // Inside the app, where each of Echo's lines and Rachel's take is a media
   // element (the card's voice, /arcade-sayit.js, plays the website's lines
@@ -664,17 +668,18 @@ await scenario("slice: a syllable card", async () => {
     await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
     await voice(page, 450);
     await page.waitForFunction(() => REV === 1 && phase === "wave" && wave === 2);
-    // Echo's power button after a syllable card: its turn is the bare sound, and the card's wait never runs in it
+    // Echo's own mid-wave ask after a syllable card (3 Oct 2026: nobody taps
+    // him): it is the bare sound, and the card's wait never runs in it
     await page.waitForTimeout(1200);
     const n = said.length;
-    await page.evaluate(() => { fruits.length = 0; nextToss = waveMs + 60000; });
-    await page.locator("#slowKeys").click();
+    await page.evaluate(() => { fruits.length = 0; nextToss = waveMs + 60000; SLOW_ASK.listen = 4000; slowAskAt = Math.min(slowAskAt, 150); });
     await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
     await page.waitForTimeout(2200);
     st = await page.evaluate(() => ({ turn: !!slowTurn, rung: ASK.rung, pill: document.getElementById("slowSound").textContent, card: document.getElementById("revOvl").classList.contains("show") }));
-    ok("slice syllable card: Echo's power button still asks the bare sound, and the card's wait does not run in its turn",
+    ok("slice syllable card: Echo's own ask still asks the bare sound, and the card's wait does not run in its turn",
       st.turn && st.pill === "rrrr" && !st.card && said.slice(n).join("|") === "Super Slice! Say", { st, said: said.slice(n) });
-    await page.locator("#slowCancel").click(); await page.waitForFunction(() => !slowTurn);
+    // nobody answers him: his listening ends by itself, and the game goes on
+    await page.waitForFunction(() => !slowTurn, null, { timeout: 6000 });
     noOverlap("slice syllable card", await log(page));
     clean("slice syllable card", errors);
   } finally { await context.close(); }

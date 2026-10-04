@@ -353,7 +353,11 @@ ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age gro
   // sona.js's per-child keys, so a brother or sister starts at the first
   const perKid = (readFileSync(ROOT + "/sona.js", "utf8").match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("the round of dinosaurs is kept per child: the page's key goes through Sona.kkey, and sona.js lists it", /Sona\.kkey\("sona\.dino\.v1"\)/.test(dp) && perKid.includes('"sona.dino.v1"') && !/localStorage\.\w+\((?!DINOKEY)/.test(dp));
-  ok("the dinosaurs are drawn, not downloaded, and none is an emoji", !/\.(?:png|jpe?g|svg|gif)\b/.test(dug) && (dug.match(/\.webp/g) || []).length === 2 && !/[\u{1F300}-\u{1FAFF}]/u.test(dug));
+  // the dinosaurs and the dig are painted since 4 Oct 2026 (Travis: "add the
+  // ChatGPT art"): every picture is a webp in the crafted game folder that is
+  // really there, each dinosaur has its own, and none is an emoji
+  const pics = [...dug.matchAll(/"(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+  ok("the dinosaurs are painted pictures that exist, one each, and none is an emoji", !/\.(?:png|jpe?g|svg|gif)\b/.test(dug) && pics.length > 0 && pics.every((u) => /^\/assets\/crafted\/(?:game\/)?[\w-]+\.webp$/.test(u) && existsSync(ROOT + u)) && ["trex", "tri", "steg", "bronto"].every((id) => pics.includes("/assets/crafted/game/dino-" + id + ".webp")) && !/[\u{1F300}-\u{1FAFF}]/u.test(dug), pics);
 }
 {
   // Bubble Pop is on this engine too (1 Oct 2026), but it is NOT a catalog
@@ -855,7 +859,7 @@ async function brushFor(page) {
 // dinosaur's own body colour (none on a dashed outline)
 const cards = (page, rowId) => page.evaluate((rowId) => {
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const FILL = {}; window.__dino.dinos.forEach((d) => { FILL[d.id] = d.fill; });
+  const FILL = {}; window.__dino.dinos.forEach((d) => { FILL[d.id] = d.paint || d.fill; });
   const read = (cv, id) => {
     const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data, f = rgb(FILL[id]); let ink = 0, fill = 0;
     for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 40) ink++; if (d[i + 3] > 200 && Math.abs(d[i] - f[0]) + Math.abs(d[i + 1] - f[1]) + Math.abs(d[i + 2] - f[2]) < 24) fill++; }
@@ -984,7 +988,7 @@ await scenario("every dinosaur", async () => {
       const box = await page.locator("#dig").boundingBox();
       const d0 = await dig();
       ok(id + ": eight bones of its own, the skull last", d0.bones.length === 8 && new Set(d0.bones).size === 8 && d0.bones[7] === "skull" && d0.bones.includes(SIGN[id]), d0.bones);
-      ok(id + ": asleep, the cliff shows no body, only its outline", (await paint(page, d0.fill)) === 0);
+      ok(id + ": asleep, the cliff shows no body, only its outline", (await paint(page, d0.paint || d0.fill)) === 0);
       const spots = [];
       for (let n = 1; n <= 8; n++) {
         if (!(await brushFor(page))) { ok(id + " bone " + n + ": the word, said twice, brings the brush", false, await game(page)); break; }
@@ -997,7 +1001,7 @@ await scenario("every dinosaur", async () => {
       }
       await until(page, () => window.__dino.awake === true, 6000);
       await page.waitForTimeout(1100);
-      ok(id + ": it wakes in its own colour", (await paint(page, d0.fill)) > 300, { fill: d0.fill, px: await paint(page, d0.fill) });
+      ok(id + ": it wakes in its own colour", (await paint(page, d0.paint || d0.fill)) > 300, { fill: d0.fill, px: await paint(page, d0.paint || d0.fill) });
       await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
       ok(id + ": the end card names it: \"You found a " + name + "!\"", (await page.locator("#endTitle").innerText()) === "You found a " + name + "!" && (await game(page)).step === 8, await page.locator("#endTitle").innerText());
       c = await cards(page, "dinoRowEnd");

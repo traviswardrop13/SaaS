@@ -232,7 +232,10 @@
         var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
         lockedGame=comingSoon?null:game;unlock.hidden=!!comingSoon;notice.hidden=false;app.classList.add("has-message");
         if(comingSoon){message.textContent=game.name+" is "+(game.comingLabel||"Coming soon").replace(/^Coming/,"coming")+". Pick another game to play.";return;}
-        message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
+        // (trial first, 3 Oct 2026: a family without the free version has no
+        // free games to point at, so the line stops at the ask)
+        var freeVer=true;try{freeVer=!S.freeVersion||S.freeVersion();}catch(e){}
+        message.textContent="Ask a grown-up to help open "+game.name+"."+(freeVer?" Your free games are still ready to play!":"");
       }
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
@@ -242,7 +245,14 @@
       function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name));return {allowed:ok,tier:game.tier,reason:ok?"book":"premium"};}
       function launch(game){
         if(game.kind==="book"){clearMessage();location.href=game.go;return;}
-        if(!access(game).allowed){showLocked(game);return;}
+        if(!access(game).allowed){
+          // a grey game opens the price at once where Sona can sell (Travis,
+          // 4 Oct 2026); a Coming soon one, or a phone that cannot buy, keeps
+          // the grown-up note
+          var soon=game.comingSoon||access(game).reason==="coming-soon",offer=false;try{offer=!soon&&!!(S.offerOnLock&&S.offerOnLock());}catch(e){}
+          if(offer){clearMessage();location.href="/subscribe.html?from="+encodeURIComponent(game.key);return;}
+          showLocked(game);return;
+        }
         clearMessage();
         location.href=game.go;
       }
@@ -271,7 +281,9 @@
       function paintBests(){bestCards.forEach(paintBest);}
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
-        var grant=game.kind==="book"?bookAccess(game):access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        // "Free" means open as free HERE: since 3 Oct 2026 (trial first) a
+        // free-tier game is Premium's for a family without the free version
+        var grant=game.kind==="book"?bookAccess(game):access(game),tier=(grant.reason==="free-mode"||grant.reason==="free")?"free":game.tier==="free"?"premium":game.tier;
         if(game.kind==="book")button.classList.add("book-card");
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
         // a parked game says its day ("Coming Oct 9"), then "Coming soon"
@@ -318,7 +330,9 @@
       // Premium, one book is free and the rest ask for a grown-up there; the
       // tag says which, so a parent reads "1 free book", not "Premium".
       var booksCard=document.getElementById("booksCard");
-      var freeBooks=(S.FREE_BOOKS||[]).length;
+      // only the free books that are free on this phone (trial first: none
+      // for a family without the free version)
+      var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
       var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
       document.getElementById("booksTag").textContent=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
       booksCard.onclick=function(){clearMessage();location.href="/library.html";};

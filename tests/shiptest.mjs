@@ -299,11 +299,18 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 // parked content cannot inflate it. freemiumtest holds the family surfaces.
 {
   const decomment = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
-  for (const rel of ["public/parents.html", "public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
+  for (const rel of ["public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
     const src = decomment(readFileSync(APP + "/" + rel, "utf8")).replace(/\s+/g, " ");
     ok(rel + " names the free version as 'daily practice and free games'", /daily practice (and|\+) free games/i.test(src));
     ok(rel + " never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(src), (src.match(/.{0,60}\btwo (free )?games\b.{0,40}/i) || [])[0]);
   }
+  // TRIAL FIRST (3 Oct 2026): speaksona.com sends parents to the iPhone app,
+  // where a new family starts with the trial and has no free version, so its
+  // cost answer promises none (and still never "two games")
+  const home = decomment(readFileSync(APP + "/public/parents.html", "utf8")).replace(/\s+/g, " ");
+  ok("public/parents.html promises no free version: a new family in the app starts with the trial", !/daily practice (and|\+) free games|free games|free version/i.test(home),
+    (home.match(/.{0,60}(daily practice (and|\+) free games|free games|free version).{0,40}/i) || [])[0]);
+  ok("public/parents.html never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(home));
 }
 
 // ── the rulebook agrees with the code it describes (24 Sep 2026) ──

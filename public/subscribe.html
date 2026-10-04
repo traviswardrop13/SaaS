@@ -16,19 +16,26 @@
         ok = !!t && age >= 0 && age < 10 * 60 * 1000;
       } catch (e) { ok = false; }
       if (!ok) {
+        // A TAP ON A GREY GAME OR BOOK OPENS THIS PAGE AT ONCE (Travis, 4 Oct
+        // 2026: "I want it to open automatically if they click on a game that
+        // is grayed out"), so the offer it opens (?from=) asks no grown-ups
+        // check: Sona is not in Apple's Kids category, whose rules want one,
+        // and Apple's own sheet asks for Face ID or the password before
+        // anything is bought. The script below sends any ?from= visit that
+        // shows no offer back through the check (Sona.requireGate, which
+        // carries ?from= along), so Settings › Your plan keeps it.
+        if (/[?&]from=[a-z]+(&|$)/.test(location.search)) return;
         document.documentElement.style.display = "none";
         // Carry where they were going. This guard runs BEFORE sona.js (that
         // is the point of it — no flash of a parent page), so it cannot call
         // Sona.gateDest; it names its own page literally instead. today.html
         // re-checks ?to= against the allowlist on arrival, which is the side
         // that reads an untrusted URL.
-        // ?first=1 is the hand-off from a completed run and ?from=<game> the
-        // tap on a locked game; both change the copy here, so they are the
-        // flags worth carrying home and back (Home re-checks ?from= against
-        // the catalog).
-        var fm = location.search.match(/[?&]from=([a-z]+)(&|$)/);
+        // ?first=1 is the hand-off from a completed run and ?setup=1 the one
+        // from the end of setup (trial first, 3 Oct 2026); each changes the
+        // copy here, so they are the flags worth carrying home and back.
         location.replace("/today.html?gate=1&to=" + encodeURIComponent(
-          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : fm ? "?from=" + fm[1] : "")));
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : /[?&]setup=1(&|$)/.test(location.search) ? "?setup=1" : "")));
       }
     })();
   </script>
@@ -125,6 +132,15 @@
     #planMonth,#iapPlanMo{padding-top:12px;padding-bottom:12px;margin-top:9px;}
     .plan .paynote{display:block;font-weight:700;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
     .planbuy{margin-top:12px;}
+    /* THE DAY THEY ARE BILLED, IN ONE LINE (Travis, 2 Oct 2026: "there's
+       still too much information ... especially everything that is under
+       start three days free ... just briefly say like what day they'll be
+       billed"). It replaced a dated three-row timeline and, on the Apple card,
+       a paragraph of small print. What stays is what a parent needs and Apple
+       requires: when the free days end, the price after them, that it renews,
+       and where to cancel; Restore, Terms and Privacy stay as links. */
+    .billday{display:block;margin:10px 0 0;font-weight:700;font-size:13px;color:var(--muted);line-height:1.45;text-align:center;}
+    .billday b{font-weight:800;color:var(--ink);}
     .planbuy .go{margin-top:0;}
     .planbuy .reassure b{font-weight:800;color:var(--ink);}
 
@@ -148,7 +164,8 @@
     body.offer #planCard, body.offer #recapCard,
     body.offer #pickCard > h2, body.offer #pickCard > p.muted:not(#pickMsg):not(#webRenew),
     body.offer #iapCard > h2, body.offer .plan .proof, body.offer .plan .sub,
-    body.offer #pickCard > .proof, body.offer #iapCard > .proof { display:none !important; }
+    body.offer #pickCard > .proof, body.offer #iapCard > .proof,
+    body.offer #declineNote { display:none !important; }
     /* the plan card stands on its own: no white card around the bordered one */
     body.offer #pickCard, body.offer #iapCard { margin-top:16px; background:transparent; border:0; box-shadow:none; padding:0; }
     #offerHero { text-align:center; margin-top:6px; }
@@ -235,6 +252,48 @@
     body.fit4 .offer-checks li:nth-child(3) { display:none; }
     body.fit5 .offer-art { display:none; }
     body.fit5 .offer-pill { margin-top:0; }
+
+
+    /* ── THE PLAN PICK, REIMAGINED (Travis, 4 Oct 2026: "I don't love the look
+       of the paywall ... let's reimagine it a bit"). In the offer the two ways
+       to pay stand side by side as two tiles: the plan's name small on top,
+       its price big, one line under it. The words are the same words (the
+       "Sona Premium — " and "Monthly — " lead-ins and the tag's second half
+       are only folded away, so every reader of the text still finds them);
+       the radio dot gives way to a check badge on the picked tile. */
+    body.offer .planpick { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:stretch; padding-top:12px; }
+    body.offer .planpick .plan, body.offer #planMonth, body.offer #iapPlanMo { margin:0; padding:22px 10px 13px !important; text-align:center;
+      border-radius:22px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+    body.offer .planpick .plan:after { top:-9px; right:-7px; margin:0; width:26px; height:26px; border-width:3px; border-color:#fffaf0; background:#e9dcc6; }
+    body.offer .planpick .plan[aria-checked="true"]:after { border-color:#fffaf0; background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat; }
+    body.offer .planpick .plan[aria-checked="false"] { background:#fffaf2; border-color:#eadcc4; box-shadow:none; }
+    body.offer .planpick .plan[aria-checked="true"] { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
+    body.offer .plan .tag { position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap; margin:0; }
+    body.offer .plan .tagmore { display:none; }
+    body.offer .plan b .pname { font-size:0; display:block; }
+    body.offer .plan b .pname:before { content:attr(data-short); display:block; font-family:Nunito,sans-serif; font-size:14px; font-weight:800;
+      letter-spacing:.02em; color:#8a6f52; text-transform:uppercase; margin-bottom:3px; }
+    body.offer .plan b { display:block; font-family:"Baloo 2"; font-size:25px; line-height:1.05; letter-spacing:-.3px; }
+    body.crafted-family.offer .plan .save, body.offer .plan .paynote { font-size:12.5px; line-height:1.3; margin-top:6px; font-weight:700; color:#7a6047; }
+    body.offer .planbuy { margin-top:14px; }
+    body.offer .planbuy .go { font-size:21px; padding-top:17px; padding-bottom:17px; }
+    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:18px 8px 10px !important; }
+    body.fit3.offer .plan b { font-size:22px; }
+    /* ── TRIAL FIRST: the two screens before the price (3 Oct 2026) ──
+       Only on the hand-off from setup, and only once the store has said the
+       yearly plan starts with free days. While they are up, nothing else on
+       the page shows: the price comes after them, as on ReciMe's. */
+    body.intro-on .wrap > :not(#trialIntro) { display:none !important; }
+    #trialIntro { min-height:calc(100vh - 32px); min-height:calc(100dvh - 32px); display:flex; flex-direction:column; justify-content:center; text-align:center; padding:8px 4px 20px; }
+    .ti-slide { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .ti-art { position:relative; width:100%; max-width:340px; height:210px; }
+    .ti-art .offer-art { height:210px; margin:0; }
+    .ti-art > img.ti-pic { display:block; height:100%; width:auto; max-width:100%; margin:0 auto; object-fit:contain; filter:drop-shadow(0 8px 12px rgba(148,108,54,.22)); }
+    .ti-title { font-family:"Baloo 2",sans-serif; font-weight:800; font-size:30px; line-height:1.15; color:var(--ink); margin:8px 0 0; max-width:340px; text-wrap:balance; }
+    .ti-title em { font-style:normal; color:var(--act-d); }
+    .ti-sub { font-weight:700; font-size:16px; line-height:1.5; color:var(--muted); max-width:320px; margin:0; }
+    .ti-next { margin-top:16px; width:100%; max-width:340px; }
+    @media (max-height:640px) { .ti-art, .ti-art .offer-art { height:150px; } .ti-title { font-size:26px; } }
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -251,6 +310,31 @@
     </nav>
     <a class="family-crumb" href="/settings.html">‹ Settings</a>
     <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Your plan</h1><p>Told plainly — for the grown-ups.</p></div></div>
+
+    <!-- TRIAL FIRST, THE TWO SCREENS BEFORE THE PRICE (3 Oct 2026). Travis
+         sent ReciMe's onboarding ("We offer 7 days free so everyone can
+         cook…", "You'll get a reminder 2 days before your trial ends.", then
+         "Design your trial") with "something like this". Shown on the
+         hand-off from setup (?setup=1) only, in a card that can sell, and only
+         once the store has said the yearly plan really starts with free days:
+         the number is the store's and the date the clock's, never typed here.
+         The second screen is ReciMe's reminder made true: Sona sends no
+         reminder (there is no trial mailer), so it says the day the free days
+         end and where to cancel. The pictures are ChatGPT's crafted art (see
+         INTRO_ART in the script). -->
+    <section id="trialIntro" hidden aria-live="polite">
+      <div class="ti-slide" id="tiFree" hidden>
+        <div class="ti-art" id="tiFreeArt" aria-hidden="true"></div>
+        <h1 class="ti-title" id="tiFreeTitle">We offer <em id="tiDays">3 days free</em> so every kid can practice with Echo.</h1>
+        <button class="btn go ti-next" id="tiFreeGo" type="button">Continue</button>
+      </div>
+      <div class="ti-slide" id="tiDate" hidden>
+        <div class="ti-art" id="tiDateArt" aria-hidden="true"></div>
+        <h1 class="ti-title" id="tiDateTitle">Nothing to pay until <em id="tiEnd"></em>.</h1>
+        <p class="ti-sub" id="tiDateSub">Cancel anytime before then.</p>
+        <button class="btn go ti-next" id="tiDateGo" type="button">Continue</button>
+      </div>
+    </section>
 
     <!-- THE OFFER, AS A MOMENT (30 Sep 2026). Travis: "this paywall is
          absolutely terrible". Reached from the end of a first practice run
@@ -271,7 +355,7 @@
       <ul class="offer-checks">
         <li>Every game and every book, for every child on this phone</li>
         <li>Real speech practice, built into every game</li>
-        <li>Daily practice and the free games stay free either way</li>
+        <li id="offerCheck3">Daily practice and the free games stay free either way</li>
       </ul>
     </section>
 
@@ -326,24 +410,23 @@
            starts with free days. -->
       <div class="planpick" id="iapPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="iapPlan" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
-        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b>Sona Premium — <span id="iapPrice">$59.99/yr</span></b>
+        <span class="tag">3 DAYS FREE<span class="tagmore"> · EVERYTHING INCLUDED</span></span>
+        <b><span class="pname" data-short="Yearly">Sona Premium — </span><span id="iapPrice">$59.99/yr</span></b>
         <span class="save">Billed once a year.</span>
         <span class="sub">Nothing is charged during your 3 free days. Sona Premium: every game and every book. Daily practice and free games stay free either way.</span>
       </div>
       <div class="plan" id="iapPlanMo" role="radio" aria-checked="false" tabindex="-1" data-plan="monthly" style="display:none;">
-        <b>Monthly — <span id="iapPriceMo"></span></b>
+        <b><span class="pname" data-short="Monthly">Monthly — </span><span id="iapPriceMo"></span></b>
         <span class="paynote">Charged today. Cancel anytime.</span>
       </div>
       </div>
       <div class="planbuy">
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
-        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="iapTL"></div>
+        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions.</span>
+        <p class="billday" id="iapTL"></p>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" id="iapLegal" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium (yearly) starts with a 3-day free trial, then renews at the yearly price shown above. <span id="iapLegalMo" hidden>Sona Premium (monthly) is charged today at the monthly price shown above and renews every month. </span>Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -366,25 +449,25 @@
            plainly that practice stays free either way. Listing the Sound
            Check or the progress report here would imply the free version
            lacks them; it does not. -->
-      <p class="muted" style="font-size:13.5px;font-weight:700;">Sona Premium opens every game and every book, for every child on this device. Daily practice and free games stay free either way.</p>
+      <p class="muted" id="pickWhat" style="font-size:13.5px;font-weight:700;">Sona Premium opens every game and every book, for every child on this device. Daily practice and free games stay free either way.</p>
       <!-- WEB CARD — exact dollars, because Stripe reads its prices from this
            repo. TWO WAYS TO PAY since 1 Oct 2026 (Travis: "add to the paywall
            a $10 a month option ... that does not have a free trial. That's a
            pay today, but the $59.99 has a three-day trial. And have that as
            the default option selected"): the yearly plan, picked when the
            page opens, and under it $9.99 a month, charged today. One button
-           serves both and says what the picked one does; the free-days
-           timeline and "no charge today" belong to yearly and leave the
-           screen when monthly is picked. $119.88 and "save $59.89" did NOT
+           serves both and says what the picked one does; the line naming
+           the day they are billed and "no charge today" belong to yearly and
+           leave the screen when monthly is picked. $119.88 and "save $59.89" did NOT
            come back with monthly: the saving is $59.89 only while the charter
            price lasts, so it would turn false at family fifty-one. What a
            parent can still check: $59.99 / 12 = $4.9991, hence "under $5 a
            month, billed once a year" and never "$4.99". Move a price and
-           #planLine and trialTimeline()'s final row move with it. -->
+           #planLine and trialTimeline()'s billing line move with it. -->
       <div class="planpick" id="webPlans" role="radiogroup" aria-label="How would you like to pay?">
       <div class="plan best" id="planLife" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
-        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b id="webTitle">Sona Premium — $59.99/yr</b>
+        <span class="tag">3 DAYS FREE<span class="tagmore"> · EVERYTHING INCLUDED</span></span>
+        <b id="webTitle"><span class="pname" data-short="Yearly">Sona Premium — </span><span id="webPrice">$59.99/yr</span></b>
         <!-- CHARTER. Filled by /api/charter at load: while the first fifty
              spots last, this names the standard price and how many are left
              (the count only when Stripe answered it — a guessed scarcity
@@ -404,7 +487,7 @@
            the bottom"): the first says the same thing as a fact about the
            plan rather than as something it lacks. -->
       <div class="plan" id="planMonth" role="radio" aria-checked="false" tabindex="-1" data-plan="monthly">
-        <b>Monthly — <span id="monthPrice">$9.99</span>/mo</b>
+        <b><span class="pname" data-short="Monthly">Monthly — </span><span class="pfig"><span id="monthPrice">$9.99</span>/mo</span></b>
         <span class="paynote">Charged today. Cancel anytime.</span>
       </div>
       </div>
@@ -412,7 +495,7 @@
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
         <span class="reassure" id="monthMath" hidden><b id="monthMathPrice">$9.99</b> is charged today, then every month. Cancel anytime.</span>
-        <div class="tl trial" id="webTL"></div>
+        <p class="billday" id="webTL"></p>
         <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
           <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
           · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
@@ -549,8 +632,11 @@
   <script>
     // Parent-only page: re-check the gate once the shared helper is loaded, and
     // again on bfcache restores (back-swipe re-shows the page without scripts).
-    if (window.Sona && Sona.requireGate) Sona.requireGate();
-    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+    // (the offer a tap on a grey game or book opens, ?from=, asks no check;
+    // the end of the script sends this page through it if no offer showed)
+    var FROM_TAP = /[?&]from=[a-z]+(&|$)/.test(location.search);
+    if (!FROM_TAP && window.Sona && Sona.requireGate) Sona.requireGate();
+    window.addEventListener("pageshow", function (e) { if (e.persisted && !FROM_TAP && window.Sona && Sona.requireGate) Sona.requireGate(); });
 
     // The free games, named from the catalog (27 Sep 2026): a fixed "Four
     // free games" went stale the day Bubble Pop was parked.
@@ -574,17 +660,33 @@
     // means the web card stays hidden. Only the BROWSER rails below read it;
     // the Apple card never does.
     var WEB_SELLS=false; try{ WEB_SELLS=!!(Sona.webSales&&Sona.webSales()); }catch(e){}
+    // TRIAL FIRST (Travis, 3 Oct 2026): does this family have the free version
+    // at all? Where Sona can sell, a family set up from that day on does not
+    // (Sona.freeVersion), so no line on this page may tell them something
+    // "stays free". An older cached sona.js has no answer: the free version.
+    var FREE_VER=true; try{ FREE_VER=!Sona.freeVersion||!!Sona.freeVersion(); }catch(e){}
+    if (!FREE_VER) {
+      try {
+        document.getElementById("offerCheck3").textContent = "Cancel anytime" + ((Sona.isNativeApp && Sona.isNativeApp()) ? " in Settings" : "");
+        document.getElementById("pickWhat").textContent = "Sona Premium opens daily practice, every game and every book, for every child on this device.";
+        var _isub = document.querySelector("#iapPlan .sub");
+        if (_isub) _isub.textContent = "Nothing is charged during your 3 free days. Sona Premium: daily practice, every game and every book.";
+      } catch (e) {}
+    }
 
     // Which door the grown-up came through (30 Sep 2026): the end of a first
     // practice run (?first=1), a tap on a locked game (?from=<game>), a locked
     // book or "See Premium" (?from=library), or Settings (neither). ?from= is
     // checked against the catalog — it arrived in a URL.
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
+    // ?setup=1: the end of setup, for a family who starts with the trial
+    // (Sona.trialFirst). It opens on the two screens before the price.
+    var OFFER_SETUP = /[?&]setup=1(&|$)/.test(location.search);
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
       OFFER_FROM = _f === "library" ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
     } catch (e) {}
-    var OFFER_SOURCE = OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM ? "from-game" : "settings";
+    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM ? "from-game" : "settings";
 
     // The header line for a family who holds Premium without having bought it
     // here. Where it came from is said out loud: a clinician's plan can end,
@@ -598,39 +700,119 @@
       document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
     }
 
-    // The dated trial timeline, one builder for both paywalls.
-    //
-    // Every row has to survive a parent checking it against reality: the dates
-    // are computed from the same +3 days the charge itself uses, the middle row
-    // promises only what the code can keep (no reminder email exists — see the
-    // CSS note), and the final row carries a FIGURE only on the web, where this
-    // repo is the source of truth. On iOS the App Store price is whatever App
-    // Store Connect says and RevenueCat rewrites it above, so naming a number
-    // here could contradict the button two lines up.
+    // The day they are billed, one builder for both paywalls (2 Oct 2026; it
+    // was a dated three-row timeline). The date comes from the same +3 days
+    // the charge itself uses. On the web the price is this repo's (the
+    // charter figure, window.__yearPrice); in the app it is the store's own
+    // string, read off the card two lines up once RevenueCat has painted it,
+    // so the line can never name a different number from the box above it.
+    // No reminder is promised: there is no trial mailer to keep one.
     function trialTimeline(id, native) {
       var el = document.getElementById(id);
       if (!el) return;
-      var fmt = function (days) {
-        try { return new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); }
-        catch (e) { return ""; }
-      };
-      var d0 = fmt(0), d2 = fmt(2), d3 = fmt(3);
-      if (!d3) return;                       // no dates, no timeline — the prose line stays
-      var where = native ? "Settings → Subscriptions" : "your account";
-      var last = native
-        ? "Sona Premium's yearly plan starts, at the price above — only if you kept Premium."
-        : "Sona Premium's yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Premium.";
-      el.innerHTML =
-        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — every game unlocks</b>' +
-          '<p>Every game in Sona Premium opens. Nothing is charged today.</p></div>' +
-        '<div class="tli clock"><span class="tld"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M4 3 2 5M20 3l2 2"/></svg></span><b>' + d2 + ' — still free</b>' +
-          '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
-        '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
-      // the prose sentence said the same thing in one line; the timeline
-      // replaces it rather than repeating it
+      var d3 = "";
+      try { d3 = new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      if (!d3) return;                       // no date, no line — the prose line stays
+      var price;
+      if (native) {
+        var shown = ((document.getElementById("iapPrice") || {}).textContent || "").replace(/\/(yr|year)$/i, "");
+        price = /\d/.test(shown) ? shown + " a year" : "the yearly price above";
+      } else price = (window.__yearPrice || "$59.99") + " a year";
+      // Apple's card says where to cancel, as Apple asks. The web says
+      // "Cancel anytime" and not "in your account": a web buyer has no
+      // cancel button there (they email us), and Stripe's own page, where
+      // they actually pay, spells out the renewal.
+      el.innerHTML = "Free until <b>" + d3 + "</b>, then " + price + ". " +
+        (native ? "Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime.");
+      // the one-line version said less in the same place; this replaces it
       var prose = document.getElementById(native ? "iapMath" : "trialMath");
       if (prose) prose.style.display = "none";
     }
+    // ── TRIAL FIRST: the two screens before the price (see #trialIntro) ──
+    // INTRO_ART: the two pictures drawn for these screens in ChatGPT's crafted
+    // style (Travis makes them; set the paths here when they land). Until
+    // then the first screen shows games in Home's own art with Echo cheering,
+    // and the second Echo waving: ChatGPT pictures already in the app.
+    var INTRO_ART = { free: "", date: "" };
+    var introState = "off", introWaiters = [];
+    // run fn once the price itself is on screen (now, if no intro is up)
+    function afterIntro(fn) { if (introState === "off" || introState === "done") fn(); else introWaiters.push(fn); }
+    function introDone() {
+      if (introState === "off" || introState === "done") return;
+      introState = "done";
+      document.getElementById("trialIntro").hidden = true;
+      document.body.classList.remove("intro-on");
+      var w = introWaiters; introWaiters = [];
+      w.forEach(function (fn) { try { fn(); } catch (e) {} });
+      try { window.scrollTo(0, 0); } catch (e) {}
+      fitOffer();
+    }
+    function introArt() {
+      var acts = Sona.GAME_ACTS || {}, cards = Sona.CRAFTED_CARDS || {};
+      var ok = function (k) { return acts[k] && !acts[k].comingSoon && cards[k]; };
+      var picks = ["slice", "feed", "tiles", "bubbles"].filter(ok);
+      if (picks.length < 2) picks = Object.keys(acts).filter(ok).slice(0, 4);
+      document.getElementById("tiFreeArt").innerHTML = INTRO_ART.free
+        ? '<img class="ti-pic" src="' + INTRO_ART.free + '" alt="" />'
+        : '<div class="offer-art">' + picks.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + cards[k] + '.webp" alt="" /></span>'; }).join("") +
+          '<img class="echo" src="/assets/crafted/echo-cheer.webp" alt="" /></div>';
+      document.getElementById("tiDateArt").innerHTML = '<img class="ti-pic" src="' + (INTRO_ART.date || "/assets/crafted/echo-wave.webp") + '" alt="" />';
+    }
+    // Up before the store has answered: the pictures only, since nothing on
+    // these screens can be said yet. If the answer does not come in 2.5 s,
+    // the price screen shows instead.
+    function introWait() {
+      if (introState !== "off") return;
+      introState = "wait";
+      try { introArt(); } catch (e) {}
+      document.getElementById("tiFreeTitle").style.visibility = "hidden";
+      document.getElementById("tiFreeGo").style.visibility = "hidden";
+      document.getElementById("tiFree").hidden = false;
+      document.getElementById("trialIntro").hidden = false;
+      document.body.classList.add("intro-on");
+      setTimeout(function () { if (introState === "wait") introDone(); }, 2500);
+    }
+    // days: the free days the store (or, on the web, this repo's checkout)
+    // starts the yearly plan with. None, and the screens are skipped: they
+    // exist to say "free", and must not say it of a plan that charges today.
+    function introStart(days, native) {
+      if (introState !== "wait") return;
+      if (!(days > 0)) { introDone(); return; }
+      introState = "on";
+      document.getElementById("tiDays").textContent = days + (days === 1 ? " day" : " days") + " free";
+      var end = "";
+      try { end = new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      if (end) document.getElementById("tiEnd").textContent = end;
+      else document.getElementById("tiDateTitle").textContent = "Nothing to pay during your free days.";
+      document.getElementById("tiDateSub").innerHTML = native ? "Cancel anytime before then, in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime before then.";
+      var one = document.getElementById("tiFree"), two = document.getElementById("tiDate");
+      document.getElementById("tiFreeTitle").style.visibility = "";
+      document.getElementById("tiFreeGo").style.visibility = "";
+      document.getElementById("tiFreeGo").onclick = function () {
+        one.hidden = true; two.hidden = false;
+        try { document.getElementById("tiDateGo").focus({ preventScroll: true }); } catch (e) {}
+      };
+      document.getElementById("tiDateGo").onclick = introDone;
+      try { document.getElementById("tiFreeGo").focus({ preventScroll: true }); } catch (e) {}
+      try { if (window.SonaAnalytics) SonaAnalytics.track("trial intro viewed", { surface: native ? "native" : "web" }); } catch (e) {}
+    }
+    // The yearly plan's free days, from the store's own product: a free
+    // introductory offer counted in days (or weeks). Anything else is 0.
+    function freeDays(p) {
+      var ip = p && (p.introPrice || p.introductoryPrice);
+      if (!ip || Number(ip.price) !== 0) return 0;
+      var n = Number(ip.periodNumberOfUnits) || 0, u = String(ip.periodUnit || "").toUpperCase();
+      if (!n || !u) { var m = /^P(\d+)([DW])$/.exec(String(ip.period || "")); if (m) { n = +m[1]; u = m[2] === "W" ? "WEEK" : "DAY"; } }
+      var days = u === "DAY" ? n : u === "WEEK" ? n * 7 : 0;
+      return days > 0 && days <= 31 ? days : 0;
+    }
+    // Once the free days start (or a purchase is restored) on the hand-off
+    // from setup, the first game setup chose opens; from anywhere else, Home.
+    function nextAfterBuy() {
+      if (!OFFER_SETUP) return "/today.html";
+      try { return (Sona.firstGameStart && Sona.firstGameStart()) || "/today.html"; } catch (e) { return "/today.html"; }
+    }
+
     if (FREE) {
       try {
         document.getElementById("iapCard").style.display = "none";
@@ -768,16 +950,21 @@
           return;
         }
         document.getElementById("iapCard").style.display = "block";
-        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE }); } catch (e) {}
-        // The offer is on screen NOW — this is the only place the one-shot is
-        // spent. Deciding to come here is not the same as arriving.
-        try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+        // the hand-off from setup opens on the two screens first (see
+        // #trialIntro), so the price is counted as seen once they close
+        if (OFFER_SETUP) introWait();
+        afterIntro(function () {
+          try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE }); } catch (e) {}
+          // The offer is on screen NOW — this is the only place the one-shot is
+          // spent. Deciding to come here is not the same as arriving.
+          try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+        });
         // NO dollars and NO comparison. The figure on this card arrives from
         // App Store Connect a moment later, so a price written here would
         // out-argue it. No ratio either ("about half what monthly costs"):
         // Apple sets both prices, and a ratio typed here is a claim about
         // numbers this repo does not own.
-        var LINE_YEAR = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then one charge a year — cancel any time before it.";
+        var LINE_YEAR = (FREE_VER ? "Today: the <b>free version</b>. " : "") + "Sona Premium: <b>3 days free</b>, then one charge a year — cancel any time before it.";
         document.getElementById("planLine").innerHTML = LINE_YEAR;
         // greet the onboarding hand-off warmly
         var welcome = /[?&]welcome=1/.test(location.search);
@@ -791,12 +978,14 @@
         trialTimeline("iapTL", true);
         Sona.iapProduct("annual").then(function (p) {
           if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
-        }).catch(function () {});
+          trialTimeline("iapTL", true);   // the billing line names the store's price too
+          if (OFFER_SETUP) introStart(freeDays(p), true);
+        }).catch(function () { if (OFFER_SETUP) introStart(0, true); });
 
         // THE PICK. Yearly on arrival (Travis, 1 Oct 2026: "the $59.99 has a
         // three-day trial. And have that as the default option selected").
         // Everything that is only true of one plan is painted from here: the
-        // button's words, the free-days line and timeline (yearly), "charged
+        // button's words, the free-days line and billing day (yearly), "charged
         // today" (monthly). Nothing yearly stays on screen beside a button
         // that charges today.
         var IAP_PLAN = "annual", moProduct = null, buyBtn = document.getElementById("iapBuy");
@@ -806,7 +995,7 @@
           buyBtn.textContent = mo ? "Subscribe — " + moProduct.priceString + " a month" : "Start 3 days free";
           document.getElementById("iapMathMo").hidden = !mo;
           tl.style.display = mo ? "none" : "";
-          // the timeline replaces the one-line version when it could be built
+          // the billing line replaces the one-line version when it could be built
           math.style.display = (mo || tl.innerHTML) ? "none" : "";
           document.getElementById("iapTitle").textContent = mo ? "Get Sona Premium, month by month" : TITLE_YEAR;
           fitOffer();
@@ -823,7 +1012,6 @@
           moProduct = p;
           document.getElementById("iapPriceMo").textContent = p.priceString + "/mo";
           document.getElementById("iapPlanMo").style.display = "";
-          document.getElementById("iapLegalMo").hidden = false;
           document.getElementById("planLine").innerHTML = LINE_YEAR + " Or pay <b>month by month</b>, charged today.";
           fitOffer();   // a second box just appeared above the button
         }).catch(function () {});
@@ -845,7 +1033,7 @@
             try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
             document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
             document.getElementById("iapCard").style.display = "none";
-            setTimeout(function () { location.href = "/today.html"; }, 1200);
+            setTimeout(function () { location.href = nextAfterBuy(); }, 1200);
           }).catch(function (e) {
             // "Nothing was charged" is only said when that is known. Apple can
             // take the payment and the unlock still not arrive (sona.js throws
@@ -864,7 +1052,7 @@
           msg.textContent = "Checking your purchases…";
           Sona.iapRestore().then(function (active) {
             msg.textContent = active ? "Restored ✓ — welcome back!" : "No purchases found on this Apple ID.";
-            if (active) setTimeout(function () { location.href = "/today.html"; }, 1000);
+            if (active) setTimeout(function () { location.href = nextAfterBuy(); }, 1000);
           }).catch(function () { msg.textContent = "Couldn't reach the App Store — try again in a moment."; });
         };
       } catch (e) {}
@@ -924,7 +1112,7 @@
     // the child was choosing a game, not finishing a run, so the line under
     // it says the free games are still there.
     (function () {
-      if (!OFFER_FIRST && !OFFER_FROM) return;
+      if (!OFFER_FIRST && !OFFER_FROM && !OFFER_SETUP) return;
       var row = document.getElementById("declineRow"), a = document.getElementById("declineLink");
       if (!row || !a) return;
       // a family who cannot be sold to is not being asked, so there is nothing
@@ -939,11 +1127,14 @@
       if (!inApp && !WEB_SELLS) return;
       // nor is an app build with no purchase plugin: it made no offer either
       if (inApp && !(Sona.iapAvailable && Sona.iapAvailable())) return;
-      if (!OFFER_FIRST) { var dn = document.getElementById("declineNote"); if (dn) dn.textContent = "Your free games are still ready to play."; }
+      if (!OFFER_FIRST) { var dn = document.getElementById("declineNote"); if (dn) dn.textContent = FREE_VER ? "Your free games are still ready to play." : ""; }
+      // "Not now" without the free version goes to Home with every game
+      // locked (Travis, 3 Oct 2026: "yeah home locked")
+      if (!FREE_VER) a.textContent = "Not now";
       row.style.display = "block";
       a.addEventListener("click", function () {
         // keepalive, because this navigates immediately afterwards
-        try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_FIRST ? "first-run" : "from-game" }); } catch (e) {}
+        try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : "from-game" }); } catch (e) {}
       });
     })();
 
@@ -962,7 +1153,7 @@
         if (!hasPremium) {
           if (WEB_SELLS) {
             document.getElementById("pickCard").style.display = "block";
-            var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
+            var ft = document.getElementById("freeTierCard"); if (ft && FREE_VER) ft.style.display = "block";
             var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           } else {
             // THE WEBSITE DOES NOT SELL (see #appCard). The web card stays
@@ -1006,7 +1197,7 @@
         document.getElementById("monthMathPrice").textContent = monthPrice;
         document.getElementById("monthMath").hidden = !mo;
         if (tl) tl.style.display = mo ? "none" : "";
-        // the timeline replaces the one-line version when it could be built
+        // the billing line replaces the one-line version when it could be built
         if (math) math.style.display = (mo || (tl && tl.innerHTML)) ? "none" : "";
         document.getElementById("pickTitle").textContent = mo ? "Get Sona Premium, month by month"
           : welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium";
@@ -1014,14 +1205,20 @@
         // who paid on the web has no account page with a cancel button (the
         // Terms say to email, and /api/portal is not linked from anywhere).
         // "In your account" on the yearly line is older than this change.
-        document.getElementById("webRenew").textContent = mo
+        var rn = document.getElementById("webRenew");
+        rn.textContent = mo
           ? "Sona Premium is charged today and renews at " + monthPrice + " a month until you cancel. To cancel, email hello@speaksona.com and we’ll stop it."
           : "Sona Premium renews at " + yearPrice + " a year after the 3-day free trial. Cancel anytime in your account.";
+        // For the yearly plan the billing line under the button already says
+        // all of this in one line (Travis, 2 Oct 2026: "get rid of as much as
+        // we can"), so the small print steps aside while that line is there.
+        // Monthly keeps it: it is the line that says how to cancel.
+        rn.hidden = !mo && !!(tl && tl.innerHTML);
         // the header line (Settings view) names both ways to pay, whichever
         // is picked. "Under $N a month" never stands without "billed once a
         // year": beside a real monthly plan it would read as that plan's price.
         if (document.getElementById("pickCard").style.display !== "none")
-          document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then " + yearPrice + "/yr — <b>" + yearPer + "</b>, billed once a year. Or " + monthPrice + " a month, charged today.";
+          document.getElementById("planLine").innerHTML = (FREE_VER ? "Today: the <b>free version</b>. " : "") + "Sona Premium: <b>3 days free</b>, then " + yearPrice + "/yr — <b>" + yearPer + "</b>, billed once a year. Or " + monthPrice + " a month, charged today.";
         fitOffer();   // the charter line, or a pick, may have moved the button
       }
       wirePick("webPlans", function (plan) { WEB_PLAN = plan === "monthly" ? "monthly" : "annual"; paintWeb(); });
@@ -1043,8 +1240,13 @@
       // planMoment().
       try {
         var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
-        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web", source: OFFER_SOURCE });
-        if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
+        // the hand-off from setup opens on the two screens first; the web
+        // plan's free days are this repo's checkout's (trial_period_days: 3)
+        if (offerOnScreen && OFFER_SETUP) { introWait(); introStart(3, false); }
+        afterIntro(function () {
+          if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web", source: OFFER_SOURCE });
+          if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
+        });
       } catch (e) {}
       // the exact-date pill: a trial started today ends on a knowable date, and
       // naming it beats "after 3 days" for trust
@@ -1101,7 +1303,7 @@
             // paintWeb, from yearPrice and yearPer). Monthly does not move.
             yearValue = 99.99; window.__yearPrice = j.standard;
             yearPrice = j.standard; yearPer = "under $8.50 a month";
-            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Premium — " + j.standard + "/yr";
+            var t = document.getElementById("webPrice"); if (t) t.textContent = j.standard + "/yr";
             var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
             trialTimeline("webTL", false);
           }
@@ -1118,7 +1320,7 @@
     // Premium, or where no purchase card is showing (an old App Store binary).
     (function () {
       try {
-        if (!OFFER_FIRST && !OFFER_FROM) return;
+        if (!OFFER_FIRST && !OFFER_FROM && !OFFER_SETUP) return;
         if (FREE || (Sona.premium && Sona.premium())) return;
         var native = !!(Sona.isNativeApp && Sona.isNativeApp());
         var card = document.getElementById(native ? "iapCard" : "pickCard");
@@ -1131,7 +1333,8 @@
         var name = (P.childName || "").trim(), who = name || "Your child";
         var acts = Sona.GAME_ACTS || {}, art = Sona.CRAFTED_CARDS || {};
         // what Premium opens TODAY: released games outside the free tier
-        var open = Object.keys(acts).filter(function (k) { return acts[k].tier !== "free" && !acts[k].comingSoon; });
+        // (without the free version, that is every released game)
+        var open = Object.keys(acts).filter(function (k) { return (acts[k].tier !== "free" || !FREE_VER) && !acts[k].comingSoon; });
         var game = OFFER_FROM && OFFER_FROM !== "library" ? acts[OFFER_FROM] : null;
 
         // the games themselves, in Home's art: the tapped one large, or the
@@ -1157,10 +1360,13 @@
         var big = open.some(function (k) { return acts[k].group === "arcade"; });
         var little = open.some(function (k) { return acts[k].group === "simple"; });
         var soon = function (grp) { return Object.keys(acts).some(function (k) { return acts[k].group === grp && acts[k].tier !== "free" && acts[k].comingSoon; }); };
+        // "More games" to a family who has free ones; to one who has none
+        // (trial first), just "Games"
+        var lead = FREE_VER ? "More games" : "Games";
         document.getElementById("offerSub").textContent =
-          big && little ? "More games for little kids and big kids, and new ones on the way."
-          : big ? "More games for big kids, and new ones " + (soon("simple") ? "for little kids " : "") + "on the way."
-          : little ? "More games for little kids, and new ones " + (soon("arcade") ? "for big kids " : "") + "on the way."
+          big && little ? lead + " for little kids and big kids, and new ones on the way."
+          : big ? lead + " for big kids, and new ones " + (soon("simple") ? "for little kids " : "") + "on the way."
+          : little ? lead + " for little kids, and new ones " + (soon("arcade") ? "for big kids " : "") + "on the way."
           : "New games on the way.";
 
         // one line about what just happened, from what this device recorded —
@@ -1231,6 +1437,11 @@
       };
       paint();
     })();
+
+    // A ?from= visit that is not showing the offer (a family that already has
+    // Premium, a phone that cannot buy, an unknown game in the address) is
+    // Settings › Your plan, a grown-ups page: it asks the check after all.
+    try { if (FROM_TAP && !document.body.classList.contains("offer") && window.Sona && Sona.requireGate) Sona.requireGate(); } catch (e) {}
 
     // card icons from the shared icon kit (the inline SVG stays as fallback)
     (function () { try {

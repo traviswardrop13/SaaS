@@ -11,12 +11,14 @@ body[data-setup-screen="welcome"] .ob {
 body[data-setup-screen="welcome"] .mascot { display: none; }
 body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: column; min-height: 0; }
 .welcome-brand { color: #48280f; font-family: 'Baloo 2', sans-serif; font-size: 38px; font-weight: 800; line-height: 1; text-align: center; text-shadow: 0 1px 12px #fff6e9; }
-.welcome-brand span { display: block; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 800; margin-top: 7px; letter-spacing: .035em; }
-.welcome-copy { margin: 22px auto 0; padding: 22px 18px 18px; width: 100%; max-width: 350px; background: #fffaf0; border: 1px solid rgba(128, 85, 40, .13); border-radius: 28px; box-shadow: 0 6px 0 rgba(131, 94, 46, .1), 0 12px 24px rgba(77, 55, 28, .1); }
-body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: clamp(28px, 8.6vw, 36px); line-height: 1.05; margin: 0; color: #48280f; }
-/* Who's setting this up: the first screen's two answers, each one tap.
+.welcome-brand span { display: block; font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 800; margin-top: 8px; }
+/* Who's setting this up: the second screen's two answers, each one tap.
    Parents come first, so theirs is the teal action and the clinician's the
-   cream second choice. */
+   cream second choice. The answers are the buttons, so the footer keeps only
+   Back. */
+.ob .step[data-step="who"] { text-align: center; }
+.ob .step[data-step="who"] .qh { margin: 0 auto; }
+body[data-setup-screen="who"] #nextBtn { display: none; }
 .who { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
 .who-pick { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding: 14px 16px; border-radius: 22px; cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; transition: transform .12s; }
 .who-pick b { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.1; }
@@ -29,17 +31,13 @@ body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: clamp(28px, 8.6
 .who-pick:focus-visible { outline: 3px solid #0b6f78; outline-offset: 3px; }
 body[data-setup-screen="welcome"] .world-scene { flex: 1; min-height: 60px; max-height: none; margin: 0; }
 body[data-setup-screen="welcome"] .world-scene img, body[data-setup-screen="welcome"] .world-scene:before { display: none; }
-body[data-setup-screen="welcome"] #moveRow { margin: 0 !important; }
-body[data-setup-screen="welcome"] #moveLink { padding: 10px 14px; border-radius: 20px; background: rgba(255, 250, 240, .94); color: #67462e; font-size: 12px; line-height: 24px; }
-/* the answers are the buttons here, so the footer's Continue steps aside */
-body[data-setup-screen="welcome"] .obfoot { display: none; }
+/* the hello's one button sits on the orchard itself, with no cream fade */
+body[data-setup-screen="welcome"] .obfoot { background: none; }
 @media (max-height: 680px) {
   body[data-setup-screen="welcome"] .ob { padding-top: max(12px, env(safe-area-inset-top)); }
   .welcome-brand { font-size: 29px; }
-  .welcome-brand span { font-size: 10px; margin-top: 3px; }
-  .welcome-copy { margin-top: 12px; padding: 14px 12px; border-radius: 22px; }
-  body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: 28px; }
-  .who { gap: 10px; margin-top: 14px; }
+  .welcome-brand span { font-size: 17px; margin-top: 4px; }
+      .who { gap: 10px; margin-top: 14px; }
   .who-pick { padding: 11px 14px; }
   .who-pick b { font-size: 20px; }
 }
@@ -50,7 +48,11 @@ body[data-setup-screen="welcome"] .obfoot { display: none; }
 /* The remaining setup pages share the quieter cream-card side of the boards.
    The scroll area stays separate from the fixed controls for native keyboards. */
 html { background: #fff6e9; }
-body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at 75% 0, #fffdf7, #fff6e9 75%); color: #48280f; }
+/* The colour under the gradient is load-bearing (4 Oct 2026): the iPhone
+   keyboard plugin (autoBackdropColor: "dom") paints the area behind the
+   keyboard's rounded corners from the body's background COLOUR, and a gradient
+   alone reads as transparent, which showed black corners while typing a name. */
+body:not([data-setup-screen="welcome"]) { background: #fff6e9 radial-gradient(ellipse at 75% 0, #fffdf7, #fff6e9 75%); color: #48280f; }
 .ob { max-width: 480px; padding-left: 22px; padding-right: 22px; scroll-padding-block: 18px 24px; }
 .ob .seg { margin: 6px 0 24px; gap: 7px; flex-shrink: 0; }
 .ob .seg > i { height: 5px; background: #e6ded0; }
@@ -65,8 +67,8 @@ body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at
 .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 22px 20px; border: 1px solid #ecdfcb; border-radius: 26px; background: #fffcf6; box-shadow: 0 6px 0 #eadbc34a, 0 14px 35px #6f492c06; }
 .ob .setup-label { display: block; font-size: 14px; line-height: 1.4; font-weight: 800; color: #67462e; margin-top: 23px; margin-bottom: 9px; }
 .ob .setup-hint { font-size: 12px; margin-top: 9px; }
-.ob input, .move-card input { background: #fff; border: 1.5px solid #ddceb8; border-radius: 15px; min-height: 56px; padding: 14px; font-size: 18px; color: #48280f; caret-color: #078e98; box-shadow: inset 0 2px 4px #75532f05; }
-.ob input:focus, .move-card input:focus { outline: 2px solid #0b939c; outline-offset: 3px; }
+.ob input { background: #fff; border: 1.5px solid #ddceb8; border-radius: 15px; min-height: 56px; padding: 14px; font-size: 18px; color: #48280f; caret-color: #078e98; box-shadow: inset 0 2px 4px #75532f05; }
+.ob input:focus { outline: 2px solid #0b939c; outline-offset: 3px; }
 .ob input::placeholder { color: #967f67; opacity: 1; }
 .ob #obAge { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 0; }
 .ob #obAge .sound { min-width: 0; min-height: 63px; padding: 12px 5px; font-size: 22px; }
@@ -83,9 +85,9 @@ body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at
 .ob #micNotNow { color: #087d87; text-decoration: underline; text-underline-offset: 4px; margin-top: 16px; }
 .obfoot { background: linear-gradient(transparent, #fff6e9 30%); padding: 16px 22px calc(18px + env(safe-area-inset-bottom)); }
 .obfoot .inner { max-width: 436px; gap: 12px; }
-.obfoot .btn, .move-card .btn { background: linear-gradient(#22b4bc, #069ca8); color: white; border: 1px solid #08959e; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 #ffffff60; border-radius: 21px; min-height: 60px; font-size: 22px; line-height: 1.15; }
-.obfoot .btn:active, .move-card .btn:active { box-shadow: 0 1px 0 #087e89; }
-.obfoot .btn:disabled, .move-card .btn:disabled { background: #e6dccb; color: #95836c; box-shadow: none; border-color: #e6dccb; transform: none; cursor: not-allowed; }
+.obfoot .btn { background: linear-gradient(#22b4bc, #069ca8); color: white; border: 1px solid #08959e; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 #ffffff60; border-radius: 21px; min-height: 60px; font-size: 22px; line-height: 1.15; }
+.obfoot .btn:active { box-shadow: 0 1px 0 #087e89; }
+.obfoot .btn:disabled { background: #e6dccb; color: #95836c; box-shadow: none; border-color: #e6dccb; transform: none; cursor: not-allowed; }
 .obfoot #backBtn { min-height: 48px; color: #806348; font-size: 15px; }
 body[data-setup-screen="achieve"] .ob { padding-top: calc(24px + env(safe-area-inset-top)); }
 body[data-setup-screen="achieve"] #handoffTitle { font-size: 28px; line-height: 1.14; margin: 8px auto 12px; max-width: 370px; }

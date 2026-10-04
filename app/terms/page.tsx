@@ -144,9 +144,20 @@ export default function TermsPage() {
                 <br />
               </>
             )}
-            <strong>Sona has a free version and Premium.</strong> The free version
-            — daily practice and free games, plus a free picture book — costs
-            nothing and needs no card. Premium adds every game and every book.
+            {/* TRIAL FIRST (Travis, 3 Oct 2026: "lets add the paywall before
+                they try anything in the app"). A family who sets Sona up in
+                the iPhone or iPad app from that day starts Sona Premium's free
+                days to use anything; the free version stays only with the
+                families sona.js's freeVersion() names. No length of free days
+                is typed here: it is App Store Connect's, like the price. */}
+            <strong>Sona Premium opens Sona.</strong> In the Sona app on iPhone
+            and iPad, a new family starts Sona Premium, with the free days and
+            price shown in the App Store, to use daily practice, every game and
+            every book. A free version — daily practice and free games, plus a
+            free picture book — costs nothing and needs no card for families who
+            set Sona up before October 3, 2026, families who joined through their
+            speech therapist&apos;s link, and anywhere Sona Premium cannot be
+            bought, such as speaksona.com today.
             <br />
             <br />
             {!WEB_SALES && (

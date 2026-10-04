@@ -16,10 +16,10 @@
    with each miss until the next kick cannot miss — the last thing a child
    does is score (Rachel's rule: end every round on a success).
 
-   Its pictures are drawn here, plainly, until the art arrives. When the
-   goalie's painted picture lands (a friendly bear keeper standing ready,
-   transparent, feet at the bottom), set KEEPER_PIC to its address below and
-   it is drawn in place of the drawn bear; nothing else changes.
+   Its pictures are painted (Travis, 4 Oct 2026: "add the ChatGPT art"):
+   the stadium, Bo and the ball, from tools/art/game-sprites.json. Each
+   falls back to the drawn one until it loads. The pitch, goal and net stay
+   drawn: they move and carry the perspective.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
@@ -99,8 +99,19 @@
       crowd.push({ r: r, u: (i + (r % 2 ? 0.5 : 0) + 0.2 * Math.sin(i * 7.3 + r)) / per, skin: SKIN[(i * 3 + r * 5) % SKIN.length], shirt: SHIRT[(i * 7 + r * 2) % SHIRT.length], ph: (i * 1.7 + r) % 6 });
     }
   }
+  // the painted stadium (sky, stand, crowd, bunting and the low wall), cut to
+  // end at the wall's foot, which sits on the horizon. The pitch below stays
+  // drawn: it carries the box lines in perspective. The crowd hops as one
+  // picture when a goal goes in.
+  var STADIUM = new Image(); STADIUM.src = "/assets/crafted/game/soccer-stadium.webp";
   function drawStadium() {
     var horizon = project(0, 0, GOAL_Z + NET_D + 5).y;
+    if (STADIUM.complete && STADIUM.naturalWidth) {
+      var sc = Math.max(W / STADIUM.naturalWidth, (horizon + 2) / STADIUM.naturalHeight), sw = STADIUM.naturalWidth * sc, sh = STADIUM.naturalHeight * sc;
+      var hop = Math.max(0, 1 - (clock - cheerAt) / 1.2), dy = hop > 0 ? -Math.abs(Math.sin((clock - cheerAt) * 9)) * 3 * hop : 0;
+      ctx.fillStyle = "#BFE6FA"; ctx.fillRect(0, 0, W, horizon + 1);
+      ctx.drawImage(STADIUM, (W - sw) / 2, horizon + 2 - sh + dy, sw, sh);
+    } else {
     // sky
     var g = ctx.createLinearGradient(0, 0, 0, horizon);
     g.addColorStop(0, "#BFE6FA"); g.addColorStop(1, "#E9F7FF");
@@ -128,6 +139,7 @@
     }
     // the advertising boards in front of the stand
     ctx.fillStyle = "#F7F1E3"; ctx.fillRect(0, horizon - 5, W, 6);
+    }
     // the pitch: mown stripes running to the goal
     g = ctx.createLinearGradient(0, horizon, 0, H);
     g.addColorStop(0, "#6CB24D"); g.addColorStop(1, "#8ED06A");
@@ -169,7 +181,7 @@
   // The goalie: Bo, a friendly bear in a teal jersey and big gloves, drawn
   // until his picture arrives (see the top of this file). No address until
   // then, so no page asks for a file that isn't there.
-  var KEEPER_PIC = "", KEEPER = new Image(), keeperPic = false;
+  var KEEPER_PIC = "/assets/crafted/game/soccer-keeper.webp", KEEPER = new Image(), keeperPic = false;
   KEEPER.onload = function () { keeperPic = true; };
   if (KEEPER_PIC) KEEPER.src = KEEPER_PIC;
   function drawKeeper() {
@@ -216,11 +228,13 @@
     }
   }
 
+  var BALL_ART = new Image(); BALL_ART.src = "/assets/crafted/game/soccer-ball.webp";
   function drawBall(b) {
     var p = project(b.x, b.y, b.z), r = BALL_R * p.s;
     if (r <= 0.5) return;
     var sh = project(b.x, 0.001, b.z);
     ctx.fillStyle = "rgba(30,70,20," + Math.max(0, 0.3 - b.y * 0.08).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, r * 1.05, r * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+    if (BALL_ART.complete && BALL_ART.naturalWidth) { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(b.spin || 0); ctx.drawImage(BALL_ART, -r, -r, r * 2, r * 2); ctx.restore(); return; }
     ctx.save(); ctx.translate(p.x, p.y);
     var g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
     g.addColorStop(0, "#FFFFFF"); g.addColorStop(0.7, "#F1F1EC"); g.addColorStop(1, "#C9CCC2");
