@@ -4,7 +4,10 @@ body.crafted-family{
   --ink:#442711;--muted:#82674e;--line:#eadcc7;--card:#fffdf8;
   --blue:#128e96;--blue-d:#086d76;--good:#428165;
   --family-teal:#07828d;--family-teal-dark:#065e66;--family-shadow:rgba(103,67,25,.10);
-  color:var(--ink);background:radial-gradient(ellipse at 20% 0,#fffdf7 0,#fff8ed 52%,#f7eedf 100%) fixed;
+  /* the colour under the gradient is what the iPhone keyboard plugin paints
+     behind the keyboard's corners (autoBackdropColor: "dom"); a gradient alone
+     reads as transparent, and the corners showed black (4 Oct 2026) */
+  color:var(--ink);background:#fff8ed radial-gradient(ellipse at 20% 0,#fffdf7 0,#fff8ed 52%,#f7eedf 100%) fixed;
   min-height:100vh;min-height:100dvh;height:auto;color-scheme:light;
 }
 .crafted-family .wrap,.crafted-family .premium-wrap{max-width:540px;padding:calc(16px + env(safe-area-inset-top)) 20px calc(36px + env(safe-area-inset-bottom));}
