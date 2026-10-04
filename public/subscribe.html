@@ -279,6 +279,17 @@
     body.offer .planbuy .go { font-size:21px; padding-top:17px; padding-bottom:17px; }
     body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:18px 8px 10px !important; }
     body.fit3.offer .plan b { font-size:22px; }
+    /* the side-by-side tiles give room back first on a short phone, so the
+       fit drops the game's picture only after everything else (firstgametest:
+       375 x 667 with the charter line keeps its picture) */
+    body.fit2.offer .planpick { gap:8px; padding-top:10px; }
+    body.fit2.offer .planpick .plan, body.fit2.offer #planMonth, body.fit2.offer #iapPlanMo { padding:17px 8px 9px !important; }
+    body.fit2.offer .plan b { font-size:22px; }
+    body.fit2.offer .plan b .pname:before { font-size:12px; margin-bottom:1px; }
+    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:14px 6px 7px !important; }
+    body.fit3.offer .plan b { font-size:20px; }
+    body.fit3.offer .plan .save, body.fit3.offer .plan .paynote, body.fit3.offer .plan #charterLine { font-size:11.5px !important; margin-top:3px; }
+    body.fit2.offer .planbuy .go { font-size:19px; padding-top:13px; padding-bottom:13px; }
     /* ── TRIAL FIRST: the two screens before the price (3 Oct 2026) ──
        Only on the hand-off from setup, and only once the store has said the
        yearly plan starts with free days. While they are up, nothing else on
