@@ -1199,6 +1199,8 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 - **Its sounds go through the engine** (`game.sounds`: swish, whoosh, clank,
   bounce, made on the phone), so each waits for a closed mic like a chime.
 - **Nothing is practice data**, as in every Say & Play game.
+Its gym wall, ball and (since 4 Oct 2026) backboard are painted
+(`public/assets/crafted/game/`); the rim, net and floor stay drawn.
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
 `tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
@@ -1223,8 +1225,10 @@ the ball goes. What it keeps, as Hoops does:
 Home's wide card is the painted one (`public/assets/crafted/home-soccer.webp`,
 from main's covers, 1 Oct 2026), and the website tile is cut from it; the
 sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
-through `PLAYED`), and painted art drops in at that name. Bo's own picture drops in by setting
-`KEEPER_PIC` in `soccer.js`. On Home the eight big-kid games fill four even rows of two, so
+through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
+painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
+`public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
+drawn, because they move and carry the perspective. On Home the eight big-kid games fill four even rows of two, so
 neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
 whole game.
 
@@ -1253,7 +1257,11 @@ types of dinosaurs to look for not just one"): T. rex, Triceratops,
 Stegosaurus, Brontosaurus, dug in that order, a new one each finished round,
 round again after the last. Each has its own skeleton outline, its own eight
 bones and places in the pit, and its own body and colour when it wakes (data in
-`DINOS` in `dino.js`, drawn from one small kit; painted art drops in at `ART`).
+`DINOS` in `dino.js`, drawn from one small kit). Since 4 Oct 2026 the dig
+site, the sand, the earth and each woken dinosaur are painted (`ART`,
+`public/assets/crafted/game/dino-*.webp`); a painted dinosaur is fitted to its
+skeleton's outline and its bones fade as it wakes, since a painting never
+lines up bone for bone. The skeleton, its outline and the bones stay drawn.
 The round is the child's (`sona.dino.v1`, one of `PER_KID`, kept by the page
 through `Sona.kkey`; `dino.js` never touches storage): a brother or sister
 starts at the T. rex, and one left half dug waits, from its first bone. The
@@ -1330,9 +1338,9 @@ on the same play-game hook as Hoops. What it keeps:
   quiet phone call (and not at all with the ringer off). A browser keeps Web
   Audio. How loud they are on a real phone is `MEDIA_PEAK` in the page: it was
   set without a phone to listen on. A muted Sona (volume 0) plays none.
-- **Its wand, basket and sky are drawn plainly in code** until painted ones
-  arrive (`WAND_PIC` in `bubbles.js` is the drop-in); the bubble is the
-  painted one, the word pictures are Feed Echo's.
+- **Its sky, wand, bubble and basket are painted** (4 Oct 2026,
+  `public/assets/crafted/game/bubbles-*.webp`; the basket is
+  `crafted-bubbles.css`'s background); the word pictures are Feed Echo's.
 - **Nothing is practice data**; each heard word is one rep on the week's
   count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
   <word>." with start-of-word words for the child's sound, and "heard" is a

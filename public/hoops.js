@@ -188,8 +188,18 @@
     ctx.fillStyle = "#71624c"; ctx.fillRect(top.x - w / 2, -2, w, top.y + 4);
     ctx.fillStyle = "#b5a084"; ctx.fillRect(top.x - w / 2 + 1, -2, Math.max(1, w * 0.3), top.y + 4);
   }
+  // the painted backboard (frame, board and square), fitted to the board's
+  // corners; the drawn one until it loads
+  var BOARD_ART = new Image(); BOARD_ART.src = "/assets/crafted/game/hoops-board.webp";
   function drawBoard() {
     var c = [project(hoopX - BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_BOTTOM, BOARD_Z), project(hoopX - BOARD_W / 2, BOARD_BOTTOM, BOARD_Z)];
+    if (BOARD_ART.complete && BOARD_ART.naturalWidth) {
+      ctx.save(); ctx.shadowColor = "rgba(90,60,30,.18)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+      ctx.drawImage(BOARD_ART, c[0].x, c[0].y, c[1].x - c[0].x, c[2].y - c[0].y); ctx.restore();
+      var a1 = project(hoopX, RIM_Y, BOARD_Z), a2 = project(hoopX, RIM_Y, HOOP_Z + RIM_R);
+      ctx.strokeStyle = "#D93F32"; ctx.lineWidth = Math.max(3, a1.s * 0.05); ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y); ctx.stroke();
+      return;
+    }
     ctx.save(); ctx.shadowColor = "rgba(90,60,30,.18)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
     poly(c); ctx.fillStyle = "#fff4db"; ctx.fill(); ctx.restore();
     ctx.save(); poly(c); ctx.clip();

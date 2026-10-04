@@ -19,8 +19,9 @@ body[data-crafted="bubbles"] #cheer{font-size:19px;}
 /* The basket: a plain cream tray with five spots, drawn here until its
    picture arrives. A spot fills with the word's picture when the gold bubble
    is popped. */
-body[data-crafted="bubbles"] #basket{background:linear-gradient(#fffaf0,#f3e2c3);border:2px solid #fffdf5;border-radius:18px;box-shadow:0 3px 0 #c9ab7c,0 6px 10px #5b3a1a22;}
-body[data-crafted="bubbles"] #basket .well{border-radius:50%;background:#ecd9b6;box-shadow:inset 0 2px 4px #8c6a3b40;}
+/* the painted wicker basket (4 Oct 2026); the wells sit in its weave */
+body[data-crafted="bubbles"] #basket{background:url(/assets/crafted/game/bubbles-basket.webp) center 62%/100% 150% no-repeat;padding:0 7% 2%;}
+body[data-crafted="bubbles"] #basket .well{border-radius:50%;background:#fff6e0cc;box-shadow:inset 0 2px 4px #8c6a3b40;}
 body[data-crafted="bubbles"] #basket .well.full{background:#fffdf6;box-shadow:inset 0 0 0 2px #ffd21c,0 2px 0 #c9ab7c;}
 @media(max-height:650px){
  body[data-crafted="bubbles"] #app{gap:9px;padding-left:12px;padding-right:12px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(10px + env(safe-area-inset-bottom));}

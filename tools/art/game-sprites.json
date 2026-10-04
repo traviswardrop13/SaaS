@@ -214,5 +214,89 @@
   "size": "1536x1024",
   "transparent": true,
   "prompt": "The rounded end cap of a wooden beam: a short, slightly wider, smooth rounded block of warm honey-brown painted wood with a soft highlight, seen straight from the front, wide and short, filling the frame width. No leaves, no vines."
+ },
+ {
+  "name": "soccer-stadium",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A cozy children's football stadium seen from the pitch, straight on: soft blue sky with two puffy clouds at the top, then three rows of stands filling the lower half with a happy crowd of round clay people in pastel shirts waving, triangle party bunting strung along the top of the stands, and a low cream advertising wall (blank, no words) running along the very bottom edge. No goal, no ball, no grass, no players, no text or numbers."
+ },
+ {
+  "name": "soccer-keeper",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "Bo, a friendly round brown teddy-bear goalkeeper standing ready, seen from the front: teal goalkeeper jersey (plain, no number), dark shorts, big yellow goalkeeper gloves held out wide at shoulder height, kind smiling face, small round ears. Full body, feet at the very bottom of the frame, filling the frame height."
+ },
+ {
+  "name": "soccer-ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A single classic football (soccer ball): white with black pentagon patches, smooth clay. Centered, filling 80% of the square."
+ },
+ {
+  "name": "dino-site",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny fossil dig site for a children's game, front view: warm peach sky with a soft round sun top right, and a big smooth sandstone cliff face in warm orange-tan that fills the middle of the picture with a few gentle horizontal rock layers, a couple of small cacti and pebbles at the edges. The middle of the cliff face is plain and open (a dinosaur skeleton will be drawn there by the game). The bottom third is flat pale sand ground. No dinosaurs, no bones, no tools, no text."
+ },
+ {
+  "name": "dino-sand",
+  "size": "1024x1024",
+  "transparent": false,
+  "prompt": "A seamless top-down texture of soft pale golden sand with tiny pebbles and gentle ripples, evenly lit, filling the whole square edge to edge. No objects, no shadows, no border."
+ },
+ {
+  "name": "dino-soil",
+  "size": "1024x1024",
+  "transparent": false,
+  "prompt": "A seamless top-down texture of slightly damp warm brown dug earth with small pebbles, evenly lit, filling the whole square edge to edge. No objects, no border."
+ },
+ {
+  "name": "dino-trex",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon T. rex, side view facing right, full body standing on its two legs, big head, tiny arms, long tail out to the left, green with a lighter belly, a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-tri",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Triceratops, side view facing right, full body on four sturdy legs, a big frill and three gentle horns, short tail to the left, soft orange with a lighter belly, a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-steg",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Stegosaurus, side view facing right, full body on four legs, a row of rounded back plates and a short spiky tail to the left, soft purple with yellow plates and a lighter belly, small head with a kind smiling face and a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-bronto",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Brontosaurus, side view facing right, full body on four thick legs, a very long neck curving up with a small head on the right, long tail to the left, soft blue with a lighter belly, a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "bubbles-sky",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A soft sunny sky for a toddlers' bubble game, portrait: pale blue sky fading lighter toward the bottom, two or three small puffy white clouds near the top, and a low gentle green grassy hill with a few tiny flowers across the bottom fifth. The middle of the sky is open and plain. No bubbles, no characters, no text."
+ },
+ {
+  "name": "bubbles-wand",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A child's bubble wand: a short wooden handle running from the bottom-left corner up to a round teal ring at the top-right, with a shimmering soap film inside the ring. Smooth clay."
+ },
+ {
+  "name": "bubbles-basket",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A wide, low, empty woven wicker picnic basket seen from the front, honey-coloured weave with a rounded rim, no handle, much wider than tall, filling the frame width. Empty, nothing inside."
+ },
+ {
+  "name": "hoops-board",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A children's basketball backboard seen straight on: a cream rectangular board with a warm wooden frame and a small orange-red square painted in the lower middle. No hoop, no net, no pole, no text. The board fills the whole frame edge to edge."
  }
 ]
