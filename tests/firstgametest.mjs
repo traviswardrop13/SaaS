@@ -149,8 +149,12 @@ await scenario("Home, paying, no Premium", async () => {
     // Travis, 30 Sep 2026: "the two free games for older kids, the two free games for younger kids"
     ok("only the free games are open: Bubble Pop, Feed Echo, Fruit Slice and Piano Tiles", JSON.stringify(open) === JSON.stringify(["bubbles", "feed", "slice", "tiles"]), open);
     ok("every other game is greyed out", cards.filter((c) => c.locked).length >= 4 && cards.filter((c) => c.locked).every((c) => Number(c.fade) < 0.7), cards);
+    // where Sona can sell (this phone's website sells), a grey game opens the
+    // price at once, on that game (Travis, 4 Oct 2026: "I want it to open
+    // automatically if they click on a game that is grayed out")
     await page.locator('#activityGroups button[data-game="stack"]').click();
-    ok("a greyed game still answers a tap: ask a grown-up", await page.locator("#libraryNotice").isVisible() && new URL(page.url()).pathname === "/today.html");
+    await page.waitForURL(/\/subscribe\.html\?from=stack$/).catch(() => {});
+    ok("a greyed game still answers a tap: it opens the price at once, on that game", /\/subscribe\.html\?from=stack$/.test(page.url()), page.url());
     ok("Home paying: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
