@@ -185,7 +185,10 @@ function fakeDevice(cfg) {
   if (cfg.native) window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
   HTMLMediaElement.prototype.play = function () {
     if (cfg.refuse) return Promise.reject(new DOMException("refused", "NotAllowedError"));
-    const media=this,rec={kind:"media",start:now(),end:Infinity,live:h.micOn(),src:String(media.src)};h.sounds.push(rec);media.__quietRecord=rec;
+    // "media" is a voice line, a recording or a game's own note. A Sona chime
+    // the app plays this way (2 Oct 2026) is "chime": still a sound in the
+    // audit, never counted as one of Echo's lines.
+    const media=this,rec={kind:h.chiming?"chime":"media",start:now(),end:Infinity,live:h.micOn(),src:String(media.src)};h.sounds.push(rec);media.__quietRecord=rec;
     media.__quietTimer=setTimeout(()=>{rec.end=now();if(media.onended)media.onended();},cfg.speechMs||400);return Promise.resolve();
   };
   HTMLMediaElement.prototype.pause = function(){clearTimeout(this.__quietTimer);if(this.__quietRecord)this.__quietRecord.end=Math.min(this.__quietRecord.end,now());};
@@ -207,7 +210,7 @@ function fakeDevice(cfg) {
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set(value) {
     sona = value;
     value.confetti = () => {};
-    Object.keys(value.sfx || {}).forEach((k) => { const real = value.sfx[k]; if (typeof real !== "function" || k === "stop") return; value.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); return real.apply(this, arguments); }; });
+    Object.keys(value.sfx || {}).forEach((k) => { const real = value.sfx[k]; if (typeof real !== "function" || k === "stop") return; value.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); h.chiming = k; try { return real.apply(this, arguments); } finally { h.chiming = null; } }; });
   } });
 
   if (!localStorage.getItem("sona.test.quietSeed")) {

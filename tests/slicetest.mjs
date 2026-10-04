@@ -114,7 +114,10 @@ function fakePhone(cfg) {
   // arcadespeechhelptest's: held here, so a round is just the round.
   document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
   cfg = cfg || {};
-  const f = window.__f = { mics: 0, live: 0, sfx: [], media: [] };
+  // media: Echo's lines and Rachel's recordings. chimes: a Sona chime the app
+  // plays as a media element (2 Oct 2026), kept apart so the card's counts
+  // stay its voice lines.
+  const f = window.__f = { mics: 0, live: 0, sfx: [], media: [], chimes: [], chiming: false };
   // cfg.native: inside the iPhone app, where Echo's lines play as media
   // elements (Sona.mediaPCM) and Rachel's take as one too, so every sound
   // the card makes is logged below. The website's Web Audio path is
@@ -140,13 +143,13 @@ function fakePhone(cfg) {
   // Echo's lead-in and Rachel's sound clip end at once: on a slow CI runner
   // real media playback held the card's mic back past the test's patience
   // (27 Sep 2026: GitHub's runner took 5.8 s for the first card)
-  window.Audio = function (src) { const a = { src, volume: 1, paused: false, play() { f.media.push({ src: /^blob:/.test(src) ? "voice" : String(src), live: f.live > 0, at: Math.round(performance.now()) }); setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() { a.paused = true; }, removeAttribute() {}, load() {} }; return a; };
+  window.Audio = function (src) { const a = { src, volume: 1, paused: false, play() { (f.chiming ? f.chimes : f.media).push({ src: /^blob:/.test(src) ? "voice" : String(src), live: f.live > 0, at: Math.round(performance.now()) }); setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() { a.paused = true; }, removeAttribute() {}, load() {} }; return a; };
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
     // a phone still holding last week's sona.js: no store for bests at all
     if (cfg.noStore) { delete v.gameBest; delete v.gameBestOffer; }
-    const sfx = v.sfx || {}; v.sfx = new Proxy(sfx, { get(t, k) { const real = t[k]; if (typeof real !== "function" || k === "stop") return real; return function () { f.sfx.push({ name: k, live: f.live > 0 }); return real.apply(this, arguments); }; } }); } });
+    const sfx = v.sfx || {}; v.sfx = new Proxy(sfx, { get(t, k) { const real = t[k]; if (typeof real !== "function" || k === "stop") return real; return function () { f.sfx.push({ name: k, live: f.live > 0 }); f.chiming = true; try { return real.apply(this, arguments); } finally { f.chiming = false; } }; } }); } });
   // every title the card shows, with how many sounds had played by then
   f.titles = [];
   addEventListener("DOMContentLoaded", () => { const h = document.getElementById("revTitle"); new MutationObserver(() => f.titles.push({ t: h.textContent, media: f.media.length, at: Math.round(performance.now()) })).observe(h, { childList: true, subtree: true, characterData: true }); });

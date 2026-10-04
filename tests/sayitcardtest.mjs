@@ -49,7 +49,9 @@ function voicePhone(cfg) {
   // Echo's mid-round ask for the sound power (3 Oct 2026) is
   // arcadespeechhelptest's: held here, so a round is just the round.
   document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
-  const h = window.__card = { media: [], web: [], synth: [], mics: [], voice: false, hidden: false, sizes: {}, practice: [] };
+  // media: the card's lines. chimes: a Sona chime the app plays as a media
+  // element (2 Oct 2026), kept apart so the card's lines are counted alone.
+  const h = window.__card = { media: [], chimes: [], chiming: false, web: [], synth: [], mics: [], voice: false, hidden: false, sizes: {}, practice: [] };
   if (cfg.native) window.Capacitor = { isNativePlatform: () => true, getPlatform: () => "ios", Plugins: {} };
   Object.defineProperty(document, "hidden", { configurable: true, get: () => h.hidden });
   Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (h.hidden ? "hidden" : "visible") });
@@ -63,7 +65,7 @@ function voicePhone(cfg) {
   window.Audio = function (src) {
     const a = { src, volume: 1, paused: false, start: null, end: null, removeAttribute() {}, load() {},
       play() {
-        a.start = performance.now(); a.size = h.sizes[src] || 0; h.media.push(a); look(a);
+        a.start = performance.now(); a.size = h.sizes[src] || 0; (h.chiming ? h.chimes : h.media).push(a); look(a);
         if (cfg.stuck) return new Promise(() => {});
         if (cfg.refuse) { a.end = a.start; return Promise.reject(new DOMException("refused", "NotAllowedError")); }
         a.timer = setTimeout(() => { a.end = performance.now(); if (a.onended) a.onended(); }, cfg.speechMs || 150);
@@ -117,6 +119,7 @@ function voicePhone(cfg) {
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set(v) {
     sona = v; v.confetti = () => {};
+    Object.keys(v.sfx || {}).forEach((k) => { const real = v.sfx[k]; if (typeof real !== "function" || k === "stop") return; v.sfx[k] = function () { h.chiming = true; try { return real.apply(this, arguments); } finally { h.chiming = false; } }; });
     for (const k of ["logAttempt", "bumpReps", "recordSession", "recordRung", "rotAdvance"]) { const real = v[k]; v[k] = function () { h.practice.push(k); return real ? real.apply(this, arguments) : undefined; }; }
   } });
   if (!sessionStorage.getItem("sona.test.seeded")) { sessionStorage.setItem("sona.test.seeded", "1"); (new Function("cfg", "(" + cfg.seed + ")(cfg)"))(cfg); }
