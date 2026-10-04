@@ -158,7 +158,7 @@
   var SKULL_LONG = [[-26, 6], [-23, -15], [-3, -23], [18, -18], [37, -7], [41, 6], [31, 15], [4, 17], [-18, 14]];
 
   var DINOS = [
-    { id: "trex", name: "T. rex", a: "a", fill: "#8BD07A", edge: "#5FA04F", far: "#74BA63",
+    { id: "trex", name: "T. rex", a: "a", fill: "#8BD07A", paint: "#9CC454", edge: "#5FA04F", far: "#74BA63",
       look: [
         { as: "far", pts: [[266, 152], [278, 174], [268, 186], [296, 195, 1], [248, 197, 1], [246, 184], [238, 158]] },
         { as: "body", pts: [[62, 98, 1], [108, 86], [158, 78], [200, 74], [240, 74], [264, 62], [272, 38], [294, 16], [330, 13], [364, 22], [392, 36], [394, 58], [374, 67], [326, 70, 1],
@@ -180,7 +180,7 @@
       ],
       spots: [[0.3, 0.5], [0.72, 0.5], [0.5, 0.62], [0.28, 0.42], [0.66, 0.6], [0.4, 0.4], [0.62, 0.45], [0.42, 0.55]] },
 
-    { id: "tri", name: "Triceratops", a: "a", fill: "#B8A2F2", edge: "#8671CC", far: "#A28BE3", accent: "#A28BE3", light: "#D8CBFA",
+    { id: "tri", name: "Triceratops", a: "a", fill: "#B8A2F2", paint: "#DCC4EC", edge: "#8671CC", far: "#A28BE3", accent: "#A28BE3", light: "#D8CBFA",
       look: [
         { as: "far", pts: [[276, 160], [310, 160], [312, 195, 1], [280, 195, 1]] },
         { as: "far", pts: [[162, 160], [196, 160], [200, 195, 1], [166, 195, 1]] },
@@ -206,7 +206,7 @@
       ],
       spots: [[0.7, 0.5], [0.3, 0.5], [0.52, 0.4], [0.5, 0.62], [0.26, 0.45], [0.74, 0.55], [0.36, 0.55], [0.6, 0.5]] },
 
-    { id: "steg", name: "Stegosaurus", a: "a", fill: "#79C9DD", edge: "#4A9BB3", far: "#62B6CC", accent: "#FF8F86", accentEdge: "#D9655E",
+    { id: "steg", name: "Stegosaurus", a: "a", fill: "#79C9DD", paint: "#ECCCF4", edge: "#4A9BB3", far: "#62B6CC", accent: "#FF8F86", accentEdge: "#D9655E",
       look: [
         { as: "far", pts: [[292, 158], [322, 158], [326, 195, 1], [296, 195, 1]] },
         { as: "far", pts: [[170, 152], [208, 152], [212, 195, 1], [176, 195, 1]] },
@@ -232,7 +232,7 @@
       ],
       spots: [[0.5, 0.45], [0.26, 0.5], [0.72, 0.6], [0.4, 0.6], [0.66, 0.42], [0.3, 0.45], [0.5, 0.55], [0.7, 0.5]] },
 
-    { id: "bronto", name: "Brontosaurus", a: "a", fill: "#F3A2C3", edge: "#C8709A", far: "#E58DB2",
+    { id: "bronto", name: "Brontosaurus", a: "a", fill: "#F3A2C3", paint: "#9CDCEC", edge: "#C8709A", far: "#E58DB2",
       look: [
         { as: "far", pts: [[276, 154], [312, 154], [314, 195, 1], [282, 195, 1]] },
         { as: "far", pts: [[178, 154], [216, 154], [220, 195, 1], [184, 195, 1]] },
@@ -261,6 +261,8 @@
 
   // painted pictures, when they arrive (see the top of this file). No address
   // until then, so no page asks for a file that isn't there.
+  // paint: the main body colour of each painted picture below, so a reader
+  // (the tests) can find the woken body whichever picture is drawn
   var ART = { trex: "/assets/crafted/game/dino-trex.webp", tri: "/assets/crafted/game/dino-tri.webp", steg: "/assets/crafted/game/dino-steg.webp", bronto: "/assets/crafted/game/dino-bronto.webp" }, art = {};
   var SITE = new Image(), SAND = new Image(), SOIL = new Image();
   SITE.src = "/assets/crafted/game/dino-site.webp"; SOIL.src = "/assets/crafted/game/dino-soil.webp";
@@ -676,8 +678,8 @@
   // ── what the engine calls ──
   function publish() {
     try { window.__dino = { state: state, found: found, count: count, rubs: rubs, frozen: frozen, revealed: +revealed().toFixed(3),
-      dino: cur.id, name: cur.name, fill: cur.fill, got: kept.got.slice(), bones: cur.bones.map(function (b) { return b.id; }),
-      dinos: DINOS.map(function (d) { return { id: d.id, name: d.name, fill: d.fill }; }),
+      dino: cur.id, name: cur.name, fill: cur.fill, paint: cur.paint, got: kept.got.slice(), bones: cur.bones.map(function (b) { return b.id; }),
+      dinos: DINOS.map(function (d) { return { id: d.id, name: d.name, fill: d.fill, paint: d.paint }; }),
       pit: { x: +pit.x.toFixed(1), y: +pit.y.toFixed(1), w: +pit.w.toFixed(1), h: +pit.h.toFixed(1) },
       bone: dig ? { id: dig.bone.id, x: +dig.x.toFixed(1), y: +dig.y.toFixed(1), w: +dig.w.toFixed(1), h: +dig.h.toFixed(1) } : null,
       glow: !!(dig && state === "ready" && clock >= glowAt), awake: wakeAt >= 0 }; } catch (e) {}
