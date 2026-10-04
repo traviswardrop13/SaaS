@@ -409,7 +409,10 @@
     var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
     var catalogMatch=/^arcade-([a-z]+)\.html$/.exec(qp.get("game")||"");
     var catalogKey=(catalogMatch&&S.gameKey(catalogMatch[1]))||"slice";
-    var catalogBlocked=!catalogDaily&&!S.gameAccess(catalogKey).allowed;
+    // The old daily run (a saved run or a typed address; Home never opens it)
+    // asks the practice gate: since 3 Oct 2026 (trial first) a family without
+    // the free version, Premium or a trial has no practice to start.
+    var catalogBlocked=catalogDaily?!!(S.gated&&S.gated("daily")):!S.gameAccess(catalogKey).allowed;
     if(catalogBlocked)S.gameBounce(catalogKey);
     $("micPromise").textContent=S.MIC_PROMISE;
     var profile=S?S.getProfile():{volume:0.8};

@@ -1982,7 +1982,7 @@
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
-    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"];
+    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -2247,12 +2247,42 @@
   function gateBounce() {
     try { location.replace("/today.html?locked=1"); } catch (e) {}
   }
+  // ── TRIAL FIRST: NOTHING FREE WHERE SONA CAN SELL (Travis, 3 Oct 2026) ──
+  // "lets add the paywall before they try anything in the app. and then they
+  // unlock everything. so fruit slice and piano tiles and feed echo and
+  // bubble pop are all part of paid or needing to start a trial", then, of
+  // the plan screen's "Not now": "yeah home locked". Setup now ends on the
+  // plan screen (trialFirst()), and the free version (the free-tier games,
+  // FREE_BOOKS, and the practice that opens them) is open only to:
+  //   - a device where nobody can buy: an app build with no purchase plugin
+  //     (the App Store's 1.0.4) or a browser while the website does not sell.
+  //     A wall nobody can pass is not a paywall, it is a broken app;
+  //   - a household already set up on this build's first load
+  //     (_keepFreeVersion): it was told those games were free;
+  //   - a family who joined through their speech therapist's link
+  //     (slpVerified): every clinician page promises them the free version.
+  //     sona.slpok travels in a backup, so a pasted one brings the free
+  //     version too, never Premium: accepted, since it is what those pages
+  //     promise.
+  // Premium from any source, a trial, or Sona being free open everything,
+  // exactly as before.
+  function canSellHere() {
+    try { return isNativeApp() ? iapAvailable() : webSales(); } catch (e) { return false; }
+  }
+  const FREEVER_KEY = "sona.freever.v1";
+  function freeVersionKept() { try { return localStorage.getItem(FREEVER_KEY) === "kept"; } catch (e) { return false; } }
+  function freeVersion() { return !canSellHere() || freeVersionKept() || slpVerified(); }
+  // Setup ends on the plan screen, not the first game, for a family who could
+  // buy here and has nothing that opens the games yet.
+  function trialFirst() {
+    try { return !isFree() && !freeVersion() && !premium() && !trialActive(); } catch (e) { return false; }
+  }
   const PRACTICE_ASKS = ["practice", "daily", "session", "demo"];
   function gated(what) {
     if (isFree()) return false;
-    // Practice is the free version. Nothing below may ever run for it: not
-    // the demonstration window, not a dead trial, not a lapsed subscription.
-    if (PRACTICE_ASKS.indexOf(what) !== -1) return false;
+    // Practice opens with the free version (see freeVersion above), or with
+    // Premium or a trial. A run that already started is never stopped.
+    if (PRACTICE_ASKS.indexOf(what) !== -1) return !(freeVersion() || premium() || trialActive() || runActive());
     if (gameKey(what)) return !gameAccess(what).allowed;
     if (premium()) return false;                     // every game, whatever the source
     if (runActive()) return false;                   // never mid-run — see above
@@ -2278,7 +2308,7 @@
   // demonstration window gated() still honours for the rest: a new family
   // would otherwise watch a shelf of open books lock three days in.
   const FREE_BOOKS = ["Rory and the Rainbow"];
-  function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1; }
+  function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1 && freeVersion(); }
   function booksOpen() { return isFree() || premium() || trialActive(); }
   function bookLocked(title) { return !bookFree(title) && !booksOpen(); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
@@ -2661,6 +2691,7 @@
       if (path === "/subscribe.html") {
         var q = new URLSearchParams(s.split("?")[1] || "");
         if (q.get("first") === "1") return path + "?first=1";
+        if (q.get("setup") === "1") return path + "?setup=1";
         var from = q.get("from");
         from = from === "library" ? from : gameKey(from);
         return path + (from ? "?from=" + from : "");
@@ -3116,7 +3147,8 @@
     if (!act || act.available === false) return result;
     // Unfinished games cannot be unlocked by a plan, saved turn or old link.
     if (act.comingSoon) { result.reason = "coming-soon"; return result; }
-    if (act.tier === "free") return allow("free");
+    // the free tier opens with the free version only (see freeVersion)
+    if (act.tier === "free" && (preview || freeVersion())) return allow("free");
     if (preview) {
       if (previewPlan().state === "trial") return allow("trial");
     } else {
@@ -4716,6 +4748,30 @@
     } catch (e) {}
   }
 
+  // THE FREE VERSION, KEPT (3 Oct 2026), in the free eras' one-shot shape. A
+  // device already set up on its first load of the trial-first build was told
+  // Fruit Slice, Piano Tiles, Feed Echo, Bubble Pop and the free book were
+  // free, and keeps them ("kept"); a device not set up yet is stamped "post"
+  // before it onboards, and starts with the trial. It keeps the free version,
+  // not Premium. Not gated on any free era's stamp (a device that first
+  // loaded in an earlier window carries those too), and on NO_IMPORT like
+  // them: it is true of this device, not of a family.
+  function _keepFreeVersion() {
+    try {
+      if (localStorage.getItem(FREEVER_KEY)) return;
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      const setUp = slots.some(function (slot) {
+        try { const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null"); return !!(pr && (pr.onboarded || pr.childName)); }
+        catch (e) { return false; }
+      });
+      localStorage.setItem(FREEVER_KEY, setUp ? "kept" : "post");
+    } catch (e) {}
+  }
+
   const HUMAN_CLIPS = true;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -5094,7 +5150,8 @@
   // era five, likewise independent of every earlier stamp, and for the same
   // reason run before anything on this load can finish setup.
   try { _grandfatherFreeEra5(); } catch (e) {}
+  try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

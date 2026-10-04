@@ -420,7 +420,9 @@ await scenario("the gate carries the game", async () => {
 // ── onboarding's source: a clinician's own setup still ends on Home ──
 {
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("a parent's setup ends in the first game; a clinician's still on Home", /var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(ob));
+  // (since 3 Oct 2026 a family who starts with the trial goes to the plan
+  // screen in between: trialfirsttest pins that line)
+  ok("a parent's setup ends in the first game; a clinician's still on Home", /var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*var wall=false;[^\n]*\n\s*if\(wall\)\{[^\n]*\}\s*location\.href=first;/.test(ob));
 }
 
 await browser.close(); await new Promise((r) => server.close(r));

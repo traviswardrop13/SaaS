@@ -187,13 +187,15 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // ── WHAT IT COSTS, FROM THE SWITCH: /api/charter says whether Sona is free ──
 // The page never quotes a dollar figure, whatever the route says.
 for (const [label, reply, want] of [
-  ["no answer", null, /^Sona is free to start: daily practice and free games, plus a free picture book, with no card\.$/],
+  // (trial first, 3 Oct 2026: no answer promises free games, which a new
+  // family in the iPhone app no longer has)
+  ["no answer", null, /^Sona is free to download, and the app shows its price before you pay anything\.$/],
   ["free right now", { ok: true, free: true }, /^Right now, all of Sona is free: daily practice, every game and every book, with no card\.$/],
-  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Daily practice and free games are free, plus a picture book, with no card\. Premium unlocks every game and every book, and the app shows its price before you pay anything\.$/],
+  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Sona is free to download\. Sona Premium opens every game and every book, and the app shows its price before you pay anything\.$/],
   // the website not selling to families (the route's real answer in that
   // state): an Android parent is sent to the web version, so the answer says
   // where Premium is bought
-  ["the website not selling", { ok: true, free: false, webSales: false, cap: 50, taken: 0, left: 0, open: false, source: "off" }, /^Daily practice and free games are free, plus a picture book, with no card\. Premium unlocks every game and every book\. You buy it in the Sona app on iPhone and iPad, which shows its price before you pay anything\.$/],
+  ["the website not selling", { ok: true, free: false, webSales: false, cap: 50, taken: 0, left: 0, open: false, source: "off" }, /^Sona is free to download\. Sona Premium opens every game and every book\. You buy it in the Sona app on iPhone and iPad, which shows its price before you pay anything\.$/],
 ]) {
   charterReply = reply;
   const { context, page, errors } = await fresh({ path: "/" });
