@@ -11,7 +11,7 @@ body[data-setup-screen="welcome"] .ob {
 body[data-setup-screen="welcome"] .mascot { display: none; }
 body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: column; min-height: 0; }
 .welcome-brand { color: #48280f; font-family: 'Baloo 2', sans-serif; font-size: 38px; font-weight: 800; line-height: 1; text-align: center; text-shadow: 0 1px 12px #fff6e9; }
-.welcome-brand span { display: block; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 800; margin-top: 7px; letter-spacing: .035em; }
+.welcome-brand span { display: block; font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 800; margin-top: 8px; }
 /* Who's setting this up: the second screen's two answers, each one tap.
    Parents come first, so theirs is the teal action and the clinician's the
    cream second choice. The answers are the buttons, so the footer keeps only
@@ -36,8 +36,8 @@ body[data-setup-screen="welcome"] .obfoot { background: none; }
 @media (max-height: 680px) {
   body[data-setup-screen="welcome"] .ob { padding-top: max(12px, env(safe-area-inset-top)); }
   .welcome-brand { font-size: 29px; }
-  .welcome-brand span { font-size: 10px; margin-top: 3px; }
-  .who { gap: 10px; margin-top: 14px; }
+  .welcome-brand span { font-size: 17px; margin-top: 4px; }
+      .who { gap: 10px; margin-top: 14px; }
   .who-pick { padding: 11px 14px; }
   .who-pick b { font-size: 20px; }
 }
