@@ -298,5 +298,11 @@
   "size": "1536x1024",
   "transparent": true,
   "prompt": "A children's basketball backboard seen straight on: a cream rectangular board with a warm wooden frame and a small orange-red square painted in the lower middle. No hoop, no net, no pole, no text. The board fills the whole frame edge to edge."
+ },
+ {
+  "name": "hoops-floor",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "The wooden floor of a cozy children's indoor basketball court, seen from where a child stands, looking toward the far wall: glossy honey-coloured wooden planks running away from the viewer and narrowing in perspective, a soft teal painted lane (key) in the middle running from the bottom edge to the far end, crisp white court lines around it, warm light reflecting softly on the wood. The top edge of the picture is where the floor meets the far wall; show only floor, no wall, no hoop, no people, no ball, no text."
  }
 ]

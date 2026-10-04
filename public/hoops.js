@@ -159,6 +159,9 @@
     }
     // the floor: wood running toward the hoop, a teal key, white lines
     var near = 1.0, wallP = project(0, 0, WALL_Z);
+    // the painted floor (4 Oct 2026), stretched to the floor's strip; the
+    // drawn planks and key until it loads
+    if (FLOOR_ART.complete && FLOOR_ART.naturalWidth) { ctx.drawImage(FLOOR_ART, 0, wallP.y, W, H - wallP.y); return; }
     g = ctx.createLinearGradient(0, wallP.y, 0, H);
     g.addColorStop(0, "#c29459"); g.addColorStop(1, "#f0c78b");
     ctx.fillStyle = g; ctx.fillRect(0, wallP.y, W, H - wallP.y);
@@ -190,6 +193,7 @@
   }
   // the painted backboard (frame, board and square), fitted to the board's
   // corners; the drawn one until it loads
+  var FLOOR_ART = new Image(); FLOOR_ART.src = "/assets/crafted/game/hoops-floor.webp";
   var BOARD_ART = new Image(); BOARD_ART.src = "/assets/crafted/game/hoops-board.webp";
   function drawBoard() {
     var c = [project(hoopX - BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_BOTTOM, BOARD_Z), project(hoopX - BOARD_W / 2, BOARD_BOTTOM, BOARD_Z)];
