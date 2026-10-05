@@ -873,9 +873,32 @@ Check. An address a clinician types for a parent never reaches it. That route:
   subscriber counts as success; a failed form or tag step is logged, not lost;
 - says `captured` only when a list actually said yes.
 
-What reaches Kit: the email, a **clinician's own** first name, and the role tag
-(`sona-slp`, `sona-parent`, `sona-other`).
-Never anything about a child. Wherever an email joins the list, the page says
+What reaches Kit: the email, a **clinician's own** first name, the role tag
+(`sona-slp`, `sona-parent`, `sona-other`), and, since 5 Oct 2026, a **plan
+tag** for a parent who started Sona Premium in the iPhone app.
+Never anything about a child.
+
+**The plan tag** (Travis, 5 Oct 2026: "yeah build it", to "when a family with
+an email starts their free days, the app tells our server, and the server tags
+them in Kit"). Apple never tells Sona who bought, so the phone says it: once
+`Sona.buyPlan()` has gone through (never a restore, a cancel or a failure), it
+posts the household's parent email (`parentEmail()`: setup's optional
+weekly-summary box, on any child's profile) to `/api/lead` with `plan: "trial"`
+(Apple's entitlement says TRIAL, or, when Apple's answer says nothing, the card
+sold free days) or `"paid"`. The route turns those two words, and only those,
+into `sona-trial` / `sona-paid` (`kitPlanTag` in `lib/kit.ts`) beside the role
+tag; the ledger keeps the plan too. Once per kind and address on that phone
+(`sona.plantold.v1`); no email, nothing sent; nobody is asked for one at that
+moment. The privacy page says Kit holds this. **What it is for is built in
+Kit, by Travis:** the welcome emails stop when `sona-trial` or `sona-paid` is
+added, and a `sona-trial` sequence can send the free days' last-day note.
+Kit's free plan has one visual automation and no sequences; Creator has both.
+The app's own words still promise no reminder (see "TRIAL FIRST"): only
+families who gave an email get one, and only once Kit sends it. Not built: a
+RevenueCat webhook (it would add cancellations, conversions and expiries), and
+App Store Connect's App Privacy answers, which should now list purchases
+linked to the parent's email (Travis's task, no review). `planwordstest` plays
+the phone side ("the list hears"), `slpapi` the route and the tags. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
 Unsubscribe anytime." **Except the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
