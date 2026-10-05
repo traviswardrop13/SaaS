@@ -18,6 +18,20 @@
   "prompt": "One giant whole round watermelon, deep green with darker green stripes, smooth clay, a soft highlight top-left. Centered, filling 85% of the square, seen from the front."
  },
  {
+  "name": "fruit-market-v3",
+  "size": "1024x1536",
+  "transparent": false,
+  "ref": "tools/art/refs/fruit-market-v2-wide.webp",
+  "prompt": "Repaint the attached picture as a calmer, taller game background for a phone. Keep its sunny orange orchard world, its clay painting style, its rich colours and warm light: the clear blue sky fading to buttery gold, a few soft clouds, the small distant village with its towers and hills in the middle.\n\nFrame the sky with two BIG leafy orange trees, one on each side, with bright oranges and little white blossoms: each tree's leaves fill the outer 30% of the width on its side, from the top of the picture down to the fence, and its trunk stands about 15% in from the edge (not at the edge). The middle 40% of the width stays open sky for flying fruit.\n\nLeave out every character (no fox, no bird, no animals, no people), the wooden counter, the fruit crates, the chalkboard and the striped market stalls. Below the village, a low wooden fence with soft green orchard bushes from about 74% to 82% down, then plain soft green grass down to the bottom edge, with nothing on it. The soft blurry strips along the far left and far right edges of the attached picture are only placeholders.\n\nCalm and uncluttered, big simple shapes. No fruit in the air, no text, no letters, no frames, no UI."
+ },
+ {
+  "name": "fruit-stand",
+  "size": "1536x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/fruit-market-v2.webp",
+  "prompt": "A wide, low strip for the very bottom of a children's Fruit Slice game screen, alone on a fully transparent background, taken from the attached picture's world: its honey-gold wooden fruit counter, its smiling little orange fox and its round teal bird, in exactly the same clay style, colours and light, seen straight on from the front.\n\nThe counter: one long, low honey-wood counter running the FULL width of the picture, cut off by its left and right edges (no end posts, no legs, no corners showing). Its top is one flat, thick honey-wood plank, the ledge. Below the ledge, its front of warm vertical honey-wood planks goes all the way down to the bottom edge of the picture. Centred on the front, just under the ledge, a blank dark charcoal chalkboard sign in a thin wooden frame, about 40% of the picture's width and short, with nothing written on it. The counter, ledge and front together, fills only the bottom 22% of the picture.\n\nThe fox: in the bottom-LEFT corner, peeking over the ledge from behind the counter, a little cut off by the picture's left edge: only its ears, its happy face and its two dark-brown front paws resting on the ledge show. SMALL: about 15% of the picture's width.\n\nThe bird: in the bottom-RIGHT corner, peeking over the ledge from behind the counter the same way, a little cut off by the picture's right edge: its coral-and-golden top feathers, its face with orange beak and pink cheeks, and its wing tips on the ledge. SMALL: about 15% of the picture's width.\n\nThe ledge between the two of them is completely bare: no fruit, no crates, no baskets, nothing on it. Everything above the counter and the two characters is fully transparent: no sky, no trees, no grass, no background. Calm and simple, big shapes. No text, no letters."
+ },
+ {
   "name": "finish-banner",
   "size": "1536x1024",
   "transparent": true,
