@@ -150,7 +150,7 @@ changing one. What follows from the rule:
 - **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
-  hello → who → name and age → **"What brings you to Sona?"** → sounds →
+  hello → name and age → **"What brings you to Sona?"** → sounds →
   **"How does practice go at home now?"** → **"<Name>'s practice is ready"** →
   the price → microphone → "Hand the phone to <Name>!" → the first game. The
   old order told a parent to hand the phone over and tap "Let's play!", and
@@ -658,17 +658,16 @@ the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is the setup question "Who's setting up
-Sona?", with two answers, "Parent or caregiver" and "SLP or SLPA" (Travis, 1
-Oct 2026: "have the very first step in onboarding ask"). Since 2 Oct 2026 it
-is the second screen: the first is a hello, Echo in his world and one
-Continue button (Travis: "that first page with the bird just have that be a
-fun page ... and then the second slide is who's setting up Sona"), and the
-two answers are the only way past the question. In a browser the SLP answer is the only entrance to
-`ORDER_SLP`, so removing it makes that whole branch dead code; in the iPhone
-app, which never opens clinician screens, it sets the app up for a child and
-says the dashboard is on the web (no link, no price) — `for-slps.html` is indexable and linked from the landing
-footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
+is now reversed. **Setup itself is for parents** (Travis, 5 Oct 2026: "I want
+to take out the button of who's setting up Sona because it's just for the
+parents"): the "Who's setting up Sona?" screen of 1 Oct is gone, and the
+hello (Echo in his world, one Continue) goes straight to the child's name. A
+speech therapist signs up at speaksona.com/for-slps. The clinician's own
+setup (`ORDER_SLP`) is kept, and kept tested, behind its own address,
+`/onboarding.html?slp=1`, which nothing in the app links to (in the iPhone
+app that address sets the app up for a child in a clinician's words, with no
+price, and ends on Home). `for-slps.html` is indexable and linked from the
+landing footer, and `betatest` pins that setup asks no such question. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys their own Premium and adds their
 caseload — yearly prices, never per family, never to the clinician. **Parents come first now** (Travis,
