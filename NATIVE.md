@@ -344,6 +344,19 @@ price ASC controls is the same untrue promise the web half was built to avoid.
 
 ## The iPhone sells one plan: Sona Monthly, 3 days free (5 Oct 2026)
 
+**Since the option-B setup (5 Oct 2026) the card is painted by `sona.js`, not
+by the page.** `Sona.storePlan()` asks for the monthly product (the same
+`iapProduct("monthly")` call), asks the plugin whether this Apple ID can still
+have the free days (`checkTrialOrIntroductoryPriceEligibility`) and whether it
+already holds `full` (one `syncPurchases` per app launch at most), and
+`Sona.planWords()` gives the card its words. The two screens that used to come
+before the price are gone: a two-row timeline on the price screen replaces
+them. What follows describes the same rules; where it says `paintIap()`, read
+`storePlan()` + `planWords()`. Worth one run on a real phone after any change
+here: a paying family who reinstalls should skip the price; cancelling Apple's
+sheet should show nothing; a purchase on the setup price screen should come
+back to the microphone screen.
+
 Travis, 5 Oct 2026: "get rid of the annual option and update the copy so that
 it says three days free, then $9.99 a month". The same day he gave
 `com.speaksona.app.monthly` an introductory offer in App Store Connect (free

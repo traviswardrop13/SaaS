@@ -47,7 +47,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
     let body = readFileSync(file);
     if (url.pathname === "/sona.js") body = body.toString() + `
       (function(){
-        ['iapPurchase','iapRestore','startTrial','ensureTrial','saveSub'].forEach(function(name){
+        ['iapPurchase','buyPlan','iapRestore','startTrial','ensureTrial','saveSub'].forEach(function(name){
           var original=Sona[name];
           Sona[name]=function(){
             var calls=JSON.parse(sessionStorage.getItem('test.realCalls')||'[]');

@@ -25,11 +25,39 @@ page.on("pageerror", (e) => errs.push(e.message));
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
 
-// ── onboarding: THREE setup steps before a child says a word ────────────
+// ── onboarding: FOUR setup questions, two of them one tap ───────────────
 // It was ten screens — role, path, name, buddy, interests, sounds, weekly
 // goal, a summary and an email — all in front of a parent who had just come
-// off an ad and had no idea yet whether the thing worked. Everything not
-// needed to run the FIRST session now waits until after it.
+// off an ad and had no idea yet whether the thing worked. It went down to
+// three questions, and then, REVERSED on purpose (Travis, 3–5 Oct 2026: the
+// price before anything is tried, then "number B would be good … you can do
+// a full reset"), up to four: the name, "What brings you to Sona?", the
+// sounds, and "How does practice go at home now?", then "<Name>'s practice is
+// ready", whose Continue saves the profile. Where Sona can sell, the price
+// comes next; the microphone and the hand-off follow it. This harness is a
+// browser, which cannot buy, so it walks ready → microphone → hand-off.
+//
+// ONE STEPPER moves setup on, whatever screen it is on: the parent's answer
+// on "who", an answer on each one-tap question (Continue is not painted
+// there), "Not now" on the microphone, Continue everywhere else. It never
+// presses the hand-off's button and never clicks on a page that is not setup:
+// this file is top-level code, so one stray click that leaves for a game
+// loses every check after it.
+const STEP = `(() => { const st = (document.querySelector(".step.on") || {}).dataset?.step;
+  if (!st || st === "achieve") return;                    // never press the hand-off's button, never click on another page
+  if (st === "why") document.querySelector('#obWhy [data-val="w_tricky"]').click();
+  else if (st === "home") document.querySelector('#obHome [data-val="h_notyet"]').click();
+  else if (st === "mic") document.getElementById("micNotNow").click();
+  else document.getElementById("nextBtn").click(); })()`;
+const onStep = (pg) => pg.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step || "");
+// EVERY PRESS WAITS FOR THE SCREEN TO SETTLE. After a step changes, setup
+// takes no press for 450 ms (body.ob-settling: a double tap, or Enter pressed
+// twice, must not answer a screen the parent has not read). The stepper
+// presses from script, which no CSS stops, so Continue's own check would
+// swallow a press that came too soon and the walk would stand still. It waits
+// the pause out, as a parent's finger has to; it never removes it.
+const settledOb = (pg) => pg.waitForFunction(() => !document.body.classList.contains("ob-settling"));
+const RACHEL_LINE = "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.";
 await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
 // CODES1: sona.slpok is what a successful /api/slp/redeem writes — seeded
@@ -45,7 +73,7 @@ const ob = await page.evaluate(() => ({
   restoreDoor: !!document.getElementById("moveLink") || /Moving from another phone|Enter your code/.test(document.body.innerText),
 }));
 ok("beta step removed", !ob.betaStep);
-ok("three progress groups match the three setup questions", ob.segs === 3, "segs=" + ob.segs);
+ok("four progress groups match the four setup questions", ob.segs === 4, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
 // THE CLINICIAN DOOR STAYS OPEN. It was removed on 19 Sep while the SLP side
 // was hidden and restored on 21 Sep: it is the only entrance to the clinician
@@ -55,7 +83,10 @@ ok("buddy is preselected, so it never needs to be a step", ob.preselected);
 // slp/slpa"), on its own page after the hello since 2 Oct. The move-in code
 // left setup that day: a family moving phones uses Settings, and one who paid
 // on the website restores by email there.
-ok("setup asks who is setting up: a parent or caregiver, or an SLP or SLPA", ob.clinicianDoor);
+// 5 Oct 2026 (Travis: "I want to take out the button of who's setting up Sona
+// because it's just for the parents"): the question is gone. A clinician's own
+// setup opens only from /onboarding.html?slp=1; they sign up at /for-slps.
+ok("setup no longer asks who is setting up: it is for parents", !ob.clinicianDoor);
 ok("…and carries no move-in code (Travis, 2 Oct 2026: \"take off moving from another phone enter your code\")", !ob.restoreDoor);
 
 // ── one mascot at a time ──
@@ -79,78 +110,82 @@ for (const [who, seed] of [["a fresh family", () => {}],
     /(echo-avatar\.svg|echo-welcome\.webp)/.test(m.html) && !/bFox/i.test(m.html));
   ok("…and the bubble beside it is Echo's", /Echo/.test(m.says));
 
-  const hosts = await ob2.evaluate(async () => {
+  const hosts = await ob2.evaluate(async (STEP) => {
     const nm = document.querySelector('[data-step="name"] input');
     const seen = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       const cur = (document.querySelector(".step.on") || {}).dataset?.step;
       if (!cur) break;
       seen.push(cur + ":" + (/(echo-avatar\.svg|echo-welcome\.webp)/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
       if (cur === "mic") break;
       if (cur === "name" && nm && !nm.value) nm.value = "Milo";
       if (cur === "sounds" && !document.querySelector("#obSounds .on")) document.querySelector('#obSounds [data-sound="R"]').click();
-      (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })();
+      while (document.body.classList.contains("ob-settling")) await new Promise((r) => setTimeout(r, 25));   // wait the pause out
+      (0, eval)(STEP);
       await new Promise((r) => setTimeout(r, 220));
     }
     return seen;
-  });
+  }, STEP);
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of both one-tap questions and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,why,sounds,home,ready,mic", JSON.stringify(hosts));
   await ob2.close();
 }
 
-// ── the real walk, to finish() ──
-// one press of whatever moves setup on (2 Oct 2026): the parent's answer on
-// the question, "Not now" on the microphone, Continue everywhere else
-const clickNext = async () => { await page.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await page.waitForTimeout(250); };
+// ── the real walk, to the hand-off ──
+// one press of whatever moves setup on (the stepper above)
+const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); };
 await clickNext(); await clickNext(); // the hello → the question → name (the parent's answer)
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
-await clickNext(); // name →
+await clickNext(); // name → "What brings you to Sona?"
+ok("after the name comes one tap: \"What brings you to Sona?\"", (await onStep(page)) === "why", await onStep(page));
+await clickNext(); // an answer → sounds
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
-await clickNext(); // sounds → Meet Rachel
-// MEET RACHEL (29 Sep 2026; moved 2 Oct 2026): who made this, right before the
-// microphone. It is a Continue, not a step: no field, no choice, and no
-// progress segment, which is why the three groups above still match the three
-// questions.
+await clickNext(); // sounds → "How does practice go at home now?"
+ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "home", await onStep(page));
+await clickNext(); // an answer → ready
+// "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the parent
+// picked, and under "About Sona" says who built it: Rachel's line, word for
+// word, where her own screen used to stand right before the microphone. It is
+// a Continue, not a question: no field, no choice and no progress segment,
+// which is why the four groups above still match the four questions. It also
+// replaced the 2-second "building the plan" beat on the parent path.
 const meet = await page.evaluate(() => {
-  const st = document.querySelector('[data-step="rachel"]');
+  const st = document.querySelector('[data-step="ready"]');
   return { step: (document.querySelector(".step.on") || {}).dataset?.step,
+           title: (document.getElementById("readyTitle") || {}).textContent || "",
+           rachel: (document.getElementById("readyRachel") || {}).textContent || "",
            asks: st ? st.querySelectorAll("input,select,textarea,button,.sound,.choice").length : -1,
-           segHidden: document.getElementById("seg").hidden };
+           segHidden: document.getElementById("seg").hidden,
+           card: st ? getComputedStyle(st).backgroundColor : "", body: getComputedStyle(document.body).backgroundColor,
+           build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true };
 });
-ok("the screen after the sounds is Rachel's, and it asks nothing",
-  meet.step === "rachel" && meet.asks === 0 && meet.segHidden, JSON.stringify(meet));
-await clickNext(); // Meet Rachel → mic
-// The "building the plan" beat used to fire HERE, on the way into the
-// microphone step, and sit over it for 1.8s — the one setup screen whose
-// words matter. It now plays from finish(), between the last answer and the
-// finale, so this asserts it is ABSENT here and present there.
-ok("the build beat no longer covers the microphone step",
-  await page.evaluate(() => !document.querySelector("#obBuild.show")));
+ok("the screen after the home question is \"Milo's practice is ready\", it asks nothing, and carries Rachel's line",
+  meet.step === "ready" && meet.title === "Milo's practice is ready" && meet.asks === 0 && meet.segHidden && meet.rachel === RACHEL_LINE, JSON.stringify(meet));
+ok("…on cream, with no build beat on the parent path, and nothing saved until its Continue",
+  meet.card === "rgb(255, 252, 246)" && meet.body === "rgb(255, 246, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
+await clickNext(); // ready → mic (the profile is saved here)
+ok("no build beat covers the microphone step either",
+  await page.evaluate(() => !document.getElementById("obBuild")));
 const atMic = await page.evaluate(() => ({
   step: (document.querySelector(".step.on") || {}).dataset?.step,
   cta: document.getElementById("nextBtn").textContent,
   says: document.querySelector('[data-step="mic"]').textContent,
+  saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true,
+  at: location.pathname,
 }));
-ok("the last setup step is the microphone, not a price or an email",
-  atMic.step === "mic", atMic.step);
+ok("on a phone that cannot buy, the last setup step is the microphone, not a price or an email",
+  atMic.step === "mic" && atMic.at === "/onboarding.html" && atMic.saved, JSON.stringify(atMic));
 // the promise on this screen has to match the one charge.html makes, because
 // two screens promising different things about a child's voice is how the
 // stale upload wording survived for months
 ok("…and it tells the truth about the microphone",
   atMic.says.includes(await page.evaluate(() => Sona.MIC_PROMISE)) && /never uploaded/.test(atMic.says) && /saved on this phone/.test(atMic.says));
 ok("…and offers an in-app decline before the OS prompt", /Not now/.test(atMic.says));
-await page.evaluate(() => document.getElementById("micNotNow").click()); await page.waitForTimeout(250); // mic → finish()
-
-// the build beat, now between the last answer and the finale: named, and
-// calm and bounded, before the child can start
-const build = await page.evaluate(() => {
-  const el = document.getElementById("obBuild");
-  return { shown: !!(el && el.classList.contains("show")), txt: el ? el.textContent : "",
-           solid: el ? getComputedStyle(el).backgroundColor === "rgb(255, 246, 233)" : false };
-});
-ok("sound-plan build beat calmly shows the family answers", build.shown && /Milo's sound plan/.test(build.txt) && build.solid, JSON.stringify(build));
-await page.waitForTimeout(2000);
+await page.evaluate(() => document.getElementById("micNotNow").click()); await page.waitForTimeout(250); // mic → the hand-off, at once
+ok("…and the hand-off follows the microphone with no build beat in between",
+  await page.evaluate(() => !document.getElementById("obBuild") && document.querySelector('[data-step="achieve"]').classList.contains("on")));
 const fin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   achName: document.getElementById("achName").textContent,
@@ -188,12 +223,14 @@ ok("onboarding no pageerrors", errs.length === 0);
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's Continue
-  const seen = await pg2.evaluate(() => ({ title: (document.getElementById("whoTitle") || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is one short question", seen.on === "who" && /^Who's setting up Sona\?$/.test(seen.title.trim()), JSON.stringify(seen));
-  // Parents now go directly from the child's details to a compact sound grid.
-  // (one tap on "Parent or caregiver" reaches the child's details)
-  await pg2.evaluate(() => document.querySelector('.who-pick[data-role="parent"]').click()); await pg2.waitForTimeout(200);
-  await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })(); }); await pg2.waitForTimeout(300);
+  const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
+  ok("the screen after the hello is the child's name", seen.on === "name" && /^Who's practicing today\?$/.test(seen.title.trim()), JSON.stringify(seen));
+  // Parents go from the child's details to one tap ("What brings you to
+  // Sona?"), then to a compact sound grid.
+  await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
+  const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("whyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obWhy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
+  ok("after the name comes the why question: one short heading and four one-tap answers", asked.on === "why" && asked.title === "What brings you to Sona?" && asked.answers === 4 && !asked.overflow, JSON.stringify(asked));
+  await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → sounds
   const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
   ok("…and the sound grid is the next screen and fits at 390px", grid.onSounds&&!grid.overflow&&grid.labels.length===19, JSON.stringify(grid));
   await pg2.close();
@@ -209,10 +246,11 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250); await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250); // the hello → the question → name
+  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
+  await hop(); await hop(); // the hello → the question → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
+  await hop(); // name → "What brings you to Sona?"
   const held = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"));
   ok("what a parent typed is written down as they go",
     !!held && held.childName === "Rosie" && String(held.childAge) === "6", JSON.stringify(held));
@@ -224,23 +262,32 @@ ok("onboarding no pageerrors", errs.length === 0);
   }));
   ok("…and is still there after the phone rings", back.name === "Rosie" && back.age === "6", JSON.stringify(back));
 
-  // it is a scratchpad, not a profile: finishing must clear it, or a stale
-  // draft shadows the real thing on the next visit
+  // it is a scratchpad, not a profile: saving the profile must clear it, or a
+  // stale draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole short flow again: the hello → the question → name →
-  // sounds → Meet Rachel → mic → finish
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
-  await pg.locator('#obExploreSounds').click();
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(700);
+  // walks the whole flow again: the hello → name → why →
+  // sounds → home → ready, whose Continue saves the profile and tears it up
+  await hop(); await hop(); await hop();   // hello, name, why (an answer) → sounds
+  await pg.locator('#obExploreSounds').click();          // → the home question
+  await hop();                                           // an answer → ready
+  const onReady = await pg.evaluate(() => ({
+    step: (document.querySelector(".step.on") || {}).dataset?.step,
+    draft: JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"),
+    prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
+  }));
+  ok("the draft also holds the two one-tap answers, as fixed ids, until the profile is saved",
+    onReady.step === "ready" && !!onReady.draft && onReady.draft.why === "w_tricky" && onReady.draft.home === "h_notyet" &&
+    onReady.draft.childName === "Rosie" && onReady.prof.onboarded !== true, JSON.stringify(onReady.draft));
+  await hop(700);                                        // ready → mic: the profile is real
   const after = await pg.evaluate(() => ({
+    step: (document.querySelector(".step.on") || {}).dataset?.step,
     draft: localStorage.getItem("sona.obdraft.v1"),
     prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
   }));
-  ok("…and the scratchpad is torn up once the profile is real",
-    after.draft === null && after.prof.onboarded === true, JSON.stringify(after.draft));
+  ok("…and the scratchpad is torn up once the profile is real: on leaving the ready screen",
+    after.step === "mic" && after.draft === null && after.prof.onboarded === true, JSON.stringify(after.draft));
+  ok("…and the answers never become part of the profile",
+    !("why" in after.prof) && !("home" in after.prof), JSON.stringify(Object.keys(after.prof)));
   await pg.close();
 }
 
@@ -265,18 +312,30 @@ ok("onboarding no pageerrors", errs.length === 0);
     !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b/i.test(door.says.replace(/doesn't test or diagnose/, "")),
     door.says.slice(0, 200));
 
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250); await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250); // the hello → the question → name
+  const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
+  await hop(); await hop(); // the hello → the question → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
+  await hop(); // name → "What brings you to Sona?"
+  await hop(); // an answer → sounds
   await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
     onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
-    onRachel: document.querySelector('[data-step="rachel"]').classList.contains("on"),
+    onHome: document.querySelector('[data-step="home"]').classList.contains("on"),
   }));
-  ok("…and can continue without choosing a target (to Meet Rachel, then the microphone)",
-    !landed.onSounds && landed.onRachel, JSON.stringify(landed));
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => (() => { const st = (document.querySelector(".step.on") || {}).dataset?.step; if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click(); else if (st === "mic") document.getElementById("micNotNow").click(); else document.getElementById("nextBtn").click(); })()); await pg.waitForTimeout(700);
+  ok("…and can continue without choosing a target (to the home question, then the ready screen)",
+    !landed.onSounds && landed.onHome, JSON.stringify(landed));
+  await hop(); // an answer → ready
+  const ready = await pg.evaluate(() => ({
+    step: (document.querySelector(".step.on") || {}).dataset?.step,
+    says: document.querySelector('[data-step="ready"]').innerText,
+    chips: [...document.querySelectorAll("#readyChips li")].map((l) => l.textContent),
+  }));
+  ok("…where the ready screen says \"Every sound, easiest first\", never a list Sona chose for the child",
+    ready.step === "ready" && JSON.stringify(ready.chips) === '["Every sound, easiest first"]', JSON.stringify(ready.chips));
+  ok("…and is not dressed up as a recommendation or a result either",
+    !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b|\bplan\b|score|result/i.test(ready.says.replace(/doesn't test or diagnose/, "")),
+    ready.says.slice(0, 200));
+  await hop(700); // ready → mic: the profile is saved
   const prof = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
   // the CONTENT path is the existing play path — mode stays "play", because
   // five other files read mode === "play" and a third value would have filed
@@ -296,7 +355,8 @@ ok("name question carries justification microcopy", /cheers them on by name|know
 // This is the parent path, with an optional email after the core setup.
 await clickNext(); await clickNext(); // the hello → the question → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); // name → sounds
+await clickNext(); // name → "What brings you to Sona?"
+await clickNext(); // an answer → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
@@ -305,18 +365,22 @@ const pickState = await page.evaluate(() => {
   return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
-await clickNext(); // sounds → Meet Rachel
-await clickNext(); // Meet Rachel → mic
-await clickNext(); // mic → finish()
-await page.waitForTimeout(1800);
+await clickNext(); // sounds → "How does practice go at home now?"
+await clickNext(); // an answer → ready
+await clickNext(); // ready → mic (the profile is saved)
+await clickNext(); // mic → the hand-off
+await page.waitForTimeout(400);
 // THE WEEKLY-SUMMARY ASK LIVES ON THE FINALE, NOT IN THE STEPS. A parent has
 // no email anywhere else: on the SLP channel the clinician owns the family
 // relationship and Sona's roster deliberately carries no parent contact, so
 // without this there is no route to a parent that does not go through their
-// clinician. It is on the finale rather than as a sixth step because setup
-// once ENDED at a price screen before the child had said a word, and the pin
-// above ("the last setup step is the microphone, not a price or an email")
-// exists to stop that shape coming back in a friendlier costume.
+// clinician. It is on the finale rather than as a step of its own because
+// setup once ENDED at a price screen before the child had said a word. That
+// shape is back ON PURPOSE where Sona can sell (Travis, 3–5 Oct 2026: the
+// price follows the ready screen, and the microphone and this hand-off follow
+// the price); the pin above ("on a phone that cannot buy, the last setup step
+// is the microphone, not a price or an email") holds what is left of it: no
+// price for a family Sona cannot sell to, and never an email as a gate.
 const finaleAsk = await page.evaluate(() => {
   const box = document.getElementById("achEmail");
   return {
@@ -345,22 +409,31 @@ await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 await clickNext(); await clickNext(); // the hello → the question → name
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
-await clickNext(); // name →
+await clickNext(); // name → "What brings you to Sona?"
+await clickNext(); // an answer → sounds
 await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({
   onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
-  onRachel: document.querySelector('[data-step="rachel"]').classList.contains("on"),
+  onHome: document.querySelector('[data-step="home"]').classList.contains("on"),
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
-ok("explore goes on (Meet Rachel, then the microphone) without selected targets", !playSkip.onSounds && playSkip.onRachel, JSON.stringify(playSkip));
-// the beat plays from finish() now — walk the last steps and look there
-await clickNext(); // Meet Rachel → mic
-await clickNext(); // mic → finish()
+ok("explore goes on (the home question, then the ready screen) without selected targets", !playSkip.onSounds && playSkip.onHome && !playSkip.build, JSON.stringify(playSkip));
+await clickNext(); // an answer → ready
+// where the build beat said "play list, not sound plan", the ready screen now
+// says what the parent picked, in the same register
+const playReady = await page.evaluate(() => ({
+  step: (document.querySelector(".step.on") || {}).dataset?.step,
+  title: document.getElementById("readyTitle").textContent,
+  chips: [...document.querySelectorAll("#readyChips li")].map((l) => l.textContent),
+  build: !!document.getElementById("obBuild"),
+}));
+ok("the ready screen says \"Nora's practice is ready\" and \"Every sound, easiest first\", never a sound plan",
+  playReady.step === "ready" && playReady.title === "Nora's practice is ready" && JSON.stringify(playReady.chips) === '["Every sound, easiest first"]' && !playReady.build, JSON.stringify(playReady));
+await clickNext(); // ready → mic
+await clickNext(); // mic → the hand-off
 await page.waitForTimeout(150);
-const playBuild = await page.evaluate(() => (document.getElementById("obBuild") || {}).textContent || "");
-ok("the build beat says play list, not sound plan", /Nora's play list/.test(playBuild), playBuild);
-await clickNext(); // goal →
-await clickNext(); // slp →
+ok("…and the hand-off follows, with nothing left for the stepper to press",
+  (await onStep(page)) === "achieve" && new URL(page.url()).pathname === "/onboarding.html", page.url());
 // parents can still skip email — never a gate for families
 const parentSkipShown = await page.evaluate(() => getComputedStyle(document.getElementById("obEmailSkip").parentElement).display !== "none");
 ok("parents can still skip email (no gate)", parentSkipShown);

@@ -190,12 +190,15 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   const typed = [...sub.matchAll(/id="(monthPrice|monthMathPrice)">([^<]*)</g)].map((m) => m[2]);
   ok("the plan screen's typed monthly figure is the one checkout charges", typed.length === 2 && typed.every((t) => t === MONTHLY_PRICE), JSON.stringify(typed));
   ok("…and the answer from /api/charter can only replace it with a well-formed price", /typeof j\.monthly === "string" && \/\^\\\$\\d\{1,3\}\\\.\\d\\d\$\/\.test\(j\.monthly\)/.test(sub));
-  // Since 5 Oct 2026 the Apple card sells ONE plan, Sona Monthly ("3 days
-  // free, then $9.99 a month"): its typed $9.99 is a placeholder, repainted
-  // from the store's own price string, and the old monthly row is gone.
-  ok("the Apple card's one plan is Sona Monthly, its typed $9.99 only a placeholder the store's price repaints",
-    /<span id="iapPrice">\$9\.99\/mo<\/span>/.test(sub) && /moProduct && moProduct\.priceString/.test(sub) &&
-    /getElementById\("iapPrice"\)\.textContent = price \+ "\/mo"/.test(sub) && !/iapPriceMo|iapPlanMo/.test(sub));
+  // Since 5 Oct 2026 the Apple card sells ONE plan, the monthly product, and
+  // types nothing about it: the price span ships empty and the store's own
+  // price string is painted into it (from Sona.planWords, by the one paint
+  // function). The placeholder "$9.99/mo" that sat there for a day is gone
+  // with the old monthly row: a typed figure is a claim about a number App
+  // Store Connect owns. What the card says in each store state is played in
+  // pricescreentest and iaptest.
+  ok("the Apple card carries no typed price at all",
+    /<span class="oneplan-price" id="iapPrice"><\/span>/.test(sub) && /Sona\.planWords\(/.test(sub) && !/iapPriceMo|iapPlanMo/.test(sub));
   ok("the charter line is written into the YEARLY box only", /id="planLife"[\s\S]*?id="charterLine"[\s\S]*?<\/div>\s*<!--|id="planLife"[\s\S]*?id="charterLine"/.test(readFileSync(APP + "/public/subscribe.html", "utf8")) &&
     !/id="planMonth"[^>]*>[\s\S]{0,400}charter/i.test(sub));
 
@@ -307,7 +310,10 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   const terms = src("/app/terms/page.tsx").replace(/\{" "\}/g, " ").replace(/\s+/g, " ");
   const off = between(terms, "{!WEB_SALES && (", "<PlanTerms />");
   ok("the Terms, with the website not selling, lead with who sells new subscriptions, and quote no Apple price",
-    /New family subscriptions to Sona Premium are sold in the Sona app on iPhone and iPad, by Apple, at the price and free-trial length shown in the App Store\./.test(off) &&
+    // "with any free trial", not "the free-trial length" (5 Oct 2026): the
+    // app's card can now say "charged today", when the store's plan has no
+    // free days or this buyer has used them, and the Terms may not presume some
+    /New family subscriptions to Sona Premium are sold in the Sona app on iPhone and iPad, by Apple, at the price, and with any free trial, shown in the App Store\./.test(off) &&
     /We are not selling new family subscriptions on speaksona\.com\./.test(off) && !/\$\s?\d/.test(off), off.slice(0, 200));
   // "family", every time: a clinician's plans ARE new Sona Premium
   // subscriptions sold on speaksona.com, two sections down the same page

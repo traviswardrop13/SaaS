@@ -134,8 +134,8 @@ export default function TermsPage() {
                     its own page. */}
                 <strong>
                   New family subscriptions to Sona Premium are sold in the Sona
-                  app on iPhone and iPad, by Apple, at the price and free-trial
-                  length shown in the App Store.
+                  app on iPhone and iPad, by Apple, at the price, and with any
+                  free trial, shown in the App Store.
                 </strong>{" "}
                 We are not selling new family subscriptions on speaksona.com. A
                 clinician&apos;s plans are still sold here: see Premium for
@@ -151,9 +151,9 @@ export default function TermsPage() {
                 families sona.js's freeVersion() names. No length of free days
                 is typed here: it is App Store Connect's, like the price. */}
             <strong>Sona Premium opens Sona.</strong> In the Sona app on iPhone
-            and iPad, a new family starts Sona Premium, with the free days and
-            price shown in the App Store, to use daily practice, every game and
-            every book. A free version — daily practice and free games, plus a
+            and iPad, a new family starts Sona Premium, at the price, and with
+            any free days, shown in the App Store, to use daily practice, every
+            game and every book. A free version — daily practice and free games, plus a
             free picture book — costs nothing and needs no card for families who
             set Sona up before October 3, 2026, families who joined through their
             speech therapist&apos;s link, and anywhere Sona Premium cannot be
@@ -246,8 +246,8 @@ export default function TermsPage() {
             A yearly family plan bought on speaksona.com and canceled during
             its 3 free days is never charged. A monthly family plan bought there
             has no free days: it was charged when it was bought and is charged
-            at the start of each month after that. For a subscription bought in the app, the
-            free-trial length is the one the App Store showed at the time of
+            at the start of each month after that. For a subscription bought in the app, any
+            free trial is the one the App Store showed at the time of
             purchase.{" "}
           </>
         )}
@@ -419,7 +419,7 @@ function PlanTerms() {
       <br />
       <br />
       Subscriptions started inside the iOS app are sold and billed by Apple, at
-      the price and free-trial length shown in the App Store at the time of
+      the price, and with any free trial, shown in the App Store at the time of
       purchase.
       {/* Apple's price lives in App Store Connect and the paywall renders
           whatever RevenueCat reports, so the figures above cannot be stated as

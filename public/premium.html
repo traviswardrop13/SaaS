@@ -161,7 +161,12 @@
         if(allOpen)return;   // a live trial: every game is already open
         // what the plan screen sells here: in the iPhone app one plan since 5 Oct
         // 2026, Sona Monthly with its free days; the web card keeps both plans
-        el("premiumPrice").textContent=(S.isNativeApp&&S.isNativeApp())?"3 days free, then month by month":"Yearly with 3 days free, or month by month";
+        // In the app the free days are the store's to promise (5 Oct 2026): the
+        // line starts plan-neutral and names them only once Sona.storePlan()
+        // says this buyer's plan really starts with them.
+        var inApp=!!(S.isNativeApp&&S.isNativeApp());
+        el("premiumPrice").textContent=inApp?"One plan, month by month":"Yearly with 3 days free, or month by month";
+        if(inApp&&S.storePlan){try{S.storePlan().then(function(plan){if(plan&&plan.state==="free"&&plan.free&&plan.free.text)el("premiumPrice").textContent=plan.free.text+" free, then month by month";});}catch(e){}}
         el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
         buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
