@@ -189,20 +189,6 @@
       <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
     </div>
 
-    <!-- WHO IS SETTING THIS UP is the second screen, its own page (Travis, 1
-         Oct 2026: "have the very first step in onboarding ask if they are a
-         parent/caregiver or an slp/slpa"; 2 Oct 2026: on a separate page). A
-         tap on either answer goes straight on. In a browser a speech
-         therapist gets the clinician setup; the iPhone app never opens
-         clinician screens (NATIVE.md), so there they set up the app for a
-         child, as a parent would, and are told the dashboard is on the web. -->
-    <div class="step" data-step="who">
-      <h1 class="qh" id="whoTitle">Who's setting up Sona?</h1>
-      <div class="who" id="obWho" role="group" aria-labelledby="whoTitle">
-        <button type="button" class="who-pick" data-role="parent"><b>Parent or caregiver</b><span>For my child</span></button>
-        <button type="button" class="who-pick" data-role="slp"><b>SLP or SLPA</b><span>Speech-language pathologist or assistant</span></button>
-      </div>
-    </div>
 
     <!-- name -->
     <div class="step" data-step="name">
@@ -501,17 +487,30 @@
     var ORDER_PARENT=[];
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
-      var o=asks?["welcome","who","name","why","sounds","home","ready","mic"]
-                :["welcome","who","name","sounds","ready","mic"];
+      var o=asks?["welcome","name","why","sounds","home","ready","mic"]
+                :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
     setParentOrder();
-    var ORDER_SLP    = ["welcome","who","name","sounds","slp","email"];
+    // SETUP IS FOR PARENTS (Travis, 5 Oct 2026: "I want to take out the button
+    // of who's setting up Sona because it's just for the parents"). The
+    // "Who's setting up Sona?" screen is gone: the hello goes straight to the
+    // child's name. A speech therapist signs up at speaksona.com/for-slps;
+    // the clinician's own setup below is still here for a browser that opens
+    // /onboarding.html?slp=1 (never the iPhone app, which has no clinician
+    // screens: NATIVE.md), so that path and its tests are not lost.
+    // (In the app the same address gives the old in-app variant: a child set up
+    // in a clinician's words, no price, Home. Nothing in the app links to it.)
+    var SLP_DOOR=false; try{ SLP_DOOR=/[?&]slp=1(&|$)/.test(location.search); }catch(e){}
+    if(SLP_DOOR&&!p.onboarded&&!AFTER){ draft.role="slp"; draft.mode="speech"; draft.pathReason=""; setParentOrder(); try{document.getElementById("slpAppNote").hidden=!nativeFamily;}catch(e){} }
+    // With no question to answer, everyone else is a parent (the answer used to set it).
+    if(draft.role!=="slp") draft.role="parent";
+    var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
     // A reload mid-setup restores draft.role, so the order must follow it.
     // Always starting on ORDER_PARENT sent a clinician down the family path:
     // no email step, so no account and no sign-in link, yet finish() still
     // saved role "slp". They resume on name, where the link itself lands:
-    // "who" is the fork: its two answers choose the path.
+    // (Since 5 Oct 2026 a clinician arrives only by the ?slp=1 door above.)
     var ORDER = (!nativeFamily && draft.role === "slp") ? ORDER_SLP : ORDER_PARENT;
     // The marker is for the parent order only, and a marker that is not valid
     // for this child, this tab and this profile is thrown away.
@@ -541,9 +540,9 @@
     // nothing and take none. The browser clinician keeps a segment a step.
     var ASKS={name:1,why:1,sounds:1,home:1};
     function askKeys(){return ORDER.filter(function(k){return ASKS[k];});}
-    function paintSeg(){segEl.innerHTML="";var count=ORDER===ORDER_PARENT?askKeys().length:ORDER.length-2;for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i"));}
+    function paintSeg(){segEl.innerHTML="";var count=ORDER===ORDER_PARENT?askKeys().length:ORDER.length-1;for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i"));}
     function paintProgress(key){
-      var parent=ORDER===ORDER_PARENT,n=parent?askKeys().indexOf(key):idx-2;
+      var parent=ORDER===ORDER_PARENT,n=parent?askKeys().indexOf(key):idx-1;
       segEl.hidden=parent?n<0:(key==="welcome"||key==="who"||key==="achieve");
       Array.prototype.forEach.call(segEl.children,function(el,i){el.classList.toggle("on",i<=n);});
       segEl.setAttribute("role","progressbar");segEl.setAttribute("aria-label","Setup progress");
@@ -771,23 +770,6 @@
     // (NATIVE.md), so there they set the app up for a child the way a parent
     // would, in a clinician's words ("Which child is this for?"), and are told
     // their dashboard is on the web.
-    (function(){
-      var host=document.getElementById("obWho"); if(!host) return;
-      host.querySelectorAll(".who-pick").forEach(function(btn){
-        btn.onclick=function(){
-          if(finished||ORDER[idx]!=="who")return;
-          try{ Sona.sfx.tap(); }catch(e){}
-          var slp=btn.dataset.role==="slp";
-          draft.role=slp?"slp":"parent";
-          setParentOrder();
-          if(slp){ draft.mode="speech"; draft.pathReason=""; }
-          ORDER=(slp&&!nativeFamily)?ORDER_SLP:ORDER_PARENT;
-          document.getElementById("slpAppNote").hidden=!(slp&&nativeFamily);
-          try{ applyRoleCopy(); }catch(e){}
-          saveDraft(); paintSeg(); settle(); idx=ORDER.indexOf("name"); render();
-        };
-      });
-    })();
 
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
@@ -925,10 +907,6 @@
     function back(){
       if(idx<=0||micBusy||finished||saved||leaving) return;
       Sona.sfx.tap(); idx--;
-      // Backing onto the "who" screen undoes its answer. Otherwise a parent
-      // who tapped "SLP or SLPA" by mistake could only finish as a clinician,
-      // email and all. (And the two one-tap questions are a parent's again.)
-      if(ORDER[idx]==="who"){ draft.role="parent"; setParentOrder(); ORDER=ORDER_PARENT; document.getElementById("slpAppNote").hidden=true; applyRoleCopy(); paintSeg(); }
       settle(); render();
     }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:

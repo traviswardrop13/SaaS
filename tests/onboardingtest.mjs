@@ -2,7 +2,7 @@
 // silent fakes; page navigation, profile/draft storage, and controls are real.
 //
 // SETUP, OPTION B (Travis, 4–5 Oct 2026: "number B would be good … you can do
-// a full reset"): hello → who → name → "What brings you to Sona?" → sounds →
+// a full reset"): hello → name → "What brings you to Sona?" → sounds →
 // "How does practice go at home now?" → "<Name>'s practice is ready" → (the
 // price, only where Sona can sell) → microphone → hand-off → first game. The
 // profile is saved by the ready screen's Continue. This suite's own harness is
@@ -71,7 +71,11 @@ const screen=page=>page.evaluate(()=>document.body.dataset.setupScreen);
 // The first screen is a hello with one Continue, and the second asks who is
 // setting Sona up (Travis, 1 Oct 2026; its own page since 2 Oct); either answer
 // goes straight on, so a parent's one tap reaches the name.
-async function who(page,role='parent'){if(await screen(page)==='welcome')await next(page);await page.locator('[data-step="who"].on').waitFor();await calm(page);await page.locator('.who-pick[data-role="'+role+'"]').click();}
+// "Who's setting up Sona?" left setup on 5 Oct 2026 (Travis: "it's just for
+// the parents"): the hello goes straight to the child's name. A clinician's
+// setup opens only from /onboarding.html?slp=1, which is where who(page,'slp')
+// goes; for a parent it only presses the hello's Continue.
+async function who(page,role='parent'){if(role==='slp'&&!/[?&]slp=1/.test(page.url())){await page.goto(base+'/onboarding.html?slp=1');await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));}if(await screen(page)==='welcome')await next(page);}
 async function toName(page){await who(page);await page.locator('[data-step="name"].on').waitFor();}
 // One tap on a one-tap question: one of its answer ids, or 'skip'.
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();}
@@ -180,23 +184,19 @@ await scenario('sound selection and private paced handoff',async()=>{
 // slide is who's setting up Sona"; the question since 1 Oct: "have the very
 // first step in onboarding ask if they are a parent/caregiver or an
 // slp/slpa"). Two answers, each one tap; no Continue to press on the question.
-await scenario('a hello first, then the question of who is setting Sona up',async()=>{
+await scenario('a hello first, then the child\'s name: setup is for parents',async()=>{
  {const {context,page,errors,requests}=await fresh();try{
   const hello=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.querySelector('[data-step="welcome"]').innerText.replace(/\s+/g,' ').trim(),cta:document.getElementById('nextBtn').textContent.trim(),footer:getComputedStyle(document.querySelector('.obfoot')).display,seg:document.getElementById('seg').hidden}));
   ok('the very first screen is a hello: Sona\'s name and one Continue, no question',hello.screen==='welcome'&&/^Sona/.test(hello.text)&&!/\?/.test(hello.text)&&hello.cta==='Continue'&&hello.footer!=='none'&&hello.seg,hello);
   await next(page);
-  const first=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,title:document.getElementById('whoTitle').textContent,picks:[...document.querySelectorAll('.who-pick')].map(b=>b.innerText.replace(/\s+/g,' ').trim()),cta:getComputedStyle(document.getElementById('nextBtn')).display,back:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,words:document.querySelector('[data-step="who"]').innerText.trim().split(/\s+/).length}));
-  ok('Continue opens the question, in a few words, on a page of its own',first.screen==='who'&&/Who's setting up Sona\?/.test(first.title)&&first.words<=32&&first.seg,first);
-  ok('…with two answers: a parent or caregiver, or an SLP or SLPA',first.picks.length===2&&/^Parent or caregiver/.test(first.picks[0])&&/^SLP or SLPA/.test(first.picks[1])&&/speech-language pathologist or assistant/i.test(first.picks[1]),first.picks);
-  ok('…and the answers are the buttons: no Continue to press, and Back to the hello',first.cta==='none'&&first.back!=='none',first);
+  ok('Continue opens the child\'s name: nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='name'&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
   await who(page,'parent');
-  ok('a parent goes straight to the child\'s name, the first of four progress segments',await page.locator('[data-step="name"].on').count()===1&&/Who's practicing/.test(await page.locator('[data-step="name"] .qh').innerText())&&await page.locator('#seg i').count()===4&&await page.locator('#seg i.on').count()===1&&await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
+  {const at=await page.evaluate(()=>({on:(document.querySelector('.step.on')||{}).dataset.step,title:document.querySelector('[data-step="name"] .qh').innerText,segs:document.querySelectorAll('#seg i').length,lit:document.querySelectorAll('#seg i.on').length,role:draft.role,parent:ORDER===ORDER_PARENT}));
+  ok('a parent goes straight to the child\'s name, the first of four progress segments',at.on==='name'&&/Who's practicing/.test(at.title)&&at.segs===4&&at.lit===1&&at.role==='parent'&&at.parent,at);}
   await calm(page);await page.locator('#backBtn').click();
-  ok('Back returns to the question',await page.locator('[data-step="who"].on').count()===1&&await page.locator('#backBtn').isVisible());
-  await calm(page);await page.locator('#backBtn').click();
-  ok('…and Back again to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  ok('Back returns to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
   await who(page,'slp');
-  ok('in a browser an SLP or SLPA gets the clinician setup, in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
+  ok('a clinician\'s setup still opens from its own address in a browser (/onboarding.html?slp=1), in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
   ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
   clean('first question',errors);
  }finally{await context.close();}}
@@ -207,9 +207,9 @@ await scenario('a hello first, then the question of who is setting Sona up',asyn
  {const {context,page,errors,requests}=await fresh({native:true});try{
   await who(page,'slp');
   const st=await page.evaluate(()=>({order:ORDER===ORDER_PARENT,steps:ORDER.join(),role:draft.role,screen:document.body.dataset.setupScreen,title:document.querySelector('[data-step="name"] .qh').textContent,note:document.getElementById('slpAppNote').hidden?'':document.getElementById('slpAppNote').textContent,groups:document.querySelectorAll('#seg i').length}));
-  ok('in the app an SLP or SLPA sets the app up for a child, never the clinician steps',st.order&&st.screen==='name'&&/Which child/.test(st.title),st);
+  ok('in the app that address sets the app up for a child, never the clinician steps',st.order&&st.screen==='name'&&/Which child/.test(st.title),st);
   ok('…and is told the clinician dashboard is on the web, with no link and no price',/dashboard is on the web/.test(st.note)&&!/\$|price|Premium|<a/i.test(st.note),st.note);
-  ok('…with neither family question on their path, and two progress groups: name and sounds',st.steps==='welcome,who,name,sounds,ready,mic'&&st.groups===2,st);
+  ok('…with neither family question on their path, and two progress groups: name and sounds',st.steps==='welcome,name,sounds,ready,mic'&&st.groups===2,st);
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="6"]').click();await next(page);
   ok('…the name leads straight to the sounds',await screen(page)==='sounds');
   await choose(page,'S');await next(page);
@@ -221,15 +221,6 @@ await scenario('a hello first, then the question of who is setting Sona up',asyn
   await next(page);await page.waitForURL(url=>url.pathname!=='/onboarding.html');
   ok('…and it ends on Home: never a game, never a price',new URL(page.url()).pathname==='/today.html'&&priced(requests).length===0&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')===null),page.url());
   clean('native SLP answer',errors);
- }finally{await context.close();}}
- // A mistaken "SLP or SLPA" tap in the app, undone with Back: the family
- // questions are a parent's again.
- {const {context,page,errors}=await fresh({native:true});try{
-  await who(page,'slp');await calm(page);await page.locator('#backBtn').click();
-  ok('Back onto the question gives the parent\'s four questions back',await page.evaluate(()=>draft.role==='parent'&&ORDER.join()==='welcome,who,name,why,sounds,home,ready,mic'&&document.querySelectorAll('#seg i').length===4));
-  await who(page,'parent');await page.locator('#obName').fill('Milo');await next(page);
-  ok('…and answering Parent walks them',await screen(page)==='why');
-  clean('native SLP undone',errors);
  }finally{await context.close();}}
 });
 
@@ -319,7 +310,7 @@ await scenario('the two answers stay on this phone',async()=>{
   ok('no request to any host, in its address or its body, carries an answer, an answer\'s id, the child\'s name or the age group',leaks.length===0,leaks);
   ok('…nor does anything queued for Meta or for PostHog',!SECRET.test(kept.fbq)&&!SECRET.test(JSON.stringify(kept.posthog)),[kept.fbq,kept.posthog]);
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
-  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","who","name","why","sounds","home","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
+  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","why","sounds","home","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
   ok('the saved profile has no field for either answer, and a backup carries neither the answers nor a draft',!/"why"|"home"|w_therapist|h_hard/.test(kept.profile)&&!/setupasks|obdraft|w_therapist|h_hard/.test(kept.backup)&&kept.draft===null,kept.profile);
   const lead=requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead').map(r=>JSON.parse(r.body));
   ok('the one lead (the weekly-summary email) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
@@ -355,9 +346,8 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   clean('rachel on ready',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
-  await page.evaluate(()=>{window.__screens=[];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
-  // Back to the question leaves the clinician path (a mistaken tap), so it is answered again.
-  await who(page,'slp');await calm(page);await page.locator('#backBtn').click();await who(page,'slp');
+  await who(page,'slp');   // (before the watcher: it opens the clinician's own address)
+  await page.evaluate(()=>{window.__screens=[document.body.dataset.setupScreen];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
   ok('the clinician setup never shows ready or Rachel\'s block, nor either family question, forward or back',screens.includes('name')&&!screens.includes('ready')&&!screens.includes('why')&&!screens.includes('home')&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
@@ -368,7 +358,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   // Settings → Add a child: the household already has a child, and this
   // family has been asked its two questions (or is past them).
   await page.evaluate(()=>localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}]})));await page.reload();
-  ok('a second child\'s setup has two progress groups and neither family question',await page.evaluate(()=>ORDER.join()==='welcome,who,name,sounds,ready,mic'&&document.querySelectorAll('#seg i').length===2));
+  ok('a second child\'s setup has two progress groups and neither family question',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'&&document.querySelectorAll('#seg i').length===2));
   await toName(page);await page.locator('#obName').fill('Rosie');await page.locator('#obAge [data-age="4"]').click();await next(page);
   ok('…the name leads straight to the sounds',await screen(page)==='sounds'&&(await progress(page)).lit===2);
   await choose(page,'S');await next(page);
@@ -382,7 +372,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
  // is not asked again, whichever child this is.
  {const {context,page,errors}=await fresh();try{
   await page.evaluate(()=>localStorage.setItem('sona.setupasks.v1',JSON.stringify({v:1,why:'',home:''})));await page.reload();
-  ok('a family already asked is not asked twice',await page.evaluate(()=>ORDER.join()==='welcome,who,name,sounds,ready,mic'));
+  ok('a family already asked is not asked twice',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'));
   clean('asked once',errors);
  }finally{await context.close();}}
  // No age picked, two sounds, and the "explore" path: the chips say only what was given.
@@ -483,7 +473,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The two one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'||s==='who'){await who(page);continue;}if(s==='why'||s==='home'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='why'||s==='home'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -512,19 +502,6 @@ await scenario('clinician setup survives a reload',async()=>{
  }finally{await slp.context.close();}
 });
 
-// The first question is the fork: backing onto it undoes a mistaken "SLP or SLPA".
-await scenario('a parent can back out of clinician setup',async()=>{
- const {context,page,errors,requests}=await fresh();try{
-  await who(page,'slp');await calm(page);await page.locator('#backBtn').click();
-  ok('Back to the question returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='who'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===4));
-  await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
-  const seen=await walk(page);
-  ok('answering again walks the family path to the mic, never the clinician email',seen.join()==='welcome,name,why,sounds,home,ready,mic',seen);
-  await notNow(page);await atHandoff(page);
-  ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
-  clean('clinician back-out',errors);
- }finally{await context.close();}
-});
 
 // A DRAFT BELONGS TO ONE CHILD. A setup left half done for one child used to
 // open the next child's setup with a brother's name already typed in. A draft
@@ -807,9 +784,8 @@ await scenario('a solid colour behind the keyboard',async()=>{
  try{
   const opaque=(c)=>{const m=/rgba?\(([^)]+)\)/.exec(c||'');if(!m)return false;const p=m[1].split(',').map(Number);return p.length<4||p[3]>0.99;};
   const seen={};
-  await next(page);await page.locator('[data-step="who"].on').waitFor();
-  seen.who=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
-  await calm(page);await page.locator('.who-pick[data-role="parent"]').click();await page.locator('[data-step="name"].on').waitFor();
+  seen.who=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);   // (the hello: the question that came next is gone)
+  await next(page);await page.locator('[data-step="name"].on').waitFor();
   seen.name=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
   ok('while a grown-up types in setup, the body has a solid colour for the keyboard\'s corners to show',opaque(seen.who)&&opaque(seen.name),seen);
   const fam=readFileSync(ROOT+'/crafted-family.css','utf8');
@@ -856,7 +832,7 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.goto(base+'/onboarding.html');await page.locator('[data-step="mic"].on').waitFor();
   const back=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,html:document.documentElement.className,backBtn:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,hello:document.querySelector('[data-step="welcome"]').classList.contains('on'),visible:getComputedStyle(document.querySelector('.ob')).visibility,cta:document.getElementById('nextBtn').textContent.trim(),name:document.getElementById('micName').textContent,role:draft.role,steps:__phone.events.filter(e=>e.name==='setup step').map(e=>e.props.step).join()}));
   ok('with a valid marker and nothing owed, setup opens on the microphone: no hello, no Back, no progress bar, nothing left hidden',back.screen==='mic'&&!back.hello&&back.backBtn==='none'&&back.seg&&back.visible==='visible'&&!/ob-resume|ob-leaving/.test(back.html)&&back.cta==='Turn on Echo\'s ears'&&back.name==='Mia',back);
-  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,who,name,why,sounds,home,ready,mic',back.steps);
+  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,why,sounds,home,ready,mic',back.steps);
   await page.reload();await page.locator('[data-step="mic"].on').waitFor();
   ok('a reload on the microphone comes back to the microphone',await screen(page)==='mic');
   await next(page);await page.waitForFunction(()=>__phone.mic.requests.length===1);
@@ -950,21 +926,11 @@ await scenario('in the app, a clinician and a second child',async()=>{
   ok('…and it still ends on Home',new URL(page.url()).pathname==='/today.html'&&priced(requests).length===0,page.url());
   clean('app clinician',errors);
  }finally{await context.close();}}
- // a mistaken "SLP or SLPA" tap, undone: the store ask is never remembered as "off"
- {const {context,page,errors,requests}=await phone({entitled:true});try{
-  await page.goto(base+'/onboarding.html');await who(page,'slp');await page.locator('#obName').fill('Mia');await next(page);await choose(page,'R');await next(page);await page.locator('[data-step="ready"].on').waitFor();
-  ok('as a clinician the store is not asked on ready',await page.evaluate(()=>__phone.infos===0));
-  for(let i=0;i<3;i++){await calm(page);await page.locator('#backBtn').click();}
-  await who(page,'parent');await next(page);await answerWhy(page);await next(page);await answerHome(page);await page.locator('[data-step="ready"].on').waitFor();
-  await next(page);await page.locator('[data-step="mic"].on').waitFor();
-  ok('Back to "who", then Parent: the store IS asked, finds Premium, and they go on to the microphone, never the price',priced(requests).length===0&&await page.evaluate(()=>__phone.infos>=1&&Sona.isSubscribed()&&draft.role==='parent'));
-  clean('mistaken clinician tap',errors);
- }finally{await context.close();}}
  // a second child in a household that owes the price, and one that does not
  for(const [label,cfg,dest] of [['an unpaid household',{kids:2,stamp:'post'},'/subscribe.html'],['a household with Premium',{kids:2,stamp:'post',entitled:true},'/onboarding.html']]){
   const {context,page,errors,requests}=await phone(cfg);try{
    await page.goto(base+'/onboarding.html');
-   ok('a second child ('+label+'): two progress groups, neither family question, and their own name already in the field',await page.evaluate(()=>ORDER.join()==='welcome,who,name,sounds,ready,mic'&&document.querySelectorAll('#seg i').length===2)&&await page.locator('#obName').inputValue()==='Ben');
+   ok('a second child ('+label+'): two progress groups, neither family question, and their own name already in the field',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'&&document.querySelectorAll('#seg i').length===2)&&await page.locator('#obName').inputValue()==='Ben');
    await toName(page);await next(page);await choose(page,'R');await next(page);await page.locator('[data-step="ready"].on').waitFor();
    const ready=await readyShown(page);
    await next(page);

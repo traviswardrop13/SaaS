@@ -16,19 +16,6 @@ body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: colu
    Parents come first, so theirs is the teal action and the clinician's the
    cream second choice. The answers are the buttons, so the footer keeps only
    Back. */
-.ob .step[data-step="who"] { text-align: center; }
-.ob .step[data-step="who"] .qh { margin: 0 auto; }
-body[data-setup-screen="who"] #nextBtn { display: none; }
-.who { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
-.who-pick { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding: 14px 16px; border-radius: 22px; cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; transition: transform .12s; }
-.who-pick b { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.1; }
-.who-pick span { font-family: Nunito, sans-serif; font-size: 12.5px; font-weight: 700; line-height: 1.3; }
-.who-pick[data-role="parent"] { background: linear-gradient(#23b5bd, #069ca8); color: #fff; border: 1px solid #07959f; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 rgba(255,255,255,.45); }
-.who-pick[data-role="slp"] { background: #f7ebd6; color: #5b3a20; border: 1px solid #e3cfae; box-shadow: 0 4px 0 #dcc49e; }
-.who-pick:active { transform: translateY(3px); }
-.who-pick[data-role="parent"]:active { box-shadow: 0 2px 0 #087e89; }
-.who-pick[data-role="slp"]:active { box-shadow: 0 1px 0 #dcc49e; }
-.who-pick:focus-visible { outline: 3px solid #0b6f78; outline-offset: 3px; }
 body[data-setup-screen="welcome"] .world-scene { flex: 1; min-height: 60px; max-height: none; margin: 0; }
 body[data-setup-screen="welcome"] .world-scene img, body[data-setup-screen="welcome"] .world-scene:before { display: none; }
 /* the hello's one button sits on the orchard itself, with no cream fade */
@@ -37,9 +24,6 @@ body[data-setup-screen="welcome"] .obfoot { background: none; }
   body[data-setup-screen="welcome"] .ob { padding-top: max(12px, env(safe-area-inset-top)); }
   .welcome-brand { font-size: 29px; }
   .welcome-brand span { font-size: 17px; margin-top: 4px; }
-      .who { gap: 10px; margin-top: 14px; }
-  .who-pick { padding: 11px 14px; }
-  .who-pick b { font-size: 20px; }
 }
 @media (min-width: 600px) {
   body[data-setup-screen="welcome"] { background-size: auto 100%; background-color: #fff6e9; }

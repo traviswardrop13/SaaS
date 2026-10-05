@@ -45,8 +45,7 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 // loses every check after it.
 const STEP = `(() => { const st = (document.querySelector(".step.on") || {}).dataset?.step;
   if (!st || st === "achieve") return;                    // never press the hand-off's button, never click on another page
-  if (st === "who") document.querySelector('.who-pick[data-role="parent"]').click();
-  else if (st === "why") document.querySelector('#obWhy [data-val="w_tricky"]').click();
+  if (st === "why") document.querySelector('#obWhy [data-val="w_tricky"]').click();
   else if (st === "home") document.querySelector('#obHome [data-val="h_notyet"]').click();
   else if (st === "mic") document.getElementById("micNotNow").click();
   else document.getElementById("nextBtn").click(); })()`;
@@ -84,7 +83,10 @@ ok("buddy is preselected, so it never needs to be a step", ob.preselected);
 // slp/slpa"), on its own page after the hello since 2 Oct. The move-in code
 // left setup that day: a family moving phones uses Settings, and one who paid
 // on the website restores by email there.
-ok("setup asks who is setting up: a parent or caregiver, or an SLP or SLPA", ob.clinicianDoor);
+// 5 Oct 2026 (Travis: "I want to take out the button of who's setting up Sona
+// because it's just for the parents"): the question is gone. A clinician's own
+// setup opens only from /onboarding.html?slp=1; they sign up at /for-slps.
+ok("setup no longer asks who is setting up: it is for parents", !ob.clinicianDoor);
 ok("…and carries no move-in code (Travis, 2 Oct 2026: \"take off moving from another phone enter your code\")", !ob.restoreDoor);
 
 // ── one mascot at a time ──
@@ -127,7 +129,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   ok("…a walk that reaches the microphone, by way of both one-tap questions and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === "welcome,who,name,why,sounds,home,ready,mic", JSON.stringify(hosts));
+    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,why,sounds,home,ready,mic", JSON.stringify(hosts));
   await ob2.close();
 }
 
@@ -221,12 +223,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's Continue
-  const seen = await pg2.evaluate(() => ({ title: (document.getElementById("whoTitle") || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is one short question", seen.on === "who" && /^Who's setting up Sona\?$/.test(seen.title.trim()), JSON.stringify(seen));
+  const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
+  ok("the screen after the hello is the child's name", seen.on === "name" && /^Who's practicing today\?$/.test(seen.title.trim()), JSON.stringify(seen));
   // Parents go from the child's details to one tap ("What brings you to
   // Sona?"), then to a compact sound grid.
-  // (one tap on "Parent or caregiver" reaches the child's details)
-  await pg2.evaluate(() => document.querySelector('.who-pick[data-role="parent"]').click()); await pg2.waitForTimeout(200);
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
   const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("whyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obWhy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
   ok("after the name comes the why question: one short heading and four one-tap answers", asked.on === "why" && asked.title === "What brings you to Sona?" && asked.answers === 4 && !asked.overflow, JSON.stringify(asked));
@@ -265,9 +265,9 @@ ok("onboarding no pageerrors", errs.length === 0);
   // it is a scratchpad, not a profile: saving the profile must clear it, or a
   // stale draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole flow again: the hello → the question → name → why →
+  // walks the whole flow again: the hello → name → why →
   // sounds → home → ready, whose Continue saves the profile and tears it up
-  await hop(); await hop(); await hop(); await hop();   // hello, who, name, why (an answer) → sounds
+  await hop(); await hop(); await hop();   // hello, name, why (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → the home question
   await hop();                                           // an answer → ready
   const onReady = await pg.evaluate(() => ({

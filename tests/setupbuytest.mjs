@@ -35,7 +35,6 @@ async function toReady(page, name) {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
-  await step(page, "who"); await tap(page, '.who-pick[data-role="parent"]');
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
   await step(page, "why"); await tap(page, '#obWhy .ask-pick[data-val="w_therapist"]');
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
