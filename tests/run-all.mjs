@@ -59,6 +59,9 @@ const SUITES = [
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "trialfirsttest.mjs", // trial first: the price before the first game, nothing free where Sona can sell
+  "planwordstest.mjs", // PLANWORDS1: the store answer (monthly only, eligibility, late answers) and every sentence the iPhone price card may show
+  "pricescreentest.mjs", // PRICE1: the one-plan iPhone price card in every store state: no typed figure, no reminder words, never a dead end
+  "setupbuytest.mjs", // SETUPBUY1: a new family end to end: setup, the price, a purchase, then the microphone, the hand-off and the first game
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true

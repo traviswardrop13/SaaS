@@ -5210,7 +5210,7 @@
     const s = String(v == null ? "" : v).toUpperCase();
     if (s === "1" || s.indexOf("INELIGIBLE") !== -1) return "no";   // before ELIGIBLE: the name contains it
     if (s === "3" || s.indexOf("NO_INTRO") !== -1) return "none";
-    if (s === "2" || /ELIGIBLE$/.test(s)) return "yes";
+    if (s === "2" || s === "ELIGIBLE" || s === "INTRO_ELIGIBILITY_STATUS_ELIGIBLE") return "yes";   // exact: "sure" prints "Nothing to pay today" as plain fact
     return "unknown";
   }
   // The Plan a page is handed. `_p` is the store's own product object, kept

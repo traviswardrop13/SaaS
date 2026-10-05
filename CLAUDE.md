@@ -84,14 +84,13 @@ Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
 pages that introduce her (parents, subscribe, trial, progress, talk, slp)
 missing it.
-One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
-her photo, "Built with", "Rachel Wardrop, MS, CF-SLP", and one sentence,
-"She is a pediatric speech-language pathologist in her clinical fellowship."
-(Travis's line, 1 Oct 2026). Since 2 Oct 2026
-it comes right before the microphone screen ("Let Echo hear you"), which is
-the last one before the first game (Travis: "put the Rachel ... slide not as
-the last step, but the step right before the let echo hear you"). "Not now"
-on the microphone still goes on to the game. She still is a
+One of those places is setup (Travis, 29 Sep 2026: a Meet Rachel screen with
+her photo). **Since 5 Oct 2026 (option B) she is on setup's "<Name>'s practice
+is ready" screen**, in a box of her own titled "About Sona", apart from what
+the parent picked: her photo and the settled line word for word, "Built with
+Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical
+fellowship." Her separate screen is gone. Where her credential sits beside a
+list a parent picked is hers and Travis's to change. She still is a
 Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
@@ -99,7 +98,7 @@ landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
 — a specific, checkable false claim about a trademarked certification, on the
 page that sells the app. `tests/iaptest.mjs` fails if it comes back, and if
 the licence ever lapses or she moves state, that pin is where to start — and
-the Meet Rachel setup screen (`onboarding.html`, pinned in
+setup's ready screen (`onboarding.html`, her line pinned word for word in
 `tests/onboardingtest.mjs`) shows her credential to every new family.
 If a change
 touches what a child is asked to say, how a sound is cued, what counts as
@@ -148,32 +147,57 @@ opens them) is open only to
 Premium from any source, a trial, or Sona being free open everything, as
 before. These three were defaults Travis did not pick; ask him before
 changing one. What follows from the rule:
-- **Setup's last tap** ("Let's play!") goes to `/subscribe.html?setup=1` when
-  `trialFirst()` says so (the grown-ups check is marked passed: a grown-up just
-  set Sona up), else to the first game as before; a clinician's own setup
-  still ends on Home. `?setup=1` rides the grown-ups check (`gateDest`).
-- **The plan screen opens on two screens first**, ReciMe's shape: "We offer 3
-  days free so every kid can practice with Echo." and "Nothing to pay until
-  October 6. Cancel anytime before then, in Settings → Subscriptions.", each
-  with Continue, then the price as the offer. **Only when the store says the
-  plan starts with free days** (on the iPhone Sona Monthly, the one plan since
-  5 Oct 2026; `freeDays()` reads the product's
-  introductory offer; the web's are this repo's 3), and the number is that
-  answer, the date the clock's. No answer within 2.5 s, or a plan that
-  charges today, and the price shows straight away: these screens exist to
-  say "free". **ReciMe's reminder screen is made true, not copied:** Sona
-  sends no reminder (there is no trial mailer), so the second screen names
-  the day and where to cancel. A real reminder (an email, or a phone
-  notification, which needs a new App Store build) is Travis's call. "Paywall
-  viewed" and the one-shot (`planShown`) count only once the price is on
-  screen. **The pictures are ChatGPT's crafted art:** until Travis's two drawn
-  for these screens land (`INTRO_ART` in `subscribe.html`, a path each), the
-  first shows games in Home's own art with Echo cheering, the second Echo
-  waving.
+- **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
+  OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
+  reset i don't really care i'm not married to anything"). A parent's setup is
+  hello → who → name and age → **"What brings you to Sona?"** → sounds →
+  **"How does practice go at home now?"** → **"<Name>'s practice is ready"** →
+  the price → microphone → "Hand the phone to <Name>!" → the first game. The
+  old order told a parent to hand the phone over and tap "Let's play!", and
+  then showed three money screens to the child holding it.
+  - **The two new questions are one tap each, can be skipped, and change
+    nothing a child is given** (no sounds, mode or goal). Each puts one true
+    sentence about SONA on the ready screen, never one about the child. Their
+    wording, the eight sentences and the ready screen are Rachel's to change.
+  - **The answers stay on the phone**: a household key
+    (`sona.setupasks.v1`, `Sona.setupAsks()`), not in the profile, not in a
+    backup (`NO_EXPORT`), in no request, event, title or log. In a browser
+    Meta's pixel reports the words on tapped buttons by itself, so the setup
+    page's pixel tag carries `data-autoconfig="off"` (that page only; whether
+    the landing pages should too is Travis's call). Asked once per family.
+  - **The ready screen** repeats only what the parent said (name, age group
+    if given, the sounds, or "Every sound, easiest first") with "Sona
+    practices — it doesn't test or diagnose." Never "plan" beside Rachel's
+    name, never an age norm, a result or a price. **The profile is saved when
+    the parent leaves it**, before the price and before the microphone.
+  - **Its Continue goes to `/subscribe.html?setup=1` when `trialFirst()` says
+    so** (after asking the store once whether this Apple ID already has
+    Premium, `Sona.setupWall()`, 2.5 s at most; the grown-ups check is marked
+    passed), else on, in the page, to the microphone. A clinician's own setup
+    still ends on Home.
+  - **A purchase or a restore comes BACK to setup** for the microphone and the
+    hand-off: a tab-only marker (`sona.setupafter.v1`, `Sona.setupAfter()`)
+    written when setup leaves for the price. The marker picks a screen and
+    grants nothing; without it (app closed on the price) the family lands on
+    Home and the games ask for the microphone themselves.
+    `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
+  - **Nothing moves under a finger:** for about half a second after a setup
+    step changes, and after the price card changes shape, taps are ignored.
+- **The price is ONE screen** (the two ReciMe-style screens before it are
+  gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
+  today.") and **the billing day** (the store's price starts "unless you
+  cancel at least 24 hours before", Apple's own measure), one button, and
+  "Not now" in plain sight. See "THE IPHONE SELLS ONE PLAN" for where every
+  word comes from. **No reminder is promised:** Sona sends none, so the words
+  email, remind and notify may not appear on the price screen
+  (`pricescreentest`, `setupbuytest`). A real reminder (Resend, fed by
+  RevenueCat) is a later change that adds a third row for a family it is
+  truly armed for, and is Travis's to approve: it changes what the privacy
+  page says. "Paywall viewed" and the one-shot (`planShown`) count only once
+  a priced card is on screen.
 - **"Not now" goes to Home with everything locked:** every game and book is
-  "Premium" and the Books card says "Premium". The free days starting (or a
-  restore) on the hand-off opens the first game setup chose, not Home
-  (`nextAfterBuy()`).
+  "Premium" and the Books card says "Premium"; no microphone ask and no
+  hand-off. Settings then says "Plan: none yet", never "free version".
 - **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
   2026: "I want it to open automatically if they click on a game that is
   grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the
@@ -335,19 +359,32 @@ every yearly figure when the price check answers late.
 days free, then $9.99 a month", after giving `com.speaksona.app.monthly` a
 free 3-day introductory offer in App Store Connect). On the Apple card of
 `subscribe.html` (offer and Settings views):
-- **One box, no pick:** "Monthly", the store's price ("$9.99/mo"), "3 days
-  free, then $9.99 a month.", one button "Start 3 days free", and under it
-  "Free until October 8, then $9.99 a month. Renews unless canceled in
-  Settings → Subscriptions." The header line and the two screens at the end
-  of setup say the same plan.
-- **The store decides every word** (`paintIap()`): the markup's $9.99 and 3
-  days are placeholders, repainted from `Sona.iapProduct("monthly")` (which
-  refuses any other id) as soon as it answers. A monthly product with **no**
-  free trial makes every line "charged today" ("Subscribe — $9.99 a month",
-  "Charged to your Apple ID today, then every month.") and skips the two
-  screens; no line ever promises free days Apple's sheet would not give. A
-  store with no monthly product, or one that answers with the yearly product,
-  sells nothing in its place.
+- **One plan, no pick:** the tile says "3 days free, then $9.99 a month."
+  (Travis's words, built from the store's answer), the button "Start 3 days
+  free", and the two-row timeline above it. Charged today: "$9.99 a month,
+  charged today." and "Subscribe — $9.99 a month", no timeline.
+- **The store decides every word, and the page types none.**
+  `Sona.storePlan()` asks for the monthly product only, through
+  `iapProduct("monthly")` (which refuses any other id), and answers one of
+  `free` / `paid` / `none` / `owned`; `Sona.planWords(plan)` returns every
+  sentence the card may show. `subscribe.html` ships no price, no day count
+  and no "free" of its own: until the store answers the button reads
+  "Checking the App Store…", and with no answer in 4 seconds the card says
+  "We couldn't reach the App Store." with Try again and Not now. A store with
+  no monthly product, or one that answers with the yearly product, sells
+  nothing in its place. A late answer repaints the card by itself.
+- **The buyer's own eligibility is asked** (the plugin's
+  `checkTrialOrIntroductoryPriceEligibility`; Apple gives free days once per
+  subscription group). A definite "not eligible" removes the free days. When
+  the phone cannot tell (the call is missing, slow or unsure) the free days
+  still show, but nothing is stated as plain fact: the rows say "new
+  subscribers" and a line says "Only new subscribers get 3 days free.
+  Otherwise Apple charges $9.99 today. Apple shows your exact terms before
+  you confirm." An Apple ID that already holds Premium is told "You already
+  have Sona Premium. Welcome back!" and sold nothing.
+- **Never less able to sell than before:** purchase goes through the calls
+  real phones already use; every new native call is optional and may only
+  ever leave the card as if it did not exist.
 - **The yearly product is not removed from sale in App Store Connect:** Apple
   says that also stops renewals for anyone who bought it. It is only no
   longer offered, and `IAP_PRODUCTS.annual` stays in `sona.js` for restore.
@@ -355,117 +392,14 @@ free 3-day introductory offer in App Store Connect). On the Apple card of
   nothing while `WEB_SALES` is off; turning it on would sell the yearly plan
   and a pay-today monthly, as built on 1 Oct), the clinician plans, the
   Terms (which name no Apple price or trial length). The Premium page says
-  "3 days free, then month by month" in the app.
-- **One introductory offer per Apple ID per subscription group:** a family
-  who already used free days is charged at once. Apple's own sheet says so
-  before they pay; the card cannot know it.
-`iaptest` plays the card against a store with the trial, without it, with no
-monthly product and with the wrong product; `trialfirsttest` the two screens
-and the first game after the free days start; `chartertest` that the card's
-$9.99 is only a placeholder the store repaints.
-
-What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
-surface says "**under $5 a month**" and never "$4.99 a month" (which would
-imply $59.88 a year) — and **always with "billed once a year"**, because
-beside a real monthly plan a bare "under $5 a month" reads as a cheaper one.
-
-**A plan off sale is not a cancelled subscription.** Anyone who bought
-$9.99/month, in August or today, keeps it. So: `/api/subscription` must go on
-recognising every interval, `IAP_PRODUCTS.monthly` stays in `sona.js` so
-RevenueCat can restore them on a reinstall, and the Terms describe both plans.
-**And a flip to free now leaves monthly buyers charged every month, not once a
-year**, in an app that is free: stopping those subscriptions in Stripe and
-App Store Connect is the first operations task of any flip (see "The iOS
-price does not live in this repo").
-
-**Known, and not fixed by the monthly change (1 Oct 2026) — Travis's call when:**
-(1) A family who paid on the WEB has no cancel button: `/api/portal` (Stripe's
-billing page) is built but nothing links to it. So the monthly plan's small
-print says what is true ("To cancel, email hello@speaksona.com and we'll stop
-it", pinned in `progtest`), as the Terms do; the yearly card still says
-"cancel anytime in your account", which is the older, looser wording. A
-pay-today monthly plan is the one people cancel most. (2) A web purchase is never re-checked on the
-device: Home re-asks Apple and a clinician's coverage, but only a parent's tap
-on Restore asks Stripe, so a web plan that was cancelled, or a trial that
-never became a charge, stays unlocked on that phone.
-
-**FAMILIES BUY IN THE APP, NOT ON THE WEBSITE: ON SINCE 2 OCT 2026**
-(Travis, 1 Oct 2026, told that a family who pays on the website has no
-cancel button and that a cancelled web plan stays unlocked on the phone: "i
-dont want them paying on the website"). One switch, two copies, like
-`FREE_MODE`: `WEB_SALES` in `lib/pricing.ts` and `public/sona.js`
-(`Sona.webSales()`), pinned equal by `freetest`. It is the FAMILY web
-checkout only.
-
-**Both copies are `false`: the website does not sell** (Travis, 2 Oct 2026:
-"turn off payments on website then merge"). It shipped `true` on 1 Oct,
-because that night's review found the app on the App Store (1.0.4) has **no
-buy button at all**: its build carries no RevenueCat plugin (1.0.3 build 6
-had it). On 2 Oct he fixed the rest: both products sit in RevenueCat's `full`
-entitlement, the yearly price goes to $59.99 on 4 Oct with 3 free days, the
-monthly product exists at $9.99, and **1.0.5 (build 8), the first build that
-can sell, was sent to App Review**. He switched the website off the same day,
-on his word alone: **until 1.0.5 is live, nobody can buy Premium anywhere**,
-and a family on 1.0.4 is told it "can't be bought in this version of the app
-yet". Everything below is what `false` does; the tests play both states
-whichever way it ships, so turning it back on is the same two booleans.
-- **The server refuses.** `/api/checkout` answers 410 ("Sona Premium is bought
-  in the Sona app on iPhone and iPad.") before it touches Stripe, and its
-  plain-link GET goes to the home page. `/api/charter` answers with no price
-  and no Stripe call. A hidden button is not a closed door: an old tab, a
-  bookmark or an old ad link reaches the same refusal.
-- **A browser family sees where Premium is, never a price.** The plan screen
-  shows one card, "Sona Premium is in the iPhone and iPad app", with the App
-  Store button (`#appCard`); so do `trial.html`, the Next `/subscribe` page
-  and the old `/families` page. No dollar figure, no "3 days free", no charter
-  line and no spots-left number in that state: the iPhone price is Apple's
-  (App Store Connect), and the charter offer was a web price. **The Terms are
-  the one exception:** they lead with where a family buys and name no Apple
-  price, then keep the web plans' prices and free days (`PlanTerms`) as the
-  terms of subscriptions already bought on speaksona.com, not as an offer
-  (the charter paragraph has an off twin for that). Do not strip them. It says
-  Premium "opens there": **a purchase in the app does not unlock the
-  website**, because nothing links an Apple purchase to a browser.
-- **No offer in a browser.** `planEligible()` is false in a browser that
-  cannot sell, so the practice win screen says "Done", the one-time ask is not
-  spent, and no "paywall viewed" is logged for a page that sells nothing. In
-  the app nothing changes: the Apple card never reads this switch.
-- **Nor in an app build that cannot sell** (true in BOTH states of the
-  switch): a build with no purchase plugin (`Sona.iapAvailable()` false, which
-  is the App Store's 1.0.4) is not eligible either, its plan screen says "Sona
-  Premium can't be bought in this version of the app yet" over what stays
-  free, with no decline row. It used to say "you're a founding family" over an
-  empty page, after a child had been told "Show a grown-up". Never "update the
-  app" there until a build that sells is in the store.
-- **People who already pay on the web keep everything.** Restore by email
-  (Settings, `trial.html`), `/api/subscription`, the receipt for a checkout
-  opened before the flip, the billing page route and the success page never
-  read the switch. They still cancel by email, and the plan screen now says so
-  to anyone with an active plan (`#planCancel`, with Apple's way beside it):
-  Settings' "Manage →" lands there.
-- **Clinicians still buy on the web.** `/api/slp/plan`, the dashboard's buy
-  buttons and `for-slps.html` never read it. The dashboard's one line about
-  what families pay says "in the Sona app on iPhone and iPad", with no figure.
-- **Settings › Account's plan links go to the plan screen** (`/subscribe.html`),
-  in both states. They went to the Next `/subscribe` page, which threw the
-  iPhone app back to Home: in the app, "See Premium" never reached the Apple
-  card.
-- **Tests play both states** through a session-only seam,
-  `sessionStorage["sona.websalesui"]` = `"1"` / `"0"` (never localStorage, never
-  a URL flag; it changes only what a page shows, since the server refuses
-  whatever a page shows). `websalestest` plays the pages; `caseloadtest` plays
-  the refusal against the fake Stripe.
-
-**What turning it off leaves, and is Travis's to know:** (1) a family on
-Android or a computer can use the free version and can no longer buy Premium
-anywhere (the website's cost answer then says Premium is bought in the app);
-(2) Premium bought in the app is the app's, not the website's; (3) nobody new
-can take a charter spot, so "$59.99 for the first 50 families" is no longer an
-offer anyone meets (the families who hold it keep it); (4) what a family pays
-is whatever App Store Connect says, and the in-app purchase works only once
-the product is approved there AND attached to the `full` entitlement in
-RevenueCat. On 1 Oct 2026 the yearly product was listed at $79.99 and was not
-attached to `full`, so a purchase would not have unlocked Premium.
+  "One plan, month by month" in the app, and names the free days only once
+  the store reports them.
+`planwordstest` plays the store answer and every sentence; `pricescreentest`
+the card in each store state (trial, none, no monthly product, the wrong
+product, not eligible, unsure, already owned, the store silent) and that it
+ships no typed figure; `setupbuytest` a new family from setup through a
+purchase to the first game; `iaptest` and `trialfirsttest` the rails around
+it; `chartertest` that the card's price span ships empty.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
 The switch has changed **twelve times in eight weeks** (`git log -G'const

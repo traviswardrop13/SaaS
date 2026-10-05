@@ -892,7 +892,11 @@
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
           : trialLeft
             ? 'Plan: <strong>free trial</strong> — ' + trialLeft + ' day' + (trialLeft === 1 ? '' : 's') + ' left · <a href="/subscribe.html">See plans →</a> · <a href="#" id="restoreLink">Restore</a>'
-            : (trialEnded ? 'Your free trial has ended. ' : '') + 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe.html">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
+            : (trialEnded ? 'Your free trial has ended. ' : '') + ((Sona.freeVersion && !Sona.freeVersion())
+                // trial first (3 Oct 2026): this family was never given the free
+                // games, so "free version" would name something they do not have
+                ? 'Plan: <strong>none yet</strong> — Sona Premium opens daily practice, every game and every book'
+                : 'Plan: <strong>free version</strong> — daily practice and free games') + ' · <a href="/subscribe.html">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }
