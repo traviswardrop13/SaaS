@@ -93,19 +93,17 @@ function phone(cfg) {
 }
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
-  let tts=0;const said=[];
-  // The say-it card's own two lines are asked for as the page loads (2 Oct
-  // 2026, /arcade-sayit.js): they are answered, and never counted here, so
-  // "the first ask" is still the sound power's instruction.
-  const CARD_LINES=['To keep playing, say','Go!'];
-  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}said.push(text);if(!CARD_LINES.includes(text)){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});}return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
+  const said=[];
+  // Reward prompts are prefetched. Keep the instruction endpoint down
+  // through the first spoken ask, then explicitly recover it for the retry.
+  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){let text='';try{text=JSON.parse(r.request().postData()).text;}catch(e){}said.push(text);if(cfg.ttsFailFirst&&text==='Super Slice! Say')return r.fulfill({status:503,body:'{}'});return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
   await context.addInitScript(phone,cfg);
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(BASE+'/arcade-slice.html?from=charge');
   await page.waitForFunction(()=>window.gameEntryAllowed===true&&typeof draw==='function');
   // When "Got it!" shows (the sound was heard), for the recognizer's tail check.
   await page.evaluate(()=>{const st=document.getElementById('slowStatus');new MutationObserver(()=>{if(!__ss.gotAt&&st.textContent==='Got it!')__ss.gotAt=performance.now();}).observe(st,{subtree:true,childList:true,characterData:true});});
-  return{context,page,errors,said};
+  return{context,page,errors,said,recoverInstruction:()=>{cfg.ttsFailFirst=false;}};
 }
 // One fruit, well away from the edges, and no toss for a while: the board is
 // then something a test can watch hold still or move.
@@ -325,11 +323,12 @@ try {
   });
 
   await scenario('Echo\'s instruction, when it could not load',async()=>{
-    const{context,page,errors}=await fresh({voiceOn:true,native:true,ttsFailFirst:true});try{
+    const{context,page,errors,recoverInstruction}=await fresh({voiceOn:true,native:true,ttsFailFirst:true});try{
       await quietBoard(page);await turn(page,1500);
       const first=await voices(page);
       ok('an instruction that could not load is left out: the R and "Go!" still play',first.join()==='/coach/say-echo/R-sound.wav,line',first);
       await page.waitForFunction(()=>!slowTurn,null,{timeout:5000});
+      recoverInstruction();
       await turn(page,1500);
       const second=(await voices(page)).slice(first.length);
       ok('…and it is tried again on the next ask',second.join()==='line,/coach/say-echo/R-sound.wav,line',second);

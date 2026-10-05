@@ -180,7 +180,7 @@ try {
         await page.locator("#revOvl.show").waitFor();
         const again = await until(page, () => __card.mics.length === 2, 6000);
         const m2 = (await media(page)).slice(3);
-        ok(game + ": the next card asks the same way, and its lines need no second download", again && m2.map(kind).join() === "ask,R,go" && tts.length === 2, { m2: m2.map(kind), tts });
+        ok(game + ": the next card asks the same way, and its lines need no second download", again && m2.map(kind).join() === "ask,R,go" && tts.filter((text) => text === "To keep playing, say" || text === "Go!").length === 2, { m2: m2.map(kind), tts });
         ok(game + ": the card writes no practice data", (await page.evaluate(() => __card.practice.length)) === 0);
         ok(game + ": no runtime errors", errors.length === 0, errors);
       } finally { await context.close(); }
@@ -262,7 +262,7 @@ try {
       await page.waitForTimeout(2500);
       await page.evaluate(() => { if (playing) crash(); });
       const again = await until(page, () => __card.mics.length === 2, 6000);
-      ok("slice: …and the next card says them, with no second download", again && (await media(page)).slice(1).map(kind).join() === "ask,R,go" && tts.length === 2, { media: (await media(page)).map(kind), tts });
+      ok("slice: …and the next card says them, with no second download", again && (await media(page)).slice(1).map(kind).join() === "ask,R,go" && tts.filter((text) => text === "To keep playing, say" || text === "Go!").length === 2, { media: (await media(page)).map(kind), tts });
       ok("slice slow voice: no runtime errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });

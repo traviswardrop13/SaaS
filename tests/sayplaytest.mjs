@@ -1071,7 +1071,7 @@ await scenario("every dinosaur", async () => {
       const kept = JSON.parse(await page.evaluate(() => localStorage.getItem("sona.dino.v1")));
       ok(id + ": it is kept as the last one found", kept.last === id && kept.got.join() === DINOS.slice(0, i + 1).join(), kept);
       const l = await log(page);
-      ok(id + ": every sound waited for a closed mic, and Echo only ever said the word", l.sfx.every((s) => s.live === 0) && overlaps(l).length === 0 && l.speech.length >= 8 && l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+      ok(id + ": every sound waited for a closed mic, and Echo said one brush instruction then only isolated words", l.sfx.every((s) => s.live === 0) && overlaps(l).length === 0 && l.speech.length >= 9 && l.speech[0] === "Say each word two times to get a brush." && l.speech.slice(1).every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
       await page.locator("#again").click();
       const next = DINOS[(i + 1) % 4];
       ok(id + ": Play again goes on to the " + DINO_NAMES[next] + (i === 3 ? ": round again after the last" : ""), (await dig()).dino === next && (await dig()).found === 0 && (await dig()).awake === false && (await game(page)).step === 0, await dig());

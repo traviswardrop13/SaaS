@@ -240,7 +240,7 @@ async function fresh(file, cfg = {}) {
 const live = (page) => page.evaluate(() => __quiet.live());
 // a mic's interval starts when it was ASKED for (see micOn above); `landed`
 // is when the page got its track, null for a request that failed
-const log = (page) => page.evaluate(() => ({ mics: __quiet.mics.map((m) => ({ start: m.asked, landed: m.start, end: m.end == null ? __quiet.now() : m.end })), sounds: __quiet.sounds.map((s) => ({ kind: s.kind, start: s.start, end: s.end, live: s.live, len: s.len, text: s.text })), sfx: __quiet.sfx.slice(), requests: __quiet.requests, leakFrames: __quiet.leakFrames }));
+const log = (page) => page.evaluate(() => ({ mics: __quiet.mics.map((m) => ({ start: m.asked, landed: m.start, end: m.end == null ? __quiet.now() : m.end })), sounds: __quiet.sounds.map((s) => ({ kind: s.kind, start: s.start, end: s.end, live: s.live, len: s.len, text: s.text, src: s.src })), sfx: __quiet.sfx.slice(), requests: __quiet.requests, leakFrames: __quiet.leakFrames }));
 async function voice(page, ms) { await page.evaluate(() => { __quiet.voice = true; }); await page.waitForTimeout(ms); await page.evaluate(() => { __quiet.voice = false; }); }
 const talk = (page, on) => page.evaluate((v) => { __quiet.voice = v; }, on);
 // waits for a condition and answers true/false, so a pin reports a clean FAIL
@@ -278,12 +278,11 @@ const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["st
 // row of five fruit through its own rowUp(); Piano Tiles sets a row
 // of seven notes the same way: their cards name the row (Beat Your Best, 1-2
 // Oct 2026).
-const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
+const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; rowN = 6; rowUp(); }, run: () => { dist = 70; }, glide: () => { score = 7; rowN = 6; rowUp(); } };
 // Beat Your Best: a game that keeps the child's own best dares them to pass
 // it, so its top button is "Play again" (back through its own practice page),
-// not "Next" on to a different game. Piano Tiles and Fruit Slice are the
-// first two; each game joins this list as its best lands.
-const PLAYS_AGAIN = ["tiles", "slice"];
+// not "Next" on to a different game. Every arcade game now keeps a best and returns through its own practice page.
+const PLAYS_AGAIN = ["run", "tiles", "slice", "stack", "glide"];
 // "orange" by hue, so a new value from the designer needs no test edit: the
 // crafted orange (#bf5d24) and action.css's (#ef6f23) both read as orange
 const isOrange = (c) => { const m = String(c).match(/(\d+),\s*(\d+),\s*(\d+)/); if (!m) return false; const [r, g, b] = m.slice(1).map(Number);
@@ -594,8 +593,9 @@ await scenario("slice: no microphone", async () => {
   } finally { await context.close(); }
 });
 
-// the say-it card's own two lines (/arcade-sayit.js), asked for as the page loads
-const HELPER_LINES = new Set(["To keep playing, say", "Go!"]);
+// Fixed helper and reward lines are preloaded, not spoken by the syllable card.
+// Actual playback and mic overlap remain checked through __quiet.sounds.
+const PRELOADED_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a heart and Super Slice, say"]);
 // ── Fruit Slice: a card that asks a syllable (Travis, 1 Oct 2026: "start with
 // isolation then ree rah roh then rot") ──
 // The card after a wave now asks one syllable for a child on R, in ONE line
@@ -613,7 +613,7 @@ await scenario("slice: a syllable card", async () => {
   // Echo's voice service answers here (it is down for the rest of this suite).
   // The card's voice asks for its own two lines, "To keep playing, say" and
   // "Go!", as the page loads: `said` is what the card itself asks for.
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!PRELOADED_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   const card = () => page.evaluate(() => { const b = [...document.querySelectorAll("#revTitle .snd")];
     return { title: document.getElementById("revTitle").textContent, snd: b.map((x) => x.textContent), sound: b[0] && getComputedStyle(b[0]).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rung: ASK.rung, text: ASK.text, rev: REV }; });
@@ -674,13 +674,14 @@ await scenario("slice: a syllable card", async () => {
     // Echo's own mid-wave ask after a syllable card (3 Oct 2026: nobody taps
     // him): it is the bare sound, and the card's wait never runs in it
     await page.waitForTimeout(1200);
-    const n = said.length;
+    const spokenBeforeOwnAsk = (await log(page)).sounds.filter((x) => x.kind === "media").length;
     await page.evaluate(() => { fruits.length = 0; nextToss = waveMs + 60000; SLOW_ASK.listen = 4000; slowAskAt = Math.min(slowAskAt, 150); });
     await page.waitForFunction(() => __quiet.live() === 1, null, { timeout: 8000 });
     await page.waitForTimeout(2200);
     st = await page.evaluate(() => ({ turn: !!slowTurn, rung: ASK.rung, pill: document.getElementById("slowSound").textContent, card: document.getElementById("revOvl").classList.contains("show") }));
+    const ownVoices = (await log(page)).sounds.filter((x) => x.kind === "media").slice(spokenBeforeOwnAsk);
     ok("slice syllable card: Echo's own ask still asks the bare sound, and the card's wait does not run in its turn",
-      st.turn && st.pill === "rrrr" && !st.card && said.slice(n).join("|") === "Super Slice! Say", { st, said: said.slice(n) });
+      st.turn && st.pill === "rrrr" && !st.card && ownVoices.length === 3 && ownVoices[1].src.includes("/coach/say-echo/R-sound.wav"), { st, ownVoices });
     // nobody answers him: his listening ends by itself, and the game goes on
     await page.waitForFunction(() => !slowTurn, null, { timeout: 6000 });
     noOverlap("slice syllable card", await log(page));
@@ -690,7 +691,7 @@ await scenario("slice: a syllable card", async () => {
 
 await scenario("slice: done on a syllable card", async () => {
   const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", native: true });
-  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!HELPER_LINES.has(t)) said.push(t); } });
+  const said = []; page.on("request", (r) => { if (r.url().endsWith("/api/tts")) { const t = JSON.parse(r.postData()).text; if (!PRELOADED_LINES.has(t)) said.push(t); } });
   await context.route("**/api/tts", (route) => route.fulfill({ body: Buffer.alloc(4800), contentType: "application/octet-stream" }));
   try {
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
@@ -698,12 +699,15 @@ await scenario("slice: done on a syllable card", async () => {
     await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     await page.waitForFunction(() => __quiet.sounds.some((x) => x.kind === "media"));
     await page.evaluate(SCORED.slice);
+    // Reward-line prefetches are not spoken audio. Preserve the request
+    // snapshot before cancellation; no new line may be requested afterward.
+    const askedBeforeDone = said.length;
     await page.locator("#revDone").click();
     await page.locator("#endOvl.show").waitFor();
     await page.waitForTimeout(2200);
     const l = await log(page), line = l.sounds.filter((x) => x.kind === "media");
     ok("slice: \"I'm done playing\" mid-line stops Echo, opens no mic, and nothing is said after it",
-      line.length === 1 && line[0].end !== Infinity && l.requests === 0 && said.length === 1 && (await live(page)) === 0, { line, requests: l.requests, said });
+      line.length === 1 && line[0].end !== Infinity && l.requests === 0 && said.length === askedBeforeDone && (await live(page)) === 0, { line, requests: l.requests, said, askedBeforeDone });
     clean("slice done on a syllable card", errors);
   } finally { await context.close(); }
 });
