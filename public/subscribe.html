@@ -129,7 +129,12 @@
     .planpick .plan[aria-checked="true"]:after{border-color:#14858d;
       background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat;}
     .planpick .plan:focus-visible{outline:3px solid #157da5;outline-offset:3px;}
-    #planMonth,#iapPlanMo{padding-top:12px;padding-bottom:12px;margin-top:9px;}
+    /* Apple's card has ONE plan since 5 Oct 2026 (Sona Monthly): no radio dot,
+       nothing to pick, and in the offer one full-width tile, teal like a
+       picked one. */
+    .planpick.one .plan{padding-right:16px;cursor:default;}
+    .planpick.one .plan:after{display:none;}
+    #planMonth{padding-top:12px;padding-bottom:12px;margin-top:9px;}
     .plan .paynote{display:block;font-weight:700;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
     .planbuy{margin-top:12px;}
     /* THE DAY THEY ARE BILLED, IN ONE LINE (Travis, 2 Oct 2026: "there's
@@ -201,7 +206,7 @@
     body.offer .planpick .plan { padding-right:46px; }
     body.crafted-family.offer .plan .save { background:none; padding:0; margin-top:4px; font-size:13.5px; }
     body.offer .plan .reassure { margin-top:4px; }
-    body.offer #planMonth, body.offer #iapPlanMo { padding-top:10px; padding-bottom:10px; margin-top:8px; }
+    body.offer #planMonth { padding-top:10px; padding-bottom:10px; margin-top:8px; }
     body.offer .planbuy { margin-top:10px; }
     /* THE BUTTON STAYS ON THE FIRST SCREEN, MEASURED (1 Oct 2026). One
        height breakpoint could not know what is on the page: a win pill, a
@@ -247,7 +252,7 @@
     body.fit3 .offer-checks li { font-size:13.5px; }
     body.fit3.offer .plan { padding:10px 13px; }
     body.fit3.offer .planpick .plan { padding-right:44px; }
-    body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding-top:8px; padding-bottom:8px; margin-top:7px; }
+    body.fit3.offer #planMonth { padding-top:8px; padding-bottom:8px; margin-top:7px; }
     body.fit3.offer .planbuy { margin-top:8px; }
     body.fit4 .offer-checks li:nth-child(3) { display:none; }
     body.fit5 .offer-art { display:none; }
@@ -262,12 +267,14 @@
        are only folded away, so every reader of the text still finds them);
        the radio dot gives way to a check badge on the picked tile. */
     body.offer .planpick { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:stretch; padding-top:12px; }
-    body.offer .planpick .plan, body.offer #planMonth, body.offer #iapPlanMo { margin:0; padding:22px 10px 13px !important; text-align:center;
+    body.offer .planpick .plan, body.offer #planMonth { margin:0; padding:22px 10px 13px !important; text-align:center;
       border-radius:22px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
     body.offer .planpick .plan:after { top:-9px; right:-7px; margin:0; width:26px; height:26px; border-width:3px; border-color:#fffaf0; background:#e9dcc6; }
     body.offer .planpick .plan[aria-checked="true"]:after { border-color:#fffaf0; background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat; }
     body.offer .planpick .plan[aria-checked="false"] { background:#fffaf2; border-color:#eadcc4; box-shadow:none; }
     body.offer .planpick .plan[aria-checked="true"] { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
+    body.offer .planpick.one { grid-template-columns:1fr; }
+    body.offer .planpick.one .plan { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
     body.offer .plan .tag { position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap; margin:0; }
     body.offer .plan .tagmore { display:none; }
     body.offer .plan b .pname { font-size:0; display:block; }
@@ -277,22 +284,23 @@
     body.crafted-family.offer .plan .save, body.offer .plan .paynote { font-size:12.5px; line-height:1.3; margin-top:6px; font-weight:700; color:#7a6047; }
     body.offer .planbuy { margin-top:14px; }
     body.offer .planbuy .go { font-size:21px; padding-top:17px; padding-bottom:17px; }
-    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:18px 8px 10px !important; }
+    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth { padding:18px 8px 10px !important; }
     body.fit3.offer .plan b { font-size:22px; }
     /* the side-by-side tiles give room back first on a short phone, so the
        fit drops the game's picture only after everything else (firstgametest:
        375 x 667 with the charter line keeps its picture) */
     body.fit2.offer .planpick { gap:8px; padding-top:10px; }
-    body.fit2.offer .planpick .plan, body.fit2.offer #planMonth, body.fit2.offer #iapPlanMo { padding:17px 8px 9px !important; }
+    body.fit2.offer .planpick .plan, body.fit2.offer #planMonth { padding:17px 8px 9px !important; }
     body.fit2.offer .plan b { font-size:22px; }
     body.fit2.offer .plan b .pname:before { font-size:12px; margin-bottom:1px; }
-    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth, body.fit3.offer #iapPlanMo { padding:14px 6px 7px !important; }
+    body.fit3.offer .planpick .plan, body.fit3.offer #planMonth { padding:14px 6px 7px !important; }
     body.fit3.offer .plan b { font-size:20px; }
     body.fit3.offer .plan .save, body.fit3.offer .plan .paynote, body.fit3.offer .plan #charterLine { font-size:11.5px !important; margin-top:3px; }
     body.fit2.offer .planbuy .go { font-size:19px; padding-top:13px; padding-bottom:13px; }
     /* ── TRIAL FIRST: the two screens before the price (3 Oct 2026) ──
        Only on the hand-off from setup, and only once the store has said the
-       yearly plan starts with free days. While they are up, nothing else on
+       plan it offers starts with free days (on Apple's card the monthly plan, since
+       5 Oct 2026). While they are up, nothing else on
        the page shows: the price comes after them, as on ReciMe's. */
     body.intro-on .wrap > :not(#trialIntro) { display:none !important; }
     #trialIntro { min-height:calc(100vh - 32px); min-height:calc(100dvh - 32px); display:flex; flex-direction:column; justify-content:center; text-align:center; padding:8px 4px 20px; }
@@ -327,7 +335,8 @@
          cook…", "You'll get a reminder 2 days before your trial ends.", then
          "Design your trial") with "something like this". Shown on the
          hand-off from setup (?setup=1) only, in a card that can sell, and only
-         once the store has said the yearly plan really starts with free days:
+         once the store has said the plan really starts with free days (on
+         Apple's card, Sona Monthly since 5 Oct 2026):
          the number is the store's and the date the clock's, never typed here.
          The second screen is ReciMe's reminder made true: Sona sends no
          reminder (there is no trial mailer), so it says the day the free days
@@ -409,26 +418,23 @@
         <span><b>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship</b>, and Sona&rsquo;s co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
       <!-- NATIVE CARD — App Store Connect owns every figure here.
-           RevenueCat overwrites #iapPrice from the store at runtime, so the
-           figure in the markup is only a placeholder, and the card never
-           states a saving in dollars. MONTHLY (back on sale 1 Oct 2026) is
-           stricter still: its row has NO figure in the markup and stays
-           hidden until the store hands back the monthly product itself, with
-           a price and no introductory offer on it. So an iPhone whose App
-           Store has no such product, or has one with a free trial attached,
-           shows the yearly plan alone, exactly as before — never a monthly
-           button that fails, and never "charged today" beside a product that
-           starts with free days. -->
-      <div class="planpick" id="iapPlans" role="radiogroup" aria-label="How would you like to pay?">
-      <div class="plan best" id="iapPlan" role="radio" aria-checked="true" tabindex="0" data-plan="annual">
-        <span class="tag">3 DAYS FREE<span class="tagmore"> · EVERYTHING INCLUDED</span></span>
-        <b><span class="pname" data-short="Yearly">Sona Premium — </span><span id="iapPrice">$59.99/yr</span></b>
-        <span class="save">Billed once a year.</span>
-        <span class="sub">Nothing is charged during your 3 free days. Sona Premium: every game and every book. Daily practice and free games stay free either way.</span>
-      </div>
-      <div class="plan" id="iapPlanMo" role="radio" aria-checked="false" tabindex="-1" data-plan="monthly" style="display:none;">
-        <b><span class="pname" data-short="Monthly">Monthly — </span><span id="iapPriceMo"></span></b>
-        <span class="paynote">Charged today. Cancel anytime.</span>
+           ONE PLAN SINCE 5 OCT 2026 (Travis: "get rid of the annual option and
+           update the copy so that it says three days free, then $9.99 a
+           month"): Sona Monthly, with the free days App Store Connect starts
+           it with. The price and the free days in the markup are placeholders
+           (what App Store Connect said on 5 Oct); once RevenueCat hands back
+           the monthly product, the script repaints both from it, and a
+           product with no free trial turns every line into "charged today".
+           The card never states a saving. The yearly product stays in
+           App Store Connect and in sona.js's IAP_PRODUCTS, so anyone who
+           bought it is still recognised and can restore; it is simply no
+           longer offered here. -->
+      <div class="planpick one" id="iapPlans">
+      <div class="plan best" id="iapPlan" data-plan="monthly">
+        <span class="tag" id="iapTag"><span id="iapTagDays">3 DAYS FREE</span><span class="tagmore"> · EVERYTHING INCLUDED</span></span>
+        <b><span class="pname" data-short="Monthly">Sona Premium — </span><span id="iapPrice">$9.99/mo</span></b>
+        <span class="save" id="iapSave">3 days free, then $9.99 a month.</span>
+        <span class="sub" id="iapSub">Nothing is charged during your 3 free days. Sona Premium: every game and every book. Daily practice and free games stay free either way.</span>
       </div>
       </div>
       <div class="planbuy">
@@ -680,8 +686,7 @@
       try {
         document.getElementById("offerCheck3").textContent = "Cancel anytime" + ((Sona.isNativeApp && Sona.isNativeApp()) ? " in Settings" : "");
         document.getElementById("pickWhat").textContent = "Sona Premium opens daily practice, every game and every book, for every child on this device.";
-        var _isub = document.querySelector("#iapPlan .sub");
-        if (_isub) _isub.textContent = "Nothing is charged during your 3 free days. Sona Premium: daily practice, every game and every book.";
+        // (the Apple card's own lines follow FREE_VER in paintIap)
       } catch (e) {}
     }
 
@@ -718,17 +723,19 @@
     // string, read off the card two lines up once RevenueCat has painted it,
     // so the line can never name a different number from the box above it.
     // No reminder is promised: there is no trial mailer to keep one.
-    function trialTimeline(id, native) {
+    // Apple's card (5 Oct 2026: one plan, Sona Monthly) hands in its own free
+    // days and the store's price string, so the line is "then $9.99 a month"
+    // and its date is the store's free days, not the web's 3.
+    function trialTimeline(id, native, days, monthPrice) {
       var el = document.getElementById(id);
       if (!el) return;
+      var n = native && days > 0 ? days : 3;
       var d3 = "";
-      try { d3 = new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      try { d3 = new Date(Date.now() + n * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
       if (!d3) return;                       // no date, no line — the prose line stays
       var price;
-      if (native) {
-        var shown = ((document.getElementById("iapPrice") || {}).textContent || "").replace(/\/(yr|year)$/i, "");
-        price = /\d/.test(shown) ? shown + " a year" : "the yearly price above";
-      } else price = (window.__yearPrice || "$59.99") + " a year";
+      if (native) price = (monthPrice || "$9.99") + " a month";
+      else price = (window.__yearPrice || "$59.99") + " a year";
       // Apple's card says where to cancel, as Apple asks. The web says
       // "Cancel anytime" and not "in your account": a web buyer has no
       // cancel button there (they email us), and Stripe's own page, where
@@ -784,7 +791,8 @@
       setTimeout(function () { if (introState === "wait") introDone(); }, 2500);
     }
     // days: the free days the store (or, on the web, this repo's checkout)
-    // starts the yearly plan with. None, and the screens are skipped: they
+    // starts the plan with (Apple's: Sona Monthly since 5 Oct 2026; the web's:
+    // the yearly plan). None, and the screens are skipped: they
     // exist to say "free", and must not say it of a plan that charges today.
     function introStart(days, native) {
       if (introState !== "wait") return;
@@ -807,7 +815,7 @@
       try { document.getElementById("tiFreeGo").focus({ preventScroll: true }); } catch (e) {}
       try { if (window.SonaAnalytics) SonaAnalytics.track("trial intro viewed", { surface: native ? "native" : "web" }); } catch (e) {}
     }
-    // The yearly plan's free days, from the store's own product: a free
+    // A plan's free days, from the store's own product: a free
     // introductory offer counted in days (or weeks). Anything else is 0.
     function freeDays(p) {
       var ip = p && (p.introPrice || p.introductoryPrice);
@@ -970,62 +978,57 @@
           // spent. Deciding to come here is not the same as arriving.
           try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
         });
-        // NO dollars and NO comparison. The figure on this card arrives from
-        // App Store Connect a moment later, so a price written here would
-        // out-argue it. No ratio either ("about half what monthly costs"):
-        // Apple sets both prices, and a ratio typed here is a claim about
-        // numbers this repo does not own.
-        var LINE_YEAR = (FREE_VER ? "Today: the <b>free version</b>. " : "") + "Sona Premium: <b>3 days free</b>, then one charge a year — cancel any time before it.";
-        document.getElementById("planLine").innerHTML = LINE_YEAR;
-        // greet the onboarding hand-off warmly
-        var welcome = /[?&]welcome=1/.test(location.search);
-        var TITLE_YEAR = welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium";
-        document.getElementById("iapTitle").textContent = TITLE_YEAR;
-        try {
-          var d3 = new Date(Date.now() + 3 * 86400000);
-          var t3 = d3.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-          document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t3 + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
-        } catch (e) {}
-        trialTimeline("iapTL", true);
-        Sona.iapProduct("annual").then(function (p) {
-          if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
-          trialTimeline("iapTL", true);   // the billing line names the store's price too
-          if (OFFER_SETUP) introStart(freeDays(p), true);
-        }).catch(function () { if (OFFER_SETUP) introStart(0, true); });
-
-        // THE PICK. Yearly on arrival (Travis, 1 Oct 2026: "the $59.99 has a
-        // three-day trial. And have that as the default option selected").
-        // Everything that is only true of one plan is painted from here: the
-        // button's words, the free-days line and billing day (yearly), "charged
-        // today" (monthly). Nothing yearly stays on screen beside a button
-        // that charges today.
-        var IAP_PLAN = "annual", moProduct = null, buyBtn = document.getElementById("iapBuy");
+        // NO comparison and NO saving: Apple sets the price, and a ratio or a
+        // saving typed here is a claim about numbers this repo does not own.
+        // ONE PLAN (5 Oct 2026): Sona Monthly, "3 days free, then $9.99 a
+        // month". Every line that names the free days or the price is painted
+        // from here, first with the markup's placeholders and again once the
+        // store has answered with the monthly product itself (sona.js refuses
+        // any other id). A product that comes back with no free trial makes
+        // every line say "charged today", so the card never promises free
+        // days that Apple's sheet would not give.
+        var welcome = /[?&]welcome=1/.test(location.search), buyBtn = document.getElementById("iapBuy");
+        var moProduct = null;
+        function iapPrice() {
+          var ps = moProduct && moProduct.priceString;
+          return ps && /\d/.test(ps) ? ps : "$9.99";
+        }
+        function iapDays() { return moProduct ? freeDays(moProduct) : 3; }
         function paintIap() {
-          var mo = IAP_PLAN === "monthly" && !!moProduct;
-          var tl = document.getElementById("iapTL"), math = document.getElementById("iapMath");
-          buyBtn.textContent = mo ? "Subscribe — " + moProduct.priceString + " a month" : "Start 3 days free";
-          document.getElementById("iapMathMo").hidden = !mo;
-          tl.style.display = mo ? "none" : "";
-          // the billing line replaces the one-line version when it could be built
-          math.style.display = (mo || tl.innerHTML) ? "none" : "";
-          document.getElementById("iapTitle").textContent = mo ? "Get Sona Premium, month by month" : TITLE_YEAR;
+          var price = iapPrice(), days = iapDays(), free = days > 0;
+          var dWord = days + (days === 1 ? " day" : " days");
+          document.getElementById("iapPrice").textContent = price + "/mo";
+          document.getElementById("iapTag").hidden = !free;
+          document.getElementById("iapTagDays").textContent = free ? dWord.toUpperCase() + " FREE" : "";
+          document.getElementById("iapSave").textContent = free ? dWord + " free, then " + price + " a month." : price + " a month, charged today.";
+          document.getElementById("iapSub").textContent = (free ? "Nothing is charged during your " + days + " free " + (days === 1 ? "day" : "days") + ". " : "Charged today, then every month. ") +
+            (FREE_VER ? "Sona Premium: every game and every book. Daily practice and free games stay free either way." : "Sona Premium: daily practice, every game and every book.");
+          buyBtn.textContent = free ? "Start " + dWord + " free" : "Subscribe — " + price + " a month";
+          document.getElementById("iapTitle").textContent = free
+            ? (welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium")
+            : "Get Sona Premium, month by month";
+          document.getElementById("planLine").innerHTML = (FREE_VER ? "Today: the <b>free version</b>. " : "") +
+            (free ? "Sona Premium: <b>" + dWord + " free</b>, then " + price + " a month — cancel any time before then."
+                  : "Sona Premium: " + price + " a month, charged today — cancel any time.");
+          var math = document.getElementById("iapMath"), tl = document.getElementById("iapTL");
+          document.getElementById("iapMathMo").hidden = free;
+          tl.style.display = free ? "" : "none";
+          math.style.display = "";
+          if (free) {
+            try {
+              var dd = new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+              math.innerHTML = "No charge today — first charge <b>" + dd + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
+            } catch (e) {}
+            trialTimeline("iapTL", true, days, price);   // the one billing line, when it can be built
+          } else math.style.display = "none";
           fitOffer();
         }
-        wirePick("iapPlans", function (plan) { IAP_PLAN = plan === "monthly" && moProduct ? "monthly" : "annual"; paintIap(); });
-        // MONTHLY IS OFFERED ONLY IF THE APP STORE SELLS IT AS DESCRIBED: the
-        // monthly product itself (sona.js refuses any other id), with a price
-        // to show and NO introductory offer — the row says "charged today",
-        // and a trial attached in App Store Connect would make that false.
-        // Anything else and the row never appears; the card is the yearly
-        // plan alone, as it was.
+        paintIap();
         Sona.iapProduct("monthly").then(function (p) {
-          if (!p || !p.priceString || p.introPrice || p.introductoryPrice) return;
-          moProduct = p;
-          document.getElementById("iapPriceMo").textContent = p.priceString + "/mo";
-          document.getElementById("iapPlanMo").style.display = "";
-          document.getElementById("planLine").innerHTML = LINE_YEAR + " Or pay <b>month by month</b>, charged today.";
-          fitOffer();   // a second box just appeared above the button
-        }).catch(function () {});
+          if (p && p.priceString) moProduct = p;
+          paintIap();
+          if (OFFER_SETUP) introStart(moProduct ? freeDays(moProduct) : 0, true);
+        }).catch(function () { if (OFFER_SETUP) introStart(0, true); });
 
         var msg = document.getElementById("iapMsg");
         function iapGo(kind, value, label) {
@@ -1056,8 +1059,7 @@
           });
         }
         buyBtn.onclick = function () {
-          if (IAP_PLAN === "monthly" && moProduct) iapGo("monthly", typeof moProduct.price === "number" ? moProduct.price : 0, "iap_monthly");
-          else iapGo("annual", 59.99, "iap_annual");
+          iapGo("monthly", moProduct && typeof moProduct.price === "number" ? moProduct.price : 9.99, "iap_monthly");
         };
         document.getElementById("iapRestore").onclick = function () {
           msg.textContent = "Checking your purchases…";

@@ -342,27 +342,36 @@ native card describes exactly that. Do not add charter copy to the native
 card ahead of the ASC change: a card that says "first 50 families" over a
 price ASC controls is the same untrue promise the web half was built to avoid.
 
-## The monthly plan on iOS (1 Oct 2026)
+## The iPhone sells one plan: Sona Monthly, 3 days free (5 Oct 2026)
 
-Monthly is on sale again beside the yearly plan (Travis: "a $10 a month
-option ... that does not have a free trial. That's a pay today"). On the
-iPhone it exists only if App Store Connect and RevenueCat say so — nothing in
-this repo can make it appear:
+Travis, 5 Oct 2026: "get rid of the annual option and update the copy so that
+it says three days free, then $9.99 a month". The same day he gave
+`com.speaksona.app.monthly` an introductory offer in App Store Connect (free
+for the first 3 days, from 4 Oct, no end date); 1.0.5 was Ready for
+Distribution. What has to stay true on the store side:
 
-1. **App Store Connect:** `com.speaksona.app.monthly` approved and on sale, at
-   the monthly price, in the same subscription group as the annual product,
-   with **no introductory offer** (no free trial) on it.
-2. **RevenueCat:** that product attached to the `full` entitlement, the one
-   the annual product unlocks. If it is not, Apple takes the payment and the
-   app stays locked (the card then says to tap Restore Purchases, never
-   "nothing was charged").
+1. **App Store Connect:** `com.speaksona.app.monthly` approved and on sale at
+   the monthly price, with its 3-day free introductory offer. An introductory
+   offer is a price setting: adding, changing or ending one needs no app build
+   and no review. Each Apple ID gets one introductory offer per subscription
+   group, so someone who already used free days (on either product) is
+   charged at once; Apple's sheet says so before anyone pays.
+2. **RevenueCat:** that product attached to the `full` entitlement. If it is
+   not, Apple takes the payment and the app stays locked (the card then says
+   to tap Restore Purchases, never "nothing was charged").
+3. **The yearly product is NOT removed from sale.** Apple's help says removing
+   a subscription from sale stops renewals as well as sign-ups, so anyone who
+   bought it would lose it; it costs nothing to leave it listed. The plan
+   screen simply no longer offers it, and `IAP_PRODUCTS.annual` stays in
+   `sona.js` so a yearly buyer is still recognised on a restore.
 
-Until both are true the app shows the yearly plan alone, exactly as before:
-`subscribe.html`'s monthly row ships hidden with no price in its markup, and
-is shown only when `Sona.iapProduct("monthly")` returns that very product
-with a price string and no `introPrice`. A product that carries a free trial
-is not offered, because the row says "Charged today". The card never states a
-saving, in dollars or as a ratio: both prices are Apple's.
+`subscribe.html`'s Apple card is one box: the price and the free days in its
+markup are placeholders ($9.99, 3 days), repainted from
+`Sona.iapProduct("monthly")` the moment the store answers. A monthly product
+with no free trial turns every line into "charged today" (and the two screens
+before the price at the end of setup are skipped). A store that has no
+monthly product, or answers with the yearly one, sells nothing in its place.
+The card never states a saving: the price is Apple's.
 
 ## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026)
 
@@ -382,7 +391,7 @@ web subscription is recognised. The clinician's link opens in Safari, and the
 app keeps separate storage, so the link state (the code and the enrolment
 ticket) travels into the app through the move-in code; the app then asks
 `/api/slp/covered` itself. The cached answer never travels. A parent's own Premium in the app stays the
-existing in-app purchases (yearly, and monthly when the store sells it), priced in App Store Connect. Apple accepts
+existing in-app purchase (Sona Monthly since 5 Oct 2026; the yearly product stays listed, unoffered), priced in App Store Connect. Apple accepts
 access bought elsewhere only while the app also sells Premium itself and never
 points a parent at buying outside it — so no page inside the app may mention
 the clinician plan or a web price.
