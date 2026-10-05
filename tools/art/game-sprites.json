@@ -304,5 +304,203 @@
   "size": "1536x1024",
   "transparent": false,
   "prompt": "The wooden floor of a cozy children's indoor basketball court, seen from where a child stands, looking toward the far wall: glossy honey-coloured wooden planks running away from the viewer and narrowing in perspective, a soft teal painted lane (key) in the middle running from the bottom edge to the far end, crisp white court lines around it, warm light reflecting softly on the wood. The top edge of the picture is where the floor meets the far wall; show only floor, no wall, no hoop, no people, no ball, no text."
+ },
+ {
+  "name": "peekaboo-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy little house front for a toddlers' peekaboo game: a cheerful pastel wall with three closed round-topped wooden doors in a row at mid height, flower boxes, soft garden in front. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "peekaboo-door",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One closed round-topped wooden door with a little round knob and a tiny heart window, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "peekaboo-door-open",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "The same round-topped wooden door frame standing wide open, showing a warm empty doorway inside, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "balloon-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny park party for toddlers: blue sky with soft clouds, green grass at the bottom, bunting strung between two trees, a picnic table at one side. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "balloon-red",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big shiny red party balloon with a curly white string hanging down. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "balloon-pump",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A cute colourful hand balloon pump, upright, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "bo-bear",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "Bo, a friendly round brown teddy bear in a small teal T-shirt, standing and waving, full body, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cheerful race track seen from behind and above, a grey road with white and red kerbs running straight up into the distance, green grass and little flags on both sides, a crowd stand far away. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "racecar-car",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A small friendly red race car with a big number-free round white circle on the side, seen from behind and slightly above, chunky wheels. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-finish",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A race finish arch with a checkered banner (no words) over the road, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-cone",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One orange traffic cone with a white stripe. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny backyard bath time scene for toddlers: a wooden fence, a small clothesline with towels, green grass, a little garden hose coiled at one side. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "puppy-dog",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A happy fluffy cream puppy sitting in a round metal washtub full of soap bubbles, front view, muddy brown splotches on its fur. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-clean",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "The same happy fluffy cream puppy sitting in a round metal washtub full of soap bubbles, front view, perfectly clean and sparkling. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-sponge",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One yellow bath sponge with a few soap bubbles. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "rocket-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A launch pad at a little space centre at dusk for a children's game: purple-blue sky with first stars, a low hill, a small launch tower on one side, the launch pad empty in the middle bottom. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "rocket-ship",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A friendly cartoon rocket ship, white with red fins and a round blue window, standing upright, no flames. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "rocket-flame",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A bright cartoon rocket exhaust flame pointing down, orange and yellow, soft and round. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "treasure-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A treasure map for a children's game, top-down: a warm parchment map with a blue sea, three small sandy islands joined by a dotted path, a palm tree on each island, a compass rose in a corner, no words. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "treasure-boat",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A small cute wooden sailboat with a white sail, seen from the side. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "treasure-chest",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A wooden treasure chest, lid open, overflowing with gold coins and colourful gems. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A snowy winter yard for toddlers: soft falling snow, snow-covered pine trees, a little cabin far away, gentle white snow ground across the bottom. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "snowman-ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big round snowball, soft white with blue shading. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-hat",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A black top hat with a red band. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-done",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A finished friendly snowman with three snowballs, a black top hat, a carrot nose, coal smile, red scarf and stick arms, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "Outer space for a children's game: deep friendly blue-purple sky full of soft stars, a few colourful small planets far away, a gentle nebula glow. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "space-ship",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A small friendly cartoon rocket ship flying to the right, white with red fins, round window, a little flame at the back. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-planet-ring",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon planet with a ring, soft orange and cream. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-planet-green",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon planet, round, green and blue like a little world. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny garden bed for toddlers: blue sky, a white picket fence, butterflies, and a patch of dark soil in the bottom middle where a flower will grow. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "flower-can",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A cheerful blue watering can tipping to pour, a few water drops falling from its spout. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-sprout",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A tiny green sprout with two leaves growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-bloom",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A big happy pink flower in full bloom on a tall green stem with leaves, growing from a small soil mound. Centered, filling about 85% of the frame."
  }
 ]
