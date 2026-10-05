@@ -3,6 +3,8 @@
 Branch: `games/tiles-slice-appstore`. Original pull request: [#200](https://github.com/traviswardrop13/SaaS/pull/200).
 GitHub reports that #200 was merged during this continuation. The reviewed screenshots and verification fixes
 are follow-up work on the same branch; this continuation performs no merge.
+The branch is pushed. Follow-up PR creation returned 403 through both the GitHub integration and the configured
+Git credential; the available browser is signed out. Open a follow-up PR from this branch when PR access is available.
 
 ## Game appearance
 
