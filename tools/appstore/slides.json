@@ -1,0 +1,99 @@
+{
+  "_": "App Store screenshots (5 Oct 2026). One entry per slide, in store order: the first three show in search. Every line must be true of the app today (CLAUDE.md): no score, points, certified, CCC, therapy, treatment, diagnosis, evaluation or accuracy; no price and no 'free'; no game counts or 'every week'; no quotes or reviews; only games a child can open. Rachel's line is Travis's, word for word, and her name always carries 'MS, CF-SLP'. title: two lines, the 'accent' one (0 or 1) in the warm orange. scene: the raw screen capture.mjs writes. bg: two colours, top to bottom, soft. status: the status bar's ink over that screen. decor: at most two small pictures from public/, placed in canvas fractions (x, y of the centre; w of the width); 'behind' puts one under the phone.",
+  "out": "design/appstore/2026-10-05",
+  "sizes": {
+    "iphone": { "canvas": [1320, 2868], "label": "iPhone 6.9-inch" },
+    "ipad": { "canvas": [2064, 2752], "label": "iPad 13-inch" }
+  },
+  "slides": [
+    {
+      "id": "01-fruit-slice",
+      "scene": "slice",
+      "title": ["Speech practice", "kids ask for."],
+      "accent": 1,
+      "sub": "Say the sound, then slice the fruit.",
+      "bg": ["#fff5dc", "#ffe0c2"],
+      "status": "dark",
+      "decor": [
+        { "src": "assets/crafted/fruit-strawberry.webp", "x": 0.075, "y": 0.47, "w": 0.13, "rot": -14, "behind": true },
+        { "src": "assets/crafted/fruit-orange.webp", "x": 0.93, "y": 0.78, "w": 0.14, "rot": 12, "behind": true }
+      ]
+    },
+    {
+      "id": "02-practice",
+      "scene": "charge",
+      "title": ["Real practice,", "a few minutes a day"],
+      "accent": 1,
+      "sub": "Echo says it first. Five tries out loud, then play.",
+      "bg": ["#e4f3fb", "#fff3e2"],
+      "status": "dark",
+      "decor": []
+    },
+    {
+      "id": "03-piano-tiles",
+      "scene": "tiles",
+      "title": ["Play songs", "they already know"],
+      "accent": 1,
+      "sub": "Say the sound when Echo asks, and the keys slow down.",
+      "bg": ["#eee8ff", "#fff1e6"],
+      "status": "light",
+      "decor": [
+        { "src": "assets/crafted/game/star.webp", "x": 0.92, "y": 0.42, "w": 0.1, "rot": 10, "behind": true }
+      ]
+    },
+    {
+      "id": "04-hoops",
+      "scene": "hoops",
+      "title": ["Every word", "earns a shot"],
+      "accent": 1,
+      "sub": "Say the word, then swipe to shoot.",
+      "bg": ["#fff0e0", "#ffdcc0"],
+      "status": "dark",
+      "decor": [
+        { "src": "assets/crafted/game/ball.webp", "x": 0.085, "y": 0.83, "w": 0.15, "rot": -8, "behind": true }
+      ]
+    },
+    {
+      "id": "05-books",
+      "scene": "book",
+      "title": ["Stories for", "their sound"],
+      "accent": 1,
+      "sub": "Echo reads. Your child says the word to turn the page.",
+      "bg": ["#e8f5e4", "#fff4e4"],
+      "status": "dark",
+      "decor": []
+    },
+    {
+      "id": "06-home",
+      "scene": "home",
+      "title": ["Pick a game,", "play with their voice"],
+      "accent": 1,
+      "sub": "Arcade games for ages 5–8, simple play for ages 3–4.",
+      "bg": ["#fff6e2", "#ffe9c6"],
+      "status": "dark",
+      "decor": [
+        { "src": "assets/crafted/echo-wave.webp", "x": 0.9, "y": 0.86, "w": 0.17, "rot": 0 }
+      ]
+    },
+    {
+      "id": "07-progress",
+      "scene": "progress",
+      "title": ["See their week", "at a glance"],
+      "accent": 1,
+      "sub": "Reps and practice days, for grown-ups. Audio is never uploaded.",
+      "bg": ["#e2f4f2", "#fff5e6"],
+      "status": "dark",
+      "decor": []
+    },
+    {
+      "id": "08-rachel",
+      "scene": "rachel",
+      "title": ["Built with", "Rachel, MS, CF-SLP,"],
+      "accent": 1,
+      "sub": "a pediatric speech-language pathologist in her clinical fellowship.",
+      "bg": ["#fdeee6", "#fff6ea"],
+      "status": "dark",
+      "decor": []
+    }
+  ]
+}

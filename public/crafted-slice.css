@@ -1,9 +1,19 @@
-/* Fruit Slice follows the original market board. Decorative art stays below
-   the live canvas; all slicing and earned-wave rules remain in the game. */
+/* Fruit Slice's market, made calmer (Travis, 5 Oct 2026: "a little bit too
+   busy ... make the bird and whatever's down low maybe smaller or just
+   simplify it"): the fox and Echo stay, small, peeking over the corners of
+   one low counter, and the crates of painted fruit and the market stalls are
+   gone, so the sky is open for the fruit. Two layers, because one picture
+   stretched '100% 100%' squashed differently on every phone (half again as
+   wide on an iPad): the orchard covers the screen from the bottom, and the
+   counter is pinned to the bottom at #app's full width, so its ledge and its
+   sign sit at the same share of the WIDTH above the bottom on every screen.
+   arcade-slice.html stands the fruit on that ledge (STAND_LEDGE) and
+   #sliceHint sits on the sign; tools/art/cut-slice.py cuts both pictures and
+   prints those shares. Decorative art stays below the live canvas. */
 body[data-crafted="slice"] #app{
- background-image:url('/assets/crafted/fruit-market-v2.webp');
- background-size:100% 100%;background-position:center;
- background-color:#efd69e;
+ background-image:url('/assets/crafted/fruit-stand.webp'),url('/assets/crafted/fruit-market-v3.webp');
+ background-size:100% auto,cover;background-position:center bottom,center bottom;
+ background-repeat:no-repeat;background-color:#efd69e;
 }
 body[data-crafted="slice"] #sliceEcho{display:none;}
 body[data-crafted="slice"] #top{gap:9px;padding-left:14px;padding-right:14px;}
@@ -14,12 +24,15 @@ body[data-crafted="slice"] #banner{top:calc(82px + env(safe-area-inset-top));}
 body[data-crafted="slice"] #banner .pill{padding:10px 22px;border-radius:20px;}
 body[data-crafted="slice"] #banner b{font-size:26px;}
 body[data-crafted="slice"] #banner span{font-size:14px;margin-top:3px;}
-/* Centred on the painted chalkboard (its middle is 91.2% down the picture),
-   not on its bottom edge: at 5.5% the words sat ~12 px above the home bar. */
+/* On the counter's chalkboard: its middle is 13.25% of #app's width above
+   the bottom (#app is min(100vw,560px) wide), and its dark face runs from
+   28.5% to 70.8% across. The words are sized by that width too, so they fit
+   the board on a 320 px phone and on the iPad's 560 px column alike. */
 body[data-crafted="slice"] #sliceHint{
- position:absolute;left:14%;right:14%;bottom:7.3%;z-index:4;
+ position:absolute;left:28.5%;right:29.2%;bottom:calc(min(100vw,560px)*0.1325);
+ transform:translateY(50%);z-index:4;white-space:nowrap;
  pointer-events:none;text-align:center;color:#fff9e9;
- font-family:"Baloo 2",sans-serif;font-size:clamp(19px,5.8vw,25px);
+ font-family:"Baloo 2",sans-serif;font-size:clamp(14px,calc(min(100vw,560px)*0.048),27px);
  font-weight:800;line-height:1.15;text-shadow:0 2px 2px #221a12;
 }
 body[data-crafted="slice"] #combo{font-size:29px;top:27%;color:#fff0a3;}

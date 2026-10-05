@@ -74,7 +74,6 @@
     #sliceEcho{position:absolute;left:3%;bottom:calc(env(safe-area-inset-bottom) + 46px);width:17%;max-width:78px;z-index:3;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(90,50,15,.25));}
     #sliceEcho.hop{animation:echoJump .9s cubic-bezier(.3,1.5,.5,1);}
     @keyframes echoJump{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
-    #sab{position:absolute;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);}
     #revHearts{display:flex;justify-content:center;gap:8px;}
     #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
     #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
@@ -109,7 +108,6 @@
     <div id="sliceHint" aria-hidden="true">Swipe to slice!</div>
     <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
     <img id="sliceEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
-    <div id="sab"></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -252,9 +250,8 @@
     function fruitSize(f){ return 2*(f.r+8); } // retains the generous, unchanged r+16 swipe target
 
 
-    var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1), SAB=0;
-    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-      try{ SAB=parseFloat(getComputedStyle($("sab")).paddingBottom)||0; }catch(e){ SAB=0; } }
+    var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
+    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
     fit(); window.addEventListener("resize",fit);
 
     var playing=true, score=0;
@@ -338,9 +335,17 @@
     // of its own place on the counter, so the first fruit a child slices are
     // the ones their own voice put there. After that every fruit is thrown
     // from the stand too, and an emptied place restocks a moment later.
-    var WELLS=[{e:"🍉"},{e:"🍇"},{e:"🍊"},{e:"🍓"},{e:"🍋"}], firstI=0;
-    function standTop(){ return H-SAB-58; }
-    function wellX(i){ return W*(0.29+i*0.155); }
+    // The stand is the painted counter (fruit-stand.webp, crafted-slice.css):
+    // drawn at the screen's full width and pinned to the bottom, so the line
+    // its fruit stand on is STAND_LEDGE of the WIDTH above the bottom on every
+    // screen (tools/art/cut-slice.py prints it). Its counter is tall enough
+    // to clear a phone's home bar, so the safe area no longer moves the stand.
+    // The five places sit on the bare ledge between the fox and Echo (their
+    // paws end at 19% and 78% across), and a fruit leaves from the place it
+    // was shown in: it used to wait at one spot and fly from another.
+    var WELLS=[{e:"🍉"},{e:"🍇"},{e:"🍊"},{e:"🍓"},{e:"🍋"}], firstI=0, STAND_LEDGE=0.1979;
+    function standTop(){ return H-W*STAND_LEDGE; }
+    function wellX(i){ return W*(0.27+i*0.11); }
     // opts.n throws that many at once (Super Slice's burst), opts.goldAt makes
     // one of them golden. While Super Slice lasts, every toss is two or three.
     // SUPER SLICE'S FRUIT ARE EXTRAS (Beat Your Best, 1-2 Oct 2026). A fruit
@@ -901,17 +906,18 @@
     var GIANT_ART=new Image(); GIANT_ART.src="/assets/crafted/game/giant-watermelon.webp";
 
     // ── the stand at the bottom: fruit waiting on the counter, restocked ──
+    // Each fruit stands on the painted ledge (standTop()), a size smaller
+    // than it was so five fit between the fox and Echo with a gap.
     function drawStand(now){
-      var top=H*0.855, i;
+      var size=Math.min(40,W*0.1), top=standTop()-size*0.45, i;
       for(i=0;i<WELLS.length;i++){ var wl=WELLS[i];
         if(!wl.e&&wl.back&&now>=wl.back){ wl.e=FRUITS[(Math.random()*FRUITS.length)|0]; wl.pop=now; }
         if(!wl.e) continue;
         var t=wl.pop?Math.min(1,(now-wl.pop)/350):1, sc=t<1?0.4+0.6*t+Math.sin(t*Math.PI)*0.25:1;
-        // Live stock sits in the painted market crate. An empty place still
-        // refills only on its existing timer; launch geometry stays unchanged.
-        ctx.save(); ctx.translate(W*(0.20+i*0.15),top); ctx.scale(sc,sc);
-        ctx.fillStyle="rgba(86,45,14,.18)"; ctx.beginPath(); ctx.ellipse(0,18,20,5,0,0,7); ctx.fill();
-        drawFruit(wl.e,Math.min(44,W*0.115)); ctx.restore(); }
+        // An empty place still refills only on its existing timer.
+        ctx.save(); ctx.translate(wellX(i),top); ctx.scale(sc,sc);
+        ctx.fillStyle="rgba(86,45,14,.18)"; ctx.beginPath(); ctx.ellipse(0,size*0.42,size*0.45,size*0.11,0,0,7); ctx.fill();
+        drawFruit(wl.e,size); ctx.restore(); }
     }
     function glow(r,now){
       var gl=ctx.createRadialGradient(0,0,r*0.4,0,0,r*1.7); gl.addColorStop(0,"rgba(255,214,51,.9)"); gl.addColorStop(1,"rgba(255,214,51,0)");

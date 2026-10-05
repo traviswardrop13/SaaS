@@ -8,7 +8,10 @@ const spec = JSON.parse(fs.readFileSync(path.join(here, "game-sprites.json"), "u
 const only = process.argv[2] ? process.argv[2].split(",") : null;
 const out = path.join(here, "out/game"); fs.mkdirSync(out, { recursive: true });
 const STYLE = "Children's game art in the exact look of the attached reference: soft 3D clay, smooth clean finish (no grain, no noise, no paper texture), warm rich sunny colours, gentle even light, friendly and simple for 3 to 8 year olds. No text, letters or numbers anywhere.";
-const refFor = (s) => path.join(here, "refs", /Echo/.test(s.prompt) ? "echo-clay.webp" : "approved-style.png");
+// An entry's own `ref` (a path from the repo root) wins: a scene redrawn from
+// the one it replaces keeps that scene's palette and light, which the shared
+// style picture cannot give it.
+const refFor = (s) => s.ref ? path.join(here, "../..", s.ref) : path.join(here, "refs", /Echo/.test(s.prompt) ? "echo-clay.webp" : "approved-style.png");
 const sent = [];
 async function pace() { for (;;) { const now = Date.now(); while (sent.length && now - sent[0] > 61000) sent.shift(); if (sent.length < 5) { sent.push(now); return; } await new Promise((r) => setTimeout(r, 61000 - (now - sent[0]) + 250)); } }
 async function draw(s) {
