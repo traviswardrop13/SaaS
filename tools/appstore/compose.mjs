@@ -62,15 +62,18 @@ function statusBar(dev, k, ink) {
       <span style="position:absolute;right:${30 * k}px;top:${21 * k}px;display:flex;gap:${6 * k}px;align-items:center">${signal(k)}${wifi(k)}${battery(k)}</span></div>`;
   }
   return `<div class="sb" style="height:${24 * k}px;color:${c}">
-    <span style="position:absolute;left:${20 * k}px;top:${5 * k}px;font:600 ${12.5 * k}px/${15 * k}px var(--sys)">9:41&nbsp;&nbsp;Thu Nov 12</span>
+    <span style="position:absolute;left:${20 * k}px;top:${5 * k}px;font:600 ${12.5 * k}px/${15 * k}px var(--sys)">9:41&nbsp;&nbsp;Mon Oct 5</span>
     <span style="position:absolute;right:${18 * k}px;top:${5 * k}px;display:flex;gap:${6 * k}px;align-items:center;font:600 ${12 * k}px/${15 * k}px var(--sys)">${wifi(k * 0.86)}<span>100%</span>${battery(k * 0.9)}</span></div>`;
 }
 
-function slideHTML(slide, dev) {
-  const [CW, CH] = CFG.sizes[dev].canvas, L = LAYOUT[dev], F = FRAMES[dev];
+function slideHTML(slide, dev, copyBottom) {
+  const [CW, CH] = CFG.sizes[dev].canvas, L = LAYOUT[dev];
+  // A cropped detail keeps the captured pixels' aspect, without pretending
+  // the excerpt includes a whole device or adding a status bar over it.
+  const rawInfo = pngInfo(readFileSync(path.join(RAW, dev, slide.scene + ".png")));
+  const F = slide.detail ? { pt: [rawInfo.w, rawInfo.h], radius: 0.028, bezel: 0.007, rim: 0.003, island: false } : FRAMES[dev];
   // the headline block's height, then the phone fills what is left
-  const lines = 2, subLines = dev === "iphone" && slide.sub.length > 40 ? 2 : 1;
-  const textH = L.top + lines * L.h1 * 1.02 + L.gap + subLines * L.sub * 1.3;
+  const textH = copyBottom || L.top + 2 * L.h1 * 1.02 + L.gap + 2 * L.sub * 1.3;
   const phoneTop = textH + L.phoneTop;
   const availH = CH - phoneTop - L.bottom;
   const [pw, ph] = F.pt;
@@ -97,9 +100,10 @@ function slideHTML(slide, dev) {
     /* a soft glow behind the phone, so it sits in light rather than on a flat page */
     body::before{content:"";position:absolute;left:50%;top:${fy + fh * 0.42}px;width:${fw * 1.5}px;height:${fh * 0.9}px;transform:translate(-50%,-50%);
       background:radial-gradient(closest-side,rgba(255,255,255,.75),rgba(255,255,255,0));pointer-events:none;}
-    h1{position:absolute;left:0;right:0;top:${L.top}px;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:${L.h1}px;line-height:1.02;color:${INK};letter-spacing:-0.01em;}
-    h1 span{display:block;} h1 .acc{color:${ACCENT};}
-    p.sub{position:absolute;left:${CW * 0.09}px;right:${CW * 0.09}px;top:${L.top + lines * L.h1 * 1.02 + L.gap}px;text-align:center;font-family:"Nunito";font-weight:700;font-size:${L.sub}px;line-height:1.3;color:${SUBINK};}
+    .copy{position:absolute;left:${CW * 0.09}px;right:${CW * 0.09}px;top:${L.top}px;text-align:center;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:${L.h1}px;line-height:1.02;color:${INK};letter-spacing:-0.01em;}
+    h1 span{display:block;white-space:nowrap;} h1 .acc{color:${ACCENT};}
+    p.sub{margin-top:${L.gap}px;font-family:"Nunito";font-weight:700;font-size:${L.sub}px;line-height:1.3;color:${SUBINK};}
     .decor{position:absolute;z-index:3;filter:drop-shadow(0 ${CW * 0.008}px ${CW * 0.012}px rgba(90,50,10,.18));}
     .decor.behind{z-index:1;}
     .phone{position:absolute;z-index:2;left:${fx}px;top:${fy}px;width:${fw}px;height:${fh}px;border-radius:${R + bez + rim}px;
@@ -111,12 +115,11 @@ function slideHTML(slide, dev) {
     .sb{position:absolute;left:0;right:0;top:0;z-index:2;}
     .island{position:absolute;z-index:3;left:50%;top:${11 * k}px;width:${126 * k}px;height:${37 * k}px;margin-left:${-63 * k}px;border-radius:${18.5 * k}px;background:#000;}
   </style></head><body>
-    <h1>${title}</h1>
-    <p class="sub">${esc(slide.sub)}</p>
+    <header class="copy"><h1>${title}</h1><p class="sub">${esc(slide.sub)}</p></header>
     ${decor}
     <div class="phone"><div class="bezel"><div class="screen">
       <img class="shot" src="${shotURL}" alt="">
-      ${statusBar(dev, k, slide.status)}
+      ${slide.detail ? "" : statusBar(dev, k, typeof slide.status === "object" ? slide.status[dev] : slide.status)}
       ${F.island ? '<div class="island"></div>' : ""}
     </div></div></div>
   </body></html>`;
@@ -156,18 +159,32 @@ async function main() {
         if (only && !only.includes(slide.id)) continue;
         const raw = path.join(RAW, dev, slide.scene + ".png");
         if (!existsSync(raw)) { console.log("FAIL " + dev + "/" + slide.id + ": no raw screen " + raw + " (run capture.mjs)"); bad++; continue; }
+        // Keep the exact Rachel sentence checkable in the copy source even
+        // though the headline and its continuation have different sizes.
+        if (slide.statement && slide.title.join(" ") + " " + slide.sub !== slide.statement) throw new Error("Credential wording drifted: " + slide.id);
         pending = slideHTML(slide, dev);
         await page.goto(BASE + "/slide?" + Date.now());
         await page.evaluate(() => document.fonts.ready);
+        // Measure wrapped copy, especially the longer credential sentence
+        // on iPad. A guessed line count can put the frame through the words.
+        const copyBottom = await page.locator(".copy").evaluate((el) => el.getBoundingClientRect().bottom);
+        pending = slideHTML(slide, dev, copyBottom);
+        await page.goto(BASE + "/slide?fit=" + Date.now());
+        await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => Promise.all([...document.images].map((i) => i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
         const broken = await page.evaluate(() => [...document.images].filter((i) => !i.naturalWidth).map((i) => i.getAttribute("src")));
+        const fit = await page.evaluate(() => {
+          const copy = document.querySelector(".copy").getBoundingClientRect(), frame = document.querySelector(".phone").getBoundingClientRect();
+          const titleFits = [...document.querySelectorAll("h1 span")].every((el) => { const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect(); return b.left >= copy.left && b.right <= copy.right; });
+          return titleFits && copy.bottom < frame.top && frame.left >= 0 && frame.right <= innerWidth && frame.bottom < innerHeight;
+        });
         const file = path.join(out, dev, slide.id + ".png");
         const buf = await page.screenshot({ type: "png", clip: { x: 0, y: 0, width: CW, height: CH } });
         writeFileSync(file, buf);
         const info = pngInfo(buf);
         const okSize = info.w === CW && info.h === CH, okRGB = info.colour === 2;
-        if (!okSize || !okRGB || broken.length) bad++;
-        console.log((okSize && okRGB && !broken.length ? "PASS " : "FAIL ") + path.relative(REPO, file) + "  " + info.w + "x" + info.h + (okRGB ? " RGB" : " colour type " + info.colour) + (broken.length ? "  missing: " + broken.join(", ") : ""));
+        if (!okSize || !okRGB || broken.length || !fit) bad++;
+        console.log((okSize && okRGB && !broken.length && fit ? "PASS " : "FAIL ") + path.relative(REPO, file) + "  " + info.w + "x" + info.h + (okRGB ? " RGB" : " colour type " + info.colour) + (broken.length ? "  missing: " + broken.join(", ") : "") + (!fit ? "  copy or frame outside its bounds" : ""));
       }
       await context.close();
     }
