@@ -22,9 +22,9 @@
     {
       "id": "02-practice",
       "scene": "charge",
-      "title": ["Real practice,", "a few minutes a day"],
+      "title": ["Real practice,", "then play"],
       "accent": 1,
-      "sub": "Echo says it first. Five tries out loud, then play.",
+      "sub": "Echo says it first. Five tries out loud.",
       "bg": ["#e4f3fb", "#fff3e2"],
       "status": "dark",
       "decor": []
@@ -32,11 +32,11 @@
     {
       "id": "03-piano-tiles",
       "scene": "tiles",
-      "title": ["Play songs", "they already know"],
+      "title": ["Tap the tiles,", "play a song"],
       "accent": 1,
-      "sub": "Say the sound when Echo asks, and the keys slow down.",
+      "sub": "Say the sound when Echo asks to slow the keys.",
       "bg": ["#eee8ff", "#fff1e6"],
-      "status": "light",
+      "status": { "iphone": "light", "ipad": "dark" },
       "decor": [
         { "src": "assets/crafted/game/star.webp", "x": 0.92, "y": 0.42, "w": 0.1, "rot": 10, "behind": true }
       ]
@@ -44,9 +44,9 @@
     {
       "id": "04-hoops",
       "scene": "hoops",
-      "title": ["Every word", "earns a shot"],
+      "title": ["Say it,", "then shoot"],
       "accent": 1,
-      "sub": "Say the word, then swipe to shoot.",
+      "sub": "Say the word twice, then swipe to shoot.",
       "bg": ["#fff0e0", "#ffdcc0"],
       "status": "dark",
       "decor": [
@@ -58,7 +58,7 @@
       "scene": "book",
       "title": ["Stories for", "their sound"],
       "accent": 1,
-      "sub": "Echo reads. Your child says the word to turn the page.",
+      "sub": "Echo reads. Say the word to turn the page.",
       "bg": ["#e8f5e4", "#fff4e4"],
       "status": "dark",
       "decor": []
@@ -66,21 +66,21 @@
     {
       "id": "06-home",
       "scene": "home",
-      "title": ["Pick a game,", "play with their voice"],
+      "detail": true,
+      "title": ["Pick a game,", "play with Echo"],
       "accent": 1,
-      "sub": "Arcade games for ages 5–8, simple play for ages 3–4.",
+      "sub": "Arcade for ages 5–8. Simple play for ages 3–4.",
       "bg": ["#fff6e2", "#ffe9c6"],
       "status": "dark",
-      "decor": [
-        { "src": "assets/crafted/echo-wave.webp", "x": 0.9, "y": 0.86, "w": 0.17, "rot": 0 }
-      ]
+      "decor": []
     },
     {
       "id": "07-progress",
       "scene": "progress",
-      "title": ["See their week", "at a glance"],
+      "detail": true,
+      "title": ["See practice", "at a glance"],
       "accent": 1,
-      "sub": "Reps and practice days, for grown-ups. Audio is never uploaded.",
+      "sub": "An example week. Audio is never uploaded.",
       "bg": ["#e2f4f2", "#fff5e6"],
       "status": "dark",
       "decor": []
@@ -91,6 +91,7 @@
       "title": ["Built with", "Rachel, MS, CF-SLP,"],
       "accent": 1,
       "sub": "a pediatric speech-language pathologist in her clinical fellowship.",
+      "statement": "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
       "bg": ["#fdeee6", "#fff6ea"],
       "status": "dark",
       "decor": []

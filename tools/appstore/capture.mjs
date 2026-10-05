@@ -14,7 +14,7 @@
 // under $APPSTORE_RAW. compose.mjs reads the same folder.
 //
 // What is staged, and why it is honest:
-//   - the household is "Mia", 7, on R, onboarded, with a few days of practice
+//   - the household is "Mia", 8, on R, onboarded, with example practice
 //     and game reps this week, so the numbers a parent sees are not zero;
 //   - Premium is on through the free-era promise (earlyAdopter, the mark
 //     _grandfatherFreeEra() puts on a real household), so nothing is greyed:
@@ -30,9 +30,8 @@
 //     so (window.__dev.voice), with the voiced shape the test suites use;
 //     the voice service is down, so lines fall back to the (silent) browser
 //     voice, and nothing plays out loud;
-//   - the clock is frozen on a Thursday in November (AT below), a week with
-//     no limited-time shelf, so Home opens on the games and the week has
-//     four days in it.
+//   - the clock uses the review day in Idaho (AT below): October's live
+//     Halloween shelf stays above the game crop, with no future practice days.
 import { createServer } from "http";
 import { readFileSync, existsSync, statSync, mkdirSync } from "fs";
 import path from "path";
@@ -53,31 +52,29 @@ export const DEVICES = {
   ipad: { viewport: { width: 1032, height: 1376 }, dpr: 2, inset: { top: 24, bottom: 20 } },
 };
 
-// Thursday 12 Nov 2026, 4:10 pm in Idaho. The week is Mon 9 – Sun 15.
-const AT = Date.parse("2026-11-12T16:10:00-07:00");
+// Monday 5 Oct 2026, 4:10 pm in Idaho. The week is Mon 5 – Sun 11.
+const AT = Date.parse("2026-10-05T16:10:00-06:00");
 const TZ = "America/Boise";
-const DAYS = ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12"];
-const LAST_WEEK = ["2026-11-02", "2026-11-03", "2026-11-05", "2026-11-06", "2026-11-07"];
+const DAYS = ["2026-10-05"];
 
 // A believable week for one child on R: practice-page tries (what Progress
 // and a clinician see) and sounds said inside games (Home's corner adds them).
 function seedOutcomes() {
   const days = {};
-  [[LAST_WEEK[0], 4, 3, 20], [LAST_WEEK[1], 3, 2, 15], [LAST_WEEK[2], 5, 3, 25], [LAST_WEEK[3], 3, 2, 15], [LAST_WEEK[4], 2, 2, 10],
-    [DAYS[0], 4, 3, 20], [DAYS[1], 5, 4, 25], [DAYS[2], 3, 2, 15], [DAYS[3], 4, 3, 20]]
+  [[DAYS[0], 4, 3, 20]]
     .forEach(([d, a, p, tries]) => { days[d] = { a, p, tries }; });
   const attempts = Object.values(days).reduce((n, d) => n + d.a, 0), passes = Object.values(days).reduce((n, d) => n + d.p, 0);
-  return { R: { attempts, passes, tries: attempts * 5, firstAt: LAST_WEEK[0], lastAt: DAYS[3], days,
+  return { R: { attempts, passes, tries: attempts * 5, firstAt: DAYS[0], lastAt: DAYS[0], days,
     byPos: { i: { a: attempts, p: passes } } } };
 }
 function seedProgress() {
   const practiceDays = {};
-  LAST_WEEK.concat(DAYS).forEach((d) => { practiceDays[d] = 1; });
-  return { practiceDays, streak: { count: DAYS.length, lastDate: DAYS[DAYS.length - 1] }, totals: { sessions: 9, words: 185, stars: 0, coins: 0 }, stage: { R: 2 } };
+  DAYS.forEach((d) => { practiceDays[d] = 1; });
+  return { practiceDays, streak: { count: DAYS.length, lastDate: DAYS[DAYS.length - 1] }, totals: { sessions: 1, words: 20, stars: 0, coins: 0 }, stage: { R: 2 } };
 }
 function seedGameReps() {
   const g = {};
-  [[LAST_WEEK[0], 6], [LAST_WEEK[2], 9], [LAST_WEEK[4], 4], [DAYS[0], 8], [DAYS[1], 12], [DAYS[2], 6], [DAYS[3], 10]].forEach(([d, n]) => { g[d] = { R: n }; });
+  [[DAYS[0], 10]].forEach(([d, n]) => { g[d] = { R: n }; });
   return g;
 }
 
@@ -180,11 +177,10 @@ function device(cfg) {
       // a phone opening Sona for the first time (setup)
       localStorage.setItem("sona.profile.v1", JSON.stringify({ voiceOn: true, soundOn: true, volume: 0.8 }));
     } else {
-      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.8, weeklyGoal: 5 }));
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "8", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.8, weeklyGoal: 5 }));
       localStorage.setItem("sona.micok", "1");
       localStorage.setItem("sona.outcomes.v1", JSON.stringify(cfg.outcomes));
       localStorage.setItem("sona.gamereps.v1", JSON.stringify(cfg.gameReps));
-      localStorage.setItem("sona.bests.v1", JSON.stringify({ slice: { n: 17, at: "2026-11-11" }, tiles: { n: 24, at: "2026-11-10" } }));
       localStorage.setItem("sona.sprintintro.v1", "3");
       // the days Progress's week marks (momWeek reads practiceDays), and the
       // review ask already answered, so it is not on the page
@@ -245,11 +241,19 @@ async function settle(page) {
   await page.evaluate(() => Promise.all([...document.images].filter((i) => i.src && !i.complete && i.loading !== "lazy").map((i) => new Promise((r) => { i.onload = i.onerror = r; setTimeout(r, 4000); }))));
 }
 async function voice(page, ms) { await page.evaluate(() => { __dev.voice = true; }); await page.waitForTimeout(ms); await page.evaluate(() => { __dev.voice = false; }); }
-async function shot(page, devName, scene) {
+async function shot(page, devName, scene, clip) {
+  if (scene === "home") {
+    const bounds = clip || { x: 0, y: 0, width: DEVICES[devName].viewport.width, height: DEVICES[devName].viewport.height };
+    const cut = await page.evaluate((b) => [...document.querySelectorAll('.activity-group[data-group="arcade"] .game-card')].filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.left < b.x || r.right > b.x + b.width || r.top < b.y || r.bottom > b.y + b.height;
+    }).map((el) => el.querySelector(".game-name").textContent), bounds);
+    if (cut.length) throw new Error("Home capture cuts game cards: " + cut.join(", "));
+  }
   const dir = path.join(RAW, devName);
   mkdirSync(dir, { recursive: true });
   const file = path.join(dir, scene + ".png");
-  await page.screenshot({ path: file });
+  await page.screenshot({ path: file, ...(clip ? { clip } : {}) });
   return file;
 }
 
@@ -266,7 +270,7 @@ const cutIn = (page, f) => page.evaluate(async (f) => {
   const ev = (type, x, y) => cv.dispatchEvent(new PointerEvent(type, { clientX: r.left + x, clientY: r.top + y, bubbles: true, pointerId: 7, pointerType: "touch", isPrimary: true }));
   const x0 = f.x - f.dx, y0 = f.y + f.dy, x1 = f.x + f.dx, y1 = f.y - f.dy;
   ev("pointerdown", x0, y0);
-  for (let i = 1; i <= 8; i++) { ev("pointermove", x0 + (x1 - x0) * i / 8, y0 + (y1 - y0) * i / 8); await new Promise((d) => setTimeout(d, 12)); }
+  for (let i = 1; i <= 8; i++) { ev("pointermove", x0 + (x1 - x0) * i / 8, y0 + (y1 - y0) * i / 8); await new Promise((d) => setTimeout(d, f.stepMs || 12)); }
   if (f.freeze) { await new Promise((d) => requestAnimationFrame(() => d())); __dev.frozen = true; }
   window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 7, bubbles: true }));
 }, f);
@@ -276,17 +280,24 @@ SCENES.slice = async (devName) => {
   await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
   await settle(page);
   // the fruit to cut: unsliced, well above the stand, near the top of its arc
-  const pick = (minUp) => page.evaluate((minUp) => {
+  const pick = (minUp, framed = false) => page.evaluate(({ minUp, framed, clearCounter }) => {
     const top = standTop(), up = fruits.filter((q) => !q.sliced && q.y < top - minUp && q.y > H * 0.2);
     // never through a golden fruit (its "GOLDEN!" flash would sit on the frame)
     const gold = fruits.filter((q) => q.gold && !q.sliced), far = (q) => gold.every((g) => Math.hypot(g.x - q.x, g.y - q.y) > 170);
-    const ok = up.filter((q) => !q.gold && far(q));
+    const ok = up.filter((q) => !q.gold && far(q) && (!framed || q.y > H * 0.34 && q.y < H * 0.65));
     if (!ok.length) return null;
     // near the top of its arc, and in the upper part of the screen
-    const cost = (q) => Math.abs(q.vy) + (q.y > H * 0.55 ? 100 : 0);
+    const gap = (q) => Math.min(...up.filter((o) => o !== q).map((o) => Math.hypot(o.x - q.x, o.y - q.y)), 400);
+    const cost = (q) => Math.abs(q.vy) + (q.y > H * 0.55 ? 100 : 0) - (framed ? gap(q) : 0);
     const f = ok.sort((a, b) => cost(a) - cost(b))[0];
-    return { x: f.x, y: f.y + f.vy, n: up.length, dx: Math.min(110, W * 0.22), dy: 48 };
-  }, minUp);
+    // On the phone, a large falling fruit can still cover the counter after
+    // its centre has passed it. Allow for its painted radius and the short
+    // swipe's remaining frames, so the stand's instruction stays clear.
+    const lowerClear = !fruits.some((q) => !q.sliced && (clearCounter
+      ? q.y + q.r + 8 + Math.max(0, q.vy) * 6 > top - 30 && q.y - q.r - 8 < H
+      : q.y > top - 35 && q.y < H + 50));
+    return { x: f.x, y: f.y + f.vy, n: up.length, gap: gap(f), lowerClear, dx: Math.min(framed ? 30 : 110, W * (framed ? 0.07 : 0.22)), dy: framed ? 18 : 48, stepMs: framed ? 4 : 12 };
+  }, { minUp, framed, clearCounter: framed && devName === "iphone" });
   // a row of five first, so the counter shows a real row and the shot's cut
   // (one or two fruit) cannot reach the next five: no "in a row!" flash
   // over the frame. Wave 1 asks for six, so the wave is still on.
@@ -308,18 +319,18 @@ SCENES.slice = async (devName) => {
     await page.waitForTimeout(400);
   }
   await until(page, () => fruits.filter((q) => !q.sliced).length >= 4, 6000);
-  // the moment: the most fruit up at once in the next few seconds, and the
-  // "SUPER SLICE!" banner gone (a calm frame, not a shout)
+  // A short real swipe through an isolated fruit below Echo, after the
+  // "SUPER SLICE!" banner fades, keeps the action readable.
   let best = null; const t0 = Date.now();
-  while (Date.now() - t0 < 9000) {
-    const f = await pick(110);
+  while (Date.now() - t0 < (devName === "iphone" ? 24000 : 11000)) {
+    const f = await pick(110, true);
     const calm = await page.evaluate(() => Number(getComputedStyle(document.getElementById("banner")).opacity) < 0.05);
-    if (f && f.n >= 4 && calm) { best = f; break; }
-    if (f && f.n >= 3 && calm && Date.now() - t0 > 4000) { best = f; break; }
+    if (f && f.n >= 2 && f.n <= 4 && f.gap >= 120 && f.lowerClear && calm) { best = f; break; }
+    if (f && f.n <= 4 && f.gap >= 90 && f.lowerClear && calm && Date.now() - t0 > 5000) { best = f; break; }
     await page.waitForTimeout(30);
   }
-  best = best || (await pick(40));
-  if (best) await cutIn(page, Object.assign(best, { freeze: true }));
+  if (!best) throw new Error("No readable Fruit Slice capture moment");
+  await cutIn(page, Object.assign(best, { freeze: true }));
   s.note = await page.evaluate(() => "row " + rowN + ", " + fruits.filter((q) => !q.sliced).length + " fruit up, Super Slice " + (slowMs > 0 ? "on" : "OFF") + (document.getElementById("slowControl").hidden ? ", Echo's button HIDDEN" : ""));
   await shot(page, devName, "slice");
   return s;
@@ -416,7 +427,19 @@ SCENES.home = async (devName) => {
   await page.evaluate(() => document.querySelectorAll("img[loading=lazy]").forEach((i) => { i.loading = "eager"; }));
   await settle(page);
   await page.waitForTimeout(800);
-  await shot(page, devName, "home");
+  // Focus on complete playable rows by scrolling the real October Home.
+  // The book shelves remain above them; no card is removed or unlocked.
+  const clip = await page.evaluate(() => {
+    const group = document.querySelector('.activity-group[data-group="arcade"]'), grid = group.querySelector(".game-grid");
+    const cards = [...grid.querySelectorAll(".game-card")];
+    const bottom = cards[cards.length - 1].getBoundingClientRect().bottom;
+    const top = group.getBoundingClientRect().top;
+    scrollBy(0, top - 70);
+    const r = group.getBoundingClientRect();
+    return { x: Math.floor(r.left - 8), y: Math.floor(r.top - 8), width: Math.ceil(r.width + 16), height: Math.ceil(bottom - top + 16) };
+  });
+  await page.waitForTimeout(300);
+  await shot(page, devName, "home", clip);
   return s;
 };
 
@@ -428,7 +451,13 @@ SCENES.progress = async (devName) => {
   await until(page, () => window.Sona && document.getElementById("volReps") && document.getElementById("volReps").textContent !== "0", 15000);
   await settle(page);
   await page.waitForTimeout(600);
-  await shot(page, devName, "progress");
+  // A complete weekly card, without cutting a sentence or introducing the
+  // lower sound-check section into a picture about reps and practice days.
+  const clip = await page.evaluate(() => {
+    const top = document.querySelector(".family-pagehead").getBoundingClientRect(), card = document.getElementById("weekCard").getBoundingClientRect();
+    return { x: Math.floor(card.left - 8), y: Math.floor(top.top - 8), width: Math.ceil(card.width + 16), height: Math.ceil(card.bottom - top.top + 18) };
+  });
+  await shot(page, devName, "progress", clip);
   return s;
 };
 
@@ -472,7 +501,8 @@ async function main() {
       let s = null;
       try {
         s = await SCENES[name](devName);
-        console.log("PASS " + devName + "/" + name + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s)" + (s.note ? "  " + s.note : "") + (s.errors.length ? "  page errors: " + s.errors.slice(0, 3).join(" | ") : ""));
+        if (s.errors.length) bad++;
+        console.log((s.errors.length ? "FAIL " : "PASS ") + devName + "/" + name + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s)" + (s.note ? "  " + s.note : "") + (s.errors.length ? "  page errors: " + s.errors.slice(0, 3).join(" | ") : ""));
       } catch (e) {
         bad++; console.log("FAIL " + devName + "/" + name + ": " + e.message.split("\n")[0]);
       } finally { if (s) await s.context.close(); }
