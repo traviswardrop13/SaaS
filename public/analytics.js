@@ -21,7 +21,11 @@
   var POSTHOG_KEY = "phc_xRPqirD2PznnvZrpeuLDwo7LtYegHsF2xWsDNLEEXdkw"; // PostHog Project API key (public)
   var POSTHOG_HOST = "https://us.i.posthog.com";
   var NATIVE = !!window.Capacitor;
-  var ALLOWED = { sound: 1, game: 1, duration_seconds: 1, attempts_count: 1, surface: 1, plan: 1, source: 1 };
+  // `step` (5 Oct 2026) is a fixed code for WHICH screen was reached: a setup
+  // screen's key ("name", "ready"…) or which price card a phone showed
+  // ("free-sure", "paid"…). Never what was tapped on it: the two answers a
+  // parent gives in setup stay on the phone, and no caller is handed them.
+  var ALLOWED = { sound: 1, game: 1, duration_seconds: 1, attempts_count: 1, surface: 1, plan: 1, source: 1, step: 1 };
 
   window.SonaAnalytics = { track: function () {}, identify: function () {}, reset: function () {} }; // no-op until loaded
 

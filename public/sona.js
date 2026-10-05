@@ -1945,9 +1945,24 @@
   // Everything the app persists lives under the "sona." key prefix, so a full
   // backup is a sweep of those keys — the safety net for the data-loss risk
   // (a cleared browser/app currently erases a child's whole history).
+  //
+  // TWO KEYS NEVER LEAVE IN A BACKUP (5 Oct 2026): what a parent tapped on
+  // setup's two one-tap questions ("What brings you to Sona?", "How does
+  // practice go at home now?"), and the half-finished setup that holds the
+  // same two taps before it is saved. Those screens say "Your answer stays on
+  // this device", and a backup code is something a family copies, emails to
+  // itself or pastes into another phone. Left out here AND refused by
+  // importData below, so neither half can be undone by the other.
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1"];
   function exportData() {
     const out = {};
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf("sona.") === 0) out[k] = localStorage.getItem(k); } } catch (e) {}
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        // the base key, as importData judges it ("name@k2" is "name")
+        if (k && k.indexOf("sona.") === 0 && NO_EXPORT.indexOf(k.split("@")[0]) === -1) out[k] = localStorage.getItem(k);
+      }
+    } catch (e) {}
     return { app: "sona", v: 1, data: out };
   }
   function exportString() { try { return JSON.stringify(exportData()); } catch (e) { return "{}"; } }
@@ -1981,8 +1996,13 @@
   // say "this device was judged on its first load", which is true of the
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
+  //
+  // SETUP'S TWO ANSWERS AND ITS DRAFT are the last two (NO_EXPORT above): a
+  // backup made by this build never holds them, and one that does (hand-made,
+  // or from a build that slips) is not let in either.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
-    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1"];
+    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
+    "sona.setupasks.v1", "sona.obdraft.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -4369,14 +4389,18 @@
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
-  // The App Store build sells "Sona Yearly" ($79.99/yr, 7-day free trial —
-  // ONE offer) through Apple's sheet via the @revenuecat/purchases-capacitor
-  // plugin — reached over the same remote-page bridge SonaAudio already uses.
-  // Web visitors never touch this (Stripe stays the web rail). We purchase
-  // DIRECTLY by product id (no offerings dependency) and unlock on the "full"
-  // entitlement. The appl_ key is publishable by design.
-  // NOTE: this product id is already App Store-approved; the price lives in
-  // App Store Connect, and the paywall renders whatever ASC reports.
+  // The App Store build sells Sona Premium through Apple's sheet via the
+  // @revenuecat/purchases-capacitor plugin — reached over the same
+  // remote-page bridge SonaAudio already uses. Web visitors never touch this
+  // (Stripe stays the web rail). We purchase DIRECTLY by product id (no
+  // offerings dependency) and unlock on the "full" entitlement. The appl_ key
+  // is publishable by design.
+  // NO PRICE AND NO FREE-TRIAL LENGTH IS WRITTEN HERE, and that is the point:
+  // both live in App Store Connect, and this comment went on naming a yearly
+  // price and a trial length long after the store had changed both. Since
+  // 5 Oct 2026 the app sells ONE plan, the monthly product, and storePlan() /
+  // planWords() further down turn the store's own answer into every figure
+  // and every "free" a parent reads.
   // ── FREE MODE ──────────────────────────────────────────────────────────
   // The switch, what "off" means since the free version shipped (24 Sep
   // 2026), and who keeps Premium regardless of it are all documented at
@@ -4864,11 +4888,14 @@
   // Since 24 Sep 2026 "off" no longer means "everything behind a wall". Sona
   // has a FREE VERSION — daily practice and released free-tier games —
   // and PREMIUM, which opens every released game:
-  //   OFF (now) — the free version for everyone; Premium for premium(): a
-  //     subscription (yearly, 3 days free; the web price comes from
-  //     lib/charter.ts via /api/charter, the iOS price from App Store
-  //     Connect), a covered clinician's caseload, a founder or founding
-  //     pilot, or any of the five free eras' promises;
+  //   OFF (now) — the free version for the families freeVersion() names
+  //     (since 3 Oct 2026 a family who could buy here starts with the price:
+  //     see TRIAL FIRST); Premium for premium(): a subscription (on the
+  //     iPhone the one plan the App Store answers with, at its price and
+  //     with any free days it reports: storePlan(); on the web, when the
+  //     website sells, the plans in lib/charter.ts via /api/charter), a
+  //     covered clinician's caseload, a founder or founding pilot, or any of
+  //     the five free eras' promises;
   //   ON — every released game for everyone, nothing sold.
   // Practice is never gated in either state; gated() says so before anything.
   //
@@ -4956,8 +4983,9 @@
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
   // Monthly was retired from SALE on 18 Sep 2026, back on sale on 1 Oct 2026,
-  // and since 5 Oct 2026 the ONLY plan the iPhone's plan screen offers (3 days
-  // free, then $9.99 a month: the free days are App Store Connect's offer).
+  // and since 5 Oct 2026 the ONLY plan the iPhone's plan screen offers (that
+  // day: 3 days free, then $9.99 a month. Both are App Store Connect's, and
+  // storePlan() below reads them from the store, so neither is typed here).
   // The annual id stays here all the same, as monthly's did while it was off
   // sale: RevenueCat needs each id to recognise an existing subscriber on
   // restore or reinstall, and dropping one would strand them behind a paywall
@@ -5000,19 +5028,29 @@
         })
     );
   }
-  // buy: try the modern API first, fall back across plugin versions
-  function iapPurchase(kind) {
+  // buy. ONE PURCHASE CALL, NEVER TWO (5 Oct 2026). This used to try
+  // purchaseStoreProduct and, when that REJECTED, try purchaseProduct too
+  // ("fall back across plugin versions"). But a rejection is Apple's answer,
+  // not a missing method: a parent who cancelled the sheet, or whose purchase
+  // is waiting for Ask to Buy, was then sent through the second name, and on
+  // a bridge that answers it the second call's error replaced Apple's own
+  // (cancel read as "That didn't go through", "Waiting for approval" could
+  // never show) or a second sheet opened. Which method exists is known before
+  // anything is asked of Apple, so it is chosen first and called once.
+  // `product` (optional) is the store's own product object, already in hand
+  // from storePlan(): with it no second fetch can hang between the tap and
+  // Apple's sheet. Without it, or with one that is not the id being bought,
+  // the product is fetched here as it always was.
+  function iapPurchase(kind, product) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
-    return iapConfigure().then((P) =>
-      iapProduct(kind).then((product) => {
-        const attempts = [];
-        if (product && P.purchaseStoreProduct) attempts.push(() => P.purchaseStoreProduct({ product }));
-        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: id, type: IAP_TYPE }));
-        let p = Promise.reject(new Error("no-purchase-api"));
-        attempts.forEach((fn) => { p = p.catch(fn); });
-        return p;
-      })
-    ).then((res) => {
+    return iapConfigure().then((P) => {
+      const have = (product && product.identifier === id) ? Promise.resolve(product) : iapProduct(kind);
+      return have.then((prod) => {
+        if (prod && typeof P.purchaseStoreProduct === "function") return P.purchaseStoreProduct({ product: prod });   // the only attempt
+        if (typeof P.purchaseProduct === "function") return P.purchaseProduct({ productIdentifier: id, type: IAP_TYPE });   // an old plugin with no product API
+        throw new Error("no-purchase-api");
+      });
+    }).then((res) => {
       if (res && res.userCancelled) throw Object.assign(new Error("cancelled"), { cancelled: true });
       if (_iapActive(res)) { _iapUnlock(); return { ok: true }; }
       // some plugin versions return only {productIdentifier}; verify via customer info
@@ -5070,6 +5108,460 @@
       // do not stamp the check clock, so the next open tries again.
       return isSubscribed();
     });
+  }
+
+  // ── THE ONE PLAN THE IPHONE SELLS, AS THE STORE ANSWERS IT (5 Oct 2026) ──
+  // Travis, 5 Oct 2026: "get rid of the annual option and update the copy so
+  // that it says three days free, then $9.99 a month". The app sells the
+  // MONTHLY product alone, and what a screen may say about it is decided HERE,
+  // once, from three answers only the store can give:
+  //   - the monthly product itself: its price, and the free time its
+  //     introductory offer carries, if it has one;
+  //   - whether THIS Apple ID may still have that offer. Apple gives one per
+  //     subscription group and yearly shares monthly's group, so a family who
+  //     took the yearly plan's free days gets none here and is charged at
+  //     once. A product that "has 3 free days" proves nothing about the buyer;
+  //   - whether this Apple ID already holds Premium. A reinstall is a new,
+  //     anonymous RevenueCat customer, so the record alone says "no" to a
+  //     family that is paying: only a purchase sync finds them.
+  // storePlan() turns those into one of four states:
+  //   free  — the product came back, its free time can be read, and the buyer
+  //           is not definitely ineligible. `sure` is true only on a definite
+  //           "eligible"; when it is false the words say "new subscribers"
+  //           and state no first charge as fact;
+  //   paid  — the product came back and has no offer, or the buyer is
+  //           definitely ineligible: charged today, never the word "free";
+  //   none  — everything else: no monthly product, the yearly one answering
+  //           in its place (iapProduct refuses it), an offer that costs money
+  //           or cannot be read, an error, no answer in time. NOTHING is sold
+  //           instead and no figure is shown; the yearly id stays in
+  //           IAP_PRODUCTS for restore only;
+  //   owned — this Apple ID already has Premium, so it is never sold a second
+  //           plan.
+  // The product and the purchase go through iapProduct("monthly") and
+  // iapPurchase("monthly", product), the calls real phones already use. The
+  // two NEW native calls (the eligibility ask and the purchase sync) are
+  // optional by construction: missing, throwing, rejecting or slow, each
+  // leaves the answer exactly as if the call did not exist, and neither can
+  // hold the card back beyond the limits below.
+  const PLAN_WAIT_MS  = 4000;  // no product by then → none/timeout. The clock starts when storePlan() is CALLED, before the store is even set up.
+  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility and "already has it" may hold the answer back
+  const PLAN_OWN_MS   = 3000;  // after the product: how long "already has it" may hold back a pay-today price for a buyer Apple calls ineligible
+  const WALL_WAIT_MS  = 2500;  // setupWall. Starts when setupWall() is called.
+  const IAPSYNC = "sona.iapsync.v1";   // sessionStorage "1": a purchase sync has FINISHED in this app launch
+  // a call that may throw before it returns its promise (a bridge method that
+  // is missing or broken) becomes a rejection, so nothing below can throw
+  function _soon(fn) { return new Promise((resolve) => { resolve(fn()); }); }
+
+  // "Does this Apple ID hold Premium?", shared by storePlan and setupWall so
+  // setup's ask and the price screen's are one ask. The customer record
+  // first; if it says no, ONE purchase sync, then the record again.
+  // syncPurchases re-attaches an old purchase to this install without Apple's
+  // sign-in prompt (restorePurchases can show one, which is why Restore stays
+  // a button). At most one FINISHED sync per app launch.
+  let _ownP = null, _syncP = null;
+  function _iapSyncOnce() {            // → Promise<boolean>: true only if a sync was sent now and resolved. Never rejects.
+    if (_syncP) return _syncP;         // one attempt per page load
+    let had = false; try { had = sessionStorage.getItem(IAPSYNC) === "1"; } catch (e) {}
+    const P = iapPlugin();
+    if (had || !P || typeof P.syncPurchases !== "function") return (_syncP = Promise.resolve(false));
+    // the flag is written only when the sync RESOLVES: one cut off by leaving the page is sent again by the next page
+    return (_syncP = _soon(() => P.syncPurchases()).then(() => { try { sessionStorage.setItem(IAPSYNC, "1"); } catch (e) {} return true; }, () => false));
+  }
+  function _iapOwned(fresh) {          // never rejects
+    if (_ownP && !fresh) return _ownP;
+    return (_ownP = _soon(() => iapRefresh(true))
+      .then((a) => a ? true : _iapSyncOnce().then((sent) => sent ? iapRefresh(true) : false))
+      .catch(() => false));
+  }
+
+  // The free time a product's introductory offer carries:
+  //   "none"  no offer at all;
+  //   "paid"  an offer that costs money (a discounted first period): the
+  //           first charge is neither nothing nor the full price;
+  //   "odd"   an offer whose length cannot be read;
+  //   { n, unit, text }  free for that long ("3 days", "1 month", "1 year").
+  // Only the last is ever shown as free time. Weeks are said in days, as
+  // Apple's own sheet says them.
+  function planFree(p) {
+    let ip = null; try { ip = p && (p.introPrice || p.introductoryPrice); } catch (e) {}
+    if (!ip) return "none";
+    // free means a price that IS zero: a missing one is not known to be
+    if (ip.price == null || ip.price === "" || Number(ip.price) !== 0) return "paid";
+    const span = (n, u) => {
+      if (u === "W") { n = n * 7; u = "D"; }
+      if (!(n >= 1) || Math.floor(n) !== n) return null;
+      const unit = u === "D" ? "day" : u === "M" ? "month" : u === "Y" ? "year" : "";
+      // what Apple lets an offer be, with room: anything outside is a misread
+      if (!unit || (unit === "day" && n > 31) || (unit === "month" && n > 12) || (unit === "year" && n > 1)) return null;
+      return { n, unit, text: n + " " + unit + (n === 1 ? "" : "s") };
+    };
+    // the count and its unit first, then the ISO period ("P3D"): a bridge may send either
+    let free = span(Number(ip.periodNumberOfUnits), String(ip.periodUnit || "").toUpperCase().charAt(0));
+    if (!free) { const m = /^P(\d+)([DWMY])$/i.exec(String(ip.period || "")); if (m) free = span(Number(m[1]), m[2].toUpperCase()); }
+    return free || "odd";
+  }
+  // RevenueCat's answer for one product: a number or its name, either under
+  // .status or bare (which one a real phone sends is not known yet, so both
+  // are read). "no" = this buyer already used the group's offer; "none" = the
+  // product has no offer; anything unreadable is "unknown", never a "no".
+  function _planElig(r, id) {
+    let v = null; try { v = r && r[id]; if (v && typeof v === "object") v = v.status; } catch (e) { v = null; }
+    const s = String(v == null ? "" : v).toUpperCase();
+    if (s === "1" || s.indexOf("INELIGIBLE") !== -1) return "no";   // before ELIGIBLE: the name contains it
+    if (s === "3" || s.indexOf("NO_INTRO") !== -1) return "none";
+    if (s === "2" || /ELIGIBLE$/.test(s)) return "yes";
+    return "unknown";
+  }
+  // The Plan a page is handed. `_p` is the store's own product object, kept
+  // for buyPlan and hidden from JSON, logs and for-in: nothing may copy it
+  // into a payload by accident. FROZEN: one Plan is handed to every caller of
+  // the page load, so a page that wrote to it would change the price the next
+  // caller reads, and the words built from it.
+  function _plan(state, why, p, free, sure) {
+    const priced = state === "free" || state === "paid";
+    const plan = {
+      state,
+      kind: priced ? "monthly" : "",                       // handed back to buyPlan and analytics; pages never branch on it
+      id: priced ? String(p.identifier || IAP_PRODUCTS.monthly) : "",
+      price: priced ? String(p.priceString) : "",          // the store's own string, verbatim: never rebuilt from a number
+      per: priced ? "month" : "",
+      free: state === "free" ? free : null,
+      sure: state === "free" && sure === true,
+      why: why || "",
+    };
+    if (priced) Object.defineProperty(plan, "_p", { value: p, enumerable: false });
+    if (plan.free) Object.freeze(plan.free);
+    return Object.freeze(plan);
+  }
+
+  // ONE ASK PER PAGE LOAD, and the latest answer is the one every caller
+  // gets, "none" included: only { fresh: true } asks the store again.
+  //   opts.fresh   ask again (Try again; the app coming back to the front)
+  //   opts.onLate  called with the new Plan whenever an answer that arrived
+  //                AFTER the promise resolved changes { state, kind, sure }.
+  // LATE ANSWERS COUNT. The promise resolves on the limits above, but the
+  // three asks stay live: a "not eligible", an "already has it" or the
+  // product itself arriving later replaces the answer and tells every
+  // onLate, so a sentence the phone knows to be false never stays on screen.
+  // Callbacks are kept for the page load, each once; an ask that a later
+  // fresh one replaced tells nobody anything.
+  let _planAsk = null;
+  const _planLate = [];
+  function _planStep(a) {
+    if (a !== _planAsk) return;
+    let plan;
+    if (a.own === true) plan = _plan("owned");
+    else if (!a.got) { if (!a.timedOut) return; plan = _plan("none", "timeout"); }
+    else if (a.failed) plan = _plan("none", "error");
+    else if (!a.p) plan = _plan("none", "no-product");
+    else {
+      const ownIn = a.own !== undefined, eligIn = a.elig !== undefined || a.intro === "none";
+      if (!(ownIn && eligIn)) {
+        if (!a.graceOver) return;
+        // A buyer Apple calls ineligible has subscribed before and may be
+        // paying right now: no pay-today price while the sync is in flight.
+        if (a.elig === "no" && !ownIn && !a.ownOver) return;
+      }
+      const cant = a.elig === "no" || a.elig === "none";
+      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes");
+      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p);
+      // an offer that costs money, or one that cannot be read, for a buyer
+      // who may get it: the first charge is unknown, so nothing is stated
+      else plan = _plan("none", "no-product");
+    }
+    if (!a.plan) { a.plan = plan; a.resolve(plan); return; }
+    if (plan.state === a.plan.state && plan.kind === a.plan.kind && plan.sure === a.plan.sure) return;
+    a.plan = plan;
+    _planLate.slice().forEach((fn) => { try { fn(plan); } catch (e) {} });
+  }
+  function storePlan(opts) {           // → Promise<Plan>. Never rejects.
+    opts = opts || {};
+    try { if (typeof opts.onLate === "function" && _planLate.indexOf(opts.onLate) === -1) _planLate.push(opts.onLate); } catch (e) {}
+    if (!iapPlugin()) return Promise.resolve(_plan("none", "no-plugin"));
+    if (_planAsk && !opts.fresh) return _planAsk.plan ? Promise.resolve(_planAsk.plan) : _planAsk.promise;
+    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, timedOut: false, graceOver: false, ownOver: false };
+    a.promise = new Promise((resolve) => { a.resolve = resolve; });
+    // whoever is still waiting on the ask this one replaces gets this one's answer
+    if (_planAsk && !_planAsk.plan) _planAsk.resolve(a.promise);
+    _planAsk = a;
+    try {
+      const id = IAP_PRODUCTS.monthly;
+      // the limit first: a store that never finishes setting itself up is caught by the same clock
+      a.wait = setTimeout(() => { a.timedOut = true; _planStep(a); }, PLAN_WAIT_MS);
+      const got = (p, failed) => {
+        if (a.got) return;
+        clearTimeout(a.wait);
+        a.got = true; a.failed = !!failed;
+        // a product with no price to show is not a product
+        a.p = (p && String(p.priceString == null ? "" : p.priceString).trim()) ? p : null;
+        if (a.p) {
+          a.intro = planFree(a.p);
+          setTimeout(() => { a.graceOver = true; _planStep(a); }, PLAN_GRACE_MS);
+          setTimeout(() => { a.ownOver = true; _planStep(a); }, PLAN_OWN_MS);
+        }
+        _planStep(a);
+      };
+      _soon(() => iapProduct("monthly")).then((p) => got(p, false), () => got(null, true));
+      _iapOwned(!!opts.fresh).then((own) => { a.own = !!own; _planStep(a); });
+      _soon(() => iapConfigure()).then((P) => {
+        if (typeof P.checkTrialOrIntroductoryPriceEligibility !== "function") return "unknown";
+        return Promise.resolve(P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: [id] })).then((r) => _planElig(r, id));
+      }).catch(() => "unknown").then((e) => { a.elig = e; _planStep(a); });
+    } catch (e) {
+      if (!a.plan) { a.plan = _plan("none", "error"); a.resolve(a.plan); }
+    }
+    return a.promise;
+  }
+
+  // Buy the plan a screen was handed. Resolves { ok: true }, or
+  // { ok: true, restored: true } when Apple says this Apple ID already bought
+  // it and a restore finds Premium (not a new sale: the caller must not count
+  // or celebrate it). Rejects with an Error whose .code a page can turn into
+  // words with planSay():
+  //   cancelled · pending (Ask to Buy) · not-allowed (Screen Time) ·
+  //   not-entitled (Apple took the order, Premium did not switch on) ·
+  //   offline · unavailable · busy (a purchase is already open) · failed ·
+  //   no-plan (nothing to buy was handed in).
+  // The numbers are RevenueCat's error codes, which cross the bridge as
+  // strings. No time limit on Apple's own sheet: a parent may sit on it.
+  function _buyCode(e) {
+    if (!e) return "failed";
+    const c = String(e.code == null ? "" : e.code), m = String(e.message || "");
+    if (e.cancelled || e.userCancelled || c === "1") return "cancelled";
+    if (c === "20") return "pending";
+    if (c === "3") return "not-allowed";
+    if (m === "not-entitled") return "not-entitled";
+    if (c === "10" || c === "35") return "offline";
+    if (c === "5" || m === "no-purchase-api" || m === "no-iap") return "unavailable";
+    if (c === "15") return "busy";
+    return "failed";
+  }
+  function _buyError(code) {
+    const err = new Error(code); err.code = code;
+    if (code === "cancelled") err.cancelled = true;
+    return err;
+  }
+  function buyPlan(plan) {
+    let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
+    if (!p) return Promise.reject(_buyError("no-plan"));
+    return _soon(() => iapPurchase(plan.kind, p)).then(() => ({ ok: true }), (e) => {
+      if (e && !e.cancelled && String(e.code) === "6") {
+        // "already purchased": the sale is Apple's news that they own it
+        return _soon(() => iapRestore()).then((active) => {
+          if (active) return { ok: true, restored: true };
+          throw _buyError("not-entitled");
+        }, () => { throw _buyError("not-entitled"); });
+      }
+      throw _buyError(_buyCode(e));
+    });
+  }
+
+  // "Does this family still owe the price?", after asking the store once.
+  // Setup calls it as the parent leaves the ready screen, so a paying family
+  // who reinstalled goes on to the microphone instead of to a price. False at
+  // once for anyone setup would not send to the price anyway. Otherwise the
+  // answer is trialFirst() read when the store has spoken or `ms` has passed,
+  // whichever is first: the store's "yes" has by then written the
+  // subscription, and a slow store means the price screen (which runs the
+  // same ask) decides. Never rejects.
+  function setupWall(ms) {
+    let due = false; try { due = trialFirst(); } catch (e) {}
+    if (!due) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      let done = false, t = 0;
+      const end = () => {
+        if (done) return; done = true; clearTimeout(t);
+        let owes = false; try { owes = trialFirst(); } catch (e) {}
+        resolve(owes);
+      };
+      t = setTimeout(end, (typeof ms === "number" && ms >= 0) ? ms : WALL_WAIT_MS);
+      _iapOwned(false).then(end, end);
+    });
+  }
+
+  // PLAN-WORDS-BEGIN
+  // EVERY SENTENCE APPLE'S CARD MAY SHOW LIVES BETWEEN THESE TWO MARKERS.
+  // The plan screen types no price, no day count and no "free" of its own:
+  // it paints what planWords() returns for the Plan storePlan() handed it,
+  // and its status line from planSay(). So a claim about money can only be
+  // changed here, where the tests read every state at once (planwordstest).
+  // Plain text only: a store string never becomes markup.
+  //
+  // What the words keep, whatever the store answers:
+  //   - every figure is the store's own price string, never a typed one;
+  //   - "paid" and "none" never say "free"; "none" and the waiting state
+  //     show no figure at all;
+  //   - when the phone is not sure this buyer gets the free time
+  //     (plan.sure false), no row states "nothing to pay today" or a billing
+  //     day as plain fact: each says "new subscribers", and the note says
+  //     what Apple does otherwise;
+  //   - "cancel at least 24 hours before" is Apple's own measure. The row
+  //     names a day with no time, so "a day before" could be read as the
+  //     evening before, which is too late;
+  //   - the two rows are Today and the billing day, and NOTHING ELSE. No
+  //     sentence here promises a message before the charge: Sona sends none.
+  //     A third row arrives only in the change that ships a real one, and
+  //     planwordstest fails on those words until then.
+  const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
+  // The day the first charge falls, for a plan with free time. Apple's free
+  // days are exact 24-hour days from the purchase; months and years land on
+  // the same day of the month, or its last day (31 Jan + 1 month).
+  function planBillDate(plan, now) {
+    try {
+      const f = plan && plan.state === "free" && plan.free;
+      if (!f || !(f.n >= 1)) return null;
+      const from = (now instanceof Date && !isNaN(now.getTime())) ? now : new Date();
+      if (f.unit === "day") return new Date(from.getTime() + f.n * 86400000);
+      if (f.unit !== "month" && f.unit !== "year") return null;
+      const d = new Date(from.getTime()), day = d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + (f.unit === "year" ? 12 * f.n : f.n));
+      d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+      return d;
+    } catch (e) { return null; }
+  }
+  // plan: what storePlan() resolved, or null/undefined while it is asking.
+  // o.freeVersion: this family already has daily practice (the free
+  // version), so Premium is not what opens it. o.now: the clock, for tests.
+  function planWords(plan, o) {
+    o = o || {};
+    const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
+    const w = {
+      state: "wait", title: "Sona Premium", tag: "", price: "", what: WHAT,
+      rows: [], note: "", noteFirst: false,
+      button: "Checking the App Store…", act: "wait",
+      header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
+      none: null,
+    };
+    if (plan == null) return w;
+    if (plan.state === "owned") { w.state = "owned"; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
+    const P = String(plan.price || ""), per = String(plan.per || "");
+    const FREE = (plan.state === "free" && plan.free && plan.free.text) ? String(plan.free.text) : "";
+    if (!P || !per || !(plan.state === "paid" || FREE)) {
+      // nothing to sell, or a plan too broken to describe: no figure, one way on
+      const reach = plan.state === "none" && (plan.why === "timeout" || plan.why === "error");
+      w.state = "none"; w.what = ""; w.button = "Try again"; w.act = "retry";
+      w.none = reach ? { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." }
+                     : { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." };
+      w.header = w.none.title;
+      return w;
+    }
+    const PP = P + " a " + per;
+    w.act = "buy";
+    if (plan.state === "paid") {
+      w.state = "paid"; w.title = "Get Sona Premium";
+      w.price = PP + ", charged today.";
+      w.note = "Charged to your Apple ID today, then every " + per + ". Renews unless canceled in " + PLAN_CANCEL + ".";
+      w.button = "Subscribe — " + PP;
+      w.header = "Sona Premium: " + PP + ", charged today.";
+      return w;
+    }
+    const RENEW = "Renews every " + per + " unless canceled in " + PLAN_CANCEL + ".";
+    let DAY = "";
+    try { const d = planBillDate(plan, o.now); if (d) DAY = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }); } catch (e) { DAY = ""; }
+    if (!DAY || /invalid/i.test(DAY)) DAY = "After your free " + (plan.free.unit === "day" ? "days" : "time");
+    w.state = "free";
+    w.tag = FREE.toUpperCase() + " FREE";
+    w.price = FREE + " free, then " + PP + ".";          // Travis's line (5 Oct 2026), built from the store's two answers
+    w.button = "Start " + FREE + " free";
+    if (plan.sure === true) {
+      w.title = "Start Sona Premium with " + FREE + " free";
+      w.rows = [
+        { when: "Today", text: "Everything opens. Nothing to pay today." },
+        { when: DAY, text: PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
+      ];
+      w.header = "Sona Premium: " + FREE + " free, then " + PP + ".";
+    } else {
+      w.title = "Sona Premium: " + FREE + " free for new subscribers";
+      w.rows = [
+        { when: "Today", text: "Everything opens. New subscribers pay nothing today." },
+        { when: DAY, text: "For new subscribers, " + PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
+      ];
+      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm.";
+      w.noteFirst = true;                                  // the note sits directly under the tile, above the rows
+      w.header = "Sona Premium: " + FREE + " free for new subscribers, then " + PP + ".";
+    }
+    return w;
+  }
+  // The card's one status line, by code (buyPlan's codes, and the page's own
+  // moments). "Nothing was charged" is never said: after a failure the phone
+  // does not know that. Cancelled and busy say nothing at all.
+  const PLAN_SAY = {
+    opening: "Opening the App Store…",
+    slow: "Still waiting for the App Store. If its window has closed, tap Restore Purchases.",
+    pending: "Waiting for approval. Sona Premium opens once the purchase is approved.",
+    "not-allowed": "Purchases are turned off on this device. Check Screen Time in Settings.",
+    "not-entitled": "Apple has your order, but Premium hasn't switched on yet. Tap Restore Purchases below.",
+    offline: "We couldn't reach the App Store. Check your connection and try again.",
+    unavailable: "Sona Premium can't be bought right now. Please try again in a little while.",
+    failed: "That didn't go through. If Apple took a payment, tap Restore Purchases.",
+    bought: "Sona Premium is on. Welcome to Sona!",
+    owned: "You already have Sona Premium. Welcome back!",
+    restoring: "Checking your purchases…",
+    restored: "Restored ✓ — welcome back!",
+    "no-purchases": "No purchases found on this Apple ID.",
+    "restore-failed": "Couldn't reach the App Store — try again in a moment.",
+  };
+  function planSay(code) {
+    return (typeof code === "string" && Object.prototype.hasOwnProperty.call(PLAN_SAY, code)) ? PLAN_SAY[code] : "";
+  }
+  // PLAN-WORDS-END
+
+  // ── SETUP: THE MARKER THAT BRINGS A BUYER BACK, AND THE TWO ANSWERS ──
+  // (Travis, 4–5 Oct 2026: "number B would be good … you can do a full
+  // reset".) Setup now saves the child on its ready screen and shows the
+  // price while the grown-up still holds the phone; the microphone and the
+  // hand-off come after.
+  //
+  // THE MARKER (sessionStorage, this tab only) says "this tab left setup's
+  // ready screen for this child": the price screen reads it to send a buyer
+  // back to setup, and setup reads it to open on the microphone instead of
+  // the hello. IT PICKS A SCREEN AND GRANTS NOTHING. Whether a family owes
+  // the price is always re-read from trialFirst() (stored entitlement), so a
+  // forged marker opens a microphone step and not one game. It dies with the
+  // tab or the app, after two hours, or when another child is active.
+  const SETUPAFTER = "sona.setupafter.v1";
+  const SETUPAFTER_MS = 2 * 60 * 60 * 1000;
+  function setupAfterMark() {
+    try { sessionStorage.setItem(SETUPAFTER, JSON.stringify({ at: Date.now(), kid: _slot() })); return true; } catch (e) { return false; }
+  }
+  // Pure: it removes nothing, so asking twice gives the same answer twice.
+  function setupAfter() {
+    try {
+      const m = JSON.parse(sessionStorage.getItem(SETUPAFTER) || "null");
+      if (!m || typeof m !== "object" || typeof m.at !== "number" || typeof m.kid !== "string") return false;
+      const age = Date.now() - m.at;
+      if (!(age >= 0 && age < SETUPAFTER_MS)) return false;
+      if (m.kid !== _slot()) return false;
+      return !!getProfile().onboarded;
+    } catch (e) { return false; }
+  }
+  function setupAfterClear() { try { sessionStorage.removeItem(SETUPAFTER); } catch (e) {} }
+
+  // THE TWO ANSWERS ("What brings you to Sona?", "How does practice go at
+  // home now?") STAY ON THIS PHONE. The screens that ask say so, so it has to
+  // be true by construction: ONE household key, holding one fixed id per
+  // question or "" for a skip. Not in the profile and not in PER_KID (so
+  // sendProgress, which reads the profile, cannot carry it to a clinician),
+  // not in a backup (NO_EXPORT) and not let in by one (NO_IMPORT), and no
+  // event, lead, address, title or error message is ever given one. They
+  // change nothing a child is given; they only pick which true sentence
+  // about Sona setup's ready screen shows. Asked once per family: the key
+  // existing (even with both skipped) is what stops a second ask.
+  const SETUPASKS = "sona.setupasks.v1";
+  const SETUP_WHY  = ["w_therapist", "w_waiting", "w_tricky", "w_extra"];
+  const SETUP_HOME = ["h_notyet", "h_hard", "h_sometimes", "h_most"];
+  function _askId(list, v) { return (typeof v === "string" && list.indexOf(v) !== -1) ? v : ""; }
+  function setupAsks() {
+    let raw = null, v = null;
+    try { raw = localStorage.getItem(SETUPASKS); v = JSON.parse(raw || "null"); } catch (e) {}
+    v = (v && typeof v === "object") ? v : {};
+    return { asked: raw != null, why: _askId(SETUP_WHY, v.why), home: _askId(SETUP_HOME, v.home) };
+  }
+  function setupAsksSave(a) {
+    a = (a && typeof a === "object") ? a : {};
+    try { localStorage.setItem(SETUPASKS, JSON.stringify({ v: 1, why: _askId(SETUP_WHY, a.why), home: _askId(SETUP_HOME, a.home) })); return true; } catch (e) { return false; }
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
@@ -5236,5 +5728,5 @@
   try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_WHY, SETUP_HOME };
 })(window);

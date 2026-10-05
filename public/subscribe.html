@@ -70,22 +70,16 @@
     .tli b{font-family:"Baloo 2";font-weight:800;font-size:16px;display:block;color:var(--ink);}
     .tli p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
 
-    /* Trial timeline: the same dashed rail as the founding card, tightened to
-       sit inside a plan. The dated 3-row shape is the strongest known defuser
-       of "I'll forget and get billed" — but only the rows we can actually keep
-       are here. We do NOT promise a reminder email: no trial webhook and no
-       trial mailer exist, and a promise the code can't keep is worse than no
-       promise. The middle row says what IS true — cancelling early keeps the
-       rest of the free days — and names where to do it. */
-    .tl.trial{margin-top:11px;padding-left:32px;}
-    .tl.trial:before{left:11px;top:8px;bottom:10px;width:3px;}
-    .tl.trial .tli{padding-bottom:13px;}
-    .tl.trial .tld{left:-32px;width:25px;height:25px;font-size:12px;}
-    .tl.trial .tli b{font-size:13.5px;}
-    .tl.trial .tli p{font-size:12px;margin-top:1px;}
-    .tli.clock .tld{background:linear-gradient(160deg,#56b4ff,var(--blue));border-color:transparent;box-shadow:0 3px 0 0 var(--blue-d);}
-    .tl.trial .tli.now .tld,.tl.trial .tli.lock .tld{box-shadow:0 3px 0 0 var(--orange-d);}
-    .tl.trial .tli.now .tld{background:linear-gradient(160deg,#ffc78f,var(--orange));border-color:transparent;}
+    /* WHAT HAPPENS WHEN, ON APPLE'S CARD: TWO ROWS (5 Oct 2026). When the
+       plan starts with free days the card lists Today and the day the first
+       charge falls, on the founding card's dashed rail, above the one button;
+       a plan charged today has one line and no rows. Only rows the code can
+       keep are there. No row promises a reminder before the charge: Sona
+       sends none, and a promise nothing keeps is worse than no promise. The
+       words are Sona.planWords's; the rules (.tl.days) are at the end of this
+       sheet, after the fit rules they tie with. They replaced a three-row
+       timeline whose "today" dot was orange, the colour that here means a
+       practice sound and nothing else. */
 
     /* ── plan picker (trial cohort) ── */
     /* proof strip: the named-SLP credential ABOVE the plans — the strongest
@@ -129,11 +123,6 @@
     .planpick .plan[aria-checked="true"]:after{border-color:#14858d;
       background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat;}
     .planpick .plan:focus-visible{outline:3px solid #157da5;outline-offset:3px;}
-    /* Apple's card has ONE plan since 5 Oct 2026 (Sona Monthly): no radio dot,
-       nothing to pick, and in the offer one full-width tile, teal like a
-       picked one. */
-    .planpick.one .plan{padding-right:16px;cursor:default;}
-    .planpick.one .plan:after{display:none;}
     #planMonth{padding-top:12px;padding-bottom:12px;margin-top:9px;}
     .plan .paynote{display:block;font-weight:700;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
     .planbuy{margin-top:12px;}
@@ -143,7 +132,9 @@
        billed"). It replaced a dated three-row timeline and, on the Apple card,
        a paragraph of small print. What stays is what a parent needs and Apple
        requires: when the free days end, the price after them, that it renews,
-       and where to cancel; Restore, Terms and Privacy stay as links. */
+       and where to cancel; Restore, Terms and Privacy stay as links.
+       (Since 5 Oct 2026 this is the web card's line. Apple's card says the
+       same things in its two rows, and wears this class on its one note.) */
     .billday{display:block;margin:10px 0 0;font-weight:700;font-size:13px;color:var(--muted);line-height:1.45;text-align:center;}
     .billday b{font-weight:800;color:var(--ink);}
     .planbuy .go{margin-top:0;}
@@ -183,7 +174,10 @@
     .offer-art .oc:nth-child(3) { right:22%; top:4px; transform:rotate(4deg); z-index:2; }
     .offer-art .oc:nth-child(4) { right:0; transform:rotate(11deg); }
     .offer-art.solo { height:200px; }
-    .offer-art.solo .oc { left:50%; top:2px; width:68%; max-width:290px; transform:translateX(-50%) rotate(-2deg); }
+    /* (the tapped game's picture is sized by the screen's WIDTH and its box is
+       not, so each level also caps its height: on the wider phones it used to
+       spill out of the box and over the "wants to play" line under it) */
+    .offer-art.solo .oc { left:50%; top:2px; width:68%; max-width:290px; max-height:192px; transform:translateX(-50%) rotate(-2deg); }
     .offer-art .echo { position:absolute; left:50%; bottom:-6px; width:96px; transform:translateX(-50%); z-index:3; filter:drop-shadow(0 6px 8px rgba(148,108,54,.25)); }
     .offer-art.solo .echo { left:auto; right:6%; transform:none; width:84px; }
     .offer-pill { display:inline-block; margin-top:14px; padding:5px 13px; border-radius:99px; background:#fff3c9; border:1px solid #f3dc92;
@@ -210,14 +204,15 @@
     body.offer .planbuy { margin-top:10px; }
     /* THE BUTTON STAYS ON THE FIRST SCREEN, MEASURED (1 Oct 2026). One
        height breakpoint could not know what is on the page: a win pill, a
-       two-line headline, the charter line, the Apple card's monthly box all
-       come and go, and with two plan boxes a 736, 780 or 812-tall phone lost
-       the button under a rule written for 667. So fitOffer() (in the script)
-       measures the button and steps the page down one level at a time until
-       it fits — the picture smaller, then the type, then the third check (only
-       on the web card, where "What stays free" says the same thing in full
-       under the offer), and the picture altogether only when nothing else
-       is left. */
+       two-line headline, the charter line, the Apple card's rows and its note
+       all come and go, and with two plan boxes a 736, 780 or 812-tall phone
+       lost the button under a rule written for 667. So fitOffer() (in the
+       script) measures the button and steps the page down one level at a time
+       until it fits — the picture smaller, then the type, then the third check
+       (only on the web card, where "What stays free" says the same thing in
+       full under the offer), and the picture altogether only when nothing
+       else is left. (Apple's card is measured to "Not now" and has levels of
+       its own, fit6 to fit8, at the end of this sheet.) */
     /* fitOffer() measures the moment after it changes a class. Under Reduce
        Motion sona.css gives EVERY property a .01ms transition, and a box
        mid-transition reports where it WAS: the fit read the old layout, ran
@@ -231,7 +226,7 @@
     body.fit1 .offer-art .oc:nth-child(2), body.fit1 .offer-art .oc:nth-child(3) { top:2px; }
     body.fit1 .offer-art .echo { width:72px; }
     body.fit1 .offer-art.solo { height:142px; }
-    body.fit1 .offer-art.solo .oc { width:54%; }
+    body.fit1 .offer-art.solo .oc { width:54%; max-height:134px; }
     body.fit1 .offer-art.solo .echo { width:64px; }
     body.fit1 .offer-pill { margin-top:10px; }
     body.fit2 .offer-art { height:70px; margin-top:0; }
@@ -239,7 +234,7 @@
     body.fit2 .offer-art .oc:nth-child(2), body.fit2 .offer-art .oc:nth-child(3) { top:0; }
     body.fit2 .offer-art .echo { display:none; }
     body.fit2 .offer-art.solo { height:84px; }
-    body.fit2 .offer-art.solo .oc { width:36%; }
+    body.fit2 .offer-art.solo .oc { width:36%; max-height:72px; }
     body.fit2 .offer-art.solo .echo { display:block; width:46px; right:20%; bottom:-2px; }
     body.fit2 .offer-pill { margin-top:8px; font-size:12.5px; padding:3px 11px; }
     body.fit2 #offerTitle { font-size:25px; margin-top:5px; }
@@ -273,8 +268,6 @@
     body.offer .planpick .plan[aria-checked="true"]:after { border-color:#fffaf0; background:#14858d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/13px no-repeat; }
     body.offer .planpick .plan[aria-checked="false"] { background:#fffaf2; border-color:#eadcc4; box-shadow:none; }
     body.offer .planpick .plan[aria-checked="true"] { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
-    body.offer .planpick.one { grid-template-columns:1fr; }
-    body.offer .planpick.one .plan { background:linear-gradient(#f2fbf9,#e3f4f1); border-color:#14858d; border-width:2.5px; box-shadow:0 6px 16px rgba(20,133,141,.18); }
     body.offer .plan .tag { position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap; margin:0; }
     body.offer .plan .tagmore { display:none; }
     body.offer .plan b .pname { font-size:0; display:block; }
@@ -297,22 +290,72 @@
     body.fit3.offer .plan b { font-size:20px; }
     body.fit3.offer .plan .save, body.fit3.offer .plan .paynote, body.fit3.offer .plan #charterLine { font-size:11.5px !important; margin-top:3px; }
     body.fit2.offer .planbuy .go { font-size:19px; padding-top:13px; padding-bottom:13px; }
-    /* ── TRIAL FIRST: the two screens before the price (3 Oct 2026) ──
-       Only on the hand-off from setup, and only once the store has said the
-       plan it offers starts with free days (on Apple's card the monthly plan, since
-       5 Oct 2026). While they are up, nothing else on
-       the page shows: the price comes after them, as on ReciMe's. */
-    body.intro-on .wrap > :not(#trialIntro) { display:none !important; }
-    #trialIntro { min-height:calc(100vh - 32px); min-height:calc(100dvh - 32px); display:flex; flex-direction:column; justify-content:center; text-align:center; padding:8px 4px 20px; }
-    .ti-slide { display:flex; flex-direction:column; align-items:center; gap:12px; }
-    .ti-art { position:relative; width:100%; max-width:340px; height:210px; }
-    .ti-art .offer-art { height:210px; margin:0; }
-    .ti-art > img.ti-pic { display:block; height:100%; width:auto; max-width:100%; margin:0 auto; object-fit:contain; filter:drop-shadow(0 8px 12px rgba(148,108,54,.22)); }
-    .ti-title { font-family:"Baloo 2",sans-serif; font-weight:800; font-size:30px; line-height:1.15; color:var(--ink); margin:8px 0 0; max-width:340px; text-wrap:balance; }
-    .ti-title em { font-style:normal; color:var(--act-d); }
-    .ti-sub { font-weight:700; font-size:16px; line-height:1.5; color:var(--muted); max-width:320px; margin:0; }
-    .ti-next { margin-top:16px; width:100%; max-width:340px; }
-    @media (max-height:640px) { .ti-art, .ti-art .offer-art { height:150px; } .ti-title { font-size:26px; } }
+
+    /* ── APPLE'S CARD: ONE PLAN, PAINTED FROM THE STORE'S ANSWER (5 Oct 2026) ──
+       One tile (the plan's name, its price line as the largest words about
+       money, one sentence saying what Premium opens), then the two dated rows
+       when the plan starts with free days, one note, ONE button, a status
+       line. Every word in it is written by paintApple() from Sona.planWords;
+       nothing here or in the markup names a price or a free day. This block
+       is LAST in the sheet on purpose: its fit rules tie with the fit2/fit3
+       title rules above and must come after them. */
+    .oneplan{position:relative;margin-top:14px;padding:20px 14px 13px;text-align:center;border-radius:22px;border:2.5px solid #14858d;background:linear-gradient(#f2fbf9,#e3f4f1);box-shadow:0 6px 16px rgba(20,133,141,.18);}
+    .oneplan .tag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#f4ddb0;color:#79572c;box-shadow:inset 0 1px 0 #fff8e9;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.06em;padding:3px 10px;border-radius:99px;}
+    .oneplan-name{display:block;font-family:Nunito,sans-serif;font-size:13px;font-weight:800;letter-spacing:.02em;color:#8a6f52;text-transform:uppercase;}
+    .oneplan-price{display:block;margin-top:2px;font-family:"Baloo 2";font-weight:800;font-size:26px;line-height:1.08;letter-spacing:-.3px;color:var(--ink);overflow-wrap:anywhere;text-wrap:balance;}
+    .oneplan-what{display:block;margin-top:5px;font-weight:700;font-size:13px;line-height:1.35;color:#7a6047;}
+    .oneplan-none{margin-top:14px;text-align:center;font-weight:700;font-size:14px;line-height:1.45;color:var(--muted);}
+    .oneplan-none b{display:block;font-family:"Baloo 2";font-weight:800;font-size:19px;color:var(--ink);}
+    .tl.days{list-style:none;margin:12px 0 0;padding:0 0 0 32px;text-align:left;}
+    /* the rail only joins one dot to the next; it never runs on past the last
+       dot like a step still to come */
+    .tl.days:before{display:none;}
+    .tl.days .tli:not(:last-child):after{content:"";position:absolute;left:-22px;top:27px;bottom:2px;width:3px;border-radius:99px;background:repeating-linear-gradient(#decfb5 0 6px,transparent 6px 11px);}
+    .tl.days .tli{padding-bottom:11px;} .tl.days .tli:last-child{padding-bottom:0;}
+    .tl.days .tld{left:-32px;top:0;width:22px;height:22px;}
+    .tl.days .tli b{font-size:14px;} .tl.days .tli p{font-size:12.5px;margin-top:1px;line-height:1.4;}
+    /* by id, so the family sheet's sage and the old orange can never repaint
+       them; teal from the tokens */
+    #iapTL .tli.now .tld{background:linear-gradient(160deg,var(--act-hi),var(--act));border-color:transparent;box-shadow:0 3px 0 0 var(--act-d);}
+    #iapTL .tli.bill .tld{background:#fffdf7;border:2px solid var(--act);box-shadow:none;}
+    #iapMsg{margin-top:10px;font-weight:800;font-size:12.5px;}
+    #iapMsg:empty{display:none;}
+    body.offer #iapMsg{text-align:center;}
+    /* after a purchase, a restore or "you already have it": one clear line
+       where the price was */
+    #iapCard[data-state="done"] #iapMsg{margin-top:14px;font-family:"Baloo 2";font-size:19px;line-height:1.25;color:var(--ink);text-align:center;text-wrap:balance;}
+    #iapLegal{margin-top:10px;font-weight:800;font-size:11px;}
+    body.offer #iapLegal{text-align:center;margin-top:14px;}
+    /* the hand-off from setup has no header: the grown-up is mid-setup, and
+       the ways off are the button, "Not now", Restore, Terms and Privacy */
+    body.offer.from-setup .family-header{display:none !important;}
+    /* NOTHING MOVES UNDER A FINGER. After the card changes shape (the price
+       arriving puts the button where "Not now" was), and after a tap on the
+       button or Restore, nothing here takes a tap for a moment. */
+    body.price-settling #iapBuy,body.price-settling #declineRow,body.price-settling #iapLegal{pointer-events:none;}
+    body.offer .oneplan,body.offer .oneplan *,body.offer .tl.days,body.offer .tl.days *,body.offer #iapNote,body.offer #iapNone,body.offer #iapMsg,body.offer #declineRow,body.offer #declineLink{transition:none !important;}
+    /* Apple's card is fitted to "Not now", which sits under the button, so it
+       has further to go than the web card: after the picture's first steps it
+       gives up the three checks (fit6), the picture (fit5), the sub-line
+       (fit7) and last the "wants to play" pill (fit8). The tile's own
+       sentence still says what Premium opens at every level. */
+    body.fit6 .offer-checks{display:none;}
+    body.fit7 .offer-sub{display:none;}
+    body.fit7 #offerTitle{font-size:21px;}
+    body.fit7.offer .oneplan{margin-top:10px;padding:16px 10px 9px;}
+    body.fit7.offer .oneplan-price{font-size:22px;}
+    body.fit7.offer .tl.days{margin-top:8px;} body.fit7.offer .tl.days .tli:not(:last-child){padding-bottom:8px;}
+    body.fit7.offer #iapNote{margin-top:6px;font-size:12px;}
+    body.fit7.offer .planbuy{margin-top:8px;}
+    body.fit7.offer #declineRow{margin-top:8px !important;}
+    body.fit7.offer #declineLink{padding:9px 20px !important;min-height:44px;}   /* the family sheet gives every .btn 50px */
+    /* the last level is for the smallest phone in the longest shape (320
+       wide, not sure of the free days, from a grey game): the pill goes and
+       the small print closes up, so the button still ends on the first
+       screen */
+    body.fit8 .offer-pill{display:none;}
+    body.fit8.offer .oneplan{padding:14px 10px 8px;}
+    body.fit8.offer .tl.days .tli p,body.fit8.offer #iapNote{line-height:1.3;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -329,32 +372,6 @@
     </nav>
     <a class="family-crumb" href="/settings.html">‹ Settings</a>
     <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Your plan</h1><p>Told plainly — for the grown-ups.</p></div></div>
-
-    <!-- TRIAL FIRST, THE TWO SCREENS BEFORE THE PRICE (3 Oct 2026). Travis
-         sent ReciMe's onboarding ("We offer 7 days free so everyone can
-         cook…", "You'll get a reminder 2 days before your trial ends.", then
-         "Design your trial") with "something like this". Shown on the
-         hand-off from setup (?setup=1) only, in a card that can sell, and only
-         once the store has said the plan really starts with free days (on
-         Apple's card, Sona Monthly since 5 Oct 2026):
-         the number is the store's and the date the clock's, never typed here.
-         The second screen is ReciMe's reminder made true: Sona sends no
-         reminder (there is no trial mailer), so it says the day the free days
-         end and where to cancel. The pictures are ChatGPT's crafted art (see
-         INTRO_ART in the script). -->
-    <section id="trialIntro" hidden aria-live="polite">
-      <div class="ti-slide" id="tiFree" hidden>
-        <div class="ti-art" id="tiFreeArt" aria-hidden="true"></div>
-        <h1 class="ti-title" id="tiFreeTitle">We offer <em id="tiDays">3 days free</em> so every kid can practice with Echo.</h1>
-        <button class="btn go ti-next" id="tiFreeGo" type="button">Continue</button>
-      </div>
-      <div class="ti-slide" id="tiDate" hidden>
-        <div class="ti-art" id="tiDateArt" aria-hidden="true"></div>
-        <h1 class="ti-title" id="tiDateTitle">Nothing to pay until <em id="tiEnd"></em>.</h1>
-        <p class="ti-sub" id="tiDateSub">Cancel anytime before then.</p>
-        <button class="btn go ti-next" id="tiDateGo" type="button">Continue</button>
-      </div>
-    </section>
 
     <!-- THE OFFER, AS A MOMENT (30 Sep 2026). Travis: "this paywall is
          absolutely terrible". Reached from the end of a first practice run
@@ -406,45 +423,49 @@
 
     <!-- native paywall (App Store build): Apple's sheet, required restore +
          legal links. Stripe never shows inside the shell. -->
-    <div class="card" id="iapCard" style="display:none;">
+    <div class="card" id="iapCard" style="display:none;" data-state="wait">
       <!-- The plan is SONA PREMIUM, named as such on every surface that sells
            it (24 Sep 2026): the "See the plan" button on the Premium page and
            the one-time offer after a first run both land here, and a card
            titled "Sona Yearly" beside "only if you keep Sona" read as buying
            Sona itself — which, with a free version, nobody has to. -->
-      <h2 id="iapTitle">Start your free days of Sona Premium</h2>
+      <h2 id="iapTitle">Sona Premium</h2>
       <div class="proof">
         <span class="pem"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></span>
         <span><b>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship</b>, and Sona&rsquo;s co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
-      <!-- NATIVE CARD — App Store Connect owns every figure here.
-           ONE PLAN SINCE 5 OCT 2026 (Travis: "get rid of the annual option and
-           update the copy so that it says three days free, then $9.99 a
-           month"): Sona Monthly, with the free days App Store Connect starts
-           it with. The price and the free days in the markup are placeholders
-           (what App Store Connect said on 5 Oct); once RevenueCat hands back
-           the monthly product, the script repaints both from it, and a
-           product with no free trial turns every line into "charged today".
-           The card never states a saving. The yearly product stays in
-           App Store Connect and in sona.js's IAP_PRODUCTS, so anyone who
-           bought it is still recognised and can restore; it is simply no
-           longer offered here. -->
-      <div class="planpick one" id="iapPlans">
-      <div class="plan best" id="iapPlan" data-plan="monthly">
-        <span class="tag" id="iapTag"><span id="iapTagDays">3 DAYS FREE</span><span class="tagmore"> · EVERYTHING INCLUDED</span></span>
-        <b><span class="pname" data-short="Monthly">Sona Premium — </span><span id="iapPrice">$9.99/mo</span></b>
-        <span class="save" id="iapSave">3 days free, then $9.99 a month.</span>
-        <span class="sub" id="iapSub">Nothing is charged during your 3 free days. Sona Premium: every game and every book. Daily practice and free games stay free either way.</span>
+      <!-- NATIVE CARD: ONE PLAN, AND THE STORE SAYS EVERYTHING ABOUT IT.
+           Travis, 5 Oct 2026: "get rid of the annual option and update the
+           copy so that it says three days free, then $9.99 a month". The app
+           sells the monthly product alone, and App Store Connect owns its
+           price and its free days. So this card SHIPS WITH NO FIGURE, NO DAY
+           COUNT AND NO "FREE": the markup below is empty, and paintApple() (in
+           the script) fills it from Sona.planWords for the answer
+           Sona.storePlan gives. A typed "3 days free" here once sat over a
+           product that charged at once. Until the store answers, the button
+           says it is checking and takes no tap; a store with no monthly
+           product, or one that answers with the yearly product, shows no
+           price at all. The card never states a saving. The yearly product
+           stays in App Store Connect and in sona.js's IAP_PRODUCTS, so anyone
+           who bought it is still recognised and can restore; it is simply
+           not offered here. iaptest and pricescreentest read this markup for
+           any figure or "free" a parent could see. -->
+      <div class="oneplan" id="iapPlan">
+        <span class="tag" id="iapTag" hidden></span>
+        <span class="oneplan-name">Sona Premium</span>
+        <span class="oneplan-price" id="iapPrice"></span>
+        <span class="oneplan-what" id="iapWhat"></span>
       </div>
-      </div>
+      <ol class="tl days" id="iapTL" hidden aria-label="What happens when"></ol>
+      <div class="oneplan-none" id="iapNone" role="status" hidden><b id="iapNoneTitle"></b><span id="iapNoneText"></span></div>
+      <p class="billday" id="iapNote" hidden></p>
       <div class="planbuy">
-        <button class="btn go" id="iapBuy">Start 3 days free</button>
-        <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
-        <span class="reassure" id="iapMathMo" hidden>Charged to your Apple&nbsp;ID today, then every month. Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions.</span>
-        <p class="billday" id="iapTL"></p>
+        <button class="btn go" id="iapBuy" type="button" data-act="wait" disabled aria-describedby="iapNote">Checking the App Store…</button>
       </div>
-      <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p style="margin-top:10px;font-weight:800;font-size:11px;">
+      <!-- no inline style on these two: the rules at the end of the sheet set
+           their spacing, and an inline margin would beat them -->
+      <p class="muted" id="iapMsg" role="status" aria-live="polite"></p>
+      <p id="iapLegal">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
         · <a href="/privacy" style="color:#8a6f52;">Privacy</a>
@@ -686,7 +707,7 @@
       try {
         document.getElementById("offerCheck3").textContent = "Cancel anytime" + ((Sona.isNativeApp && Sona.isNativeApp()) ? " in Settings" : "");
         document.getElementById("pickWhat").textContent = "Sona Premium opens daily practice, every game and every book, for every child on this device.";
-        // (the Apple card's own lines follow FREE_VER in paintIap)
+        // (the Apple card's own lines follow FREE_VER in paintApple)
       } catch (e) {}
     }
 
@@ -695,14 +716,54 @@
     // book or "See Premium" (?from=library), or Settings (neither). ?from= is
     // checked against the catalog — it arrived in a URL.
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
-    // ?setup=1: the end of setup, for a family who starts with the trial
-    // (Sona.trialFirst). It opens on the two screens before the price.
+    // ?setup=1: setup's ready screen, for a family who starts with the trial
+    // (Sona.trialFirst). The grown-up is still holding the phone: the price
+    // comes here, and the microphone and the hand-off after it (5 Oct 2026;
+    // the two screens that used to stand before the price are gone, and the
+    // card's own two rows say what they said).
     var OFFER_SETUP = /[?&]setup=1(&|$)/.test(location.search);
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
       OFFER_FROM = _f === "library" ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
     } catch (e) {}
     var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM ? "from-game" : "settings";
+
+    // APPLE'S CARD, ITS WHOLE STATE (5 Oct 2026). Up here because three
+    // blocks read it: the native rail that paints the card, fitOffer(), and
+    // "Not now".
+    //   plan     what Sona.storePlan answered (null while it is asking)
+    //   busy     a purchase is open: one in flight, ever
+    //   msg      the status line under the button
+    //   done     "" | "bought" | "restored" | "owned": the card is one line now
+    //   counted  a priced card was really painted (the impression, once)
+    //   told     which "price state" codes were already sent
+    //   shape    the words last painted, to tell a real change from a repaint
+    //   gen      bumped by every ask and every tap, so a stale BACKGROUND
+    //            answer (back at the front, the approval watch) is dropped
+    //   asks     counts the asks the card itself waits on (at load, "Try
+    //            again"). Their answer is the price: only a newer one of
+    //            them replaces it, never a tap (see ask())
+    //   poll, pendingKind, stop   the watch for an Ask to Buy approval
+    var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", stop: null };
+    // NOTHING MOVES UNDER A FINGER: for `ms` after the card changes shape, or
+    // after a tap on the button or Restore, the button, "Not now" and the
+    // Restore row take no tap (body.price-settling). The price arriving puts
+    // the button where "Not now" was a moment before.
+    // A HOLD IS NEVER CUT SHORT. The second after a tap used to end early
+    // whenever a message followed it (Screen Time off, offline: each asks for
+    // 0.6 s of its own, and the newer timer replaced the longer one). A call
+    // that would end sooner than the hold already running now leaves it be.
+    // "Already running" is read off the timer, not the clock alone: on a
+    // phone whose clock was set back, the clock would go on saying a hold is
+    // running after its timer had ended it, and the button would take no tap.
+    var settleT = 0, settleEnd = 0;
+    function settleTaps(ms) {
+      var end = Date.now() + ms;
+      document.body.classList.add("price-settling");
+      if (settleT && end <= settleEnd) return;
+      settleEnd = end; clearTimeout(settleT);
+      settleT = setTimeout(function () { settleT = 0; document.body.classList.remove("price-settling"); }, ms);
+    }
 
     // The header line for a family who holds Premium without having bought it
     // here. Where it came from is said out loud: a clinician's plan can end,
@@ -716,121 +777,46 @@
       document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
     }
 
-    // The day they are billed, one builder for both paywalls (2 Oct 2026; it
-    // was a dated three-row timeline). The date comes from the same +3 days
-    // the charge itself uses. On the web the price is this repo's (the
-    // charter figure, window.__yearPrice); in the app it is the store's own
-    // string, read off the card two lines up once RevenueCat has painted it,
-    // so the line can never name a different number from the box above it.
-    // No reminder is promised: there is no trial mailer to keep one.
-    // Apple's card (5 Oct 2026: one plan, Sona Monthly) hands in its own free
-    // days and the store's price string, so the line is "then $9.99 a month"
-    // and its date is the store's free days, not the web's 3.
-    function trialTimeline(id, native, days, monthPrice) {
+    // The day they are billed, the web card's one line (2 Oct 2026; it was a
+    // dated three-row timeline). The date comes from the same +3 days the
+    // charge itself uses, and the price is this repo's (the charter figure,
+    // window.__yearPrice). No reminder is promised: there is no trial mailer
+    // to keep one. Only the web card calls this now: Apple's card paints its
+    // own two rows from Sona.planWords, so no figure for it is typed here.
+    function trialTimeline(id) {
       var el = document.getElementById(id);
       if (!el) return;
-      var n = native && days > 0 ? days : 3;
       var d3 = "";
-      try { d3 = new Date(Date.now() + n * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
+      try { d3 = new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
       if (!d3) return;                       // no date, no line — the prose line stays
-      var price;
-      if (native) price = (monthPrice || "$9.99") + " a month";
-      else price = (window.__yearPrice || "$59.99") + " a year";
-      // Apple's card says where to cancel, as Apple asks. The web says
+      var price = (window.__yearPrice || "$59.99") + " a year";
       // "Cancel anytime" and not "in your account": a web buyer has no
       // cancel button there (they email us), and Stripe's own page, where
       // they actually pay, spells out the renewal.
-      el.innerHTML = "Free until <b>" + d3 + "</b>, then " + price + ". " +
-        (native ? "Renews unless canceled in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime.");
+      el.innerHTML = "Free until <b>" + d3 + "</b>, then " + price + ". Cancel anytime.";
       // the one-line version said less in the same place; this replaces it
-      var prose = document.getElementById(native ? "iapMath" : "trialMath");
+      var prose = document.getElementById("trialMath");
       if (prose) prose.style.display = "none";
     }
-    // ── TRIAL FIRST: the two screens before the price (see #trialIntro) ──
-    // INTRO_ART: the two pictures drawn for these screens in ChatGPT's crafted
-    // style (Travis makes them; set the paths here when they land). Until
-    // then the first screen shows games in Home's own art with Echo cheering,
-    // and the second Echo waving: ChatGPT pictures already in the app.
-    var INTRO_ART = { free: "", date: "" };
-    var introState = "off", introWaiters = [];
-    // run fn once the price itself is on screen (now, if no intro is up)
-    function afterIntro(fn) { if (introState === "off" || introState === "done") fn(); else introWaiters.push(fn); }
-    function introDone() {
-      if (introState === "off" || introState === "done") return;
-      introState = "done";
-      document.getElementById("trialIntro").hidden = true;
-      document.body.classList.remove("intro-on");
-      var w = introWaiters; introWaiters = [];
-      w.forEach(function (fn) { try { fn(); } catch (e) {} });
-      try { window.scrollTo(0, 0); } catch (e) {}
-      fitOffer();
-    }
-    function introArt() {
-      var acts = Sona.GAME_ACTS || {}, cards = Sona.CRAFTED_CARDS || {};
-      var ok = function (k) { return acts[k] && !acts[k].comingSoon && cards[k]; };
-      var picks = ["slice", "feed", "tiles", "bubbles"].filter(ok);
-      if (picks.length < 2) picks = Object.keys(acts).filter(ok).slice(0, 4);
-      document.getElementById("tiFreeArt").innerHTML = INTRO_ART.free
-        ? '<img class="ti-pic" src="' + INTRO_ART.free + '" alt="" />'
-        : '<div class="offer-art">' + picks.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + cards[k] + '.webp" alt="" /></span>'; }).join("") +
-          '<img class="echo" src="/assets/crafted/echo-cheer.webp" alt="" /></div>';
-      document.getElementById("tiDateArt").innerHTML = '<img class="ti-pic" src="' + (INTRO_ART.date || "/assets/crafted/echo-wave.webp") + '" alt="" />';
-    }
-    // Up before the store has answered: the pictures only, since nothing on
-    // these screens can be said yet. If the answer does not come in 2.5 s,
-    // the price screen shows instead.
-    function introWait() {
-      if (introState !== "off") return;
-      introState = "wait";
-      try { introArt(); } catch (e) {}
-      document.getElementById("tiFreeTitle").style.visibility = "hidden";
-      document.getElementById("tiFreeGo").style.visibility = "hidden";
-      document.getElementById("tiFree").hidden = false;
-      document.getElementById("trialIntro").hidden = false;
-      document.body.classList.add("intro-on");
-      setTimeout(function () { if (introState === "wait") introDone(); }, 2500);
-    }
-    // days: the free days the store (or, on the web, this repo's checkout)
-    // starts the plan with (Apple's: Sona Monthly since 5 Oct 2026; the web's:
-    // the yearly plan). None, and the screens are skipped: they
-    // exist to say "free", and must not say it of a plan that charges today.
-    function introStart(days, native) {
-      if (introState !== "wait") return;
-      if (!(days > 0)) { introDone(); return; }
-      introState = "on";
-      document.getElementById("tiDays").textContent = days + (days === 1 ? " day" : " days") + " free";
-      var end = "";
-      try { end = new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); } catch (e) {}
-      if (end) document.getElementById("tiEnd").textContent = end;
-      else document.getElementById("tiDateTitle").textContent = "Nothing to pay during your free days.";
-      document.getElementById("tiDateSub").innerHTML = native ? "Cancel anytime before then, in Settings&nbsp;→&nbsp;Subscriptions." : "Cancel anytime before then.";
-      var one = document.getElementById("tiFree"), two = document.getElementById("tiDate");
-      document.getElementById("tiFreeTitle").style.visibility = "";
-      document.getElementById("tiFreeGo").style.visibility = "";
-      document.getElementById("tiFreeGo").onclick = function () {
-        one.hidden = true; two.hidden = false;
-        try { document.getElementById("tiDateGo").focus({ preventScroll: true }); } catch (e) {}
-      };
-      document.getElementById("tiDateGo").onclick = introDone;
-      try { document.getElementById("tiFreeGo").focus({ preventScroll: true }); } catch (e) {}
-      try { if (window.SonaAnalytics) SonaAnalytics.track("trial intro viewed", { surface: native ? "native" : "web" }); } catch (e) {}
-    }
-    // A plan's free days, from the store's own product: a free
-    // introductory offer counted in days (or weeks). Anything else is 0.
-    function freeDays(p) {
-      var ip = p && (p.introPrice || p.introductoryPrice);
-      if (!ip || Number(ip.price) !== 0) return 0;
-      var n = Number(ip.periodNumberOfUnits) || 0, u = String(ip.periodUnit || "").toUpperCase();
-      if (!n || !u) { var m = /^P(\d+)([DW])$/.exec(String(ip.period || "")); if (m) { n = +m[1]; u = m[2] === "W" ? "WEEK" : "DAY"; } }
-      var days = u === "DAY" ? n : u === "WEEK" ? n * 7 : 0;
-      return days > 0 && days <= 31 ? days : 0;
-    }
-    // Once the free days start (or a purchase is restored) on the hand-off
-    // from setup, the first game setup chose opens; from anywhere else, Home.
+    // WHERE A BUYER GOES NEXT. From setup's ready screen the grown-up comes
+    // back to setup for the microphone and the hand-off: the tab-only marker
+    // (Sona.setupAfter) says so. It picks a screen and grants nothing. From
+    // anywhere else, and without a marker, Home.
     function nextAfterBuy() {
       if (!OFFER_SETUP) return "/today.html";
-      try { return (Sona.firstGameStart && Sona.firstGameStart()) || "/today.html"; } catch (e) { return "/today.html"; }
+      try { if (Sona.setupAfter && Sona.setupAfter()) return "/onboarding.html"; } catch (e) {}
+      // No marker. The OLD setup page (still open on some phones when this
+      // shipped) did the microphone and the hand-off before the price and
+      // left its first-game mark; the new page writes that mark only after
+      // the price. So a mark with no marker is that phone: its game.
+      try { var k = Sona.gameKey(sessionStorage.getItem("sona.firstgame.v1") || ""); if (k && Sona.GAME_ACTS[k] && Sona.GAME_ACTS[k].go) return Sona.GAME_ACTS[k].go; } catch (e) {}
+      return "/today.html";
     }
+    // A setup visitor who already has Premium is sent on at once (a reload
+    // between the purchase and the hop; a household that paid for a first
+    // child), never left on "Your plan: Active". Read from the stored
+    // entitlement, not from the address.
+    try { if (OFFER_SETUP && !FREE && Sona.premium && Sona.premium()) { document.documentElement.style.visibility = "hidden"; location.replace(nextAfterBuy()); } } catch (e) {}
 
     if (FREE) {
       try {
@@ -864,36 +850,49 @@
     // THE BUTTON ON THE FIRST SCREEN, BY MEASURING (1 Oct 2026) — see the
     // .fit1…fit5 note in the styles. Only the offer view is fitted; it starts
     // from the full layout every time and adds one level at a time while the
-    // buy button's bottom edge is still below the screen (less the phone's
-    // home-bar inset and a little air). It is called again whenever something
-    // that changes the height arrives: the charter line, the Apple card's
-    // monthly box, the fonts, a rotation.
+    // thing it measures is still below the screen (less the phone's home-bar
+    // inset and a little air). It is called again whenever something that
+    // changes the height arrives: the charter line, the store's answer on
+    // Apple's card, the fonts, a rotation.
+    // THE WEB CARD is measured to its buy button, through fit1…fit5, exactly
+    // as before. APPLE'S CARD (5 Oct 2026) is measured to "Not now", the
+    // lowest thing a parent must be able to reach: it sits under the button,
+    // and every word about money sits above the button, so "Not now" on the
+    // first screen means the whole billing line is too. Its levels give up
+    // the checks (fit6) before the picture, then the sub-line (fit7) and last
+    // the "wants to play" pill (fit8). Restore, Terms and Privacy follow
+    // "Not now" and may sit one short scroll below. It never runs while a
+    // purchase is open or after one: a status line may push "Not now" down,
+    // away from the button, but the page must not jump under a second tap.
     function fitOffer() {
       try {
         var b = document.body;
         if (!b.classList.contains("offer")) return;
-        var LEVELS = ["fit1", "fit2", "fit3", "fit4", "fit5"];
-        LEVELS.forEach(function (c) { b.classList.remove(c); });
+        if (APPLE.busy || APPLE.done) return;
+        ["fit1", "fit2", "fit3", "fit4", "fit5", "fit6", "fit7", "fit8"].forEach(function (c) { b.classList.remove(c); });
         var btn = null;
         ["iapBuy", "buyLife"].forEach(function (id) {
           var el = document.getElementById(id);
           if (!btn && el && el.getBoundingClientRect().height > 0) btn = el;
         });
         if (!btn) return;
+        var apple = btn.id === "iapBuy";
+        var seen = function (id) { var el = document.getElementById(id); return (el && el.getBoundingClientRect().height > 0) ? el : null; };
+        var tgt = apple ? (seen("declineLink") || btn) : btn;
+        var LEVELS = apple ? ["fit1", "fit2", "fit3", "fit6", "fit5", "fit7", "fit8"] : ["fit1", "fit2", "fit3", "fit4", "fit5"];
         var inset = 0;
         try {
           var probe = document.createElement("div");
           probe.style.cssText = "position:fixed;left:0;bottom:0;visibility:hidden;padding-bottom:env(safe-area-inset-bottom);";
           b.appendChild(probe); inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0; b.removeChild(probe);
         } catch (e) {}
-        var fits = function () { return btn.getBoundingClientRect().bottom + (window.pageYOffset || 0) <= window.innerHeight - inset - 8; };
+        var fits = function () { return tgt.getBoundingClientRect().bottom + (window.pageYOffset || 0) <= window.innerHeight - inset - 8; };
         var ft = document.getElementById("freeTierCard");
         var freeSaid = !!ft && ft.style.display !== "none" && ft.getBoundingClientRect().height > 0;
         for (var i = 0; i < LEVELS.length && !fits(); i++) {
-          // fit4 drops the third check ("the free games stay free"): only
-          // where the card under the offer says it in full (the web card).
-          // The Apple card has no such card, so it keeps the check and gives
-          // up the picture instead.
+          // fit4 (the web card's list only) drops the third check ("the free
+          // games stay free"): only where the card under the offer says it
+          // in full.
           if (LEVELS[i] === "fit4" && !freeSaid) continue;
           b.classList.add(LEVELS[i]);
         }
@@ -942,6 +941,17 @@
 
     // Native shell (App Store build): ONE paywall — Apple's sheet via
     // RevenueCat. Stripe cards never render in the shell (3.1.1 hygiene).
+    //
+    // ONE PLAN, ONE PAINT FUNCTION (5 Oct 2026). Travis: "get rid of the annual
+    // option and update the copy so that it says three days free, then $9.99 a
+    // month". The app sells the monthly product alone. What the card may say
+    // about it is not decided here: Sona.storePlan() asks the store (the
+    // product, whether THIS buyer still gets the free days, whether this
+    // Apple ID already has Premium) and Sona.planWords() holds every sentence
+    // for each answer. paintApple() writes those words and nothing else
+    // writes the card, so this page types no price, no day count and no
+    // "free" of its own. NO comparison and NO saving either: a ratio typed
+    // here would be a claim about numbers this repo does not own.
     (function () {
       try {
         if (FREE) return;
@@ -968,106 +978,336 @@
           var ftN = document.getElementById("freeTierCard"); if (ftN) ftN.style.display = "block";
           return;
         }
-        document.getElementById("iapCard").style.display = "block";
-        // the hand-off from setup opens on the two screens first (see
-        // #trialIntro), so the price is counted as seen once they close
-        if (OFFER_SETUP) introWait();
-        afterIntro(function () {
-          try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE }); } catch (e) {}
-          // The offer is on screen NOW — this is the only place the one-shot is
-          // spent. Deciding to come here is not the same as arriving.
-          try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
-        });
-        // NO comparison and NO saving: Apple sets the price, and a ratio or a
-        // saving typed here is a claim about numbers this repo does not own.
-        // ONE PLAN (5 Oct 2026): Sona Monthly, "3 days free, then $9.99 a
-        // month". Every line that names the free days or the price is painted
-        // from here, first with the markup's placeholders and again once the
-        // store has answered with the monthly product itself (sona.js refuses
-        // any other id). A product that comes back with no free trial makes
-        // every line say "charged today", so the card never promises free
-        // days that Apple's sheet would not give.
-        var welcome = /[?&]welcome=1/.test(location.search), buyBtn = document.getElementById("iapBuy");
-        var moProduct = null;
-        function iapPrice() {
-          var ps = moProduct && moProduct.priceString;
-          return ps && /\d/.test(ps) ? ps : "$9.99";
-        }
-        function iapDays() { return moProduct ? freeDays(moProduct) : 3; }
-        function paintIap() {
-          var price = iapPrice(), days = iapDays(), free = days > 0;
-          var dWord = days + (days === 1 ? " day" : " days");
-          document.getElementById("iapPrice").textContent = price + "/mo";
-          document.getElementById("iapTag").hidden = !free;
-          document.getElementById("iapTagDays").textContent = free ? dWord.toUpperCase() + " FREE" : "";
-          document.getElementById("iapSave").textContent = free ? dWord + " free, then " + price + " a month." : price + " a month, charged today.";
-          document.getElementById("iapSub").textContent = (free ? "Nothing is charged during your " + days + " free " + (days === 1 ? "day" : "days") + ". " : "Charged today, then every month. ") +
-            (FREE_VER ? "Sona Premium: every game and every book. Daily practice and free games stay free either way." : "Sona Premium: daily practice, every game and every book.");
-          buyBtn.textContent = free ? "Start " + dWord + " free" : "Subscribe — " + price + " a month";
-          document.getElementById("iapTitle").textContent = free
-            ? (welcome ? "One last thing — start your free days of Sona Premium" : "Start your free days of Sona Premium")
-            : "Get Sona Premium, month by month";
-          document.getElementById("planLine").innerHTML = (FREE_VER ? "Today: the <b>free version</b>. " : "") +
-            (free ? "Sona Premium: <b>" + dWord + " free</b>, then " + price + " a month — cancel any time before then."
-                  : "Sona Premium: " + price + " a month, charged today — cancel any time.");
-          var math = document.getElementById("iapMath"), tl = document.getElementById("iapTL");
-          document.getElementById("iapMathMo").hidden = free;
-          tl.style.display = free ? "" : "none";
-          math.style.display = "";
-          if (free) {
-            try {
-              var dd = new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" });
-              math.innerHTML = "No charge today — first charge <b>" + dd + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
-            } catch (e) {}
-            trialTimeline("iapTL", true, days, price);   // the one billing line, when it can be built
-          } else math.style.display = "none";
-          fitOffer();
-        }
-        paintIap();
-        Sona.iapProduct("monthly").then(function (p) {
-          if (p && p.priceString) moProduct = p;
-          paintIap();
-          if (OFFER_SETUP) introStart(moProduct ? freeDays(moProduct) : 0, true);
-        }).catch(function () { if (OFFER_SETUP) introStart(0, true); });
+        var g = function (id) { return document.getElementById(id); };
+        var card = g("iapCard"), elTL = g("iapTL"), elNote = g("iapNote"), elBuy = g("iapBuy"), elMsg = g("iapMsg");
+        var buyWrap = card.querySelector(".planbuy");
+        card.style.display = "block";
 
-        var msg = document.getElementById("iapMsg");
-        function iapGo(kind, value, label) {
-          msg.textContent = "Opening the App Store…";
-          try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: value, currency: "USD", content_name: label }); } catch (e) {}
-          Sona.iapPurchase(kind).then(function () {
-            msg.textContent = "";
-            // RevenueCat has confirmed the entitlement by the time this resolves
-            // "purchase completed", NOT "trial started": sona.js fires
-            // "trial started" when the in-app 3-day clock begins, and two
-            // different funnel steps sharing one event name makes both numbers
-            // meaningless. This one means money was committed. `plan` is the
-            // plan that was bought: it said "annual" for every sale while
-            // there was only one.
-            try { if (window.SonaAnalytics) SonaAnalytics.track("purchase completed", { source: "apple", plan: kind }); } catch (e) {}
-            try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
-            document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
-            document.getElementById("iapCard").style.display = "none";
-            setTimeout(function () { location.href = nextAfterBuy(); }, 1200);
-          }).catch(function (e) {
-            // "Nothing was charged" is only said when that is known. Apple can
-            // take the payment and the unlock still not arrive (sona.js throws
-            // "not-entitled"); a family told nothing was charged then would be
-            // charged, locked out, and trying to buy again.
-            msg.textContent = (e && e.cancelled) ? ""
-              : (e && /not-entitled/.test(String(e.message))) ? "Apple has your order, but Premium hasn't switched on yet. Tap Restore Purchases below."
-              : "That didn't go through — nothing was charged. Try again in a moment.";
-          });
+        // The three functions ship together in sona.js. A page newer than the
+        // sona.js beside it (a deploy caught between two requests) has no
+        // words to paint with, so it says the one thing it can without a
+        // figure, and its button loads the page again, which fetches both.
+        var OLD = !(Sona.planWords && Sona.planSay && Sona.buyPlan);
+        function say(code) { try { return OLD ? "" : Sona.planSay(code); } catch (e) { return ""; } }
+        function wordsOf(plan) {
+          // (the same plain card if planWords ever throws: never a blank one)
+          if (!OLD) { try { return Sona.planWords(plan, { freeVersion: FREE_VER }); } catch (e) {} }
+          return { state: "none", title: "Sona Premium", tag: "", price: "", what: "", rows: [], note: "", noteFirst: false, button: "Try again", act: "reload",
+            header: "We couldn't reach the App Store.", none: { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." } };
         }
-        buyBtn.onclick = function () {
-          iapGo("monthly", moProduct && typeof moProduct.price === "number" ? moProduct.price : 9.99, "iap_monthly");
+        // which card a phone really showed, once each: a fixed code, nothing
+        // about the family
+        function tell(code) {
+          if (APPLE.told[code]) return;
+          APPLE.told[code] = 1;
+          try { if (window.SonaAnalytics) SonaAnalytics.track("price state", { surface: "native", source: OFFER_SOURCE, plan: (APPLE.plan && APPLE.plan.kind) || "", step: code }); } catch (e) {}
+        }
+
+        // THE ONE PAINT. Text goes in with textContent and DOM nodes only: a
+        // store's price string never becomes markup.
+        function paintApple() {
+          var w = wordsOf(APPLE.plan), done = !!APPLE.done;
+          card.setAttribute("data-state", done ? "done" : w.state);
+          g("iapTitle").textContent = done ? wordsOf(null).title : w.title;
+          g("iapPlan").hidden = done || w.state === "none" || w.state === "owned";
+          g("iapTag").textContent = w.tag; g("iapTag").hidden = !w.tag;
+          g("iapPrice").textContent = w.price;
+          g("iapWhat").textContent = w.what; g("iapWhat").hidden = !w.what;
+          while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
+          (w.rows || []).forEach(function (row, i) {
+            var li = document.createElement("li"), dot = document.createElement("span"), b = document.createElement("b"), p = document.createElement("p");
+            li.className = "tli " + (i === 0 ? "now" : "bill");
+            dot.className = "tld"; dot.setAttribute("aria-hidden", "true");
+            b.textContent = row.when; p.textContent = row.text;
+            li.appendChild(dot); li.appendChild(b); li.appendChild(p); elTL.appendChild(li);
+          });
+          elTL.hidden = done || !elTL.firstChild;
+          g("iapNoneTitle").textContent = w.none ? w.none.title : "";
+          g("iapNoneText").textContent = w.none ? w.none.text : "";
+          g("iapNone").hidden = done || !w.none;
+          // When the phone is not sure this buyer gets the free days, the note
+          // says so directly under the tile, ABOVE the rows that name a day.
+          var before = w.noteFirst ? elTL : buyWrap;
+          if (elNote.nextElementSibling !== before) card.insertBefore(elNote, before);
+          elNote.textContent = w.note; elNote.hidden = done || !w.note;
+          var held = w.act === "wait" || APPLE.busy;
+          elBuy.textContent = w.button; elBuy.setAttribute("data-act", w.act);
+          elBuy.disabled = held;
+          if (held) elBuy.setAttribute("aria-busy", "true"); else elBuy.removeAttribute("aria-busy");
+          elBuy.hidden = done || !w.button;
+          elMsg.textContent = done ? say(APPLE.done) : APPLE.msg;
+          // after a sale there is nothing left to decline, restore or read
+          g("declineRow").hidden = done; g("iapLegal").hidden = done;
+          if (done) return;
+          // the header line (Settings › Your plan; hidden in the offer)
+          var line = g("planLine");
+          line.textContent = "";
+          if (FREE_VER) { var fv = document.createElement("b"); fv.textContent = "free version"; line.appendChild(document.createTextNode("Today: the ")); line.appendChild(fv); line.appendChild(document.createTextNode(". ")); }
+          line.appendChild(document.createTextNode(w.header));
+          // THE IMPRESSION, once, and only for a card that states a price: a
+          // card still asking, one that could not reach the store and one
+          // that found Premium already there are not offers, and must not
+          // spend the one ask this family gets.
+          if (!APPLE.counted && (w.state === "free" || w.state === "paid")) {
+            APPLE.counted = true;
+            try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE, plan: APPLE.plan.kind }); } catch (e) {}
+            try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+          }
+          if (APPLE.plan && !OLD) {
+            if (w.state === "free") tell(APPLE.plan.sure ? "free-sure" : "free-unsure");
+            else if (w.state === "paid") tell("paid");
+            else if (w.state === "none") tell(APPLE.plan.why === "timeout" ? "none-timeout" : APPLE.plan.why === "error" ? "none-error" : "none-noproduct");
+          }
+          // Re-fit, and hold taps, ONLY when the words changed shape. A status
+          // line coming or going never re-fits the page: it can only push
+          // "Not now" down, away from the button.
+          var shape = JSON.stringify(w);
+          if (shape !== APPLE.shape) { APPLE.shape = shape; fitOffer(); settleTaps(600); }
+        }
+
+        // ── asking the store, and taking its answers ──
+        function same(a, b) { return !!a && !!b && a.state === b.state && a.kind === b.kind && a.sure === b.sure && a.price === b.price; }
+        function take(plan) { APPLE.plan = plan || { state: "none", why: "error" }; if (APPLE.plan.state === "owned") owned(); else paintApple(); }
+        // LATE ANSWERS COUNT (Sona.storePlan's onLate). "Not eligible", "already
+        // has it" or the product itself can arrive after the card painted; the
+        // card then repaints by itself, so a sentence the phone knows to be
+        // false never stays up. Not while a purchase is open (its own end
+        // re-reads the answer), and not while an ask is in flight.
+        function late(plan) {
+          if (APPLE.done || APPLE.busy || APPLE.plan === null) return;
+          if (!same(plan, APPLE.plan)) take(plan);
+        }
+        // THE SAFETY NET. storePlan() is new and no real phone had run it when
+        // this shipped, so this screen must never be LESS able to sell than
+        // the one it replaced. If storePlan is missing, throws, rejects or
+        // has not answered well after every limit it has (4 s for the
+        // product, then at most 3 s more), the card is built the old way:
+        // from Sona.iapProduct("monthly"), the call phones already use. It
+        // asks nothing about the buyer, so free days are shown as the product
+        // reports them and in the "new subscribers" words (sure: false),
+        // never as a plain promise. An offer it cannot read as free days
+        // sells nothing: the card may not state a first charge it cannot read.
+        var SAFETY_MS = 8000, SPARE_MS = 4000;
+        // ONE READER OF A PRODUCT'S FREE TIME, WHEN SONA.JS HANDS IT OUT.
+        // storePlan reads it with sona.js's planFree; if this net read it
+        // with a copy of its own, the two could read one offer two ways. So
+        // the net asks Sona.planFree first. The lines under that are this
+        // page's short copy for a sona.js that does not hand it out (days
+        // and weeks only); they go when it does. Either way, anything but
+        // "no offer" or a readable free time comes back "odd", and sells
+        // nothing: a first period that costs money included.
+        function spareFree(p) {
+          if (typeof Sona.planFree === "function") {
+            try { var r = Sona.planFree(p); return (r === "none" || (r && typeof r === "object" && r.text)) ? r : "odd"; } catch (e) { return "odd"; }
+          }
+          var ip = p.introPrice || p.introductoryPrice;
+          if (!ip) return "none";
+          if (ip.price == null || ip.price === "" || Number(ip.price) !== 0) return "odd";
+          var n = Number(ip.periodNumberOfUnits) || 0, u = String(ip.periodUnit || "").toUpperCase();
+          if (!n || !u) { var m = /^P(\d+)([DW])$/.exec(String(ip.period || "")); if (m) { n = +m[1]; u = m[2] === "W" ? "WEEK" : "DAY"; } }
+          var days = u === "DAY" ? n : u === "WEEK" ? n * 7 : 0;
+          return (days >= 1 && days <= 31 && Math.floor(days) === days) ? { n: days, unit: "day", text: days + (days === 1 ? " day" : " days") } : "odd";
+        }
+        function spare(cb) {
+          var over = false;
+          var end = function (plan) { if (over) return; over = true; clearTimeout(t); cb(plan); };
+          var t = setTimeout(function () { end({ state: "none", why: "timeout" }); }, SPARE_MS);
+          try {
+            Sona.iapProduct("monthly").then(function (p) {
+              var price = p ? String(p.priceString == null ? "" : p.priceString).trim() : "";
+              var free = price ? spareFree(p) : "odd";
+              if (!price || free === "odd") { end({ state: "none", why: "no-product" }); return; }
+              end({ state: free === "none" ? "paid" : "free", kind: "monthly", id: String(p.identifier || ""), price: price, per: "month",
+                free: free === "none" ? null : free, sure: false, why: "", _p: p, spare: true });
+            }, function () { end({ state: "none", why: "error" }); });
+          } catch (e) { end({ state: "none", why: "error" }); }
+        }
+        // THE ANSWER THE CARD IS WAITING ON ALWAYS LANDS. It is counted apart
+        // from gen, because a tap on Restore moves gen (so no background
+        // answer hops away under it) and Restore is live while the card still
+        // says "Checking the App Store…". When this answer went stale with
+        // that tap and the restore then found nothing, the card said
+        // "Checking…" for good: no price, a dead button, and coming back to
+        // the app did not help, since every other ask stands down while this
+        // one is out. The parent most likely to tap Restore there is a lapsed
+        // subscriber, whom the store holds back for up to 3 s. Only a newer
+        // ask of this kind, or an ending, may drop it.
+        function ask(fresh) {                 // at load, and "Try again"
+          var mine = ++APPLE.asks, answered = false;
+          APPLE.gen++;                        // a background ask still out is stale now
+          APPLE.plan = null; APPLE.msg = ""; paintApple();
+          var got = function (plan) { if (answered) return; answered = true; clearTimeout(net); if (mine === APPLE.asks && !APPLE.done) take(plan); };
+          var net = setTimeout(function () { if (!answered) spare(got); }, SAFETY_MS);
+          try { Sona.storePlan({ fresh: fresh, onLate: late }).then(got, function () { spare(got); }); }
+          catch (e) { spare(got); }
+        }
+        // "COULD NOT REACH THE STORE" IS NOT NEWS ABOUT THE PLAN. A second ask
+        // (back at the front, or just before a purchase) that only timed out
+        // or failed never takes down a price the store itself gave a moment
+        // ago: the card stays, and the tap still goes to Apple, which says
+        // "offline" in its own words if it is. "Nothing to sell", "already
+        // has it" and a change in the free days ARE news, and are shown.
+        function unreached(plan) { return !!plan && plan.state === "none" && (plan.why === "timeout" || plan.why === "error"); }
+        function pricedNow() { return !!APPLE.plan && (APPLE.plan.state === "free" || APPLE.plan.state === "paid"); }
+        // Back at the front (the grown-up left for the App Store's own
+        // settings, or approved an Ask to Buy on another device): ask again,
+        // without painting the waiting state over a card that is being read.
+        function reask() {
+          if (APPLE.busy || APPLE.done || APPLE.plan === null || card.style.display === "none") return;
+          var gen = ++APPLE.gen;
+          try {
+            Sona.storePlan({ fresh: true, onLate: late }).then(function (plan) {
+              if (gen !== APPLE.gen || APPLE.busy || APPLE.done) return;
+              if (unreached(plan) && pricedNow()) return;
+              take(plan);
+            }, function () {});
+          } catch (e) {}
+        }
+        // the store's latest answer, for a tap about to buy: null when it
+        // cannot be had quickly (or at all), and the tap then buys what is on
+        // screen, as it always did. A slow answer may never hold the button.
+        function latest(cb) {
+          var over = false;
+          var end = function (cur) { if (over) return; over = true; clearTimeout(t); cb(unreached(cur) ? null : cur); };
+          var t = setTimeout(function () { end(null); }, 2500);
+          try { Sona.storePlan().then(end, function () { end(null); }); } catch (e) { end(null); }
+        }
+
+        // ── how it ends ──
+        // The card keeps its place and says one line; "Not now" and the
+        // Restore row leave with the price, so a family that just paid is
+        // never one late tap from being sent Home.
+        function appleDone(code, ms) {
+          if (APPLE.done) return;
+          APPLE.done = code; APPLE.busy = false; if (APPLE.stop) APPLE.stop();
+          paintApple();
+          try { elMsg.scrollIntoView({ block: "nearest" }); } catch (e) {}
+          if (ms) setTimeout(function () { location.replace(nextAfterBuy()); }, ms);
+        }
+        function bought(kind) {
+          if (APPLE.done) return;
+          // "purchase completed", NOT "trial started": sona.js fires "trial
+          // started" when the in-app 3-day clock begins, and two different
+          // funnel steps sharing one event name makes both numbers
+          // meaningless. This one means money was committed (RevenueCat has
+          // confirmed the entitlement by now). `plan` is the plan bought.
+          try { if (window.SonaAnalytics) SonaAnalytics.track("purchase completed", { source: "apple", plan: kind }); } catch (e) {}
+          try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
+          g("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
+          appleDone("bought", 1200);
+        }
+        // This Apple ID already has Premium: found by the store at load, late,
+        // on coming back to the app, or as Apple's "already purchased" answer
+        // to the buy tap. NOT a sale: nothing is counted and nothing is
+        // celebrated. The one exception is an Ask to Buy sent from this very
+        // screen and now approved, which is this screen's sale.
+        function owned() {
+          if (APPLE.done) return;
+          if (APPLE.pendingKind) { bought(APPLE.pendingKind); return; }
+          tell("owned");
+          if (OFFER_FIRST || OFFER_FROM || OFFER_SETUP) { appleDone("owned", 1000); return; }
+          // Settings › Your plan: stay, as the page a subscriber opens
+          APPLE.done = "owned"; APPLE.busy = false; if (APPLE.stop) APPLE.stop();
+          card.setAttribute("data-state", "owned"); card.style.display = "none";
+          g("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.';
+          g("planCancel").hidden = false;
+        }
+
+        // ── the one button ──
+        elBuy.onclick = function () {
+          var act = elBuy.getAttribute("data-act");
+          if (act === "reload") { location.reload(); return; }
+          if (act === "retry") { ask(true); return; }
+          if (act !== "buy" || APPLE.busy || APPLE.done) return;
+          // a second tap lands on a disabled button, and "Not now" and Restore
+          // take none for a second: nothing under the finger moved
+          settleTaps(1000);
+          if (APPLE.stop) APPLE.stop();
+          APPLE.gen++;                         // an ask in flight is stale now: it must not hop away under Apple's sheet
+          var has = false; try { has = !!(Sona.isSubscribed && Sona.isSubscribed()); } catch (e) {}
+          if (has) { owned(); return; }
+          var plan = APPLE.plan;
+          APPLE.busy = true; APPLE.msg = say("opening"); paintApple();
+          // ONE PURCHASE IN FLIGHT, EVER: the button stays disabled until
+          // Apple answers. After 30 s it says so and points at Restore, which
+          // keeps working (as "Not now" does).
+          var slow = setTimeout(function () { if (APPLE.busy && !APPLE.done) { APPLE.msg = say("slow"); paintApple(); } }, 30000);
+          var sold = function (r) {
+            clearTimeout(slow);
+            if (APPLE.done) return;
+            APPLE.busy = false; APPLE.msg = "";
+            // Apple said "already purchased" and a restore found it: theirs
+            // already, so the welcome-back line and no sale counted
+            if (r && r.restored) owned(); else bought(plan.kind);
+          };
+          var failed = function (e) {
+            clearTimeout(slow);
+            if (APPLE.done) return;
+            APPLE.busy = false;
+            var code = (e && e.code) || "failed";
+            // "nothing was charged" is never said: after a failure the phone
+            // does not know that. A cancelled sheet says nothing at all.
+            if (code !== "busy") APPLE.msg = say(code);
+            if (code === "pending") APPLE.pendingKind = plan.kind;
+            // an approval may still be on its way, whatever this tap ended in:
+            // keep watching, and keep saying so if the tap left nothing to say
+            if (APPLE.pendingKind) { watch(); if (!APPLE.msg) APPLE.msg = say("pending"); }
+            paintApple();
+            if (APPLE.msg) { fitOffer(); settleTaps(600); try { elMsg.scrollIntoView({ block: "nearest" }); } catch (x) {} }
+            // an answer that arrived while Apple's sheet was open
+            if (!plan.spare) latest(function (cur) { if (cur && !APPLE.busy && !APPLE.done && !same(cur, APPLE.plan)) take(cur); });
+          };
+          var buy = function () { try { Sona.buyPlan(plan).then(sold, failed); } catch (e) { failed(e); } };
+          // THE TAP BUYS WHAT THE STORE SAYS NOW. If its answer changed since
+          // the card was painted (free days gone, Premium already there), the
+          // new answer is shown and nothing is bought on this tap.
+          if (plan.spare) buy();
+          else latest(function (cur) {
+            if (APPLE.done) { clearTimeout(slow); return; }
+            if (cur && !same(cur, plan)) { clearTimeout(slow); APPLE.busy = false; APPLE.msg = ""; take(cur); return; }
+            buy();
+          });
         };
-        document.getElementById("iapRestore").onclick = function () {
-          msg.textContent = "Checking your purchases…";
-          Sona.iapRestore().then(function (active) {
-            msg.textContent = active ? "Restored ✓ — welcome back!" : "No purchases found on this Apple ID.";
-            if (active) setTimeout(function () { location.href = nextAfterBuy(); }, 1000);
-          }).catch(function () { msg.textContent = "Couldn't reach the App Store — try again in a moment."; });
+        g("iapRestore").onclick = function () {
+          if (APPLE.done) return;
+          settleTaps(1000);
+          if (APPLE.stop) APPLE.stop();
+          APPLE.gen++;                         // background asks only: the price the card is still waiting on lands all the same (ask())
+          APPLE.msg = say("restoring"); paintApple();
+          var stays = function (code) {
+            if (APPLE.done) return;
+            APPLE.msg = say(code); paintApple();
+            fitOffer(); settleTaps(600);
+            try { elMsg.scrollIntoView({ block: "nearest" }); } catch (e) {}
+            if (APPLE.pendingKind) watch();
+          };
+          try { Sona.iapRestore().then(function (active) { if (active) appleDone("restored", 1000); else stays("no-purchases"); }, function () { stays("restore-failed"); }); }
+          catch (e) { stays("restore-failed"); }
         };
+
+        // ── asks in the background ──
+        // ASK TO BUY: after a purchase that is waiting for a parent's
+        // approval, the store is asked every 10 s, 60 times at most, while
+        // the page is on screen, and the card moves on by itself when the
+        // approval lands. A tap on the button or Restore stops the watch
+        // while it works, and it starts again if nothing came of the tap.
+        // Every background answer carries the gen it started with and is
+        // dropped if a tap, a purchase or an ending came first, so nothing
+        // hops away while Apple's sheet is open.
+        APPLE.stop = function () { clearInterval(APPLE.poll); APPLE.poll = 0; };
+        function watch() {
+          if (APPLE.poll) return;
+          var left = 60;
+          APPLE.poll = setInterval(function () {
+            if (--left < 0) { APPLE.stop(); return; }
+            if (document.hidden || APPLE.busy || APPLE.done) return;
+            var gen = APPLE.gen;
+            try { Sona.iapRefresh(true).then(function (active) { if (active && gen === APPLE.gen && !APPLE.busy && !APPLE.done) owned(); }, function () {}); } catch (e) {}
+          }, 10000);
+        }
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) reask(); });
+
+        if (OLD) paintApple(); else ask(false);
       } catch (e) {}
     })();
 
@@ -1145,9 +1385,19 @@
       // locked (Travis, 3 Oct 2026: "yeah home locked")
       if (!FREE_VER) a.textContent = "Not now";
       row.style.display = "block";
-      a.addEventListener("click", function () {
+      a.addEventListener("click", function (e) {
+        // a family that just paid is never sent Home by a late tap (the row
+        // is already off the screen; this is for a tap already on its way)
+        if (APPLE.done) { e.preventDefault(); return; }
+        try { if (APPLE.stop) APPLE.stop(); } catch (x) {}
+        // from setup, "Not now" ends the hand-off: Home, with no microphone
+        // step and no hand-off card to come back to
+        if (OFFER_SETUP) { try { Sona.setupAfterClear(); } catch (x) {} }
+        // "offer dismissed" only for an offer that was really made: in the
+        // app, a card that showed a price. Leaving "We couldn't reach the App
+        // Store" is not turning a price down.
         // keepalive, because this navigates immediately afterwards
-        try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : "from-game" }); } catch (e) {}
+        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : "from-game" }); } catch (x) {} }
       });
     })();
 
@@ -1253,13 +1503,8 @@
       // planMoment().
       try {
         var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
-        // the hand-off from setup opens on the two screens first; the web
-        // plan's free days are this repo's checkout's (trial_period_days: 3)
-        if (offerOnScreen && OFFER_SETUP) { introWait(); introStart(3, false); }
-        afterIntro(function () {
-          if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web", source: OFFER_SOURCE });
-          if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
-        });
+        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web", source: OFFER_SOURCE });
+        if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
       } catch (e) {}
       // the exact-date pill: a trial started today ends on a knowable date, and
       // naming it beats "after 3 days" for trust
@@ -1269,7 +1514,7 @@
         var _tm = document.getElementById("trialMath");
         if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
       } catch (e) {}
-      trialTimeline("webTL", false);
+      trialTimeline("webTL");
       var yearValue = 59.99;
       // one button: it buys the picked plan. The value is what that plan
       // charges first, for the ad pixel; the amount charged is the server's.
@@ -1318,7 +1563,7 @@
             yearPrice = j.standard; yearPer = "under $8.50 a month";
             var t = document.getElementById("webPrice"); if (t) t.textContent = j.standard + "/yr";
             var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
-            trialTimeline("webTL", false);
+            trialTimeline("webTL");
           }
           release();
         }).catch(release);
@@ -1339,8 +1584,19 @@
         var card = document.getElementById(native ? "iapCard" : "pickCard");
         if (!card || card.style.display === "none") return;
         document.body.classList.add("offer");
+        // from setup the header steps aside too (the rule is in the styles;
+        // the header's markup is the one every grown-ups page shares)
+        if (OFFER_SETUP) document.body.classList.add("from-setup");
         document.getElementById("offerHero").hidden = false;
         document.getElementById("offerRachel").hidden = false;
+        // ON APPLE'S CARD THE ORDER IS: the button, the status line, "Not
+        // now", THEN Restore · Terms · Privacy. So in the offer that row
+        // moves out of the card to sit under "Not now" (when there is one);
+        // in Settings › Your plan it stays in the card.
+        if (native) {
+          var declineRow = document.getElementById("declineRow"), legal = document.getElementById("iapLegal");
+          if (declineRow && legal && declineRow.style.display !== "none") declineRow.parentNode.insertBefore(legal, declineRow.nextSibling);
+        }
 
         var P = {}; try { P = Sona.getProfile() || {}; } catch (e) {}
         var name = (P.childName || "").trim(), who = name || "Your child";
@@ -1358,7 +1614,11 @@
         box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
           '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
 
-        document.getElementById("offerTitle").textContent = game ? "Unlock " + game.name + ", and every other game"
+        // From setup the headline carries on from the screen the parent just
+        // left ("<Name>'s practice is ready"). It names no sound: setup
+        // preselects one, so a sound here could be one nobody chose.
+        document.getElementById("offerTitle").textContent = OFFER_SETUP ? (name ? name + "'s practice is ready" : "Practice is ready")
+          : game ? "Unlock " + game.name + ", and every other game"
           : name ? "Unlock every game for " + name : "Unlock every game";
         // WHO THE GAMES ARE FOR, not how many (Travis, 1 Oct 2026: "a
         // different way to say 6 more games today, like more games for
@@ -1376,8 +1636,12 @@
         // "More games" to a family who has free ones; to one who has none
         // (trial first), just "Games"
         var lead = FREE_VER ? "More games" : "Games";
+        // …and from setup, for a family with no free version, the line under
+        // that headline finishes its sentence: practice is ready, and Premium
+        // is what opens it.
         document.getElementById("offerSub").textContent =
-          big && little ? lead + " for little kids and big kids, and new ones on the way."
+          OFFER_SETUP && !FREE_VER ? "Sona Premium opens it."
+          : big && little ? lead + " for little kids and big kids, and new ones on the way."
           : big ? lead + " for big kids, and new ones " + (soon("simple") ? "for little kids " : "") + "on the way."
           : little ? lead + " for little kids, and new ones " + (soon("arcade") ? "for big kids " : "") + "on the way."
           : "New games on the way.";
