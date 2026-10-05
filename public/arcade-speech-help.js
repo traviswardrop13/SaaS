@@ -31,12 +31,23 @@
    itself, a hidden page or a phone that has said no to the mic. A round that
    ends while he is asking ends the turn first (the card never meets a live
    turn). */
-    var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid=false;
-    var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000};
-    var slowAskPlay=0, slowAskAt=SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;
+    var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid={};
+    var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000, soon:1500};
+    var slowAskPlay=0, slowAskAt=SLOW_HELP.first||SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;
     function slowFactor(){ return slowMs>0?0.55:1; }
     function slowIdle(){ return SLOW_HELP.idle||("Say "+(SAYTXT||"rrrr")+" when Echo asks"); }
-    function slowLineText(){ return SLOW_HELP.say||("To "+SLOW_HELP.action+", say"); }
+    function slowLineText(){ return (SLOW_HELP.line&&SLOW_HELP.line())||SLOW_HELP.say||("To "+SLOW_HELP.action+", say"); }
+    function slowAskSoon(){
+      if(!CAN_LISTEN||slowNoMic||slowTurn||slowMs>0) return;
+      slowAskAt=Math.min(slowAskAt,slowAskPlay+SLOW_ASK.soon);
+    }
+    // Warm both reasons before play, so the first ask explains the reward.
+    document.addEventListener("DOMContentLoaded",function(){
+      if(!window.SayIt||!SayIt.line||!window.S||!S.getProfile||!S.getProfile().voiceOn) return;
+      SayIt.line(SLOW_HELP.say||("To "+SLOW_HELP.action+", say"));
+      if(SLOW_HELP.heartSay) SayIt.line(SLOW_HELP.heartSay);
+      (SLOW_HELP.lines||[]).forEach(function(text){ SayIt.line(text); });
+    });
     // The page's mic is wanted by the say-it card (reviveWait) or by a sound
     // turn still listening. A turn never sets reviveWait: that is the card's,
     // and a turn that ended under a card must not take it away.
@@ -70,9 +81,9 @@
         // the game's own line once a visit, said to its end; after that the
         // sound alone (Rachel's take), which a child has already heard asked for
         ask:function(t){
-          var first=!slowSaid;
-          return (first?t.line(slowLineText()):Promise.resolve(false)).then(function(said){
-            if(said===true) slowSaid=true;
+          var text=slowLineText(), first=!slowSaid[text];
+          return (first?t.line(text):Promise.resolve(false)).then(function(said){
+            if(said===true) slowSaid[text]=true;
             return t.take();
           });
         },
@@ -126,7 +137,7 @@
             slowAskAt=slowMissed>=2?SLOW_ASK.quiet:SLOW_ASK.every;
             $("slowStatus").textContent=message||slowIdle();
           }
-          paintSlowKeys();if(accepted&&SLOW_HELP.onEarn)SLOW_HELP.onEarn();resolve();
+          paintSlowKeys();if(accepted&&SLOW_HELP.onHeard)SLOW_HELP.onHeard();if(accepted&&SLOW_HELP.onEarn)SLOW_HELP.onEarn();resolve();
         },Math.max(0,micClosedAt+SETTLE_MS-performance.now()));});
       });
       return t.done;

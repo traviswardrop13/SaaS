@@ -233,9 +233,8 @@ const feedLine = (w) => feedAsk.m[1] + w + feedAsk.m[2] + w + feedAsk.m[3];
 
 // ───────────────────────── the five round games ─────────────────────────
 // Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide. Three
-// things can speak in them: the say-it card between rounds (Fruit Slice's
-// only — the other four cards are text), Echo's power button (all five), and
-// Sound Sprint's how-to-play line.
+// things can speak in them: the say-it card between rounds (all five games),
+// Echo's sound power (all five), and Sound Sprint's how-to-play line.
 const ROUND_KEYS = ["slice", "tiles", "stack", "run", "glide"];
 const roundFile = (k) => `public/arcade-${k}.html`;
 for (const k of ROUND_KEYS) if (!S.GAME_ACTS[k] || !String(S.GAME_ACTS[k].go).includes(`arcade-${k}.html`) || S.GAME_ACTS[k].comingSoon) fail(`GAME_ACTS.${k} is no longer a live round game at arcade-${k}.html — re-read the round games' section.`);
@@ -255,7 +254,7 @@ const SAYIT = "public/arcade-sayit.js";
 const sayitLines = find(SAYIT, /var ASK = "([^"]*)", GO = "([^"]*)";/, "the say-it card's lines");
 if (sayitLines.m[2] !== GO) fail(`the say-it card's "${sayitLines.m[2]}" is not Sona.goClip's "${GO}".`);
 const sayitVoice = find(SAYIT, /return fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \},\n\s*body: JSON\.stringify\(\{ text: text, voice: profile\(\)\.voiceId \|\| "", stable: true \}\)/, "the say-it card's voice request");
-const sayitHook = find(SAYIT, /line: function \(text\) \{ return sayLine\(text, g, st\)\.then\(null, skip\); \},/, "the say-it card: a page's own line");
+const sayitHook = find(SAYIT, /line: function \(text\) \{ return sayLine\(text, g, st\)\.then\(null, function \(\) \{ return false; \}\); \},/, "the say-it card: a page's own line");
 const sayitOrder = find(SAYIT, /: sayLine\(ASK, g, st\)\.then\(null, skip\)\.then\(function \(\) \{ return sayTake\(g, st\); \}\);\n\s*asked\.then\(null, skip\)\n\s*\.then\(function \(\) \{ return sayLine\(GO, g, st\); \}\)/, "the say-it card: the ask, her take, then Go!");
 const sayitTake = find(SAYIT, /if \(!url \|\| !live\(g\) \|\| st\.stuck \|\| !\(S\.humanClipsOn && S\.humanClipsOn\(\)\)\) return Promise\.resolve\(\);/, "the say-it card plays her take only while the switch is on");
 const sayitMuted = find(SAYIT, /if \(!voiceOn\(\)\) \{ page\.listen\(false\); return; \}/, "the say-it card says nothing while Sona's sound is off");
@@ -292,16 +291,16 @@ for (const s of GAME_ON) if (!SOUNDS.includes(s)) fail(`GAME_SYL_ON names ${s}, 
 const gameSteps = (s) => ({ syl: SC.gameSyllables(s).map((x) => x.t), word: SC.gameWord(s) });
 for (const s of SOUNDS) if (!existsSync(join(ROOT, "public/coach/say-echo", s + "-sound.wav"))) fail(`public/coach/say-echo/${s}-sound.wav is missing — the games and the practice page play it for ${s}.`);
 
-// Echo's power button: an instruction in Echo's voice, then her recording.
-// Four games share arcade-speech-help.js and set their own SLOW_HELP;
-// Piano Tiles carries its own copy.
+// Echo's mid-round ask: all five games share the say-it voice. A cached
+// reason is followed by Rachel's one take, Go!, then the microphone.
 const HELP = "public/arcade-speech-help.js";
-const helpLine = find(HELP, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:(SLOW_HELP\.say\|\|\("To "\+SLOW_HELP\.action\+", say"\)),voice:p\.voiceId\|\|"",stable:true\}\)/, "the sound power's instruction");
-find(HELP, /var instruct=!\(SLOW_HELP\.sayOnce&&slowSaid\);/, "the sound power's say-it-once rule");
-const helpSound = find(HELP, /S\.humanClipsOn&&S\.humanClipsOn\(\)\)return slowAudio\("\/coach\/say-echo\/"\+SND\+"-sound\.wav",t\);/, "the sound power: Rachel's recording");
-const MUTED = /if\(p\.voiceOn===false\|\|Number\(p\.volume\)===0\)return Promise\.resolve\(\);/;
-const helpMuted = find(HELP, MUTED, "the sound power says nothing while Sona's sound is off");
-coverAll(HELP, TTS_CALL, [helpLine], "a voice request"); coverAll(HELP, SPEAK_CALL, [], "a voice call");
+const helpLine = find(HELP, /function slowLineText\(\)\{ return \(SLOW_HELP\.line&&SLOW_HELP\.line\(\)\)\|\|SLOW_HELP\.say\|\|\("To "\+SLOW_HELP\.action\+", say"\); \}/, "the sound power's instruction reader");
+const helpAsk = find(HELP, /ask:function\(t\)\{\n\s*var text=slowLineText\(\), first=!slowSaid\[text\];\n\s*return \(first\?t\.line\(text\):Promise\.resolve\(false\)\)\.then\(function\(said\)\{\n\s*if\(said===true\) slowSaid\[text\]=true;\n\s*return t\.take\(\);\n\s*\}\);\n\s*\},/, "the sound power: each reason once, then Rachel's recording");
+const helpSound = find(HELP, SAYIT_CLIP, "the sound power plays Rachel's one take of the sound");
+const helpMuted = sayitMuted;
+find(HELP, /slowVoice=SayIt\.voice\(\{/, "the sound power uses the shared voice and mute rule");
+coverAll(HELP, TTS_CALL, [], "a voice request"); coverAll(HELP, SPEAK_CALL, [], "a voice call");
+coverAll(HELP, /\bt\.line\(/, [helpAsk]);
 // A page loads a script by its <script src>, not by a comment that names it.
 const loads = (file, script) => src(file).includes(`<script src="${script}"></script>`);
 const HELP_KEYS = ROUND_KEYS.filter((k) => loads(roundFile(k), "/arcade-speech-help.js"));
@@ -312,14 +311,16 @@ const power = {};
 for (const k of HELP_KEYS) {
   const cfg = find(roundFile(k), /<script>window\.SLOW_HELP=(\{.*\});<\/script>/, "SLOW_HELP");
   const opts = (0, eval)("(" + cfg.m[1] + ")");
-  power[k] = { text: new Function("SLOW_HELP", "return " + helpLine.m[1] + ";")(opts), once: !!opts.sayOnce, cite: cfg.cite };
+  const text = opts.say || ("To " + opts.action + ", say");
+  const extra = [...new Set([opts.heartSay, ...(opts.lines || [])].filter((x) => x && x !== text))];
+  // A literal added to a state-dependent ask must also be preloaded and listed.
+  // Page callbacks are not run here: they read the live board's own globals.
+  if (opts.line) for (const m of opts.line.toString().matchAll(/"([^"]*)"/g)) {
+    if (m[1] && m[1] !== text && !extra.includes(m[1])) fail(`${roundName(k)} has an unlisted sound-power reason: ${m[1]}. Add it to SLOW_HELP.lines.`);
+  }
+  power[k] = { text, extra, once: true, cite: cfg.cite };
 }
-const tilesLine = find(TILES, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:"([^"]*)",voice:p\.voiceId\|\|"",stable:true\}\)/, "Piano Tiles' sound power: the instruction");
-find(TILES, /S\.ALL_SOUNDS\.indexOf\(SND\)>=0\)return slowAudio\("\/coach\/say-echo\/"\+SND\+"-sound\.wav",t\);/, "Piano Tiles' sound power: Rachel's recording");
-find(TILES, MUTED, "Piano Tiles' sound power says nothing while Sona's sound is off");
-if (HELP_KEYS.includes("tiles")) fail("Piano Tiles now loads arcade-speech-help.js — it carried its own copy of the sound power. Re-read it.");
-power.tiles = { text: tilesLine.m[1], once: false, cite: tilesLine.cite };
-for (const k of ROUND_KEYS) if (!power[k]) fail(`${roundName(k)} has no sound power the script can read.`);
+for (const k of ROUND_KEYS) if (!power[k]) fail(`${roundName(k)} no longer loads the shared sound power — re-read it.`);
 
 // Sound Sprint says how to play, on the start card of a child's first races.
 const runLine = find(RUN, /var START_LINE="([^"]*)";/, "Sound Sprint's how-to-play line");
@@ -328,7 +329,7 @@ const runVoice = find(RUN, /fetch\("\/api\/tts",\{method:"POST",headers:\{"Conte
 const runFallback = find(RUN, /said=S\.speakNow\(START_LINE\);/, "Sound Sprint's fallback voice");
 const runMuted = find(RUN, /if\(!sc\.line\|\|!startVoiceOn\(\)\)\{ beginRace\(\); return; \}/, "Sound Sprint says nothing while Sona's sound is off");
 // Nothing else in the five pages reaches the voice.
-const roundKnown = { slice: [sliceAsk], tiles: [tilesLine], run: [runVoice, runFallback], stack: [], glide: [] };
+const roundKnown = { slice: [sliceAsk], tiles: [], run: [runVoice, runFallback], stack: [], glide: [] };
 for (const k of ROUND_KEYS) {
   const f = roundFile(k);
   coverAll(f, TTS_CALL, roundKnown[k], "a voice request");
@@ -609,7 +610,7 @@ const totals = { fixed: 0, expansions: 0, fillers: 0, words: 0, distinct: 0, par
 // "Go!" is its own row, the last of B4; every line that hands over the turn points at it.
 const GO_ROW = "B" + (S.PRAISES.length + SOUNDS.length * 2 + 6);
 for (const [f, what] of [[LB, "the books"], [SP, "simple-play.js (Peekaboo)"], [HELP, "the sound power"], [TILES, "Piano Tiles"], [RUN, "Sound Sprint"]]) if (/goClip/.test(src(f))) fail(`${what} now says "Go!" (${f}) — the sheet's "Go!" row says it does not.`);
-const bangLines = [roundEnd.m[1], win.m[1], chest.m[1], advEnd.m[1], quiet.m[1], GO, sayitLines.m[1], sliceIdea.m[1], ...ROUND_KEYS.map((k) => power[k].text), runLine.m[1], bookEnd.m[1], bookBye.m[1]].filter((l) => l.includes("!"));
+const bangLines = [roundEnd.m[1], win.m[1], chest.m[1], advEnd.m[1], quiet.m[1], GO, sayitLines.m[1], sliceIdea.m[1], ...ROUND_KEYS.flatMap((k) => [power[k].text, ...power[k].extra]), runLine.m[1], bookEnd.m[1], bookBye.m[1]].filter((l) => l.includes("!"));
 let bN = 0, cN = 0;
 
 P("# Echo's Recording Script");
@@ -713,7 +714,7 @@ B("win.mp3", win.m[1], `The win: five tries heard and the last check passed. Spo
 B("chest.mp3", chest.m[1], `The treasure chest at the end of the adventure: after the child's third tap opens it, ${afterChime.m[1]} ms after the tap chime, while the sticker shows.`, "A small wonder, like peeking into a box together.", chest.cite);
 B("adventure-end.mp3", advEnd.m[1], `Adventure end: when the fifth round's game hands back and the "Adventure complete!" card appears, ${afterChime.m[1]} ms after its chime.`, "Proud and settled, winding down.", advEnd.cite);
 B("quiet.mp3", quiet.m[1], "The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: \"I couldn't hear you!\" / \"Say it big — I'm all ears!\" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt.", "Gentle and playful. This is the one line that kept its \"!\" on 24 Sep — \"Say it big\" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call.", quiet.cite);
-B("go.mp3", GO, `After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7), every picture-game word (C8) and Feed Echo's asks (C6). Not the books, the sound power or Sound Sprint's how-to-play. Then the mic opens.`, "Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call.", `${goLine.cite} (Sona.goClip; the say-it card asks for the same "${GO}" at ${sayitLines.cite}); joined on at ${goJoin.cite}`);
+B("go.mp3", GO, `After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7) and sound power (B5), every picture-game word (C8) and Feed Echo's asks (C6). Not the books or Sound Sprint's how-to-play. Then the mic opens.`, "Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call.", `${goLine.cite} (Sona.goClip; the say-it card asks for the same "${GO}" at ${sayitLines.cite}); joined on at ${goJoin.cite}`);
 if ("B" + bN !== GO_ROW) fail(`the "Go!" row is B${bN}, but the sheet points at ${GO_ROW}.`);
 bTable(`B4 — Round end, win, chest, adventure end, quiet screen, "${GO}" (6)`);
 P();
@@ -721,10 +722,14 @@ P();
   const bare = S.soundSay("R"), secs = (ms) => Number(ms) / 1000;
   B("card-say.mp3", sayitLines.m[1], `The say-it card between rounds in all five round games (${ROUND_KEYS.map(roundName).join(", ")}): Echo says this, then Rachel's recording of the sound plays (\`say-echo/<SOUND>-sound.wav\`, Part A), then "${GO}" (${GO_ROW}), then the mic opens. Screen: "Say “${bare}” for wave 2!" (each game its own words). On ${roundName("slice")}, a card that asks a syllable or a word says one line instead of this and her recording (C7).`, "Friendly and plain. It runs straight into the sound, so leave it open at the end.", `${sayitLines.cite}; in this order at ${sayitOrder.cite}`);
   B("card-idea.mp3", sliceIdea.m[1], `${roundName("slice")}'s card, when a syllable or a word got no answer for ${secs(sliceWait.m[1])} s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "${GO}". The practice page's own words for the same move (B3).`, "As B3: a good idea just arrived. Not a consolation.", `${sliceIdea.cite}; said at ${sliceLead.cite}; the step back at ${sliceBack.cite}`);
-  for (const k of ROUND_KEYS) B(`power-${k}.mp3`, power[k].text, `${roundName(k)}: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens.${power[k].once ? " Spoken the first time in a game only; after that the tap plays just the sound." : ""}`, `Short and bright. It runs straight into the sound, so leave it open at the end.${power[k].text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
+  for (const k of ROUND_KEYS) {
+    for (const [i, text] of [power[k].text, ...power[k].extra].entries()) {
+      B(`power-${k}${i ? "-heart" + (i > 1 ? i : "") : ""}.mp3`, text, `${roundName(k)}: Echo asks automatically during play${i ? " when a heart is missing" : ""}; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "${GO}", then the mic. Later asks for the same reason play just the sound and "${GO}". A heard try earns the power and one heart back, up to three.`, `Short and bright. It runs straight into the sound, so leave it open at the end.${text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
+    }
+  }
   B("sprint-howto.mp3", runLine.m[1], `${roundName("run")}'s start card, on a child's first ${NUMWORD[runRaces.m[1]] || runRaces.m[1]} races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early).`, 'Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout.', `${runLine.cite}; asked for at ${runVoice.cite}`);
 }
-bTable(`B5 — The round games (${2 + ROUND_KEYS.length + 1})`, `The say-it card in all five round games (one voice for all five, \`arcade-sayit.js\`), Echo's power button in all five (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
+bTable(`B5 — The round games (${3 + ROUND_KEYS.reduce((n, k) => n + 1 + power[k].extra.length, 0)})`, `The say-it card in all five round games (one voice for all five, \`arcade-sayit.js\`), Echo's power button in all five (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
 B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
 bTable("B6 — Books (2)");

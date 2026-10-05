@@ -341,5 +341,5 @@
     return { speak: speak, stop: stop, speaking: function () { return speaking && page.up(); } };
   }
 
-  global.SayIt = { voice: voice, chimeMs: chimeMs, ASK: ASK, GO: GO, VOICE_TAIL_MS: VOICE_TAIL_MS, LINE_WAIT_MS: LINE_WAIT_MS };
+  global.SayIt = { voice: voice, line: line, chimeMs: chimeMs, ASK: ASK, GO: GO, VOICE_TAIL_MS: VOICE_TAIL_MS, LINE_WAIT_MS: LINE_WAIT_MS };
 })(window);

@@ -35,7 +35,7 @@ await new Promise((r) => server.listen(8265, "127.0.0.1", r));
 const browser = await chromium.launch(launchOpts());
 let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }
-async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
+async function scenario(name, fn) { if(process.env.TILES_LIVES_ONLY && name!=="hearts and pace") return; try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 
 // ── the code: a round, not a practice ──
@@ -65,7 +65,7 @@ ok("the top button is Play again, back through this game's practice page; the ga
 function fakePhone(cfg) {
   // Echo's mid-round ask for the sound power (3 Oct 2026) is
   // arcadespeechhelptest's: held here, so a round is just the round.
-  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = SLOW_ASK.soon = 1e12; window.slowAskAt = 1e12; } });
   cfg = cfg || {};
   const f = window.__f = { mics: 0, live: 0, sfx: [] };
   navigator.mediaDevices.getUserMedia = () => {
@@ -172,6 +172,29 @@ const neverDown = (list) => list.every((n, i) => i === 0 || n >= list[i - 1]);
 async function stopAtCard(page) { await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); await page.locator("#revDone").click(); await page.locator("#endOvl.show").waitFor(); }
 const WIN = /^(Bravo! You played four songs!|You\u2019re a piano star! My feathers were dancing!|What beautiful music we made!)$/;
 
+await scenario("hearts and pace", async () => {
+  const {context,page,errors}=await open(320,568);
+  try {
+    const installed=await page.evaluate(()=>typeof hearts!=="undefined"&&typeof loseHeart==="function");
+    ok("three real hearts are installed on the playable board",installed);
+    if(!installed)return;
+    const drop=async()=>{await page.evaluate(()=>{tiles=[{lane:0,y:HITY()+80,h:88,hit:false,gone:false,note:HZ.C,wait:false,gold:false}];songIx=1;nextAt=1e9;});await page.waitForFunction(()=>tiles.some(t=>t.gone));};
+    ok("the first song starts at the original gentle pace",await page.evaluate(()=>hearts===3&&paceK===1&&Math.abs((HITY()+90)/speedPx()-2.5)<.01));
+    await page.evaluate(()=>{paceK=1.3;});await drop();
+    ok("a missed note costs one heart, backs the pace off, and opens no card",await page.evaluate(()=>hearts===2&&Math.abs(paceK-1.18)<.001&&playing&&!reviveWait&&!window.__ended));
+    await drop();ok("one fumble cannot cascade through the remaining hearts",await page.evaluate(()=>hearts===2));
+    await page.evaluate(()=>{slowMs=8000;heartHitAt=-1e9;});await drop();
+    ok("slow keys protect hearts",await page.evaluate(()=>hearts===2));
+    await page.evaluate(()=>{slowMs=0;SLOW_HELP.onHeard();});
+    ok("a heard sound gives a heart back, with the three-heart ceiling",await page.evaluate(()=>{SLOW_HELP.onHeard();return hearts===3;}));
+    await page.evaluate(()=>{slowMs=0;hearts=1;heartHitAt=-1e9;comboN=rowBest=5;paintRow();});await drop();
+    await page.locator("#endOvl.show").waitFor();
+    ok("zero hearts ends on a kind card with the child's best and replay/home buttons",await page.evaluate(()=>hearts===0&&window.__ended&&!playing&&!reviveWait&&/Lovely music/.test(document.getElementById("endTitle").textContent)&&document.getElementById("endSub").textContent.indexOf("5 notes")>=0&&document.getElementById("endCharge").textContent==="Play again"));
+    ok("the hearts fit the smallest phone without pushing Echo below the board",await page.evaluate(()=>{var top=document.getElementById("top").getBoundingClientRect(),h=document.getElementById("gameHearts").getBoundingClientRect();return h.right<=innerWidth&&h.bottom<=top.bottom;}));
+    ok("hearts have no runtime errors",errors.length===0,errors);
+  } finally {await context.close();}
+});
+
 await scenario("a whole round", async () => {
   const { context, page, errors } = await open();
   try {
@@ -194,7 +217,7 @@ await scenario("a whole round", async () => {
     // song 2: let two tiles slip by
     await playSong(page, 2);
     s = await st(page);
-    ok("tiles that slip by just fade: no card until the song is done, nothing lost", s.REV === 2 && (s.card ? /for song 3!$/.test(s.title) : true), s);
+    ok("a slipped tile costs a heart, play continues, and the card waits for the next song", s.REV === 2 && await page.evaluate(() => hearts===1) && (s.card ? /for song 3!$/.test(s.title) : true), s);
     b = await best(page);
     ok("a slipped tile ends the row, and the top-left number stays where it was: it never goes down", b.combo < 14 && b.row >= 14 && b.pill === String(b.row) && neverDown(b.pills), b);
     const after2 = b.combo;

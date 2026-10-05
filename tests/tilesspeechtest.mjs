@@ -101,7 +101,7 @@ try {
     await scenario('Echo asks with no tap, and the song keeps going',async()=>{
       const {context,page,errors}=await fresh();try{
         await page.waitForFunction(()=>tiles.length>0);
-        ok('Echo first asks after ten seconds of play, and nobody has to tap',await page.evaluate(()=>slowAskAt===10000&&!slowTurn&&__slowTest.requests===0));
+        ok('Echo first asks after six seconds of play, and nobody has to tap',await page.evaluate(()=>slowAskAt===6000&&!slowTurn&&__slowTest.requests===0));
         // the song's first tiles wait on the keys until tapped; nobody taps here
         await page.evaluate(()=>{waitLeft=0;tiles.forEach(t=>{t.wait=false;});});
         await ask(page,1500);await ready(page);

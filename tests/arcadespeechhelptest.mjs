@@ -27,7 +27,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const BASE = 'http://127.0.0.1:'+server.address().port;
 let failures=0, assertions=0;
 function ok(name,pass,detail='') { assertions++; if(!pass)failures++; console.log((pass?'PASS ':'FAIL ')+name+(pass?'':' → '+JSON.stringify(detail))); }
-async function scenario(name,fn) { try{await fn();}catch(e){ok(name+' completes without a harness/page exception',false,e.stack);} }
+async function scenario(name,fn) { if(process.env.ARCADE_HEARTS_ONLY && !name.includes("heart recovery"))return; try{await fn();}catch(e){ok(name+' completes without a harness/page exception',false,e.stack);} }
 const browser = await chromium.launch(launchOpts());
 
 function phone(cfg) {
@@ -133,10 +133,28 @@ try {
     await probe.context.close();
     if(exists!==1)continue; // The pre-change tree fails here, not with a timeout.
     available.push(game);
+    await scenario(game+' heart recovery',async()=>{
+      const{context,page,errors,tts}=await fresh({game,voiceOn:true,native:true,text:'taco'});try{
+        const installed=await page.evaluate(()=>typeof hearts!=='undefined'&&typeof loseHeart==='function');
+        ok(game+': a real heart and speech recovery system is installed',installed);if(!installed)return;
+        await seed(page,game);
+        const loss=await page.evaluate(()=>{loseHeart(performance.now());return{hearts,at:slowAskAt,play:slowAskPlay};});
+        ok(game+': a lost heart brings Echo back within 1.5 seconds of play',loss.hearts===2&&loss.at-loss.play<=1500,loss);
+        await ready(page);await voiced(page);await page.waitForFunction(()=>!slowTurn);
+        ok(game+': taco gives neither a heart nor a power',await page.evaluate(()=>hearts===2&&slowMs===0));
+        await page.evaluate(()=>{__slowTest.text='rrrr';});await ask(page);await ready(page);await voiced(page);
+        await page.waitForFunction(()=>!slowTurn&&slowMs>0);
+        ok(game+': the accepted sound restores one heart AND the power',await page.evaluate(()=>hearts===3&&slowMs>0));
+        const reason=await page.evaluate(()=>slowLineText());
+        ok(game+': the early reason and the heart reason were warmed before the mic',tts.some(t=>/heart/.test(t))&&tts.some(t=>t!==reason),tts);
+        await clean(game+' heart recovery',page,errors);
+      }finally{await context.close();}
+    });
+
     await scenario(game+' Echo asks with no tap, and the game keeps going',async()=>{
       const{context,page,errors}=await fresh({game});try{
         const plan=await page.evaluate(()=>({at:slowAskAt,first:SLOW_ASK.first,every:SLOW_ASK.every,quiet:SLOW_ASK.quiet,listen:SLOW_ASK.listen}));
-        ok(game+': Echo first asks after ten seconds of play, then every twenty, and listens for eight',plan.at===10000&&plan.first===10000&&plan.every===20000&&plan.quiet===40000&&plan.listen===8000,plan);
+        ok(game+': Echo first asks after six seconds of play, then every twenty, and listens for eight',plan.at===6000&&plan.first===10000&&plan.every===20000&&plan.quiet===40000&&plan.listen===8000,plan);
         await page.waitForTimeout(400);
         ok(game+': no ask and no mic before then',await page.evaluate(()=>!slowTurn&&__slowTest.requests===0&&__slowTest.starts===0));
         await seed(page,game);

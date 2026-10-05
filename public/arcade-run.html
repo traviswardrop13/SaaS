@@ -105,7 +105,7 @@
     <div id="top">
       <button id="close">✕</button>
       <div class="hudpill" id="distPill" hidden><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg> <b id="score">0m</b></div>
-      <div id="hudspacer"></div>
+      <div id="hudspacer"><span id="gameHearts" class="game-hearts" role="img"></span></div>
       <div id="coinLbl" class="hudpill" style="color:#9a6a00;font-size:14px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#f0a500"/><circle cx="32" cy="30" r="19" fill="#ffd21c"/><circle cx="32" cy="30" r="12" fill="none" stroke="#f0b400" stroke-width="3"/></svg> <b id="coinN">0</b></div>
       <div id="timer" class="hudpill"></div>
     </div>
@@ -161,7 +161,7 @@
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
       <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
+      <button class="btn blue" id="endCharge">Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back home</button>
     </div>
@@ -183,7 +183,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;}};</script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slow course, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -245,15 +245,15 @@
 
     // ---- the runner: 3 lanes, dodge rocks, grab coins ----
     var LANES=3, ROADF=0.74, playing=!raceHeld, dist=0, coins=0, speed0=H*0.0029, speed=speed0, lane=1, laneX=1;
-    var BESTK="sona.best.run", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
+    var BEST=0;
     var REV=3, reviveWait=false;   // say-the-sound cards: one at each checkpoint
 
     // ── the race: three stretches, then the finish line (27 Sep 2026) ──
     // The round Travis said yes to for Fruit Slice, as a race, with what the
     // review of the older games asked for: the park, the beach and the forest,
     // a checkpoint between each with the say-it card, and a party at the
-    // finish line, so every race ends in a win. A rock is a tumble (a second
-    // off the road, ten metres back) and never a stop; after two tumbles in a
+    // finish line for a child who keeps their hearts. A rock is a tumble
+    // off the road and one lost heart; the next stretch of road eases in a
     // stretch the rocks thin out and the road slows. Tap the lane you want or
     // swipe (a tap used to count only as the left or right half of the
     // screen). A golden coin pulls in every coin nearby for a few seconds.
@@ -263,8 +263,45 @@
       {name:"the forest",len:220,grass:"#5cb35a",edge:"#3f8f47",side:"pine"}
     ];
     var stretch=0, stretchStart=0, phase="run", tumbles=0, magnetUntil=0, finishY=null, finaleDone=false, echoT=-1e9, sideOff=0;
+    var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
+    function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }
+    function restoreHeart(){ if(!playing||phase!=="run"||outOfHearts)return; hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
+    function loseHeart(now){
+      if(!playing||phase!=="run"||slowTurn||slowMs>0||now-heartHitAt<1500)return false;
+      heartHitAt=now; hearts=Math.max(0,hearts-1); paintHearts();
+      if(!hearts){ outOfHearts=true; } else slowAskSoon();
+      return true;
+    }
+    // Each child keeps their own best in the visible count, never the hidden
+    // reward number. Older cached Sona scripts can still play without a store.
+    var rowN=0, rowBest=0, startBest=0, keptRow=0, saidNewBest=false;
+    var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
+    try{if(CAN_BEST)startBest=S.gameBest("run")|0;}catch(e){}
+    function rowSaid(n){return n+" m";}
+    function keepBest(){
+      var n=dist;
+      if(!CAN_BEST||n<=keptRow)return;
+      keptRow=n;try{S.gameBestOffer("run",n);}catch(e){}
+    }
+    function bestReached(){
+      var n=dist;keepBest();
+      if(startBest>0&&!saidNewBest&&n>startBest){saidNewBest=true;banner("New best!",rowSaid(n));}
+    }
+    function rowUp(){rowN++;rowBest=Math.max(rowBest,rowN);bestReached();}
+    function bestLine(){
+      var n=dist;if(n<1)return [];
+      var did=rowSaid(n)+".";
+      if(!CAN_BEST)return [did,""];
+      if(startBest<=0)return [did,"Your best: "+n+"!"];
+      if(n>startBest)return [did,"A new best!"];
+      if(n>=570)return [did,"That is every metre!"];
+      if(n===startBest)return [did,"The same as your best!"];
+      return [did,"Your best: "+startBest+"."+(startBest-n<=50?" "+(startBest-n)+" away!":"")];
+    }
+    paintHearts();
+    var cleanSince=0, obstacleHelpUntil=0;
     function startStretch(i){
-      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*(1+0.12*i); things=[]; spawnGap=140; hud();
+      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*[1,1.15,1.30][i]; cleanSince=dist; things=[]; spawnGap=140; hud();
       banner("Stretch "+(i+1),"Run through "+STRETCHES[i].name+"!");
     }
     function endStretch(){
@@ -314,7 +351,7 @@
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       hurtT=performance.now(); playing=true;
       if(phase==="checkpoint") startStretch(stretch+1);
       draw(); // the gated rAF died on the card — restart it
@@ -374,7 +411,7 @@
       // one obstacle OR a coin trail; never fully blocked. After two tumbles
       // in a stretch, the rocks thin out.
       var block=(Math.random()*LANES)|0;
-      if(Math.random()<(tumbles>=2?0.32:0.58)){ things.push({t:"o",e:OBST[(Math.random()*OBST.length)|0],lane:block,y:-60}); }
+      if(Math.random()<(dist<obstacleHelpUntil?.32:[.50,.58,.66][stretch])){ things.push({t:"o",e:OBST[(Math.random()*OBST.length)|0],lane:block,y:-60}); }
       else { var cl=(Math.random()*LANES)|0, gold=Math.random()<0.12; for(var k=0;k<3;k++) things.push({t:"c",e:"🪙",lane:cl,y:-60-k*70,gold:gold&&k===1}); }
     }
 
@@ -404,20 +441,22 @@
       distIv=setInterval(function(){
         if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
         distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
-        dist+=metres; $("score").textContent=dist+"m"; hud();
+        dist+=metres; bestReached(); $("score").textContent=dist+"m"; hud();
+        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*1.75,speed*1.05);cleanSince=dist;}
         if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
       },100);
       // a touch faster through a stretch, unless the child keeps tumbling
-      rampIv=setInterval(function(){ if(document.hidden)return; if(playing&&phase==="run"&&tumbles<2&&speed<speed0*1.6) speed*=1.04; },8000);
+      rampIv=setInterval(function(){ if(document.hidden)return; /* distance, rather than wall time, earns the next pace step */ },8000);
     }
 
     // Mario-Kart fall: hit something → tumble off the map (~1.1s), get rescued
     // back onto the road, keep running. Funny, never punishing.
     var falling={on:false,t0:0};
     function startFall(){
+      if(!playing||phase!=="run"||falling.on)return;
       falling={on:true,t0:performance.now()};
-      dist=Math.max(stretchStart,dist-10); tumbles++;
-      if(tumbles>=2) speed=Math.max(speed0*0.85,speed*0.9);
+      tumbles++;
+      if(loseHeart(performance.now())){speed=Math.max(speed0*[1,1.15,1.30][stretch]*.85,speed/1.1025);cleanSince=dist;obstacleHelpUntil=dist+60;}
       flash("WHOOOA!"); sfx("drop");
     }
 
@@ -496,7 +535,7 @@
       // player (falling = Mario-Kart tumble + rescue); running = a little bounce
       if(falling.on){
         var ft=(now-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; hurtT=now; flash("Back in the race!"); }
+        if(ft>=1){ falling.on=false; hurtT=now; if(outOfHearts)endRound();else flash("Back in the race!"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
           ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,66*(1-ft*0.45))){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill(); } ctx.restore();
@@ -808,7 +847,7 @@
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket, and Echo stops mid-word. Coming back to
     // the card asks again, out loud, then listens.
-    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    function speechBackground(){keepBest();if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
     if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
@@ -821,20 +860,20 @@
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("run",isDaily?score():null);
       playing=false; reviveWait=false; phase="done"; clearInterval(distIv); clearInterval(rampIv);
-      var isBest=dist>BEST; if(isBest){ BEST=dist; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
+      keepBest(); var isBest=dist>startBest; BEST=Math.max(startBest,dist);
       var pts=score(), cshare=Math.min(10,(coins/2)|0);
       try{ if(cshare&&S&&S.addCoins)S.addCoins(cshare); }catch(e){}
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         if(pts===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=pts===0?"Good try!":("+"+pts+" points!");
-        $("endSub").textContent=pts===0?"On to the next game…":"Banking your score…";
+        $("endTitle").textContent="Whew — what a run we had!";
+        $("endSub").textContent="On to the next game…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(pts===0){
+      if(pts===0&&!outOfHearts){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
         $("endTitle").textContent="Good try! Wanna go again?";
@@ -845,17 +884,20 @@
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=finaleDone?"You won the race! "+coins+" coins!":isBest&&dist>0?"NEW BEST! Fast feet, my friend!":"Whew — what a run we had!";
-      var _es=$("endSub"); _es.textContent=dist+" m · Best: "+BEST+" m"; _es.className="later";
-      setTimeout(function(){ _es.classList.add("in"); },1000);
+      $("endTitle").textContent=outOfHearts?"Whew — what a run we had!":finaleDone?"You won the race!":"Whew — what a run we had!";
+      var _es=$("endSub"), line=bestLine(), i, sp; _es.textContent="";
+      for(i=0;i<line.length;i++){if(!line[i])continue;if(_es.firstChild)_es.appendChild(document.createTextNode(" "));sp=document.createElement("span");sp.textContent=line[i];_es.appendChild(sp);}
+      if(_es.firstChild){_es.className="later best";setTimeout(function(){_es.classList.add("in");},1000);}
+      else{_es.className="";_es.style.display="none";}
+
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("glide").allowed?"/charge.html?game=arcade-glide.html":"/activities.html"); };
+    $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ S.finishGameTurn("run"); location.href="/today.html#play"; };
     $("close").onclick=function(){
       if(window.__speechLeaving)return;window.__speechLeaving=true;
-      function leave(){closeReviveMic();playing=false;clearInterval(distIv);clearInterval(rampIv);S.finishGameTurn("run");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      function leave(){keepBest();closeReviveMic();playing=false;clearInterval(distIv);clearInterval(rampIv);S.finishGameTurn("run");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
       if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
     };
     }

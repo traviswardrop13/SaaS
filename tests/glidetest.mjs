@@ -43,7 +43,7 @@ ok("the page asks for the mic in one place only: the say-it card", (code.match(/
 function fakePhone() {
   // Echo's mid-round ask for the sound power (3 Oct 2026) is
   // arcadespeechhelptest's: held here, so a round is just the round.
-  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = SLOW_ASK.soon = 1e12; window.slowAskAt = 1e12; } });
   const f = window.__f = { mics: 0, live: 0, sfx: [] };
   navigator.mediaDevices.getUserMedia = () => {
     f.mics++; f.live++;

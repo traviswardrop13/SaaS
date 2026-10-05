@@ -153,7 +153,7 @@
        nobody taps: Echo asks mid-wave ("Super Slice! Say rrrr. Go!") and the
        fruit keep flying while he listens; the sound once, quick or held, is
        ten seconds of Super Slice (/arcade-speech-help.js). -->
-  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",ms:10000,earnSfx:"reward"};</script>
+  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",heartSay:"For a heart and Super Slice, say",first:6000,ms:10000,earnSfx:"reward"};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -328,6 +328,20 @@
     // ends a wave for a child who keeps earning the power, so it has to mean
     // what it says: on the slow clock it was 82 seconds. Neither runs while
     // Echo listens or the phone is locked.
+    // Lives count finger play only. Cascade protection gives time to recover;
+    // Echo's speaking/listening turn and the sound power never cost a life.
+    var HEART_MAX=3, hearts=HEART_MAX, heartLastAt=-1e9, gameOverPending=false, gameOver=false, pacePlay=0;
+    function paintHearts(){ var el=$("hudspacer"); el.setAttribute("role","img"); el.setAttribute("aria-label",hearts+" of "+HEART_MAX+" hearts"); el.innerHTML=S.heartRow?S.heartRow(hearts,HEART_MAX,16):String(hearts); el.style.visibility=phase==="finale"||phase==="done"?"hidden":""; }
+    function slicePace(){ return 1+Math.min(0.45,pacePlay/90000*(0.28+Math.min(0.17,startBest/160))); }
+    function loseHeart(now){
+      if(!playing||phase!=="wave"||slowTurn||slowMs>0||now-heartLastAt<1500||hearts<=0) return;
+      heartLastAt=now; hearts--; pacePlay=Math.max(0,pacePlay-30000); paintHearts();
+      if(!hearts) gameOverPending=true;
+      else if(typeof slowAskSoon==="function") slowAskSoon();
+    }
+    function gainHeart(){ hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
+    SLOW_HELP.onHeard=gainHeart;
+    SLOW_HELP.line=function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:SLOW_HELP.say;};
     var wave=0, waveGot=0, waveMs=0, wavePlay=0, nextToss=900, phase="wave", missRun=0, giant=null, finaleDone=false;
 
     // ── the fruit stand from the "Say it 5 times" page, now at the bottom ──
@@ -424,7 +438,7 @@
 
     // ── the HUD: this wave's progress, then the giant's five cuts ──
     function hud(){
-      var t=$("timer"), s, i;
+      paintHearts(); var t=$("timer"), s, i;
       if(phase==="finale"||phase==="done"){
         var c=phase==="done"?GIANT_CUTS:(giant?giant.cuts:0);
         s='<span class="wv">Giant</span><span class="notch">'; for(i=0;i<GIANT_CUTS;i++) s+='<i'+(i<c?' class="on"':'')+'></i>';
@@ -938,8 +952,8 @@
       if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
       paintSlowKeys();
       if(playing&&phase==="wave"){
-        waveMs+=dt*slowFactor(); wavePlay+=dt;
-        if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(slowMs>0?0.45:missRun>=2?1.25:1); }
+        waveMs+=dt*slowFactor(); wavePlay+=dt; if(!slowTurn&&!(slowMs>0)) pacePlay+=dt;
+        if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(slowMs>0?0.45:missRun>=2?1.25:1)/slicePace(); }
         if(waveGot>=WAVES[wave].goal||wavePlay>=WAVE_CAP_MS) endWave();
       }
       ctx.clearRect(0,0,W,H);
@@ -952,7 +966,7 @@
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
       for(i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        var factor=slowFactor(); f.x+=f.vx*factor; f.y+=f.vy*factor; f.vy+=(f.g||G)*factor; f.rot+=f.vr*factor;
+        var factor=slowFactor()*slicePace(); f.x+=f.vx*factor; f.y+=f.vy*factor; f.vy+=(f.g||G)*factor; f.rot+=f.vr*factor;
         if(f.sliced){ fruits.splice(i,1); continue; }
         // a miss just falls away: nothing stops and nothing is lost; the help
         // grows instead, and the row they are on starts again (the top-left
@@ -962,12 +976,14 @@
         // five that cost a child their row would teach them not to say the
         // sound. A fruit left in the air once a wave is over costs nothing
         // either, as it never did.
-        if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"&&!f.extra&&!(slowMs>0)){ missRun++; rowN=0; } continue; }
+        if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"&&!f.extra&&!(slowMs>0)&&!slowTurn){ missRun++; rowN=0; loseHeart(now); } continue; }
         ctx.save(); ctx.translate(f.x,f.y);
         if(f.gold) glow(f.r,now);
         ctx.rotate(f.rot);
         drawFruit(f.e,fruitSize(f)); ctx.restore();
       }
+      // End after walking the array: clearing it inside the loop froze the old game.
+      if(gameOverPending){ gameOverPending=false; gameOver=true; phase="done"; endRound(); }
       // particles + halves
       for(i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;
@@ -1056,7 +1072,7 @@
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(score===0){
+      if(score===0&&!gameOver){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
         $("endTitle").textContent="Good try! Wanna go again?";
@@ -1079,7 +1095,7 @@
       // row. Your best: 17. 8 away!" that was a second count with a second
       // meaning on one small card, so the title now carries no number and
       // the row is the only thing counted.
-      $("endTitle").textContent=finaleDone?"You sliced the giant watermelon!":"I saw the fruit fly! So fun!";
+      $("endTitle").textContent=gameOver?"Great slicing! Play again?":finaleDone?"You sliced the giant watermelon!":"I saw the fruit fly! So fun!";
       // the row this child sliced, and their own best in the same thing
       var _es=$("endSub"), line=bestLine(), i, sp;
       _es.textContent="";

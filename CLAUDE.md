@@ -1414,14 +1414,48 @@ the quarter second after a move finished came back to no next word and no way
 on. `sayplay.js` now calls that moment `step`, which `resume()` reads as "the
 next word".
 
+**Arcade lives and a real ending** (Travis, 4 Oct 2026, in the 5 Oct handoff:
+"They need to be able to actually die or lose in the game ... say their target
+sound to get a new life ... start easier and get progressively a little trickier").
+This replaces the five round games' earlier promise of an automatic win. It
+changes finger play, never what passes the speech check:
+- Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint and Flappy Glide start
+  with three hearts. A real gameplay miss costs one. No miss opens the
+  between-round say-it card. At zero hearts the round ends on a kind card,
+  with Play again and Back home; it does not claim the finale was completed.
+  A retry goes through the existing five-tries practice page.
+- One accepted sound-power turn restores one heart, up to three, as well as
+  earning that game's power. Tapping Echo, silence, an unrelated word and a
+  cancelled ask restore nothing and count no rep. The Apple isolation verdict
+  and the existing sound-shape fallback are unchanged. A heard power is one
+  game rep; a heart or gameplay miss is never speech practice data.
+- No heart is lost while Echo asks or listens, while the earned power is on,
+  in a finale, or on a hidden page. Nearby misses are protected from emptying
+  all three hearts at once. Losing a heart brings the next ask forward by
+  about 1.5 seconds of eligible play; it never opens an always-on microphone.
+- Echo explains the reward before the recorded sound and Go! The ordinary
+  and heart-restoring reasons are each spoken once per visit, only marked
+  said after a line finishes. Both download as the page loads. A slow or
+  failed voice uses the existing bounded fallback, so play never freezes.
+- The pace starts at the existing easy speed and rises within a capped range;
+  a miss eases it. The sound power still slows motion to 55%. Exact pacing,
+  grace windows and the heart lines are play defaults for Travis to hear and
+  play on his phone. Rachel should review the frequency and wording of asks,
+  and the effect on children the phone hears poorly.
+
+**The clinical success rule below still applies to speech-practice rounds:**
+step the target down rather than end on failed speech. An arcade round may
+end because of finger play; that is not a grade of the child's sound.
+
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
 OK... The talking moves to between waves"). The six first games are being made
 solid one at a time, and this is the first:
 - **A wave ends** when its fruit are sliced (6, 8, then 10; a golden fruit
   counts three) or after 45 seconds of play, whatever the count.
-- **A missed fruit just falls.** Nothing stops and nothing is lost; after two
-  misses in a row the fruit come one at a time, bigger and slower.
+- **A missed ordinary fruit costs a heart** during active play, outside an
+  ask or earned Super Slice. Misses ease the pace; Super Slice extras cost
+  nothing. The board keeps moving until the last heart is gone.
 - **The say-it card shows only between waves** ("Say “rrrr” for wave 2!";
   for a child on R it may ask a syllable or a short word, see "Games ask for
   more than the sound"), never after a miss. Its listening and quiet rules are the ones every arcade
@@ -1430,8 +1464,9 @@ solid one at a time, and this is the first:
 - **The fruit are thrown from the stand** at the bottom of the screen. The first
   five are the five the "Say it 5 times" page filled, in its order, and on that
   page each heard try now drops its fruit onto the counter.
-- **Wave 3 ends in a giant watermelon:** five swipes across it and it bursts, so
-  every round ends on a win.
+- **Reaching the end of wave 3 opens the giant watermelon:** five swipes
+  across it and it bursts. Its finale costs no hearts; a round that runs out
+  earlier ends without claiming that win.
 `tests/slicetest.mjs` plays a whole round.
 
 **Block Stacker is the same round, as a tower** (27 Sep 2026): it stands on the
@@ -1448,8 +1483,9 @@ few seconds. `tests/stacktest.mjs` plays a whole round.
 Mary Had a Little Lamb and Row, Row, Row Your Boat, each tile one note of the
 tune in a lane by pitch, so tapping the tiles plays the song; the say-it card
 between songs; then Ode to Joy as a grand finale whose tiles all wait on the
-keys, so it ends in a win. A tile that slips by fades and the song plays on
-(after two in a row the next tiles slow and wait); the first three tiles wait
+keys, so reaching it ends in a win. A tile that slips by costs a heart
+outside an ask or earned slow keys; remaining tiles get a safe landing after
+a miss so one fumble cannot empty the hearts. The first three tiles wait
 on the keys until tapped; and a tile takes the song's fall time on every
 screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins it: sound on plays at the one normal level, muted is silent.
@@ -1498,10 +1534,13 @@ them to be able to just be playing the game and at any given point say the
 sound to slow the game ... have 11 Labs voice maybe say that like mid game").
 All five round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint,
 Flappy Glide), from one copy in `arcade-speech-help.js`:
-- **Echo asks by himself, mid-round:** after about 10 seconds of play, then
-  every 20 seconds of play (`SLOW_ASK`). The first ask in a visit is the
-  game's line ("Super Slice! Say", "To slow the keys, say"), then Rachel's one
-  take of the sound, then "Go!"; later asks are her take and "Go!". It is the
+- **Echo asks by himself, mid-round:** all five pages first ask after about
+  six seconds of play (`SLOW_HELP.first`); the shared fallback remains ten. Later asks wait 20 seconds of eligible
+  play (`SLOW_ASK`), with a heart loss bringing the next forward by 1.5
+  seconds. The first ask for each distinct reason in a visit is the game's
+  line ("Super Slice! Say", "To slow the keys, say", or its heart reason),
+  then Rachel's one take, then "Go!"; later asks for that same reason are her
+  take and "Go!". Each reason is preloaded through `SayIt.line`. It is the
   say-it card's voice (`SayIt.voice`, through its `ask` hook): media in the
   app, Web Audio on the website, the mic only after "Go!" and its tail.
 - **The game keeps going.** Nothing holds, dims or waits, and the game's
@@ -1510,8 +1549,8 @@ Flappy Glide), from one copy in `arcade-speech-help.js`:
   word until the mic has closed, so nothing plays over him or into the mic.
 - **He listens 8 seconds** (`SLOW_ASK.listen`). One heard sound earns the
   power at once, exactly as before (Super Slice ten seconds, the others eight
-  at 55%) and is one rep. Nothing heard: the mic closes quietly and play goes
-  on. Two quiet asks in a row and the next waits 40 seconds
+  at 55%), restores one missing heart up to three, and is one rep. Nothing
+  heard: the mic closes quietly and play goes on. Two quiet asks in a row and the next waits 40 seconds
   (`SLOW_ASK.quiet`), so a child who isn't playing along isn't asked every
   20 seconds; a heard one goes back to 20.
 - **Play time only.** No ask during a say-it card, a break, a finale, while
@@ -1524,8 +1563,8 @@ Flappy Glide), from one copy in `arcade-speech-help.js`:
   make an iPhone play everything like a phone call (quieter, the side buttons
   moving call volume), so he chose this over that. The cost is about eleven
   quiet seconds (his ask and his listening) in every half minute or so of
-  play: no swish, no piano notes. The timings are the four numbers in
-  `SLOW_ASK`.
+  play: no swish, no piano notes. The timings are the numbers in `SLOW_ASK`,
+  plus each page's earlier first ask.
 - **Rachel's to rule on:** a child is now asked for the bare sound about
   every 20 seconds inside these games, on top of the cards between rounds;
   whether that is too often, and whether "Go!" belongs there. What counts is
@@ -1741,8 +1780,8 @@ up to Home's number. `tests/repweektest.mjs` pins it.
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
 beach and the forest, a checkpoint between each with the say-it card ("Say
-“rrrr” to run to the beach!"), and a finish line that always ends the race in
-a win. A rock is a tumble (a second off the road, ten metres back), never the
+“rrrr” to run to the beach!"), and a finish line that ends a completed race in a win; three lost hearts
+can end it earlier. A rock is a tumble (a second off the road, ten metres back), never the
 card; after two tumbles in a stretch the rocks thin out and the road slows.
 The child taps the lane they want or swipes (a tap used to count only as the
 left or right half of the screen). A golden coin is a coin magnet. The top
@@ -1769,8 +1808,8 @@ no practice data. `tests/runtest.mjs` plays all of it.
 
 **Flappy Glide is the same round, as a flight** (27 Sep 2026): three legs of
 6, 7 and 8 gaps, a rest on a cloud between each with the say-it card ("Say
-“rrrr” to fly on!"), and a fireworks landing that always ends the flight in a
-win. The review found it the hardest of the six (a steady tap every
+“rrrr” to fly on!"), and a fireworks landing for a completed flight; three lost hearts can
+end it earlier. The review found it the hardest of the six (a steady tap every
 half-second, hedges nearly back to back), so the balloon floats and sinks
 slowly (a tap about every second holds it level), the gaps are wider and
 further apart, and a hedge is a soft bounce back into the gap, never the card;
@@ -1786,8 +1825,9 @@ Home's picture of the game carries a small "Best 17". **Step one is built:**
 the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
 (fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Hoops and Soccer
 Goal follow after Travis has played these two; Dino Dig gets no number.
-- **What binds every game that gets one.** Every round still ends on a win
-  and the title never turns into a loss. The number on screen never goes
+- **What binds every game that gets one.** Every ending remains kind; a
+  completed finale celebrates a win, and zero hearts ends the round without
+  claiming completion. The number on screen never goes
   down during play. It counts the finger, never the voice: nothing grades
   speech, nothing is practice data, and nothing reaches Progress, the week's
   reps, coins, a clinician or the server. No child sees another child's.
@@ -1985,8 +2025,10 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   sentences; single words stay single words.
 - **Silence is never a rep.** A rep requires detected voicing. A round that
   advances on a timer teaches a child that not talking works.
-- **End every round on a success.** Step the target down rather than let a
-  child fail out — the last thing they do is the thing they remember.
+- **End every speech-practice round on a success.** Step the target down
+  rather than let a child fail out of speaking — the last thing they do is
+  the thing they remember. An arcade round can end at zero gameplay hearts
+  under Travis's 4 Oct rule; it never marks the child's speech as a loss.
 - **Developmental order is real.** Sounds are gated by `SOUND_NORM` (the age
   a sound is typically acquired). Do not offer a 4-year-old /r/ drills
   because the parent picked it.

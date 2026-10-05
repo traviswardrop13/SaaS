@@ -45,7 +45,7 @@ const tts = { up: false, said: [], all: [], delay: 0 };
 // lines, "To keep playing, say" and "Go!", as the page loads, whatever the
 // card will ask: every request is kept in tts.all, and tts.said holds only
 // the card's own asks (a syllable or word line, Echo's idea).
-const HELPER_LINES = new Set(["To keep playing, say", "Go!"]);
+const HELPER_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a heart and Super Slice, say"]);
 const server = createServer((req, res) => {
   const u = new URL(req.url, BASE), f = path.join(ROOT, u.pathname);
   // Echo's voice: down unless a scenario turns it on (tts.up), and every line asked for is kept
@@ -93,7 +93,7 @@ ok("the row counts the finger only: a sliced fruit and the giant's burst add to 
   (code.match(/rowN\+\+/g) || []).length === 2 && /f\.sliced=true; hit\+\+; rowN\+\+;/.test(code) && /giant=null; sfx\("giant"\); echoHop\(\);\s*rowN\+\+; rowUp\(true\);/.test(code) && (code.match(/\browUp\(/g) || []).length === 3
   && !/function doRevive\(\)\{[^}]*(rowN|rowBest)/.test(code) && !/SLOW_HELP\.onEarn=function\(\)\{[^}]*(rowN|rowBest)/.test(code));
 ok("Super Slice's fruit are extras: marked as thrown, never counted toward the wave, and nothing dropped while it lasts breaks the row or feeds the two-miss help",
-  /extra:slowMs>0,/.test(code) && /if\(phase==="wave"&&!f\.extra\) waveGot\+=worth;/.test(code) && /if\(playing&&phase==="wave"&&!f\.extra&&!\(slowMs>0\)\)\{ missRun\+\+; rowN=0; \}/.test(code));
+  /extra:slowMs>0,/.test(code) && /if\(phase==="wave"&&!f\.extra\) waveGot\+=worth;/.test(code) && /if\(playing&&phase==="wave"&&!f\.extra&&!\(slowMs>0\)&&!slowTurn\)\{ missRun\+\+; rowN=0; loseHeart\(now\); \}/.test(code));
 ok("a wave's time limit reads real seconds of play, not the clock Super Slice slows", /wavePlay\+=dt;/.test(code) && /wavePlay>=WAVE_CAP_MS/.test(code) && !/waveMs>=WAVE_CAP_MS/.test(code) && /wavePlay=0;/.test(code));
 { // every string the page can put on screen: the markup's text and the script's literals (ids such as "score" are one bare word)
   const words = [...PAGE.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").matchAll(/>([^<>]+)</g)].map((m) => m[1].trim())
@@ -112,7 +112,7 @@ ok("the \"Say it 5 times\" stand drops each fruit onto the counter, and stills i
 function fakePhone(cfg) {
   // Echo's mid-round ask for the sound power (3 Oct 2026) is
   // arcadespeechhelptest's: held here, so a round is just the round.
-  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = 1e12; window.slowAskAt = 1e12; } });
+  document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = SLOW_ASK.soon = 1e12; window.slowAskAt = 1e12; } });
   cfg = cfg || {};
   // media: Echo's lines and Rachel's recordings. chimes: a Sona chime the app
   // plays as a media element (2 Oct 2026), kept apart so the card's counts
@@ -240,8 +240,34 @@ const end = async (page) => { await page.evaluate(() => endRound()); await page.
 // the two win titles: neither carries a number (the row under it is the only count on the card)
 const WIN = /^(You sliced the giant watermelon!|I saw the fruit fly! So fun!)$/;
 
+// The finger can end the round; the speech target is never graded here.
+await scenario("three lives and an earned heart", async () => {
+  const {context,page,errors}=await open();
+  try {
+    const built=await page.evaluate(() => typeof loseHeart === "function" && typeof gainHeart === "function");
+    ok("Fruit Slice has three real lives", built);
+    if(!built) return;
+    await page.evaluate(() => { fruits=[]; nextToss=1e9; WAVES[0].goal=999; });
+    let out=await page.evaluate(() => { loseHeart(performance.now()); return {hearts,card:reviveWait,ended:!!window.__ended}; });
+    ok("one miss costs one heart and play continues without a card",out.hearts===2&&!out.card&&!out.ended,out);
+    out=await page.evaluate(() => { loseHeart(performance.now()); return hearts; });
+    ok("one pile of fruit cannot take all three hearts",out===2,out);
+    out=await page.evaluate(() => { heartLastAt=-1e9; slowMs=8000; loseHeart(performance.now()); slowMs=0; slowTurn={finishing:true}; loseHeart(performance.now()); slowTurn=null; return hearts; });
+    ok("a speaking turn and an earned power protect the remaining lives",out===2,out);
+    out=await page.evaluate(() => { gainHeart(); gainHeart(); return hearts; });
+    ok("a heard sound restores one life, never more than three",out===3,out);
+    const pace=await page.evaluate(() => { pacePlay=0; const first=slicePace(); pacePlay=90000; const later=slicePace(); heartLastAt=-1e9; loseHeart(performance.now()); return {first,later,back:slicePace()}; });
+    ok("fruit starts slow, gets harder, and backs off after a miss",pace.first===1&&pace.later>pace.first&&pace.back<pace.later,pace);
+    await page.evaluate(() => { hearts=1; heartLastAt=-1e9; loseHeart(performance.now()); });
+    await page.waitForFunction(() => !!window.__ended);
+    ok("zero hearts ends on Play again and Back home with the mic closed",await page.evaluate(() => hearts===0&&!playing&&!reviveWait&&!rv.st&&document.getElementById("endOvl").classList.contains("show")&&getComputedStyle(document.getElementById("endCharge")).display!=="none"));
+    ok("lives produce no page errors",errors.length===0,errors);
+  } finally { await context.close(); }
+});
+
 await scenario("a whole round", async () => {
   const { context, page, errors } = await open();
+  await page.evaluate(() => { hearts=999; });
   try {
     await page.evaluate(() => { WAVES[0].every = 450; });
     ok("wave 1 opens with its banner and asks for no mic while it plays",

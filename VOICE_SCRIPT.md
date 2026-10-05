@@ -33,7 +33,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file
   plays as-is, and an unlevelled one is the one sound that can still jump.
 
-Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:4719) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
+Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:4857) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
 
 ---
 
@@ -51,7 +51,7 @@ also run through ElevenLabs speech-to-speech into Echo's voice by `tools/revoice
 `public/coach/say-echo/` (25 Sep 2026). With the
 switch on, the C1 prompt for a sound is Echo's words with her one take in the letter's
 place, and `say-echo/<SOUND>.mp3` plays in its stead only when the voice service is down
-(public/charge.html:1013); `say-echo/<SOUND>-demo.mp3` is used only by the parked Coach Call.
+(public/charge.html:1016); `say-echo/<SOUND>-demo.mp3` is used only by the parked Coach Call.
 
 Continuants are **stretched** (held about 1.5 s); stops are **popped** (one crisp
 burst, never held — a held /p/ teaches a schwa the child then has to unlearn).
@@ -78,7 +78,7 @@ burst, never held — a held /p/ teaches a schwa the child then has to unlearn).
 | A18 | TH (as in 'thumb') | **thhh** | STRETCH ~1.5 s | `TH.mp3`, `TH-demo.mp3` | Peek your tongue between your teeth and blow soft — th. |
 | A19 | TH (voiced, as in 'the') | **thuh** | STRETCH ~1.5 s | `THV.mp3`, `THV-demo.mp3` | Tongue between your teeth and buzz — th, like in 'the'. |
 
-Sources: models public/sona.js:3453 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3375 (`CUES`).
+Sources: models public/sona.js:3567 (`SOUND_SAY`, shown on the practice card and the games' keep-playing card, never sent to TTS); cues public/sona.js:3489 (`CUES`).
 
 ---
 
@@ -96,37 +96,37 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3614; spoken at public/charge.html:2260 |
-| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3614; spoken at public/charge.html:2260 |
-| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3614; spoken at public/charge.html:2260 |
-| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3614; spoken at public/charge.html:2260 |
-| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3614; spoken at public/charge.html:2260 |
+| B1 | praise-1.mp3 | Nice one. | After the easier target (the "I have an idea" line, B3/C5) passes — one of the five, picked at random. The only spoken praise in the live app, and the win line (B45) follows it; a normal pass gets only the win line. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3728; spoken at public/charge.html:2263 |
+| B2 | praise-2.mp3 | Good job. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3728; spoken at public/charge.html:2263 |
+| B3 | praise-3.mp3 | I heard that. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3728; spoken at public/charge.html:2263 |
+| B4 | praise-4.mp3 | That was lovely. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3728; spoken at public/charge.html:2263 |
+| B5 | praise-5.mp3 | Well done. | Same moment, random pick of five. | Soft and pleased, a small smile in it. Not a cheer. | public/sona.js:3728; spoken at public/charge.html:2263 |
 
 ### B2 — Coaching after a miss (19)
 
-`Let's try that one again. {tip}.`, then "Go!" (B49) — the tip is Rachel's mouth cue cut at the dash (rule at public/charge.html:2228).
+`Let's try that one again. {tip}.`, then "Go!" (B49) — the tip is Rachel's mouth cue cut at the dash (rule at public/charge.html:2231).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B6 | coach-P.mp3 | Let's try that one again. Press your lips and pop a little puff. | Once per round, when the on-device check heard a clearly different sound on P. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B7 | coach-B.mp3 | Let's try that one again. Lips together, turn your voice on. | Once per round, when the on-device check heard a clearly different sound on B. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B8 | coach-M.mp3 | Let's try that one again. Lips together and hum. | Once per round, when the on-device check heard a clearly different sound on M. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B9 | coach-N.mp3 | Let's try that one again. Tongue up behind your teeth and hum. | Once per round, when the on-device check heard a clearly different sound on N. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B10 | coach-T.mp3 | Let's try that one again. Tongue taps behind your top teeth. | Once per round, when the on-device check heard a clearly different sound on T. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B11 | coach-D.mp3 | Let's try that one again. Like T, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on D. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B12 | coach-K.mp3 | Let's try that one again. The back of your tongue pops up in the back. | Once per round, when the on-device check heard a clearly different sound on K. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B13 | coach-G.mp3 | Let's try that one again. Like K, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on G. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B14 | coach-F.mp3 | Let's try that one again. Top teeth on your bottom lip, blow soft. | Once per round, when the on-device check heard a clearly different sound on F. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B15 | coach-V.mp3 | Let's try that one again. Like F, but buzz your voice. | Once per round, when the on-device check heard a clearly different sound on V. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B16 | coach-S.mp3 | Let's try that one again. Teeth together, big smile, let the air hiss out. | Once per round, when the on-device check heard a clearly different sound on S. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B17 | coach-Z.mp3 | Let's try that one again. Teeth together and buzz like a bee. | Once per round, when the on-device check heard a clearly different sound on Z. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B18 | coach-SH.mp3 | Let's try that one again. Round your lips and whisper quiet. | Once per round, when the on-device check heard a clearly different sound on SH. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B19 | coach-CH.mp3 | Let's try that one again. Pop it like a little train. | Once per round, when the on-device check heard a clearly different sound on CH. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B20 | coach-J.mp3 | Let's try that one again. Like CH, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on J. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B21 | coach-L.mp3 | Let's try that one again. Tongue tip up behind your top teeth. | Once per round, when the on-device check heard a clearly different sound on L. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B22 | coach-R.mp3 | Let's try that one again. Pull your tongue back and up like a tiger growl. | Once per round, when the on-device check heard a clearly different sound on R. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B23 | coach-TH.mp3 | Let's try that one again. Peek your tongue between your teeth and blow soft. | Once per round, when the on-device check heard a clearly different sound on TH (as in 'thumb'). Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
-| B24 | coach-THV.mp3 | Let's try that one again. Tongue between your teeth and buzz. | Once per round, when the on-device check heard a clearly different sound on TH (voiced, as in 'the'). Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2234 |
+| B6 | coach-P.mp3 | Let's try that one again. Press your lips and pop a little puff. | Once per round, when the on-device check heard a clearly different sound on P. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B7 | coach-B.mp3 | Let's try that one again. Lips together, turn your voice on. | Once per round, when the on-device check heard a clearly different sound on B. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B8 | coach-M.mp3 | Let's try that one again. Lips together and hum. | Once per round, when the on-device check heard a clearly different sound on M. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B9 | coach-N.mp3 | Let's try that one again. Tongue up behind your teeth and hum. | Once per round, when the on-device check heard a clearly different sound on N. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B10 | coach-T.mp3 | Let's try that one again. Tongue taps behind your top teeth. | Once per round, when the on-device check heard a clearly different sound on T. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B11 | coach-D.mp3 | Let's try that one again. Like T, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on D. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B12 | coach-K.mp3 | Let's try that one again. The back of your tongue pops up in the back. | Once per round, when the on-device check heard a clearly different sound on K. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B13 | coach-G.mp3 | Let's try that one again. Like K, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on G. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B14 | coach-F.mp3 | Let's try that one again. Top teeth on your bottom lip, blow soft. | Once per round, when the on-device check heard a clearly different sound on F. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B15 | coach-V.mp3 | Let's try that one again. Like F, but buzz your voice. | Once per round, when the on-device check heard a clearly different sound on V. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B16 | coach-S.mp3 | Let's try that one again. Teeth together, big smile, let the air hiss out. | Once per round, when the on-device check heard a clearly different sound on S. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B17 | coach-Z.mp3 | Let's try that one again. Teeth together and buzz like a bee. | Once per round, when the on-device check heard a clearly different sound on Z. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B18 | coach-SH.mp3 | Let's try that one again. Round your lips and whisper quiet. | Once per round, when the on-device check heard a clearly different sound on SH. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B19 | coach-CH.mp3 | Let's try that one again. Pop it like a little train. | Once per round, when the on-device check heard a clearly different sound on CH. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B20 | coach-J.mp3 | Let's try that one again. Like CH, but turn your voice on. | Once per round, when the on-device check heard a clearly different sound on J. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B21 | coach-L.mp3 | Let's try that one again. Tongue tip up behind your top teeth. | Once per round, when the on-device check heard a clearly different sound on L. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B22 | coach-R.mp3 | Let's try that one again. Pull your tongue back and up like a tiger growl. | Once per round, when the on-device check heard a clearly different sound on R. Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B23 | coach-TH.mp3 | Let's try that one again. Peek your tongue between your teeth and blow soft. | Once per round, when the on-device check heard a clearly different sound on TH (as in 'thumb'). Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
+| B24 | coach-THV.mp3 | Let's try that one again. Tongue between your teeth and buzz. | Once per round, when the on-device check heard a clearly different sound on TH (voiced, as in 'the'). Screen: "Almost! {cue} —" / "Try again — you've got this!". Then one retry of three tries. | Kind and unhurried. A helpful hint, never a correction. The mouth cue is Rachel's, word for word. | public/charge.html:2237 |
 
 ### B3 — Echo's idea, sound alone (19)
 
@@ -134,59 +134,64 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B25 | idea-P.mp3 | I have an idea. Let's try this one. Make your P sound. | After the retry ALSO missed on a syllable round of P: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B26 | idea-B.mp3 | I have an idea. Let's try this one. Make your B sound. | After the retry ALSO missed on a syllable round of B: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B27 | idea-M.mp3 | I have an idea. Let's try this one. Make your M sound. | After the retry ALSO missed on a syllable round of M: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B28 | idea-N.mp3 | I have an idea. Let's try this one. Make your N sound. | After the retry ALSO missed on a syllable round of N: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B29 | idea-T.mp3 | I have an idea. Let's try this one. Make your T sound. | After the retry ALSO missed on a syllable round of T: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B30 | idea-D.mp3 | I have an idea. Let's try this one. Make your D sound. | After the retry ALSO missed on a syllable round of D: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B31 | idea-K.mp3 | I have an idea. Let's try this one. Make your K sound. | After the retry ALSO missed on a syllable round of K: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B32 | idea-G.mp3 | I have an idea. Let's try this one. Make your G sound. | After the retry ALSO missed on a syllable round of G: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B33 | idea-F.mp3 | I have an idea. Let's try this one. Make your F sound. | After the retry ALSO missed on a syllable round of F: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B34 | idea-V.mp3 | I have an idea. Let's try this one. Make your V sound. | After the retry ALSO missed on a syllable round of V: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B35 | idea-S.mp3 | I have an idea. Let's try this one. Make your S sound. | After the retry ALSO missed on a syllable round of S: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B36 | idea-Z.mp3 | I have an idea. Let's try this one. Make your Z sound. | After the retry ALSO missed on a syllable round of Z: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B37 | idea-SH.mp3 | I have an idea. Let's try this one. Make your S H sound. | After the retry ALSO missed on a syllable round of SH: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B38 | idea-CH.mp3 | I have an idea. Let's try this one. Make your C H sound. | After the retry ALSO missed on a syllable round of CH: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B39 | idea-J.mp3 | I have an idea. Let's try this one. Make your J sound. | After the retry ALSO missed on a syllable round of J: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B40 | idea-L.mp3 | I have an idea. Let's try this one. Make your L sound. | After the retry ALSO missed on a syllable round of L: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B41 | idea-R.mp3 | I have an idea. Let's try this one. Make your R sound. | After the retry ALSO missed on a syllable round of R: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B42 | idea-TH.mp3 | I have an idea. Let's try this one. Make your T H sound. | After the retry ALSO missed on a syllable round of TH (as in 'thumb'): Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
-| B43 | idea-THV.mp3 | I have an idea. Let's try this one. Make your T H sound. | After the retry ALSO missed on a syllable round of TH (voiced, as in 'the'): Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2256 |
+| B25 | idea-P.mp3 | I have an idea. Let's try this one. Make your P sound. | After the retry ALSO missed on a syllable round of P: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B26 | idea-B.mp3 | I have an idea. Let's try this one. Make your B sound. | After the retry ALSO missed on a syllable round of B: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B27 | idea-M.mp3 | I have an idea. Let's try this one. Make your M sound. | After the retry ALSO missed on a syllable round of M: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B28 | idea-N.mp3 | I have an idea. Let's try this one. Make your N sound. | After the retry ALSO missed on a syllable round of N: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B29 | idea-T.mp3 | I have an idea. Let's try this one. Make your T sound. | After the retry ALSO missed on a syllable round of T: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B30 | idea-D.mp3 | I have an idea. Let's try this one. Make your D sound. | After the retry ALSO missed on a syllable round of D: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B31 | idea-K.mp3 | I have an idea. Let's try this one. Make your K sound. | After the retry ALSO missed on a syllable round of K: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B32 | idea-G.mp3 | I have an idea. Let's try this one. Make your G sound. | After the retry ALSO missed on a syllable round of G: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B33 | idea-F.mp3 | I have an idea. Let's try this one. Make your F sound. | After the retry ALSO missed on a syllable round of F: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B34 | idea-V.mp3 | I have an idea. Let's try this one. Make your V sound. | After the retry ALSO missed on a syllable round of V: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B35 | idea-S.mp3 | I have an idea. Let's try this one. Make your S sound. | After the retry ALSO missed on a syllable round of S: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B36 | idea-Z.mp3 | I have an idea. Let's try this one. Make your Z sound. | After the retry ALSO missed on a syllable round of Z: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B37 | idea-SH.mp3 | I have an idea. Let's try this one. Make your S H sound. | After the retry ALSO missed on a syllable round of SH: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B38 | idea-CH.mp3 | I have an idea. Let's try this one. Make your C H sound. | After the retry ALSO missed on a syllable round of CH: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B39 | idea-J.mp3 | I have an idea. Let's try this one. Make your J sound. | After the retry ALSO missed on a syllable round of J: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B40 | idea-L.mp3 | I have an idea. Let's try this one. Make your L sound. | After the retry ALSO missed on a syllable round of L: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B41 | idea-R.mp3 | I have an idea. Let's try this one. Make your R sound. | After the retry ALSO missed on a syllable round of R: Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B42 | idea-TH.mp3 | I have an idea. Let's try this one. Make your T H sound. | After the retry ALSO missed on a syllable round of TH (as in 'thumb'): Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
+| B43 | idea-THV.mp3 | I have an idea. Let's try this one. Make your T H sound. | After the retry ALSO missed on a syllable round of TH (voiced, as in 'the'): Echo steps down to the bare sound. Screen: "Echo's idea — say" / "An easier one — you've got this!". Then three tries. | Bright and easy, like a good idea just arrived. Not a consolation. | public/charge.html:2259 |
 
 ### B4 — Round end, win, chest, adventure end, quiet screen, "Go!" (6)
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B44 | roundend.mp3 | Good practicing. Let's play. | Round end when the retry (and the easier target, if there was one) still came back as the wrong sound. The game opens anyway; the win line is NOT spoken in this case. | Warm and light. There is no disappointment in it — the child practised, and now they play. | public/charge.html:2264 |
-| B45 | win.mp3 | You did it. Let's play. | The win: five tries heard and the last check passed. Spoken 600 ms after the win chime; the game loads 1.2 s later. | Quietly delighted. A full stop, not a fanfare. | public/charge.html:2403 |
-| B46 | chest.mp3 | Look what we found. | The treasure chest at the end of the adventure: after the child's third tap opens it, 600 ms after the tap chime, while the sticker shows. | A small wonder, like peeking into a box together. | public/charge.html:2339 |
-| B47 | adventure-end.mp3 | We finished the whole adventure. | Adventure end: when the fifth round's game hands back and the "Adventure complete!" card appears, 600 ms after its chime. | Proud and settled, winding down. | public/charge.html:2464 |
-| B48 | quiet.mp3 | I couldn't hear you! Say it big — I'm all ears! | The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: "I couldn't hear you!" / "Say it big — I'm all ears!" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt. | Gentle and playful. This is the one line that kept its "!" on 24 Sep — "Say it big" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call. | public/charge.html:2367 |
-| B49 | go.mp3 | Go! | After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7), every picture-game word (C8) and Feed Echo's asks (C6). Not the books, the sound power or Sound Sprint's how-to-play. Then the mic opens. | Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call. | public/sona.js:523 (Sona.goClip; the say-it card asks for the same "Go!" at public/arcade-sayit.js:50); joined on at public/charge.html:1012 |
+| B44 | roundend.mp3 | Good practicing. Let's play. | Round end when the retry (and the easier target, if there was one) still came back as the wrong sound. The game opens anyway; the win line is NOT spoken in this case. | Warm and light. There is no disappointment in it — the child practised, and now they play. | public/charge.html:2267 |
+| B45 | win.mp3 | You did it. Let's play. | The win: five tries heard and the last check passed. Spoken 600 ms after the win chime; the game loads 1.2 s later. | Quietly delighted. A full stop, not a fanfare. | public/charge.html:2406 |
+| B46 | chest.mp3 | Look what we found. | The treasure chest at the end of the adventure: after the child's third tap opens it, 600 ms after the tap chime, while the sticker shows. | A small wonder, like peeking into a box together. | public/charge.html:2342 |
+| B47 | adventure-end.mp3 | We finished the whole adventure. | Adventure end: when the fifth round's game hands back and the "Adventure complete!" card appears, 600 ms after its chime. | Proud and settled, winding down. | public/charge.html:2467 |
+| B48 | quiet.mp3 | I couldn't hear you! Say it big — I'm all ears! | The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: "I couldn't hear you!" / "Say it big — I'm all ears!" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt. | Gentle and playful. This is the one line that kept its "!" on 24 Sep — "Say it big" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call. | public/charge.html:2370 |
+| B49 | go.mp3 | Go! | After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7) and sound power (B5), every picture-game word (C8) and Feed Echo's asks (C6). Not the books or Sound Sprint's how-to-play. Then the mic opens. | Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call. | public/sona.js:523 (Sona.goClip; the say-it card asks for the same "Go!" at public/arcade-sayit.js:50); joined on at public/charge.html:1015 |
 
 
-### B5 — The round games (8)
+### B5 — The round games (13)
 
-The say-it card in all five round games (one voice for all five, `arcade-sayit.js`), Echo's power button in all five (instruction at public/arcade-speech-help.js:46, her sound at public/arcade-speech-help.js:57), and Sound Sprint's how-to-play line. None of them is spoken while Sona's sound is off (arcade-sayit.js:298, arcade-speech-help.js:40, arcade-run.html:613). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.
+The say-it card in all five round games (one voice for all five, `arcade-sayit.js`), Echo's power button in all five (instruction at public/arcade-speech-help.js:39, her sound at public/arcade-speech-help.js:79), and Sound Sprint's how-to-play line. None of them is spoken while Sona's sound is off (arcade-sayit.js:302, arcade-sayit.js:302, arcade-run.html:627). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B50 | card-say.mp3 | To keep playing, say | The say-it card between rounds in all five round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide): Echo says this, then Rachel's recording of the sound plays (`say-echo/<SOUND>-sound.wav`, Part A), then "Go!" (B49), then the mic opens. Screen: "Say “rrrr” for wave 2!" (each game its own words). On Fruit Slice, a card that asks a syllable or a word says one line instead of this and her recording (C7). | Friendly and plain. It runs straight into the sound, so leave it open at the end. | public/arcade-sayit.js:50; in this order at public/arcade-sayit.js:325 |
-| B51 | card-idea.mp3 | I have an idea. Let's try this one. | Fruit Slice's card, when a syllable or a word got no answer for 8 s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "Go!". The practice page's own words for the same move (B3). | As B3: a good idea just arrived. Not a consolation. | public/arcade-slice.html:585; said at public/arcade-slice.html:615; the step back at public/arcade-slice.html:652 |
-| B52 | power-slice.mp3 | Super Slice! Say | Fruit Slice: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens. Spoken the first time in a game only; after that the tap plays just the sound. | Short and bright. It runs straight into the sound, so leave it open at the end. Has a "!": a little lift, not a shout. | public/arcade-slice.html:157 |
-| B53 | power-tiles.mp3 | To slow the keys, say | Piano Tiles: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-tiles.html:656 |
-| B54 | power-stack.mp3 | To slow the block, say | Block Stacker: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-stack.html:131 |
-| B55 | power-run.mp3 | To slow the course, say | Sound Sprint: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-run.html:187 |
-| B56 | power-glide.mp3 | To slow the beams, say | Flappy Glide: the child taps Echo during a round. The game holds, Echo says this, then Rachel's recording of the sound plays and the mic opens. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-glide.html:145 |
-| B57 | sprint-howto.mp3 | Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins! | Sound Sprint's start card, on a child's first three races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early). | Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout. | public/arcade-run.html:533; asked for at public/arcade-run.html:554 |
+| B50 | card-say.mp3 | To keep playing, say | The say-it card between rounds in all five round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide): Echo says this, then Rachel's recording of the sound plays (`say-echo/<SOUND>-sound.wav`, Part A), then "Go!" (B49), then the mic opens. Screen: "Say “rrrr” for wave 2!" (each game its own words). On Fruit Slice, a card that asks a syllable or a word says one line instead of this and her recording (C7). | Friendly and plain. It runs straight into the sound, so leave it open at the end. | public/arcade-sayit.js:50; in this order at public/arcade-sayit.js:329 |
+| B51 | card-idea.mp3 | I have an idea. Let's try this one. | Fruit Slice's card, when a syllable or a word got no answer for 8 s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "Go!". The practice page's own words for the same move (B3). | As B3: a good idea just arrived. Not a consolation. | public/arcade-slice.html:598; said at public/arcade-slice.html:628; the step back at public/arcade-slice.html:667 |
+| B52 | power-slice.mp3 | Super Slice! Say | Fruit Slice: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. Has a "!": a little lift, not a shout. | public/arcade-slice.html:158 |
+| B53 | power-slice-heart.mp3 | For a heart and Super Slice, say | Fruit Slice: Echo asks automatically during play when a heart is missing; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-slice.html:158 |
+| B54 | power-tiles.mp3 | To slow the keys, say | Piano Tiles: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-tiles.html:137 |
+| B55 | power-tiles-heart.mp3 | For a heart and slow keys, say | Piano Tiles: Echo asks automatically during play when a heart is missing; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-tiles.html:137 |
+| B56 | power-stack.mp3 | To slow the block, say | Block Stacker: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-stack.html:130 |
+| B57 | power-stack-heart.mp3 | For a heart and slow blocks, say | Block Stacker: Echo asks automatically during play when a heart is missing; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-stack.html:130 |
+| B58 | power-run.mp3 | To slow the course, say | Sound Sprint: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-run.html:186 |
+| B59 | power-run-heart.mp3 | For a heart and slow course, say | Sound Sprint: Echo asks automatically during play when a heart is missing; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-run.html:186 |
+| B60 | power-glide.mp3 | To slow the beams, say | Flappy Glide: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-glide.html:144 |
+| B61 | power-glide-heart.mp3 | For a heart and slow beams, say | Flappy Glide: Echo asks automatically during play when a heart is missing; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power and one heart back, up to three. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-glide.html:144 |
+| B62 | sprint-howto.mp3 | Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins! | Sound Sprint's start card, on a child's first three races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early). | Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout. | public/arcade-run.html:547; asked for at public/arcade-run.html:568 |
 
 ### B6 — Books (2)
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
-| B58 | book-end.mp3 | The end! Great listening! | The last page of every book ("The End!"), with the star and the chime. | Warm and pleased, winding down. Still has its "!". | public/library.html:1684 |
-| B59 | book-turn.mp3 | Great trying. Let's turn the page. | A book page's key word (C9): after three tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page." | Kind and light. The page turns on a good note. | public/library.html:1907 |
+| B63 | book-end.mp3 | The end! Great listening! | The last page of every book ("The End!"), with the star and the chime. | Warm and pleased, winding down. Still has its "!". | public/library.html:1687 |
+| B64 | book-turn.mp3 | Great trying. Let's turn the page. | A book page's key word (C9): after three tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page." | Kind and light. The page turns on a good note. | public/library.html:1910 |
 
 Not in this list because they speak nothing: Home, setup, settings, the voice
 picker, the mic-permission screens, the chest captions and every in-round label.
@@ -202,11 +207,11 @@ Numbered like Part B so they can be ticked off.
 
 ### C1 — The first prompt of a sound-alone round
 
-`Ready? {cue}, and make your {sound} sound, {n} times.`, then "Go!" (B49) (public/charge.html:2186, built at public/charge.html:611)
+`Ready? {cue}, and make your {sound} sound, {n} times.`, then "Go!" (B49) (public/charge.html:2189, built at public/charge.html:614)
 
 Spoken once, into a closed mic, right after the mic opens and the room is measured.
 Every session's first round is a sound-alone round, so a child hears this every day.
-With the sound models on, Echo says the words and one take of Rachel's recorded sound (`/coach/say-echo/{SOUND}-sound.wav`, Part A) plays in the letter's place: "Ready? Pull your tongue back and up, and make your [rrrr] sound, five times." (public/charge.html:666; spoken at public/charge.html:674).
+With the sound models on, Echo says the words and one take of Rachel's recorded sound (`/coach/say-echo/{SOUND}-sound.wav`, Part A) plays in the letter's place: "Ready? Pull your tongue back and up, and make your [rrrr] sound, five times." (public/charge.html:669; spoken at public/charge.html:677).
 
 **Fillers.**
 
@@ -232,7 +237,7 @@ With the sound models on, Echo says the words and one take of Rachel's recorded 
 | TH (as in 'thumb') | Peek your tongue between your teeth and blow soft | T H |
 | TH (voiced, as in 'the') | Tongue between your teeth and buzz | T H |
 
-{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:604). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:2051) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2236). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
+{n}: the number words the page knows are 2 → "two", 3 → "three", 4 → "four", 5 → "five", 6 → "six" (public/charge.html:607). The ones actually used: **five** on every normal prompt (`CHARGE_NEED = 5`, public/sona.js:2051) and **three** during a retry window after a miss (`burstAndVerify(3)`, public/charge.html:2239). The cued form can fire with "three" only when a syllable round stepped down to the sound and the child then tapped Echo.
 
 Worth Rachel's eye: the comma/"like" cut leaves "Lips together" (B), "Like T" (D), "Like K" (G), "Like F" (V), "Teeth together" (S), "Pop it" (CH), "Like CH" (J) — a G round opens "Ready? Like K, and make your G sound, five times.". TH and THV are both spelled "T H", so only the cue tells them apart.
 
@@ -240,48 +245,48 @@ Worth Rachel's eye: the comma/"like" cut leaves "Lips together" (B), "Like T" (D
 
 | # | File | Say this | When | Source |
 |---|---|---|---|---|
-| C1 | prompt-P-cued-5.mp3 | Ready? Press your lips and pop a little puff, and make your P sound, five times. | First prompt of a P sound-alone round. | public/charge.html:611 |
-| C2 | prompt-B-cued-5.mp3 | Ready? Lips together, and make your B sound, five times. | First prompt of a B sound-alone round. | public/charge.html:611 |
-| C3 | prompt-M-cued-5.mp3 | Ready? Lips together and hum, and make your M sound, five times. | First prompt of a M sound-alone round. | public/charge.html:611 |
-| C4 | prompt-N-cued-5.mp3 | Ready? Tongue up behind your teeth and hum, and make your N sound, five times. | First prompt of a N sound-alone round. | public/charge.html:611 |
-| C5 | prompt-T-cued-5.mp3 | Ready? Tongue taps behind your top teeth, and make your T sound, five times. | First prompt of a T sound-alone round. | public/charge.html:611 |
-| C6 | prompt-D-cued-5.mp3 | Ready? Like T, and make your D sound, five times. | First prompt of a D sound-alone round. | public/charge.html:611 |
-| C7 | prompt-K-cued-5.mp3 | Ready? The back of your tongue pops up in the back, and make your K sound, five times. | First prompt of a K sound-alone round. | public/charge.html:611 |
-| C8 | prompt-G-cued-5.mp3 | Ready? Like K, and make your G sound, five times. | First prompt of a G sound-alone round. | public/charge.html:611 |
-| C9 | prompt-F-cued-5.mp3 | Ready? Top teeth on your bottom lip, and make your F sound, five times. | First prompt of a F sound-alone round. | public/charge.html:611 |
-| C10 | prompt-V-cued-5.mp3 | Ready? Like F, and make your V sound, five times. | First prompt of a V sound-alone round. | public/charge.html:611 |
-| C11 | prompt-S-cued-5.mp3 | Ready? Teeth together, and make your S sound, five times. | First prompt of a S sound-alone round. | public/charge.html:611 |
-| C12 | prompt-Z-cued-5.mp3 | Ready? Teeth together and buzz, and make your Z sound, five times. | First prompt of a Z sound-alone round. | public/charge.html:611 |
-| C13 | prompt-SH-cued-5.mp3 | Ready? Round your lips and whisper quiet, and make your S H sound, five times. | First prompt of a SH sound-alone round. | public/charge.html:611 |
-| C14 | prompt-CH-cued-5.mp3 | Ready? Pop it, and make your C H sound, five times. | First prompt of a CH sound-alone round. | public/charge.html:611 |
-| C15 | prompt-J-cued-5.mp3 | Ready? Like CH, and make your J sound, five times. | First prompt of a J sound-alone round. | public/charge.html:611 |
-| C16 | prompt-L-cued-5.mp3 | Ready? Tongue tip up behind your top teeth, and make your L sound, five times. | First prompt of a L sound-alone round. | public/charge.html:611 |
-| C17 | prompt-R-cued-5.mp3 | Ready? Pull your tongue back and up, and make your R sound, five times. | First prompt of a R sound-alone round. | public/charge.html:611 |
-| C18 | prompt-TH-cued-5.mp3 | Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, five times. | First prompt of a TH (as in 'thumb') sound-alone round. | public/charge.html:611 |
-| C19 | prompt-THV-cued-5.mp3 | Ready? Tongue between your teeth and buzz, and make your T H sound, five times. | First prompt of a TH (voiced, as in 'the') sound-alone round. | public/charge.html:611 |
-| C20 | prompt-P-cued-3.mp3 | Ready? Press your lips and pop a little puff, and make your P sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C21 | prompt-B-cued-3.mp3 | Ready? Lips together, and make your B sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C22 | prompt-M-cued-3.mp3 | Ready? Lips together and hum, and make your M sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C23 | prompt-N-cued-3.mp3 | Ready? Tongue up behind your teeth and hum, and make your N sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C24 | prompt-T-cued-3.mp3 | Ready? Tongue taps behind your top teeth, and make your T sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C25 | prompt-D-cued-3.mp3 | Ready? Like T, and make your D sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C26 | prompt-K-cued-3.mp3 | Ready? The back of your tongue pops up in the back, and make your K sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C27 | prompt-G-cued-3.mp3 | Ready? Like K, and make your G sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C28 | prompt-F-cued-3.mp3 | Ready? Top teeth on your bottom lip, and make your F sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C29 | prompt-V-cued-3.mp3 | Ready? Like F, and make your V sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C30 | prompt-S-cued-3.mp3 | Ready? Teeth together, and make your S sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C31 | prompt-Z-cued-3.mp3 | Ready? Teeth together and buzz, and make your Z sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C32 | prompt-SH-cued-3.mp3 | Ready? Round your lips and whisper quiet, and make your S H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C33 | prompt-CH-cued-3.mp3 | Ready? Pop it, and make your C H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C34 | prompt-J-cued-3.mp3 | Ready? Like CH, and make your J sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C35 | prompt-L-cued-3.mp3 | Ready? Tongue tip up behind your top teeth, and make your L sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C36 | prompt-R-cued-3.mp3 | Ready? Pull your tongue back and up, and make your R sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C37 | prompt-TH-cued-3.mp3 | Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
-| C38 | prompt-THV-cued-3.mp3 | Ready? Tongue between your teeth and buzz, and make your T H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:611 |
+| C1 | prompt-P-cued-5.mp3 | Ready? Press your lips and pop a little puff, and make your P sound, five times. | First prompt of a P sound-alone round. | public/charge.html:614 |
+| C2 | prompt-B-cued-5.mp3 | Ready? Lips together, and make your B sound, five times. | First prompt of a B sound-alone round. | public/charge.html:614 |
+| C3 | prompt-M-cued-5.mp3 | Ready? Lips together and hum, and make your M sound, five times. | First prompt of a M sound-alone round. | public/charge.html:614 |
+| C4 | prompt-N-cued-5.mp3 | Ready? Tongue up behind your teeth and hum, and make your N sound, five times. | First prompt of a N sound-alone round. | public/charge.html:614 |
+| C5 | prompt-T-cued-5.mp3 | Ready? Tongue taps behind your top teeth, and make your T sound, five times. | First prompt of a T sound-alone round. | public/charge.html:614 |
+| C6 | prompt-D-cued-5.mp3 | Ready? Like T, and make your D sound, five times. | First prompt of a D sound-alone round. | public/charge.html:614 |
+| C7 | prompt-K-cued-5.mp3 | Ready? The back of your tongue pops up in the back, and make your K sound, five times. | First prompt of a K sound-alone round. | public/charge.html:614 |
+| C8 | prompt-G-cued-5.mp3 | Ready? Like K, and make your G sound, five times. | First prompt of a G sound-alone round. | public/charge.html:614 |
+| C9 | prompt-F-cued-5.mp3 | Ready? Top teeth on your bottom lip, and make your F sound, five times. | First prompt of a F sound-alone round. | public/charge.html:614 |
+| C10 | prompt-V-cued-5.mp3 | Ready? Like F, and make your V sound, five times. | First prompt of a V sound-alone round. | public/charge.html:614 |
+| C11 | prompt-S-cued-5.mp3 | Ready? Teeth together, and make your S sound, five times. | First prompt of a S sound-alone round. | public/charge.html:614 |
+| C12 | prompt-Z-cued-5.mp3 | Ready? Teeth together and buzz, and make your Z sound, five times. | First prompt of a Z sound-alone round. | public/charge.html:614 |
+| C13 | prompt-SH-cued-5.mp3 | Ready? Round your lips and whisper quiet, and make your S H sound, five times. | First prompt of a SH sound-alone round. | public/charge.html:614 |
+| C14 | prompt-CH-cued-5.mp3 | Ready? Pop it, and make your C H sound, five times. | First prompt of a CH sound-alone round. | public/charge.html:614 |
+| C15 | prompt-J-cued-5.mp3 | Ready? Like CH, and make your J sound, five times. | First prompt of a J sound-alone round. | public/charge.html:614 |
+| C16 | prompt-L-cued-5.mp3 | Ready? Tongue tip up behind your top teeth, and make your L sound, five times. | First prompt of a L sound-alone round. | public/charge.html:614 |
+| C17 | prompt-R-cued-5.mp3 | Ready? Pull your tongue back and up, and make your R sound, five times. | First prompt of a R sound-alone round. | public/charge.html:614 |
+| C18 | prompt-TH-cued-5.mp3 | Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, five times. | First prompt of a TH (as in 'thumb') sound-alone round. | public/charge.html:614 |
+| C19 | prompt-THV-cued-5.mp3 | Ready? Tongue between your teeth and buzz, and make your T H sound, five times. | First prompt of a TH (voiced, as in 'the') sound-alone round. | public/charge.html:614 |
+| C20 | prompt-P-cued-3.mp3 | Ready? Press your lips and pop a little puff, and make your P sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C21 | prompt-B-cued-3.mp3 | Ready? Lips together, and make your B sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C22 | prompt-M-cued-3.mp3 | Ready? Lips together and hum, and make your M sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C23 | prompt-N-cued-3.mp3 | Ready? Tongue up behind your teeth and hum, and make your N sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C24 | prompt-T-cued-3.mp3 | Ready? Tongue taps behind your top teeth, and make your T sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C25 | prompt-D-cued-3.mp3 | Ready? Like T, and make your D sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C26 | prompt-K-cued-3.mp3 | Ready? The back of your tongue pops up in the back, and make your K sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C27 | prompt-G-cued-3.mp3 | Ready? Like K, and make your G sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C28 | prompt-F-cued-3.mp3 | Ready? Top teeth on your bottom lip, and make your F sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C29 | prompt-V-cued-3.mp3 | Ready? Like F, and make your V sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C30 | prompt-S-cued-3.mp3 | Ready? Teeth together, and make your S sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C31 | prompt-Z-cued-3.mp3 | Ready? Teeth together and buzz, and make your Z sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C32 | prompt-SH-cued-3.mp3 | Ready? Round your lips and whisper quiet, and make your S H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C33 | prompt-CH-cued-3.mp3 | Ready? Pop it, and make your C H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C34 | prompt-J-cued-3.mp3 | Ready? Like CH, and make your J sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C35 | prompt-L-cued-3.mp3 | Ready? Tongue tip up behind your top teeth, and make your L sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C36 | prompt-R-cued-3.mp3 | Ready? Pull your tongue back and up, and make your R sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C37 | prompt-TH-cued-3.mp3 | Ready? Peek your tongue between your teeth and blow soft, and make your T H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
+| C38 | prompt-THV-cued-3.mp3 | Ready? Tongue between your teeth and buzz, and make your T H sound, three times. | Same, tapped during a retry window (three tries). | public/charge.html:614 |
 
 ### C2 — The prompt again (tap on Echo)
 
-`Ready? Make your {sound} sound, {n} times.`, then "Go!" (tap: public/charge.html:1290; built at public/charge.html:611)
+`Ready? Make your {sound} sound, {n} times.`, then "Go!" (tap: public/charge.html:1293; built at public/charge.html:614)
 
 Every later prompt of the same sound-alone round: the child taps Echo ("Tap Echo to
 hear it again"). With the sound models on, her take sits in the letter's place here too.
@@ -289,48 +294,48 @@ hear it again"). With the sound models on, her take sits in the letter's place h
 
 | # | File | Say this | When | Source |
 |---|---|---|---|---|
-| C39 | prompt-P-5.mp3 | Ready? Make your P sound, five times. | Repeat prompt, P. | public/charge.html:611 |
-| C40 | prompt-B-5.mp3 | Ready? Make your B sound, five times. | Repeat prompt, B. | public/charge.html:611 |
-| C41 | prompt-M-5.mp3 | Ready? Make your M sound, five times. | Repeat prompt, M. | public/charge.html:611 |
-| C42 | prompt-N-5.mp3 | Ready? Make your N sound, five times. | Repeat prompt, N. | public/charge.html:611 |
-| C43 | prompt-T-5.mp3 | Ready? Make your T sound, five times. | Repeat prompt, T. | public/charge.html:611 |
-| C44 | prompt-D-5.mp3 | Ready? Make your D sound, five times. | Repeat prompt, D. | public/charge.html:611 |
-| C45 | prompt-K-5.mp3 | Ready? Make your K sound, five times. | Repeat prompt, K. | public/charge.html:611 |
-| C46 | prompt-G-5.mp3 | Ready? Make your G sound, five times. | Repeat prompt, G. | public/charge.html:611 |
-| C47 | prompt-F-5.mp3 | Ready? Make your F sound, five times. | Repeat prompt, F. | public/charge.html:611 |
-| C48 | prompt-V-5.mp3 | Ready? Make your V sound, five times. | Repeat prompt, V. | public/charge.html:611 |
-| C49 | prompt-S-5.mp3 | Ready? Make your S sound, five times. | Repeat prompt, S. | public/charge.html:611 |
-| C50 | prompt-Z-5.mp3 | Ready? Make your Z sound, five times. | Repeat prompt, Z. | public/charge.html:611 |
-| C51 | prompt-SH-5.mp3 | Ready? Make your S H sound, five times. | Repeat prompt, SH. | public/charge.html:611 |
-| C52 | prompt-CH-5.mp3 | Ready? Make your C H sound, five times. | Repeat prompt, CH. | public/charge.html:611 |
-| C53 | prompt-J-5.mp3 | Ready? Make your J sound, five times. | Repeat prompt, J. | public/charge.html:611 |
-| C54 | prompt-L-5.mp3 | Ready? Make your L sound, five times. | Repeat prompt, L. | public/charge.html:611 |
-| C55 | prompt-R-5.mp3 | Ready? Make your R sound, five times. | Repeat prompt, R. | public/charge.html:611 |
-| C56 | prompt-TH-5.mp3 | Ready? Make your T H sound, five times. | Repeat prompt, TH (as in 'thumb'). | public/charge.html:611 |
-| C57 | prompt-THV-5.mp3 | Ready? Make your T H sound, five times. | Repeat prompt, TH (voiced, as in 'the'). | public/charge.html:611 |
-| C58 | prompt-P-3.mp3 | Ready? Make your P sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C59 | prompt-B-3.mp3 | Ready? Make your B sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C60 | prompt-M-3.mp3 | Ready? Make your M sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C61 | prompt-N-3.mp3 | Ready? Make your N sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C62 | prompt-T-3.mp3 | Ready? Make your T sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C63 | prompt-D-3.mp3 | Ready? Make your D sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C64 | prompt-K-3.mp3 | Ready? Make your K sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C65 | prompt-G-3.mp3 | Ready? Make your G sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C66 | prompt-F-3.mp3 | Ready? Make your F sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C67 | prompt-V-3.mp3 | Ready? Make your V sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C68 | prompt-S-3.mp3 | Ready? Make your S sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C69 | prompt-Z-3.mp3 | Ready? Make your Z sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C70 | prompt-SH-3.mp3 | Ready? Make your S H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C71 | prompt-CH-3.mp3 | Ready? Make your C H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C72 | prompt-J-3.mp3 | Ready? Make your J sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C73 | prompt-L-3.mp3 | Ready? Make your L sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C74 | prompt-R-3.mp3 | Ready? Make your R sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C75 | prompt-TH-3.mp3 | Ready? Make your T H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
-| C76 | prompt-THV-3.mp3 | Ready? Make your T H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:611 |
+| C39 | prompt-P-5.mp3 | Ready? Make your P sound, five times. | Repeat prompt, P. | public/charge.html:614 |
+| C40 | prompt-B-5.mp3 | Ready? Make your B sound, five times. | Repeat prompt, B. | public/charge.html:614 |
+| C41 | prompt-M-5.mp3 | Ready? Make your M sound, five times. | Repeat prompt, M. | public/charge.html:614 |
+| C42 | prompt-N-5.mp3 | Ready? Make your N sound, five times. | Repeat prompt, N. | public/charge.html:614 |
+| C43 | prompt-T-5.mp3 | Ready? Make your T sound, five times. | Repeat prompt, T. | public/charge.html:614 |
+| C44 | prompt-D-5.mp3 | Ready? Make your D sound, five times. | Repeat prompt, D. | public/charge.html:614 |
+| C45 | prompt-K-5.mp3 | Ready? Make your K sound, five times. | Repeat prompt, K. | public/charge.html:614 |
+| C46 | prompt-G-5.mp3 | Ready? Make your G sound, five times. | Repeat prompt, G. | public/charge.html:614 |
+| C47 | prompt-F-5.mp3 | Ready? Make your F sound, five times. | Repeat prompt, F. | public/charge.html:614 |
+| C48 | prompt-V-5.mp3 | Ready? Make your V sound, five times. | Repeat prompt, V. | public/charge.html:614 |
+| C49 | prompt-S-5.mp3 | Ready? Make your S sound, five times. | Repeat prompt, S. | public/charge.html:614 |
+| C50 | prompt-Z-5.mp3 | Ready? Make your Z sound, five times. | Repeat prompt, Z. | public/charge.html:614 |
+| C51 | prompt-SH-5.mp3 | Ready? Make your S H sound, five times. | Repeat prompt, SH. | public/charge.html:614 |
+| C52 | prompt-CH-5.mp3 | Ready? Make your C H sound, five times. | Repeat prompt, CH. | public/charge.html:614 |
+| C53 | prompt-J-5.mp3 | Ready? Make your J sound, five times. | Repeat prompt, J. | public/charge.html:614 |
+| C54 | prompt-L-5.mp3 | Ready? Make your L sound, five times. | Repeat prompt, L. | public/charge.html:614 |
+| C55 | prompt-R-5.mp3 | Ready? Make your R sound, five times. | Repeat prompt, R. | public/charge.html:614 |
+| C56 | prompt-TH-5.mp3 | Ready? Make your T H sound, five times. | Repeat prompt, TH (as in 'thumb'). | public/charge.html:614 |
+| C57 | prompt-THV-5.mp3 | Ready? Make your T H sound, five times. | Repeat prompt, TH (voiced, as in 'the'). | public/charge.html:614 |
+| C58 | prompt-P-3.mp3 | Ready? Make your P sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C59 | prompt-B-3.mp3 | Ready? Make your B sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C60 | prompt-M-3.mp3 | Ready? Make your M sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C61 | prompt-N-3.mp3 | Ready? Make your N sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C62 | prompt-T-3.mp3 | Ready? Make your T sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C63 | prompt-D-3.mp3 | Ready? Make your D sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C64 | prompt-K-3.mp3 | Ready? Make your K sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C65 | prompt-G-3.mp3 | Ready? Make your G sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C66 | prompt-F-3.mp3 | Ready? Make your F sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C67 | prompt-V-3.mp3 | Ready? Make your V sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C68 | prompt-S-3.mp3 | Ready? Make your S sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C69 | prompt-Z-3.mp3 | Ready? Make your Z sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C70 | prompt-SH-3.mp3 | Ready? Make your S H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C71 | prompt-CH-3.mp3 | Ready? Make your C H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C72 | prompt-J-3.mp3 | Ready? Make your J sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C73 | prompt-L-3.mp3 | Ready? Make your L sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C74 | prompt-R-3.mp3 | Ready? Make your R sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C75 | prompt-TH-3.mp3 | Ready? Make your T H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
+| C76 | prompt-THV-3.mp3 | Ready? Make your T H sound, three times. | Repeat prompt during a retry window (three tries). | public/charge.html:614 |
 
 ### C3 — The prompt on a syllable, word or sentence round
 
-`Ready? Say {target}, {n} times.`, then "Go!" (public/charge.html:611; targets from `ladderContent`)
+`Ready? Say {target}, {n} times.`, then "Go!" (public/charge.html:614; targets from `ladderContent`)
 
 Round two onward of an adventure climbs sound → syllable → word → sentence, capped
 one rung above what the child has mastered. One target per round; the same line
@@ -370,11 +375,11 @@ Two things for Rachel here: the frames are applied blindly, so "I have a rain" a
 
 ### C4 — Hear it slooow (the turtle)
 
-Not a separate recording. The turtle pill replays the current line slowed to 0.7× by the app (public/charge.html:943); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (public/charge.html:1283). On a sound-alone round the slowed line ends on "Go!", and with the sound models on it has Rachel's take in the letter's place, slowed with it.
+Not a separate recording. The turtle pill replays the current line slowed to 0.7× by the app (public/charge.html:946); on a sound-alone round that is the C1/C2 text, on any other round it is just the target — syllable, word, or sentence without its full stop (public/charge.html:1286). On a sound-alone round the slowed line ends on "Go!", and with the sound models on it has Rachel's take in the letter's place, slowed with it.
 
 ### C5 — Echo's idea, with a syllable or a word
 
-`I have an idea. Let's try this one. Say {target}.`, then "Go!" (public/charge.html:2256)
+`I have an idea. Let's try this one. Say {target}.`, then "Go!" (public/charge.html:2259)
 
 The step-down after two misses on a word or sentence round: {target} is a syllable
 (C3 list) or a word at the practice position (Part D) from one rung down. (Rarely — the
@@ -419,7 +424,7 @@ eight Beginning-position words with a picture (public/arcade-feed.html:267). The
 
 ### C7 — Fruit Slice's say-it card, with a syllable or a word
 
-`To keep playing, say... {ask}.` (public/arcade-slice.html:495)
+`To keep playing, say... {ask}.` (public/arcade-slice.html:510)
 
 The card between rounds of Fruit Slice. When it asks for more than the sound alone, Echo
 says the whole ask as ONE line in his own voice, the syllable or word last and after
@@ -446,10 +451,10 @@ Rachel's calls, built on defaults until she answers: which syllables and in what
 
 | # | File | Say this | When | Source |
 |---|---|---|---|---|
-| C77 | card-R-ree.mp3 | To keep playing, say... ree. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:495 |
-| C78 | card-R-rah.mp3 | To keep playing, say... rah. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:495 |
-| C79 | card-R-roh.mp3 | To keep playing, say... roh. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:495 |
-| C80 | card-R-rot.mp3 | To keep playing, say... rot. | Fruit Slice's card asks R in a short word. | public/arcade-slice.html:495 |
+| C77 | card-R-ree.mp3 | To keep playing, say... ree. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:510 |
+| C78 | card-R-rah.mp3 | To keep playing, say... rah. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:510 |
+| C79 | card-R-roh.mp3 | To keep playing, say... roh. | Fruit Slice's card asks R in a syllable. | public/arcade-slice.html:510 |
+| C80 | card-R-rot.mp3 | To keep playing, say... rot. | Fruit Slice's card asks R in a short word. | public/arcade-slice.html:510 |
 
 ### C8 — The picture games (Say & Play)
 
@@ -491,10 +496,10 @@ Live: Home's Books card opens the shelf. Echo reads everything in a book aloud.
 **Best left to TTS** — it is a lot of text, and it changes when a book does. Listed so
 nothing is hidden. Four templates, and two fixed lines (B6):
 
-- **The cover:** `{title}! A story full of {sound} sounds.` (public/library.html:1671) — {sound} is read as its letters ("R", "SH", "TH"). Written out under each book below.
-- **A page:** the page's text, read as the page opens (public/library.html:1718) and again on "Hear it" (public/library.html:1945).
-- **A tapped word:** that word alone (public/library.html:1924).
-- **The key word:** 498 of the 498 pages have one, shown in bold below. After reading the page Echo asks `Can you say... {word}.`; after a try that was a voice but not the book's kind of sound, `One more time... {word}.` (public/library.html:1877); after three of those, the B6 line and the page turns. A name keeps its capital. Silence never turns the page. A child younger than the age the book's sound usually arrives is never asked (public/library.html:1755), and the first ask of a visit waits for a grown-up's yes to the mic. Screen: "Can you say {word}?".
+- **The cover:** `{title}! A story full of {sound} sounds.` (public/library.html:1674) — {sound} is read as its letters ("R", "SH", "TH"). Written out under each book below.
+- **A page:** the page's text, read as the page opens (public/library.html:1721) and again on "Hear it" (public/library.html:1948).
+- **A tapped word:** that word alone (public/library.html:1927).
+- **The key word:** 498 of the 498 pages have one, shown in bold below. After reading the page Echo asks `Can you say... {word}.`; after a try that was a voice but not the book's kind of sound, `One more time... {word}.` (public/library.html:1880); after three of those, the B6 line and the page turns. A name keeps its capital. Silence never turns the page. A child younger than the age the book's sound usually arrives is never asked (public/library.html:1758), and the first ask of a visit waits for a grown-up's yes to the mic. Screen: "Can you say {word}?".
 
 **Rory and the Rainbow** — R (public/library.html:365). Cover: "Rory and the Rainbow! A story full of R sounds."
 
@@ -1580,13 +1585,13 @@ one of the five praise lines.
 
 ### E7 — Dead code: never spoken
 
-- **The idle nudge** (public/charge.html:1844): would replay the prompt after 8 s of silence, up to twice. `armIdle()` is defined but never called; the not-heard path is the quiet screen (B4).
-- **"You did it."** (public/charge.html:2260): fallback praise only if `praiseLine` were missing — `sona.js` always provides it.
-- **"Let's try our {sound} sound again"** (public/charge.html:2228): fallback coaching only for a sound with no tip — all 19 have one.
-- **"Listen to Echo, then copy the sound!"** (public/sona.js:3396): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
-- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:3602, public/sona.js:3607, public/sona.js:3618): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
+- **The idle nudge** (public/charge.html:1847): would replay the prompt after 8 s of silence, up to twice. `armIdle()` is defined but never called; the not-heard path is the quiet screen (B4).
+- **"You did it."** (public/charge.html:2263): fallback praise only if `praiseLine` were missing — `sona.js` always provides it.
+- **"Let's try our {sound} sound again"** (public/charge.html:2231): fallback coaching only for a sound with no tip — all 19 have one.
+- **"Listen to Echo, then copy the sound!"** (public/sona.js:3510): the default cue for an unknown sound; the practice page forces the sound to one of the 19.
+- **`actionCue`, `repeatCue`, `coachLine`** (public/sona.js:3716, public/sona.js:3721, public/sona.js:3732): exported, no caller anywhere. Pre-calm wording — e.g. "Are you ready? Say rrrr 5 times!", "Repeat after me… rrrr!  Now you try — rrrr!", "Let's try again. Say rrrr! Pull your tongue back and up like a tiger growl — rrr!".
 - **The conversation rung** (public/gamecontent.js:89): "Which do you like — a ___ or a ___?", "Do you want the ___ or the ___?", "Pick one — ___ or ___!", "Hmm… a ___ or a ___?" — the practice page keeps only items with a target (`it.t`) and these have none, so a conversation round falls back to the bare sound.
-- **The sound models as text** (public/sona.js:3453): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
+- **The sound models as text** (public/sona.js:3567): puh, buh, mmm, nnn, tuh, duh, kuh, guh, ffff, vvvv, sss, zzz, shhh, chuh, juh, lll, rrrr, thhh, thuh — shown on screen, never sent to TTS, because a synthesized "rrrr" comes out mangled. The performed sound is Rachel's clip (Part A).
 
 ### E8 — Shown on screen, never spoken (so nobody records them by mistake)
 
@@ -1615,6 +1620,6 @@ folders; they were a wish-list. They are gone, and so is the old `tools/voicepag
 
 ---
 
-**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **59 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 910 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 136 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
+**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **64 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 910 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 136 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
 
-Record B first (59 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
+Record B first (64 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
