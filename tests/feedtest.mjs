@@ -69,7 +69,7 @@ const tapCard = (word) => page.evaluate((w) => { const b = [...document.querySel
 const fedNow = () => page.evaluate(() => document.getElementById("plate").dataset.fed);
 // the child says the word once the mic is listening
 async function sayWord() {
-  await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 6000 });
+  await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 12000 });
   await page.waitForTimeout(450);   // past the mic's first look at the room
   await page.evaluate(() => { window.__mic.voice = true; });
   await page.waitForFunction(() => !document.getElementById("grid").classList.contains("locked"), null, { timeout: 3000 }).catch(() => {});
@@ -92,7 +92,8 @@ ok("renders 2-4 picture cards", t.cards.length >= 2 && t.cards.length <= 4, JSON
 const target1 = (t.bubble.match(/Where's the (.+)\?/) || [])[1];
 ok("the asked word is one of the cards", !!target1 && t.cards.includes(target1), t.bubble);
 ok("round starts 0/5", /0\/5/.test(t.fed));
-await page.waitForTimeout(400);
+// Browser speech must finish before "Go!" is requested and the mic opens.
+await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 12000 });
 ok("Echo speaks the ask", ttsAsks.some((x) => new RegExp("Where is the " + target1, "i").test(x)), JSON.stringify(ttsAsks));
 // Calm, not hype (24 Sep 2026): the voice reads "!" as a burst of energy, so
 // the word ends on a period. The practice word inside it is unchanged. Then
@@ -141,7 +142,7 @@ const scaleAfter = await page.evaluate(() => parseFloat((document.getElementById
 ok("Echo grows with the bite (visible, not just banked)", scaleAfter > scaleBefore + 0.04, scaleBefore + " → " + scaleAfter);
 
 // ── silence never unlocks a picture: the mic closes and waits for a tap ──
-await page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent) && window.__mic.live === 1, null, { timeout: 6000 });
+await page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent) && window.__mic.live === 1, null, { timeout: 12000 });
 await page.waitForTimeout(8600);
 t = await page.evaluate(() => ({ mic: !document.getElementById("micBtn").hidden, live: window.__mic.live, locked: document.getElementById("grid").classList.contains("locked"), sub: document.getElementById("bSub").textContent, fed: document.getElementById("plate").dataset.fed }));
 ok("a quiet turn closes the mic, keeps the pictures locked and shows the mic button", t.mic && t.live === 0 && t.locked && /Tap the mic/.test(t.sub) && /1\/5/.test(t.fed), JSON.stringify(t));
