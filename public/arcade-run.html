@@ -183,7 +183,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slow course, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and a slower course, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -442,7 +442,7 @@
         if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
         distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
         dist+=metres; bestReached(); $("score").textContent=dist+"m"; hud();
-        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*1.75,speed*1.05);cleanSince=dist;}
+        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*1.75,speed*(1.05+Math.min(.02,startBest/570*.02)));cleanSince=dist;}
         if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
       },100);
       // a touch faster through a stretch, unless the child keeps tumbling

@@ -14,8 +14,9 @@
    and only the second earns the move. One long word is one saying: the
    second counts only after the voice has dropped away for GAP_MS, and never
    sooner than APART_MS after the first. Echo still
-   models the word alone ("Say... rabbit."); "2 times" is only ever on screen,
-   so no carrier phrase is glued onto the target.
+   models the word alone ("Say... rabbit."). Hoops, Soccer and Dino first
+   explain the two sayings in a separate sentence, before any target word.
+   Nothing is spoken between the two sayings or glued onto the target.
 
    ONE GAME ASKS ONCE: game.sayTimes (1 or 2; two unless the page says 1).
    Travis asked for two in the word games, the ones for ages 5-8 he was
@@ -92,6 +93,7 @@
   // one opening of the mic: a tap on the mic, "Hear it" and a pause all keep it.
   var said = 0;
   var SOUND = "R", WORDS = [], word = null, used = [], parts = {}, stageHTML = "";
+  var introSaid=false, themed=[], themedUsed=[], roundWords=[];
 
   function setPhase(p) { phase = p; document.body.setAttribute("data-phase", paused ? "paused" : p); publish(); }
   // What tests read (the page's internals stay inside this closure otherwise).
@@ -453,6 +455,15 @@
     return ws.filter(function (w) { return w && w.w && w.e; }).sort(function (a, b) { return a.w.length - b.w.length; }).slice(0, 10);
   }
   function pickWord() {
+    if(step%3===0){
+      var theme=themed.filter(function(w){return themedUsed.indexOf(w.w)<0&&roundWords.indexOf(w.w)<0;})[0];
+      if(theme){themedUsed.push(theme.w);roundWords.push(theme.w);return theme;}
+    }
+    var fresh=WORDS.filter(function(w){return roundWords.indexOf(w.w)<0;});
+    if(fresh.length){var choice=fresh[(Math.random()*fresh.length)|0];roundWords.push(choice.w);return choice;}
+    // A short bank may need an ordinary repeat, but never repeat a theme.
+    var repeats=WORDS.filter(function(w){return themedUsed.indexOf(w.w)<0&&(!word||w.w!==word.w);});
+    if(repeats.length){var again=repeats[(Math.random()*repeats.length)|0];roundWords.push(again.w);return again;}
     var i, tries = 0;
     do { i = (Math.random() * WORDS.length) | 0; tries++; } while (WORDS.length > 1 && (used.indexOf(i) >= 0 || (word && WORDS[i] === word)) && tries < 40);
     used.push(i); if (used.length >= WORDS.length) used = [];
@@ -494,7 +505,7 @@
 
   // ── a turn: show the word, Echo says it, the child says it, the game moves ──
   function nextTurn(same) {
-    micStop(); heardThisTurn = false; clearTimeout(nextTurn._t);
+    micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
     // a new word starts at none of two; the same word again ("Hear it", or
     // back from a pause) keeps a saying Echo has already heard
     if (!same || !word) { word = pickWord(); said = 0; }
@@ -517,11 +528,16 @@
     // new take of every word, fetched again on launch day, the word read
     // fresh). It never waits on the network (sayGo). Then the mic opens,
     // after the same voice tail as before.
-    var asked = word;
-    say("Say... " + word.w + ".").then(function () {
-      if (turnLive && word === asked) return sayGo();
+    var asked = word, generation=audioGeneration;
+    var lead=(!introSaid&&G.intro)?say(G.intro):Promise.resolve();
+    lead.then(function(){
+      if(!turnLive||word!==asked||!audioAllowed(generation))return;
+      introSaid=true;
+      return say("Say... " + word.w + ".");
     }).then(function () {
-      if (!turnLive) return;
+      if (turnLive && word === asked && audioAllowed(generation)) return sayGo();
+    }).then(function () {
+      if (!turnLive || word!==asked || !audioAllowed(generation)) return;
       quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS);
       micOpen();
     });
@@ -600,7 +616,7 @@
     $("endOvl").classList.remove("show");
     try { $("turnPanel").classList.remove("done"); } catch (e) {}
     if (G.play) G.play.reset(); else resetStage();
-    step = 0; paintDots(); used = [];
+    step = 0; paintDots(); used = []; themedUsed=[]; roundWords=[];
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
@@ -642,6 +658,9 @@
     poseKeep = ["welcome", "talk", "listen", "cheer", "think"].map(function (p) { var i = new Image(); i.src = POSE + p + ".webp"; return i; });
     SOUND = String((S.rotSound && S.rotSound()) || "R").toUpperCase();
     WORDS = pool(SOUND); if (!WORDS.length) { SOUND = "R"; WORDS = pool("R"); }
+    themed=(S.gameWords?S.gameWords(G.key,SOUND):[]);
+    // Warm the separate count instruction while the child sees the start card.
+    if(G.intro&&profile.voiceOn!==false&&volume()>0){var introKey=(profile.voiceId||"echo")+"|"+(S.TTS_CACHE_VERSION||"v9")+"|"+G.intro;ttsGet(introKey).then(function(cached){if(!cached)return fetchVoice(G.intro).then(function(v){if(v&&v.keep)ttsPut(introKey,v.bytes);});});}
     // the grown-up reads the practice sound on the start card; the bar keeps
     // the game's name, which is all that fits beside eight dots on a phone
     try { $("startSound").textContent = "Today’s sound: " + ((S.soundLabel) ? S.soundLabel(SOUND) : SOUND); } catch (e) {}

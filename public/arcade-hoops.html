@@ -40,7 +40,7 @@
       <span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span>
     </div>
     <div id="stageWrap" class="court">
-      <canvas id="court" role="img" aria-label="A basketball court. The hoop glides from side to side. Say the word to get the ball, then flick it up into the hoop."></canvas>
+      <canvas id="court" role="img" aria-label="A basketball court. The hoop glides from side to side. Say the word two times to get the ball, then flick it up into the hoop."></canvas>
       <img id="courtEcho" src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
     </div>
     <div id="turnPanel" aria-live="polite">
@@ -59,7 +59,7 @@
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
       <h2 id="startTitle">Hoops</h2>
-      <p>Say the word to get the ball. Then swipe up to shoot it into the hoop!</p>
+      <p>Say the word two times to get the ball. Then swipe up to shoot it into the hoop!</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
     </div>
@@ -68,7 +68,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say each word to get the ball.</p>
+      <p>Say each word two times to get the ball.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -113,7 +113,7 @@
       o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
     }
     SayPlay.start({
-      key: "hoops", title: "Hoops",
+      key: "hoops", intro: "Say each word two times to get a ball.", title: "Hoops",
       steps: [[], [], [], [], [], [], [], []], finale: [],
       done: { title: "Hoops star!", sub: "Eight words, eight baskets. What a shooter!" },
       play: window.Hoops,

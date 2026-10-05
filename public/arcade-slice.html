@@ -545,7 +545,7 @@
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
       if(phase==="break") startWave(wave+1);
     }
@@ -891,7 +891,7 @@
       juice(g.x,gy,"#ff5470",46,false); juice(g.x,gy,"#58cc02",14,false); splat(g.x,gy,g.r*1.2,"#ff5470");
       giant=null; sfx("giant"); echoHop();
       rowN++; rowUp(true);   // the giant is one fruit sliced, however many cuts it took: one more on the row
-      try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
       banner("You did it!","The giant watermelon is sliced!");
       setTimeout(endRound,1800);
     }
@@ -1057,7 +1057,7 @@
       keepBest();
       var coins=Math.min(10,(score/4)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // The old five-game run (charge.html?daily=1): Home no longer opens
         // it, but a saved run and a typed address still do, so the round is

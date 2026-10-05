@@ -456,7 +456,7 @@
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
       if(phase==="break") startSong(song+1);
     }
@@ -486,7 +486,7 @@
         if(t.lane===lane&&!t.hit&&!t.gone&&t.y+t.h>zoneTop&&t.y<zoneBot){ if(!best||t.y>best.y)best=t; } }
       keyGlow[lane]=performance.now();
       if(best){
-        best.hit=true; comboN++; missRun=0; if(!SONGS[song].finale)paceK=Math.min(1.35,paceK+.015);
+        best.hit=true; comboN++; missRun=0; if(!SONGS[song].finale)paceK=Math.min(1.35,paceK+.015+Math.min(.005,startBest*.0001));
         lastHitLane=lane; lastHitAt=performance.now();
         score+=best.gold?3:1;
         var popped=rowUp(); hud();
@@ -852,7 +852,7 @@
       keepBest();
       var coins=Math.min(10,(score/5)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // The old five-game run (charge.html?daily=1): Home no longer opens
         // it, but a saved run and a typed address still do, so the round is

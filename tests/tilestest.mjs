@@ -214,10 +214,10 @@ await scenario("a whole round", async () => {
     await heardCard(page);
     s = await st(page);
     ok("the child's sound starts song 2, and the mic is closed again", s.song === 1 && s.phase === "song" && s.playing && !s.card && s.REV === 2 && s.live === 0, s);
-    // song 2: let two tiles slip by
+    // Song 2: two close slips share one heart-loss cooldown.
     await playSong(page, 2);
     s = await st(page);
-    ok("a slipped tile costs a heart, play continues, and the card waits for the next song", s.REV === 2 && await page.evaluate(() => hearts===1) && (s.card ? /for song 3!$/.test(s.title) : true), s);
+    ok("a slipped tile costs a heart, play continues, and the card waits for the next song", s.REV === 2 && await page.evaluate(() => hearts===2) && (s.card ? /for song 3!$/.test(s.title) : true), s);
     b = await best(page);
     ok("a slipped tile ends the row, and the top-left number stays where it was: it never goes down", b.combo < 14 && b.row >= 14 && b.pill === String(b.row) && neverDown(b.pills), b);
     const after2 = b.combo;

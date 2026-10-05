@@ -95,6 +95,7 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 
 function fakeDevice(cfg) {
   const T0 = performance.now();
+  if(cfg.fastPlay) Math.random=()=>0.46; // deterministic exhausted-bank fallback
   const now = () => (performance.now() - T0) / 1000;
   const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], gains: [], speech: [], requests: 0, inflight: 0, gumPlan: [], voice: false, hidden: false, speaking: 0, voicedFrames: 0, leakFrames: 0 };
   // Two counts (24 Sep 2026). live(): tracks the page holds right now, which
@@ -242,6 +243,9 @@ async function fresh(file, cfg = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const url = route.request().url();
+    // This fixture completes only the finger move. Real Hoops physics are
+    // tested in playgamestest; here it isolates the eight-word rotation.
+    if (cfg.fastPlay && url.split("?")[0] === BASE + "/dino.js") return route.fulfill({status:200,contentType:"text/javascript",body:"window.Dino={init:function(api){this.api=api;},onWord:function(){this.api.done();},pause:function(){},resume:function(){},finale:function(){},reset:function(){}};"});
     if (cfg.unparked && url.split("?")[0] === BASE + "/sona.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: UNPARKED_SONA });
     return url.startsWith(BASE + "/") ? route.continue() : route.abort();
   });
@@ -285,7 +289,7 @@ const PRACTICE = /^sona\.(?:progress|reps|charge|tickets|rotation|today|coins|st
 // word and never a robot "Go!" (review, 2 Oct 2026). The voice scenarios
 // below play the clip.
 const ASK = /^Say\.\.\. [a-z]+\.$/i;
-const asksRight = (speech) => speech.length > 0 && speech.every((t) => ASK.test(t));
+const asksRight = (speech) => speech.length > 0 && speech.every((t) => ASK.test(t)||/^Say each word two times to get a (ball|brush)\.$/.test(t));
 const practiceState = (page) => page.evaluate((src) => { const re = new RegExp(src); return Object.keys(localStorage).filter((k) => re.test(k)).sort().map((k) => [k, localStorage.getItem(k)]); }, PRACTICE.source);
 // one saying: wait for the mic to be listening, then say the word
 async function sayOnce(page) {
@@ -400,6 +404,64 @@ ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) =>
 // take about 160 s of those 300, so THE NEXT REBUILT GAME GOES IN ITS OWN PART
 // too, or run-all kills the suite with no failing assertion to read.
 const PART = process.env.SAYPLAY_PART || "engine";
+// 5 Oct: the count instruction is a separate first clip, once per visit.
+// The word remains isolated, and the first saying cannot award equipment.
+if (PART === "engine" || PART === "intro") {
+for (const [key, tool] of [["hoops","ball"],["soccer","ball"],["dino","brush"]]) {
+  await scenario(key + " isolated intro", async () => {
+    const {context,page,errors}=await fresh("arcade-"+key+".html",{age:"7",micok:true,permission:"granted",speechMs:160});
+    try {
+      const instruction="Say each word two times to get a "+tool+".";
+      await page.locator("#startBtn").click();
+      await page.waitForFunction(()=>window.__sayplay.listening===true);
+      let l=await log(page);const target=(await game(page)).word;
+      ok(key+": one complete count instruction precedes one isolated word",l.speech.join("|")===instruction+"|Say... "+target+".",l.speech);
+      await page.locator("#hear").click();await page.waitForFunction(()=>window.__sayplay.listening===true);
+      l=await log(page);
+      ok(key+": Hear it repeats only the target, not the count instruction",l.speech.filter(t=>t===instruction).length===1&&l.speech[l.speech.length-1]==="Say... "+target+".",l.speech);
+      const played=l.sounds.length;
+      await sayOnce(page);await page.waitForFunction(()=>window.__sayplay.said===1);
+      ok(key+": first saying keeps the microphone and awards no ball or brush",(await game(page)).phase==="turn"&&(await live(page))===1&&(await gameReps(page))===1&&(await log(page)).sounds.length===played,await game(page));
+      await page.waitForTimeout(320);await sayIt(page);
+      ok(key+": second saying awards equipment and closes the microphone",await until(page,()=>window.__sayplay.phase==="play",3000)&&(await live(page))===0&&(await gameReps(page))===2,await game(page));
+      noOverlap(key+" intro",await log(page));clean(key+" intro",errors);
+    } finally {await context.close();}
+  });
+}
+await scenario("theme rotation",async()=>{
+  const {context,page,errors}=await fresh("arcade-dino.html",{age:"7",micok:true,permission:"granted",speechMs:80,fastPlay:true});
+  try {
+    await page.locator("#startBtn").click();const round=[];
+    for(let turn=0;turn<8;turn++){
+      await page.waitForFunction(()=>window.__sayplay.listening===true);
+      round.push((await game(page)).word);await sayIt(page);
+      await page.waitForFunction(n=>window.__sayplay.step===n,turn+1);
+    }
+    ok("Dino starts with its pictured R theme, uses all seven targets before repeating, and never repeats its theme",round[0]==="rock"&&new Set(round.slice(0,7)).size===7&&round.filter(w=>w==="rock").length===1,round);
+    ok("the game keeps the ordinary seven-word bank intact, and a completed round gives 16 play reps",await page.evaluate(()=>Sona.wordsFor("R","i").length===7)&&(await gameReps(page))===16,round);
+    await page.waitForFunction(()=>window.__sayplay.phase==="end",{},{timeout:6000});await page.locator("#again").click();await page.waitForFunction(()=>window.__sayplay.listening===true);
+    const speech=(await log(page)).speech;
+    ok("Play again starts a fresh themed rotation without repeating the visit's instruction",(await game(page)).word==="rock"&&speech.filter(t=>t==="Say each word two times to get a brush.").length===1,speech);
+    noOverlap("theme rotation",await log(page));clean("theme rotation",errors);
+  } finally {await context.close();}
+});
+await scenario("cancelled intro",async()=>{
+  const {context,page,errors}=await fresh("arcade-hoops.html",{age:"7",micok:true,permission:"granted",speechMs:800});
+  try {
+    await page.locator("#startBtn").click();await page.waitForFunction(()=>__quiet.speaking>0);
+    await page.evaluate(()=>__quiet.background());await page.waitForTimeout(1000);
+    let l=await log(page);
+    ok("intro cancellation stops narration and prevents the later target or microphone",l.speech.length===1&&l.speech[0]==="Say each word two times to get a ball."&&await live(page)===0&&!(await game(page)).listening,l.speech);
+    await page.evaluate(()=>__quiet.foreground());await page.locator("#resume").click();await page.waitForFunction(()=>window.__sayplay.listening===true);
+    l=await log(page);
+    ok("an interrupted instruction is retried, then the target is spoken alone",l.speech.length===3&&l.speech[0]===l.speech[1]&&ASK.test(l.speech[2]),l.speech);
+    await page.evaluate(()=>__quiet.background());await page.evaluate(()=>__quiet.foreground());await page.locator("#resume").click();await page.waitForFunction(()=>window.__sayplay.listening===true);
+    l=await log(page);
+    ok("a completed instruction stays completed after a pause",l.speech.length===4&&l.speech.filter(t=>t==="Say each word two times to get a ball.").length===2&&ASK.test(l.speech[3]),l.speech);
+    noOverlap("cancelled intro",l);clean("cancelled intro",errors);
+  } finally {await context.close();}
+});
+}
 if (PART === "engine") {
 for (const g of GAMES) {
   const file = ROOT + "/arcade-" + g.key + ".html";
@@ -644,7 +706,7 @@ await scenario("hoops played through", async () => {
   const { context, page, errors } = await fresh("arcade-hoops.html", { age: "7", micok: true, permission: "granted" });
   try {
     await page.locator("#startOvl.show").waitFor();
-    ok("hoops: the start card says how to play: say the word, then swipe up to shoot", /Say the word to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to shoot/i.test(await page.locator("#startOvl").innerText()));
+    ok("hoops: the start card says how to play: say the word, then swipe up to shoot", /Say the word two times to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to shoot/i.test(await page.locator("#startOvl").innerText()));
     const before = await practiceState(page);
     await page.locator("#startBtn").click();
     const box = await court(page);
@@ -739,7 +801,7 @@ await scenario("soccer played through", async () => {
   try {
     await page.locator("#startOvl.show").waitFor();
     ok("soccer: it is open on Home, with no day on it", await page.evaluate(() => { const a = Sona.GAME_ACTS.soccer; return !a.comingSoon && !a.comingOn && a.say === true && a.group === "arcade" && a.go === "/arcade-soccer.html" && Sona.gameAccess("soccer").allowed; }));
-    ok("soccer: the start card says how to play: say the word, then swipe up to kick it past the goalie", /Say the word to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to kick it past the goalie/i.test(await page.locator("#startOvl").innerText()));
+    ok("soccer: the start card says how to play: say the word, then swipe up to kick it past the goalie", /Say the word two times to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to kick it past the goalie/i.test(await page.locator("#startOvl").innerText()));
     const before = await practiceState(page);
     await page.locator("#startBtn").click();
     const box = await pitchBox(page);
@@ -883,7 +945,7 @@ if (PART === "play") await scenario("dino dug up", async () => {
   try {
     await page.locator("#startOvl.show").waitFor();
     ok("dino: it is open on Home, with no day on it", await page.evaluate(() => { const a = Sona.GAME_ACTS.dino; return !a.comingSoon && !a.comingOn && a.say === true && a.group === "arcade" && a.go === "/arcade-dino.html" && Sona.gameAccess("dino").allowed; }));
-    ok("dino: the start card says how to play: say the word, then rub the sand", /Say the word to get a brush/.test(await page.locator("#startOvl").innerText()) && /rub the sand/i.test(await page.locator("#startOvl").innerText()));
+    ok("dino: the start card says how to play: say the word, then rub the sand", /Say the word two times to get a brush/.test(await page.locator("#startOvl").innerText()) && /rub the sand/i.test(await page.locator("#startOvl").innerText()));
     // THE FIRST DINOSAUR: a child who has never dug looks for the T. rex
     let c = await cards(page, "dinoRow");
     ok("dino: the start card says which one to look for today, with its outline", (await page.locator("#dinoName").innerText()) === "Today: T. rex" && c.pic.ink > 200 && c.pic.fill === 0 && /T\. rex/.test(c.pic.label) && (await dig()).dino === "trex", c.pic);
@@ -1564,7 +1626,7 @@ await scenario("two times", async () => {
     const l = await log(page);
     noOverlap("twice", l);
     ok("twice: every chime waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
-    ok("twice: Echo still says the word alone: \"2 times\" is only ever on screen", l.speech.length >= 4 && l.speech.every((x) => /^Say\.\.\. [a-z]+\.$/i.test(x)), l.speech);
+    ok("twice: Echo models each target in an isolated word line", l.speech.length >= 4 && l.speech.every((x) => /^Say\.\.\. [a-z]+\.$/i.test(x)), l.speech);
     ok("twice: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
     clean("twice", errors);
   } finally { await context.close(); }

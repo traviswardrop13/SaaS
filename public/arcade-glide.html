@@ -259,7 +259,7 @@
       gates.push({x:W+70,cy:cy,passed:false,hit:false,star:Math.random()<0.7,gold:leg>0&&Math.random()<0.15,got:false});
     }
     function startLeg(i){
-      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase*[1,.94,.88][i]; gspeed=gspeed0; gateMs=gateEvery-900; gates=[]; landing=null;
+      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase*(1-[0,.06,.12][i]*(1+Math.min(.3,startBest/21*.3))); gspeed=gspeed0; gateMs=gateEvery-900; gates=[]; landing=null;
       py=H*0.45; vy=0; mercyT=performance.now(); hud();
       banner("Leg "+(i+1),"Fly through "+LEGS[i].goal+" gaps!");
     }
@@ -410,7 +410,7 @@
         if(g.star&&!g.got){ ctx.fillStyle=g.gold?"#ffd21c":"#fff6b8"; if(g.gold){ ctx.globalAlpha=0.5+0.5*Math.sin(now/120); ctx.beginPath(); ctx.arc(g.x,g.cy,24,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.fillStyle="#ffd21c"; } star5(g.x,g.cy,g.gold?16:12);
           if(moving&&Math.abs(g.x-px)<26&&Math.abs(g.cy-py)<46){ g.got=true; score+=g.gold?3:1; $("score").textContent=rowBest; sfx(g.gold?"reward":"star"); if(g.gold){ flash("GOLDEN STAR!"); echoT=now; }
             for(var k=0;k<10;k++){ var a=Math.random()*6.28; sparks.push({x:g.x,y:g.cy,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:1,c:g.gold?"#ffd21c":"#fff6b8"}); } } }
-        if(moving&&!g.passed && g.x<px-COLW/2){ g.passed=true; legGot++; score++; if(!g.hit)rowUp(); $("score").textContent=rowBest; hud(); if(legGot%3===0) echoT=now; }
+        if(moving&&!g.passed && g.x<px-(COLW/2+22)){ g.passed=true; legGot++; score++; if(!g.hit)rowUp(); $("score").textContent=rowBest; hud(); if(legGot%3===0) echoT=now; }
         if(moving&&phase==="fly"&&!falling.on&&!g.hit && now-mercyT>900 && Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)) bump(g);
       }
       // the cloud rest, or the landing, floats up under the balloon

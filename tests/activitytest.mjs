@@ -302,7 +302,7 @@ if (present && hasContract) {
       same(onDay("2026-10-09"), sorted(["peekaboo", "balloon", "racecar", "puppy", "rocket", "treasure", "snowman", "space", "flower"])), dated);
     ok("…the 16 Oct nine are Robot Builder, Choo-Choo Train, Pizza Chef, Birthday Cake, Castle Builder, Surprise Boxes, Monster Makeover, Fish Tank and Bedtime Stars",
       same(onDay("2026-10-16"), sorted(["robot", "train", "pizza", "cake", "castle", "gifts", "monster", "fishtank", "stars"])), dated);
-    const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{[^\n]*/gm)].map((m) => m[0]);
+    const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{ name: [^\n]*/gm)].map((m) => m[0]);
     ok("…and Soccer Goal and Dino Dig, rebuilt, carry no day and are not parked", rebuilt.length === 2 && rebuilt.every((line) => !/\bcomingSoon\b|\bcomingOn\b/.test(line)), rebuilt);
     const cardsAt = async (now) => {
       const { ctx, pg, errors } = await fixture({ now });
@@ -337,15 +337,15 @@ if (present && hasContract) {
     const { ctx, pg } = await fixture({ catalog, now: Date.UTC(2028, 3, 30, 12) });
     try {
       const featured = pg.locator("#featuredGroups");
-      ok("the New shelf shows only the two current releases", same(sorted(await featured.locator("button[data-game]").evaluateAll((els) => els.map((el) => el.dataset.game))), ["feed", "slice"]));
+      ok("daily picks replace the New shelf without inventing releases", await featured.locator('[data-collection="picks"] button[data-game]').count() === 2 && await featured.locator('[data-collection="new"]').count() === 0);
       ok("featured cards leave every game once in the age groups", same(sorted(await visibleGames(pg)), allKeys));
       const shelf = await featured.locator("button[data-game]").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y }; }));
-      ok("featured cards share a horizontal shelf", shelf.length === 2 && Math.abs(shelf[0].y - shelf[1].y) < 2 && shelf[1].x > shelf[0].x, shelf);
-      const button = featured.locator('button[data-game="feed"]');
+      ok("daily picks share a horizontal shelf", shelf.length === 2 && Math.abs(shelf[0].y - shelf[1].y) < 2 && shelf[1].x > shelf[0].x, shelf);
+      const button = featured.locator('button[data-game="feed"],button[data-game="bubbles"]').first();
       if (await button.count()) {
         await button.click();
-        await pg.waitForURL(/\/arcade-feed\.html(?:[?#]|$)/);
-        ok("a featured game opens its existing route", new URL(pg.url()).pathname === "/arcade-feed.html");
+        await pg.waitForURL(/\/arcade-(?:feed|bubbles)\.html(?:[?#]|$)/);
+        ok("a featured game opens its existing route", /\/arcade-(?:feed|bubbles)\.html$/.test(new URL(pg.url()).pathname));
       } else ok("a featured game has a working launch button", false);
     } finally { await ctx.close(); }
   });

@@ -92,3 +92,9 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .featured-grid .book-card .crafted-card-image{object-fit:cover;}
 .coming-all{margin:26px 0 8px;}
 .coming-all .coming-heading{margin-top:12px;}
+
+/* Mixed daily picks keep equally sized cover and game art; age-group scenes
+   retain their wide crops. New is a release badge, not the row's promise. */
+.featured-group[data-collection="picks"] .game-art{aspect-ratio:1;}
+.featured-group[data-collection="picks"] .game-info{min-height:66px;}
+.game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}

@@ -122,7 +122,7 @@ try {
       ok('last-week baseline compares only this family', state.last === 'Up from 3 tries last week', state.last);
       ok('eligible accuracy uses sound checks as its denominator', /75% of sound checks/.test(state.acc) && /3 of 4 sound checks/.test(state.acc), state.acc);
       ok('clearest sound waits for enough data', /R.*75%/.test(state.clearest || ''), state.clearest);
-      ok('weekly goal replaces the day streak', /1 of 5 days this week/.test(state.week) && !/90/.test(state.week), state.week);
+      ok('weekly goal replaces the day streak', /0 of 5 days at the goal this week/.test(state.week) && !/90/.test(state.week), state.week);
       await page.getByText('More details', { exact: false }).click();
       const history = await page.locator('#recent').innerText();
       ok('history uses explicit tries, never legacy word totals', /12 tries/.test(history) && !/99|words/.test(history), history);

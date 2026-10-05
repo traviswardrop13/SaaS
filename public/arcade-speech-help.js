@@ -38,7 +38,7 @@
     function slowIdle(){ return SLOW_HELP.idle||("Say "+(SAYTXT||"rrrr")+" when Echo asks"); }
     function slowLineText(){ return (SLOW_HELP.line&&SLOW_HELP.line())||SLOW_HELP.say||("To "+SLOW_HELP.action+", say"); }
     function slowAskSoon(){
-      if(!CAN_LISTEN||slowNoMic||slowTurn||slowMs>0) return;
+      if(!CAN_LISTEN||slowNoMic||slowTurn||slowMs>0||slowMissed>=2) return;
       slowAskAt=Math.min(slowAskAt,slowAskPlay+SLOW_ASK.soon);
     }
     // Warm both reasons before play, so the first ask explains the reward.

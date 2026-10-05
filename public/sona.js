@@ -203,7 +203,7 @@
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v2", "sona.reps.v1",
     "sona.day.v2", "sona.coinmint.v1", "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
-    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
+    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1", "sona.goaldays.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
     // Dino Dig's round of dinosaurs: which one is next and the ones found
@@ -569,7 +569,14 @@
       .then(function (b) { return b || _go.mem[key] || null; });
   }
 
-  function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
+  function saveProfile(patch) {
+    // Lowering the daily target can complete today without another saying.
+    // Stamp that earned day in this writer; read-only goal readers stay pure.
+    const dailyChange = patch && Object.prototype.hasOwnProperty.call(patch, "dailyGoal");
+    const previousGoal = dailyChange ? repGoal() : null;
+    save(PKEY, Object.assign(getProfile(), patch || {}));
+    if (dailyChange && repGoal() < previousGoal) _goalCheck();
+  }
 
   function getProgress() {
     const g = load(GKEY, DEFAULT_PROGRESS);
@@ -612,27 +619,29 @@
     const cut = _localDay(Date.now() - 130 * 86400000); Object.keys(g.practiceDays).forEach(function (k) { if (k < cut) delete g.practiceDays[k]; });
   } }
 
-  // ── The parent's week — streaks belong to MOM, not the kid ──
-  // She picks 3, 5, or 7 practice days a week in onboarding; a practice day is
-  // any day with real logged attempts. The week streak counts consecutive weeks
-  // that met HER goal, so a 3-day family feels every bit as on-track as a
-  // 7-day one. Nothing here is ever shown to (or pressures) the child.
-  function weeklyGoalDays() { const g = parseInt(getProfile().weeklyGoal, 10); return (g === 3 || g === 5 || g === 7) ? g : 5; }
+  // Daily rep goals and the grown-up's week. Existing practice days stay in
+  // days/done for honest practice summaries; metDays/goalDone show the new goal.
+  // Before goals existed, a family's practiced days keep their earned weeks.
+  const GOALKEY = "sona.goaldays.v1", GOAL_SINCE = "2026-10-05";
+  function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return n === 7 ? 5 : (n === 3 || n === 4 || n === 5) ? n : 4; }
+  function weeklyGoalDays() { return goalDays(); }
   function momWeek() {
-    const g = getProgress(); const pd = Object.assign({}, g.practiceDays || {});
-    if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1; // pre-history migration
-    const now = new Date(); const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    const g = getProgress(), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
+    if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1;
+    const now = new Date(), dow = (now.getDay() + 6) % 7;
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
-    const key = function (d) { return _localDay(d.getTime()); };
-    const days = []; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i); days.push(!!pd[key(d)]); }
-    const goal = weeklyGoalDays(); const done = days.filter(Boolean).length;
+    const key = (d) => _localDay(d.getTime());
+    function met(k) { return k <= t && (!!stamps[k] || (k === t && dayGoal().done) || (k < GOAL_SINCE && !!pd[k])); }
+    const days = [], metDays = [];
+    for (let i = 0; i < 7; i++) { const k = key(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)); days.push(k <= t && !!pd[k]); metDays.push(met(k)); }
+    const goal = goalDays(), done = days.filter(Boolean).length, goalDone = metDays.filter(Boolean).length;
     let weekStreak = 0;
     for (let w = 1; w <= 26; w++) {
-      let c = 0; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * w + i); if (pd[key(d)]) c++; }
+      let c = 0; for (let i = 0; i < 7; i++) if (met(key(new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * w + i)))) c++;
       if (c >= goal) weekStreak++; else break;
     }
-    if (done >= goal) weekStreak++;
-    return { days: days, done: done, goal: goal, hit: done >= goal, weekStreak: weekStreak, todayIx: dow, practicedToday: days[dow] };
+    if (goalDone >= goal) weekStreak++;
+    return { days, done, metDays, goalDone, goal, hit: goalDone >= goal, weekStreak, todayIx: dow, practicedToday: days[dow] };
   }
   // current stage to practice for a sound (0..3); 3 = mastered
   function stageOf(sound) { const g = getProgress(); return Math.min(3, g.stage[sound] || 0); }
@@ -1449,14 +1458,14 @@
   // is the thing a five-year-old actually chases. It fills on REPS, which are
   // VAD-counted, so the meter can only move when a child actually speaks —
   // a bar that creeps up on a timer would teach exactly the wrong lesson.
-  const REP_GOAL_DEFAULT = 25;
+  const REP_GOAL_DEFAULT = 30;
   function repGoal() {
     // An assignment's daily target outranks the family's own — the clinician
     // set it, and the jar the child is filling should be the one they set.
     const hw = homework();
     if (hw && hw.repsPerDay > 0) return hw.repsPerDay;
-    const g = parseInt(getProfile().dailyGoal, 10) || 0;
-    return g > 0 ? g : REP_GOAL_DEFAULT;
+    const p = getProfile(), g = parseInt(p.dailyGoal, 10) || 0;
+    return g > 0 ? g : (parseInt(p.childAge, 10) >= 5 ? 50 : REP_GOAL_DEFAULT);
   }
   function goalState() {
     const n = repsToday(), goal = repGoal();
@@ -1721,7 +1730,7 @@
     // without one (Feed Echo and Hoops open straight from Home), so a week
     // whose reps all came from games says so instead of "practiced 0 days ...
     // 7 reps".
-    if (w.reps > 0 && weekReps(0, null, true) === 0) bits.push(name + " said the practice sound out loud " + w.reps + (w.reps === 1 ? " time" : " times") + " in games this week.");
+    if (w.reps > 0 && weekReps(0, null, true) === 0) bits.push(name + " said the practice sound out loud " + w.reps + (w.reps === 1 ? " time" : " times") + " in games and books this week.");
     else bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " — " + w.reps + (w.reps === 1 ? " rep" : " reps") + ", each one said out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
@@ -1857,6 +1866,24 @@
       { w: "bathe", e: "🛁", pos: "f" }, { w: "smooth", e: "🧈", pos: "f" }, { w: "teethe", e: "🦷", pos: "f" }, { w: "breathe", e: "😮‍💨", pos: "f" }
     ]
   };
+  // Game-themed beginning words reuse painted bank pictures. No new words
+  // leak into Feed Echo or practice. A named homework list always wins.
+  const GAME_WORDS = {
+    soccer: { B:["ball","bear"], N:["net"], T:["toe"], F:["foot"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
+    hoops: { B:["ball"], N:["net"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
+    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] }
+  };
+  function gameWords(key,sound) {
+    sound=String(sound||"").toUpperCase();
+    if(homeworkWords(sound).length)return [];
+    var names=(GAME_WORDS[key]||{})[sound]||[], all=[];
+    Object.keys(WORDS).forEach(function(snd){all=all.concat(WORDS[snd]);});
+    return names.map(function(name){
+      var entry=(WORDS[sound]||[]).filter(function(w){return w.w===name;})[0]||all.filter(function(w){return w.w===name;})[0];
+      return entry?{w:entry.w,e:entry.e,pos:"i"}:null;
+    }).filter(function(w){return !!w;});
+  }
+
   // Word positions for targeted practice — SLPs pick where in the word the sound sits.
   const POSITIONS = [
     { id: "i", name: "Beginning" }, { id: "m", name: "Middle" }, { id: "f", name: "End" },
@@ -3282,6 +3309,26 @@
   // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
   // under Limited time for that window instead. Folder = public/assets/books/<slug>.
   const HOME_BOOKS = [
+    // Existing covers can be daily picks too; no release date is invented.
+    { slug: "rory-rainbow", title: "Rory and the Rainbow", sound: "R" },
+    { slug: "penny-pebble-party", title: "Penny's Pebble Party", sound: "P" },
+    { slug: "bo-beach-day", title: "Bo's Beach Day", sound: "B" },
+    { slug: "mia-makes-muffins", title: "Mia Makes Muffins", sound: "M" },
+    { slug: "ned-needs-a-net", title: "Ned Needs a Net", sound: "N" },
+    { slug: "toby-tiny-tuba", title: "Toby's Tiny Tuba", sound: "T" },
+    { slug: "dot-digs-a-pool", title: "Dot Digs a Pool", sound: "D" },
+    { slug: "kip-kite", title: "Kip's Kite", sound: "K" },
+    { slug: "goldie-guitar", title: "Goldie's Guitar", sound: "G" },
+    { slug: "finn-finds-a-feather", title: "Finn Finds a Feather", sound: "F" },
+    { slug: "val-the-van", title: "Val the Van", sound: "V" },
+    { slug: "sid-the-seagull", title: "Sid the Seagull", sound: "S" },
+    { slug: "zoe-and-the-zipper", title: "Zoe and the Zipper", sound: "Z" },
+    { slug: "shay-the-shy-shark", title: "Shay the Shy Shark", sound: "SH" },
+    { slug: "chip-the-chipmunk", title: "Chip the Chipmunk", sound: "CH" },
+    { slug: "jax-and-the-jam-jar", title: "Jax and the Jam Jar", sound: "J" },
+    { slug: "leo-lucky-leaf", title: "Leo's Lucky Leaf", sound: "L" },
+    { slug: "theo-thunder-day", title: "Theo's Thunder Day", sound: "TH" },
+    { slug: "this-bear-that-bee", title: "This Bear, That Bee", sound: "THV" },
     { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", sound: "R", releasedOn: "2026-10-01" },
     { slug: "ray-lost-ring", title: "Ray and the Lost Ring", sound: "R", releasedOn: "2026-10-01" },
     { slug: "sam-sailboat", title: "Sam's Sailboat", sound: "S", releasedOn: "2026-10-01" },
@@ -3320,11 +3367,15 @@
       var parsed = Date.parse(value + "T00:00:00Z");
       return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
     }
+    // A day string is the read-only seam for daily picks. Existing release
+    // rows retain their UTC-day rule when only a timestamp is supplied.
+    var requestedDay = options && isFinite(catalogDay(options.day)) ? options.day : "";
+    if (requestedDay) day = catalogDay(requestedDay);
     // A parked game's day (comingOn, see GAME_ACTS) on the family's own
     // calendar, the way the bookshelf dates its books: "Coming Oct 9" until
     // the day, then "Coming soon" again if the game still isn't ready. A label
     // only; gameAccess never reads it.
-    var localToday = _localDay(now);
+    var localToday = requestedDay || _localDay(now);
     function comingOn(act) {
       var d = act.comingSoon && typeof act.comingOn === "string" && isFinite(catalogDay(act.comingOn)) ? act.comingOn : "";
       return d && d > localToday ? d : null;
@@ -3373,7 +3424,7 @@
     // new ... the next section like limited time where we have books and
     // games"). HOME_BOOKS names each book's day out and, for a limited-time
     // one, its window; a book is still opened (or not) by the shelf's rules.
-    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
+    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, sound: b.sound, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, playDescription: "A picture book with Echo.", tier: bookFree(b.title) ? "free" : "premium", releasedOn: b.releasedOn || null, available: true, comingSoon: false }; }
     // only the child's own sounds, the one practised now first (Travis, 1 Oct
     // 2026: "the kids just seeing books based on their letter/s")
     var mySounds = (getProfile().focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
@@ -3392,8 +3443,52 @@
     var featured = [];
     if (newRow.length) featured.push({ id: "new", name: "What's new", games: newRow });
     if (limitedRow.length) featured.push({ id: "seasonal", name: "Limited time", games: limitedRow });
-    return { recommended: recommended, groups: groups, featured: featured };
+    // Today's picks change with the local calendar, without saving a shuffle
+    // or calling fid() (which creates an id). Lanes are disjoint where the
+    // catalog permits it: a book + game, then two games the following day.
+    // The two littles games cannot avoid every repeat; never borrow an older
+    // child's game or an unrelated sound's book just to fill that gap.
+    var pickDay = catalogDay(localToday), ordinal = Math.floor(pickDay / 86400000);
+    var seed = _slot(); try { seed += ":" + (localStorage.getItem("sona.fid.v1") || ""); } catch (e) {}
+    function pickHash(text) { var h = 2166136261; for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function ranked(list) { return list.slice().sort(function (a, b) { var x = pickHash(seed + "|" + a.key), y = pickHash(seed + "|" + b.key); return x - y || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0); }); }
+    function walk(list, step, lane) { return list.length ? list[((step + pickHash(seed + "|" + lane)) % list.length + list.length) % list.length] : null; }
+    function opens(item) { return item && (item.kind === "book" ? !bookLocked(item.name) : gameAccess(item.key).allowed); }
+    function freshPick(item) { var r = catalogDay(item.releasedOn); item.isNew = r <= pickDay && pickDay - r < 30 * 86400000; return item; }
+    var pickGames = ranked(ACTIVITY_KEYS.filter(function (key) { var a = GAME_ACTS[key]; return a.group === playStyle() && a.available !== false && !a.comingSoon && !a.season; }).map(entry));
+    // An active assignment leads the sound pool, exactly as practice does.
+    // Read its window against the requested calendar, so a date preview stays
+    // deterministic even across an assignment's start or due day.
+    var pickSounds = mySounds, hw = (load(HWKEY, {}) || {}).hw;
+    if (hw && (!hw.start || localToday >= hw.start) && (!hw.due || localToday <= hw.due) && Array.isArray(hw.sounds)) {
+      var assigned = hw.sounds.map(function (x) { return String(x).toUpperCase(); }).filter(function (x) { return !!WORDS[x]; });
+      if (assigned.length) pickSounds = assigned;
+    }
+    var pickBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && (!isFinite(r) || r <= pickDay) && (!pickSounds.length || playMode() || pickSounds.indexOf(b.sound) !== -1); });
+    var firstSound = pickSounds.indexOf(nowSound) !== -1 ? nowSound : pickSounds[0];
+    var currentBooks = pickBooks.filter(function (b) { return b.sound === firstSound; });
+    if (currentBooks.length) pickBooks = currentBooks;
+    pickBooks = ranked(pickBooks.map(bookEntry));
+    var split = Math.max(1, Math.floor(pickGames.length / 2));
+    var leftGames = pickGames.slice(0, split), rightGames = pickGames.slice(split);
+    var bookDay = ordinal % 2 === 0 && pickBooks.length;
+    var left = bookDay ? walk(pickBooks, Math.floor(ordinal / 2), "books") : walk(leftGames, ordinal, "left");
+    var right = walk(rightGames, ordinal, "right");
+    if (!right) right = walk(pickGames.filter(function (g) { return !left || g.key !== left.key; }), ordinal, "right");
+    // Picks stay useful for a free family: if neither chosen tile opens,
+    // replace one game with an open choice. The book stays in their sound.
+    if (left && right && !opens(left) && !opens(right)) {
+      var openGames = pickGames.filter(opens);
+      if (openGames.length) {
+        if (bookDay) right = walk(openGames, ordinal, "open");
+        else left = walk(openGames.filter(function (g) { return g.key !== right.key; }), ordinal, "open") || left;
+      }
+    }
+    var choices = [left, right].filter(function (item, i, all) { return item && (!i || item.key !== all[0].key); }).map(freshPick);
+    var picks = { id: "picks", name: "Today's picks", tag: "Changes daily", day: localToday, games: choices };
+    return { recommended: recommended, groups: groups, featured: featured, picks: picks };
   }
+  function homePicks(dayStr) { return activityLibrary({ day: dayStr }).picks.games; }
   // Home previews the same adventure that practice launches. Feed Echo has
   // its own practice/reward loop and remains an independent game choice.
   // A started adventure keeps its order when a family pauses over midnight.
@@ -3877,6 +3972,7 @@
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
       try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + reps; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      _goalCheck();
       // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
       try { sendProgress("auto"); } catch (e3) {}
     } catch (e) {}
@@ -3929,19 +4025,44 @@
     const t = _weekStart(+p[0], +p[1] - 1, +p[2]); return isNaN(t.getTime()) ? "" : _localDay(t.getTime());
   }
   function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
-  function _repBuckets(sound, practiceOnly) {
-    const out = outcomes(), wk = {};
-    function add(k, n) { if (!n) return; const w = _weekOf(k); if (w && w >= REPS_SINCE) wk[w] = (wk[w] || 0) + n; }
+  // One daily ledger feeds both daily goals and week totals. It never writes.
+  function _repDays(sound, practiceOnly) {
+    const out = outcomes(), counts = {};
+    function add(k, n) { const w = _weekOf(k); if (n > 0 && isFinite(n) && w && w >= REPS_SINCE && /^\d{4}-\d{2}-\d{2}$/.test(k)) counts[k] = (counts[k] || 0) + n; }
     Object.keys(out).forEach((s) => {
       if (sound && s !== sound) return;
       const days = (out[s] && out[s].days) || {};
       Object.keys(days).forEach((k) => add(k, _dayTries(days[k])));
     });
-    // practiceOnly: the practice page's tries alone, for what a clinician is
-    // handed (Progress's summary and card say "Free-play games are not included").
+    // Play reps, including accepted book words, never enter clinical outcomes.
     const gr = practiceOnly ? {} : load(GAMEREPKEY, {});
     Object.keys(gr).forEach((k) => { const d = gr[k] || {}; Object.keys(d).forEach((s) => { if (!sound || s === sound) add(k, Math.max(0, Math.floor(Number(d[s]) || 0))); }); });
-    return wk;
+    return counts;
+  }
+  function _repBuckets(sound, practiceOnly) {
+    const days = _repDays(sound, practiceOnly), weeks = {};
+    Object.keys(days).forEach((k) => { const w = _weekOf(k); weeks[w] = (weeks[w] || 0) + days[k]; });
+    return weeks;
+  }
+  function dayReps(dayKey, practiceOnly) { return _repDays(null, practiceOnly)[dayKey || today()] || 0; }
+  function dayGoal() { const n = dayReps(), goal = repGoal(); return { n, goal, done: !!load(GOALKEY, {})[today()] || n >= goal }; }
+  // A silent, nonblocking note can appear over a live microphone. No audio,
+  // confetti, focus change, parent gate or input interception belongs here.
+  function _goalBanner(n) {
+    if (document.hidden) return;
+    try {
+      if (document.getElementById("sonaGoalBanner")) return;
+      const b = document.createElement("div"); b.id = "sonaGoalBanner"; b.setAttribute("role", "status");
+      b.textContent = "You did it! " + n + " reps today. Keep playing!";
+      b.style.cssText = "position:fixed;z-index:1200;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 18px;border-radius:20px;background:#fff8e9;color:#4a2c14;box-shadow:0 4px 20px #4a2c1426;font:800 17px/1.35 'Nunito',sans-serif;text-align:center;pointer-events:none";
+      document.body.appendChild(b); setTimeout(() => b.remove(), 4000);
+    } catch (e) {}
+  }
+  function _goalCheck() {
+    const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
+    if (!d.done || stamps[t]) return;
+    stamps[t] = d.goal; save(GOALKEY, stamps);
+    track("rep goal met"); _goalBanner(d.n);
   }
   // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
   // 2026: "yeah count as reps"). Every place a game asks for the sound and
@@ -3957,7 +4078,7 @@
       const s = String(sound || "").toUpperCase(); if (ALL_SOUNDS.indexOf(s) < 0) return;
       const t = today(), gr = load(GAMEREPKEY, {}), d = gr[t] || (gr[t] = {});
       // kept like the day ledger, unpruned: the best week reads all of it
-      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr);
+      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _goalCheck();
     } catch (e) {}
   }
   // sound narrows the count to one sound — Progress names the week's busiest
@@ -5236,5 +5357,5 @@
   try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled };
 })(window);

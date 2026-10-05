@@ -182,9 +182,8 @@
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Block Stacker needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
 
-    // best height (local, just for pride)
+    // The per-child best is read below, after the live tower state exists.
     var best=0;
-    if(best) $("best").textContent="Best: "+best;
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -203,10 +202,9 @@
     // The round Travis said yes to for Fruit Slice, for the tower: the five
     // blocks the "Say it 5 times" page built are its bottom; three floors of
     // 5, 6 and 7 blocks go on top, with the say-it card between floors; a
-    // missed block tumbles off and a fresh one slides in (nothing stops,
-    // nothing is lost; the next comes slower, and after two misses in a row
-    // the landing zone is wider too); a close drop snaps into
-    // place; and the round always ends on a win: a rocket on the top blasts
+    // missed block costs one heart and a fresh one slides in slower,
+    // with a wider snap zone; a close drop snaps into place. A child who
+    // keeps their hearts reaches the rocket on top, which blasts
     // off to the moon, launched by any tap (or by itself, if nobody taps).
     var FLOORS=[{goal:5,speed:.85},{goal:6,speed:1.10},{goal:7,speed:1.35}];
     var floor=0, floorGot=0, phase="floor", missRun=0, rocket=null, finaleDone=false;
@@ -393,7 +391,7 @@
       for(var k=0;k<6;k++) puffs.push({x:x+Math.random()*w,y:y+BH-4,r:4+Math.random()*4,life:1,vx:(Math.random()-0.5)*1.4,vy:-Math.random()*0.8});
       score++; floorGot++; rowUp(); missRun=0; $("score").textContent=rowBest; hud();
       if(perfectRun===3||floorGot===FLOORS[floor].goal) echoHop();
-      if(!slowTurn&&slowMs<=0)speed=Math.min(4.5,speed+.08);
+      if(!slowTurn&&slowMs<=0)speed=Math.min(4.5,speed+.08+Math.min(.04,startBest*.002));
       $("tapHint").style.display="none";
       if(floorGot>=FLOORS[floor].goal) endFloor(); else nextBlock(w);
       dropping=false;

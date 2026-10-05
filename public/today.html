@@ -97,8 +97,8 @@
     #buddyBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
     #buddyBtn{background:#ffe5b1;overflow:hidden;}
     /* REPWEEKS1: the week's reps, top right beside the Grown-ups button, in
-       that button's crafted style. It only climbs, it sets no target and it
-       compares nothing: the comparisons are behind the gate, one tap away.
+       that button's crafted style. The daily count keeps climbing after the
+       goal is met; the full week remains behind the gate, one tap away.
        Phones drop the "Sona" wordmark rather than squeeze the count or the
        Grown-ups door; only a screen wide enough for all four shows it. */
     #repPill{display:flex;align-items:center;gap:5px;flex:none;min-height:44px;margin-left:auto;padding:5px 11px 5px 8px;border:1px solid #efe2ce;border-radius:15px;background:linear-gradient(#fffefb,#fff7e9);box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;color:var(--ink);cursor:pointer;text-align:left;}
@@ -148,7 +148,7 @@
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
-      <button id="repPill" type="button" aria-label="Reps this week"><span class="rep-ic" data-ic="bolt" aria-hidden="true"></span><span class="rep-copy"><span id="repPillN">0</span><span class="rep-unit" id="repPillUnit">reps this week</span></span></button>
+      <button id="repPill" type="button" aria-label="Reps today"><span class="rep-ic" data-ic="bolt" aria-hidden="true"></span><span class="rep-copy"><span id="repPillN">0</span><span class="rep-unit" id="repPillUnit">reps today</span></span></button>
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
@@ -240,9 +240,9 @@
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       // Home stays quiet. Practice begins only after a child picks a game.
-      // a book card (What's new / Limited time) opens it on the bookshelf,
+      // a book card opens it on the bookshelf,
       // whose own rules decide free, Premium or not out yet
-      function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name));return {allowed:ok,tier:game.tier,reason:ok?"book":"premium"};}
+      function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name)),free=!!(S.bookFree&&S.bookFree(game.name));return {allowed:ok,tier:game.tier,reason:ok?(free?"free":"book"):"premium"};}
       function launch(game){
         if(game.kind==="book"){clearMessage();location.href=game.go;return;}
         if(!access(game).allowed){
@@ -290,24 +290,29 @@
         var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.disabled=!!comingSoon;button.classList.toggle("is-coming",!!comingSoon);
         button.dataset.locked=grant.allowed?"false":"true";
-        button.setAttribute("aria-label",comingSoon?game.name+". "+label+".":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
+        button.setAttribute("aria-label",comingSoon?game.name+". "+label+".":game.name+". "+(game.playDescription||game.sub||"A picture book with Echo.")+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock.")+(game.isNew?" New.":""));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");
         if(game.kind==="book"){
           var cover=node("img","crafted-card-image");cover.src=game.cover;cover.alt="";cover.decoding="async";cover.loading="lazy";art.appendChild(cover);
         }else if(craftedCards[game.key]){
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
         }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
+        if(game.isNew&&!comingSoon)art.appendChild(node("span","game-new","New"));
         button.appendChild(art);
         if(game.kind!=="book"&&!comingSoon&&grant.allowed){var best={button:button,art:art,key:game.key,label:button.getAttribute("aria-label")};bestCards.push(best);paintBest(best);}
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
         info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
         var arrow=node("span","game-arrow","›");arrow.setAttribute("aria-hidden","true");info.appendChild(arrow);button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
-      // A cached pre-shelves sona.js still supplies the complete age groups.
-      (library.featured || []).forEach(function(collection){
+      // Daily choices replace the old New row; a recent release carries its
+      // own honest badge. Limited-time choices keep their existing row.
+      // A cached sona.js without picks still paints its original shelves.
+      var hasPicks=library.picks&&library.picks.games&&library.picks.games.length;
+      var collections=hasPicks?[library.picks].concat((library.featured||[]).filter(function(c){return c.id!=="new";})):(library.featured||[]);
+      collections.forEach(function(collection){
         var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
         var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
-        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"Here for a little while"));section.appendChild(top);
+        top.appendChild(node("span","shelf-tag",collection.tag||(collection.id==="new"?"Just added":"Here for a little while")));section.appendChild(top);
         var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
       });
       // every game still being built goes in one Coming soon section after the
@@ -323,7 +328,7 @@
         if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading",group.name+" · "+group.ageLabel.replace(/^Suggested a/,"A")));waiting.appendChild(parked);comingShelves.push(waiting);}
         host.appendChild(section);
       });
-      if(comingShelves.length){var soon=node("section","coming-all");soon.id="comingGroups";var head=node("div","shelf-heading");head.appendChild(node("h2","","Coming soon"));head.appendChild(node("span","shelf-tag","New ones every week"));soon.appendChild(head);comingShelves.forEach(function(w){soon.appendChild(w);});host.appendChild(soon);}
+      if(comingShelves.length){var soon=node("section","coming-all");soon.id="comingGroups";var head=node("div","shelf-heading");head.appendChild(node("h2","","Coming soon"));head.appendChild(node("span","shelf-tag","New ones on the way"));soon.appendChild(head);comingShelves.forEach(function(w){soon.appendChild(w);});host.appendChild(soon);}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
@@ -340,8 +345,11 @@
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
       // An iPhone keeps Home alive behind a game; when it comes back to the
-      // front the tags are read again, like the week's reps in the corner.
-      document.addEventListener("visibilitychange",function(){if(!document.hidden)paintBests();});
+      // front the tags are read again, like today's reps in the corner.
+      document.addEventListener("visibilitychange",function(){if(!document.hidden){
+        if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
+        paintBests();
+      }});
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted picture (1 Oct 2026); the old sticker only if it can't load
       (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);})(document.getElementById("libraryBooksArt"));
@@ -398,20 +406,26 @@
       $("gateOvl").classList.add("show");
     }
     $("parentBtn").onclick=function(){ sfx("tap"); openGate(); };
-    // REPWEEKS1: the week's reps, read (never written). It is painted on load
-    // and again whenever the app comes back to the front: an iPhone keeps
-    // Home alive in the background, and a family opening it on Monday morning
-    // must not see last week's number under "this week". A tap is a grown-up's
-    // way to the week-by-week card, so it meets the same gate as the gear — a
-    // child who taps it gets "For grown-ups" and Never mind.
+    // The child's daily goal keeps counting after it is met. It is read on
+    // load and whenever Home returns to the front, including after midnight.
+    // The same tap still opens the grown-up check and the reps in Settings.
+    // Older cached sona.js keeps its weekly count until the new reader arrives.
     // repNum builds the thousands comma by hand: progtest scans this page's
     // source for a dollar sign before a digit, which a regex replace needs.
     function repNum(n){n=String(Math.max(0,Math.floor(Number(n)||0)));var o="";while(n.length>3){o=","+n.slice(-3)+o;n=n.slice(0,-3);}return n+o;}
     function paintReps(){
-      var n=0; try{ n=(S&&S.weekReps)?S.weekReps(0):0; }catch(e){}
-      $("repPillN").textContent=repNum(n);
-      $("repPillUnit").textContent=(n===1?"rep":"reps")+" this week";
-      $("repPill").setAttribute("aria-label",repNum(n)+(n===1?" rep":" reps")+" this week. For grown-ups: see week by week.");
+      var state=null,n=0; try{if(S&&S.dayGoal)state=S.dayGoal();}catch(e){}
+      if(state){
+        n=state.n;
+        $("repPillN").textContent=state.done?repNum(n):repNum(n)+"/"+repNum(state.goal);
+        $("repPillUnit").textContent=state.done?"Goal met":"reps today";
+        $("repPill").setAttribute("aria-label",repNum(n)+" of "+repNum(state.goal)+" reps today."+(state.done?" Goal met.":"")+" For grown-ups: see your reps.");
+      }else{
+        try{n=(S&&S.weekReps)?S.weekReps(0):0;}catch(e){}
+        $("repPillN").textContent=repNum(n);
+        $("repPillUnit").textContent=(n===1?"rep":"reps")+" this week";
+        $("repPill").setAttribute("aria-label",repNum(n)+(n===1?" rep":" reps")+" this week. For grown-ups: see week by week.");
+      }
     }
     paintReps();
     document.addEventListener("visibilitychange",function(){ if(!document.hidden) paintReps(); });

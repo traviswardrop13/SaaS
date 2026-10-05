@@ -28,12 +28,13 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // as the start card's asks.
 const TTS = { mode: "fail", ms: 900, delay: 0, asks: [], card: [], open: [] };
 const CARD_LINES = ["To keep playing, say", "Go!"];
+const HELP_LINES = ["To slow the course, say", "For a heart and a slower course, say"];
 const server = createServer((req, res) => {
   const u = new URL(req.url, BASE), f = path.join(ROOT, u.pathname);
   if (u.pathname === "/api/tts") {
     let body = ""; req.on("data", (c) => (body += c)); req.on("end", () => {
       let text = null; try { text = JSON.parse(body).text; } catch (e) {}
-      (CARD_LINES.includes(text) ? TTS.card : TTS.asks).push(text);
+      ((CARD_LINES.includes(text)||HELP_LINES.includes(text)) ? TTS.card : TTS.asks).push(text);
       if (TTS.mode === "hang") { TTS.open.push(res); return; }
       if (TTS.mode === "fail") { res.writeHead(503); res.end("{}"); return; }
       setTimeout(() => { res.writeHead(200, { "content-type": "application/octet-stream" }); res.end(Buffer.alloc(48 * TTS.ms)); }, TTS.delay);
@@ -48,7 +49,7 @@ await new Promise((r) => server.listen(8266, "127.0.0.1", r));
 const browser = await chromium.launch(launchOpts());
 let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }
-async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
+async function scenario(name, fn) { if(process.env.ARCADE_LIVES_ONLY && name!=="hearts, pace and best")return; try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 
 // ── the code: a race, not a practice ──
@@ -57,7 +58,7 @@ ok("three stretches, the park, the beach and the forest, then the finish line",
   /\{name:"the park",len:160,/.test(code) && /\{name:"the beach",len:190,/.test(code) && /\{name:"the forest",len:220,/.test(code) && /function drawFinish\(/.test(code));
 ok("a rock is a tumble, never the card", /things\.splice\(i,1\); startFall\(\); continue;/.test(code) && !/things\.splice\(i,1\); crash\(\);/.test(code));
 ok("only a checkpoint asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to run to "/.test(code));
-ok("the win card counts metres, not \"treats\"", !/treats/.test(code) && /dist\+" m · Best: "\+BEST\+" m"/.test(code));
+ok("the end card counts metres and the child's own best", !/treats/.test(code) && /function bestLine/.test(code) && /S\.gameBestOffer\("run",n\)/.test(code));
 ok("nothing in the race is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code));
 ok("the page asks for the mic in one place only: the say-it card", (code.match(/getUserMedia\(/g) || []).length === 1 && /function openReviveMic\(\)/.test(code));
 
@@ -111,10 +112,14 @@ function fakePhone(cfg) {
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
+    if(cfg.noStore){delete v.gameBest;delete v.gameBestOffer;}
+    const cf=v.confetti;v.confetti=function(){f.confetti=(f.confetti||0)+1;if(cf)return cf.apply(this,arguments);};
     const sfx = v.sfx || {}; v.sfx = new Proxy(sfx, { get(t, k) { const real = t[k]; if (typeof real !== "function" || k === "stop") return real; return function () { f.sfx.push({ name: k, live: f.live > 0 }); return real.apply(this, arguments); }; } }); } });
   localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: cfg.volume !== 0, soundOn: true, volume: cfg.volume == null ? 0.6 : cfg.volume }));
   if (cfg.seen !== null) localStorage.setItem("sona.sprintintro.v1", String(cfg.seen == null ? 3 : cfg.seen));
+  if(cfg.best)localStorage.setItem("sona.bests.v1",JSON.stringify({ run: {n:cfg.best,at:"2026-10-01"} }));
+  localStorage.setItem("sona.best.run","99999");
   sessionStorage.setItem("sona.play.token", "arcade-run.html");
 }
 async function open(cfg = {}, size = { width: 390, height: 844 }) {
@@ -153,6 +158,28 @@ const stored = (page) => page.evaluate(() => { const grab = (st) => { const ks =
 const shown = async (page) => { await page.locator("#startOvl.show").waitFor(); };
 const started = (page, timeout = 8000) => page.waitForFunction(() => raceHeld === false && playing === true, null, { timeout });
 const voice = (mode, more = {}) => Object.assign(TTS, { mode, ms: 900, delay: 0, asks: [] }, more);
+
+await scenario("hearts, pace and best", async () => {
+  const {context,page,errors}=await open({best:10,volume:0},{width:320,height:568});try{
+    const installed=await page.evaluate(()=>typeof hearts!=="undefined"&&typeof loseHeart==="function");
+    ok("three real hearts are installed",installed);if(!installed)return;
+    ok("the opening is gentle, and an old phone-wide best is ignored",await page.evaluate(()=>hearts===3&&speed===speed0&&startBest===10&&SLOW_HELP.first===6000));
+    ok("three hearts fit the smallest phone's existing HUD",await page.evaluate(()=>{const top=document.getElementById("top").getBoundingClientRect(),hs=document.getElementById("gameHearts").getBoundingClientRect();return hs.left>=top.left&&hs.right<=top.right&&hs.bottom<=top.bottom;}));
+    await page.evaluate(()=>{dist=cleanSince+40;});await page.waitForFunction(()=>speed>speed0);const fast=await page.evaluate(()=>speed);
+    ok("clean metres increase pace and save the child's own best",await page.evaluate(()=>dist>=40&&Sona.gameBest("run")===dist&&saidNewBest));
+    const loss=await page.evaluate(()=>{const metres=dist;SLOW_ASK.soon=1500;startFall();const out={hearts,metres,after:dist,slower:speed<speed0*1.05,at:slowAskAt-slowAskPlay};SLOW_ASK.soon=slowAskAt=1e12;return out;});
+    ok("a tumble costs one heart, backs off pace, preserves metres and brings Echo soon",loss.hearts===2&&loss.after===loss.metres&&loss.slower&&loss.at<=1500,loss);
+    await page.evaluate(()=>{falling.on=false;startFall();});ok("one burst of collisions cannot take every heart",await page.evaluate(()=>hearts===2));
+    await page.evaluate(()=>{heartHitAt=-1e9;falling.on=false;slowMs=8000;startFall();falling.on=false;slowMs=0;slowTurn={finishing:true};startFall();slowTurn=null;falling.on=false;});
+    ok("the power and the speech turn both protect hearts",await page.evaluate(()=>hearts===2));
+    ok("an accepted speech callback restores a heart, capped at three",await page.evaluate(()=>{SLOW_HELP.onHeard();SLOW_HELP.onHeard();return hearts===3;}));
+    await page.evaluate(()=>{hearts=1;heartHitAt=-1e9;startFall();});await page.locator("#endOvl.show").waitFor();
+    ok("zero hearts ends kindly with metres, own best, replay and home",await page.evaluate(()=>hearts===0&&!playing&&!reviveWait&&window.__ended&&!finaleDone&&document.getElementById("endTitle").textContent==="Whew — what a run we had!"&&/ m\./.test(document.getElementById("endSub").textContent)&&document.getElementById("endCharge").textContent==="Play again"&&__f.confetti===undefined));
+    ok("a finished round spends the turn",await page.evaluate(()=>sessionStorage.getItem("sona.play.active")===null&&sessionStorage.getItem("sona.play.token")===null));
+    await page.locator("#endCharge").click();await page.waitForURL(/charge\.html/);ok("replay earns another turn in this same game",new URL(page.url()).searchParams.get("game")==="arcade-run.html");
+    ok("hearts and pace have no runtime errors",errors.length===0,errors);
+  }finally{await context.close();}
+});
 
 await scenario("the start card", async () => {
   voice("ok");
@@ -212,7 +239,7 @@ await scenario("the start card", async () => {
     await page.reload(); await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startStretch === "function");
     await page.waitForTimeout(300);
     c = await card(page);
-    ok("the fourth race starts straight away: no card, and Echo's line is not even asked for", !c.shown && !c.held && c.playing && JSON.parse(c.still).banner === "Stretch 1" && c.seen === "3" && TTS.asks.length === asks && c.voice === 0, c);
+    ok("the fourth race starts straight away: no card, and Echo's line is not even asked for", !c.shown && !c.held && c.playing && ["Stretch 1","New best!"].includes(JSON.parse(c.still).banner) && c.seen === "3" && TTS.asks.length === asks && c.voice === 0, c);
     ok("the start card: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
@@ -369,7 +396,7 @@ await scenario("a whole race", async () => {
     await page.evaluate(() => { hurtT = -1e9; things.push({ t: "o", e: "🪨", lane: lane, y: PLAYY() - 20 }); });   // (no mercy window left over)
     await page.waitForFunction(() => falling.on === true, null, { timeout: 3000 });
     s = await st(page);
-    ok("a rock is a tumble: no card, nothing lost but ten metres, the race goes on", !s.card && s.playing && s.REV === 3 && s.tumbles === 1 && s.mics === 0, s);
+    ok("a rock is a tumble: no card, one heart used and no metres taken away, the race goes on", !s.card && s.playing && s.REV === 3 && s.tumbles === 1 && s.mics === 0 && await page.evaluate(() => hearts===2), s);
     await page.waitForFunction(() => falling.on === false, null, { timeout: 3000 });
     // a golden coin is a magnet
     await page.waitForFunction(() => Math.abs(laneX - lane) < 0.05);

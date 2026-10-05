@@ -15,5 +15,5 @@ body[data-crafted="stack"] #flash{display:none;}
 
 /* The sound chip sits just under the HUD, and its status line close under
    the chip, so the sliding block has clear room below (1 Oct 2026). */
-body[data-crafted="stack"] #slowControl{top:calc(64px + env(safe-area-inset-top));}
+body[data-crafted="stack"] #slowControl{top:calc(80px + env(safe-area-inset-top));}
 body[data-crafted="stack"] #slowStatus{margin-top:4px;}

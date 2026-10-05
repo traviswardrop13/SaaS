@@ -17,7 +17,7 @@
 // Markdown table — which letters a child is shown as "the sound" is Rachel's
 // call, and she reviews the table, not the regexes.
 import vm from "vm";
-import { readFileSync, readdirSync, writeFileSync } from "fs";
+import { readFileSync, readdirSync, writeFileSync, existsSync } from "fs";
 import { ROOT } from "./_env.mjs";
 
 let fails = 0;
@@ -79,6 +79,28 @@ ok("every bank word reads the same after marking (only tags added)", bad.text.le
 ok("every bank word gets exactly one mark", bad.count.length === 0, bad.count.slice(0, 6));
 ok("every mark is one of the sound's spellings, or the whole word", bad.spelling.length === 0, bad.spelling.slice(0, 6));
 ok("…and the helper narrows almost every word (a whole-word fallback is the exception)", whole <= 2, rows.filter((r) => r.m === r.w).map((r) => r.snd + ":" + r.w));
+
+// Game-only theme words may borrow a word that the practice bank filed at
+// another position (cave is final V there), but must model their own onset.
+{
+  ok("game-only word provider is exported",typeof S.gameWords==="function"&&!!S.GAME_WORDS);
+  vm.runInContext(readFileSync(ROOT+"/crafted-words.js","utf8"),ctx);
+  const bad=[];let count=0;
+  for(const [key,sounds] of Object.entries(S.GAME_WORDS||{}))for(const [snd,names] of Object.entries(sounds)){
+    const words=S.gameWords(key,snd);
+    if(words.length!==names.length)bad.push(key+"/"+snd+" dropped a theme word");
+    for(const w of words){
+      count++;const html=S.soundMark(w.w,snd,w.pos),[m,at]=markOf(html),pic=ctx.SonaCraftedWords.picture(w.w,64);
+      if(w.pos!=="i"||at!==0||marks(html).length!==1||!SPELL[snd].includes(String(m).toLowerCase())||unesc(html)!==w.w)bad.push(key+" "+snd+" "+w.w+" marker "+html);
+      if(!/^[a-z]+$/.test(w.w)||!m||!/[aeiouy]/.test(w.w.charAt(m.length)))bad.push(key+" "+w.w+" is not an isolated onset before a vowel");
+      const art=pic&&pic.match(/background-image:url\(([^)]+)\)/);
+      if(!art||!existsSync(ROOT+art[1]))bad.push(key+" "+w.w+" has no shipped painted picture");
+    }
+  }
+  ok("every game-only theme word is pictured, isolated, has no onset blend, and marks its sound at the beginning ("+count+")",count>20&&bad.length===0,bad);
+  ok("Bubble Pop keeps its ordinary word bank",S.gameWords&&S.gameWords("bubbles","B").length===0);
+  ok("Dino cave models its K onset without changing the practice bank's final V",S.gameWords&&markOf(S.soundMark(S.gameWords("dino","K")[0].w,"K","i"))[0]==="c"&&S.WORDS.V.some(w=>w.w==="cave"&&w.pos==="f"));
+}
 
 // ── the words English makes hard, pinned: [word, sound, pos, letters, index] ──
 const PINS = [

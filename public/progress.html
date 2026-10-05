@@ -271,10 +271,10 @@
       <p id="wkGoalMsg" style="font-weight:800;font-size:13.5px;margin-top:10px;color:#6b86a3;"></p>
       <div id="wkGoalPick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <button class="gbtn" data-g="3">3 days/wk</button>
+        <button class="gbtn" data-g="4">4 days/wk</button>
         <button class="gbtn" data-g="5">5 days/wk</button>
-        <button class="gbtn" data-g="7">Every day</button>
       </div>
-      <p class="goal-note muted">Days with sound practice count toward your goal.</p>
+      <p class="goal-note muted">Days at the daily rep goal count. Change the daily goal in Settings.</p>
       <p id="clearest"></p>
     </div>
 
@@ -389,7 +389,7 @@
     var lastWeekTries = Sona.weekReps ? Sona.weekReps(-1, null, true) : 0;
     var gameWeek = Sona.weekReps ? Sona.weekReps(0) - thisWeekTries : 0;
     document.getElementById("volReps").textContent = thisWeekTries;
-    if (gameWeek > 0) { var vg = document.getElementById("volGames"); vg.hidden = false; vg.textContent = "Plus " + gameWeek + (gameWeek === 1 ? " sound" : " sounds") + " said out loud in games: " + (thisWeekTries + gameWeek) + " reps in all."; }
+    if (gameWeek > 0) { var vg = document.getElementById("volGames"); vg.hidden = false; vg.textContent = "Plus " + gameWeek + (gameWeek === 1 ? " sound" : " sounds") + " said out loud in games and books: " + (thisWeekTries + gameWeek) + " reps in all."; }
     document.getElementById("volLast").textContent = lastWeekTries > 0 && thisWeekTries > lastWeekTries
       ? "Up from " + lastWeekTries + " tries last week" : "Last week: " + lastWeekTries + " tries";
     var clearestKey = null;
@@ -442,20 +442,19 @@
       document.getElementById("rateYes").onclick = function () { var s2 = st(); s2.rated = Date.now(); put(s2); card.style.display = "none"; };
     })();
 
-    // Mom's week — HER goal (3/5/7 days), her streak, switchable right here.
-    // A practice day = real logged attempts; the week starts Monday.
+    // Goal days are separate from the practice-only summary below. The week starts Monday.
     (function () {
       var wk = document.getElementById("week");
       function paintWk() {
         var w = Sona.momWeek(); wk.innerHTML = "";
         var L = ["M", "T", "W", "T", "F", "S", "S"];
         for (var i = 0; i < 7; i++) {
-          var on = w.days[i], isT = i === w.todayIx;
+          var on = w.metDays[i], isT = i === w.todayIx;
           var cell = document.createElement("div"); cell.className = "day";
           cell.innerHTML = '<div class="d' + (on ? ' on' : '') + '"' + (isT && !on ? ' style="box-shadow:inset 0 0 0 2px #ff8a3d;"' : '') + '>' + (on ? '✓' : '·') + '</div><div class="lbl">' + L[i] + '</div>';
           wk.appendChild(cell);
         }
-        document.getElementById("wkGoalMsg").textContent = w.done + " of " + w.goal + " days this week"
+        document.getElementById("wkGoalMsg").textContent = w.goalDone + " of " + w.goal + " days at the goal this week"
           + (w.weekStreak > 0 ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row at your goal" : "");
         document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) { b.classList.toggle("on", parseInt(b.dataset.g, 10) === w.goal); });
       }

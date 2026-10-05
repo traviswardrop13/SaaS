@@ -169,7 +169,7 @@ ok("SLP-referred → tagged for the clinician's roster, with no founding grant w
   prof.slpCode === "RACHEL1" && prof.earlyAdopter !== true);
 // the deferred questions must not have been silently answered on the parent's
 // behalf either — they are asked later, in Settings, or they keep their default
-ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 5);
+ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 4);
 ok("no email was demanded to finish", prof.email === "");
 ok("onboarding no pageerrors", errs.length === 0);
 

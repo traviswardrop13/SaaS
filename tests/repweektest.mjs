@@ -35,7 +35,7 @@ async function fresh({ at, tz = "America/Denver", width = 375 } = {}) {
   await context.route("**/*", (route) => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   await context.addInitScript((SHIFT) => {
     const RealDate = Date;
-    const now = () => RealDate.now() + SHIFT + (window.__jump || 0);
+    const now = () => RealDate.now() + SHIFT + (window.__jump || Number(sessionStorage.getItem("sona.test.clockJump")) || 0);
     class ShiftedDate extends RealDate {
       constructor(...a) { if (a.length === 0) super(now()); else super(...a); }
       static now() { return now(); }
@@ -138,8 +138,8 @@ await scenario("Home's corner", async () => {
     };
   });
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /rep|week/i.test(k)));
-  ok("the corner shows this week's reps", s.n === "28" && s.unit === "reps this week", s);
-  ok("its name says the number and where a grown-up can see more", /^28 reps this week\./.test(s.aria) && /For grown-ups/.test(s.aria), s.aria);
+  ok("the corner shows today toward the daily goal", s.n === "14/50" && s.unit === "reps today", s);
+  ok("its name says the number and where a grown-up can see more", /^14 of 50 reps today\./.test(s.aria) && /For grown-ups/.test(s.aria), s.aria);
   ok("it is a real button with a full-size tap target", s.tag === "BUTTON" && s.pill.h >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l && s.pill.t >= s.gear.t - 1 && s.pill.b <= s.gear.b + 1, s);
   ok("on a phone the 'Sona' wordmark steps aside for the count and the Grown-ups button", s.label === "none", s);
@@ -168,10 +168,11 @@ await scenario("Monday morning", async () => {
   // after midnight. The count must be the new week's, not last week's.
   const { context, page, errors } = await fresh({ at: Date.UTC(2026, 9, 19, 5, 50) }); // Sun 18 Oct 23:50 MDT
   await seed(page, only({ "2026-10-12": { a: 2, p: 1, tries: 40 }, "2026-10-18": { a: 3, p: 2, tries: 80 } })); await home(page);
-  ok("Sunday night shows the week's 120", await page.evaluate(() => document.getElementById("repPillN").textContent === "120"));
-  await page.evaluate(() => { window.__jump = 20 * 60 * 1000; document.dispatchEvent(new Event("visibilitychange")); });
+  ok("Sunday night shows today's 80 and goal met", await page.evaluate(() => document.getElementById("repPillN").textContent === "80"));
+  await page.evaluate(() => { window.__jump = 20 * 60 * 1000; sessionStorage.setItem("sona.test.clockJump",String(window.__jump)); document.dispatchEvent(new Event("visibilitychange")); });
+  await page.waitForFunction(() => window.Sona && Sona.localDay() === "2026-10-19" && document.getElementById("repPillN")?.textContent === "0/50");
   const s = await page.evaluate(() => ({ n: document.getElementById("repPillN").textContent, day: Sona.localDay(), aria: document.getElementById("repPill").getAttribute("aria-label") }));
-  ok("back in front after midnight, the corner starts the new week at 0", s.day === "2026-10-19" && s.n === "0" && /^0 reps this week/.test(s.aria), s);
+  ok("back in front after midnight, the corner starts the new week at 0", s.day === "2026-10-19" && s.n === "0/50" && /^0 of 50 reps today/.test(s.aria), s);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -182,7 +183,7 @@ await scenario("the Grown-ups button", async () => {
   // 29 Sep 2026: the pop-up stopped carrying the week (Travis) — no wins line,
   // no story, no "Reps, week by week" link. 30 Sep 2026: the pop-up itself
   // went, and the code leads straight to Settings (Travis: "go straight to
-  // settings not have them choose"). Home's corner is still the way to the
+  // settings not have them choose"). Home's daily corner is still the way to the
   // week-by-week card (next scenario). Sona.weekWins() and soundStory() still
   // exist, so their count is checked at the source.
   ok("Home has no Grown-ups pop-up and no week card", await page.evaluate(() => !document.querySelector("#sheetOvl, #goProgress, #goSettings, #goTalk, #weekCard, #wkWins, #wkMore, #planCard, #storyBits, #shareWeek")));
@@ -245,7 +246,7 @@ await scenario("the Settings card", async () => {
   ok("a screen reader hears each week in words, from inside the item", s.list === "list" && s.items, s);
   // One short line (Travis, 30 Sep 2026): out loud, in practice or a game,
   // and never silence.
-  ok("the card says what a rep is, in one line, and that silence never counts", /^A rep is one time Milo says their sound or word out loud, in practice or in a game\. Silence never counts\.$/.test(s.note) && /Silence never counts/.test(s.text), s.note);
+  ok("the card says what a rep is, in one line, and that silence never counts", /^A rep is one time Milo says their sound or word out loud, in practice, a game or a book\. Silence never counts\.$/.test(s.note) && /Silence never counts/.test(s.text), s.note);
   ok("no percentages, scores or grades on the card", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
   ok("nothing on the card is red", s.reds === 0, s.reds);
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -285,13 +286,13 @@ await scenario("behind, tied, one rep, brand new, and wrong clocks", async () =>
   s = await readCard(page);
   ok("one rep reads 'rep', and a first week says it is the first", s.now === "1" && s.unit === "rep this week" && s.last === "The first week counted." && s.best === "" && s.bars.length === 1, s);
   await home(page);
-  ok("Home's corner says 1 rep this week", await page.evaluate(() => document.getElementById("repPillN").textContent === "1" && document.getElementById("repPillUnit").textContent === "rep this week"));
+  ok("Home's corner shows no reps today when the week's one was Tuesday", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/50" && document.getElementById("repPillUnit").textContent === "reps today"));
 
   await seed(page, null); await settings(page);
   s = await readCard(page);
   ok("a brand-new child: 0, no chart, and what adds the first rep", s.now === "0" && s.bars.length === 0 && s.best === "" && s.last === "No reps counted yet. Milo’s next practice adds the first.", s);
   await home(page);
-  ok("Home's corner shows 0 for a brand-new child", await page.evaluate(() => document.getElementById("repPillN").textContent === "0" && document.getElementById("repPillUnit").textContent === "reps this week"));
+  ok("Home's corner shows 0 for a brand-new child", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/50" && document.getElementById("repPillUnit").textContent === "reps today"));
 
   await seed(page, only({ "2026-09-15": { a: 20, p: 10 }, "2026-10-13": { a: 5, p: 3 } })); await settings(page);
   s = await readCard(page);
@@ -309,7 +310,7 @@ await scenario("behind, tied, one rep, brand new, and wrong clocks", async () =>
   s = await readCard(page);
   ok("big weeks get a thousands comma, and a short label on the bar", s.now === "1,234" && s.bars[0].val === "1.2k", s);
   await home(page);
-  ok("Home's corner uses the same comma", await page.evaluate(() => document.getElementById("repPillN").textContent === "1,234"));
+  ok("Home's corner keeps today separate from a large Tuesday count", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/50"));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -336,7 +337,7 @@ await scenario("sounds said in games are reps too", async () => {
   await home(page);
   const before = await page.evaluate(() => localStorage.getItem("sona.outcomes.v1"));
   let r = await page.evaluate(() => ({ now: Sona.weekReps(0), last: Sona.weekReps(-1), s: Sona.weekReps(0, "S"), pill: document.getElementById("repPillN").textContent }));
-  ok("this week adds the game's 5 to practice's 28, and Home's corner says 33", r.now === 33 && r.pill === "33", r);
+  ok("the week counts 33 and Home today counts 19 toward 50", r.now === 33 && r.pill === "19/50", r);
   ok("last week adds its game reps too; a date before reps were counted adds none", r.last === 22, r);
   ok("one sound's count includes its game reps", r.s === 7, r);
   await page.evaluate(() => { Sona.gameRep("r"); Sona.gameRep("R"); Sona.gameRep("X"); Sona.gameRep(""); });
@@ -345,7 +346,7 @@ await scenario("sounds said in games are reps too", async () => {
   ok("…and never touches the practice records (pass rates, the clinician's view)", r.outcomes === before);
   await settings(page);
   const card = await page.evaluate(() => ({ now: document.getElementById("rwThis").textContent, note: document.querySelector(".rw-note").innerText }));
-  ok("Settings counts them, and says a game counts too", card.now === "35" && /in practice or in a game/.test(card.note) && !/add none/.test(card.note), card);
+  ok("Settings counts them, and says a game counts too", card.now === "35" && /in practice, a game or a book/.test(card.note) && !/add none/.test(card.note), card);
   await page.evaluate(() => Sona.addKid("Ana", 4));
   ok("a second child's game reps start at 0", await page.evaluate(() => Sona.weekReps(0) === 0));
   await page.evaluate(() => Sona.gameRep("R"));
@@ -413,7 +414,7 @@ await scenario("Progress keeps practice apart from game sounds", async () => {
   await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent);
   let p = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, games: document.getElementById("volGames").hidden ? null : document.getElementById("volGames").textContent, lead: document.getElementById("storyLine").textContent }));
   ok("Progress's tries are the practice page's 28", p.tries === "28", p);
-  ok("…with the 5 game sounds on their own line, adding up to Home's 33", p.games === "Plus 5 sounds said out loud in games: 33 reps in all.", p);
+  ok("…with the 5 game sounds on their own line, adding up to Home's 33", p.games === "Plus 5 sounds said out loud in games and books: 33 reps in all.", p);
   ok("…and its lead counts practice only", /R sound with 23 tries this week — 28 tries in all/.test(p.lead), p.lead);
   await page.click("#copySummary"); await page.waitForTimeout(150);
   const copied = await page.evaluate(() => window.__copies[0] || "");
@@ -423,10 +424,10 @@ await scenario("Progress keeps practice apart from game sounds", async () => {
   await page.evaluate(() => localStorage.setItem("sona.gamereps.v1", JSON.stringify({ "2026-10-15": { R: 7 } })));
   await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent);
   p = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, games: document.getElementById("volGames").textContent }));
-  ok("a week of only game sounds: 0 practice tries, and the 7 said in games", p.tries === "0" && p.games === "Plus 7 sounds said out loud in games: 7 reps in all.", p);
+  ok("a week of only game sounds: 0 practice tries, and the 7 said in games", p.tries === "0" && p.games === "Plus 7 sounds said out loud in games and books: 7 reps in all.", p);
   await home(page);
   const story = await page.evaluate(() => Sona.soundStory()[0]);
-  ok("the week's story never says 'practiced 0 days' beside reps", story === "Milo said the practice sound out loud 7 times in games this week." && !/0 days/.test(story), story);
+  ok("the week's story never says 'practiced 0 days' beside reps", story === "Milo said the practice sound out loud 7 times in games and books this week." && !/0 days/.test(story), story);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -437,12 +438,12 @@ await scenario("each child keeps their own week", async () => {
   await page.evaluate(() => Sona.addKid("Ana", 4));
   await home(page);
   const second = await page.evaluate(() => ({ n: document.getElementById("repPillN").textContent, reps: Sona.weekReps(0) }));
-  ok("a second child starts at 0, not the first child's 28", second.n === "0" && second.reps === 0, second);
+  ok("a second child starts at 0, not the first child's 28", second.n === "0/30" && second.reps === 0, second);
   await settings(page);
   ok("Settings names the selected child", await page.evaluate(() => document.getElementById("rwHead").textContent === "Ana’s reps, week by week" && document.getElementById("rwThis").textContent === "0"));
   await page.evaluate(() => Sona.switchKid(""));
   await home(page);
-  ok("switching back shows the first child's 28 again", await page.evaluate(() => document.getElementById("repPillN").textContent === "28"));
+  ok("switching back shows the first child's 28 again", await page.evaluate(() => document.getElementById("repPillN").textContent === "14/50"));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

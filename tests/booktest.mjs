@@ -49,13 +49,13 @@ const server = createServer((req, res) => {
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
-  res.end(readFileSync(file));
+  res.end(readFileSync(url.pathname === "/library.html" && process.env.BOOK_LIBRARY_SOURCE ? process.env.BOOK_LIBRARY_SOURCE : file));
 });
 await new Promise((resolve) => server.listen(PORT, "127.0.0.1", resolve));
 const browser = await chromium.launch(launchOpts());
 let failures = 0;
 function ok(name, pass, detail = "") { if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
-async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
+async function scenario(name, fn) { if(process.env.BOOK_SCENARIO && name!==process.env.BOOK_SCENARIO)return; try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
 const strip = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 
 // ── 1. the check is Say & Play's, and it can only listen ──
@@ -306,11 +306,27 @@ await scenario("heard", async () => {
   ok("The End: Echo cheers on the card", end && endEcho.src === "/assets/crafted/echo-cheer.webp" && endEcho.loaded, endEcho);
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey);
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
   ok("a book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Rory and the Rainbow/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
-  ok("…and never logs an attempt, rep or coin", !/"(attempts|reps|coins)"/.test(JSON.stringify(moved)));
+  ok("…two accepted words add exactly 2 play reps", (await page.evaluate(() => Sona.dayReps())) === 2);
+  ok("…and never logs an attempt, practice rep or coin", !/"(attempts|reps|coins)"/.test(JSON.stringify(moved)));
   clean("heard", errors);
   await context.close();
+});
+
+await scenario("sibling rep guard", async () => {
+  const { context, page, errors } = await fresh({ micok: true });
+  try {
+    await openBook(page, "Rory and the Rainbow");
+    ok("sibling guard: the original child's book is listening", await waitLive(page));
+    const original = await page.evaluate(() => { const old=Sona.activeKid().slot; Sona.addKid("Sibling",6); return old; });
+    await voice(page,260);
+    ok("sibling guard: the existing reading turn can finish", await until(page,()=>window.__book.page===1,5000));
+    ok("sibling guard: a stale book never credits the newly active child", await page.evaluate(()=>Sona.dayReps()===0));
+    await page.evaluate((slot)=>Sona.switchKid(slot),original);
+    ok("sibling guard: a switched-away reading turn adds no rep", await page.evaluate(()=>Sona.dayReps()===0));
+    clean("sibling guard",errors);
+  } finally {await context.close();}
 });
 
 // ── 4. silence never turns the page, and is never a try ──
@@ -644,8 +660,9 @@ await scenario("six-page book", async () => {
   ok("…and the sixth ends on The End, with a chime for each page heard", end && l.sfx.filter((x) => x.name === "correct").length === 6 && l.mics.length === 6, { end, sfx: l.sfx.map((x) => x.name), mics: l.mics.length });
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey);
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
   ok("…a six-page book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Reba the Robot/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
+  ok("…six accepted words add exactly 6 play reps", (await page.evaluate(() => Sona.dayReps())) === 6);
   noOverlap("six-page book", l);
   clean("six-page book", errors);
   await context.close();

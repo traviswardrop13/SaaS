@@ -261,8 +261,8 @@
       <p class="muted">This goal is yours, not your child's — pick what fits real life. Sona tracks the week for you and never pressures the kid.</p>
       <div class="choices" id="obGoal">
         <div class="choice" data-val="3"><span class="ce" data-ic="sprout">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
-        <div class="choice" data-val="5"><span class="ce" data-ic="star">⭐</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
-        <div class="choice" data-val="7"><span class="ce" data-ic="flame">🔥</span> Every day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">All in</span></div>
+        <div class="choice" data-val="4"><span class="ce" data-ic="star">⭐</span> 4 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
+        <div class="choice" data-val="5"><span class="ce" data-ic="flame">🔥</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">A little more</span></div>
       </div>
     </div>
 
@@ -584,8 +584,8 @@
       sc.appendChild(b);
     });
 
-    // daily goal (single select, default 5)
-    var goalVal = String(p.weeklyGoal || 5);
+    // Weekly goal days: single select, default four.
+    var goalVal = String(Sona.goalDays ? Sona.goalDays() : (p.weeklyGoal || 4));
     var goalWrap = document.getElementById("obGoal");
     goalWrap.querySelectorAll(".choice").forEach(function (ch) {
       if (ch.dataset.val === goalVal) ch.classList.add("on");
@@ -779,7 +779,7 @@
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
         dailyMinutes: 5,
-        weeklyGoal: parseInt(goalVal, 10) || 5,
+        weeklyGoal: parseInt(goalVal, 10) || 4,
         email: draft.email || "",
         pathReason: draft.pathReason || "",
         onboarded: true,

@@ -1498,7 +1498,7 @@
         +'</svg>'; }
     // per-story wash for the reader background (D2): story tint over cream
     function hexRgba(hex, a) { try { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; } catch (e) { return "rgba(255,122,110," + a + ")"; } }
-    var BOOK = null, page = -1; // -1 = cover, pages.length = The End
+    var BOOK = null, page = -1, bookRepKey = ""; // -1 = cover, pages.length = The End
     var bookEl = document.getElementById("book"), bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead"), bkCount = document.getElementById("bkCount");
     var bkPrev = document.getElementById("bkPrev"), bkNext = document.getElementById("bkNext"), bkHear = document.getElementById("bkHear");
     var bkMicWrap = document.getElementById("bkMicWrap"), bkMic = document.getElementById("bkMic"), bkSkip = document.getElementById("bkSkip"), bkPrimer = document.getElementById("bkPrimer");
@@ -1506,6 +1506,7 @@
     function openBook(st) {
       if (!bookOpen(st) || bookLocked(st)) return;
       BOOK = st; page = -1;
+      bookRepKey = window.Sona && Sona.kkey ? Sona.kkey("sona.gamereps.v1") : "";
       bookEl.classList.add("show");
       bkHead.innerHTML = '<span class="bh"><span class="bh1"></span><span class="bhsep"> · </span><span class="bh2"></span></span>';
       bkHead.querySelector(".bh1").textContent = st.title;
@@ -1732,9 +1733,9 @@
        sound family. It can't tell the word, so "heard" means Echo heard the
        child, never that the word was right, and nothing here grades.
        The rules it keeps:
-       - PLAY, NOT PRACTICE. Nothing here logs an attempt, a rep, a session,
-         a rung, a rotation step, coins or a sticker, and no sona.* practice
-         key changes. Whether a book word should count is Rachel's call.
+       - PLAY, NOT PRACTICE. An accepted word adds one play rep toward the
+         daily goal. It never logs an attempt, a session, a rung, a rotation
+         step, coins or a sticker, and no clinical practice key changes.
        - SILENCE NEVER TURNS THE PAGE and is never a try: a quiet window
          closes the mic and waits for a tap on it, which only listens again.
          A try is a voice in the other family ("shape"); three of those, and
@@ -1890,6 +1891,8 @@
       if (!M) return;
       var tok = momTok;
       if (out === "heard") {
+        if (M.leaving) return; // one accepted callback credits the page once
+        try { if (window.Sona && Sona.gameRep && (!Sona.kkey || Sona.kkey("sona.gamereps.v1") === bookRepKey)) Sona.gameRep(BOOK.sound); } catch (e) {}
         // SayCheck has already closed the mic; the chime still waits its beat
         M.leaving = true;
         setBar("yay", "I heard you!");

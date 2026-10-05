@@ -44,7 +44,7 @@
       <span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span>
     </div>
     <div id="stageWrap" class="dig">
-      <canvas id="dig" role="img" aria-label="A sandy dig site under a cliff with a dinosaur skeleton's outline. Say the word to get a brush, then rub the sand to uncover a bone."></canvas>
+      <canvas id="dig" role="img" aria-label="A sandy dig site under a cliff with a dinosaur skeleton's outline. Say the word two times to get a brush, then rub the sand to uncover a bone."></canvas>
       <img id="digEcho" src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
     </div>
     <div id="turnPanel" aria-live="polite">
@@ -63,7 +63,7 @@
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
       <h2 id="startTitle">Dino Dig</h2>
-      <p>Say the word to get a brush. Then rub the sand to dig up a dinosaur bone!</p>
+      <p>Say the word two times to get a brush. Then rub the sand to dig up a dinosaur bone!</p>
       <div id="dinoToday" hidden>
         <canvas id="dinoPic" width="400" height="210" role="img" aria-label=""></canvas>
         <p id="dinoName"></p>
@@ -77,7 +77,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say each word to get a brush.</p>
+      <p>Say each word two times to get a brush.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -128,7 +128,7 @@
     // no attempt, rep or coin, and nothing a clinician is shown.
     var DINOKEY = (window.Sona && Sona.kkey) ? Sona.kkey("sona.dino.v1") : "sona.dino.v1";
     var GAME = {
-      key: "dino", title: "Dino Dig",
+      key: "dino", intro: "Say each word two times to get a brush.", title: "Dino Dig",
       steps: [[], [], [], [], [], [], [], []], finale: [],
       // the title is the dinosaur's own name once it wakes (found, below)
       done: { title: "The dinosaur woke up!", sub: "Eight words, eight bones. What a digger!" },

@@ -181,6 +181,22 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   await ctx.close();
 }
 
+// Named homework wins even when a word could be on a themed court/pit.
+{
+  const {ctx,pg}=await page();
+  const result=await pg.evaluate((cache)=>{
+    const free={hoops:Sona.gameWords("hoops","S").map(w=>w.w),dino:Sona.gameWords("dino","S").map(w=>w.w)};
+    eval(cache);
+    const assigned={hoops:Sona.gameWords("hoops","S"),soccer:Sona.gameWords("soccer","S"),dino:Sona.gameWords("dino","S"),pool:Sona.wordsFor("S","i").map(w=>w.w),unassigned:Sona.gameWords("dino","R").map(w=>w.w)};
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    return {free,assigned,restored:Sona.gameWords("dino","S").map(w=>w.w)};
+  },CACHE({words:["bus","glass"]}));
+  ok("Hoops and Dino have themed words without named homework",result.free.hoops.join() === "sock"&&result.free.dino.join()==="sand,sun",JSON.stringify(result));
+  ok("named homework disables every game's themes for its assigned sound",result.assigned.hoops.length===0&&result.assigned.soccer.length===0&&result.assigned.dino.length===0&&result.assigned.pool.length===2&&result.assigned.pool.every(w=>["bus","glass"].includes(w)),JSON.stringify(result.assigned));
+  ok("homework cannot disable themes for another sound, and removing it restores themes",result.assigned.unassigned.join()==="rock"&&result.restored.join()==="sand,sun",JSON.stringify(result));
+  await ctx.close();
+}
+
 // ── 3b. the cards between a game's rounds follow the assignment too ──
 // (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
 // Fruit Slice's card may now ask a syllable, then a short word. "ree" is an R

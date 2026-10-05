@@ -36,6 +36,11 @@
     .rw-days{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;margin-top:5px;}
     .rw-days span{font-size:10px;font-weight:800;line-height:1.25;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;}
     .rw-days span.now{color:var(--family-teal-dark,#a8521c);}
+    .goal-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:14px 0;}
+    .goal-controls label{display:grid;gap:6px;font-size:13px;font-weight:800;min-width:0;}
+    .goal-controls select{width:100%;min-height:44px;padding:8px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:800 15px "Nunito",sans-serif;}
+    #goalWeekLine{font-weight:800;margin-top:10px;}
+    #goalHelp{font-size:12px;line-height:1.45;}
     .rw-note{font-size:12px;font-weight:700;line-height:1.5;margin-top:12px;}
   </style>
   <script>
@@ -186,6 +191,12 @@
          the grown-ups gate and lands here (#reps). -->
     <div class="card" id="reps">
       <h2 id="rwHead">Reps, week by week</h2>
+      <p id="goalWeekLine"></p>
+      <div class="goal-controls">
+        <label for="dailyGoalPick">Daily goal<select id="dailyGoalPick" aria-describedby="goalHelp"></select></label>
+        <label for="goalDaysPick">Days a week<select id="goalDaysPick"><option value="3">3 days</option><option value="4">4 days</option><option value="5">5 days</option></select></label>
+      </div>
+      <p id="goalHelp" class="muted"></p>
       <div class="rw-now"><span id="rwThis">0</span> <b id="rwThisUnit">reps this week</b></div>
       <p id="rwLast" class="rw-line"></p>
       <p id="rwBest" class="rw-line"></p>
@@ -196,7 +207,7 @@
       <!-- One short line (Travis, 30 Sep 2026). It stays true: practice counts
            every voiced try, right or not yet; a game counts only when it asked
            and heard; silence counts nowhere. Never a %, a score or a verdict. -->
-      <p class="muted rw-note">A rep is one time <span id="rwWho">your child</span> says their sound or word out loud, in practice or in a game. Silence never counts.</p>
+      <p class="muted rw-note">A rep is one time <span id="rwWho">your child</span> says their sound or word out loud, in practice, a game or a book. Silence never counts.</p>
     </div>
 
     <section class="card" id="aboutCard" aria-labelledby="aboutTitle">
@@ -543,6 +554,7 @@
         focusArea: "articulation",
         practicePosition: posEl.value, gameLevel: levelEl.value, focusSounds: [].concat(Array.from(sel)) });
       paintGameLevel();
+      paintGoals();
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();
@@ -672,6 +684,21 @@
         d.className = w.current ? "now" : ""; d.appendChild(document.createTextNode(dl[0])); d.appendChild(document.createElement("br")); d.appendChild(document.createTextNode(dl[1])); days.appendChild(d);
       });
     })();
+    // These goals belong to the selected child. Homework keeps its own target
+    // and report; a parent cannot override an active assignment here.
+    function paintGoals() {
+      var prof = Sona.getProfile(), d = Sona.dayGoal(), w = Sona.momWeek(), hw = Sona.homework();
+      var pick = document.getElementById("dailyGoalPick"), days = document.getElementById("goalDaysPick");
+      var opts = parseInt(prof.childAge, 10) >= 5 ? [30, 50, 70, 100] : [20, 30, 40, 50];
+      if (opts.indexOf(d.goal) < 0) opts.push(d.goal); opts.sort(function(a,b){return a-b;});
+      pick.innerHTML = ""; opts.forEach(function(n){var o=document.createElement("option");o.value=n;o.textContent=n+" reps";pick.appendChild(o);});
+      pick.value = d.goal; pick.disabled = !!(hw && hw.repsPerDay > 0); days.value = w.goal;
+      document.getElementById("goalWeekLine").textContent = w.goalDone + " of " + w.goal + " days at the goal this week" + (w.weekStreak ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row" : "");
+      document.getElementById("goalHelp").textContent = pick.disabled ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only." : "A day counts when the daily goal is met. Practice, games and books all count.";
+    }
+    document.getElementById("dailyGoalPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({dailyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
+    document.getElementById("goalDaysPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({weeklyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
+    paintGoals();
     // Same rule as saveAll: this page belongs to the child it was painted for.
     // A switch in another tab reloads rather than resetting someone else's
     // practice under this child's name. Checked again after the dialog, which

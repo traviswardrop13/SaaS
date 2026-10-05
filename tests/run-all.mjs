@@ -28,6 +28,7 @@ const SUITES = [
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; Settings' pick, the practice page's floor, homework; it only reads
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
+  "dailygoaltest.mjs", // daily rep goals, quiet once-a-day celebration, and weekly goal-day streaks
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
@@ -50,6 +51,7 @@ const SUITES = [
   "zoomtest.mjs",  // ZOOM1: a double tap never zooms the app; grown-up pages keep pinch, game boards keep none
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
+  "homepickstest.mjs", // deterministic daily picks stay in the child's sound and age
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash

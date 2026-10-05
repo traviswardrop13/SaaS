@@ -95,10 +95,13 @@ try{
   await pg.goto(base+'/arcade-hoops.html');await pg.waitForFunction(()=>!!document.getElementById('startBtn'));
   await pg.evaluate(()=>{h.media=[];document.getElementById('startBtn').click();});
   await pg.waitForFunction(()=>h.media.length>0,{},{timeout:5000}).catch(()=>{});
-  ok('a word game (Hoops) says its word as native media at the profile\'s level (a saved 60% plays at the normal 0.8 since 30 Sep 2026)',await pg.evaluate(()=>h.media.length>0&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0),await pg.evaluate(()=>({media:h.media.length,pcm:h.pcm})));
-  await pg.evaluate(()=>{const a=h.media[0];if(a&&a.onended)a.onended();});
-  await pg.waitForFunction(()=>h.media.length>1,{},{timeout:4000}).catch(()=>{});
-  ok('…then "Go!", as its own line, also as native media and never Web Audio',await pg.evaluate(()=>h.media.length>1&&h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.synth.length===0)&&ttsTexts[ttsTexts.length-1]==='Go!'&&/^Say\.\.\. [a-z]+\.$/i.test(ttsTexts[ttsTexts.length-2]),{texts:ttsTexts.slice(-2),media:await pg.evaluate(()=>h.media.length)});
+  ok('Hoops first speaks the separate count instruction as native media, before any mic or target',await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.media[0].volume===.8&&h.pcm===0&&h.mic===0)&&ttsTexts.includes('Say each word two times to get a ball.'),{texts:ttsTexts.slice(-3)});
+  await pg.evaluate(()=>h.media[0].onended());
+  await pg.waitForFunction(()=>h.media.length===2,{},{timeout:4000});
+  ok('the isolated target follows the completed count instruction at the normal media volume',await pg.evaluate(()=>h.media[1].src.startsWith('blob:')&&h.media[1].volume===.8&&h.pcm===0&&h.mic===0)&&ttsTexts.some(t=>/^Say\.\.\. [a-z]+\.$/i.test(t)),{texts:ttsTexts.slice(-3)});
+  await pg.evaluate(()=>h.media[1].onended());
+  await pg.waitForFunction(()=>h.media.length===3,{},{timeout:4000});
+  ok('then Go! is its own native clip; the microphone waits for all three clips',await pg.evaluate(()=>h.media[2].src.startsWith('blob:')&&h.media[2].volume===.8&&h.pcm===0&&h.synth.length===0&&h.mic===0)&&ttsTexts.includes('Go!'),{texts:ttsTexts.slice(-4)});
   const bubblesFrom=ttsTexts.length;
   // Bubble Pop is a word game on the same engine since 1 Oct 2026: Echo asks
   // for the word straight after Let's play, before any bubble exists
@@ -138,9 +141,9 @@ try{
   const card=async()=>{await pg.waitForFunction(()=>typeof startWave==='function');await pg.evaluate(()=>{waveGot=WAVES[wave].goal;});await pg.waitForFunction(()=>h.media.length===1,{},{timeout:8000}).catch(()=>{});};
   const title=()=>pg.evaluate(()=>document.getElementById('revTitle').textContent);
   // The card's voice (/arcade-sayit.js, 2 Oct 2026) asks for its own two
-  // lines, "To keep playing, say" and "Go!", as the page loads, whatever the
-  // card will ask: they are set aside, and own() is what the card asked for.
-  const own=()=>lines.filter(t=>t!=='To keep playing, say'&&t!=='Go!');
+  // lines plus the power/heart instructions as the page loads. Only the
+  // complete syllable/word card ask belongs to own(), not preload requests.
+  const own=()=>lines.filter(t=>/^To keep playing, say\.\.\./.test(t));
   await pg.goto(base+'/arcade-slice.html?from=charge');await card();
   ok('a syllable card says its ask in ONE line, as native media, before any microphone',own().length===1&&/^To keep playing, say\.\.\. r(ee|ah|oh)\.$/.test(own()[0])&&await pg.evaluate(()=>h.media.length===1&&h.media[0].src.startsWith('blob:')&&h.mic===0),lines);
   ok('…and the card shows that same syllable',(await title())==='Say “'+(own()[0]||'').replace(/^.*\.\.\. |\.$/g,'')+'” for wave 2!',await title());

@@ -339,14 +339,15 @@ for (const k of ROUND_KEYS) {
 }
 
 // ───────────────────────── the picture games (Say & Play) ─────────────────────────
-// One shared script, sayplay.js, and one spoken line: Echo models the word.
+// Shared isolated word asks, with a separate first-turn instruction in three games.
 const SAYPLAY = "public/sayplay.js";
 const spAsk = find(SAYPLAY, /say\("(Say\.\.\. )" \+ word\.w \+ "(\.)"\)/, "Say & Play's ask");
 const spPoolFn = find(SAYPLAY, /^  function pool\(sound\) \{\n[\s\S]*?^  \}$/m, "Say & Play's word pool");
 const spPool = new Function("S", spPoolFn.m[0] + "\nreturn pool;")(S);
 find(SAYPLAY, /SOUND = String\(\(S\.rotSound && S\.rotSound\(\)\) \|\| "R"\)\.toUpperCase\(\);/, "Say & Play's sound");
 const spVoice = find(SAYPLAY, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: profile\.voiceId \|\| "", stable: true \}\)/, "Say & Play's voice request");
-coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk]);
+const spIntro = find(SAYPLAY, /say\(G\.intro\)/, "Say & Play first-turn instruction");
+coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk, spIntro]);
 coverAll(SAYPLAY, TTS_CALL, [spVoice], "a voice request"); coverAll(SAYPLAY, SPEAK_CALL, [], "a voice call");
 const spLine = (w) => spAsk.m[1] + w + spAsk.m[2];
 // Which game a page is, from the catalog. A page that loads a speaking
@@ -359,6 +360,7 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
+const spIntros = ["hoops", "soccer", "dino"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.
@@ -733,6 +735,8 @@ bTable(`B5 — The round games (${3 + ROUND_KEYS.reduce((n, k) => n + 1 + power[
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
 B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
 bTable("B6 — Books (2)");
+[...new Set(spIntros.map((a) => a.line))].forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => roundName(a.key) || a.key).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
+bTable("B7 — Picture-game instructions (2)");
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
 P("picker, the mic-permission screens, the chest captions and every in-round label.");
@@ -892,8 +896,7 @@ P();
 P(`\`${spLine("{word}")}\` (${spAsk.cite})`);
 P();
 P(`One shared script (\`sayplay.js\`) runs every picture game. Each turn shows a picture and`);
-P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. It is the only line`);
-P("these games speak: the cheers (\"Yes!\", \"You did it!\") are text. The sound is the one the");
+P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. Hoops, Soccer Goal and Dino Dig first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the`);
 P(`child's rotation is on (else R); the pool is up to ten of that sound's shortest`);
 P(`Beginning-position words with a picture (${spPoolFn.cite}). **Best left to TTS.**`);
 P();
@@ -903,6 +906,11 @@ P("| Sound | {word} pool |");
 P("|---|---|");
 let spCount = 0;
 SOUNDS.forEach((s) => { const pool = spPool(s).map((w) => w.w); spCount += pool.length; P(`| ${SOUND_TITLE(s)} | ${pool.join(", ")} |`); });
+P();
+P("**Game words, when available.** Existing illustrated bank words, selected at turns 1, 4 and 7 without repeating an already used themed word. Homework words replace this selection. Rachel reviews these lists before release.");
+P("| Game | Sound | Themed words |");
+P("|---|---|---|");
+Object.keys(S.GAME_WORDS || {}).forEach((k) => Object.keys(S.GAME_WORDS[k]).forEach((s) => { const ws = S.gameWords(k, s).map((w) => w.w); spCount += ws.length; P(`| ${S.GAME_ACTS[k].name} | ${SOUND_TITLE(s)} | ${ws.join(", ")} |`); }));
 totals.fillers += spCount;
 
 // C9 Books

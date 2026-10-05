@@ -251,7 +251,7 @@ try {
       await page.waitForURL(/\/today\.html/);
       await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
       if (process.env.TRIAL_SHOTS) { await page.waitForTimeout(600); await page.screenshot({ path: process.env.TRIAL_SHOTS + "/4-home.png" }); }
-      const h = await page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('.game-card[data-game="' + k + '"]');
+      const h = await page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('#activityGroups .game-card[data-game="' + k + '"]');
         return b ? { k, locked: b.dataset.locked, label: (b.querySelector(".game-access") || {}).textContent } : { k, missing: true }; }), FREE4);
       ok("\"Not now\" goes Home with Fruit Slice, Piano Tiles, Feed Echo and Bubble Pop locked, each marked Premium, none \"Free\"",
         h.every((c) => c.locked === "true" && c.label === "Premium"), h);
@@ -259,7 +259,7 @@ try {
       ok("…and the Books card says Premium, not \"1 free book\"", books === "Premium", books);
       // a grey game opens the price at once (Travis, 4 Oct 2026: "I want it
       // to open automatically if they click on a game that is grayed out")
-      await page.locator('.game-card[data-game="slice"]').click();
+      await page.locator('#activityGroups .game-card[data-game="slice"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=slice$/);
       await page.waitForFunction(() => document.body.classList.contains("offer"));
       const o = await page.evaluate(() => ({ title: document.getElementById("offerTitle").textContent, card: getComputedStyle(document.getElementById("iapCard")).display !== "none", decline: document.getElementById("declineLink").textContent }));
@@ -298,7 +298,7 @@ try {
     const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro: "free3", noGate: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
-      await page.locator('.game-card[data-game="stack"]').click();
+      await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=stack$/);
       await page.waitForFunction(() => document.body.classList.contains("offer") && getComputedStyle(document.getElementById("iapCard")).display !== "none");
       await page.waitForTimeout(400);
@@ -322,7 +322,7 @@ try {
     const { context, page, errors } = await fresh({ app: "nobuy", stamp: "post", setUp: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
-      await page.locator('.game-card[data-game="stack"]').click();
+      await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForTimeout(500);
       const v = await page.evaluate(() => ({ path: location.pathname, notice: !document.getElementById("libraryNotice").hidden, msg: document.getElementById("libraryMessage").textContent }));
       ok("on a phone that cannot buy, a grey game still shows the grown-up note: there is nothing to open", v.path === "/today.html" && v.notice && /^Ask a grown-up to help open Block Stacker\./.test(v.msg), v);

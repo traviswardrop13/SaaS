@@ -144,6 +144,13 @@ ok("the consent copy states it plainly",
   const badBank = bankWords.filter((w) => w.split(/\s+/).some((x) => NEVER_SAY.includes(x)));
   ok("no word in Sona.WORDS is a never-say word", badBank.length === 0, badBank.join(", "));
 
+  const themeMatch=sona.match(/const GAME_WORDS\s*=\s*(\{[\s\S]*?\n  \});/);
+  ok("the separate game-only word table is present",!!themeMatch);
+  const themes=themeMatch?vm.runInNewContext("("+themeMatch[1]+")"):{};
+  const themeWords=Object.values(themes).flatMap(sounds=>Object.values(sounds).flat());
+  const badThemes=themeWords.filter(w=>w.split(/\s+/).some(t=>NEVER_SAY.includes(t.toLowerCase())));
+  ok("no game-only theme word is a never-say word",themeWords.length>20&&badThemes.length===0,badThemes.join(", "));
+
   // ---- 7c. what a game's say-it card may ask for, past the bare sound ----
   // (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
   // One syllable a card, from the same generator, so the swaps above hold; a

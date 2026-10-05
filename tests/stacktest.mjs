@@ -26,7 +26,7 @@ await new Promise((r) => server.listen(8264, "127.0.0.1", r));
 const browser = await chromium.launch(launchOpts());
 let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }
-async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
+async function scenario(name, fn) { if(process.env.ARCADE_LIVES_ONLY && name!=="hearts, pace and best")return; try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 
 // ── the code: a round, not a practice ──
@@ -42,7 +42,7 @@ ok("its own sounds play only through sfx(), so they keep the quiet rules",
   /S\.sfx\.thunk=function/.test(code) && !/[^.]\bhiss\(|[^.]\bthud\(/.test(code.replace(/S\.sfx\.\w+=function\(\)\{[^\n]*\};/g, "").replace(/function (hiss|thud)\(/g, "")));
 
 // ── a fake phone: a mic that hears silence, audio that records what plays ──
-function fakePhone() {
+function fakePhone(cfg = {}) {
   // Echo's mid-round ask for the sound power (3 Oct 2026) is
   // arcadespeechhelptest's: held here, so a round is just the round.
   document.addEventListener("DOMContentLoaded", () => { if (window.SLOW_ASK) { SLOW_ASK.first = SLOW_ASK.every = SLOW_ASK.quiet = SLOW_ASK.soon = 1e12; window.slowAskAt = 1e12; } });
@@ -71,15 +71,19 @@ function fakePhone() {
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
+    if(cfg.noStore){delete v.gameBest;delete v.gameBestOffer;}
+    const cf=v.confetti;v.confetti=function(){f.confetti=(f.confetti||0)+1;if(cf)return cf.apply(this,arguments);};
     const sfx = v.sfx || {}; v.sfx = new Proxy(sfx, { get(t, k) { const real = t[k]; if (typeof real !== "function" || k === "stop") return real; return function () { f.sfx.push({ name: k, live: f.live > 0 }); return real.apply(this, arguments); }; } }); } });
   localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: false, soundOn: true, volume: 0.6 }));
+  if(cfg.best)localStorage.setItem("sona.bests.v1",JSON.stringify({ stack: {n:cfg.best,at:"2026-10-01"} }));
+  localStorage.setItem("sona.stack.best","99999");
   sessionStorage.setItem("sona.play.token", "arcade-stack.html");
 }
-async function open() {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+async function open(cfg = {}, size = { width: 390, height: 844 }) {
+  const context = await browser.newContext({ viewport: size, reducedMotion: "reduce" });
   await context.route("**/*", (r) => (r.request().url().startsWith(BASE + "/") ? r.continue() : r.abort()));
-  await context.addInitScript(fakePhone);
+  await context.addInitScript(fakePhone, cfg);
   const page = await context.newPage(); page.setDefaultTimeout(8000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + "/arcade-stack.html?from=charge");
@@ -103,6 +107,31 @@ async function dropWhere(page, kind) {
 }
 const heard = (page) => page.evaluate(() => { closeReviveMic(); doRevive(); });
 
+await scenario("hearts, pace and best", async () => {
+  const {context,page,errors}=await open({best:2},{width:320,height:568});try{
+    const installed=await page.evaluate(()=>typeof hearts!=="undefined"&&typeof loseHeart==="function");
+    ok("three real hearts are installed",installed);if(!installed)return;
+    ok("the opening is gentle, and an old phone-wide best is ignored",await page.evaluate(()=>hearts===3&&Math.abs(speed/speed0-.85)<.001&&startBest===2&&SLOW_HELP.first===6000));
+    const fitted=await page.evaluate(()=>{const top=document.getElementById("top").getBoundingClientRect(),hs=document.getElementById("gameHearts").getBoundingClientRect();return hs.left>=top.left&&hs.right<=top.right&&hs.bottom<=top.bottom;});
+    ok("three hearts fit the smallest phone's existing HUD",fitted);
+    const landed=await page.evaluate(()=>{cur.x=stack[stack.length-1].x;const v=speed;drop();return rowN===1&&rowBest===1&&speed>v;});
+    ok("a landed block builds the visible row and increases pace",landed);
+    await page.evaluate(()=>{cur.x=stack[stack.length-1].x;drop();cur.x=stack[stack.length-1].x;drop();});
+    ok("passing the child's best saves the row and shows one best banner",await page.evaluate(()=>rowBest===3&&Sona.gameBest("stack")===3&&saidNewBest&&document.getElementById("bnBig").textContent==="New best!"));
+    const loss=await page.evaluate(()=>{cur.x=-8;cur.w=MINW;const before=speed;SLOW_ASK.soon=1500;drop();const o={hearts,row:rowN,best:rowBest,playing,card:reviveWait,at:slowAskAt-slowAskPlay,slower:speed<before};SLOW_ASK.soon=slowAskAt=1e12;return o;});
+    ok("a reachable off-centre drop costs one heart, ends the row and brings Echo soon",loss.hearts===2&&loss.row===0&&loss.best===3&&loss.playing&&!loss.card&&loss.slower&&loss.at<=1500,loss);
+    await page.evaluate(()=>{cur.x=-8;cur.w=MINW;drop();});ok("one burst of missed blocks cannot take every heart",await page.evaluate(()=>hearts===2));
+    await page.evaluate(()=>{heartHitAt=-1e9;slowMs=8000;cur.x=-8;cur.w=MINW;drop();slowMs=0;slowTurn={finishing:true};cur.x=-8;cur.w=MINW;drop();slowTurn=null;});
+    ok("the power and the open speech turn both protect hearts",await page.evaluate(()=>hearts===2));
+    ok("an accepted speech callback restores a heart, capped at three",await page.evaluate(()=>{SLOW_HELP.onHeard();SLOW_HELP.onHeard();return hearts===3;}));
+    await page.evaluate(()=>{hearts=1;heartHitAt=-1e9;cur.x=-8;cur.w=MINW;drop();});await page.locator("#endOvl.show").waitFor();
+    ok("zero hearts ends kindly on the real row, own best, replay and home",await page.evaluate(()=>hearts===0&&!playing&&!reviveWait&&window.__ended&&phase==="ended"&&!finaleDone&&document.getElementById("endTitle").textContent==="Look at our tower!"&&/3 blocks in a row/.test(document.getElementById("endSub").textContent)&&document.getElementById("endCharge").textContent==="Play again"&&__f.confetti===undefined));
+    ok("a finished round spends the turn",await page.evaluate(()=>sessionStorage.getItem("sona.play.active")===null&&sessionStorage.getItem("sona.play.token")===null));
+    await page.locator("#endCharge").click();await page.waitForURL(/charge\.html/);ok("replay earns another turn in this same game",new URL(page.url()).searchParams.get("game")==="arcade-stack.html");
+    ok("hearts and pace have no runtime errors",errors.length===0,errors);
+  }finally{await context.close();}
+});
+
 await scenario("a whole round", async () => {
   const { context, page, errors } = await open();
   try {
@@ -114,7 +143,7 @@ await scenario("a whole round", async () => {
     const speedBefore = await page.evaluate(() => speed);
     ok("a missed drop happens", await dropWhere(page, "miss"));
     s = await st(page);
-    ok("a missed block tumbles off: no card, nothing lost, the tower is as it was", !s.card && s.playing && s.REV === 3 && s.n === 5 && s.falling >= 1 && s.missRun === 1 && s.mics === 0, s);
+    ok("a missed block tumbles off: one heart used, no card, the tower is as it was", !s.card && s.playing && s.REV === 3 && s.n === 5 && s.falling >= 1 && s.missRun === 1 && s.mics === 0 && await page.evaluate(() => hearts===2), s);
     ok("…and the next block comes slower", (await page.evaluate(() => speed)) < speedBefore);
     // a sloppy drop is cut, but never to a sliver
     ok("a sloppy drop happens", await dropWhere(page, "sloppy"));
@@ -153,7 +182,7 @@ await scenario("a whole round", async () => {
     ok("a tap launches it", await page.evaluate(() => rocket && rocket.launched));
     await page.waitForFunction(() => finaleDone === true, null, { timeout: 8000 });
     await page.locator("#endOvl.show").waitFor({ timeout: 5000 });
-    ok("…it reaches the moon, and the end card says so", /Blast off! You built 18 blocks to the moon!/.test(await page.locator("#endTitle").innerText()));
+    ok("…it reaches the moon, and the end card says so", /Blast off! Your tower reached the moon!/.test(await page.locator("#endTitle").innerText()));
     ok("the earned turn is spent once the round ends", await page.evaluate(() => sessionStorage.getItem("sona.play.active") === null && sessionStorage.getItem("sona.play.token") === null));
     const sfx = await page.evaluate(() => __f.sfx);
     ok("no sound ever played while the card's mic was open", sfx.length > 0 && sfx.every((c) => !c.live), sfx.filter((c) => c.live));

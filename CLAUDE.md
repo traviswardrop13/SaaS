@@ -1168,8 +1168,9 @@ reads a page the key word glows, Echo asks "Can you say... <word>." and the teal
   loud sound of the wrong kind for the book; after 3, Echo says a kind line and
   the page turns. A grown-up's small Skip turns it any time.
 - **A book word is play, not practice.** No logAttempt, bumpReps, coins or
-  stickers, and no `sona.*` practice key changes. Whether it should count is
-  Rachel's call.
+  stickers, and no clinical practice key changes. Each accepted key word adds
+  one `gameRep` toward the daily goal, once per page. Skips, silence and the
+  third-shape retry turn add none. It never means the word was pronounced right.
 - **The phone is asked for the mic only from the grown-up's "Yes, use the
   mic" tap inside the book.** "Not now", or a refused or missing mic, means
   the book reads with Next for the rest of that visit; never a dead end.
@@ -1340,8 +1341,19 @@ main to be said once, and whether a three-year-old should say a word twice is
 Rachel's call, so it stays at one until she says. With one there are no dots,
 no "Say it 2 times" and no "1 more time!": one saying earns the bubbles, one
 rep. `sayplaytest` pins which game asks how many times. With two:
-- **Echo still says the word alone** ("Say... rabbit."). "Say it 2 times" is
-  only on screen, beside two dots, so no carrier phrase is glued to the target.
+- **Echo still says the word alone** ("Say... rabbit."). Hoops, Soccer Goal
+  and Dino Dig first say a separate instruction: "Say each word two times
+  to get a ball" (a brush in Dino Dig). It plays once per visit, before the
+  first isolated word, never between the first and second saying. The start
+  card and the two dots also explain it. Interrupted instructions cancel
+  with the existing audio generation and replay before a resumed target.
+- **Words that fit the game** are selected from existing painted bank
+  entries (`GAME_WORDS`/`gameWords`), before a vowel with no blend, at turns
+  1, 4 and 7 when available, without repeating a themed word. Other turns
+  use the existing beginning-position pool. Named clinician homework always
+  overrides themes. No new word, speech gate or practice outcome is added.
+  `soundmarktest`, `soundmap`, `hwtest` and `sayplaytest` check the words,
+  artwork and precedence; Rachel reviews the exact table in the PR.
 - **The first saying only paints**: its dot is ticked and "1 more time!" shows
   in the same frame, with no voice and no chime, because the mic is still open.
   Only the second saying earns the move.
@@ -1432,7 +1444,8 @@ changes finger play, never what passes the speech check:
 - No heart is lost while Echo asks or listens, while the earned power is on,
   in a finale, or on a hidden page. Nearby misses are protected from emptying
   all three hearts at once. Losing a heart brings the next ask forward by
-  about 1.5 seconds of eligible play; it never opens an always-on microphone.
+  about 1.5 seconds of eligible play, while respecting the longer quiet
+  back-off after two unanswered asks; it never opens an always-on microphone.
 - Echo explains the reward before the recorded sound and Go! The ordinary
   and heart-restoring reasons are each spoken once per visit, only marked
   said after a line finishes. Both download as the page loads. A slow or
@@ -1758,15 +1771,14 @@ card between rounds said the bare sound. What is built is the first slice:
 `micquietgamestest` and `iphonepolishtest` play the card; `soundmap` pins the
 three lists and `kidtest` the picker.
 
-**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows this
-week's reps, the parent corner and Progress say the same number, and
-Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
+**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal; Settings keeps the
+week-by-week total, and Progress keeps sound practice apart from play. One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
 between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
 Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
-word.
+word and each accepted book key word (one a page).
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
@@ -1774,8 +1786,8 @@ Only a voiced try that passed the game's own check counts, once per ask;
 silence never does. **Progress keeps practice apart:** its "tries" and
 everything it hands a clinician (the summary, the card, "Free-play games are
 not included") are the practice page's alone (`weekReps(offset, sound,
-true)`), with a "Plus N said out loud in games" line so the week still adds
-up to Home's number. `tests/repweektest.mjs` pins it.
+true)`), with a "Plus N said out loud in games and books" line so the week still adds
+up to the Settings weekly total. `tests/repweektest.mjs` pins it.
 
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
@@ -2088,7 +2100,7 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 
 - **Settings is short** (Travis, 30 Sep 2026).
   - Reps in one line: "A rep is one time <name> says their sound or word out
-    loud, in practice or in a game. Silence never counts." (`repweektest`.)
+    loud, in practice, a game or a book. Silence never counts." (`repweektest`.)
   - No volume slider: the phone's side buttons set the level ("why can't we
     just use our phones to adjust volume on the side of our iphone?").
     `getProfile()` plays any saved level above zero at the one normal level,
@@ -2161,3 +2173,36 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   make themselves (the swish, the kick, the roar, the splat).
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
+
+
+**Daily rep goals and weekly goal days** (Travis handoff, 5 Oct 2026).
+Home uses the shared read-only `dayGoal()` count: today's practice tries plus
+accepted game and book asks. Defaults are 30 for ages 3–4 and 50 for ages 5–8,
+4 days a week; grown-ups choose 3/4/5 days and a daily number in Settings. An
+active clinician assignment keeps precedence over the family's daily number.
+These are product defaults, not a research-established treatment dose.
+
+`sona.goaldays.v1` is per child, backed up and removed with that child. It
+stamps a day once when a real counted rep reaches the goal. Raising the goal
+later cannot erase it. A DOM-only status appears once that day, for four
+seconds, without audio, confetti, a focus change or any interception of play.
+An invisible page stamps without displaying it. Opening Home earns nothing.
+Monday–Sunday goal stamps feed the weekly goal streak, with earlier practice
+days (before 5 Oct 2026) preserving existing weeks. An unfinished week does not
+break the prior completed-week streak. `momWeek().days/done` remain actual
+practice days for the clinical summary; `.metDays/.goalDone` serve the goal.
+Game and book reps remain outside outcomes, clinician summaries, shared
+progress, practice coins and homework reports. Settings explicitly explains
+the homework report's practice-only count. No child name enters goal analytics.
+`dailygoaltest`, `repweektest`, `momweek` and `booktest` pin the boundaries.
+
+Rachel's follow-up review belongs in the development record, not a warning
+flow or an approval screen for families:
+
+| Review question | Product behavior shipping |
+|---|---|
+| Daily defaults and the age split |30 at ages 3–4; 50 at ages 5–8, adjustable|
+| What a rep means |Voiced practice try, accepted game ask or accepted book word; no silence|
+| Homework and play |Home includes play toward the displayed goal; clinician report stays practice-only|
+| Weekly target |4 days by default, choice of 3/4/5; earned-day stamps|
+| Book check limitations |One accepted word is a play rep, without a clinical correctness claim|

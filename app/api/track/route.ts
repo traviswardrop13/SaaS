@@ -19,6 +19,7 @@ const PH_HOST = "https://us.i.posthog.com";
 // relay can only ever say LESS than the page asked it to.
 const EVENTS = new Set([
   "practice started", "practice completed",
+  "rep goal met",         // daily rep target reached, no child details or rep counts
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
   // The conversion funnel, added 18 Sep 2026. Without these the relay could
