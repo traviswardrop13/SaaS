@@ -1366,6 +1366,7 @@ solid one at a time, and this is the first:
 - **Wave 3 ends in a giant watermelon:** five swipes across it and it bursts, so
   every round ends on a win.
 `tests/slicetest.mjs` plays a whole round.
+The market has more open sky, with a smaller fox and Echo behind a low counter.
 
 **Block Stacker is the same round, as a tower** (27 Sep 2026): it stands on the
 five blocks the "Say it 5 times" page built; three floors of 5, 6 and 7 go on
@@ -1399,6 +1400,7 @@ silence. A browser keeps Web Audio at the level it had, so iPhone Safari with
 the ringer off is still silent. The loudness in the app was set without a
 phone to listen on: it is that one number.
 `tests/tilestest.mjs` plays a whole round.
+The painted notes are wide, rounded tiles that fill most of each lane.
 
 **Every sound is Rachel's own voice** (Travis, 1 Oct 2026, of the L on Fruit
 Slice's practice page: "it said the weirdest sound. But it didn't say the
