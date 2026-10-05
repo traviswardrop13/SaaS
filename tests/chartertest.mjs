@@ -190,7 +190,12 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   const typed = [...sub.matchAll(/id="(monthPrice|monthMathPrice)">([^<]*)</g)].map((m) => m[2]);
   ok("the plan screen's typed monthly figure is the one checkout charges", typed.length === 2 && typed.every((t) => t === MONTHLY_PRICE), JSON.stringify(typed));
   ok("…and the answer from /api/charter can only replace it with a well-formed price", /typeof j\.monthly === "string" && \/\^\\\$\\d\{1,3\}\\\.\\d\\d\$\/\.test\(j\.monthly\)/.test(sub));
-  ok("the Apple card's monthly row carries no typed price at all", /<span id="iapPriceMo"><\/span>/.test(sub));
+  // Since 5 Oct 2026 the Apple card sells ONE plan, Sona Monthly ("3 days
+  // free, then $9.99 a month"): its typed $9.99 is a placeholder, repainted
+  // from the store's own price string, and the old monthly row is gone.
+  ok("the Apple card's one plan is Sona Monthly, its typed $9.99 only a placeholder the store's price repaints",
+    /<span id="iapPrice">\$9\.99\/mo<\/span>/.test(sub) && /moProduct && moProduct\.priceString/.test(sub) &&
+    /getElementById\("iapPrice"\)\.textContent = price \+ "\/mo"/.test(sub) && !/iapPriceMo|iapPlanMo/.test(sub));
   ok("the charter line is written into the YEARLY box only", /id="planLife"[\s\S]*?id="charterLine"[\s\S]*?<\/div>\s*<!--|id="planLife"[\s\S]*?id="charterLine"/.test(readFileSync(APP + "/public/subscribe.html", "utf8")) &&
     !/id="planMonth"[^>]*>[\s\S]{0,400}charter/i.test(sub));
 

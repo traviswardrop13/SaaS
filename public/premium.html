@@ -159,7 +159,9 @@
           return;
         }
         if(allOpen)return;   // a live trial: every game is already open
-        el("premiumPrice").textContent="Yearly with 3 days free, or month by month";
+        // what the plan screen sells here: in the iPhone app one plan since 5 Oct
+        // 2026, Sona Monthly with its free days; the web card keeps both plans
+        el("premiumPrice").textContent=(S.isNativeApp&&S.isNativeApp())?"3 days free, then month by month":"Yearly with 3 days free, or month by month";
         el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
         buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};

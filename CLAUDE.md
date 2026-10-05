@@ -156,7 +156,8 @@ changing one. What follows from the rule:
   days free so every kid can practice with Echo." and "Nothing to pay until
   October 6. Cancel anytime before then, in Settings → Subscriptions.", each
   with Continue, then the price as the offer. **Only when the store says the
-  yearly plan starts with free days** (`freeDays()` reads the product's
+  plan starts with free days** (on the iPhone Sona Monthly, the one plan since
+  5 Oct 2026; `freeDays()` reads the product's
   introductory offer; the web's are this repo's 3), and the number is that
   answer, the date the clock's. No answer within 2.5 s, or a plan that
   charges today, and the price shows straight away: these screens exist to
@@ -198,9 +199,9 @@ changing one. What follows from the rule:
 - **Known and left for Travis:** a family sent by a speech therapist who
   opens the iPhone app (not the website) meets the trial too, unless they
   bring their link across (Settings › Moving to a new phone?), though the
-  clinician pages promise them the free version; and the Apple card's own
-  "3 days free" tag and button are still typed, not read from the store (only
-  the two screens read it).
+  clinician pages promise them the free version. (The Apple card's "3 days
+  free" tag and button were typed until 5 Oct 2026; since then every line on
+  it is painted from the monthly product's own answer.)
 `tests/trialfirsttest.mjs` plays the rule on every kind of phone, setup's last
 tap, both screens, "Not now", the first game after the free days start, a
 store that sells no free days or never answers, and the smallest phones.
@@ -228,12 +229,11 @@ On 1 Oct 2026 none of the three was true, so **only the web checkout sold**:
    would have been taken by Apple and left the app locked.
 3. **App Store Connect:** the yearly subscription approved at the price he
    wants. It was listed at $79.99, under a description saying $59.99.
-`NATIVE.md` says how to check each. **The monthly one too** (1 Oct 2026):
-`com.speaksona.app.monthly` must be approved there, at the monthly price,
-with **no introductory offer on it**, and sit in RevenueCat's `full`
-entitlement. Until all of that is true the iPhone shows the yearly plan alone:
-the monthly row appears only when the store hands back that product, priced,
-with no free trial attached.
+`NATIVE.md` says how to check each. **Since 5 Oct 2026 the iPhone sells the
+monthly plan alone**, with 3 free days (see "THE IPHONE SELLS ONE PLAN"
+below): `com.speaksona.app.monthly` approved in App Store Connect at the
+monthly price with its free introductory offer, and in RevenueCat's `full`
+entitlement. All three were true that day (1.0.5 Ready for Distribution).
 
 **THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
 (19 Sep 2026).** This repo already threw out one struck-through price
@@ -309,11 +309,10 @@ charter price, and **it is the one picked when the plan screen opens**.
   is the yearly plan. **A plain GET link is always yearly**, whatever its
   `?plan=` says: an old ad or email link has no plan screen and no grown-ups
   gate in front of it, and must never open a pay-today checkout.
-- **On the iPhone the store owns every figure.** The monthly row ships hidden
-  with no price in the markup; it appears only when RevenueCat returns the
-  monthly product itself (`Sona.iapProduct` refuses any other id), with a
-  price string and **no introductory offer**. No dollar saving and no ratio on
-  the Apple card.
+- **On the iPhone the store owns every figure.** Since 5 Oct 2026 the Apple
+  card is not two ways to pay but one plan (see "THE IPHONE SELLS ONE PLAN"
+  right below); the web card, which sells nothing while `WEB_SALES` is off,
+  keeps both. No dollar saving and no ratio on the Apple card.
 - **The comparison figures did NOT come back with it.** **$119.88** and
   **"save $59.89"** are still banned, on every surface, in both pricing
   states (`chartertest`). Twelve months of $9.99 is a real price again, but
@@ -330,6 +329,40 @@ is charged, charter open and closed); `progtest` and `iaptest` play the pick on
 both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
+
+**THE IPHONE SELLS ONE PLAN: 3 DAYS FREE, THEN $9.99 A MONTH** (Travis, 5 Oct
+2026: "get rid of the annual option and update the copy so that it says three
+days free, then $9.99 a month", after giving `com.speaksona.app.monthly` a
+free 3-day introductory offer in App Store Connect). On the Apple card of
+`subscribe.html` (offer and Settings views):
+- **One box, no pick:** "Monthly", the store's price ("$9.99/mo"), "3 days
+  free, then $9.99 a month.", one button "Start 3 days free", and under it
+  "Free until October 8, then $9.99 a month. Renews unless canceled in
+  Settings → Subscriptions." The header line and the two screens at the end
+  of setup say the same plan.
+- **The store decides every word** (`paintIap()`): the markup's $9.99 and 3
+  days are placeholders, repainted from `Sona.iapProduct("monthly")` (which
+  refuses any other id) as soon as it answers. A monthly product with **no**
+  free trial makes every line "charged today" ("Subscribe — $9.99 a month",
+  "Charged to your Apple ID today, then every month.") and skips the two
+  screens; no line ever promises free days Apple's sheet would not give. A
+  store with no monthly product, or one that answers with the yearly product,
+  sells nothing in its place.
+- **The yearly product is not removed from sale in App Store Connect:** Apple
+  says that also stops renewals for anyone who bought it. It is only no
+  longer offered, and `IAP_PRODUCTS.annual` stays in `sona.js` for restore.
+- **Not changed:** the web card and `/api/checkout` (the website sells
+  nothing while `WEB_SALES` is off; turning it on would sell the yearly plan
+  and a pay-today monthly, as built on 1 Oct), the clinician plans, the
+  Terms (which name no Apple price or trial length). The Premium page says
+  "3 days free, then month by month" in the app.
+- **One introductory offer per Apple ID per subscription group:** a family
+  who already used free days is charged at once. Apple's own sheet says so
+  before they pay; the card cannot know it.
+`iaptest` plays the card against a store with the trial, without it, with no
+monthly product and with the wrong product; `trialfirsttest` the two screens
+and the first game after the free days start; `chartertest` that the card's
+$9.99 is only a placeholder the store repaints.
 
 What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
 surface says "**under $5 a month**" and never "$4.99 a month" (which would

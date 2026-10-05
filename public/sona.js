@@ -4955,12 +4955,13 @@
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
-  // Monthly was retired from SALE on 18 Sep 2026 and is on sale again since
-  // 1 Oct 2026 (the plan screen offers it only when the App Store hands the
-  // product back). Either way its product id STAYS here: RevenueCat needs it
-  // to recognise an existing monthly subscriber on restore or reinstall, and
-  // dropping it would strand every one of them behind a paywall they are
-  // already paying for.
+  // Monthly was retired from SALE on 18 Sep 2026, back on sale on 1 Oct 2026,
+  // and since 5 Oct 2026 the ONLY plan the iPhone's plan screen offers (3 days
+  // free, then $9.99 a month: the free days are App Store Connect's offer).
+  // The annual id stays here all the same, as monthly's did while it was off
+  // sale: RevenueCat needs each id to recognise an existing subscriber on
+  // restore or reinstall, and dropping one would strand them behind a paywall
+  // they are already paying for.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription

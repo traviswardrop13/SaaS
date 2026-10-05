@@ -13,7 +13,8 @@
 //     therapist; nobody else;
 //   - setup ends on the plan screen for a family who starts with the trial;
 //   - the plan screen opens on two screens first, only when the store says
-//     the yearly plan starts with free days, and the second one says the
+//     the plan starts with free days (in the app, Sona Monthly: the one
+//     plan Apple's card sells since 5 Oct 2026), and the second one says the
 //     real date and where to cancel (no reminder: Sona sends none);
 //   - "Not now" goes to Home with every game and book locked;
 //   - the free days starting opens the first game setup chose.
@@ -41,7 +42,8 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 // cfg.stamp: what the free-version sweep already wrote ("kept"/"post"), or
 // absent for a phone loading this build for the first time. cfg.setUp seeds a
 // set-up child; cfg.slp a clinician's verified link; cfg.webSells the website
-// selling (its test seam); cfg.intro what the store says of the yearly plan:
+// selling (its test seam); cfg.intro what the store says of the monthly plan,
+// the only one the Apple card offers since 5 Oct 2026:
 // "free3" (3 free days), "none" (charged today) or "hang" (never answers).
 function phone(cfg) {
   const once = (k, v) => { if (localStorage.getItem(k) == null) localStorage.setItem(k, v); };
@@ -53,9 +55,9 @@ function phone(cfg) {
       getProducts: async ({ productIdentifiers }) => {
         const id = (productIdentifiers || [])[0] || "com.speaksona.app.annual";
         const monthly = id.indexOf("monthly") > -1;
-        if (!monthly && cfg.intro === "hang") return new Promise(() => {});
+        if (monthly && cfg.intro === "hang") return new Promise(() => {});
         return { products: [{ identifier: id, priceString: monthly ? "$9.99" : "$59.99", price: monthly ? 9.99 : 59.99,
-          introPrice: !monthly && cfg.intro === "free3" ? { price: 0, priceString: "$0.00", period: "P3D", periodUnit: "DAY", periodNumberOfUnits: 3, cycles: 1 } : null }] };
+          introPrice: monthly && cfg.intro === "free3" ? { price: 0, priceString: "$0.00", period: "P3D", periodUnit: "DAY", periodNumberOfUnits: 3, cycles: 1 } : null }] };
       },
       purchaseStoreProduct: async (a) => { localStorage.setItem("__ent", "1"); localStorage.setItem("__bought", (a && a.product && a.product.identifier) || "?"); return info(); },
       restorePurchases: async () => info(),
@@ -196,7 +198,7 @@ try {
       await page.waitForFunction(() => document.getElementById("tiFreeTitle").style.visibility !== "hidden" && !document.getElementById("tiFree").hidden);
       if (process.env.TRIAL_SHOTS) await page.screenshot({ path: process.env.TRIAL_SHOTS + "/1-free.png" });
       let s = await SEEN(page);
-      ok("the store says the yearly plan starts with 3 free days, so the first screen says so, and the price waits behind it",
+      ok("the store says the monthly plan starts with 3 free days, so the first screen says so, and the price waits behind it",
         s.intro && s.one && !s.two && s.title1 === "We offer 3 days free so every kid can practice with Echo." && !s.card, s);
       ok("…the price is not counted as seen yet", !s.spent, s.spent);
       const end = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }));
@@ -218,8 +220,8 @@ try {
         line: document.getElementById("planLine").innerHTML,
         body: document.body.innerText,
       }));
-      ok("…the yearly plan picked, \"Not now\" (not \"keep the free version\") under it, and no \"What stays free\"",
-        v.btn === "Start 3 days free" && v.declineShown && v.decline === "Not now" && !v.freeCard, v);
+      ok("…the one plan, 3 days free then $9.99 a month, \"Not now\" (not \"keep the free version\") under it, and no \"What stays free\"",
+        v.btn === "Start 3 days free" && /3 days free, then \$9\.99 a month/.test(v.body) && !/a year/i.test(v.body) && v.declineShown && v.decline === "Not now" && !v.freeCard, v);
       ok("…and nothing on it says anything stays free", !/stays? free|free games|free version/i.test(v.body) && v.check3 === "Cancel anytime in Settings" && /^Games for /.test(v.sub) && !/free version/.test(v.line), (v.body.match(/[^\n]*(stays? free|free games|free version)[^\n]*/i) || [v.check3, v.sub])[0]);
       ok("the two screens: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
@@ -235,7 +237,7 @@ try {
       await page.locator("#iapBuy").click();
       await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 8000 });
       ok("starting the free days opens the first game setup chose (Fruit Slice's practice page for a 7-year-old), not Home",
-        /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()) && await page.evaluate(() => localStorage.getItem("__bought") === "com.speaksona.app.annual" && Sona.premium()), page.url());
+        /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()) && await page.evaluate(() => localStorage.getItem("__bought") === "com.speaksona.app.monthly" && Sona.premium()), page.url());
       ok("free days started: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
@@ -265,7 +267,7 @@ try {
       ok("Not now: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
-  for (const [label, intro] of [["the store sells the yearly plan with no free days", "none"], ["the store never answers", "hang"]]) await scenario(label, async () => {
+  for (const [label, intro] of [["the store sells the monthly plan with no free days", "none"], ["the store never answers", "hang"]]) await scenario(label, async () => {
     const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro });
     try {
       const t0 = Date.now();
