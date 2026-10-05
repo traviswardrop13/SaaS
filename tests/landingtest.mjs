@@ -3,7 +3,8 @@
 //
 // THE ROOT IS FOR PARENTS (Travis, 26 Sep 2026: "change it to target parents
 // and caregivers only. not slps"): parents.html, one email box, one button,
-// then the App Store (or the web app on Android). The clinician page it
+// then the App Store (or the web app on Android), with nothing in between
+// (4 Oct 2026). The clinician page it
 // replaced (25 Sep 2026) lives on at /for-slps, still asking for an email and
 // "I'm a…" (parent or caregiver · SLP or SLPA · other), and is driven below
 // exactly as it was when it was the root. No name on either, no pop-up.
@@ -56,11 +57,37 @@ async function fresh(opts = {}) {
     window.__track = [];
     Object.defineProperty(window, "sonaTrack", { configurable: true, get: () => (e) => window.__track.push(e), set() {} });
   });
+  if (opts.watch) await context.addInitScript(watchLeaving);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(origin + (opts.path || "/for-slps") + "?utm_source=fb&utm_campaign=launch&fbclid=abc123");
   return { context, page, errors };
+}
+// WHAT THE VISITOR SEES AS THE PAGE LEAVES (4 Oct 2026). Nothing can be read
+// from a page whose navigation is pending: every call into it hangs until the
+// next page has arrived, and by then the answer is gone. So the page's own
+// "navigate" event is caught instead. It notes the form, the panel and the
+// button at that instant, and how long after the server's yes it came, then
+// cancels the navigation. The page is left showing, which is also what
+// happens when an iPhone opens the App Store over Safari.
+function watchLeaving() {
+  window.__left = [];
+  const realFetch = window.fetch;
+  window.fetch = function (u) {
+    return realFetch.apply(this, arguments).then((r) => { if (String(u).indexOf("/api/lead") >= 0) window.__yesAt = performance.now(); return r; });
+  };
+  window.navigation.addEventListener("navigate", (e) => {
+    const to = new URL(e.destination.url);
+    if (to.origin === location.origin && to.pathname === location.pathname) return;
+    const g = (id) => document.getElementById(id), shown = (el) => !!el && !!(el.offsetWidth || el.offsetHeight);
+    window.__left.push({
+      to: e.destination.url, ms: Math.round(performance.now() - (window.__yesAt || 0)),
+      form: shown(g("signup")), panel: shown(g("sent")), getApp: shown(g("nextGo")),
+      btn: g("fGo").textContent, off: g("fGo").disabled, track: (window.__track || []).slice(),
+    });
+    e.preventDefault();
+  });
 }
 async function fill(page, email, role) {
   await page.fill("#fEmail", email);
@@ -80,7 +107,9 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // ── what a parent sees, and the one form ──
 {
   const { context, page, errors } = await fresh({ path: "/" });
-  ok("the root is the parent page: 'Speech practice kids ask for.'", (await page.textContent("h1")) === "Speech practice kids ask for.");
+  // Travis's own line (4 Oct 2026: "I want to make the website say speech
+  // practice kids love"); it was the parent ads' "…kids ask for."
+  ok("the root is the parent page: 'Speech practice kids love.'", (await page.textContent("h1")) === "Speech practice kids love.");
   ok("its form is an email box and one button: no 'I'm a…', no name",
     await page.isVisible("#fEmail") && (await page.$("#fRole")) === null && (await page.$("#fName")) === null &&
     (await page.$$("#signup input")).length === 1 && (await page.$$("#signup button")).length === 1);
@@ -104,6 +133,43 @@ ok("the parent page carries the launch note", !!P_NOTE);
   }));
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth || document.body.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, and nothing on the page scrolls sideways", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
+
+  // THE ORDER (Travis, 4 Oct 2026): the games and books "passing across the
+  // screen I want that a lot higher up on the website and I also want
+  // Rachel's bio higher up". They were fifth and seventh; they are second and
+  // third, straight after the hero.
+  const order = await page.evaluate(() => [].map.call(document.querySelectorAll("main > section"), (sec) => sec.id || sec.className));
+  ok("the sections run hero, the games and books, Rachel, then the rest", order.join(" ") === "hero library rachel familiar game how homework safe faqs final", order.join(" "));
+  // The hero's wave is the next section rising into it. Moving a section
+  // changes which colours meet there, and a wave left in the old one is a
+  // stripe of the wrong colour across the top of the page.
+  const seam = await page.evaluate(() => {
+    const next = document.querySelector(".hero").nextElementSibling;
+    return { next: next.id, wave: getComputedStyle(document.querySelector(".hero .wave path")).fill, under: getComputedStyle(next).backgroundColor };
+  });
+  ok("…and the hero's wave is the colour of the section under it", seam.next === "library" && seam.wave === seam.under, seam);
+  // THE STRIPS ARE NEAR THE TOP NOW. The tiles that start on screen are not
+  // left to lazy loading; the rest still are (the 29 covers are about 5 MB);
+  // every tile keeps its box while its picture loads, so nothing moves; and
+  // the heading over them does not wait for a scroll, which on a laptop left
+  // the first screenful ending in an empty dark band.
+  const strips = await page.evaluate(() => [].map.call(document.querySelectorAll(".strip"), (strip) => {
+    const t = strip.querySelector(".track"), kids = [].slice.call(t.children), own = kids.filter((k) => !k.hasAttribute("aria-hidden"));
+    const step = kids[1].offsetLeft - kids[0].offsetLeft, starts = own.filter((k, i) => i * step < innerWidth);
+    const how = (k) => k.querySelector("img").getAttribute("loading");
+    return {
+      slides: getComputedStyle(t).animationName === "slide",
+      // half the doubled track is exactly one run of tiles, so the loop has no hitch
+      whole: kids[kids.length / 2].offsetLeft - kids[0].offsetLeft === t.scrollWidth / 2,
+      starts: starts.length, eager: starts.every((k) => how(k) === "eager"), lazy: own.filter((k) => how(k) === "lazy").length,
+      boxed: kids.every((k) => { const i = k.querySelector("img"); return i.offsetWidth === 150 && i.offsetHeight === 150 && !!i.getAttribute("width") && !!i.getAttribute("height"); }),
+    };
+  }));
+  ok("both strips slide, and each loop comes round on a whole run of tiles", strips.length === 2 && strips.every((st) => st.slides && st.whole), strips);
+  ok("the tiles that start on screen are fetched at once, and every tile keeps its box while its picture loads", strips.length === 2 && strips.every((st) => st.starts > 0 && st.eager && st.boxed), strips);
+  ok("…and the covers further along stay lazy", strips.length === 2 && strips[1].lazy > 10, strips);
+  ok("the library's heading is simply there: it does not wait for a scroll",
+    await page.evaluate(() => { const els = document.querySelectorAll("#library .wrap > *"); return els.length === 3 && [].every.call(els, (el) => !el.classList.contains("rv") && getComputedStyle(el).opacity === "1"); }));
 
   posts = [];
   await page.click("#fGo");
@@ -157,24 +223,97 @@ ok("the parent page carries the launch note", !!P_NOTE);
   ok("parent page: no page errors", errors.length === 0, errors);
   await context.close();
 }
-// The Lead fires only after the server said yes.
+// The Lead fires only after the server said yes. (The page is watched, so it
+// is still there to be asked once it has left for the App Store.)
 {
-  const { context, page } = await fresh({ path: "/" });
+  const { context, page } = await fresh({ path: "/", watch: true });
   posts = []; leadReply = { ok: false, error: "A valid email is required." };
   await fill(page, "dana@example.com");
   await page.click("#fGo");
   await page.waitForTimeout(400);
   ok("parent page: a refused lead shows the server's reason and stays put", /valid email is required/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
-  ok("parent page: …and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
+  ok("parent page: …and fires no Lead, and the button is back to Start free", (await page.evaluate(() => window.__track.length)) === 0 &&
+    (await page.textContent("#fGo")) === "Start free" && !(await page.isDisabled("#fGo")) && (await page.evaluate(() => window.__left.length)) === 0);
   leadReply = { ok: true, captured: true };
   await page.click("#fGo");
   await page.waitForTimeout(500);
   ok("parent page: an accepted lead fires Lead once, with no parameters", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
   await context.close();
 }
+
+// STRAIGHT TO THE APP STORE (Travis, 4 Oct 2026: "when somebody puts in their
+// email for a second it says there's a button to like press to go to the app
+// store before it goes to the app store can you just make it happen without
+// like delaying I just want it to go immediately to the app store"). Until
+// then the page swapped to a "You're in" panel with a Get the app button and
+// left 900 ms later. Now nothing comes between the server's yes and the App
+// Store: the form stays, its button says where they are going, and the panel
+// is only what they find when they come back.
+const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
+if (P_READY) {
+  const { context, page, errors } = await fresh({ path: "/", watch: true });
+  posts = []; leadReply = { ok: true, captured: true };
+  await fill(page, "dana@example.com");
+  await page.click("#fGo");
+  const went = await settles(page, () => window.__left.length === 1);
+  const at = (await page.evaluate(() => window.__left[0])) || {};
+  ok("parent page: the server's yes sends the page to the App Store listing", went && /^https:\/\/apps\.apple\.com\/us\/app\/sona-speech\//.test(at.to || ""), at);
+  ok("parent page: …with the Lead already fired, once", JSON.stringify(at.track) === '["Lead"]', at);
+  ok("parent page: …and no panel and no Get the app button on the way: the form is still there as the page leaves", at.form === true && at.panel === false && at.getApp === false, at);
+  ok("parent page: …its button switched off and reading 'Opening the App Store…'", at.off === true && at.btn === "Opening the App Store…", at);
+  ok("parent page: …at once (" + at.ms + " ms after the yes), not after the old 900", at.ms >= 0 && at.ms < 600, at);
+  // The page is still showing, as it is when an iPhone opens the App Store
+  // over Safari. "You're in" and Get the app arrive two seconds on.
+  ok("parent page: just after leaving, there is still no panel", !(await page.isVisible("#sent")) && !(await page.isVisible("#nextGo")));
+  ok("parent page: if the page is still showing two seconds on, 'You're in' and Get the app are there",
+    (await page.waitForFunction(() => !document.getElementById("sent").hidden, null, { timeout: 5000 }).then(() => true, () => false)) &&
+    (await page.textContent("#sentT")) === "You're in" && await page.isVisible("#nextGo") && (await page.textContent("#nextGo")) === "Get the app" && !(await page.isVisible("#signup")));
+  await page.click("#nextGo");
+  ok("parent page: …and Get the app goes to the same listing", await settles(page, () => window.__left.length === 2 && window.__left[1].to === window.__left[0].to));
+  ok("parent page: still one post and one Lead", posts.length === 1 && JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]', posts);
+  ok("parent page: no page errors", errors.length === 0, errors);
+  await context.close();
+}
+// They come back from the App Store. The page was hidden (or put away) after
+// it left, and that is when the panel is swapped in, so it is what they find.
+if (P_READY) for (const [what, fire] of [
+  ["hidden and shown again", () => document.dispatchEvent(new Event("visibilitychange"))],
+  ["put away and brought back", () => window.dispatchEvent(new Event("pagehide"))],
+]) {
+  const { context, page } = await fresh({ path: "/", watch: true });
+  leadReply = { ok: true, captured: true };
+  await fill(page, "dana@example.com");
+  await page.click("#fGo");
+  const went = await settles(page, () => window.__left.length === 1);
+  const early = await page.isVisible("#sent");
+  await page.evaluate(fire);
+  ok("parent page: " + what + " after leaving, the visitor finds 'You're in' and Get the app",
+    went && !early && await page.isVisible("#sent") && await page.isVisible("#nextGo") && (await page.textContent("#sentT")) === "You're in" && !(await page.isVisible("#signup")));
+  await context.close();
+}
+// …and a page that has not left takes no notice of being hidden.
+{
+  const { context, page } = await fresh({ path: "/", watch: true });
+  await fill(page, "dana@example.com");
+  await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); window.dispatchEvent(new Event("pagehide")); });
+  ok("parent page: before a sign-up, switching away and back shows no panel", !(await page.isVisible("#sent")) && await page.isVisible("#signup"));
+  await context.close();
+}
+// Android leaves for the web app the same way, and its button says so.
+if (P_READY) {
+  const { context, page } = await fresh({ path: "/", ua: ANDROID, watch: true });
+  leadReply = { ok: true, captured: true };
+  await fill(page, "lee@example.com");
+  await page.click("#fGo");
+  const went = await settles(page, () => window.__left.length === 1);
+  const at = (await page.evaluate(() => window.__left[0])) || {};
+  ok("parent page, Android: the yes sends it to the web app's setup, the button reading 'Opening Sona…', with no panel on the way",
+    went && /\/onboarding\.html$/.test(at.to || "") && at.btn === "Opening Sona…" && at.off === true && at.form === true && at.panel === false && at.getApp === false, at);
+  await context.close();
+}
 // Android: the same as everyone while the app is not ready.
 {
-  const { context, page, errors } = await fresh({ path: "/", ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
+  const { context, page, errors } = await fresh({ path: "/", ua: ANDROID });
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "lee@example.com");
   await page.click("#fGo");

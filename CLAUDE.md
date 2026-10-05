@@ -713,10 +713,21 @@ plain sight on the dashboard, but the new ads, and the work, go to parents.
 it to target parents and caregivers only. not slps"). Its yellow is pale
 butter, not sun (27 Sep 2026: "the more pale yellow. to help the app icon in
 top left stand out"), so Echo's bright tile is the yellowest thing on it. The
-root is `parents.html`: the parent ads' headline ("Speech practice kids ask for."),
+root is `parents.html`: the headline "Speech practice kids love." (Travis, 4
+Oct 2026: "I want to make the website say speech practice kids love"; until
+then it was the parent ads' "Speech practice kids ask for.", which the ads
+and the app's welcome screen still say),
 the new Echo and the two game screens from those ads, one email box and one
 button (role `parent`, nothing else — no name, no "I'm a…"), then the App
-Store (Android: the web app). No Sign in in its header; the footer sends a
+Store (Android: the web app). **Right under the top come the sliding games
+and books, then Rachel** (the same day: "I want that a lot higher up ... and
+I also want Rachel's bio higher up"), then the rest in its old order. **The
+email goes straight to the App Store** ("I just want it to go immediately"):
+once the server says yes the Lead fires, the button reads "Opening the App
+Store…" and the page leaves 150 ms later (`LEAVE_MS`, the time the pixel's
+request needs to get out). No panel and no second button come first; the
+"You're in" panel with "Get the app" is only what an iPhone visitor finds
+when they come back from the App Store. `landingtest` plays it. No Sign in in its header; the footer sends a
 speech therapist to `/for-slps`. Its pictures were cut from the ads and
 changed only where the ads showed what the app no longer does — the STAR MODE
 gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a

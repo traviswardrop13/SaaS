@@ -20,7 +20,7 @@
 document.documentElement.className += " js";
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Speech practice kids ask for — Sona</title>
+  <title>Speech practice kids love — Sona</title>
   <!-- speaksona.com, FOR PARENTS AND CAREGIVERS ONLY (Travis, 26 Sep 2026:
        "bring my website to life ... change it to target parents and
        caregivers only. not slps"). next.config.js rewrites / to this file.
@@ -42,14 +42,17 @@ document.documentElement.className += " js";
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://speaksona.com/" />
-  <meta property="og:title" content="Speech practice kids ask for." />
+  <meta property="og:title" content="Speech practice kids love." />
   <meta property="og:description" content="A few playful minutes of speech practice a day, at home, with Echo. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free to start." />
   <meta property="og:image" content="https://speaksona.com/og-parents.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <!-- The picture was made for the headline before this one ("…kids ask
+       for."), which is painted into it, so the alt still says what the
+       picture shows. A new picture is owed (4 Oct 2026). -->
   <meta property="og:image:alt" content="Sona: speech practice kids ask for. Echo the bird between two game screens." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Speech practice kids ask for." />
+  <meta name="twitter:title" content="Speech practice kids love." />
   <meta name="twitter:description" content="A few playful minutes of speech practice a day, at home, with Echo. Free to start." />
   <meta name="twitter:image" content="https://speaksona.com/og-parents.png" />
 
@@ -121,7 +124,9 @@ document.documentElement.className += " js";
     .brand b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:28px;letter-spacing:-.5px;line-height:1;}
 
     /* ── hero ── */
-    .hero{position:relative;background:linear-gradient(180deg,#FFF9EA 0%,var(--butter) 55%,var(--butter-2) 100%);padding-bottom:40px;}
+    /* 56px under the hero, not 40: the wave below it is the library's ink
+       now, and the byline and the phones want air above a dark edge */
+    .hero{position:relative;background:linear-gradient(180deg,#FFF9EA 0%,var(--butter) 55%,var(--butter-2) 100%);padding-bottom:56px;}
     .hero-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:28px 48px;align-items:center;padding-top:36px;}
     .hero-l{display:flex;flex-direction:column;gap:22px;position:relative;z-index:2;}
     .launch{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:8px 16px 8px 12px;font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 0 0 1.5px #F0E3C0,0 3px 0 rgba(29,43,79,.08);}
@@ -131,7 +136,10 @@ document.documentElement.className += " js";
     .lede{font-size:clamp(18px,2vw,21px);line-height:1.5;color:#34405F;max-width:520px;text-wrap:pretty;font-weight:600;}
     .signup{display:flex;flex-direction:column;gap:10px;max-width:520px;}
     .srow{display:flex;flex-wrap:wrap;gap:10px;}
-    .srow input{flex:1 1 240px;min-width:0;height:60px;padding:0 20px;border-radius:18px;border:3px solid #F0E3C0;background:#fff;font:700 17px Nunito,sans-serif;color:var(--ink);box-shadow:0 4px 0 rgba(29,43,79,.06);}
+    /* the box may give up width (160px, not 240) so the button can grow to
+       "Opening the App Store…" beside it instead of dropping to its own line
+       and pushing the page down as the visitor leaves */
+    .srow input{flex:1 1 160px;min-width:0;height:60px;padding:0 20px;border-radius:18px;border:3px solid #F0E3C0;background:#fff;font:700 17px Nunito,sans-serif;color:var(--ink);box-shadow:0 4px 0 rgba(29,43,79,.06);}
     .srow input::placeholder{color:#8A90A6;}
     .srow input:focus{outline:none;border-color:var(--ink);}
     .srow .btn{flex:none;}
@@ -185,6 +193,49 @@ document.documentElement.className += " js";
     .kicker{font:800 14px Nunito,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);}
     .sub{font-size:clamp(17px,1.8vw,20px);line-height:1.55;color:var(--body);font-weight:600;max-width:640px;text-wrap:pretty;}
     .center{text-align:center;margin-left:auto;margin-right:auto;}
+
+    /* ── the library strip: the first thing after the hero (Travis, 4 Oct
+       2026: "I want that a lot higher up"). The hero's wave is this
+       section's ink, so the top padding starts under the wave. ── */
+    .lib{background:var(--ink);color:#fff;padding:64px 0 92px;overflow:hidden;}
+    .lib .sub{color:#C9CFE3;}
+    .lib h2 .n{color:var(--sun);}
+    .strip{margin-top:36px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+    .strip + .strip{margin-top:18px;}
+    /* the right padding is one gap: with it, half the doubled track is one
+       whole run of tiles, so the loop comes round with no 8 px hitch */
+    .track{display:flex;gap:16px;width:max-content;list-style:none;margin:0;padding:6px 16px 6px 0;}
+    /* The loop starts only once the script has doubled the track (.on).
+       The strips are near the top of the page now, and a strip that began
+       sliding before that jumped the moment it was doubled. */
+    .js .strip.go.on .track{animation:slide var(--dur,80s) linear infinite;}
+    .js .strip.rev .track{animation-direction:reverse;}
+    .strip:hover .track{animation-play-state:paused;}
+    @keyframes slide{to{transform:translateX(-50%)}}
+    .tile{flex:none;width:150px;display:flex;flex-direction:column;gap:8px;}
+    .tile img{display:block;width:150px;height:150px;border-radius:24px;background:#2B3A63;object-fit:cover;}
+    .tile.b img{border-radius:10px 24px 24px 10px;box-shadow:inset 6px 0 0 rgba(0,0,0,.12);}
+    .tile.b.soon img{opacity:.5;filter:saturate(.4);}
+    .tile .soon-tag{align-self:flex-start;font-style:normal;font-size:12px;font-weight:800;color:var(--muted);background:var(--paper-d);border-radius:99px;padding:2px 9px;}
+    .tile span{font:800 15px Nunito,sans-serif;color:#E7EAF5;text-align:center;line-height:1.2;}
+    .lib-note{margin-top:30px;text-align:center;font-size:15px;color:#AEB6D0;font-weight:600;}
+
+    /* ── Rachel: right under the library (4 Oct 2026: "I also want
+       Rachel's bio higher up"). Ink above her, and the fridge list's paper
+       below, which she shares, so the bottom padding is short. ── */
+    .rachel{padding:88px 0 40px;}
+    @media(max-width:760px){ .rachel{padding-top:64px;} }
+    .r-in{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:48px;align-items:center;background:#fff;border-radius:36px;padding:44px;box-shadow:0 2px 0 var(--line);}
+    @media(max-width:760px){ .r-in{grid-template-columns:1fr;padding:30px 22px;gap:28px;} }
+    .r-photo{position:relative;justify-self:center;width:min(100%,300px);}
+    .r-photo img{display:block;width:100%;height:auto;border-radius:50%;border:8px solid var(--teal-p);}
+    .r-photo .tag{position:absolute;right:-6px;bottom:18px;background:var(--butter-3);color:var(--ink);font:400 24px/1 var(--hand);padding:8px 14px;border-radius:14px;transform:rotate(-6deg);box-shadow:0 4px 0 #E3C679;}
+    .r-txt{display:flex;flex-direction:column;gap:16px;}
+    .r-txt .by{font-weight:800;font-size:16px;color:var(--teal-d);}
+    .r-txt p{font-size:18px;line-height:1.6;color:var(--body);font-weight:600;}
+    .rules{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;}
+    .rules li{background:var(--paper);border-radius:18px;padding:16px 18px;font-size:15px;line-height:1.5;color:var(--body);font-weight:600;}
+    .rules li b{display:block;font:900 18px/1.2 Nunito,sans-serif;color:var(--ink);margin-bottom:4px;}
 
     /* ── sound familiar? (the fridge list, in our own words) ── */
     .fam{padding:72px 0 88px;}
@@ -262,27 +313,9 @@ document.documentElement.className += " js";
     .star{width:46px;animation:spinPop 5s ease-in-out infinite;}
     @keyframes spinPop{0%,45%{transform:scale(.4) rotate(-30deg);opacity:.3}55%{transform:scale(1.2) rotate(10deg);opacity:1}62%,80%{transform:scale(1) rotate(0);opacity:1}100%{transform:scale(.4) rotate(-30deg);opacity:.3}}
 
-    /* ── the library strip ── */
-    .lib{background:var(--ink);color:#fff;padding:88px 0 92px;overflow:hidden;}
-    .lib .sub{color:#C9CFE3;}
-    .lib h2 .n{color:var(--sun);}
-    .strip{margin-top:36px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
-    .strip + .strip{margin-top:18px;}
-    .track{display:flex;gap:16px;width:max-content;list-style:none;margin:0;padding:6px 0;}
-    .js .strip.go .track{animation:slide var(--dur,80s) linear infinite;}
-    .js .strip.rev .track{animation-direction:reverse;}
-    .strip:hover .track{animation-play-state:paused;}
-    @keyframes slide{to{transform:translateX(-50%)}}
-    .tile{flex:none;width:150px;display:flex;flex-direction:column;gap:8px;}
-    .tile img{display:block;width:150px;height:150px;border-radius:24px;background:#2B3A63;object-fit:cover;}
-    .tile.b img{border-radius:10px 24px 24px 10px;box-shadow:inset 6px 0 0 rgba(0,0,0,.12);}
-    .tile.b.soon img{opacity:.5;filter:saturate(.4);}
-    .tile .soon-tag{align-self:flex-start;font-style:normal;font-size:12px;font-weight:800;color:var(--muted);background:var(--paper-d);border-radius:99px;padding:2px 9px;}
-    .tile span{font:800 15px Nunito,sans-serif;color:#E7EAF5;text-align:center;line-height:1.2;}
-    .lib-note{margin-top:30px;text-align:center;font-size:15px;color:#AEB6D0;font-weight:600;}
-
-    /* ── homework, two ways ── */
-    .hw{padding:92px 0;}
+    /* ── homework, two ways: on the same paper as How it works above it
+       (the library used to sit between them), so the top padding is short ── */
+    .hw{padding:24px 0 92px;}
     .split{display:grid;grid-template-columns:1fr 1fr;border-radius:32px;overflow:hidden;margin-top:36px;box-shadow:0 2px 0 var(--line),0 40px 60px -40px rgba(29,43,79,.4);}
     @media(max-width:680px){ .split{grid-template-columns:1fr;} }
     .half{display:flex;flex-direction:column;align-items:center;gap:26px;padding:34px 22px 40px;}
@@ -302,20 +335,6 @@ document.documentElement.className += " js";
     .half.b .ph2{width:min(62%,250px);transform:rotate(3deg);animation:bobR2 6s ease-in-out infinite;}
     .half.b .ph2 img{display:block;width:100%;height:auto;border-radius:12%/6%;filter:drop-shadow(0 24px 30px rgba(29,43,79,.3));}
     @keyframes bobR2{0%,100%{transform:rotate(3deg) translateY(0)}50%{transform:rotate(4.5deg) translateY(-10px)}}
-
-    /* ── Rachel ── */
-    .rachel{padding:24px 0 96px;}
-    .r-in{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:48px;align-items:center;background:#fff;border-radius:36px;padding:44px;box-shadow:0 2px 0 var(--line);}
-    @media(max-width:760px){ .r-in{grid-template-columns:1fr;padding:30px 22px;gap:28px;} }
-    .r-photo{position:relative;justify-self:center;width:min(100%,300px);}
-    .r-photo img{display:block;width:100%;height:auto;border-radius:50%;border:8px solid var(--teal-p);}
-    .r-photo .tag{position:absolute;right:-6px;bottom:18px;background:var(--butter-3);color:var(--ink);font:400 24px/1 var(--hand);padding:8px 14px;border-radius:14px;transform:rotate(-6deg);box-shadow:0 4px 0 #E3C679;}
-    .r-txt{display:flex;flex-direction:column;gap:16px;}
-    .r-txt .by{font-weight:800;font-size:16px;color:var(--teal-d);}
-    .r-txt p{font-size:18px;line-height:1.6;color:var(--body);font-weight:600;}
-    .rules{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;}
-    .rules li{background:var(--paper);border-radius:18px;padding:16px 18px;font-size:15px;line-height:1.5;color:var(--body);font-weight:600;}
-    .rules li b{display:block;font:900 18px/1.2 Nunito,sans-serif;color:var(--ink);margin-bottom:4px;}
 
     /* ── safe by design ── */
     .safe{background:var(--teal-d);color:#fff;padding:84px 0;}
@@ -382,8 +401,11 @@ document.documentElement.className += " js";
   <div class="wrap hero-in">
     <div class="hero-l">
       <div class="launch"><span class="dot" aria-hidden="true"></span><span data-ready="no">Coming to iPhone and iPad Friday, October 2</span><span data-ready="yes" hidden>Now on iPhone and iPad</span></div>
-      <!-- The parent ads' own headline, so the page says what the ad said. -->
-      <h1>Speech practice kids ask for.</h1>
+      <!-- Travis's own line (4 Oct 2026: "I want to make the website say
+           speech practice kids love"). Until then it was the parent ads'
+           headline, "…kids ask for.", which the ads and the app's welcome
+           screen still say. -->
+      <h1>Speech practice kids love.</h1>
       <p class="lede">A few playful minutes a day, at home. Echo says a word, your child says it back, and practice unlocks the games.</p>
 
       <!-- THE SIGN-UP: an email and one button. A parent's page asks nothing
@@ -425,7 +447,108 @@ document.documentElement.className += " js";
       <svg class="note-ic m2" viewBox="0 0 24 24"><path d="M9 18.5a3 3 0 1 1-2-2.83V4l12-2v13.5a3 3 0 1 1-2-2.83V6.2L9 7.6Z" fill="currentColor"/></svg>
     </div>
   </div>
-  <svg class="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 34C160 58 320 58 480 40S800 4 960 16s320 44 480 26V60H0Z" fill="#F7F2E8"/></svg>
+  <!-- The wave is the NEXT section rising into the hero, so it is filled
+       with that section's colour: the library's ink since 4 Oct 2026 (paper
+       while "Sound familiar?" came next). Move a section and this fill moves
+       with it; tests/landingtest.mjs compares the two. -->
+  <svg class="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 34C160 58 320 58 480 40S800 4 960 16s320 44 480 26V60H0Z" fill="#1D2B4F"/></svg>
+</section>
+
+<!-- THE LIBRARY. The counts are the catalog's own (tests/shiptest.mjs holds
+     them to it): every game Home opens, and none it shows as Coming soon —
+     the Say & Play games are parked until each is rebuilt (Travis, 26 Sep
+     2026), so they are not on this strip either. The bookshelf opens its
+     books on a date (27 Sep 2026; every queued one on Fri 9 Oct, 1 Oct
+     2026): each book tile carries the date the shelf opens it, and the
+     count and the "Coming" tags are worked out on the phone from those
+     dates, so the page is never ahead of the shelf.
+
+     SECOND ON THE PAGE (Travis, 4 Oct 2026: the games and books "passing
+     across the screen I want that a lot higher up on the website"). It was
+     fifth. Its heading is simply there, with no scroll reveal: on a laptop
+     it sits at the bottom of the first screenful, where a heading waiting
+     for a scroll left that screen ending in an empty dark band. -->
+<section class="lib" id="library">
+  <div class="wrap">
+    <div class="kicker" style="color:var(--sun);">Games and books</div>
+    <h2 style="margin-top:10px;"><span class="n">10</span> games. <span class="n" id="bookCount">29</span> picture books.</h2>
+    <p class="sub" style="margin-top:14px;">Games for ages 3 to 8 and picture books read along with Echo, with more of both on the way.</p>
+  </div>
+  <div class="strip go" aria-label="Sona's games">
+    <ul class="track">
+          <li class="tile g"><img src="/assets/site/games/slice.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Fruit Slice</span></li>
+          <li class="tile g"><img src="/assets/site/games/tiles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Piano Tiles</span></li>
+          <li class="tile g"><img src="/assets/site/games/stack.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Block Stacker</span></li>
+          <li class="tile g"><img src="/assets/site/games/run.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sound Sprint</span></li>
+          <li class="tile g"><img src="/assets/site/games/glide.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Flappy Glide</span></li>
+          <li class="tile g"><img src="/assets/site/games/hoops.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Hoops</span></li>
+          <li class="tile g"><img src="/assets/site/games/soccer.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Soccer Goal</span></li>
+          <li class="tile g"><img src="/assets/site/games/dino.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dino Dig</span></li>
+          <li class="tile g"><img src="/assets/site/games/feed.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Feed Echo</span></li>
+          <li class="tile g"><img src="/assets/site/games/bubbles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bubble Pop</span></li>
+    </ul>
+  </div>
+  <div class="strip go rev" aria-label="Sona's picture books">
+    <ul class="track">
+          <li class="tile b"><img src="/assets/books/rory-rainbow/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rory and the Rainbow</span></li>
+          <li class="tile b"><img src="/assets/books/sid-the-seagull/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sid the Seagull</span></li>
+          <li class="tile b"><img src="/assets/books/shay-the-shy-shark/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shay the Shy Shark</span></li>
+          <li class="tile b"><img src="/assets/books/leo-lucky-leaf/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Leo&rsquo;s Lucky Leaf</span></li>
+          <li class="tile b"><img src="/assets/books/theo-thunder-day/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Theo&rsquo;s Thunder Day</span></li>
+          <li class="tile b"><img src="/assets/books/rosie-red-wagon/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rosie and the Red Wagon</span></li>
+          <li class="tile b"><img src="/assets/books/ray-lost-ring/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ray and the Lost Ring</span></li>
+          <li class="tile b"><img src="/assets/books/sam-sailboat/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sam&rsquo;s Sailboat</span></li>
+          <li class="tile b"><img src="/assets/books/sophie-silly-soup/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sophie&rsquo;s Silly Soup</span></li>
+          <li class="tile b"><img src="/assets/books/libby-lemon/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Libby and the Lemon</span></li>
+          <li class="tile b"><img src="/assets/books/leon-lantern/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Leon&rsquo;s Lantern</span></li>
+          <li class="tile b"><img src="/assets/books/shane-shiny-shell/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shane and the Shiny Shell</span></li>
+          <li class="tile b"><img src="/assets/books/shawn-shadow/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shawn and His Shadow</span></li>
+          <li class="tile b"><img src="/assets/books/thor-thank-you/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Thor Says Thank You</span></li>
+          <li class="tile b"><img src="/assets/books/thelma-thirsty-plant/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Thelma&rsquo;s Thirsty Plant</span></li>
+          <li class="tile b"><img src="/assets/books/kip-kite/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Kip&rsquo;s Kite</span></li>
+          <li class="tile b"><img src="/assets/books/zoe-and-the-zipper/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Zoe and the Zipper</span></li>
+          <li class="tile b"><img src="/assets/books/chip-the-chipmunk/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Chip the Chipmunk</span></li>
+          <li class="tile b"><img src="/assets/books/goldie-guitar/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Goldie&rsquo;s Guitar</span></li>
+          <li class="tile b"><img src="/assets/books/jax-and-the-jam-jar/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Jax and the Jam Jar</span></li>
+          <li class="tile b"><img src="/assets/books/this-bear-that-bee/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>This Bear, That Bee</span></li>
+          <li class="tile b"><img src="/assets/books/toby-tiny-tuba/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Toby&rsquo;s Tiny Tuba</span></li>
+          <li class="tile b"><img src="/assets/books/finn-finds-a-feather/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Finn Finds a Feather</span></li>
+          <li class="tile b"><img src="/assets/books/val-the-van/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Val the Van</span></li>
+          <li class="tile b"><img src="/assets/books/penny-pebble-party/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Penny&rsquo;s Pebble Party</span></li>
+          <li class="tile b"><img src="/assets/books/ned-needs-a-net/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ned Needs a Net</span></li>
+          <li class="tile b"><img src="/assets/books/dot-digs-a-pool/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dot Digs a Pool</span></li>
+          <li class="tile b"><img src="/assets/books/bo-beach-day/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bo&rsquo;s Beach Day</span></li>
+          <li class="tile b"><img src="/assets/books/mia-makes-muffins/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Mia Makes Muffins</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- RACHEL. Her byline and her bio are the ones on the clinician dashboard;
+     the credential is the settled wording (CLAUDE.md), and the four rules are
+     the clinical rules the app enforces in code. Third on the page, right
+     under the library (Travis, 4 Oct 2026: "I also want Rachel's bio higher
+     up on the website"); she was seventh, after the homework picture. -->
+<section class="rachel" id="rachel">
+  <div class="wrap">
+    <div class="r-in rv">
+      <div class="r-photo">
+        <img src="/assets/rachel-wardrop-profile.jpg" width="480" height="480" alt="Rachel Wardrop, Sona's co-founder" loading="lazy">
+        <div class="tag">hi, I&rsquo;m Rachel!</div>
+      </div>
+      <div class="r-txt">
+        <div class="kicker">Made with a speech therapist</div>
+        <h2>Made with someone who does this every day.</h2>
+        <div class="by">Rachel Wardrop, MS, CF-SLP &middot; Co-founder &middot; Pediatric speech-language pathologist in her clinical fellowship</div>
+        <p>Rachel is Sona&rsquo;s co-founder and a pediatric speech-language pathologist in her clinical fellowship. She loves helping children build confidence in communication, and she sets the rules Sona keeps:</p>
+        <ul class="rules">
+          <li><b>Start simple.</b>Practice begins with one sound and moves up to words and sentences as your child is ready.</li>
+          <li><b>Silence never counts.</b>A try counts only when the phone hears your child&rsquo;s voice.</li>
+          <li><b>End on a win.</b>If a word is hard, Sona steps it down, so the last try is a success.</li>
+          <li><b>The right sound at the right age.</b>Sona waits on a sound until a child is typically old enough for it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- SOUND FAMILIAR? The ads' fridge list, in Sona's own voice: no family,
@@ -504,69 +627,6 @@ document.documentElement.className += " js";
   </div>
 </section>
 
-<!-- THE LIBRARY. The counts are the catalog's own (tests/shiptest.mjs holds
-     them to it): every game Home opens, and none it shows as Coming soon —
-     the Say & Play games are parked until each is rebuilt (Travis, 26 Sep
-     2026), so they are not on this strip either. The bookshelf opens its
-     books on a date (27 Sep 2026; every queued one on Fri 9 Oct, 1 Oct
-     2026): each book tile carries the date the shelf opens it, and the
-     count and the "Coming" tags are worked out on the phone from those
-     dates, so the page is never ahead of the shelf. -->
-<section class="lib" id="library">
-  <div class="wrap">
-    <div class="kicker rv" style="color:var(--sun);">Games and books</div>
-    <h2 class="rv d1" style="margin-top:10px;"><span class="n">10</span> games. <span class="n" id="bookCount">29</span> picture books.</h2>
-    <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8 and picture books read along with Echo, with more of both on the way.</p>
-  </div>
-  <div class="strip go" aria-label="Sona's games">
-    <ul class="track">
-          <li class="tile g"><img src="/assets/site/games/slice.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Fruit Slice</span></li>
-          <li class="tile g"><img src="/assets/site/games/tiles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Piano Tiles</span></li>
-          <li class="tile g"><img src="/assets/site/games/stack.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Block Stacker</span></li>
-          <li class="tile g"><img src="/assets/site/games/run.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sound Sprint</span></li>
-          <li class="tile g"><img src="/assets/site/games/glide.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Flappy Glide</span></li>
-          <li class="tile g"><img src="/assets/site/games/hoops.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Hoops</span></li>
-          <li class="tile g"><img src="/assets/site/games/soccer.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Soccer Goal</span></li>
-          <li class="tile g"><img src="/assets/site/games/dino.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dino Dig</span></li>
-          <li class="tile g"><img src="/assets/site/games/feed.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Feed Echo</span></li>
-          <li class="tile g"><img src="/assets/site/games/bubbles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bubble Pop</span></li>
-    </ul>
-  </div>
-  <div class="strip go rev" aria-label="Sona's picture books">
-    <ul class="track">
-          <li class="tile b"><img src="/assets/books/rory-rainbow/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rory and the Rainbow</span></li>
-          <li class="tile b"><img src="/assets/books/sid-the-seagull/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sid the Seagull</span></li>
-          <li class="tile b"><img src="/assets/books/shay-the-shy-shark/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shay the Shy Shark</span></li>
-          <li class="tile b"><img src="/assets/books/leo-lucky-leaf/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Leo&rsquo;s Lucky Leaf</span></li>
-          <li class="tile b"><img src="/assets/books/theo-thunder-day/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Theo&rsquo;s Thunder Day</span></li>
-          <li class="tile b"><img src="/assets/books/rosie-red-wagon/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rosie and the Red Wagon</span></li>
-          <li class="tile b"><img src="/assets/books/ray-lost-ring/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ray and the Lost Ring</span></li>
-          <li class="tile b"><img src="/assets/books/sam-sailboat/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sam&rsquo;s Sailboat</span></li>
-          <li class="tile b"><img src="/assets/books/sophie-silly-soup/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sophie&rsquo;s Silly Soup</span></li>
-          <li class="tile b"><img src="/assets/books/libby-lemon/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Libby and the Lemon</span></li>
-          <li class="tile b"><img src="/assets/books/leon-lantern/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Leon&rsquo;s Lantern</span></li>
-          <li class="tile b"><img src="/assets/books/shane-shiny-shell/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shane and the Shiny Shell</span></li>
-          <li class="tile b"><img src="/assets/books/shawn-shadow/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shawn and His Shadow</span></li>
-          <li class="tile b"><img src="/assets/books/thor-thank-you/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Thor Says Thank You</span></li>
-          <li class="tile b"><img src="/assets/books/thelma-thirsty-plant/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Thelma&rsquo;s Thirsty Plant</span></li>
-          <li class="tile b"><img src="/assets/books/kip-kite/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Kip&rsquo;s Kite</span></li>
-          <li class="tile b"><img src="/assets/books/zoe-and-the-zipper/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Zoe and the Zipper</span></li>
-          <li class="tile b"><img src="/assets/books/chip-the-chipmunk/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Chip the Chipmunk</span></li>
-          <li class="tile b"><img src="/assets/books/goldie-guitar/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Goldie&rsquo;s Guitar</span></li>
-          <li class="tile b"><img src="/assets/books/jax-and-the-jam-jar/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Jax and the Jam Jar</span></li>
-          <li class="tile b"><img src="/assets/books/this-bear-that-bee/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>This Bear, That Bee</span></li>
-          <li class="tile b"><img src="/assets/books/toby-tiny-tuba/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Toby&rsquo;s Tiny Tuba</span></li>
-          <li class="tile b"><img src="/assets/books/finn-finds-a-feather/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Finn Finds a Feather</span></li>
-          <li class="tile b"><img src="/assets/books/val-the-van/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Val the Van</span></li>
-          <li class="tile b"><img src="/assets/books/penny-pebble-party/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Penny&rsquo;s Pebble Party</span></li>
-          <li class="tile b"><img src="/assets/books/ned-needs-a-net/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ned Needs a Net</span></li>
-          <li class="tile b"><img src="/assets/books/dot-digs-a-pool/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dot Digs a Pool</span></li>
-          <li class="tile b"><img src="/assets/books/bo-beach-day/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bo&rsquo;s Beach Day</span></li>
-          <li class="tile b"><img src="/assets/books/mia-makes-muffins/cover.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Mia Makes Muffins</span></li>
-    </ul>
-  </div>
-</section>
-
 <!-- HOMEWORK, TWO WAYS: the ads' side-by-side. The worksheet is a generic
      one drawn here; the game is the piano screen, as it plays today. -->
 <section class="hw" id="homework">
@@ -586,32 +646,6 @@ document.documentElement.className += " js";
       <div class="half b">
         <div class="lab">also their speech homework</div>
         <div class="ph2"><img src="/assets/site/piano.webp" width="342" height="692" alt="Piano Tiles in Sona: colored tiles and an 8 note streak" loading="lazy"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- RACHEL. Her byline and her bio are the ones on the clinician dashboard;
-     the credential is the settled wording (CLAUDE.md), and the four rules are
-     the clinical rules the app enforces in code. -->
-<section class="rachel" id="rachel">
-  <div class="wrap">
-    <div class="r-in rv">
-      <div class="r-photo">
-        <img src="/assets/rachel-wardrop-profile.jpg" width="480" height="480" alt="Rachel Wardrop, Sona's co-founder" loading="lazy">
-        <div class="tag">hi, I&rsquo;m Rachel!</div>
-      </div>
-      <div class="r-txt">
-        <div class="kicker">Made with a speech therapist</div>
-        <h2>Made with someone who does this every day.</h2>
-        <div class="by">Rachel Wardrop, MS, CF-SLP &middot; Co-founder &middot; Pediatric speech-language pathologist in her clinical fellowship</div>
-        <p>Rachel is Sona&rsquo;s co-founder and a pediatric speech-language pathologist in her clinical fellowship. She loves helping children build confidence in communication, and she sets the rules Sona keeps:</p>
-        <ul class="rules">
-          <li><b>Start simple.</b>Practice begins with one sound and moves up to words and sentences as your child is ready.</li>
-          <li><b>Silence never counts.</b>A try counts only when the phone hears your child&rsquo;s voice.</li>
-          <li><b>End on a win.</b>If a word is hard, Sona steps it down, so the last try is a success.</li>
-          <li><b>The right sound at the right age.</b>Sona waits on a sound until a child is typically old enough for it.</li>
-        </ul>
       </div>
     </div>
   </div>
@@ -767,15 +801,37 @@ document.documentElement.className += " js";
     $("topGo").onclick = toForm;
     $("finalGo").onclick = toForm;
 
-    // ONE WAY OUT, called only after the Lead has fired and after a pause, so
-    // the pixel's request leaves before the page does.
-    function goNext(ms) { setTimeout(function () { location.href = NEXT_URL; }, ms); }
+    /**
+     * ONE WAY OUT, AND NO STOP ON THE WAY (Travis, 4 Oct 2026: "can you just
+     * make it happen without like delaying I just want it to go immediately
+     * to the app store"). The page used to swap to a "You're in" panel with
+     * a Get the app button and wait 900 ms. Now the form stays where it is,
+     * its button says where they are going, and leave() is called LEAVE_MS
+     * after the Lead has fired: the shortest pause that still lets the
+     * pixel's request leave the page before the page does.
+     */
+    var LEAVE_MS = 150;
     $("nextGo").onclick = function () { location.href = NEXT_URL; };
     function showDone(title, msg, button) {
       $("sentT").textContent = title;
       $("sentMsg").textContent = msg;
       $("nextGo").hidden = !button;
       $("signup").hidden = true; $("sent").hidden = false;
+    }
+    /**
+     * WHERE THEY COME BACK TO. An iPhone opens the App Store OVER Safari, so
+     * this page is still here when they return, and "You're in" with its
+     * Get the app button is what they find. It is swapped in only after the
+     * page has started to leave: as it is hidden or put away, or two seconds
+     * on if it is somehow still showing. Never before, so nobody is shown a
+     * second button to press on the way out.
+     */
+    function landed() { if ($("sent").hidden) showDone("You're in", OPENING, true); }
+    function leave() {
+      location.href = NEXT_URL;
+      window.addEventListener("pagehide", landed);
+      document.addEventListener("visibilitychange", landed);
+      setTimeout(landed, 2000);
     }
 
     function go() {
@@ -789,16 +845,17 @@ document.documentElement.className += " js";
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.assign({ email: email, role: "parent", source: src, welcome: !APP_READY }, attrib)),
       }).then(function (r) { return r.json(); }).then(function (j) {
-        busy(false);
-        if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
+        if (!j || !j.ok) { busy(false); err((j && j.error) || "Couldn't set that up right now."); return; }
         // THE CONVERSION, fired only once the server said yes: a tap is not a
         // sign-up. No parameters: Meta gets the fact, never the person.
         try { if (window.sonaTrack) sonaTrack("Lead"); } catch (e) {}
         if (APP_READY) {
-          showDone("You're in", OPENING, true);
-          goNext(900);
+          // Straight out: the button, still switched off, says where to.
+          $("fGo").textContent = OPENING;
+          setTimeout(leave, LEAVE_MS);
         } else {
           // Thanked and told; the welcome email says the same (sent once).
+          busy(false);
           showDone("You're on the list!", LAUNCH_NOTE, false);
         }
       }).catch(function () {
@@ -881,16 +938,32 @@ document.documentElement.className += " js";
       var n = $("bookCount"); if (n) n.textContent = open;
     })();
 
+    // THE TILES THAT START ON SCREEN ARE FETCHED AT ONCE. The strips sit
+    // right under the hero now (Travis, 4 Oct 2026: "I want that a lot higher
+    // up on the website"), so their first screenful is not left to the
+    // browser's lazy loading. How many tiles that is depends on how wide the
+    // screen is, so it is measured here, before the copies below are made
+    // (a copy keeps what its tile says). Every other picture stays lazy and
+    // arrives as it slides in: the 29 covers together are about 5 MB.
+    [].forEach.call(document.querySelectorAll(".strip .track"), function (t) {
+      var imgs = t.querySelectorAll("img"), k = t.children;
+      var step = k.length > 1 ? k[1].offsetLeft - k[0].offsetLeft : 166;
+      for (var i = 0, n = Math.ceil(window.innerWidth / (step || 166)) + 1; i < imgs.length && i < n; i++) imgs[i].setAttribute("loading", "eager");
+    });
+
     // The two strips loop forever. A short list is first repeated until it
     // is wider than the screen; then the whole run is doubled and the track
     // slides by exactly half, at one steady speed whatever its length. Every
     // copy is hidden from screen readers, so each game and book is read once.
+    // Only then is the strip told to move (.on), so it never starts on a
+    // track that is about to change under it.
     if (!reduce) [].forEach.call(document.querySelectorAll(".strip .track"), function (t) {
       var items = [].slice.call(t.children), want = Math.max(window.innerWidth, 800) + 200, guard = 0;
       function copy(li) { var c = li.cloneNode(true); c.setAttribute("aria-hidden", "true"); t.appendChild(c); }
       while (t.scrollWidth < want && guard++ < 12) items.forEach(copy);
       [].slice.call(t.children).forEach(copy);
       t.style.setProperty("--dur", Math.round(t.scrollWidth / 2 / 36) + "s");
+      t.parentNode.classList.add("on");
     });
     else [].forEach.call(document.querySelectorAll(".strip"), function (s) { s.classList.remove("go"); });
 

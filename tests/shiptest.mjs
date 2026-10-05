@@ -73,11 +73,11 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
   // ONE PROMISE, EVERYWHERE IT IS READ: the parent ads' own headline, on the
   // page, the tab and the card, so the page says what the ad said.
-  ok("the parent page's headline, tab title and shared card all say 'Speech practice kids ask for'",
-    /<h1>Speech practice kids ask for\.<\/h1>/.test(parents) &&
-    /<title>Speech practice kids ask for — Sona<\/title>/.test(parents) &&
-    /og:title" content="Speech practice kids ask for\."/.test(parents) &&
-    /twitter:title" content="Speech practice kids ask for\."/.test(parents));
+  ok("the parent page's headline, tab title and shared card all say 'Speech practice kids love'",
+    /<h1>Speech practice kids love\.<\/h1>/.test(parents) &&
+    /<title>Speech practice kids love — Sona<\/title>/.test(parents) &&
+    /og:title" content="Speech practice kids love\."/.test(parents) &&
+    /twitter:title" content="Speech practice kids love\."/.test(parents));
   // 1 Oct 2026 (Travis): "Built with Rachel, MS, CF-SLP, a pediatric
   // speech-language pathologist in her clinical fellowship".
   ok("…and it names Rachel's credential in the settled words", /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(parents));
