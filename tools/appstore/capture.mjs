@@ -465,20 +465,22 @@ SCENES.progress = async (devName) => {
 SCENES.rachel = async (devName) => {
   const s = await open(devName, "/onboarding.html", { fresh: true });
   const { page } = s;
-  const next = () => page.locator("#nextBtn").click();
+  // Since 5 Oct 2026 (setup option B) Rachel sits on "<Name>'s practice is
+  // ready", under About Sona; walk setup to it whatever questions come first
   await until(page, () => document.body.dataset.setupScreen === "welcome", 15000);
-  await next();
-  await page.locator('[data-step="who"].on').waitFor();
-  await page.locator('.who-pick[data-role="parent"]').click();
-  await page.locator('[data-step="name"].on').waitFor();
-  await page.locator("#obName").fill("Mia");
-  await page.locator('#obAge [data-age="8"]').click();
-  await next();
-  const r = page.locator('#obSounds [data-sound="R"]');
-  if ((await r.getAttribute("aria-pressed")) !== "true") await r.click();
-  await next();
-  await page.locator('[data-step="rachel"].on').waitFor();
-  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".rachel-photo") && document.querySelector(".rachel-photo").decode().catch(() => {})]));
+  for (let i = 0; i < 12; i++) {
+    const scr = await page.evaluate(() => document.body.dataset.setupScreen);
+    if (scr === "ready") break;
+    if (scr === "name") { await page.locator("#obName").fill("Mia"); const a = page.locator('#obAge [data-age="8"]'); if (await a.count()) await a.click(); }
+    if (scr === "sounds") { const r = page.locator('#obSounds [data-sound="R"]'); if ((await r.getAttribute("aria-pressed")) !== "true") await r.click(); }
+    await page.waitForTimeout(650);
+    // a one-tap question has no Continue: tap its first answer
+    if (await page.locator("#nextBtn").isVisible()) await page.locator("#nextBtn").click();
+    else await page.locator(".step.on button:visible").first().click();
+    await page.waitForTimeout(650);
+  }
+  await page.locator('[data-step="ready"].on').waitFor();
+  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".ready-rachel-photo") && document.querySelector(".ready-rachel-photo").decode().catch(() => {})]));
   await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => a.finish()));
   await page.waitForTimeout(500);
   await shot(page, devName, "rachel");

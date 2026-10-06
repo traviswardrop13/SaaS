@@ -97,6 +97,10 @@ function slideHTML(slide, dev, copyBottom) {
     *{margin:0;padding:0;box-sizing:border-box;}
     html,body{width:${CW}px;height:${CH}px;overflow:hidden;}
     body{position:relative;background:linear-gradient(180deg,${slide.bg[0]} 0%,${slide.bg[1]} 100%);-webkit-font-smoothing:antialiased;}
+    ${slide.bgImage ? `body{background:url(/bg/${slide.bgImage}) center/cover no-repeat,${slide.bg[0]};}
+    /* a soft wash behind the headline so painted art never fights the words */
+    body::after{content:"";position:absolute;left:0;right:0;top:0;height:${L.top + L.h1 * 3.6}px;background:linear-gradient(180deg,rgba(255,250,240,.82),rgba(255,250,240,.55) 70%,rgba(255,250,240,0));z-index:0;}
+    .copy{z-index:1;}` : ""}
     /* a soft glow behind the phone, so it sits in light rather than on a flat page */
     body::before{content:"";position:absolute;left:50%;top:${fy + fh * 0.42}px;width:${fw * 1.5}px;height:${fh * 0.9}px;transform:translate(-50%,-50%);
       background:radial-gradient(closest-side,rgba(255,255,255,.75),rgba(255,255,255,0));pointer-events:none;}
@@ -132,6 +136,7 @@ const server = createServer((req, res) => {
   if (u.pathname === "/slide") { res.writeHead(200, { "content-type": "text/html" }); res.end(pending); return; }
   let f = null;
   if (u.pathname.startsWith("/public/")) f = path.join(PUBLIC, decodeURIComponent(u.pathname.slice(8)));
+  if (u.pathname.startsWith("/bg/")) f = path.join(HERE, "bg", decodeURIComponent(u.pathname.slice(4)));
   if (u.pathname.startsWith("/raw/")) f = path.join(RAW, decodeURIComponent(u.pathname.slice(5)));
   if (!f || !existsSync(f) || !statSync(f).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[f.split(".").pop()] || "application/octet-stream" });
