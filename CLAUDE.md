@@ -2176,8 +2176,8 @@ flow or an approval screen for families:
 
 | Review question | Product behavior shipping |
 |---|---|
-| Daily defaults and the age split |30 at ages 3–4; 50 at ages 5–8, adjustable|
+| Daily default |30 at every age, adjustable|
 | What a rep means |Voiced practice try, accepted game ask or accepted book word; no silence|
 | Homework and play |Home includes play toward the displayed goal; clinician report stays practice-only|
-| Weekly target |4 days by default, choice of 3/4/5; earned-day stamps|
+| Weekly target |4 days by default; setup offers 3, 5 or every day; Settings and Progress 3, 4, 5 or every day; earned-day stamps|
 | Book check limitations |One accepted word is a play rep, without a clinical correctness claim|

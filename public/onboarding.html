@@ -941,7 +941,10 @@
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
         dailyMinutes: 5,
-        weeklyGoal: parseInt(draft.goal, 10) || parseInt(goalVal, 10) || 4,   // the pick, else what it was (Skip, a second child)
+        // the pick, when this walk asked for one (the same test the ready
+        // screen's chip uses); else the goal this child's profile already
+        // has, which for a newly added child is the default
+        weeklyGoal: (ORDER.indexOf("goal")>-1&&parseInt(draft.goal, 10)) || parseInt(goalVal, 10) || 4,
         email: draft.email || "",
         pathReason: draft.pathReason || "",
         onboarded: true,
