@@ -783,63 +783,70 @@ try {
     ok("setupAfterClear() removes it", r.again === true && r.cleared === null && r.afterClear === false, r);
   });
 
-  // ── 14. the two answers stay on the phone ──
+  // ── 14. the therapy answer stays on the phone ──
+  // ONE question since 5 Oct 2026 ("Is <Name> in speech therapy?"): it took the
+  // place of the two Travis did not like. The days-a-week pick asked beside it
+  // is a real setting (profile.weeklyGoal) and is not kept here.
   await scenario("the answers", async () => {
     await load({ setUp: true });
     const r = await page.evaluate(() => {
       const KEY = "sona.setupasks.v1", out = {};
-      out.lists = [Sona.SETUP_WHY, Sona.SETUP_HOME];
+      out.list = Sona.SETUP_THERAPY;
       out.before = Sona.setupAsks();
-      out.saved = Sona.setupAsksSave({ why: "w_therapist", home: "h_hard" });
+      out.saved = Sona.setupAsksSave({ therapy: "t_yes" });
       out.after = Sona.setupAsks();
       out.raw = localStorage.getItem(KEY);
       out.session = sessionStorage.getItem(KEY);
       out.kkey = Sona.kkey(KEY);
       out.profile = JSON.stringify(Sona.getProfile()) + (localStorage.getItem("sona.profile.v1") || "");
-      // a half-finished setup holds the same two taps, for the first child and for a later one
-      localStorage.setItem("sona.obdraft.v1", JSON.stringify({ childName: "Mia", why: "w_therapist", home: "h_hard" }));
-      localStorage.setItem("sona.obdraft.v1@k2", JSON.stringify({ childName: "Ben", why: "w_waiting" }));
+      // a half-finished setup holds the same tap, for the first child and for a later one
+      localStorage.setItem("sona.obdraft.v1", JSON.stringify({ childName: "Mia", therapy: "t_yes", goal: "5" }));
+      localStorage.setItem("sona.obdraft.v1@k2", JSON.stringify({ childName: "Ben", therapy: "t_no" }));
       out.exported = Sona.exportString();
       out.exportKeys = Object.keys(Sona.exportData().data);
       // addKid copies nothing and moves nothing
       Sona.addKid("Ben", "6");
       out.afterKid = { raw: localStorage.getItem(KEY), suffixed: localStorage.getItem(KEY + "@k2"), asks: Sona.setupAsks(), kidProfile: JSON.stringify(Sona.getProfile()) };
       Sona.switchKid("");
-      // only listed ids are kept
-      Sona.setupAsksSave({ why: "<b>we see a speech therapist</b>", home: "h_most", extra: "Mia", name: "Mia" });
+      // only a listed id is kept
+      Sona.setupAsksSave({ therapy: "<b>yes, a speech therapist</b>", extra: "Mia", name: "Mia", goal: "5" });
       out.strict = [localStorage.getItem(KEY), Sona.setupAsks()];
-      Sona.setupAsksSave({ why: "h_most", home: "w_extra" });
-      out.crossed = Sona.setupAsks();
       Sona.setupAsksSave({});
       out.skipped = [localStorage.getItem(KEY), Sona.setupAsks()];
       Sona.setupAsksSave();
       out.nothing = Sona.setupAsks();
-      localStorage.setItem(KEY, JSON.stringify({ v: 1, why: "nope", home: 7 }));
+      localStorage.setItem(KEY, JSON.stringify({ v: 2, therapy: "nope" }));
       out.unknown = Sona.setupAsks();
       localStorage.setItem(KEY, "not json");
       out.garbage = Sona.setupAsks();
+      // a family asked the OLD two questions (they were live for a day) is not asked again,
+      // and the one old answer that was this question carries over
+      localStorage.setItem(KEY, JSON.stringify({ v: 1, why: "w_therapist", home: "h_hard" }));
+      out.oldYes = Sona.setupAsks();
+      localStorage.setItem(KEY, JSON.stringify({ v: 1, why: "w_tricky", home: "h_most" }));
+      out.oldOther = Sona.setupAsks();
       // a backup that carries either key is not let in
       localStorage.removeItem(KEY); localStorage.removeItem("sona.obdraft.v1"); localStorage.removeItem("sona.obdraft.v1@k2");
       const res = Sona.importData({ app: "sona", v: 1, data: {
-        "sona.setupasks.v1": JSON.stringify({ v: 1, why: "w_tricky", home: "h_most" }),
-        "sona.obdraft.v1": JSON.stringify({ childName: "Zed", why: "w_tricky" }),
+        "sona.setupasks.v1": JSON.stringify({ v: 2, therapy: "t_no" }),
+        "sona.obdraft.v1": JSON.stringify({ childName: "Zed", therapy: "t_no" }),
         "sona.obdraft.v1@k2": JSON.stringify({ childName: "Zed" }),
         "sona.profile.v1": JSON.stringify({ childName: "Zed", childAge: "7", focusSounds: ["S"], onboarded: true }) } });
       out.imported = { ok: res && res.ok, asks: localStorage.getItem(KEY), draft: localStorage.getItem("sona.obdraft.v1"), draft2: localStorage.getItem("sona.obdraft.v1@k2"), name: Sona.getProfile().childName, state: Sona.setupAsks() };
       return out;
     });
-    ok("the two lists of answer ids are fixed", same(r.lists, [["w_therapist", "w_waiting", "w_tricky", "w_extra"], ["h_notyet", "h_hard", "h_sometimes", "h_most"]]), r.lists);
-    ok("before setup nothing was asked", same(r.before, { asked: false, why: "", home: "" }), r.before);
-    ok("after it, both answers are held and 'asked' is true", r.saved === true && same(r.after, { asked: true, why: "w_therapist", home: "h_hard" }), r.after);
-    ok("…in ONE household key in localStorage, holding two ids and nothing else", same(JSON.parse(r.raw), { v: 1, why: "w_therapist", home: "h_hard" }) && r.session === null && r.kkey === "sona.setupasks.v1", r.raw);
-    ok("no profile holds a why or a home field", !/"why"|"home"|w_therapist|h_hard/.test(r.profile) && !/"why"|"home"|w_therapist|h_hard/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
-    ok("A BACKUP NEVER CARRIES THEM: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|w_therapist|w_waiting|h_hard/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
-    ok("…and a backup that does hold either key is not let in, while the practice beside it is", r.imported.ok === true && r.imported.asks === null && r.imported.draft === null && r.imported.draft2 === null && r.imported.name === "Zed" && same(r.imported.state, { asked: false, why: "", home: "" }), r.imported);
+    ok("the list of answer ids is fixed: yes, or not right now", same(r.list, ["t_yes", "t_no"]), r.list);
+    ok("before setup nothing was asked", same(r.before, { asked: false, therapy: "" }), r.before);
+    ok("after it, the answer is held and 'asked' is true", r.saved === true && same(r.after, { asked: true, therapy: "t_yes" }), r.after);
+    ok("…in ONE household key in localStorage, holding one id and nothing else", same(JSON.parse(r.raw), { v: 2, therapy: "t_yes" }) && r.session === null && r.kkey === "sona.setupasks.v1", r.raw);
+    ok("no profile holds a therapy field", !/"therapy"|t_yes|t_no/.test(r.profile) && !/"therapy"|t_yes|t_no/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
+    ok("A BACKUP NEVER CARRIES IT: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|t_yes|t_no/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
+    ok("…and a backup that does hold either key is not let in, while the practice beside it is", r.imported.ok === true && r.imported.asks === null && r.imported.draft === null && r.imported.draft2 === null && r.imported.name === "Zed" && same(r.imported.state, { asked: false, therapy: "" }), r.imported);
     ok("adding a child copies nothing and changes nothing: the key is the household's", r.afterKid.raw === r.raw && r.afterKid.suffixed === null && same(r.afterKid.asks, r.after), r.afterKid);
-    ok("only a listed id is ever stored: anything else, a name included, becomes ''", same(JSON.parse(r.strict[0]), { v: 1, why: "", home: "h_most" }) && same(r.strict[1], { asked: true, why: "", home: "h_most" }), r.strict);
-    ok("…and an id from the other question's list is not an answer", same(r.crossed, { asked: true, why: "", home: "" }), r.crossed);
-    ok("both skipped: the key only records that the questions were shown", same(JSON.parse(r.skipped[0]), { v: 1, why: "", home: "" }) && same(r.skipped[1], { asked: true, why: "", home: "" }) && same(r.nothing, { asked: true, why: "", home: "" }), r.skipped);
-    ok("a stored value that is not on the list reads as ''", same(r.unknown, { asked: true, why: "", home: "" }) && same(r.garbage, { asked: true, why: "", home: "" }), [r.unknown, r.garbage]);
+    ok("only a listed id is ever stored: anything else, a name or the days picked included, is dropped", same(JSON.parse(r.strict[0]), { v: 2, therapy: "" }) && same(r.strict[1], { asked: true, therapy: "" }), r.strict);
+    ok("skipped: the key only records that the question was shown", same(JSON.parse(r.skipped[0]), { v: 2, therapy: "" }) && same(r.skipped[1], { asked: true, therapy: "" }) && same(r.nothing, { asked: true, therapy: "" }), r.skipped);
+    ok("a stored value that is not on the list reads as ''", same(r.unknown, { asked: true, therapy: "" }) && same(r.garbage, { asked: true, therapy: "" }), [r.unknown, r.garbage]);
+    ok("a family asked the two old questions is not asked again, and \"We see a speech therapist\" reads as yes", same(r.oldYes, { asked: true, therapy: "t_yes" }) && same(r.oldOther, { asked: true, therapy: "" }), [r.oldYes, r.oldOther]);
   });
 
   // ── 15. the source, and the fake itself ──
@@ -855,7 +862,7 @@ try {
       ip.length > 200 && !/attempts|\.catch\(fn\)/.test(ip) && (ip.match(/P\.purchaseStoreProduct\(/g) || []).length === 1 && (ip.match(/P\.purchaseProduct\(/g) || []).length === 1 &&
       /if \(prod && typeof P\.purchaseStoreProduct === "function"\) return P\.purchaseStoreProduct\(\{ product: prod \}\);/.test(ip), ip.slice(0, 300));
     ok("the new names are at the END of what pages can reach, after everything that was there",
-      /global\.Sona = \{[^\n]*\bWEB_SALES, webSales\b[^\n]*soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_WHY, SETUP_HOME \};/.test(src));
+      /global\.Sona = \{[^\n]*\bWEB_SALES, webSales\b[^\n]*soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY \};/.test(src));
     const noExport = (src.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (src.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
     ok("the answers and the setup draft are on NO_EXPORT and on NO_IMPORT", /"sona\.setupasks\.v1"/.test(noExport) && /"sona\.obdraft\.v1"/.test(noExport) && /"sona\.setupasks\.v1"/.test(noImport) && /"sona\.obdraft\.v1"/.test(noImport), [noExport, noImport.slice(-80)]);
     const perKid = (src.match(/const PER_KID = new Set\(\[[\s\S]*?\]\);/) || [""])[0];

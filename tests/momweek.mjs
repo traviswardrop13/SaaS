@@ -115,7 +115,7 @@ await page.screenshot({ path: OUT + "/mom-progress.png" });
 // onboarding goal step renders 3 choices
 errs = [];
 await page.goto("http://localhost:8128/onboarding.html"); await page.waitForTimeout(900);
-const ob = await page.evaluate(() => document.querySelectorAll("#obGoal .choice").length);
+const ob = await page.evaluate(() => document.querySelectorAll("#obGoal .ask-pick").length);
 ok("onboarding 3 cadence choices", ob, 3);
 console.log(errs.length ? "FAIL onboarding pageerrors: " + errs[0] : "PASS onboarding no pageerrors");
 if (errs.length) fails++;

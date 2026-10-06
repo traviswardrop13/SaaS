@@ -2,8 +2,8 @@
 // silent fakes; page navigation, profile/draft storage, and controls are real.
 //
 // SETUP, OPTION B (Travis, 4–5 Oct 2026: "number B would be good … you can do
-// a full reset"): hello → name → "What brings you to Sona?" → sounds →
-// "How does practice go at home now?" → "<Name>'s practice is ready" → (the
+// a full reset"): hello → name → "Is <Name> in speech therapy?" → sounds →
+// "How many days a week will you practice?" → "<Name>'s practice is ready" → (the
 // price, only where Sona can sell) → microphone → hand-off → first game. The
 // profile is saved by the ready screen's Continue. This suite's own harness is
 // a phone that cannot buy, so it never sees a price; the last scenarios borrow
@@ -79,20 +79,20 @@ async function who(page,role='parent'){if(role==='slp'&&!/[?&]slp=1/.test(page.u
 async function toName(page){await who(page);await page.locator('[data-step="name"].on').waitFor();}
 // One tap on a one-tap question: one of its answer ids, or 'skip'.
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();}
-const answerWhy=(page,val)=>answer(page,'why',val),answerHome=(page,val)=>answer(page,'home',val);
+const answerTherapy=(page,val)=>answer(page,'therapy',val),answerGoal=(page,val)=>answer(page,'goal',val);
 // name → "What brings you to Sona?" (a tap, or Skip) → the sound picker. A
 // second child and a clinician in the app are not asked, and go straight there.
-async function enter(page,{mode='speech',age='4',name='Milo',why='skip'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(await screen(page)==='why')await answerWhy(page,why);await page.locator('[data-step="sounds"].on').waitFor();if(mode!=='speech'){await calm(page);await page.locator('#obExploreSounds').click();}}
+async function enter(page,{mode='speech',age='4',name='Milo',therapy='skip'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(await screen(page)==='therapy')await answerTherapy(page,therapy);await page.locator('[data-step="sounds"].on').waitFor();if(mode!=='speech'){await calm(page);await page.locator('#obExploreSounds').click();}}
 async function choose(page,sound='R'){
   await calm(page);const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
 // From the sound picker (with a sound chosen) or the home question, on to
 // "<Name>'s practice is ready"…
-async function toReady(page,home='skip'){for(let i=0;i<3;i++){const s=await screen(page);if(s==='ready')break;if(s==='home')await answerHome(page,home);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
+async function toReady(page,goal='skip'){for(let i=0;i<3;i++){const s=await screen(page);if(s==='ready')break;if(s==='goal')await answerGoal(page,goal);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
 // …and past it: its Continue saves the profile and, on a phone that cannot
 // buy, opens the microphone step in the page.
-async function pastReady(page,home='skip'){if(['mic','achieve'].includes(await screen(page)))return;await toReady(page,home);await next(page);await page.locator('[data-step="mic"].on').waitFor();}
+async function pastReady(page,goal='skip'){if(['mic','achieve'].includes(await screen(page)))return;await toReady(page,goal);await next(page);await page.locator('[data-step="mic"].on').waitFor();}
 async function notNow(page){await pastReady(page);await calm(page);await page.locator('#micNotNow').click();}
 async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
 // Fit is read once the fonts are in and the step's entry animation is over.
@@ -102,8 +102,10 @@ function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==
 const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.html').map(r=>r.url);
 const RACHEL='Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.';
 const HEDGE='Sona practices — it doesn\'t test or diagnose.';
-const WHY=[['w_therapist','We see a speech therapist','Sona is practice for the days between speech visits.'],['w_waiting','We\'re waiting to see one','Sona is practice you can do at home. It does not replace a speech therapist.'],['w_tricky','Some sounds are tricky','Sona practices one sound at a time, in short games.'],['w_extra','A little extra practice','Sona is short speech practice, built into games.']];
-const HOME=[['h_notyet','We haven\'t started','Sona starts small: one sound and one short game.'],['h_hard','It\'s a struggle','In Sona, the practice is inside the game.'],['h_sometimes','Now and then','Sona counts each week\'s practice, so you can see it.'],['h_most','Most days','Sona has games and books, with new ones on the way.']];
+// [id, the button's words, the sentence the ready screen shows for it]
+const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home. It does not replace a speech therapist.']];
+// [value, the button's words, the chip the ready screen shows for it]: a real setting, the week's goal
+const GOAL=[['3','3 days a week','3 days a week'],['5','5 days a week','5 days a week'],['7','Every day','Every day']];
 // what the ready screen shows, as a parent reads it
 const readyShown=page=>page.evaluate(()=>{const st=document.querySelector('[data-step="ready"]'),painted=el=>!!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {on:st.classList.contains('on'),title:document.getElementById('readyTitle').textContent,chips:[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent),lines:painted(document.getElementById('readyLines'))?[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent):[],rachel:document.getElementById('readyRachel').textContent,text:st.innerText.replace(/\s+/g,' ').trim(),asks:st.querySelectorAll('input,select,textarea,button,a,[role="button"]').length,cta:document.getElementById('nextBtn').textContent.trim(),enabled:!document.getElementById('nextBtn').disabled,seg:document.getElementById('seg').hidden,mascot:painted(document.querySelector('.ob .mascot')),build:!!document.getElementById('obBuild')};});
 const progress=page=>page.evaluate(()=>{const s=document.getElementById('seg');return {groups:s.children.length,lit:s.querySelectorAll('i.on').length,hidden:s.hidden,now:s.getAttribute('aria-valuenow'),max:s.getAttribute('aria-valuemax'),role:s.getAttribute('role')};});
@@ -115,10 +117,10 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('four progress groups match the four setup questions',await page.locator('#seg i').count()===4);
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
-  ok('name and age lead to one tap, "What brings you to Sona?", and no direction page comes back',await page.locator('[data-step="why"].on').count()===1&&(await page.locator('#whyTitle').innerText()).trim()==='What brings you to Sona?'&&await page.locator('[data-step="path"]').count()===0);
+  ok('name and age lead to one tap, "Is <Name> in speech therapy?", and no direction page comes back',await page.locator('[data-step="therapy"].on').count()===1&&/^Is \S+ in speech therapy\?$/.test((await page.locator('#therapyTitle').innerText()).trim())&&await page.locator('[data-step="path"]').count()===0);
   const second=await progress(page);
   ok('…it is the second of the four: two groups lit',second.groups===4&&second.lit===2&&!second.hidden&&second.now==='2'&&second.max==='4'&&second.role==='progressbar',second);
-  await answerWhy(page);
+  await answerTherapy(page);
   ok('one tap (here Skip) opens the sound choices',await page.locator('[data-step="sounds"].on').count()===1);
   ok('R starts selected and the first row is R S L TH',await page.locator('#obSounds .on').getAttribute('data-sound')==='R'&&JSON.stringify(await page.locator('#obSounds .sound').evaluateAll(bs=>bs.slice(0,4).map(b=>b.dataset.sound)))==='["R","S","L","TH"]');
   const choices=await page.evaluate(()=>({labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>({text:b.textContent.trim(),label:Sona.soundLabel(b.dataset.sound),font:parseFloat(getComputedStyle(b.querySelector('span')||b).fontSize),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),copy:document.querySelector('[data-step="sounds"]').textContent,overflow:document.documentElement.scrollWidth>innerWidth}));
@@ -128,8 +130,8 @@ await scenario('sound selection and private paced handoff',async()=>{
   await choose(page);ok('selecting a target enables Continue',await page.locator('#nextBtn').isEnabled());
   await page.locator('#obSounds [data-sound="R"]').click();ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
-  ok('after the sounds comes the second one-tap question, the last of the four groups',await page.locator('[data-step="home"].on').count()===1&&(await progress(page)).lit===4);
-  await answerHome(page);await page.locator('[data-step="ready"].on').waitFor();
+  ok('after the sounds comes the second one-tap question, the last of the four groups',await page.locator('[data-step="goal"].on').count()===1&&(await progress(page)).lit===4);
+  await answerGoal(page);await page.locator('[data-step="ready"].on').waitFor();
   // THE READY SCREEN replaced the 2-second "Building…" beat for parents. It
   // repeats back what the parent picked and nothing else (both questions were
   // skipped here, so no sentence about Sona is shown).
@@ -234,12 +236,12 @@ await scenario('the two one-tap questions',async()=>{
   const shown=key=>page.evaluate(key=>{const st=document.querySelector('[data-step="'+key+'"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,group=st.querySelector('.ask');return {screen:document.body.dataset.setupScreen,title:st.querySelector('h1').textContent.trim(),help:st.querySelector('.ask-help').textContent.trim(),answers:[...st.querySelectorAll('.ask-pick')].map(b=>[b.dataset.val,b.textContent.trim()]),buttons:[...st.querySelectorAll('.ask-pick')].every(b=>b.tagName==='BUTTON'&&b.type==='button'),pressed:[...st.querySelectorAll('.ask-pick')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.val),skip:st.querySelector('.ask-skip').textContent.trim(),next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),text:st.innerText,group:group.getAttribute('role')==='group'&&group.getAttribute('aria-labelledby')===st.querySelector('h1').id,focus:document.activeElement===st.querySelector('h1'),bubble:document.getElementById('bubble').textContent};},key);
   const untouched=()=>page.evaluate(()=>JSON.stringify([draft.mode,draft.pathReason,draft.focusSounds,goalVal,Sona.getProfile().onboarded,localStorage.getItem('sona.setupasks.v1')]));
   await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
-  for(const q of [{key:'why',title:'What brings you to Sona?',list:WHY,pick:'w_tricky',after:'sounds',bubble:'I\'m glad you\'re here!'},{key:'home',title:'How does practice go at home now?',list:HOME,pick:'h_hard',after:'ready',bubble:'No wrong answers!'}]){
+  for(const q of [{key:'therapy',title:'Is Milo in speech therapy?',list:THERAPY,pick:'t_no',after:'sounds',bubble:'I\'m glad you\'re here!',help:/stays on this device/,says:'it says the answer stays on this device'},{key:'goal',title:'How many days a week will you practice?',list:GOAL,pick:'5',after:'ready',bubble:'Whatever you pick, I’ll keep the week on track!',help:/change it in Settings/,says:'it says the pick can be changed in Settings'}]){
    const s=await shown(q.key);
    ok(q.key+': the heading is exactly "'+q.title+'"',s.screen===q.key&&s.title===q.title,s);
-   ok(q.key+': four answers, in order, word for word, each a real button',JSON.stringify(s.answers)===JSON.stringify(q.list.map(a=>[a[0],a[1]]))&&s.buttons&&s.pressed.length===0,s.answers);
+   ok(q.key+': its answers, in order, word for word, each a real button',JSON.stringify(s.answers)===JSON.stringify(q.list.map(a=>[a[0],a[1]]))&&s.buttons&&s.pressed.length===0,s.answers);
    ok(q.key+': Skip is offered, and Continue is not painted until an answer is held; Back is',s.skip==='Skip'&&!s.next&&s.back,s);
-   ok(q.key+': it says the answer stays on this device',/stays on this device/.test(s.help),s.help);
+   ok(q.key+': '+q.says,q.help.test(s.help),s.help);
    ok(q.key+': short, and in no clinician\'s or tester\'s words',s.text.trim().split(/\s+/).length<=40&&!/SLP|pathologist|certified|delay|disorder|behind|diagnos|assess/i.test(s.text),s.text);
    ok(q.key+': the answers are one labelled group, the heading takes focus, and Echo says "'+q.bubble+'"',s.group&&s.focus&&s.bubble===q.bubble,s);
    const before=await untouched();
@@ -258,31 +260,32 @@ await scenario('the two one-tap questions',async()=>{
    const cleared=await shown(q.key);
    ok(q.key+': …and Back after a Skip shows nothing pressed and no Continue',cleared.pressed.length===0&&!cleared.next,cleared);
    await answer(page,q.key,q.pick);
-   if(q.key==='why'){await choose(page,'S');await next(page);}
+   if(q.key==='therapy'){await choose(page,'S');await next(page);}
   }
   // both answered: the ready screen shows one sentence about Sona for each
   let ready=await readyShown(page);
-  ok('the ready screen then shows one sentence about Sona for each answer, never one about the child',JSON.stringify(ready.lines)===JSON.stringify([WHY[2][2],HOME[1][2]])&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),ready.lines);
+  ok('the ready screen then shows the therapy answer\'s one sentence about Sona, never one about the child, and the days picked',JSON.stringify(ready.lines)===JSON.stringify([THERAPY[1][2]])&&ready.chips.indexOf(GOAL[1][2])>-1&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),ready.lines);
   // AN ANSWER SURVIVES AN INTERRUPTION: the draft holds both, and a reload
   // (which starts a parent at the hello again) shows them pressed.
   await page.reload();
-  ok('a reload keeps both answers in the draft',await page.evaluate(()=>draft.why==='w_tricky'&&draft.home==='h_hard'));
+  ok('a reload keeps both answers in the draft',await page.evaluate(()=>draft.therapy==='t_no'&&draft.goal==='5'));
   await toName(page);await next(page);
-  let again=await shown('why');
-  ok('…the first shows pressed, with Continue painted, and Continue keeps it',again.screen==='why'&&JSON.stringify(again.pressed)==='["w_tricky"]'&&again.next,again);
+  let again=await shown('therapy');
+  ok('…the first shows pressed, with Continue painted, and Continue keeps it',again.screen==='therapy'&&JSON.stringify(again.pressed)==='["t_no"]'&&again.next,again);
   await next(page);await page.locator('[data-step="sounds"].on').waitFor();await next(page);
-  again=await shown('home');
-  ok('…and so does the second',again.screen==='home'&&JSON.stringify(again.pressed)==='["h_hard"]'&&again.next&&await page.evaluate(()=>draft.why==='w_tricky'),again);
+  again=await shown('goal');
+  ok('…and so does the second',again.screen==='goal'&&JSON.stringify(again.pressed)==='["5"]'&&again.next&&await page.evaluate(()=>draft.therapy==='t_no'),again);
   await next(page);await page.locator('[data-step="ready"].on').waitFor();
   // every answer has its own sentence, word for word (each is a claim about
   // what practice with Sona is)
-  const table=await page.evaluate(([why,home])=>{const out=[];why.forEach(id=>{draft.why=id;draft.home='';paintReady();out.push([...document.querySelectorAll('#readyLines li')].map(l=>l.textContent));});home.forEach(id=>{draft.why='';draft.home=id;paintReady();out.push([...document.querySelectorAll('#readyLines li')].map(l=>l.textContent));});draft.why='';draft.home='';paintReady();out.push([...document.querySelectorAll('#readyLines li')].map(l=>l.textContent),getComputedStyle(document.getElementById('readyLines')).display);draft.why='w_tricky';draft.home='h_hard';paintReady();return out;},[WHY.map(a=>a[0]),HOME.map(a=>a[0])]);
-  ok('each of the eight answers puts its own sentence on the ready screen, word for word',JSON.stringify(table.slice(0,8))===JSON.stringify(WHY.concat(HOME).map(a=>[a[2]])),table.slice(0,8));
-  ok('…and with neither answered the list is not painted at all',JSON.stringify(table.slice(8))==='[[],"none"]',table.slice(8));
+  const table=await page.evaluate(([th,goal])=>{const lines=()=>[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent),chips=()=>[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent);const out={lines:[],chips:[]};th.forEach(id=>{draft.therapy=id;draft.goal='';paintReady();out.lines.push(lines());});goal.forEach(v=>{draft.therapy='';draft.goal=v;paintReady();out.chips.push(chips().slice(-1)[0]);});draft.therapy='';draft.goal='';paintReady();out.none=[lines(),getComputedStyle(document.getElementById('readyLines')).display,chips().some(c=>/days a week|Every day/.test(c))];draft.therapy='t_no';draft.goal='5';paintReady();return out;},[THERAPY.map(a=>a[0]),GOAL.map(a=>a[0])]);
+  ok('each therapy answer puts its own sentence on the ready screen, word for word',JSON.stringify(table.lines)===JSON.stringify(THERAPY.map(a=>[a[2]])),table.lines);
+  ok('each days-a-week pick shows as its own chip, in the button\'s words',JSON.stringify(table.chips)===JSON.stringify(GOAL.map(a=>a[2])),table.chips);
+  ok('…and with neither answered there is no sentence and no days chip',JSON.stringify(table.none)==='[[],"none",false]',table.none);
   // a draft may not smuggle in an answer that is not one of the fixed ids
-  await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('sona.obdraft.v1'));d.why='<b>Milo</b>';d.home='h_made_up';localStorage.setItem('sona.obdraft.v1',JSON.stringify(d));});
+  await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('sona.obdraft.v1'));d.therapy='<b>Milo</b>';d.goal='h_made_up';localStorage.setItem('sona.obdraft.v1',JSON.stringify(d));});
   await page.reload();
-  ok('a draft holding anything but a listed id reads as unanswered',await page.evaluate(()=>draft.why===''&&draft.home===''));
+  ok('a draft holding anything but a listed id reads as unanswered',await page.evaluate(()=>draft.therapy===''&&draft.goal===''));
   ok('the page title never changes with the child or an answer',await page.title()==='Sona — Welcome');
   clean('one-tap questions',errors);
  }finally{await context.close();}
@@ -297,21 +300,23 @@ await scenario('the two answers stay on this phone',async()=>{
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
   const head=await page.evaluate(()=>{const tag=document.querySelector('script[src="/pixel.js"]');return {attr:tag&&tag.getAttribute('data-autoconfig'),first:window.fbq&&fbq.queue&&fbq.queue.length?Array.from(fbq.queue[0]):null};});
   ok('setup\'s pixel tag switches off Meta\'s own button-reading, before anything else is sent to it',head.attr==='off'&&JSON.stringify(head.first)==='["set","autoConfig",false,"28886011914332605"]',head);
-  await enter(page,{name:'Zephyrine',age:'6',why:'w_therapist'});await choose(page,'R');await toReady(page,'h_hard');
-  ok('the walk answered both questions',JSON.stringify((await readyShown(page)).lines)===JSON.stringify([WHY[0][2],HOME[1][2]]));
+  await enter(page,{name:'Zephyrine',age:'6',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5');
+  {const rs=await readyShown(page);ok('the walk answered both questions',JSON.stringify(rs.lines)===JSON.stringify([THERAPY[0][2]])&&rs.chips.indexOf(GOAL[1][2])>-1,rs);}
   await next(page);await page.locator('[data-step="mic"].on').waitFor();await notNow(page);await atHandoff(page);
   await page.locator('#achEmailInput').fill('parent@example.com');
   const names=await page.evaluate(()=>[...document.querySelectorAll('button')].filter(b=>/Zephyrine/.test(b.textContent+' '+b.id+' '+b.className+' '+(b.value||''))).length);
   const kept=await page.evaluate(()=>({asks:localStorage.getItem('sona.setupasks.v1'),read:Sona.setupAsks(),profile:localStorage.getItem('sona.profile.v1'),backup:Sona.exportString(),draft:localStorage.getItem('sona.obdraft.v1'),fbq:JSON.stringify(Array.from(fbq.queue).map(a=>Array.from(a))),posthog:Array.from(window.posthog).filter(c=>Array.isArray(c)).map(c=>Array.from(c)),title:document.title}));
   await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
-  ok('the answers are kept in one household key, as fixed ids',kept.asks==='{"v":1,"why":"w_therapist","home":"h_hard"}'&&kept.read.asked===true,kept.asks);
-  const SECRET=new RegExp(WHY.concat(HOME).flatMap(a=>[a[0],a[1]]).concat(['Zephyrine','Ages 5–6']).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
+  ok('the answers are kept in one household key, as fixed ids',kept.asks==='{"v":2,"therapy":"t_yes"}'&&kept.read.asked===true&&kept.read.therapy==='t_yes',kept.asks);
+  // (the therapy answer's ids and the words that would give it away; "Yes" alone is in too many honest places to scan for)
+  const SECRET=new RegExp(THERAPY.map(a=>a[0]).concat(['Not right now','speech therapy','in therapy','Zephyrine','Ages 5–6']).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
   const leaks=requests.filter(r=>SECRET.test(decodeURIComponent(r.url))||SECRET.test(r.body||'')).map(r=>r.url);
   ok('no request to any host, in its address or its body, carries an answer, an answer\'s id, the child\'s name or the age group',leaks.length===0,leaks);
   ok('…nor does anything queued for Meta or for PostHog',!SECRET.test(kept.fbq)&&!SECRET.test(JSON.stringify(kept.posthog)),[kept.fbq,kept.posthog]);
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
-  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","why","sounds","home","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
-  ok('the saved profile has no field for either answer, and a backup carries neither the answers nor a draft',!/"why"|"home"|w_therapist|h_hard/.test(kept.profile)&&!/setupasks|obdraft|w_therapist|h_hard/.test(kept.backup)&&kept.draft===null,kept.profile);
+  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","therapy","sounds","goal","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
+  ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
+  ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
   const lead=requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead').map(r=>JSON.parse(r.body));
   ok('the one lead (the weekly-summary email) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
   ok('no button on the hand-off holds the child\'s name, and the title is still "Sona — Welcome"',names===0&&kept.title==='Sona — Welcome',[names,kept.title]);
@@ -324,7 +329,7 @@ await scenario('the two answers stay on this phone',async()=>{
 // picked. Her own screen (29 Sep; right before the microphone from 2 Oct) left
 // the parent path. The fellowship is named because it is true; never CCC or
 // certified (CLAUDE.md). The browser clinician setup never shows this screen.
-async function atReady(page,{name='Milo',age='4',sound='S',why='w_waiting',home='h_sometimes'}={}){await enter(page,{name,age,why});await choose(page,sound);await toReady(page,home);}
+async function atReady(page,{name='Milo',age='4',sound='S',therapy='t_no',goal='7'}={}){await enter(page,{name,age,therapy});await choose(page,sound);await toReady(page,goal);}
 const readyFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="ready"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect(),r=document.getElementById('readyRachel').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,rachelTop:r.top,rachelBottom:r.bottom,obSideways:ob.scrollWidth-ob.clientWidth,sideways:document.documentElement.scrollWidth-innerWidth,innerHeight};};
 await scenario('Rachel is on the ready screen, right before the price or the microphone',async()=>{
  {const {context,page,errors}=await fresh();try{
@@ -332,12 +337,12 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   const shown=await card.evaluate(async el=>{const img=el.querySelector('img');return {photo:await img.decode().then(()=>img.naturalWidth,()=>0),src:img.getAttribute('src'),alt:img.alt,line:document.getElementById('readyRachel').textContent,page:document.body.innerText,about:el.querySelector('.ready-about').innerText.replace(/\s+/g,' ').trim(),asks:el.querySelectorAll('input,select,textarea,button').length};});
   ok('Rachel is on the ready screen: her photo loads',shown.photo>0&&/\/rachel-wardrop-profile\.jpg$/.test(shown.src)&&/Rachel/.test(shown.alt),shown);
   ok('her line is exactly: '+RACHEL,shown.line===RACHEL,shown.line);
-  ok('…in a block of its own, "About Sona", with the sentences about Sona and the line that Sona does not test or diagnose',shown.about==='ABOUT SONA '+WHY[1][2]+' '+HOME[2][2]+' '+RACHEL+' '+HEDGE,shown.about);
+  ok('…in a block of its own, "About Sona", with the sentences about Sona and the line that Sona does not test or diagnose',shown.about==='ABOUT SONA '+THERAPY[1][2]+' '+RACHEL+' '+HEDGE,shown.about);
   ok('no CCC, certification or claim that the fellowship is behind her',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page+' '+shown.alt),shown.page);
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
   ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b/i.test(honest)&&(honest.match(/diagnos/gi)||[]).length===1,honest);
-  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the home question, with its answer held',await page.locator('[data-step="home"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obHome [aria-pressed="true"]').getAttribute('data-val')==='h_sometimes');
+  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the home question, with its answer held',await page.locator('[data-step="goal"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obGoal [aria-pressed="true"]').getAttribute('data-val')==='7');
   await next(page);await page.locator('[data-step="ready"].on').waitFor();
   await next(page);
   ok('Continue goes on to the microphone: the hand-off card is not showing and no microphone grant is recorded',await page.locator('[data-step="mic"].on').count()===1&&await page.locator('[data-step="achieve"].on').count()===0&&await page.evaluate(()=>localStorage.getItem('sona.micok')!=='1'));
@@ -350,7 +355,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   await page.evaluate(()=>{window.__screens=[document.body.dataset.setupScreen];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
-  ok('the clinician setup never shows ready or Rachel\'s block, nor either family question, forward or back',screens.includes('name')&&!screens.includes('ready')&&!screens.includes('why')&&!screens.includes('home')&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
+  ok('the clinician setup never shows ready or Rachel\'s block, nor either family question, forward or back',screens.includes('name')&&!screens.includes('ready')&&!screens.includes('therapy')&&!screens.includes('goal')&&await page.locator('[data-step="slp"].on').count()===1&&await page.locator('[data-step="ready"]').isHidden(),screens);
   ok('…and keeps its four progress groups',await page.locator('#seg i').count()===4);
   clean('clinician skips ready',errors);
  }finally{await context.close();}}
@@ -371,13 +376,13 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
  // A family already asked (the household key exists, even with both skipped)
  // is not asked again, whichever child this is.
  {const {context,page,errors}=await fresh();try{
-  await page.evaluate(()=>localStorage.setItem('sona.setupasks.v1',JSON.stringify({v:1,why:'',home:''})));await page.reload();
+  await page.evaluate(()=>localStorage.setItem('sona.setupasks.v1',JSON.stringify({v:1,therapy:'',goal:''})));await page.reload();
   ok('a family already asked is not asked twice',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'));
   clean('asked once',errors);
  }finally{await context.close();}}
  // No age picked, two sounds, and the "explore" path: the chips say only what was given.
  {const {context,page,errors}=await fresh();try{
-  await toName(page);await page.locator('#obName').fill('Ava');await next(page);await answerWhy(page);await choose(page,'S');await toReady(page);
+  await toName(page);await page.locator('#obName').fill('Ava');await next(page);await answerTherapy(page);await choose(page,'S');await toReady(page);
   let ready=await readyShown(page);
   ok('with no age picked there is no age chip, and two sounds read "Sounds: R · S"',JSON.stringify(ready.chips)==='["Sounds: R · S"]',ready.chips);
   await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
@@ -394,7 +399,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
     // the stress case: a 12-letter name and three sounds
     await page.evaluate(()=>{nameEl.value='Christopherr';['S','L'].forEach(s=>document.querySelector('#obSounds [data-sound="'+s+'"]').click());paintReady();});await settled(page);
     const stress=await page.evaluate(readyFit),chips=(await readyShown(page)).chips;
-    ok('a 12-letter name and three sounds at 320×568: at most a short scroll, and Rachel\'s line fully on screen without it',JSON.stringify(chips)==='["Ages 7+","Sounds: R · S · L"]'&&stress.scrollHeight-stress.height<=48&&stress.rachelTop>=0&&stress.rachelBottom<=stress.buttonTop&&stress.sideways<=0&&stress.obSideways<=0,stress);
+    ok('a 12-letter name and three sounds at 320×568: at most a short scroll, and Rachel\'s line fully on screen without it',JSON.stringify(chips.slice(0,2))==='["Ages 7+","Sounds: R · S · L"]'&&chips.length<=3&&stress.scrollHeight-stress.height<=48&&stress.rachelTop>=0&&stress.rachelBottom<=stress.buttonTop&&stress.sideways<=0&&stress.obSideways<=0,stress);
     await page.evaluate(()=>{nameEl.value='Wolfeschlegelsteinhaus';paintReady();});await settled(page);
     const long=await page.evaluate(readyFit);
     ok('a 22-letter unbroken name at 320 wide never scrolls the screen sideways',long.sideways<=0&&long.obSideways<=0,long);
@@ -408,18 +413,18 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
 // screen must hold still: no scrolling, no wrapped answer, clear of the footer.
 await scenario('the one-tap questions fit every screen, answered and not',async()=>{
  const askFit=key=>{const ob=document.querySelector('.ob'),st=document.querySelector('[data-step="'+key+'"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,nb=document.getElementById('nextBtn'),foot=painted(nb)?nb:document.getElementById('backBtn');const lines=b=>{const r=document.createRange();r.selectNodeContents(b);return new Set([...r.getClientRects()].map(x=>Math.round(x.top))).size;};return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,picks:[...st.querySelectorAll('.ask-pick')].map(b=>b.getBoundingClientRect().height),lines:[...st.querySelectorAll('.ask-pick')].map(lines),skip:st.querySelector('.ask-skip').getBoundingClientRect().height,cardBottom:st.getBoundingClientRect().bottom,foot:foot.id,footTop:foot.getBoundingClientRect().top,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:ob.scrollWidth-ob.clientWidth};};
- const fits=(f,foot)=>f.foot===foot&&f.scrollHeight<=f.height+1&&f.picks.length===4&&f.picks.every(h=>h>=44&&Math.abs(h-f.picks[0])<0.5)&&f.lines.every(n=>n===1)&&f.skip>=44&&f.cardBottom+12<=f.footTop&&f.sideways<=0&&f.obSideways<=0;
+ const fits=(f,foot)=>f.foot===foot&&f.scrollHeight<=f.height+1&&f.picks.length>=2&&f.picks.every(h=>h>=44&&Math.abs(h-f.picks[0])<0.5)&&f.lines.every(n=>n===1)&&f.skip>=44&&f.cardBottom+12<=f.footTop&&f.sideways<=0&&f.obSideways<=0;
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}},{viewport:{width:320,height:768}}]){
   const {context,page,errors}=await fresh(device),at=device.viewport.width+'×'+device.viewport.height;try{
    await toName(page);await page.locator('#obName').fill('Milo');await next(page);
-   for(const [key,pick] of [['why','w_waiting'],['home','h_notyet']]){
+   for(const [key,pick] of [['therapy','t_no'],['goal','3']]){
     await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     let fit=await page.evaluate(askFit,key);
-    ok(key+' fits at '+at+': no scrolling, four answers of one height on one line each, answers and Skip at least 44 tall, the card clear of Back',fits(fit,'backBtn'),fit);
+    ok(key+' fits at '+at+': no scrolling, the answers of one height on one line each, answers and Skip at least 44 tall, the card clear of Back',fits(fit,'backBtn'),fit);
     await answer(page,key,pick);await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     fit=await page.evaluate(askFit,key);
     ok(key+' fits at '+at+' with an answer held: the card clear of Continue',fits(fit,'nextBtn'),fit);
-    await next(page);if(key==='why')await next(page);
+    await next(page);if(key==='therapy')await next(page);
    }
    clean('question fit '+at,errors);
   }finally{await context.close();}
@@ -428,14 +433,14 @@ await scenario('the one-tap questions fit every screen, answered and not',async(
 
 await scenario('exploring sounds stays optional and can be changed before finishing',async()=>{
  const {context,page,errors}=await fresh();try{
-  await enter(page,{why:'w_extra'});await choose(page,'R');await calm(page);await page.locator('#obExploreSounds').click();
-  ok('Explore all sounds goes on (to the home question) without inventing targets',await page.locator('[data-step="home"].on').count()===1&&await page.evaluate(()=>draft.mode==='play'&&draft.pathReason==='unsure'&&draft.focusSounds.length===0));
+  await enter(page,{therapy:'t_yes'});await choose(page,'R');await calm(page);await page.locator('#obExploreSounds').click();
+  ok('Explore all sounds goes on (to the home question) without inventing targets',await page.locator('[data-step="goal"].on').count()===1&&await page.evaluate(()=>draft.mode==='play'&&draft.pathReason==='unsure'&&draft.focusSounds.length===0));
   await calm(page);await page.locator('#backBtn').click();
   ok('Back from the home question returns to the same sound choices after exploring: empty, with Continue disabled',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
   ok('choosing a sound replaces the general-play choice',await page.evaluate(()=>draft.mode==='speech'&&draft.pathReason===''&&JSON.stringify(draft.focusSounds)==='["S"]'));
   await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();
-  ok('Back from the sound picker returns to "What brings you to Sona?" with the answer held and Continue showing',await page.locator('[data-step="why"].on').count()===1&&await page.locator('#obWhy [aria-pressed="true"]').getAttribute('data-val')==='w_extra'&&await page.locator('#nextBtn').isVisible());
+  ok('Back from the sound picker returns to "What brings you to Sona?" with the answer held and Continue showing',await page.locator('[data-step="therapy"].on').count()===1&&await page.locator('#obTherapy [aria-pressed="true"]').getAttribute('data-val')==='t_yes'&&await page.locator('#nextBtn').isVisible());
   await calm(page);await page.locator('#backBtn').click();
   ok('…and Back again to name and age',await page.locator('[data-step="name"].on').count()===1);
   await next(page);await next(page);await notNow(page);await atHandoff(page);
@@ -473,7 +478,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The two one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='why'||s==='home'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='goal'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -491,7 +496,7 @@ await scenario('clinician setup survives a reload',async()=>{
   ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
   ok('…and an old draft that names no child still restores for a first child',await native.page.evaluate(()=>document.getElementById('obName').value==='Milo'));
   const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
-  ok('…it walks the family path: '+'welcome,name,why,sounds,home,ready,mic',seen.join()==='welcome,name,why,sounds,home,ready,mic',seen);
+  ok('…it walks the family path: '+'welcome,name,therapy,sounds,goal,ready,mic',seen.join()==='welcome,name,therapy,sounds,goal,ready,mic',seen);
   clean('native clinician draft',native.errors);
  }finally{await native.context.close();}
  // …and a clinician who answers "SLP or SLPA" in the app walks the shorter one
@@ -622,21 +627,21 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   // Where the first answer sits once the question shows: go and look, then
   // come Back. (Mouse clicks at fixed points from here on: a locator click
   // waits on the page first, and that wait would eat into the 150 ms.)
-  await next(page);await page.locator('[data-step="why"].on').waitFor();await settled(page);
-  const spot=await centre(page,'#obWhy .ask-pick[data-val="w_therapist"]');
+  await next(page);await page.locator('[data-step="therapy"].on').waitFor();await settled(page);
+  const spot=await centre(page,'#obTherapy .ask-pick[data-val="t_yes"]');
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
   const cont=await centre(page,'#nextBtn');
   await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(150);await page.mouse.click(spot.x,spot.y);
-  ok('a tap that lands on an answer 150 ms after the question appears answers nothing',await page.evaluate(()=>document.body.dataset.setupScreen==='why'&&draft.why===''));
+  ok('a tap that lands on an answer 150 ms after the question appears answers nothing',await page.evaluate(()=>document.body.dataset.setupScreen==='therapy'&&draft.therapy===''));
   await page.waitForTimeout(700);await page.mouse.click(spot.x,spot.y);
-  ok('…and the same tap, on the same spot, once the screen has settled is taken',await page.evaluate(()=>document.body.dataset.setupScreen==='sounds'&&draft.why==='w_therapist'));
+  ok('…and the same tap, on the same spot, once the screen has settled is taken',await page.evaluate(()=>document.body.dataset.setupScreen==='sounds'&&draft.therapy==='t_yes'));
   // the same for "Not sure? Explore all sounds" and the Skip that appears under the finger's reach
-  await next(page);await page.locator('[data-step="home"].on').waitFor();await settled(page);
-  const skip=await centre(page,'#homeSkip');
+  await next(page);await page.locator('[data-step="goal"].on').waitFor();await settled(page);
+  const skip=await centre(page,'#goalSkip');
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="sounds"].on').waitFor();await page.waitForTimeout(600);
   const explore=await centre(page,'#obExploreSounds');
   await page.mouse.click(explore.x,explore.y);await page.waitForTimeout(150);await page.mouse.click(skip.x,skip.y);
-  ok('"Not sure? Explore all sounds", then a tap where Skip appears: the home question is still waiting, unanswered',await page.evaluate(()=>document.body.dataset.setupScreen==='home'&&draft.mode==='play'&&draft.home===''&&document.querySelectorAll('[data-step="ready"].on').length===0));
+  ok('"Not sure? Explore all sounds", then a tap where Skip appears: the home question is still waiting, unanswered',await page.evaluate(()=>document.body.dataset.setupScreen==='goal'&&draft.mode==='play'&&draft.goal===''&&document.querySelectorAll('[data-step="ready"].on').length===0));
   await page.waitForTimeout(700);
   ok('the pause lifts by itself after about half a second',await page.evaluate(()=>!document.body.classList.contains('ob-settling')));
   await page.mouse.click(skip.x,skip.y);
@@ -810,7 +815,7 @@ async function phone(cfg={},viewport={width:393,height:852},hold=null){
   return o;
 }
 // hello → Parent → name + age 7 → an answer → R → an answer → ready
-async function buyerAtReady(page,name='Mia'){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',why:'w_therapist'});await choose(page,'R');await toReady(page,'h_hard');}
+async function buyerAtReady(page,name='Mia'){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5');}
 const tab=page=>page.evaluate(()=>({marker:sessionStorage.getItem('sona.setupafter.v1'),gate:sessionStorage.getItem('sona.gate.v1'),firstgame:sessionStorage.getItem('sona.firstgame.v1'),asks:localStorage.getItem('sona.setupasks.v1'),draft:localStorage.getItem('sona.obdraft.v1'),profile:JSON.parse(localStorage.getItem('sona.profile.v1')||'{}'),mic:Number(localStorage.getItem('__micAsks')||0),bought:__phone.bought.length,asked:__phone.askedAll.length,syncs:__phone.syncs}));
 await scenario('where Sona can sell, ready\'s Continue leaves for the price and a buyer comes back to the microphone',async()=>{
  const {context,page,errors,requests}=await phone();try{
@@ -820,7 +825,7 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await next(page);await page.waitForURL(url=>url.pathname==='/subscribe.html');
   const at=await tab(page),marker=JSON.parse(at.marker||'null');
   ok('Continue on ready goes to exactly /subscribe.html?setup=1',page.url()===base+'/subscribe.html?setup=1',page.url());
-  ok('…with the profile saved, the two answers kept, and the draft gone',at.profile.onboarded===true&&at.profile.childName==='Mia'&&JSON.stringify(at.profile.focusSounds)==='["R"]'&&at.asks==='{"v":1,"why":"w_therapist","home":"h_hard"}'&&at.draft===null&&!('why' in at.profile)&&!('home' in at.profile),at);
+  ok('…with the profile saved, the therapy answer kept, the days picked as the week\'s goal, and the draft gone',at.profile.onboarded===true&&at.profile.childName==='Mia'&&JSON.stringify(at.profile.focusSounds)==='["R"]'&&at.asks==='{"v":2,"therapy":"t_yes"}'&&at.draft===null&&!('therapy' in at.profile)&&at.profile.weeklyGoal===5,at);
   ok('…the grown-ups stamp and the "after the price" marker written for this child, in this tab',Number(at.gate)>0&&!!marker&&marker.kid===''&&typeof marker.at==='number'&&await page.evaluate(()=>Sona.setupAfter()===true),at);
   ok('…no first game marked yet, the phone not asked for the microphone, and nothing bought or even priced by setup',at.firstgame===null&&at.mic===0&&at.bought===0&&at.asked===0,at);
   // a reload of setup while still unpaid (a Back swipe from the price): the
@@ -832,7 +837,7 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.goto(base+'/onboarding.html');await page.locator('[data-step="mic"].on').waitFor();
   const back=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,html:document.documentElement.className,backBtn:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,hello:document.querySelector('[data-step="welcome"]').classList.contains('on'),visible:getComputedStyle(document.querySelector('.ob')).visibility,cta:document.getElementById('nextBtn').textContent.trim(),name:document.getElementById('micName').textContent,role:draft.role,steps:__phone.events.filter(e=>e.name==='setup step').map(e=>e.props.step).join()}));
   ok('with a valid marker and nothing owed, setup opens on the microphone: no hello, no Back, no progress bar, nothing left hidden',back.screen==='mic'&&!back.hello&&back.backBtn==='none'&&back.seg&&back.visible==='visible'&&!/ob-resume|ob-leaving/.test(back.html)&&back.cta==='Turn on Echo\'s ears'&&back.name==='Mia',back);
-  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,why,sounds,home,ready,mic',back.steps);
+  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,therapy,sounds,goal,ready,mic',back.steps);
   await page.reload();await page.locator('[data-step="mic"].on').waitFor();
   ok('a reload on the microphone comes back to the microphone',await screen(page)==='mic');
   await next(page);await page.waitForFunction(()=>__phone.mic.requests.length===1);
@@ -903,7 +908,7 @@ await scenario('families who see no price walk straight on, and the store is nev
  for(const [label,cfg,seed] of [['an app build with no purchase plugin',{app:'nobuy'},null],['a browser',{app:null},null],['a family who joined through their speech therapist',{slp:true},null],['a founder',{founder:true},null],['a household that already subscribes',{},()=>localStorage.setItem('sona.sub.v1',JSON.stringify({active:true,email:'',since:1,source:'stripe'}))]]){
   const {context,page,errors,requests}=await phone(cfg);try{
    await page.goto(base+'/onboarding.html');if(seed){await page.evaluate(seed);await page.reload();}
-   await enter(page,{name:'Mia',age:'8',why:'w_extra'});await choose(page,'R');await toReady(page,'h_most');
+   await enter(page,{name:'Mia',age:'8',therapy:'t_yes'});await choose(page,'R');await toReady(page,'7');
    await next(page);
    const st=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,cta:document.getElementById('nextBtn').textContent.trim(),asked:__phone.asked.length,infos:__phone.infos,syncs:__phone.syncs,marker:!!sessionStorage.getItem('sona.setupafter.v1')}));
    ok(label+': ready\'s Continue opens the microphone at once, in the page, with no "One moment…"',st.screen==='mic'&&st.cta==='Turn on Echo\'s ears'&&st.marker,st);

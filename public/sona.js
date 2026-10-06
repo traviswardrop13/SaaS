@@ -623,7 +623,10 @@
   // days/done for honest practice summaries; metDays/goalDone show the new goal.
   // Before goals existed, a family's practiced days keep their earned weeks.
   const GOALKEY = "sona.goaldays.v1", GOAL_SINCE = "2026-10-05";
-  function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return n === 7 ? 5 : (n === 3 || n === 4 || n === 5) ? n : 4; }
+  // 3, 4, 5 or 7. "Every day" is a real choice again (Travis, 5 Oct 2026, of
+  // setup: "three days a week or five days a week or every day"); for a few
+  // hours that day a saved 7 read as 5.
+  function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4; }
   function weeklyGoalDays() { return goalDays(); }
   function momWeek() {
     const g = getProgress(), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
@@ -1465,7 +1468,11 @@
     const hw = homework();
     if (hw && hw.repsPerDay > 0) return hw.repsPerDay;
     const p = getProfile(), g = parseInt(p.dailyGoal, 10) || 0;
-    return g > 0 ? g : (parseInt(p.childAge, 10) >= 5 ? 50 : REP_GOAL_DEFAULT);
+    // One default for every age (Travis, 5 Oct 2026: "we'll just set the
+    // default to thirty reps per day. Right now it's set to fifty", which it
+    // was for ages 5 and up). So three days a week is a 90-rep week. A number a
+    // grown-up picked in Settings is kept.
+    return g > 0 ? g : REP_GOAL_DEFAULT;
   }
   function goalState() {
     const n = repsToday(), goal = repGoal();
@@ -5714,18 +5721,24 @@
   // about Sona setup's ready screen shows. Asked once per family: the key
   // existing (even with both skipped) is what stops a second ask.
   const SETUPASKS = "sona.setupasks.v1";
-  const SETUP_WHY  = ["w_therapist", "w_waiting", "w_tricky", "w_extra"];
-  const SETUP_HOME = ["h_notyet", "h_hard", "h_sometimes", "h_most"];
+  // ONE question since 5 Oct 2026 (Travis, of the two it replaced, "What brings
+  // you to Sona?" and "How does practice go at home now?": "I don't like"
+  // them; "we could at the very least ask them if they are in speech therapy
+  // or not"). The days-a-week pick that sits beside it in setup is a real
+  // setting (profile.weeklyGoal), not one of these.
+  const SETUP_THERAPY = ["t_yes", "t_no"];
   function _askId(list, v) { return (typeof v === "string" && list.indexOf(v) !== -1) ? v : ""; }
   function setupAsks() {
     let raw = null, v = null;
     try { raw = localStorage.getItem(SETUPASKS); v = JSON.parse(raw || "null"); } catch (e) {}
     v = (v && typeof v === "object") ? v : {};
-    return { asked: raw != null, why: _askId(SETUP_WHY, v.why), home: _askId(SETUP_HOME, v.home) };
+    // (a record from the day the old questions were live still means "asked";
+    // its one answer that was this question carries over)
+    return { asked: raw != null, therapy: _askId(SETUP_THERAPY, v.therapy) || (v.why === "w_therapist" ? "t_yes" : "") };
   }
   function setupAsksSave(a) {
     a = (a && typeof a === "object") ? a : {};
-    try { localStorage.setItem(SETUPASKS, JSON.stringify({ v: 1, why: _askId(SETUP_WHY, a.why), home: _askId(SETUP_HOME, a.home) })); return true; } catch (e) { return false; }
+    try { localStorage.setItem(SETUPASKS, JSON.stringify({ v: 2, therapy: _askId(SETUP_THERAPY, a.therapy) })); return true; } catch (e) { return false; }
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
@@ -5892,5 +5905,5 @@
   try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_WHY, SETUP_HOME };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

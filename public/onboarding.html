@@ -163,11 +163,13 @@
 
     <!-- welcome -->
     <!-- SETUP IS FOUR QUESTIONS since 5 Oct 2026 (Travis, 4–5 Oct 2026:
-         "number B would be good … you can do a full reset"): the name, "What
-         brings you to Sona?", the sounds, and "How does practice go at home
-         now?". Two of them are one tap, each with a Skip, and their answers
-         change nothing a child is given: they only pick which true sentence
-         about Sona the next screen shows, and they stay on this phone. Then
+         "number B would be good … you can do a full reset"): the name, "Is
+         <Name> in speech therapy?", the sounds, and "How many days a week
+         will you practice?" (the second and fourth since that evening: he
+         did not like the two they replaced). Those two are one tap, each
+         with a Skip. The first changes nothing a child is given: it only
+         picks which true sentence about Sona the next screen shows, and it
+         stays on this phone. The other sets the week's goal. Then
          "<Name>'s practice is ready" repeats back what the parent picked,
          and its Continue saves the profile. Where Sona can sell, the price
          comes next, while the grown-up still holds the device; the
@@ -205,23 +207,23 @@
       </div>
     </div>
 
-    <!-- WHAT BRINGS YOU TO SONA (5 Oct 2026). One tap, or Skip. The answer
-         is the button, so the footer shows Continue only when one is already
+    <!-- IN SPEECH THERAPY? (Travis, 5 Oct 2026, of "What brings you to
+         Sona?": "I don't like" it; "we could at the very least ask them if
+         they are in speech therapy or not"). One tap, or Skip. The answer is
+         the button, so the footer shows Continue only when one is already
          held (a parent who came Back). It moves no sound, mode or goal: it
          picks one sentence about Sona on the ready screen, and it is kept in
          one household key that no backup, event or request carries, which is
-         why the screen can say "stays on this device". The wording and the
-         list are Rachel's to change. -->
-    <div class="step" data-step="why">
-      <h1 class="qh" id="whyTitle" tabindex="-1">What brings you to Sona?</h1>
+         why the screen can say "stays on this device". The wording is
+         Rachel's to change. -->
+    <div class="step" data-step="therapy">
+      <h1 class="qh" id="therapyTitle" tabindex="-1">Is your child in speech therapy?</h1>
       <p class="muted ask-help">One tap. Your answer stays on this device.</p>
-      <div class="ask" id="obWhy" role="group" aria-labelledby="whyTitle">
-        <button type="button" class="ask-pick" data-val="w_therapist" aria-pressed="false">We see a speech therapist</button>
-        <button type="button" class="ask-pick" data-val="w_waiting" aria-pressed="false">We're waiting to see one</button>
-        <button type="button" class="ask-pick" data-val="w_tricky" aria-pressed="false">Some sounds are tricky</button>
-        <button type="button" class="ask-pick" data-val="w_extra" aria-pressed="false">A little extra practice</button>
+      <div class="ask" id="obTherapy" role="group" aria-labelledby="therapyTitle">
+        <button type="button" class="ask-pick" data-val="t_yes" aria-pressed="false">Yes</button>
+        <button type="button" class="ask-pick" data-val="t_no" aria-pressed="false">Not right now</button>
       </div>
-      <button type="button" class="skip ask-skip" id="whySkip">Skip</button>
+      <button type="button" class="skip ask-skip" id="therapySkip">Skip</button>
     </div>
 
     <!-- buddy -->
@@ -249,18 +251,22 @@
       <p class="muted sound-help">Sona practices — it doesn't test or diagnose.</p>
     </div>
 
-    <!-- HOW PRACTICE GOES AT HOME (5 Oct 2026): the second one-tap question,
-         built and kept exactly as the first. -->
-    <div class="step" data-step="home">
-      <h1 class="qh" id="homeTitle" tabindex="-1">How does practice go at home now?</h1>
-      <p class="muted ask-help">No wrong answer. It stays on this device.</p>
-      <div class="ask" id="obHome" role="group" aria-labelledby="homeTitle">
-        <button type="button" class="ask-pick" data-val="h_notyet" aria-pressed="false">We haven't started</button>
-        <button type="button" class="ask-pick" data-val="h_hard" aria-pressed="false">It's a struggle</button>
-        <button type="button" class="ask-pick" data-val="h_sometimes" aria-pressed="false">Now and then</button>
-        <button type="button" class="ask-pick" data-val="h_most" aria-pressed="false">Most days</button>
+    <!-- HOW MANY DAYS A WEEK (Travis, 5 Oct 2026: "choose whether they want
+         to practice three days a week or five days a week or every day"; it
+         took the place of "How does practice go at home now?"). One tap, as
+         the question before it. Unlike that one it is a real setting: the
+         pick is the child's weekly goal (profile.weeklyGoal), the one
+         Settings shows, and Skip leaves that goal as it was. How much
+         practice to ask for is Rachel's to rule on. -->
+    <div class="step" data-step="goal">
+      <h1 class="qh" id="goalTitle" tabindex="-1">How many days a week will you practice?</h1>
+      <p class="muted ask-help">Pick what fits real life. You can change it in Settings.</p>
+      <div class="ask" id="obGoal" role="group" aria-labelledby="goalTitle">
+        <button type="button" class="ask-pick" data-val="3" aria-pressed="false">3 days a week</button>
+        <button type="button" class="ask-pick" data-val="5" aria-pressed="false">5 days a week</button>
+        <button type="button" class="ask-pick" data-val="7" aria-pressed="false">Every day</button>
       </div>
-      <button type="button" class="skip ask-skip" id="homeSkip">Skip</button>
+      <button type="button" class="skip ask-skip" id="goalSkip">Skip</button>
     </div>
 
     <!-- "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the
@@ -302,15 +308,6 @@
     </div>
 
     <!-- daily goal -->
-    <div class="step" data-step="goal">
-      <div class="qh">How often should practice happen?</div>
-      <p class="muted">This goal is yours, not your child's — pick what fits real life. Sona tracks the week for you and never pressures the kid.</p>
-      <div class="choices" id="obGoal">
-        <div class="choice" data-val="3"><span class="ce" data-ic="sprout">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
-        <div class="choice" data-val="4"><span class="ce" data-ic="star">⭐</span> 4 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
-        <div class="choice" data-val="5"><span class="ce" data-ic="flame">🔥</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">A little more</span></div>
-      </div>
-    </div>
 
     <!-- The child takes over only when the grown-up is ready. -->
     <div class="step" data-step="achieve">
@@ -435,7 +432,7 @@
       // The two one-tap answers (an id from Sona.SETUP_WHY / SETUP_HOME, or
       // "" for a skip). Never seeded from the profile or from the saved
       // household answers: they are asked once, and no profile holds them.
-      why: "", home: "",
+      therapy: "", goal: "",
     };
 
     // PARTIAL SETUP SURVIVES AN INTERRUPTION. draft lived in memory only, so a
@@ -457,13 +454,13 @@
         // An explicit list, not Object.keys(held): this reads a value off
         // disk, and a draft is not allowed to introduce fields of its own.
         ["childName","childAge","character","role","mode","focusSounds",
-         "slpEvaluated","goals","email","interests","pathReason","why","home"].forEach(function (k) {
+         "slpEvaluated","goals","email","interests","pathReason","therapy","goal"].forEach(function (k) {
           if (held[k] !== undefined && held[k] !== null) draft[k] = held[k];
         });
       } catch (e) {}
     })();
     // …and an answer is one of the fixed ids, or nothing
-    if((Sona.SETUP_WHY||[]).indexOf(draft.why)<0)draft.why=""; if((Sona.SETUP_HOME||[]).indexOf(draft.home)<0)draft.home="";
+    if((Sona.SETUP_THERAPY||[]).indexOf(draft.therapy)<0)draft.therapy=""; if(["3","5","7"].indexOf(draft.goal)<0)draft.goal="";
     // A restored clinician draft must not start clinician setup in the family
     // app. (Not on the way back from the price: a clinician who set the app
     // up for a child is role "slp" in the saved profile, and must stay one or
@@ -487,7 +484,7 @@
     var ORDER_PARENT=[];
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
-      var o=asks?["welcome","name","why","sounds","home","ready","mic"]
+      var o=asks?["welcome","name","therapy","sounds","goal","ready","mic"]
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
@@ -519,8 +516,7 @@
       welcome: "Hi! I'm Echo!",
       who:     "Hi! I'm Echo!",
       name:    "Nice to meet you!",
-      why:     "I'm glad you're here!",
-      home:    "No wrong answers!",
+      therapy: "I'm glad you're here!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
@@ -535,10 +531,10 @@
 
     var segEl = document.getElementById("seg");
     // A parent's QUESTIONS get a segment each: four for a first child (name,
-    // why, sounds, home), two for a second child or a clinician in the app.
+    // therapy, sounds, goal), two for a second child or a clinician in the app.
     // The hello, "who", the ready screen, the microphone and the hand-off ask
     // nothing and take none. The browser clinician keeps a segment a step.
-    var ASKS={name:1,why:1,sounds:1,home:1};
+    var ASKS={name:1,therapy:1,sounds:1,goal:1};
     function askKeys(){return ORDER.filter(function(k){return ASKS[k];});}
     function paintSeg(){segEl.innerHTML="";var count=ORDER===ORDER_PARENT?askKeys().length:ORDER.length-1;for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i"));}
     function paintProgress(key){
@@ -691,11 +687,6 @@
 
     // Weekly goal days: single select, default four.
     var goalVal = String(Sona.goalDays ? Sona.goalDays() : (p.weeklyGoal || 4));
-    var goalWrap = document.getElementById("obGoal");
-    goalWrap.querySelectorAll(".choice").forEach(function (ch) {
-      if (ch.dataset.val === goalVal) ch.classList.add("on");
-      ch.onclick = function () { Sona.sfx.tap(); goalVal = ch.dataset.val; goalWrap.querySelectorAll(".choice").forEach(function (n) { n.classList.remove("on"); }); ch.classList.add("on"); };
-    });
 
     // Skipping target selection keeps the existing general play order. It
     // does not assess the child or infer practice targets from their age.
@@ -774,13 +765,12 @@
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
     // with Sona is, so the words are Rachel's to change.
-    var READY_WHY={w_therapist:"Sona is practice for the days between speech visits.",w_waiting:"Sona is practice you can do at home. It does not replace a speech therapist.",w_tricky:"Sona practices one sound at a time, in short games.",w_extra:"Sona is short speech practice, built into games."};
-    var READY_HOME={h_notyet:"Sona starts small: one sound and one short game.",h_hard:"In Sona, the practice is inside the game.",h_sometimes:"Sona counts each week's practice, so you can see it.",h_most:"Sona has games and books, with new ones on the way."};
+    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home. It does not replace a speech therapist."};
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
     // ask the phone for the microphone). EVERY tap that changes the step
-    // calls this first (who, why, home, Continue, Back, Explore, ready → mic,
+    // calls this first (therapy, goal, Continue, Back, Explore, ready → mic,
     // mic → hand-off): for 450 ms the steps, the footer and the hand-off's ×
     // take no tap (onboarding-crafted.css).
     function settle(){document.body.classList.add("ob-settling");setTimeout(function(){document.body.classList.remove("ob-settling");},450);}
@@ -792,7 +782,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,who:1,name:1,why:1,sounds:1,home:1,ready:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,name:1,therapy:1,sounds:1,goal:1,ready:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -802,7 +792,7 @@
       document.getElementById(hostId).querySelectorAll(".ask-pick").forEach(function(b){b.onclick=function(){go(b.dataset.val);};});
       document.getElementById(skipId).onclick=function(){go("");};
     }
-    wireAsk("why","obWhy","whySkip");wireAsk("home","obHome","homeSkip");
+    wireAsk("therapy","obTherapy","therapySkip");wireAsk("goal","obGoal","goalSkip");
     // The ready screen, built ONLY from what the parent gave us: textContent
     // throughout, the age group only if one was picked, and no sentence for a
     // question that was skipped, was not asked, or was a clinician's setup.
@@ -815,8 +805,9 @@
       if(age>=2&&age<=4)chip("Ages 2–4");else if(age>=5&&age<=6)chip("Ages 5–6");else if(age>=7)chip("Ages 7+");
       var labels=Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;});
       chip(draft.mode==="play"?"Every sound, easiest first":(labels.length===1?"Sound: ":"Sounds: ")+labels.join(" · "));
+      if(draft.goal&&ORDER.indexOf("goal")>-1)chip(draft.goal==="7"?"Every day":draft.goal+" days a week");
       var lines=document.getElementById("readyLines");lines.innerHTML="";
-      if(draft.role!=="slp")[["why",READY_WHY],["home",READY_HOME]].forEach(function(pr){
+      if(draft.role!=="slp")[["therapy",READY_THERAPY]].forEach(function(pr){
         var t=ORDER.indexOf(pr[0])>-1&&pr[1][draft[pr[0]]];
         if(t){var li=document.createElement("li");li.textContent=t;lines.appendChild(li);}
       });
@@ -855,11 +846,13 @@
       if(key==="name") nameEl.focus();
       // A held answer shows pressed, and only then does the footer offer
       // Continue (onboarding-crafted.css reads body.ob-answered).
-      if(key==="why"||key==="home"){document.getElementById(key==="why"?"obWhy":"obHome").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
-      document.body.classList.toggle("ob-answered",(key==="why"||key==="home")&&!!draft[key]);
+      if(key==="therapy"||key==="goal"){document.getElementById(key==="therapy"?"obTherapy":"obGoal").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
+      document.body.classList.toggle("ob-answered",(key==="therapy"||key==="goal")&&!!draft[key]);
       if(key==="ready"){paintReady();wallAsk();}
       // Nothing to type on these, so a screen reader is taken to the heading.
-      if(key==="why"||key==="home"||key==="ready"){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
+      // the question names the child once a name is typed (a heading, never a button's words)
+      if(key==="therapy"){var tn=(nameEl.value||draft.childName||"").trim();document.getElementById("therapyTitle").textContent=tn?"Is "+tn+" in speech therapy?":"Is your child in speech therapy?";}
+      if(key==="therapy"||key==="goal"||key==="ready"){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
       if(key==="email"){
@@ -879,7 +872,7 @@
       if(key==="who")return;
       // …and on the two one-tap questions Continue only keeps an answer
       // already held; with none, a stray press does nothing
-      if((key==="why"||key==="home")&&!draft[key])return;
+      if((key==="therapy"||key==="goal")&&!draft[key])return;
       if(key==="ready"){leaveReady();return;}
       if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
@@ -948,7 +941,7 @@
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
         dailyMinutes: 5,
-        weeklyGoal: parseInt(goalVal, 10) || 4,
+        weeklyGoal: parseInt(draft.goal, 10) || parseInt(goalVal, 10) || 4,   // the pick, else what it was (Skip, a second child)
         email: draft.email || "",
         pathReason: draft.pathReason || "",
         onboarded: true,
@@ -957,7 +950,7 @@
       // profile above gets no field for them: the profile is what a clinician
       // share reads). Written only when the questions were on this path, so
       // the key existing is what stops a family being asked twice.
-      try{if(ORDER.indexOf("why")>-1&&draft.role!=="slp"&&Sona.setupAsksSave)Sona.setupAsksSave({why:draft.why||"",home:draft.home||""});}catch(e){}
+      try{if(ORDER.indexOf("therapy")>-1&&draft.role!=="slp"&&Sona.setupAsksSave)Sona.setupAsksSave({therapy:draft.therapy||""});}catch(e){}
       // the scratchpad has done its job; a stale draft must never shadow a
       // real profile on a later visit
       clearDraft();

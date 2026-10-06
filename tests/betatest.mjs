@@ -45,8 +45,8 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 // loses every check after it.
 const STEP = `(() => { const st = (document.querySelector(".step.on") || {}).dataset?.step;
   if (!st || st === "achieve") return;                    // never press the hand-off's button, never click on another page
-  if (st === "why") document.querySelector('#obWhy [data-val="w_tricky"]').click();
-  else if (st === "home") document.querySelector('#obHome [data-val="h_notyet"]').click();
+  if (st === "therapy") document.querySelector('#obTherapy [data-val="t_no"]').click();
+  else if (st === "goal") document.querySelector('#obGoal [data-val="3"]').click();
   else if (st === "mic") document.getElementById("micNotNow").click();
   else document.getElementById("nextBtn").click(); })()`;
 const onStep = (pg) => pg.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step || "");
@@ -129,7 +129,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   ok("…a walk that reaches the microphone, by way of both one-tap questions and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,why,sounds,home,ready,mic", JSON.stringify(hosts));
+    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,therapy,sounds,goal,ready,mic", JSON.stringify(hosts));
   await ob2.close();
 }
 
@@ -139,11 +139,11 @@ const clickNext = async () => { await settledOb(page); await page.evaluate(STEP)
 await clickNext(); await clickNext(); // the hello → the question → name (the parent's answer)
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name → "What brings you to Sona?"
-ok("after the name comes one tap: \"What brings you to Sona?\"", (await onStep(page)) === "why", await onStep(page));
+ok("after the name comes one tap: \"What brings you to Sona?\"", (await onStep(page)) === "therapy", await onStep(page));
 await clickNext(); // an answer → sounds
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → "How does practice go at home now?"
-ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "home", await onStep(page));
+ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "goal", await onStep(page));
 await clickNext(); // an answer → ready
 // "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the parent
 // picked, and under "About Sona" says who built it: Rachel's line, word for
@@ -204,7 +204,9 @@ ok("SLP-referred → tagged for the clinician's roster, with no founding grant w
   prof.slpCode === "RACHEL1" && prof.earlyAdopter !== true);
 // the deferred questions must not have been silently answered on the parent's
 // behalf either — they are asked later, in Settings, or they keep their default
-ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 4);
+// 5 Oct 2026 (Travis: "choose whether they want to practice three days a week
+// or five days a week or every day"): setup asks, and the pick is the goal.
+ok("the days a week picked in setup are the week's goal", prof.weeklyGoal === 3);
 ok("no email was demanded to finish", prof.email === "");
 ok("onboarding no pageerrors", errs.length === 0);
 
@@ -228,8 +230,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   // Parents go from the child's details to one tap ("What brings you to
   // Sona?"), then to a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
-  const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("whyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obWhy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
-  ok("after the name comes the why question: one short heading and four one-tap answers", asked.on === "why" && asked.title === "What brings you to Sona?" && asked.answers === 4 && !asked.overflow, JSON.stringify(asked));
+  const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("therapyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obTherapy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
+  ok("after the name comes one tap, \"Is <Name> in speech therapy?\": one short heading and two answers", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 2 && !asked.overflow, JSON.stringify(asked));
   await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → sounds
   const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
   ok("…and the sound grid is the next screen and fits at 390px", grid.onSounds&&!grid.overflow&&grid.labels.length===19, JSON.stringify(grid));
@@ -276,7 +278,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
   }));
   ok("the draft also holds the two one-tap answers, as fixed ids, until the profile is saved",
-    onReady.step === "ready" && !!onReady.draft && onReady.draft.why === "w_tricky" && onReady.draft.home === "h_notyet" &&
+    onReady.step === "ready" && !!onReady.draft && onReady.draft.therapy === "t_no" && onReady.draft.goal === "3" &&
     onReady.draft.childName === "Rosie" && onReady.prof.onboarded !== true, JSON.stringify(onReady.draft));
   await hop(700);                                        // ready → mic: the profile is real
   const after = await pg.evaluate(() => ({
@@ -287,7 +289,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   ok("…and the scratchpad is torn up once the profile is real: on leaving the ready screen",
     after.step === "mic" && after.draft === null && after.prof.onboarded === true, JSON.stringify(after.draft));
   ok("…and the answers never become part of the profile",
-    !("why" in after.prof) && !("home" in after.prof), JSON.stringify(Object.keys(after.prof)));
+    !("therapy" in after.prof) && !("goal" in after.prof), JSON.stringify(Object.keys(after.prof)));
   await pg.close();
 }
 
@@ -320,7 +322,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
     onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
-    onHome: document.querySelector('[data-step="home"]').classList.contains("on"),
+    onHome: document.querySelector('[data-step="goal"]').classList.contains("on"),
   }));
   ok("…and can continue without choosing a target (to the home question, then the ready screen)",
     !landed.onSounds && landed.onHome, JSON.stringify(landed));
@@ -331,7 +333,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     chips: [...document.querySelectorAll("#readyChips li")].map((l) => l.textContent),
   }));
   ok("…where the ready screen says \"Every sound, easiest first\", never a list Sona chose for the child",
-    ready.step === "ready" && JSON.stringify(ready.chips) === '["Every sound, easiest first"]', JSON.stringify(ready.chips));
+    ready.step === "ready" && ready.chips[0] === "Every sound, easiest first" && ready.chips.slice(1).every((c) => /days a week$|^Every day$/.test(c)), JSON.stringify(ready.chips));
   ok("…and is not dressed up as a recommendation or a result either",
     !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b|\bplan\b|score|result/i.test(ready.says.replace(/doesn't test or diagnose/, "")),
     ready.says.slice(0, 200));
@@ -414,7 +416,7 @@ await clickNext(); // an answer → sounds
 await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({
   onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
-  onHome: document.querySelector('[data-step="home"]').classList.contains("on"),
+  onHome: document.querySelector('[data-step="goal"]').classList.contains("on"),
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
 ok("explore goes on (the home question, then the ready screen) without selected targets", !playSkip.onSounds && playSkip.onHome && !playSkip.build, JSON.stringify(playSkip));
@@ -428,7 +430,7 @@ const playReady = await page.evaluate(() => ({
   build: !!document.getElementById("obBuild"),
 }));
 ok("the ready screen says \"Nora's practice is ready\" and \"Every sound, easiest first\", never a sound plan",
-  playReady.step === "ready" && playReady.title === "Nora's practice is ready" && JSON.stringify(playReady.chips) === '["Every sound, easiest first"]' && !playReady.build, JSON.stringify(playReady));
+  playReady.step === "ready" && playReady.title === "Nora's practice is ready" && playReady.chips[0] === "Every sound, easiest first" && playReady.chips.slice(1).every((c) => /days a week$|^Every day$/.test(c)) && !playReady.build, JSON.stringify(playReady));
 await clickNext(); // ready → mic
 await clickNext(); // mic → the hand-off
 await page.waitForTimeout(150);

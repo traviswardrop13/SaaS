@@ -150,23 +150,34 @@ changing one. What follows from the rule:
 - **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
-  hello → name and age → **"What brings you to Sona?"** → sounds →
-  **"How does practice go at home now?"** → **"<Name>'s practice is ready"** →
+  hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
+  **"How many days a week will you practice?"** → **"<Name>'s practice is
+  ready"** →
   the price → microphone → "Hand the phone to <Name>!" → the first game. The
   old order told a parent to hand the phone over and tap "Let's play!", and
   then showed three money screens to the child holding it.
-  - **The two new questions are one tap each, can be skipped, and change
-    nothing a child is given** (no sounds, mode or goal). Each puts one true
-    sentence about SONA on the ready screen, never one about the child. Their
-    wording, the eight sentences and the ready screen are Rachel's to change.
-  - **The answers stay on the phone**: a household key
+  - **The two questions between are one tap each and can be skipped**
+    (Travis, 5 Oct 2026, of the first pair, "What brings you to Sona?" and
+    "How does practice go at home now?": "I don't like" them; "we could at
+    the very least ask them if they are in speech therapy or not. Oh, and
+    then also for them to be able to choose whether they want to practice
+    three days a week or … five days a week or every day"). **Therapy**
+    ("Yes" / "Not right now") changes nothing a child is given: it puts one
+    true sentence about SONA on the ready screen, never one about the child.
+    **Days a week** (3 days / 5 days / Every day) is a real setting, the
+    child's weekly goal (`profile.weeklyGoal`, the one Settings shows), and
+    Skip leaves that goal as it was. The wording of both, the two sentences
+    and the ready screen are Rachel's to change; so is how much practice a
+    family is asked for.
+  - **The therapy answer stays on the phone**: a household key
     (`sona.setupasks.v1`, `Sona.setupAsks()`), not in the profile, not in a
     backup (`NO_EXPORT`), in no request, event, title or log. In a browser
     Meta's pixel reports the words on tapped buttons by itself, so the setup
     page's pixel tag carries `data-autoconfig="off"` (that page only; whether
     the landing pages should too is Travis's call). Asked once per family.
   - **The ready screen** repeats only what the parent said (name, age group
-    if given, the sounds, or "Every sound, easiest first") with "Sona
+    if given, the sounds, or "Every sound, easiest first", and the days a
+    week picked) with "Sona
     practices — it doesn't test or diagnose." Never "plan" beside Rachel's
     name, never an age norm, a result or a price. **The profile is saved when
     the parent leaves it**, before the price and before the microphone.
@@ -2135,8 +2146,14 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 
 **Daily rep goals and weekly goal days** (Travis handoff, 5 Oct 2026).
 Home uses the shared read-only `dayGoal()` count: today's practice tries plus
-accepted game and book asks. Defaults are 30 for ages 3–4 and 50 for ages 5–8,
-4 days a week; grown-ups choose 3/4/5 days and a daily number in Settings. An
+accepted game and book asks. **The default is 30 reps a day at every age**
+(Travis, that evening: "we'll just set the default to thirty reps per day.
+Right now it's set to fifty", which it was for ages 5–8; "if they say three
+days per week, that will make their goal ninety reps a week"), and 4 days a
+week for a family never asked. Setup asks the days (3, 5 or every day); in
+Settings grown-ups choose 3, 4, 5 or every day and a daily number, and a
+number picked there is kept. **"Every day" is 7 again**: for a few hours on 5
+Oct a saved 7 read as 5. An
 active clinician assignment keeps precedence over the family's daily number.
 These are product defaults, not a research-established treatment dose.
 

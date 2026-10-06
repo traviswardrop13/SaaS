@@ -30,7 +30,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 import { serve, open, calm, STORES, IDS, NOON, isOrange, isTeal } from "./_phone.mjs";
 
 const STUB = (what) => "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>" + what + "</title></head><body><p id=\"stub\">" + what + "</p></body></html>";
-const { base, hits, close } = await serve({ pages: { "/onboarding.html": STUB("setup"), "/today.html": STUB("home"), "/charge.html": STUB("game") } });
+const { base, hits, close } = await serve({ pages: { "/onboarding.html": STUB("setup"), "/today.html": STUB("goal"), "/charge.html": STUB("game") } });
 const browser = await chromium.launch(launchOpts());
 let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }

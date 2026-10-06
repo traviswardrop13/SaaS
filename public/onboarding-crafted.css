@@ -151,16 +151,16 @@ body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
 body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
 body.keyboard-open .ob #obAge .sound { min-height: 50px; }
 
-/* THE TWO ONE-TAP QUESTIONS (5 Oct 2026): "What brings you to Sona?" and "How
-   does practice go at home now?". The answers are the buttons, in the sound
+/* THE TWO ONE-TAP QUESTIONS (5 Oct 2026): "Is <Name> in speech therapy?" and
+   "How many days a week will you practice?". The answers are the buttons, in the sound
    chips' own cream and teal, so the footer offers Continue only when an answer
    is already held (a parent who came Back): body.ob-answered, set by render().
    The rules that name #nextBtn set layout and nothing else, and the painted
    classes are named without "btn" or "button": tests/loadtest.mjs reads any
    rule whose selector names a button for orange and green. */
-.ob .step[data-step="why"], .ob .step[data-step="home"] { text-align: center; }
-body[data-setup-screen="why"]:not(.ob-answered) #nextBtn,
-body[data-setup-screen="home"]:not(.ob-answered) #nextBtn { display: none; }
+.ob .step[data-step="therapy"], .ob .step[data-step="goal"] { text-align: center; }
+body[data-setup-screen="therapy"]:not(.ob-answered) #nextBtn,
+body[data-setup-screen="goal"]:not(.ob-answered) #nextBtn { display: none; }
 .ob .ask-help { font-size: 13px; margin: 0; }
 .ask { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 .ask-pick { width: 100%; min-height: 54px; padding: 12px 14px; border-radius: 18px; border: 1.5px solid #e4d7c3; background: #fff; color: #5b3a20; box-shadow: 0 3px 0 #e8dcc980; font: 800 19px/1.2 'Baloo 2', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent; }

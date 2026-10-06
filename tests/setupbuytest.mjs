@@ -36,11 +36,11 @@ async function toReady(page, name) {
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
-  await step(page, "why"); await tap(page, '#obWhy .ask-pick[data-val="w_therapist"]');
+  await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
-  await step(page, "home"); await tap(page, '#obHome .ask-pick[data-val="h_hard"]');
+  await step(page, "goal"); await tap(page, '#obGoal .ask-pick[data-val="5"]');
   await step(page, "ready");
 }
 
@@ -80,7 +80,7 @@ await scenario("a family that can buy", async () => {
     await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
     ok("\"Let's play!\" opens the first game (Fruit Slice's practice page for a six-year-old), open because Premium is on",
       /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()), page.url());
-    const leaked = requests.filter((r) => /w_therapist|h_hard|speech therapist|a struggle/i.test(r.url + " " + (r.body || "")));
+    const leaked = requests.filter((r) => /t_yes|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
     ok("the two answers the parent tapped are in no request, address or body, anywhere in the walk", leaked.length === 0, leaked.slice(0, 3));
     const named = requests.filter((r) => /\bMia\b/.test(decodeURIComponent(r.url) + " " + (r.body || "")));
     ok("…and neither is the child's name", named.length === 0, named.slice(0, 3));

@@ -36,10 +36,10 @@ try{
  ok('goal week uses earned days, preserves older weeks and retains actual practice days',prior.goalDone===3&&prior.done===1&&!prior.hit&&prior.weekStreak===2&&prior.metDays[3]&&!prior.metDays[2],prior);
  await page.evaluate(()=>{Sona.saveProfile({weeklyGoal:3});});
  ok('meeting this week adds one to completed goal weeks',await page.evaluate(()=>Sona.momWeek().weekStreak===3&&Sona.momWeek().hit));
- await page.evaluate(()=>Sona.saveProfile({weeklyGoal:7}));ok('legacy every-day goal reads as 5',await page.evaluate(()=>Sona.goalDays()===5));
+ await page.evaluate(()=>Sona.saveProfile({weeklyGoal:7}));ok('every day is a real goal again: 7 days (Travis, 5 Oct 2026; for a few hours it read as 5)',await page.evaluate(()=>Sona.goalDays()===7));
  await page.evaluate(()=>{Sona.addKid('Sibling',6);});
  state=await page.evaluate(()=>({d:Sona.dayGoal(),days:Sona.goalDays(),stamps:localStorage.getItem(Sona.kkey('sona.goaldays.v1')),week:Sona.momWeek()}));
- ok('sibling starts with age 5–8 goal 50, 4 days, 0 reps and no streak',state.d.goal===50&&state.d.n===0&&!state.d.done&&state.days===4&&state.stamps===null&&state.week.weekStreak===0,state);
+ ok('sibling starts with the one default goal, 30 a day at every age, 4 days, 0 reps and no streak',state.d.goal===30&&state.d.n===0&&!state.d.done&&state.days===4&&state.stamps===null&&state.week.weekStreak===0,state);
  await page.evaluate(()=>{Sona.saveProfile({dailyGoal:1});Sona.gameRep('R');});
  ok('sibling earns an independent daily stamp',await page.evaluate(()=>!!JSON.parse(localStorage.getItem(Sona.kkey('sona.goaldays.v1')))[Sona.localDay()]));
  await page.evaluate(()=>Sona.switchKid(''));
@@ -53,10 +53,11 @@ try{
  ok('homework target outranks the family target',await page.evaluate(()=>Sona.repGoal()===40));
  await page.goto(origin+'/settings.html#reps');await page.waitForFunction(()=>!!document.getElementById('dailyGoalPick')?.options.length,{},{timeout:3000}).catch(async e=>{console.log('SETTINGS DIAGNOSTIC',await page.evaluate(()=>({url:location.href,body:document.body.textContent.slice(0,300),gate:sessionStorage.getItem('sona.gate.v1'),now:Date.now()})),errors);throw e;});
  state=await page.evaluate(()=>({lock:document.getElementById('dailyGoalPick').disabled,value:document.getElementById('dailyGoalPick').value,days:[...document.getElementById('goalDaysPick').options].map(o=>o.value),overflow:document.documentElement.scrollWidth>innerWidth+1,help:document.getElementById('goalHelp').textContent}));
- ok('grown-up controls fit 320px with 3/4/5 days and a locked assignment target',state.lock&&state.value==='40'&&state.days.join(',')==='3,4,5'&&!state.overflow&&/sound practice only/.test(state.help),state);
+ ok('grown-up controls fit 320px with 3, 4, 5 or every day and a locked assignment target',state.lock&&state.value==='40'&&state.days.join(',')==='3,4,5,7'&&!state.overflow&&/sound practice only/.test(state.help),state);
  ok('no page errors',errors.length===0,errors);await context.close();
  const lowered=await fresh('6');
- await lowered.page.evaluate(()=>{for(let i=0;i<40;i++)Sona.gameRep('R');Sona.saveProfile({weeklyGoal:3,childName:'Changed name'});});
+ // (a grown-up's own 50: the default is 30 for every age since 5 Oct 2026, and 40 reps would already meet it)
+ await lowered.page.evaluate(()=>{Sona.saveProfile({dailyGoal:50});for(let i=0;i<40;i++)Sona.gameRep('R');Sona.saveProfile({weeklyGoal:3,childName:'Changed name'});});
  ok('name and weekly-goal changes do not create a daily completion stamp',await lowered.page.evaluate(()=>!Sona.dayGoal().done&&localStorage.getItem('sona.goaldays.v1')===null));
  await lowered.page.evaluate(()=>Sona.saveProfile({dailyGoal:30}));
  ok('lowering the daily target stamps today from already-earned real reps',await lowered.page.evaluate(()=>Sona.dayGoal().n===40&&Sona.dayGoal().done&&JSON.parse(localStorage.getItem('sona.goaldays.v1'))[Sona.localDay()]===30));
