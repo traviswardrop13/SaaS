@@ -5129,6 +5129,15 @@
     try { const e = info && (info.customerInfo || info); return !!(e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT]); } catch (e2) { return false; }
   }
   function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
+  // Which period Apple says Premium is in: "TRIAL" (free days), "NORMAL",
+  // "INTRO" or "PREPAID", or "" when the answer does not say (_tellPlan).
+  function _iapPeriod(info) {
+    try {
+      const e = info && (info.customerInfo || info);
+      const f = e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT];
+      return f && f.periodType ? String(f.periodType).toUpperCase() : "";
+    } catch (e2) { return ""; }
+  }
   // fetch the live product (price string comes from the App Store, locale-
   // correct). kind: "annual" (default) | "monthly".
   // THE PRODUCT ASKED FOR, OR NOTHING (1 Oct 2026). This took the first
@@ -5173,7 +5182,7 @@
       });
     }).then((res) => {
       if (res && res.userCancelled) throw Object.assign(new Error("cancelled"), { cancelled: true });
-      if (_iapActive(res)) { _iapUnlock(); return { ok: true }; }
+      if (_iapActive(res)) { _iapUnlock(); return { ok: true, period: _iapPeriod(res) }; }
       // some plugin versions return only {productIdentifier}; verify via customer info
       return iapRefresh(true).then((active) => { if (active) return { ok: true }; throw new Error("not-entitled"); });
     }).catch((e) => {
@@ -5463,10 +5472,44 @@
     if (code === "cancelled") err.cancelled = true;
     return err;
   }
+  // KIT HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
+  // it"). A parent who gave the app their email (setup's weekly-summary box)
+  // is on Sona's email list already. Apple never tells Sona who bought, so
+  // once a purchase here has gone through, the list is told which kind it
+  // was through /api/lead, the one door every grown-up's email uses: "trial"
+  // when Apple started the free days, "paid" when it charged at once. Kit's
+  // own automations then stop the welcome emails and can send the last-day
+  // note. What goes: that email and that one word. Never a child's name or
+  // anything about their practice. Never without an email (nobody is asked
+  // for one here), and once per kind and address on this phone.
+  const PLANTOLD = "sona.plantold.v1";
+  function parentEmail() {
+    const good = (v) => { const t = typeof v === "string" ? v.trim() : ""; return t.length <= 254 && /^\S+@\S+\.\S+$/.test(t) ? t : ""; };
+    let got = "";
+    try { got = good(load(PKEY, {}).email); } catch (e) {}
+    // the email sits on the profile of the child who was set up first; any child's will do
+    if (!got) { try { _kids().list.some((k) => { const p = JSON.parse(localStorage.getItem(k.slot ? PKEY + "@" + k.slot : PKEY) || "{}"); got = good(p.email); return !!got; }); } catch (e) {} }
+    if (!got) { try { got = good((getTrial() || {}).email) || good(getSub().email); } catch (e) {} }
+    return got;
+  }
+  function _tellPlan(period, plan) {
+    // Apple's own answer first; only when it says nothing, what the card sold
+    let what = period === "TRIAL" ? "trial" : (period === "NORMAL" || period === "INTRO" || period === "PREPAID") ? "paid" : "";
+    if (!what) { try { what = plan && plan.state === "free" ? "trial" : plan && plan.state === "paid" ? "paid" : ""; } catch (e) {} }
+    const email = what ? parentEmail() : "";
+    if (!email) return;
+    const mark = what + " " + email.toLowerCase();
+    try { if (localStorage.getItem(PLANTOLD) === mark) return; localStorage.setItem(PLANTOLD, mark); } catch (e) {}
+    try {
+      fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ email: email, role: "parent", plan: what, source: what === "trial" ? "app-trial" : "app-paid",
+          summary: what === "trial" ? "Started Sona Premium's free days in the app" : "Bought Sona Premium in the app" }) }).catch(() => {});
+    } catch (e) {}
+  }
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
     if (!p) return Promise.reject(_buyError("no-plan"));
-    return _soon(() => iapPurchase(plan.kind, p)).then(() => ({ ok: true }), (e) => {
+    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); return { ok: true }; }, (e) => {
       if (e && !e.cancelled && String(e.code) === "6") {
         // "already purchased": the sale is Apple's news that they own it
         return _soon(() => iapRestore()).then((active) => {

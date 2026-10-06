@@ -714,7 +714,7 @@ if (A) {
   const ob = read("public/onboarding.html");
   ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
   ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
-    /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
+    /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\),\s+tags: safeLead\.plan \? \[kitPlanTag\(safeLead\.plan\)\] : \[\] \}\)/.test(lead) &&
     /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
     /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
     "first_name is only ever a clinician's own name; a parent's lead carries none");
@@ -791,6 +791,8 @@ if (A) {
     if (u.endsWith("/v4/subscribers")) return res(createStatus, { subscriber: { id: 1 } });
     if (u.includes("/v4/tags?")) return res(200, { tags: [{ id: 77, name: "sona-parent" }, { id: 78, name: "sona-slp" }], pagination: { has_next_page: false } });
     if (/\/v4\/tags\/\d+\/subscribers$/.test(u)) return res(201, { subscriber: { id: 1 } });
+    // a tag Kit has never seen is made the first time it is used (the plan tags)
+    if (u.endsWith("/v4/tags") && init && init.method === "POST") return res(201, { tag: { id: 79, name: body && body.name } });
     if (/\/v4\/forms\/.+\/subscribers$/.test(u)) return res(formStatus, { errors: ["Not Found"] });
     return res(404, {});
   };
@@ -814,6 +816,19 @@ if (A) {
     calls.length = 0; createStatus = 401;
     const r3 = await K.kitSubscribe({ email: "x@y.org", tag: K.kitTagFor("parent") });
     ok("if the subscriber itself is refused, the lead is NOT counted as in Kit", r3.ok === false && /subscriber 401/.test(r3.detail));
+    // THE PLAN TAG (5 Oct 2026): a parent who started Sona Premium in the app
+    // gets a second tag, sona-trial or sona-paid, beside their role tag
+    ok("the plan tags: 'trial' is sona-trial, 'paid' is sona-paid, and any other word is no tag",
+      K.kitPlanTag("trial") === "sona-trial" && K.kitPlanTag("paid") === "sona-paid" && K.kitPlanTag("") === "" && K.kitPlanTag("yearly") === "" && K.kitPlanTag("TRIAL") === "");
+    calls.length = 0; createStatus = 201; formStatus = 201;
+    const r5 = await K.kitSubscribe({ email: "mom@example.com", tag: K.kitTagFor("parent"), tags: [K.kitPlanTag("trial")] });
+    const tagged = calls.filter((c) => /\/v4\/tags\/\d+\/subscribers$/.test(c.u));
+    const made = calls.find((c) => c.u.endsWith("/v4/tags") && c.method === "POST");
+    ok("a parent who started the free days is tagged sona-parent AND sona-trial (made the first time it is used)",
+      r5.ok && r5.detail === "added" && tagged.length === 2 && tagged.some((c) => /\/tags\/77\//.test(c.u)) && !!made && made.body.name === "sona-trial", [r5, calls.map((c) => c.u)]);
+    calls.length = 0;
+    const r6 = await K.kitSubscribe({ email: "mom@example.com", tag: "sona-parent", tags: ["sona-parent", ""] });
+    ok("…and a tag named twice, or an empty one, is applied once", r6.ok && calls.filter((c) => /\/v4\/tags\/\d+\/subscribers$/.test(c.u)).length === 1, calls.map((c) => c.u));
     delete process.env.KIT_API_KEY;
     const r4 = await K.kitSubscribe({ email: "x@y.org" });
     ok("with no key, Kit is simply not configured — nothing is called", r4.ok === false && r4.detail === "not configured");
@@ -846,6 +861,10 @@ if (A) {
   ok("the founder CSV cannot run a formula someone typed into a form",
     /if \(\/\^\[=\+\\-@\\t\\r\]\/\.test\(v\)\) v = "'" \+ v;/.test(page));
   ok("the founder page counts people, not rows", /var uniq = function \(list\)/.test(page) && /\$\("nLeads"\)\.textContent = uniq\(j\.leads\)/.test(page));
+  // 5 Oct 2026: the app tells this door when a parent starts Sona Premium
+  ok("a parent's plan arrives only as one of kitPlanTag's two words, rides in the safe copy, and becomes a second Kit tag",
+    /plan: kitPlanTag\(typeof body\?\.plan === "string" \? body\.plan : ""\) \? String\(body!\.plan\) : ""/.test(lead) &&
+    /plan: lead\.plan,/.test(lead) && /tags: safeLead\.plan \? \[kitPlanTag\(safeLead\.plan\)\] : \[\]/.test(lead) && /plan: safeLead\.plan,/.test(lead));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

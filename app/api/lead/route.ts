@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
-import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
+import { kitConfigured, kitPlanTag, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
 
 /**
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
     role?: string;
     fbclid?: string;
     welcome?: boolean;
+    plan?: string;
   };
   try {
     body = await req.json();
@@ -120,6 +121,12 @@ export async function POST(req: NextRequest) {
     // there, and the landing page asks nobody for a name at all.
     first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "",
     fbclid: clamp(body?.fbclid),
+    // A PARENT STARTED SONA PREMIUM IN THE APP (5 Oct 2026): "trial" when
+    // Apple started their free days, "paid" when it charged them at once,
+    // sent by sona.js once the purchase has gone through. It becomes a Kit
+    // tag (kitPlanTag) so the list's own automations can stop the welcome
+    // emails and send the free days' last-day note. Those two words only.
+    plan: kitPlanTag(typeof body?.plan === "string" ? body.plan : "") ? String(body!.plan) : "",
     at: new Date().toISOString(),
   };
 
@@ -163,6 +170,8 @@ export async function POST(req: NextRequest) {
     // because on the parent path the only name available is a child's.
     first_name: lead.first_name,
     fbclid: lead.fbclid,
+    // the grown-up's own purchase, never anything about the child
+    plan: lead.plan,
     at: lead.at,
   };
 
@@ -202,7 +211,8 @@ export async function POST(req: NextRequest) {
   const toKit = async (): Promise<void> => {
     if (!kitConfigured()) return;
     // A clinician's own first name goes with them; nobody else's does.
-    kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role) });
+    kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role),
+      tags: safeLead.plan ? [kitPlanTag(safeLead.plan)] : [] });
   };
   try {
     await Promise.all([toHook(), toKit()]);
@@ -239,6 +249,7 @@ export async function POST(req: NextRequest) {
         utm_content: safeLead.utm_content,
         fbclid: safeLead.fbclid,
         landing: safeLead.landing,
+        plan: safeLead.plan,
         // status 0 is a timeout or a network failure, not a refusal: the
         // webhook may never have seen it, or may have it without replying
         crm: hookRes ? (hookRes.ok ? "accepted" : hookRes.status ? "refused " + hookRes.status : "unreachable") : "not configured",

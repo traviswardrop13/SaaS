@@ -31,7 +31,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 import { phone, serve, open, STORES, IDS, ZONE, NOON, isOrange, isTeal } from "./_phone.mjs";
 
 const APP = ROOT + "/..";
-const { base, close } = await serve();
+const { base, close, hits } = await serve();
 const browser = await chromium.launch(launchOpts());
 let failures = 0, assertions = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + JSON.stringify(detail))); }
@@ -601,6 +601,87 @@ try {
     ok("no line says 'nothing was charged': after a failure the phone does not know that", !lines.some((l) => /nothing was charged/i.test(l)), lines);
     ok("no line promises a message, names a figure, or says 'free'", !lines.some((l) => /e-?mail|remind|notif|[\d$]|free/i.test(l)), lines);
     ok("the line a new customer reads has no 'free', no digit and no $", says.bought === "Sona Premium is on. Welcome to Sona!" && !/free|[\d$]/i.test(says.bought));
+  });
+
+  // ── the email list hears which plan began (Travis, 5 Oct 2026: "yeah build
+  // it"). Apple never tells Sona who bought, so after a purchase goes through
+  // buyPlan tells /api/lead "trial" or "paid" for the parent's own email,
+  // and Kit tags them. Only with an email, once per kind and address, never
+  // anything about the child, and never for a restore or a failure.
+  await scenario("the list hears", async () => {
+    const leads = () => hits.filter((h) => h.path === "/api/lead").map((h) => { try { return JSON.parse(h.body); } catch (e) { return { raw: h.body }; } });
+    const settle = () => page.waitForTimeout(150);
+    const buy = () => page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan)).then((r) => r, (e) => ({ code: e && e.code })));
+    const seed = (o) => page.evaluate((o) => { Object.keys(o).forEach((k) => localStorage.setItem(k, typeof o[k] === "string" ? o[k] : JSON.stringify(o[k]))); }, o);
+    const period = (t) => page.evaluate((t) => {
+      const P = Capacitor.Plugins.Purchases, orig = P.purchaseStoreProduct;
+      P.purchaseStoreProduct = async (a) => { const r = await orig(a); try { r.customerInfo.entitlements.active.full.periodType = t; } catch (e) {} return r; };
+    }, t);
+    const KID = { childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true };
+
+    hits.length = 0;
+    await load({});
+    await seed({ "sona.profile.v1": Object.assign({ email: "mom@example.com", weeklyEmail: true }, KID) });
+    let b = await buy(); await settle();
+    let L = leads();
+    ok("free days started, with an email from setup: the list is told 'trial' for that email, once",
+      !!b && b.ok === true && L.length === 1 && L[0].email === "mom@example.com" && L[0].plan === "trial" && L[0].role === "parent" && L[0].source === "app-trial", L);
+    ok("…and nothing about the child goes with it: no name, no age, no sounds",
+      L.length === 1 && !/Mia|childName|"child"|childAge|focusSounds|"R"/.test(JSON.stringify(L[0])) && same(Object.keys(L[0]).sort(), ["email", "plan", "role", "source", "summary"]), L);
+    hits.length = 0;
+    await period("TRIAL");
+    await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.removeItem("__ent"); });
+    b = await buy(); await settle();
+    ok("the same kind for the same address on this phone is not told twice", leads().length === 0, leads());
+
+    hits.length = 0;
+    await load({});
+    await seed({ "sona.profile.v1": Object.assign({ email: "dad@example.com" }, KID) });
+    await period("NORMAL");
+    await buy(); await settle();
+    L = leads();
+    ok("Apple's own word wins: a purchase it calls NORMAL (charged at once) is told 'paid', whatever the card said",
+      L.length === 1 && L[0].plan === "paid" && L[0].source === "app-paid" && L[0].email === "dad@example.com", L);
+
+    hits.length = 0;
+    await load({ intro: "none" });
+    await seed({ "sona.profile.v1": Object.assign({ email: "pat@example.com" }, KID) });
+    await buy(); await settle();
+    L = leads();
+    ok("with no word from Apple, a pay-today plan is told 'paid'", L.length === 1 && L[0].plan === "paid", L);
+
+    hits.length = 0;
+    await load({});
+    await seed({ "sona.kids.v1": { active: "k2", hi: 2, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Leo" }] },
+      "sona.profile.v1": Object.assign({ email: "first@example.com" }, KID), "sona.profile.v1@k2": { childName: "Leo", childAge: "5", onboarded: true } });
+    await buy(); await settle();
+    L = leads();
+    ok("the email sits on the first child's profile while a brother is the one playing: it is still found",
+      L.length === 1 && L[0].email === "first@example.com" && L[0].plan === "trial" && !/Leo|Mia/.test(JSON.stringify(L[0])), L);
+
+    hits.length = 0;
+    await load({});
+    await seed({ "sona.profile.v1": KID });
+    b = await buy(); await settle();
+    ok("no email anywhere: the purchase goes through and nothing is sent", !!b && b.ok === true && leads().length === 0, leads());
+
+    hits.length = 0;
+    await load({ buy: "owned" });
+    await seed({ "sona.profile.v1": Object.assign({ email: "back@example.com" }, KID) });
+    b = await buy(); await settle();
+    ok("a restore ('already purchased') is not a new trial: nothing is sent", !!b && b.restored === true && leads().length === 0, [b, leads()]);
+    for (const mode of ["cancel", "pending", "fail", "nogrant"]) {
+      hits.length = 0;
+      await load({ buy: mode });
+      await seed({ "sona.profile.v1": Object.assign({ email: "no@example.com" }, KID) });
+      b = await buy(); await settle();
+      ok("Apple's '" + mode + "': nothing is sent", !!b && !!b.code && leads().length === 0, [b, leads()]);
+    }
+    hits.length = 0;
+    await load({});
+    await seed({ "sona.profile.v1": Object.assign({ email: "not an email" }, KID) });
+    await buy(); await settle();
+    ok("an email that is not an address is not sent", leads().length === 0, leads());
   });
 
   // ── 12. setupWall: does this family still owe the price? ──

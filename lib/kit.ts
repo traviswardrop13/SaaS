@@ -89,11 +89,14 @@ async function tagId(name: string): Promise<number | null> {
   return null;
 }
 
-export async function kitSubscribe(o: { email: string; firstName?: string; tag?: string }): Promise<KitResult> {
+export async function kitSubscribe(o: { email: string; firstName?: string; tag?: string; tags?: string[] }): Promise<KitResult> {
   if (!kitConfigured()) return { ok: false, status: 0, detail: "not configured" };
 
-  // The tag lookup runs alongside the subscriber call rather than after it.
-  const tagP: Promise<number | null> = o.tag ? tagId(o.tag).catch(() => null) : Promise.resolve(null);
+  // Every tag lookup runs alongside the subscriber call rather than after it.
+  // `tag` is the role tag every lead gets; `tags` are any more (the plan tag,
+  // kitPlanTag below), each found or made the same way.
+  const names = [o.tag || "", ...(o.tags || [])].filter((n, i, a) => !!n && a.indexOf(n) === i);
+  const tagsP: Promise<(number | null)[]> = Promise.all(names.map((n) => tagId(n).catch(() => null)));
 
   const sub = await call("/subscribers", "POST", {
     email_address: o.email,
@@ -101,23 +104,41 @@ export async function kitSubscribe(o: { email: string; firstName?: string; tag?:
   });
   if (!sub.ok) {
     console.error("[kit] subscriber was not created:", sub.status, sub.text);
-    await tagP;
+    await tagsP;
     return { ok: false, status: sub.status, detail: sub.status ? "subscriber " + sub.status : "unreachable" };
   }
 
   const form = process.env.KIT_FORM_ID || "";
-  const tid = await tagP;
-  const [f, t] = await Promise.all([
+  const tids = await tagsP;
+  const [f, ...ts] = await Promise.all([
     form ? call("/forms/" + encodeURIComponent(form) + "/subscribers", "POST", { email_address: o.email }) : Promise.resolve(null),
-    tid ? call("/tags/" + tid + "/subscribers", "POST", { email_address: o.email }) : Promise.resolve(null),
+    ...tids.map((tid) => (tid ? call("/tags/" + tid + "/subscribers", "POST", { email_address: o.email }) : Promise.resolve(null))),
   ]);
 
   const notes: string[] = [];
   if (f && !f.ok) notes.push("form " + f.status);
-  if (o.tag && !tid) notes.push("tag not found");
-  else if (t && !t.ok) notes.push("tag " + t.status);
-  if (notes.length) console.error("[kit] subscriber added, but:", notes.join(", "), f && !f.ok ? f.text : "", t && !t.ok ? t.text : "");
+  names.forEach((n, i) => {
+    const t = ts[i];
+    // one tag: the wording the founder leads page has always shown; more: which one
+    const what = names.length > 1 ? "tag " + n : "tag";
+    if (!tids[i]) notes.push(what + " not found");
+    else if (t && !t.ok) notes.push(what + " " + t.status);
+  });
+  const bad = ts.filter((t) => t && !t.ok).map((t) => (t ? t.text : ""));
+  if (notes.length) console.error("[kit] subscriber added, but:", notes.join(", "), f && !f.ok ? f.text : "", bad.join(" "));
   return { ok: true, status: sub.status, detail: notes.length ? "added (" + notes.join(", ") + ")" : "added" };
+}
+
+/**
+ * THE PLAN TAG (5 Oct 2026, Travis: "yeah build it"). When a parent who gave
+ * the app their email starts Sona Premium in the iPhone app, the app tells
+ * /api/lead, and they are tagged in Kit: sona-trial when Apple started their
+ * free days, sona-paid when they were charged at once. Kit's own automations
+ * do the rest (stop the welcome emails, send "your free days end tomorrow").
+ * Only these two words ever arrive; anything else is no plan and no tag.
+ */
+export function kitPlanTag(plan: string): string {
+  return plan === "trial" ? "sona-trial" : plan === "paid" ? "sona-paid" : "";
 }
 
 /**
