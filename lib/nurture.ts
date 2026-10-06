@@ -82,7 +82,7 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
     c.paras.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;"><a href="${APP_URL}" style="display:inline-block;background:#ff8a3d;color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 26px;border-radius:12px;">${esc(c.button)}</a></p>` +
     c.after.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
-    `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel<br>MS, CF-SLP · Sona co-founder</p>` +
+    `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel, MS, CF-SLP<br>Sona co-founder</p>` +
     (c.ps ? `<p ${P}><em>${esc(c.ps)}</em></p>` : "") +
     "<br>".repeat(18) +
     `<p style="margin:0;font-size:12px;line-height:1.5;color:#8a8a8a;">You’re getting this because you gave Sona your email.<br>Sona · ${esc(postal)}<br><a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a></p>` +
@@ -90,7 +90,7 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
   const text =
     c.paras.join("\n\n") + `\n\n${c.button}: ${APP_URL}\n\n` +
     (c.after.length ? c.after.join("\n\n") + "\n\n" : "") +
-    "Rachel\nMS, CF-SLP · Sona co-founder\n" +
+    "Rachel, MS, CF-SLP\nSona co-founder\n" +
     (c.ps ? `\n${c.ps}\n` : "") +
     "\n".repeat(18) +
     `--\nYou’re getting this because you gave Sona your email.\nSona · ${postal}\nUnsubscribe: ${unsubUrl}\n`;
