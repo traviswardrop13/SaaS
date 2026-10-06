@@ -431,11 +431,16 @@ document.documentElement.className += " js";
     </div>
 
     <!-- The parent ads' picture, alive: Echo floats, says a different sound,
-         and the two game screens drift behind. Decoration only. -->
+         and the two game screens drift behind. Decoration only. Behind Echo
+         these are the ads' flat screens (hero-*.webp), not today's painted
+         games (Travis, 6 Oct 2026: the painted ones don't go with Echo or
+         the app icon; "what we had before was better even though it's not
+         what the screens actually look like anymore"). The game sections
+         further down keep the real screens. -->
     <div class="stage" aria-hidden="true">
       <div class="halo"></div>
-      <div class="ph ph-l"><img src="/assets/site/slice.webp" width="712" height="1388" alt=""></div>
-      <div class="ph ph-r"><img src="/assets/site/piano.webp" width="712" height="1388" alt=""></div>
+      <div class="ph ph-l"><img src="/assets/site/hero-slice.webp" width="356" height="694" alt=""></div>
+      <div class="ph ph-r"><img src="/assets/site/hero-piano.webp" width="342" height="692" alt=""></div>
       <div class="echo-wrap"><img src="/assets/site/echo.webp" width="458" height="458" alt="" fetchpriority="high"></div>
       <div class="bubble pop" id="bubble">rrrr!</div>
       <svg class="spark s1" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFD84A"/></svg>

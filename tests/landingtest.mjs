@@ -115,7 +115,7 @@ ok("the parent page carries the launch note", !!P_NOTE);
     (await page.$$("#signup input")).length === 1 && (await page.$$("#signup button")).length === 1);
   ok("the hero shows the new Echo and both game screens", await page.evaluate(() => {
     const s = document.querySelector(".stage");
-    return !!s && !!s.querySelector('img[src="/assets/site/echo.webp"]') && !!s.querySelector('img[src="/assets/site/slice.webp"]') && !!s.querySelector('img[src="/assets/site/piano.webp"]');
+    return !!s && !!s.querySelector('img[src="/assets/site/echo.webp"]') && !!s.querySelector('img[src="/assets/site/hero-slice.webp"]') && !!s.querySelector('img[src="/assets/site/hero-piano.webp"]');
   }));
   ok("…and Echo's bubble says a sound", /^[a-z]+!$/.test((await page.textContent("#bubble")).trim()));
   // A PARENT PAGE HAS NO SIGN IN (26 Sep 2026). A speech therapist finds

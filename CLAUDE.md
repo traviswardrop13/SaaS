@@ -710,9 +710,13 @@ cards** (1 Oct 2026; they were the old flat stickers and three frames of a
 canvas court beside painted book covers): `python3 tools/art/site-tiles.py`
 cuts each `public/assets/crafted/home-<name>.webp` to a square in
 `public/assets/site/games/<key>.webp`. A new game on the strip is one line in
-that script's `TILES`. The two phone screens (`/assets/site/slice.webp`,
-`piano.webp`) are still the ads' flat pictures; fresh captures of the painted
-games are owed.
+that script's `TILES`. **Two kinds of phone screens** (Travis, 6 Oct 2026):
+the game sections further down show today's painted games
+(`/assets/site/slice.webp`, `piano.webp`, fresh captures), but behind Echo at
+the top the ads' old flat screens stay (`hero-slice.webp`, `hero-piano.webp`):
+the painted ones "don't go with Echo or the app icon", and "what we had before
+was better even though it's not what the screens actually look like anymore".
+They are decoration (`aria-hidden`), and `landingtest` pins them.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
