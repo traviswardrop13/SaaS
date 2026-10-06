@@ -564,5 +564,11 @@
   "size": "1024x1536",
   "transparent": false,
   "prompt": "A warm soft cream and blush background with gentle light, a few small leaves and stars at the edges, calm and trustworthy. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-jungle",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A friendly sunny jungle: big tropical leaves and hanging vines at the sides, a few bananas, mangoes, pineapples and watermelon slices tucked along the bottom edge, a soft warm green and golden sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
  }
 ]
