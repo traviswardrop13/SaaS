@@ -254,7 +254,7 @@ for (const age of ["3", "4", "5", "8"]) {
   }));
   ok("practice progress starts empty before a game is chosen", zero.goal.n === 0 && zero.goal.pct === 0, JSON.stringify(zero));
   const half = await pg.evaluate(() => {
-    Sona.bumpReps(25);                 // half the50defaultforage7
+    Sona.bumpReps(15);                 // half the default of 30 (one default for every age since 5 Oct 2026)
     return { g: Sona.goalState() };
   });
   ok("reps move the meter", half.g.pct > 0.4 && half.g.pct < 0.6, JSON.stringify(half.g));
