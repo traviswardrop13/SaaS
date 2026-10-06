@@ -19,41 +19,25 @@
   },
   "slides": [
     {
-      "id": "01-fruit-slice",
-      "scene": "slice",
+      "id": "01-home",
+      "scene": "home",
+      "detail": true,
       "title": [
-        "Speech practice",
-        "kids ask for."
+        "Pick a game,",
+        "play with Echo"
       ],
       "accent": 1,
-      "sub": "Say the sound, then slice the fruit.",
+      "sub": "Arcade for ages 5–8. Simple play for ages 3–4.",
       "bg": [
-        "#fff5dc",
-        "#ffe0c2"
+        "#fff6e2",
+        "#ffe9c6"
       ],
       "status": "dark",
       "decor": [],
-      "bgImage": "slice.webp"
+      "bgImage": "home.webp"
     },
     {
-      "id": "02-practice",
-      "scene": "charge",
-      "title": [
-        "Real practice,",
-        "then play"
-      ],
-      "accent": 1,
-      "sub": "Echo says it first. Five tries out loud.",
-      "bg": [
-        "#e4f3fb",
-        "#fff3e2"
-      ],
-      "status": "dark",
-      "decor": [],
-      "bgImage": "practice.webp"
-    },
-    {
-      "id": "03-piano-tiles",
+      "id": "02-piano-tiles",
       "scene": "tiles",
       "title": [
         "Tap the tiles,",
@@ -73,24 +57,24 @@
       "bgImage": "tiles.webp"
     },
     {
-      "id": "04-hoops",
-      "scene": "hoops",
+      "id": "03-practice",
+      "scene": "charge",
       "title": [
-        "Say it,",
-        "then shoot"
+        "Real practice,",
+        "then play"
       ],
       "accent": 1,
-      "sub": "Say the word twice, then swipe to shoot.",
+      "sub": "Echo says it first. Five tries out loud.",
       "bg": [
-        "#fff0e0",
-        "#ffdcc0"
+        "#e4f3fb",
+        "#fff3e2"
       ],
       "status": "dark",
       "decor": [],
-      "bgImage": "hoops.webp"
+      "bgImage": "practice.webp"
     },
     {
-      "id": "05-books",
+      "id": "04-books",
       "scene": "book",
       "title": [
         "Stories for",
@@ -107,22 +91,38 @@
       "bgImage": "books.webp"
     },
     {
-      "id": "06-home",
-      "scene": "home",
-      "detail": true,
+      "id": "05-fruit-slice",
+      "scene": "slice",
       "title": [
-        "Pick a game,",
-        "play with Echo"
+        "Say the sound,",
+        "power up the game"
       ],
       "accent": 1,
-      "sub": "Arcade for ages 5–8. Simple play for ages 3–4.",
+      "sub": "Say it out loud to slow the fruit.",
       "bg": [
-        "#fff6e2",
-        "#ffe9c6"
+        "#fff5dc",
+        "#ffe0c2"
       ],
       "status": "dark",
       "decor": [],
-      "bgImage": "home.webp"
+      "bgImage": "slice.webp"
+    },
+    {
+      "id": "06-hoops",
+      "scene": "hoops",
+      "title": [
+        "Say the word,",
+        "earn the ball"
+      ],
+      "accent": 1,
+      "sub": "Then swipe up to shoot.",
+      "bg": [
+        "#fff0e0",
+        "#ffdcc0"
+      ],
+      "status": "dark",
+      "decor": [],
+      "bgImage": "hoops.webp"
     },
     {
       "id": "07-progress",
