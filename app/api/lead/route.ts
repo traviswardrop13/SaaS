@@ -4,6 +4,7 @@ import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
+import { enroll } from "@/lib/nurture";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
@@ -264,6 +265,17 @@ export async function POST(req: NextRequest) {
     try {
       const first = await kvCmd(["SET", "launchmail:" + email.toLowerCase(), new Date().toISOString(), "NX", "EX", 31536000]);
       if (first === "OK") welcomed = await sendWelcomeEmail(email);
+    } catch {
+      // never fail the visitor on the welcome
+    }
+  }
+
+  // THE WELCOME SERIES (lib/nurture.ts, 6 Oct 2026): now that the app is out,
+  // every grown-up who gives an email gets Rachel's welcome right away and the
+  // 5-minute email the next day — once per address, with a real unsubscribe.
+  if (APP_READY && kvConfigured()) {
+    try {
+      welcomed = (await enroll(email)) || welcomed;
     } catch {
       // never fail the visitor on the welcome
     }
