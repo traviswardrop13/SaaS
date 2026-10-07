@@ -195,7 +195,7 @@ try {
     // one check against a label built in the page by the same formatter, one against the calendar
     const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
     ok("the App Store today: Monthly, 3-day free trial, $9.99/mo, the button, all from the store",
-      s.name === "Monthly" && s.under === "3-day free trial" && s.amt === "$9.99/mo" && s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free", [s.tag, s.price, s.button]);
+      s.name === "Monthly" && s.under === "3-day free trial" && s.amt === "$9.99/mo" && s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!", [s.tag, s.price, s.button]);
     ok("…no dated rows, and the billing day (Thursday, October 8) is nowhere on the screen: just one check line",
       s.rows.length === 0 && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "No payment today · Subscription auto-renews", [s.rows, s.check, day]);
     ok("…and the small print under the button says the price that starts, and Cancel anytime",
@@ -211,7 +211,7 @@ try {
     await load(...at(SETUP, { store: { monthly: { price: "$12.49", free: "P1W" }, annual: { price: "$59.99", free: "P3D" } } })); await until("free");
     s = await snap();
     ok("a store with a week free at $12.49 says 7 days and $12.49 everywhere: the row, the line, the small print, the button",
-      s.under === "7-day free trial" && s.amt === "$12.49/mo" && s.price === "7 days free, then $12.49 a month." && s.button === "Start 7 days free" && s.note === "7 days free, then $12.49 a month. Cancel anytime." &&
+      s.under === "7-day free trial" && s.amt === "$12.49/mo" && s.price === "7 days free, then $12.49 a month." && s.button === "Start practicing!" && s.note === "7 days free, then $12.49 a month. Cancel anytime." &&
       (s.body.match(/\$[\d.,]+/g) || []).every((x) => x === "$12.49") && !/\b3 days\b/i.test(s.body), [s.tag, s.price, s.button, s.rows]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
@@ -241,7 +241,7 @@ try {
       await load(...at(SETUP, Object.assign({ store: STORES.monthlyFree }, cfg))); await until("free");
       const s = await snap();
       ok(label + ": the free days are shown as the product reports them, for \"new subscribers\", with what happens otherwise",
-        s.note === "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm. Cancel anytime in Settings → Subscriptions." && s.button === "Start 3 days free", [s.note, s.button]);
+        s.note === "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm. Cancel anytime in Settings → Subscriptions." && s.button === "Start practicing!", [s.note, s.button]);
       ok(label + ": that note sits directly under the row, above the button", s.noteAbove === true, s.noteAbove);
       ok(label + ": nothing states \"No payment today\" as plain fact: the row says \"new subscribers\"",
         s.rows.length === 0 && /new subscribers$/.test(s.under) && s.check === "Subscription auto-renews" && !/No payment today|Nothing to pay today/.test(s.cardText), [s.under, s.check]);
@@ -260,7 +260,7 @@ try {
       await load(...at(SETUP, Object.assign({ store: STORES.monthlyFree }, cfg)));
       await tick(1300); await until("free");
       const s2 = await snap();
-      ok(label + ": the card is up with its price within the short grace, free days " + (sure ? "stated" : "for \"new subscribers\""), s2.button === "Start 3 days free" && !s2.disabled && /new subscribers/.test(s2.note) === !sure, [s2.button, s2.disabled, s2.note]);
+      ok(label + ": the card is up with its price within the short grace, free days " + (sure ? "stated" : "for \"new subscribers\""), s2.button === "Start practicing!" && !s2.disabled && /new subscribers/.test(s2.note) === !sure, [s2.button, s2.disabled, s2.note]);
       await calm(page); await page.locator("#iapBuy").click(); await until("done");
       ok(label + ": and the button buys", same((await snap()).bought, [IDS.monthly]));
       await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
@@ -272,7 +272,7 @@ try {
     await load(...at(SETUP, { store: STORES.monthlyFree, elig: { monthly: 1 }, wait: { elig: 2000 } }));
     await tick(1300); await until("free");
     let s = await snap();
-    ok("Apple's \"not eligible\" is slow: the card first shows the free days for \"new subscribers\"", s.state === "free" && /new subscribers/.test(s.note) && s.button === "Start 3 days free", [s.state, s.note]);
+    ok("Apple's \"not eligible\" is slow: the card first shows the free days for \"new subscribers\"", s.state === "free" && /new subscribers/.test(s.note) && s.button === "Start practicing!", [s.state, s.note]);
     await tick(900); await until("paid");
     s = await snap();
     ok("…then, with no tap, repaints to charged today: no \"free\" left on the card", s.state === "paid" && s.button === "Subscribe — $9.99 a month" && !/free/i.test(s.cardText) && s.rows.length === 0, s.cardText);
@@ -295,7 +295,7 @@ try {
     await tick(4200);
     s = await snap();
     ok("the app comes back to the front and the store cannot be reached: the price it gave a moment ago stays on the card",
-      s.state === "free" && s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free" && !s.disabled && s.asked.length === 2, [s.state, s.price, s.asked]);
+      s.state === "free" && s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!" && !s.disabled && s.asked.length === 2, [s.state, s.price, s.asked]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
     ok("…and its button still goes to Apple with the product in hand", same(s.bought, [IDS.monthly]) && s.msg === "Sona Premium is on. Welcome to Sona!", [s.bought, s.msg]);
@@ -343,7 +343,7 @@ try {
     ok("the store comes back, but nothing is painted until the parent asks again", s.state === "none" && viewed(s) === 0);
     await calm(page); await page.locator("#iapBuy").click(); await until("free");
     s = await snap();
-    ok("Try again paints the free-days card, and only then is the offer counted, once", s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free" && viewed(s) === 1 && !!s.spent && same(told(s), ["none-noproduct", "free-sure"]), [s.price, viewed(s), told(s)]);
+    ok("Try again paints the free-days card, and only then is the offer counted, once", s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!" && viewed(s) === 1 && !!s.spent && same(told(s), ["none-noproduct", "free-sure"]), [s.price, viewed(s), told(s)]);
   });
 
   // ── 7. waiting ──
@@ -358,7 +358,7 @@ try {
     s = await snap();
     ok("…a tap on it buys nothing, and a card still asking is not an offer", s.bought.length === 0 && s.state === "wait" && viewed(s) === 0 && !s.spent, [s.bought, s.state]);
     await tick(2600); await until("free");
-    ok("…and then the price", (await snap()).button === "Start 3 days free");
+    ok("…and then the price", (await snap()).button === "Start practicing!");
     // the other two taps a waiting card takes are "Not now" (here) and Restore (under "outcomes")
     const from = hits.length;
     await load(...at(SETUP, { store: STORES.monthlyFree, products: "hang" }));
@@ -392,7 +392,7 @@ try {
       const s = await snap(), line = flat(await say(code));
       ok("Apple's sheet ends \"" + mode + "\": " + (code === "cancelled" ? "no message at all" : "the card says \"" + line + "\""), s.msg === line && (code === "cancelled") === (line === ""), [s.msg, line]);
       ok("…the price stays, the button is live again, Restore and \"Not now\" are still there, and the marker is kept",
-        s.state === "free" && s.button === "Start 3 days free" && !s.disabled && s.restoreSeen && s.declineSeen && !!s.marker && same(s.bought, [IDS.monthly]), [s.state, s.button, s.disabled, s.marker]);
+        s.state === "free" && s.button === "Start practicing!" && !s.disabled && s.restoreSeen && s.declineSeen && !!s.marker && same(s.bought, [IDS.monthly]), [s.state, s.button, s.disabled, s.marker]);
       ok("…\"nothing was charged\" is never said, and no sale is counted", !/nothing was charged/i.test(s.body) && !s.events.some((e) => e[0] === "purchase completed"), s.msg);
     }
     // Apple's sheet never comes back
@@ -418,7 +418,7 @@ try {
       await page.locator("#iapRestore").click();
       await page.waitForFunction((l) => document.getElementById("iapMsg").textContent === l, line);
       s = await snap();
-      ok("Restore, \"" + mode + "\": \"" + line + "\", and the card stays as it was", s.msg === line && s.state === "free" && !s.disabled && s.button === "Start 3 days free" && !!s.marker, [s.msg, s.state]);
+      ok("Restore, \"" + mode + "\": \"" + line + "\", and the card stays as it was", s.msg === line && s.state === "free" && !s.disabled && s.button === "Start practicing!" && !!s.marker, [s.msg, s.state]);
     }
     // RESTORE, TAPPED WHILE THE CARD STILL SAYS "Checking the App Store…".
     // Restore is live from the first frame, and the parent most likely to tap
@@ -431,10 +431,10 @@ try {
     // that is being tapped into; that hold then has 1.7 s left.)
     const NONE_FOUND = "No purchases found on this Apple ID.", NO_REACH = "Couldn't reach the App Store — try again in a moment.";
     for (const [label, cfg, line, letGo, want, button, how] of [
-      ["the store has not answered, and Restore finds nothing", { store: STORES.monthlyFree, products: "hang", restore: "none" }, NONE_FOUND, { products: "ok" }, "free", "Start 3 days free", ""],
-      ["the store has not answered, and Restore cannot reach it", { store: STORES.monthlyFree, products: "hang", restore: "fail" }, NO_REACH, { products: "ok" }, "free", "Start 3 days free", ""],
+      ["the store has not answered, and Restore finds nothing", { store: STORES.monthlyFree, products: "hang", restore: "none" }, NONE_FOUND, { products: "ok" }, "free", "Start practicing!", ""],
+      ["the store has not answered, and Restore cannot reach it", { store: STORES.monthlyFree, products: "hang", restore: "fail" }, NO_REACH, { products: "ok" }, "free", "Start practicing!", ""],
       ["a lapsed subscriber (Apple says not eligible, the purchase sync still out, past the short grace)", { store: STORES.monthlyFree, elig: { monthly: 1 }, sync: "hang", restore: "none" }, NONE_FOUND, { sync: null }, "paid", "Subscribe — $9.99 a month", "lapsed"],
-      ["after \"Try again\", with the store slow this time", { products: "fail", restore: "none" }, NONE_FOUND, { products: "ok" }, "free", "Start 3 days free", "again"],
+      ["after \"Try again\", with the store slow this time", { products: "fail", restore: "none" }, NONE_FOUND, { products: "ok" }, "free", "Start practicing!", "again"],
     ]) {
       await load(...at(SETUP, cfg));
       if (how === "again") {
@@ -788,7 +788,7 @@ try {
     await page.locator("#back").click(); await page.waitForURL(/\/subscribe\.html\?setup=1$/);
     await until("free");
     const s = await snap();
-    ok("Terms of Use and Back: the one price screen again at ?setup=1, the marker still set", s.path === "/subscribe.html?setup=1" && !!s.marker && s.button === "Start 3 days free" && !s.header && s.buttons === 1, [s.path, s.marker, s.button]);
+    ok("Terms of Use and Back: the one price screen again at ?setup=1, the marker still set", s.path === "/subscribe.html?setup=1" && !!s.marker && s.button === "Start practicing!" && !s.header && s.buttons === 1, [s.path, s.marker, s.button]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
     ok("…and a purchase there still goes back to setup", /\/onboarding\.html$/.test(page.url()), page.url());
@@ -866,7 +866,7 @@ try {
       await until("free");
       let s = await snap();
       ok(label + ": the card still reaches the price, from the monthly product itself, with its free days for \"new subscribers\"",
-        s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free" && !s.disabled && /^Only new subscribers get 3 days free\./.test(s.note) && /new subscribers$/.test(s.under) && same(s.asked, [[IDS.monthly]]), [s.price, s.button, s.note, s.asked]);
+        s.price === "3 days free, then $9.99 a month." && s.button === "Start practicing!" && !s.disabled && /^Only new subscribers get 3 days free\./.test(s.note) && /new subscribers$/.test(s.under) && same(s.asked, [[IDS.monthly]]), [s.price, s.button, s.note, s.asked]);
       await calm(page); await page.locator("#iapBuy").click(); await until("done");
       s = await snap();
       ok(label + ": and it buys that product, once, and says so", same(s.bought, [IDS.monthly]) && s.msg === "Sona Premium is on. Welcome to Sona!" && s.sub.active === true, [s.bought, s.msg]);
@@ -894,7 +894,7 @@ try {
       await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
       const s = await snap();
       ok("storePlan missing, and sona.js hands out its own reader of the free time: the card says what THAT reader read, for \"new subscribers\"",
-        s.under === "1-month free trial for new subscribers" && s.price === "1 month free, then $9.99 a month." && s.button === "Start 1 month free" && /^Only new subscribers get 1 month free\./.test(s.note) && !/\b3 days\b/i.test(s.cardText), [s.tag, s.price, s.button, s.note]);
+        s.under === "1-month free trial for new subscribers" && s.price === "1 month free, then $9.99 a month." && s.button === "Start practicing!" && /^Only new subscribers get 1 month free\./.test(s.note) && !/\b3 days\b/i.test(s.cardText), [s.tag, s.price, s.button, s.note]);
     });
     for (const [what, answer] of [["a first period that costs money", "'paid'"], ["an offer it cannot read", "'odd'"], ["nothing it should", "undefined"], ["an error", "(function () { throw new Error('boom'); })()"]])
       await withSona("delete Sona.storePlan; Sona.planFree = function () { return " + answer + "; };", async () => {
@@ -915,7 +915,7 @@ try {
       ok("planWords itself throwing: the same plain card, never a blank one or a button stuck on \"Checking…\"", /^We couldn't reach the App Store\./.test(s.none) && s.button === "Try again" && !s.disabled && !/\$|\d|free/i.test(s.cardText), [s.none, s.button]);
     });
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
-    ok("…and with the real sona.js back, the same address sells again", (await snap()).button === "Start 3 days free");
+    ok("…and with the real sona.js back, the same address sells again", (await snap()).button === "Start practicing!");
   });
 
   // ── what is counted, and that nothing about the family rides along ──

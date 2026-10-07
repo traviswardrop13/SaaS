@@ -337,7 +337,7 @@
     /* Travis, 6 Oct 2026: "Get rid of not now ... just like a subtle X in the
        top right", no header, no Rachel line under the offer. The X IS the
        decline link (same href, same handler), so it leaves the same way. */
-    body.onerow.offer .family-header,body.onerow.offer #offerRachel{display:none !important;}
+    body.onerow.offer .family-header,body.onerow.offer #offerRachel,body.onerow.offer #careLine{display:none !important;}
     body.onerow.offer #declineRow{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;margin:0 !important;z-index:5;}
     body.onerow.offer #declineLink{width:44px !important;height:44px;min-height:0;padding:0 !important;font-size:0;line-height:44px;background:transparent;border:0;box-shadow:none;color:#a08a70;}
     body.onerow.offer #declineLink:before{content:"\2715";font-size:19px;font-weight:800;}
@@ -498,7 +498,7 @@
            their spacing, and an inline margin would beat them -->
       <p class="muted" id="iapMsg" role="status" aria-live="polite"></p>
       <p id="iapLegal">
-        <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
+        <button id="iapRestore" style="border:none;background:none;color:#8a6f52;font:inherit;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
         · <a href="/privacy" style="color:#8a6f52;">Privacy</a>
       </p>
@@ -691,7 +691,7 @@
          stated option, next to the price rather than under the footer, and it
          goes back to a home screen that still has the demonstration on it. -->
 
-    <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
+    <p class="muted" id="careLine" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
       Sona is an at-home practice companion — not a substitute for professional care.
     </p>
   </div>

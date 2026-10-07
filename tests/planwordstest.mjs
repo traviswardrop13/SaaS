@@ -290,7 +290,7 @@ try {
         const p = await planFor({ store: { monthly: { price: "$9.99", free: iso, unitsOnly } } });
         const w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan, { now: new Date(2026, 9, 5, 12) })));
         ok("an offer of " + iso + (unitsOnly ? " (units only, no ISO period)" : "") + " reads as " + text + " free, billed " + day,
-          !!p && p.state === "free" && same(p.free, { n, unit, text }) && w.tag === "" && w.button === "Start " + text + " free" && w.rows.length === 0 && w.sub === n + "-" + unit + " free trial" && JSON.stringify(w).indexOf(day) === -1, [brief(p), w.sub, w.rows]);
+          !!p && p.state === "free" && same(p.free, { n, unit, text }) && w.tag === "" && w.button === "Start practicing!" && w.rows.length === 0 && w.sub === n + "-" + unit + " free trial" && JSON.stringify(w).indexOf(day) === -1, [brief(p), w.sub, w.rows]);
       }
     }
     for (const iso of ["P45D", "P13M", "P2Y", "P0D", "three days"]) {
@@ -359,7 +359,7 @@ try {
       return Sona.storePlan().then((next) => { const w = Sona.planWords(next, {}); return { same: next === plan, frozen: Object.isFrozen(next) && Object.isFrozen(next.free), next: JSON.stringify(next), id: next._p.identifier, price: w.price, button: w.button }; });
     }));
     ok("a write to a plan changes nothing: storePlan()'s next answer, and the words built from it, are still the store's",
-      wrote.same && wrote.frozen && wrote.next === JSON.stringify(first) && wrote.id === IDS.monthly && wrote.price === "3 days free, then $9.99 a month." && wrote.button === "Start 3 days free", wrote);
+      wrote.same && wrote.frozen && wrote.next === JSON.stringify(first) && wrote.id === IDS.monthly && wrote.price === "3 days free, then $9.99 a month." && wrote.button === "Start practicing!", wrote);
 
     await load({ store: STORES.empty }); await ask();
     const none1 = await got();
@@ -423,7 +423,7 @@ try {
     check("the button buys exactly when there is a priced plan", any, (c, w) => (w.act === "buy") === (c.kind === "free" || c.kind === "paid") && (c.kind !== "none" || w.act === "retry") && (c.kind !== "wait" || w.act === "wait"));
     check("no dated rows on any card (Travis, 6 Oct 2026: no billing day, just the free days)", any, (c, w) => w.rows.length === 0 && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,/.test(JSON.stringify(w)));
     check("a priced card is one row: the plan's name, the store's price with its period, and a check line that says it renews", (c) => c.kind === "free" || c.kind === "paid", (c, w) => w.name === (c.per === "month" ? "Monthly" : c.per === "year" ? "Yearly" : "Sona Premium") && w.amount.indexOf(c.price + "/") === 0 && /Subscription auto-renews$/.test(w.check));
-    check("free: the tag, the tile's line and the button are built from the store's two answers", is("free"), (c, w) => w.tag === "" && w.price === c.free.text + " free, then " + c.price + " a " + c.per + "." && w.button === "Start " + c.free.text + " free");
+    check("free: the tag, the tile's line and the button are built from the store's two answers", is("free"), (c, w) => w.tag === "" && w.price === c.free.text + " free, then " + c.price + " a " + c.per + "." && w.button === "Start practicing!");
     check("free, sure: 'No payment today', and the small print under the button names the price and 'Cancel anytime.'", (c) => c.kind === "free" && c.sure, (c, w) => w.check === "No payment today \u00b7 Subscription auto-renews" && w.noteFirst === false && w.noteLast === true && w.note === c.free.text + " free, then " + c.price + " a " + c.per + ". Cancel anytime." && w.title === "Start Sona Premium with " + c.free.text + " free" && w.header === "Sona Premium: " + c.free.text + " free, then " + c.price + " a " + c.per + ".");
     check("free, NOT sure: the note comes first, the row says 'new subscribers', and nothing says 'No payment today' as fact", (c) => c.kind === "free" && !c.sure, (c, w) => w.noteFirst === true && w.noteLast === false && /for new subscribers$/.test(w.sub) && w.check === "Subscription auto-renews" && !/No payment today|Nothing to pay today/.test(JSON.stringify(w)) && /new subscribers/.test(w.title) && /new subscribers/.test(w.header));
     check("free, NOT sure: the note says who gets the free time, what Apple charges otherwise, and that Apple shows the terms", (c) => c.kind === "free" && !c.sure, (c, w) => w.note === "Only new subscribers get " + c.free.text + " free. Otherwise Apple charges " + c.price + " today. Apple shows your exact terms before you confirm. Cancel anytime in Settings\u00a0→\u00a0Subscriptions.");
@@ -446,13 +446,13 @@ try {
     ok("the App Store today, a buyer who gets the free days: the exact card", same(w, {
       state: "free", title: "Start Sona Premium with 3 days free", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
       rows: [], note: "3 days free, then $9.99 a month. Cancel anytime.", noteFirst: false, noteLast: true,
-      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "No payment today \u00b7 Subscription auto-renews", button: "Start 3 days free", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null }), w);
+      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "No payment today \u00b7 Subscription auto-renews", button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null }), w);
     w = await real({ store: STORES.monthlyFree, elig: "missing" });
     ok("…the same store when the phone cannot tell: the exact card", same(w, {
       state: "free", title: "Sona Premium: 3 days free for new subscribers", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
       rows: [], note: "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm. Cancel anytime in Settings → Subscriptions.", noteFirst: true, noteLast: false,
       name: "Monthly", sub: "3-day free trial for new subscribers", amount: "$9.99/mo", check: "Subscription auto-renews",
-      button: "Start 3 days free", act: "buy", header: "Sona Premium: 3 days free for new subscribers, then $9.99 a month.", none: null }), w);
+      button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free for new subscribers, then $9.99 a month.", none: null }), w);
     for (const [label, cfg] of [["a monthly product with no free days", { store: STORES.noFree }], ["a buyer Apple calls ineligible", { store: STORES.monthlyFree, elig: { monthly: 1 } }]]) {
       w = await real(cfg);
       ok(label + ": the exact charged-today card", same(w, {

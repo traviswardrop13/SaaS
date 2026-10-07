@@ -159,7 +159,7 @@ try {
       // zone, exactly as a parent's phone would write it. Never a typed date.
       const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
       ok("the store says the monthly plan starts with 3 free days, so the card says so: the row, the check line, and the button",
-        s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "No payment today · Subscription auto-renews" && s.btn === "Start 3 days free" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
+        s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "No payment today · Subscription auto-renews" && s.btn === "Start practicing!" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
       ok("…with no dated rows and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
         s.rows.length === 0 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Cancel anytime.", [s.rows, s.note]);
       ok("…and no promise of a reminder: Sona sends none", !/remind|e-?mail|notif/i.test(s.body), (s.body.match(/[^\n]*(remind|e-?mail|notif)[^\n]*/i) || [""])[0]);

@@ -58,7 +58,7 @@ await scenario("a family that can buy", async () => {
     await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
-      /3 days free, then \$9\.99 a month\./.test(card) && button === "Start 3 days free" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
+      /3 days free, then \$9\.99 a month\./.test(card) && button === "Start practicing!" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
     ok("…as one row (Monthly, 3-day free trial, the price), one check line, and no date anywhere",
       (await page.locator("#iapTL li").count()) === 0 && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
     ok("…and no reminder is promised anywhere on the price screen (Sona sends none yet)",

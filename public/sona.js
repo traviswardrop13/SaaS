@@ -5643,7 +5643,7 @@
     const TRIAL = (N > 0 && UNIT) ? N + "-" + UNIT + " free trial" : FREE + " free";
     w.state = "free";
     w.price = FREE + " free, then " + PP + ".";          // Travis's line (5 Oct 2026), built from the store's two answers
-    w.button = "Start " + FREE + " free";
+    w.button = "Start practicing!";                      // Travis, 6 Oct 2026; the free days and the price are on the row and under the button
     if (plan.sure === true) {
       w.title = "Start Sona Premium with " + FREE + " free";
       w.sub = TRIAL;

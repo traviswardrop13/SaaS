@@ -194,7 +194,7 @@ ok("required furniture: Restore + Terms of Use + Privacy + renewal terms",
   // phone would write it. Never a typed date.
   const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
   ok("free days: no dated rows and no date at all (Travis, 6 Oct 2026), one check line, the button, all from the store",
-    t.state === "free" && t.rows.length === 0 && t.seen.indexOf(day) === -1 && t.check === "No payment today · Subscription auto-renews" && t.button === "Start 3 days free", JSON.stringify([t.check, t.rows, t.button, day]));
+    t.state === "free" && t.rows.length === 0 && t.seen.indexOf(day) === -1 && t.check === "No payment today · Subscription auto-renews" && t.button === "Start practicing!", JSON.stringify([t.check, t.rows, t.button, day]));
 }
 ok("…Apple said this buyer gets them, so the small print is one plain line under the button, and no 'new subscribers' note is on the card",
   t.note === "3 days free, then $9.99 a month. Cancel anytime." && !t.noteFirst && !/new subscribers/i.test(t.seen), JSON.stringify([t.note, t.noteFirst]));
@@ -295,7 +295,7 @@ ok("…and then the paywall is left behind: Home", /\/today\.html$/.test(page.ur
   await fresh({ __iapElig: "0" });
   m = await look();
   ok("when Apple cannot say whether this buyer gets them, the free days are for 'new subscribers', and the card says what happens otherwise",
-    m.state === "free" && m.button === "Start 3 days free" && /^Only new subscribers get 3 days free\. Otherwise Apple charges \$9\.99 today\. Apple shows your exact terms before you confirm\. Cancel anytime in Settings → Subscriptions\.$/.test(m.note) &&
+    m.state === "free" && m.button === "Start practicing!" && /^Only new subscribers get 3 days free\. Otherwise Apple charges \$9\.99 today\. Apple shows your exact terms before you confirm\. Cancel anytime in Settings → Subscriptions\.$/.test(m.note) &&
     m.rows.length === 0 && /new subscribers$/.test(m.under) && !/No payment today|Nothing to pay today/.test(m.seen), JSON.stringify([m.note, m.rows]));
   ok("…that note sits directly under the row, above the button", m.noteFirst, JSON.stringify(m.rows));
 
@@ -324,7 +324,7 @@ ok("…and then the paywall is left behind: Home", /\/today\.html$/.test(page.ur
   m = await look();
   ok("an order Apple took without the unlock arriving is never called 'nothing was charged'",
     !/nothing was charged/i.test(m.msg) && /Restore Purchases/.test(m.msg) && m.shown && m.state === "free", m.msg);
-  ok("…the card stays as it was, its button live again, with Restore beside it", m.button === "Start 3 days free" && !m.disabled && m.restore, JSON.stringify([m.button, m.disabled, m.restore]));
+  ok("…the card stays as it was, its button live again, with Restore beside it", m.button === "Start practicing!" && !m.disabled && m.restore, JSON.stringify([m.button, m.disabled, m.restore]));
   await page.evaluate((FLAGS) => FLAGS.forEach((k) => localStorage.removeItem(k)), FLAGS);
 }
 
@@ -434,7 +434,7 @@ await web.close();
 // covered (sona.caseplan.v1), or a free-era sweep grandfathered them
 // (earlyAdopter). The plan screen returns early for them on iOS and hides the
 // picker on the web — and nothing pinned it, so an edit that dropped either
-// check would show a covered family Apple's "Start 3 days free" sheet for
+// check would show a covered family Apple's "Start practicing!" sheet for
 // games they already have, with every suite green.
 {
   const noSale = { configure: async () => {}, getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$59.99" }] }),
@@ -2072,7 +2072,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       const links = [...document.querySelectorAll("a")].filter(seen);
       return {
         url: location.pathname, body: document.body.innerText,
-        buy: links.some((a) => a.getAttribute("href") === "/subscribe" || /Start 3 days free/.test(a.textContent)),
+        buy: links.some((a) => a.getAttribute("href") === "/subscribe" || /Start practicing!/.test(a.textContent)),
         store: links.filter((a) => /apps\.apple\.com/.test(a.getAttribute("href") || "")).map((a) => a.getAttribute("href") + " | " + a.textContent.trim()),
         restore: seen(document.getElementById("restoreLink")),
       };

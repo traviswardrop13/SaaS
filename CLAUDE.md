@@ -217,9 +217,12 @@ changing one. What follows from the rule:
   (every game and every book · real speech practice in every game · "No ads,
   ever"), then one row that looks like a picked radio: "Monthly" over "3-day
   free trial", the store's price as "$9.99/mo" on the right. Under it one
-  check line, "No payment today · Subscription auto-renews", the button, and
-  one small line: "3 days free, then $9.99 a month. Cancel anytime." No
-  header, no line under the headline, no Rachel line under the offer (her
+  check line, "No payment today · Subscription auto-renews", the button
+  ("Start practicing!", his words; charged today it stays "Subscribe — $9.99
+  a month"), and one small line: "3 days free, then $9.99 a month. Cancel
+  anytime." Restore Purchases looks like Terms and Privacy beside it. No
+  header, no line under the headline, no "at-home practice companion" line,
+  no Rachel line under the offer (her
   line is still on setup's ready screen and on Settings › Your plan). **The X
   IS "Not now"** (the same link, labelled "Not now" for a screen reader), so
   it leaves exactly as before. Every word is still `Sona.planWords`' and the
