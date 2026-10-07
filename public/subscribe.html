@@ -314,6 +314,26 @@
     .tl.days .tli{padding-bottom:11px;} .tl.days .tli:last-child{padding-bottom:0;}
     .tl.days .tld{left:-32px;top:0;width:22px;height:22px;}
     .tl.days .tli b{font-size:14px;} .tl.days .tli p{font-size:12.5px;margin-top:1px;line-height:1.4;}
+    /* THE ROW (6 Oct 2026, Travis's reference paywall): a picked radio, the
+       plan's name over one short line, the store's price on the right, one
+       check line under it. The words are still all planWords'. */
+    .oneplan{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;}
+    .oneplan-dot{flex:none;width:22px;height:22px;border-radius:50%;border:2.5px solid #14858d;background:radial-gradient(circle,#14858d 0 5px,#fff 6px);}
+    .oneplan-l{flex:1;min-width:0;display:block;}
+    .oneplan-name{font-family:"Baloo 2";font-size:19px;font-weight:800;letter-spacing:0;line-height:1.15;color:var(--ink);text-transform:none;}
+    .oneplan-sub{display:block;font-weight:700;font-size:13px;line-height:1.3;color:#7a6047;}
+    .oneplan-amt{flex:none;font-family:"Baloo 2";font-weight:800;font-size:21px;color:var(--ink);white-space:nowrap;}
+    .oneplan-check{display:flex;justify-content:center;align-items:center;gap:8px;margin:12px 0 0;font-weight:800;font-size:13px;line-height:1.3;color:#5d4a36;text-align:center;}
+    .oneplan-check:before{content:"\2713";flex:none;width:20px;height:20px;border-radius:50%;background:#14858d;color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+    #iapNote.fine{margin-top:10px;font-size:11.5px;line-height:1.35;font-weight:700;color:#8a6f52;text-align:center;}
+    .offer-unl{margin:10px 0 0;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#14858d;}
+    .offer-checks.icons li{align-items:center;}
+    .offer-checks.icons li:before{display:none;}
+    .offer-checks .oci{flex:none;width:30px;height:30px;padding:5px;border-radius:9px;background:#dff1ee;color:#14858d;}
+    body.offer .oneplan-check,body.offer .offer-unl{transition:none !important;}
+    body.fit6 .offer-unl{display:none;}
+    body.onerow.offer .offer-sub{display:none;}
+    body.fit7.offer .oneplan{padding:10px 12px;}
     /* by id, so the family sheet's sage and the old orange can never repaint
        them; teal from the tokens */
     #iapTL .tli.now .tld{background:linear-gradient(160deg,var(--act-hi),var(--act));border-color:transparent;box-shadow:0 3px 0 0 var(--act-d);}
@@ -389,10 +409,11 @@
       <p class="offer-pill" id="offerPill" hidden></p>
       <h1 id="offerTitle">Unlock every game</h1>
       <p class="offer-sub" id="offerSub"></p>
-      <ul class="offer-checks">
-        <li>Every game and every book, for every child on this phone</li>
-        <li>Real speech practice, built into every game</li>
-        <li id="offerCheck3">Daily practice and the free games stay free either way</li>
+      <p class="offer-unl" id="offerUnl">Unlimited access</p>
+      <ul class="offer-checks icons">
+        <li><svg class="oci" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="15.5" cy="11.5" r=".6"/><circle cx="18" cy="13.5" r=".6"/></svg><span>Every game and every book</span></li>
+        <li><svg class="oci" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span>Real speech practice in every game</span></li>
+        <li><svg class="oci" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.7 5.7l12.6 12.6"/></svg><span id="offerCheck3">No ads, ever</span></li>
       </ul>
     </section>
 
@@ -452,10 +473,13 @@
            any figure or "free" a parent could see. -->
       <div class="oneplan" id="iapPlan">
         <span class="tag" id="iapTag" hidden></span>
-        <span class="oneplan-name">Sona Premium</span>
-        <span class="oneplan-price" id="iapPrice"></span>
-        <span class="oneplan-what" id="iapWhat"></span>
+        <span class="oneplan-dot" aria-hidden="true"></span>
+        <span class="oneplan-l"><span class="oneplan-name" id="iapName"></span><span class="oneplan-sub" id="iapSub"></span></span>
+        <span class="oneplan-amt" id="iapAmt"></span>
+        <span class="oneplan-price" id="iapPrice" hidden></span>
+        <span class="oneplan-what" id="iapWhat" hidden></span>
       </div>
+      <p class="oneplan-check" id="iapCheck" hidden></p>
       <ol class="tl days" id="iapTL" hidden aria-label="What happens when"></ol>
       <div class="oneplan-none" id="iapNone" role="status" hidden><b id="iapNoneTitle"></b><span id="iapNoneText"></span></div>
       <p class="billday" id="iapNote" hidden></p>
@@ -705,7 +729,7 @@
     var FREE_VER=true; try{ FREE_VER=!Sona.freeVersion||!!Sona.freeVersion(); }catch(e){}
     if (!FREE_VER) {
       try {
-        document.getElementById("offerCheck3").textContent = "Cancel anytime" + ((Sona.isNativeApp && Sona.isNativeApp()) ? " in Settings" : "");
+        document.getElementById("offerCheck3").textContent = "No ads, ever";
         document.getElementById("pickWhat").textContent = "Sona Premium opens daily practice, every game and every book, for every child on this device.";
         // (the Apple card's own lines follow FREE_VER in paintApple)
       } catch (e) {}
@@ -982,6 +1006,7 @@
         var card = g("iapCard"), elTL = g("iapTL"), elNote = g("iapNote"), elBuy = g("iapBuy"), elMsg = g("iapMsg");
         var buyWrap = card.querySelector(".planbuy");
         card.style.display = "block";
+        document.body.classList.add("onerow");   // the row says it all: the line under the headline steps aside
 
         // The three functions ship together in sona.js. A page newer than the
         // sona.js beside it (a deploy caught between two requests) has no
@@ -1012,7 +1037,10 @@
           g("iapPlan").hidden = done || w.state === "none" || w.state === "owned";
           g("iapTag").textContent = w.tag; g("iapTag").hidden = !w.tag;
           g("iapPrice").textContent = w.price;
-          g("iapWhat").textContent = w.what; g("iapWhat").hidden = !w.what;
+          g("iapWhat").textContent = w.what;
+          g("iapName").textContent = w.name || ""; g("iapSub").textContent = w.sub || ""; g("iapSub").hidden = !w.sub;
+          g("iapAmt").textContent = w.amount || "";
+          g("iapCheck").textContent = w.check || ""; g("iapCheck").hidden = done || !w.check || w.state === "none" || w.state === "owned";
           while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
           (w.rows || []).forEach(function (row, i) {
             var li = document.createElement("li"), dot = document.createElement("span"), b = document.createElement("b"), p = document.createElement("p");
@@ -1027,8 +1055,9 @@
           g("iapNone").hidden = done || !w.none;
           // When the phone is not sure this buyer gets the free days, the note
           // says so directly under the tile, ABOVE the rows that name a day.
-          var before = w.noteFirst ? elTL : buyWrap;
+          var before = w.noteFirst ? elTL : w.noteLast ? buyWrap.nextElementSibling : buyWrap;
           if (elNote.nextElementSibling !== before) card.insertBefore(elNote, before);
+          elNote.classList.toggle("fine", !!w.noteLast);
           elNote.textContent = w.note; elNote.hidden = done || !w.note;
           var held = w.act === "wait" || APPLE.busy;
           elBuy.textContent = w.button; elBuy.setAttribute("data-act", w.act);

@@ -5600,7 +5600,8 @@
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
     const w = {
       state: "wait", title: "Sona Premium", tag: "", price: "", what: WHAT,
-      rows: [], note: "", noteFirst: false,
+      rows: [], note: "", noteFirst: false, noteLast: false,
+      name: "", sub: "", amount: "", check: "",
       button: "Checking the App Store…", act: "wait",
       header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
       none: null,
@@ -5619,38 +5620,42 @@
       return w;
     }
     const PP = P + " a " + per;
+    // THE ROW (Travis, 6 Oct 2026, with a reference paywall: "too many words
+    // ... I don't want it to say Friday October 9th I just want it to say
+    // three days"): the plan's name, one short line under it, the store's
+    // price on the right, and one check line. No dated rows.
+    const SHORT = { month: "mo", year: "yr", week: "wk" };
+    w.name = per === "month" ? "Monthly" : per === "year" ? "Yearly" : "Sona Premium";
+    w.amount = P + "/" + (SHORT[per] || per);
+    w.sub = ""; w.check = "Subscription auto-renews"; w.noteLast = false;
     w.act = "buy";
     if (plan.state === "paid") {
       w.state = "paid"; w.title = "Get Sona Premium";
       w.price = PP + ", charged today.";
+      w.sub = "Charged today";
       w.note = "Charged to your Apple ID today, then every " + per + ". Renews unless canceled in " + PLAN_CANCEL + ".";
       w.button = "Subscribe — " + PP;
       w.header = "Sona Premium: " + PP + ", charged today.";
       return w;
     }
-    const RENEW = "Renews every " + per + " unless canceled in " + PLAN_CANCEL + ".";
-    let DAY = "";
-    try { const d = planBillDate(plan, o.now); if (d) DAY = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }); } catch (e) { DAY = ""; }
-    if (!DAY || /invalid/i.test(DAY)) DAY = "After your free " + (plan.free.unit === "day" ? "days" : "time");
+    const UNIT = plan.free.unit ? String(plan.free.unit) : "";
+    const N = parseInt(FREE, 10);
+    const TRIAL = (N > 0 && UNIT) ? N + "-" + UNIT + " free trial" : FREE + " free";
     w.state = "free";
-    w.tag = FREE.toUpperCase() + " FREE";
     w.price = FREE + " free, then " + PP + ".";          // Travis's line (5 Oct 2026), built from the store's two answers
     w.button = "Start " + FREE + " free";
     if (plan.sure === true) {
       w.title = "Start Sona Premium with " + FREE + " free";
-      w.rows = [
-        { when: "Today", text: "Everything opens. Nothing to pay today." },
-        { when: DAY, text: PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
-      ];
+      w.sub = TRIAL;
+      w.check = "No payment today \u00b7 Subscription auto-renews";
+      w.note = w.price + " Cancel anytime in " + PLAN_CANCEL + ".";
+      w.noteLast = true;                                   // small print, under the button
       w.header = "Sona Premium: " + FREE + " free, then " + PP + ".";
     } else {
       w.title = "Sona Premium: " + FREE + " free for new subscribers";
-      w.rows = [
-        { when: "Today", text: "Everything opens. New subscribers pay nothing today." },
-        { when: DAY, text: "For new subscribers, " + PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
-      ];
-      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm.";
-      w.noteFirst = true;                                  // the note sits directly under the tile, above the rows
+      w.sub = TRIAL + " for new subscribers";
+      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm. Cancel anytime in " + PLAN_CANCEL + ".";
+      w.noteFirst = true;                                  // directly under the row, above the button
       w.header = "Sona Premium: " + FREE + " free for new subscribers, then " + PP + ".";
     }
     return w;
