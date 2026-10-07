@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
   const okManual = Boolean(founderKey) && keyIn === founderKey;
   if (!okCron && !okManual) return NextResponse.json({ ok: false }, { status: 401 });
   if (!configured()) {
-    return NextResponse.json({ ok: false, error: "Needs RESEND_API_KEY, UNSUB_SECRET and EMAIL_POSTAL." }, { status: 500 });
+    // names only, never values: this is how a founder finds out why no
+    // welcome email went out
+    const missing = ["RESEND_API_KEY", "UNSUB_SECRET", "EMAIL_POSTAL"].filter((k) => !(process.env[k] || "").trim());
+    return NextResponse.json({ ok: false, error: "Not set in Vercel: " + missing.join(", ") }, { status: 500 });
   }
   const r = await runDue();
   return NextResponse.json({ ok: true, ...r });
