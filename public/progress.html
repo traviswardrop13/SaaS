@@ -641,7 +641,9 @@
     (function () {
       var host = document.getElementById("firsts");
       if (!host) return;
-      // KIDS1: milestones belong to one child, not the device
+      // KIDS1: milestones belong to one child, not the device. kkey() only
+      // gives a child their own copy of a key listed in PER_KID (sona.js);
+      // this one was missing from it until 2 Oct 2026 — see ONE-TIME below.
       var KEY = (window.Sona&&Sona.kkey)?Sona.kkey("sona.firsts.v1"):"sona.firsts.v1";
       function loadF() { try { var v = JSON.parse(localStorage.getItem(KEY)); return (v && typeof v === "object") ? v : {}; } catch (e) { return {}; } }
       function saveF(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
@@ -656,6 +658,34 @@
         } catch (e) { return day; }
       }
       var f = loadF(); f.entries = f.entries || []; f.rungs = f.rungs || {};
+      // ONE-TIME, for a list written while every child on the device shared
+      // it. The first child keeps the un-suffixed key, so theirs is the list a
+      // sibling's rows landed in. With one child on the device nothing here
+      // can be wrong and nothing is touched. With more than one:
+      //  · "First clear" rows are dropped and rebuilt just below from THIS
+      //    child's own history, which is never pruned — so theirs come back
+      //    with their own dates and a sibling's do not come back at all.
+      //  · A level row above this child's own level cannot be theirs. (Rows
+      //    dated before 29 Jul 2026 are kept whatever they say: no device
+      //    held a second child before then, and the levels were renumbered
+      //    the day after, so an old row can sit above a level honestly.)
+      //    Rows at or below their level stay — nothing says whose they were.
+      //  · The level snapshot is whichever child opened this page last, so it
+      //    is forgotten, not compared: against a sibling's lower level it
+      //    would date, today, a level this child reached weeks ago.
+      if (!f.own) {
+        var shared = false; try { shared = Sona.kids().length > 1; } catch (e) {}
+        if (shared) {
+          f.entries = f.entries.filter(function (en) {
+            var id = String((en && en.id) || "");
+            if (id.indexOf("pass-") === 0) return false;
+            var m = /^rung-(.+)-(\d+)$/.exec(id);
+            return !(m && String(en.date) >= "2026-07-29" && parseInt(m[2], 10) > (Sona.rungOf ? Sona.rungOf(m[1]) : 0));
+          });
+          f.rungs = {};
+        }
+        f.own = 1;
+      }
       function has(id) { for (var i = 0; i < f.entries.length; i++) { if (f.entries[i].id === id) return true; } return false; }
       var oo = (Sona.outcomes ? Sona.outcomes() : {}) || {};
       var L = (Sona.LADDER ? Sona.LADDER.length : 6);
