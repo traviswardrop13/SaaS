@@ -7,18 +7,21 @@ import { kvCmd } from "@/lib/slpAuth";
  * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
  * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
  *
- * Two emails, both from Rachel, both carrying a one-tap unsubscribe link
- * (/api/email/unsub, the same HMAC token the Friday email uses) and the
- * mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing about a child, ever:
- * the only thing this file knows about anyone is an email address.
+ * Five emails from Rachel (CONTENT below: two at sign-up, then day 2, 3 and 5), each with a
+ * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
+ * email uses) and the mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing
+ * about a child, ever: the only thing this file knows is an email address.
  *
- * - step 0, the welcome: sent by /api/lead the moment a grown-up gives their
- *   email. Once per address, ever (`nurture:0:<email>`, set NX before sending,
- *   so a double tap or a retry cannot send two).
- * - step 1, "The 5-minute trick": scheduled for ~24 h later in the sorted set
- *   `nurture:due`; /api/cron/nurture sends what is due once a day. ZREM is the
- *   claim, so two overlapping runs cannot both send it.
- * Anyone in `email:unsub` (the Friday email's suppression set) gets neither.
+ * - the first two: sent by /api/lead the moment a grown-up gives their email.
+ *   Once per address, ever (`nurture:0:<email>`, set NX before sending, so a
+ *   double tap or a retry cannot send two; its value is the sign-up time).
+ * - the rest: the next one's time sits in the sorted set `nurture:due` and
+ *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
+ *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
+ * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
+ * Not yet: stopping when a family starts a trial. Sona can't see that until
+ * RevenueCat tells the server, so day 3 and day 5 say "already started? ignore
+ * the button" rather than assume.
  *
  * The people who signed up before this shipped were emailed by hand from a
  * Kit export (5–6 Oct 2026), so there is no back-fill here: it starts with
@@ -32,39 +35,98 @@ export const DUE_KEY = "nurture:due";
 type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 type Fetch = typeof fetch;
 
-export type Step = 0 | 1;
+export type Step = number;
 
-type Content = { subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
+type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
 
-// The copy Travis approved and sent by hand on 6 Oct 2026. Rachel's claims
-// ("one of the trickiest sounds", "like riding a bike") are hers to confirm.
-export const CONTENT: Record<Step, Content> = {
-  0: {
-    subject: "Tricky R? Let’s make practice fun \u{1F3C0}",
-    preview: "Games your kiddo will actually ask to play",
+/**
+ * THE SEQUENCE (Travis, 7 Oct 2026: "a super short email ... to send them
+ * directly to the app store and then a second email that's like the five
+ * minute trick ... then day two day three day five"). Built from his spec
+ * (sona-email-system.md, A1-A5), with what is not true of the app today
+ * taken out: no cup tower, no "correct" or scoring (Sona hears "a voice of
+ * the right kind", never grades), no yearly price and no "free forever"
+ * games (a new family meets the trial first; the price is Apple's, so no
+ * figure is typed), no testimonial (none exists yet). `day` is days after
+ * sign-up. Rachel's claims (the bike, the recast tip, the ages) are hers to
+ * confirm.
+ */
+export const CONTENT: Content[] = [
+  {
+    day: 0,
+    subject: "Here\u2019s Sona",
+    preview: "Your download link, and what to do tonight",
     paras: [
-      "Hi! It’s Rachel \u{1F44B}",
-      "R is one of the trickiest sounds for kiddos, and one of the most common ones parents ask me about. The good news: a little practice every day really adds up.",
-      "That’s why we made Sona. Your child says their R words to earn a ball, then takes a shot! Or they slice fruit and dig for dinosaurs, with a little talking along the way.",
-      "You can sit together, cheer them on, and see which game becomes their favorite. \u{1F49B}",
+      "Hi there,",
+      "Thanks for signing up! Here\u2019s your link to get Sona on your iPhone or iPad.",
     ],
-    button: "Start practicing R →",
-    after: ["Try Sona free for 3 days. Cancel anytime.", "Then hit reply and tell me how it went!"],
+    button: "Get Sona on the App Store",
+    after: [
+      "Try Sona free for 3 days. Apple shows the price before you confirm.",
+      "Tonight, hand your child the phone for one round. That\u2019s it.",
+      "Hit reply and tell me what sound your child is working on.",
+    ],
   },
-  1: {
-    subject: "The 5-minute trick \u{1F6B2}",
+  {
+    day: 0,
+    subject: "The 5-minute trick",
     preview: "Speech sounds work like riding a bike",
     paras: [
       "Hi there,",
       "Tricky sounds like R, S, and L are a lot like riding a bike for kiddos.",
-      "You don’t learn to ride by practicing once a week for an hour. You learn by doing a little every day.",
-      "That’s the whole idea behind Sona: short daily practice that adds up.",
+      "You don\u2019t learn to ride by practicing once a week for an hour. You learn by doing a little every day.",
+      "That\u2019s the whole idea behind Sona: short daily practice that adds up.",
     ],
-    button: "\u{1F449} Start today’s 5 minutes",
+    button: "Start today\u2019s 5 minutes",
     after: [],
     ps: "Already practicing? Keep the streak going!",
   },
-};
+  {
+    day: 2,
+    subject: "Try this the next time they say \u201cwabbit\u201d",
+    preview: "One small habit that helps a lot",
+    paras: [
+      "Hi there,",
+      "Here\u2019s my favorite tip for parents: don\u2019t correct. Say it back the right way.",
+      "If your child says \u201cLook, a wabbit!\u201d, skip \u201cNo, say rabbit.\u201d Instead, say: \u201cYes! A rabbit! The rabbit is hopping!\u201d",
+      "They hear the sound the right way, and they don\u2019t feel like they made a mistake. Do it a few times a day, and it adds up.",
+      "Sona handles the practice. You just keep it light and fun.",
+    ],
+    button: "Open Sona",
+    after: [],
+  },
+  {
+    day: 3,
+    subject: "The balloon problem",
+    preview: "A lot of speech apps let kids skip the talking",
+    paras: [
+      "Hi there,",
+      "A lot of kids\u2019 speech apps let children tap their way through without ever saying a word. It looks like practice, but it\u2019s really just a game.",
+      "Sona asks for the sound, and listens. In Hoops, saying the word is what earns the ball. Silence never counts.",
+      "So the minutes your child spends in Sona are minutes spent talking. That\u2019s screen time you don\u2019t have to feel guilty about.",
+    ],
+    button: "Try Sona free for 3 days",
+    after: [],
+    ps: "Already started? You can ignore the button.",
+  },
+  {
+    day: 5,
+    subject: "Quick answers before you decide",
+    preview: "What it costs, how to cancel, and what Sona is (and isn\u2019t)",
+    paras: [
+      "Hi there,",
+      "Here\u2019s what parents ask me most:",
+      "What does it cost? 3 days free, then Apple shows the price before you confirm.",
+      "Can I cancel? Yes, anytime: iPhone Settings \u2192 your name \u2192 Subscriptions \u2192 Sona.",
+      "How long a day? About 5 minutes.",
+      "What ages? About 3 to 8, for kids who talk but are hard to understand: \u201cwabbit,\u201d a lisp, trouble with R, S, or L.",
+      "Is my child\u2019s voice uploaded? No. Sona listens on the phone, and audio is never uploaded.",
+      "Is it the same as seeing a speech therapist? No. Sona is practice at home. It doesn\u2019t test your child, and it doesn\u2019t replace a speech therapist.",
+    ],
+    button: "Start your free trial",
+    after: [],
+  },
+];
 
 export function unsubToken(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex").slice(0, 24);
@@ -77,14 +139,13 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
   const P = 'style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;"';
   const html =
     `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">` +
-    `<div style="display:none;max-height:0;overflow:hidden;">${esc(c.preview)}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>` +
+    `<div style="display:none;max-height:0;overflow:hidden;">${esc(c.preview)}</div>` +
     `<div style="max-width:560px;margin:0 auto;padding:24px 20px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">` +
     c.paras.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;"><a href="${APP_URL}" style="display:inline-block;background:#ff8a3d;color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 26px;border-radius:12px;">${esc(c.button)}</a></p>` +
     c.after.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel, MS, CF-SLP<br>Sona co-founder</p>` +
     (c.ps ? `<p ${P}><em>${esc(c.ps)}</em></p>` : "") +
-    "<br>".repeat(18) +
     `<p style="margin:0;font-size:12px;line-height:1.5;color:#8a8a8a;">You’re getting this because you gave Sona your email.<br>Sona · ${esc(postal)}<br><a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a></p>` +
     `</div></body></html>`;
   const text =
@@ -92,7 +153,6 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
     (c.after.length ? c.after.join("\n\n") + "\n\n" : "") +
     "Rachel, MS, CF-SLP\nSona co-founder\n" +
     (c.ps ? `\n${c.ps}\n` : "") +
-    "\n".repeat(18) +
     `--\nYou’re getting this because you gave Sona your email.\nSona · ${postal}\nUnsubscribe: ${unsubUrl}\n`;
   return { subject: c.subject, html, text };
 }
@@ -105,7 +165,7 @@ function config(): { key: string; secret: string; postal: string; from: string; 
   if (!key || !secret || !postal) return null;
   return {
     key, secret, postal,
-    from: process.env.NURTURE_FROM || "Rachel at Sona <rachel@speaksona.com>",
+    from: process.env.NURTURE_FROM || "Rachel from Sona <rachel@speaksona.com>",
     replyTo: process.env.NURTURE_REPLY_TO || "rachel@speaksona.com",
   };
 }
@@ -120,11 +180,14 @@ async function unsubscribed(email: string, kv: Kv): Promise<boolean | null> {
   return Number(r) === 1;
 }
 
-export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fetch = fetch): Promise<boolean> {
+export type SendResult = "sent" | "unsub" | "failed";
+
+export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fetch = fetch): Promise<SendResult> {
   const cfg = config();
-  if (!cfg) return false;
+  if (!cfg || !CONTENT[step]) return "failed";
   const unsub = await unsubscribed(email, kv);
-  if (unsub !== false) return false;
+  if (unsub === true) return "unsub";
+  if (unsub !== false) return "failed";
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const { subject, html, text } = render(step, unsubUrl, cfg.postal);
   try {
@@ -137,36 +200,70 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
       }),
     });
     if (!r.ok) console.error("[nurture] Resend refused step", step, r.status);
-    return r.ok;
+    return r.ok ? "sent" : "failed";
   } catch (e) {
     console.error("[nurture] send threw:", e instanceof Error ? e.message : String(e));
-    return false;
+    return "failed";
   }
 }
 
-/** /api/lead: a new grown-up's email. Welcome now, schedule tomorrow's. Never throws. */
+export const nextKey = (email: string) => "nurture:next:" + email;
+
+/** /api/lead: a new grown-up's email. Welcome now, schedule the next. Never throws. */
 export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now()): Promise<boolean> {
   const email = rawEmail.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !configured()) return false;
   try {
     const first = await kv(["SET", "nurture:0:" + email, new Date(now).toISOString(), "NX", "EX", 31536000]);
     if (first !== "OK") return false;
-    await kv(["ZADD", DUE_KEY, now + DAY_MS, email]);
-    return await sendStep(email, 0, kv, f);
+    // every day-0 email goes now, in order (Travis, 7 Oct 2026: "two emails
+    // right away"); the first one out decides what /api/lead reports
+    let step = 0, first0: SendResult = "failed", r: SendResult = "failed";
+    while (CONTENT[step] && CONTENT[step].day === 0) {
+      r = await sendStep(email, step, kv, f);
+      if (step === 0) first0 = r;
+      step++;
+      if (r === "unsub") break;
+    }
+    if (r !== "unsub" && CONTENT[step]) {
+      await kv(["SET", nextKey(email), step, "EX", 31536000]);
+      await kv(["ZADD", DUE_KEY, now + CONTENT[step].day * DAY_MS, email]);
+    }
+    return first0 === "sent";
   } catch {
     return false;
   }
 }
 
-/** /api/cron/nurture: send every step-1 email that is due. */
+/**
+ * /api/cron/nurture: send every email that is due, then schedule the one
+ * after it from the sign-up time (so a late run never pushes the rest back).
+ * ZREM is the claim. An address enrolled before the sequence grew has no
+ * `nurture:next` and is on step 1, which is what it was waiting for. An
+ * unsubscribed address leaves the sequence; a failed send moves on, so one
+ * bad address can never loop.
+ */
 export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now()): Promise<{ due: number; sent: number }> {
   const due = (await kv(["ZRANGEBYSCORE", DUE_KEY, "-inf", now, "LIMIT", 0, 500])) as unknown;
   if (!Array.isArray(due)) return { due: 0, sent: 0 };
   let sent = 0;
-  for (const e of due as string[]) {
+  for (const raw of due as string[]) {
+    const e = String(raw);
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
-    if (await sendStep(String(e), 1, kv, f)) sent++;
+    const step = Number((await kv(["GET", nextKey(e)])) ?? 1) || 1;
+    const r = await sendStep(e, step, kv, f);
+    if (r === "sent") sent++;
+    const next = step + 1;
+    if (r === "unsub" || !CONTENT[next]) {
+      await kv(["DEL", nextKey(e)]);
+      continue;
+    }
+    const startedIso = (await kv(["GET", "nurture:0:" + e])) as string | null;
+    const started = startedIso ? Date.parse(startedIso) : NaN;
+    const at = Number.isFinite(started) ? started + CONTENT[next].day * DAY_MS : now + (CONTENT[next].day - CONTENT[step].day) * DAY_MS;
+    await kv(["SET", nextKey(e), next, "EX", 31536000]);
+    await kv(["ZADD", DUE_KEY, Math.max(at, now + 1), e]);
   }
   return { due: due.length, sent };
 }
