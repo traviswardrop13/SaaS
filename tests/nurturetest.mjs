@@ -50,16 +50,16 @@ process.env.RESEND_API_KEY = "re_test"; process.env.UNSUB_SECRET = "s3cret"; pro
 const T = Date.parse("2026-10-07T12:00:00Z");
 
 const s = store(["gone@example.com"]);
-ok("a new sign-up gets the first email right away", await N.enroll(" Mom@Example.com ", s.cmd, fakeFetch, T) && sent.length === 1 && sent[0].to[0] === "mom@example.com" && sent[0].subject === N.CONTENT[0].subject);
+ok("a new sign-up gets the first two emails right away, in order", await N.enroll(" Mom@Example.com ", s.cmd, fakeFetch, T) && sent.length === 2 && sent[0].to[0] === "mom@example.com" && sent[0].subject === N.CONTENT[0].subject && sent[1].subject === N.CONTENT[1].subject);
 const w = sent[0];
 ok("…from Rachel, replies to Rachel", /rachel@speaksona\.com/.test(w.from) && w.reply_to === "rachel@speaksona.com", w.from);
 ok("…with a working unsubscribe link (the token /api/email/unsub checks) in the body and the header",
   w.html.includes("/api/email/unsub?e=mom%40example.com&k=" + N.unsubToken("mom@example.com", "s3cret")) && /api\/email\/unsub/.test(w.headers["List-Unsubscribe"]) && w.headers["List-Unsubscribe-Post"] === "List-Unsubscribe=One-Click");
 ok("…and the mailing address, in html and text", w.html.includes("851 NE 1st Ave") && w.text.includes("851 NE 1st Ave"));
 ok("…and links to the App Store", w.html.includes(N.APP_URL));
-ok("a second sign-up with the same address sends nothing", !(await N.enroll("mom@example.com", s.cmd, fakeFetch, T + 1000)) && sent.length === 1);
-ok("the sequence is day 0, 1, 2, 3, 5", JSON.stringify(N.CONTENT.map((c) => c.day)) === "[0,1,2,3,5]");
-ok("nothing more before a day has passed", (await N.runDue(s.cmd, fakeFetch, T + N.DAY_MS - 1000)).sent === 0 && sent.length === 1);
+ok("a second sign-up with the same address sends nothing", !(await N.enroll("mom@example.com", s.cmd, fakeFetch, T + 1000)) && sent.length === 2);
+ok("the sequence is two at sign-up, then day 2, 3, 5", JSON.stringify(N.CONTENT.map((c) => c.day)) === "[0,0,2,3,5]");
+ok("nothing more before day 2", (await N.runDue(s.cmd, fakeFetch, T + 2 * N.DAY_MS - 1000)).sent === 0 && sent.length === 2);
 // a daily run, an hour after each sign-up anniversary, for ten days
 for (let d = 1; d <= 10; d++) await N.runDue(s.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
 ok("…then each email once, in order, and nothing after the last", JSON.stringify(sent.map((m) => m.subject)) === JSON.stringify(N.CONTENT.map((c) => c.subject)), sent.map((m) => m.subject));

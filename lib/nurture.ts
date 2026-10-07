@@ -7,12 +7,12 @@ import { kvCmd } from "@/lib/slpAuth";
  * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
  * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
  *
- * Five emails from Rachel (CONTENT below: day 0, 1, 2, 3 and 5), each with a
+ * Five emails from Rachel (CONTENT below: two at sign-up, then day 2, 3 and 5), each with a
  * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
  * email uses) and the mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing
  * about a child, ever: the only thing this file knows is an email address.
  *
- * - the first: sent by /api/lead the moment a grown-up gives their email.
+ * - the first two: sent by /api/lead the moment a grown-up gives their email.
  *   Once per address, ever (`nurture:0:<email>`, set NX before sending, so a
  *   double tap or a retry cannot send two; its value is the sign-up time).
  * - the rest: the next one's time sits in the sorted set `nurture:due` and
@@ -68,7 +68,7 @@ export const CONTENT: Content[] = [
     ],
   },
   {
-    day: 1,
+    day: 0,
     subject: "The 5-minute trick",
     preview: "Speech sounds work like riding a bike",
     paras: [
@@ -216,12 +216,20 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
   try {
     const first = await kv(["SET", "nurture:0:" + email, new Date(now).toISOString(), "NX", "EX", 31536000]);
     if (first !== "OK") return false;
-    const r = await sendStep(email, 0, kv, f);
-    if (r !== "unsub") {
-      await kv(["SET", nextKey(email), 1, "EX", 31536000]);
-      await kv(["ZADD", DUE_KEY, now + CONTENT[1].day * DAY_MS, email]);
+    // every day-0 email goes now, in order (Travis, 7 Oct 2026: "two emails
+    // right away"); the first one out decides what /api/lead reports
+    let step = 0, first0: SendResult = "failed", r: SendResult = "failed";
+    while (CONTENT[step] && CONTENT[step].day === 0) {
+      r = await sendStep(email, step, kv, f);
+      if (step === 0) first0 = r;
+      step++;
+      if (r === "unsub") break;
     }
-    return r === "sent";
+    if (r !== "unsub" && CONTENT[step]) {
+      await kv(["SET", nextKey(email), step, "EX", 31536000]);
+      await kv(["ZADD", DUE_KEY, now + CONTENT[step].day * DAY_MS, email]);
+    }
+    return first0 === "sent";
   } catch {
     return false;
   }
