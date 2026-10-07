@@ -85,6 +85,7 @@ const all = JSON.stringify(N.CONTENT) + readFileSync(path.join(REPO, "lib/nurtur
 ok("Rachel signs as MS, CF-SLP, never certified/CCC", /MS, CF-SLP/.test(all) && !/\bCCC\b|certified/i.test(all));
 ok("practice, never therapy/treatment/diagnosis/score", !/therapy|treatment|diagnos|score/i.test(JSON.stringify(N.CONTENT)));
 ok("no dollar figure, no \"correct\", no free-forever promise, no testimonial placeholder", !/correctly|forever|\[[A-Z]|CREDENTIALS/i.test(JSON.stringify(N.CONTENT)));
+ok("no emoji anywhere (they pushed the first test into spam, 7 Oct 2026)", !/\p{Extended_Pictographic}/u.test(JSON.stringify(N.CONTENT)));
 ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 
 // the wiring

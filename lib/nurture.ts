@@ -54,7 +54,7 @@ type Content = { day: number; subject: string; preview: string; paras: string[];
 export const CONTENT: Content[] = [
   {
     day: 0,
-    subject: "Here\u2019s Sona \u{1F389}",
+    subject: "Here\u2019s Sona",
     preview: "Your download link, and what to do tonight",
     paras: [
       "Hi there,",
@@ -69,7 +69,7 @@ export const CONTENT: Content[] = [
   },
   {
     day: 1,
-    subject: "The 5-minute trick \u{1F6B2}",
+    subject: "The 5-minute trick",
     preview: "Speech sounds work like riding a bike",
     paras: [
       "Hi there,",
@@ -77,7 +77,7 @@ export const CONTENT: Content[] = [
       "You don\u2019t learn to ride by practicing once a week for an hour. You learn by doing a little every day.",
       "That\u2019s the whole idea behind Sona: short daily practice that adds up.",
     ],
-    button: "\u{1F449} Start today\u2019s 5 minutes",
+    button: "Start today\u2019s 5 minutes",
     after: [],
     ps: "Already practicing? Keep the streak going!",
   },
@@ -92,7 +92,7 @@ export const CONTENT: Content[] = [
       "They hear the sound the right way, and they don\u2019t feel like they made a mistake. Do it a few times a day, and it adds up.",
       "Sona handles the practice. You just keep it light and fun.",
     ],
-    button: "\u{1F449} Open Sona",
+    button: "Open Sona",
     after: [],
   },
   {
@@ -105,7 +105,7 @@ export const CONTENT: Content[] = [
       "Sona asks for the sound, and listens. In Hoops, saying the word is what earns the ball. Silence never counts.",
       "So the minutes your child spends in Sona are minutes spent talking. That\u2019s screen time you don\u2019t have to feel guilty about.",
     ],
-    button: "\u{1F449} Try Sona free for 3 days",
+    button: "Try Sona free for 3 days",
     after: [],
     ps: "Already started? You can ignore the button.",
   },
@@ -123,7 +123,7 @@ export const CONTENT: Content[] = [
       "Is my child\u2019s voice uploaded? No. Sona listens on the phone, and audio is never uploaded.",
       "Is it the same as seeing a speech therapist? No. Sona is practice at home. It doesn\u2019t test your child, and it doesn\u2019t replace a speech therapist.",
     ],
-    button: "\u{1F449} Start your free trial",
+    button: "Start your free trial",
     after: [],
   },
 ];
@@ -139,14 +139,13 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
   const P = 'style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;"';
   const html =
     `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">` +
-    `<div style="display:none;max-height:0;overflow:hidden;">${esc(c.preview)}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>` +
+    `<div style="display:none;max-height:0;overflow:hidden;">${esc(c.preview)}</div>` +
     `<div style="max-width:560px;margin:0 auto;padding:24px 20px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">` +
     c.paras.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;"><a href="${APP_URL}" style="display:inline-block;background:#ff8a3d;color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 26px;border-radius:12px;">${esc(c.button)}</a></p>` +
     c.after.map((p) => `<p ${P}>${esc(p)}</p>`).join("") +
     `<p style="margin:24px 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;">Rachel, MS, CF-SLP<br>Sona co-founder</p>` +
     (c.ps ? `<p ${P}><em>${esc(c.ps)}</em></p>` : "") +
-    "<br>".repeat(18) +
     `<p style="margin:0;font-size:12px;line-height:1.5;color:#8a8a8a;">You’re getting this because you gave Sona your email.<br>Sona · ${esc(postal)}<br><a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a></p>` +
     `</div></body></html>`;
   const text =
@@ -154,7 +153,6 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
     (c.after.length ? c.after.join("\n\n") + "\n\n" : "") +
     "Rachel, MS, CF-SLP\nSona co-founder\n" +
     (c.ps ? `\n${c.ps}\n` : "") +
-    "\n".repeat(18) +
     `--\nYou’re getting this because you gave Sona your email.\nSona · ${postal}\nUnsubscribe: ${unsubUrl}\n`;
   return { subject: c.subject, html, text };
 }
