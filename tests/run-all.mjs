@@ -12,6 +12,7 @@ const SUITES = [
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
   "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
+  "nurturetest.mjs", // NURTURE1: a new sign-up gets the welcome now and the 5-minute email tomorrow, once each, with a real unsubscribe
   "launchtest.mjs", // LAUNCH1: the family app is locked until launch day (Friday 2 Oct), one email box, a team door, open by itself
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
