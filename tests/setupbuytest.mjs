@@ -59,13 +59,13 @@ await scenario("a family that can buy", async () => {
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
       /3 days free, then \$9\.99 a month\./.test(card) && button === "Start 3 days free" && !/\$59\.99|a year|yearly/i.test(card), { card, button });
-    ok("…with a two-row timeline (today, and the billing day) and Apple's cancel rule",
-      (await page.locator("#iapTL li").count()) === 2 && /Today/.test(card) && /at least 24 hours before/.test(card) && /Settings\s*→\s*Subscriptions/.test(card), card);
+    ok("…as one row (Monthly, 3-day free trial, the price), one check line, and no date anywhere",
+      (await page.locator("#iapTL li").count()) === 0 && /Monthly\s+3-day free trial\s+\$9\.99\/mo/.test(card) && /No payment today · Subscription auto-renews/.test(card) && /Cancel anytime\./.test(card) && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day/.test(card), card);
     ok("…and no reminder is promised anywhere on the price screen (Sona sends none yet)",
       !/\b(remind|reminder|email|e-mail|notify|notification)/i.test(await text(page, "body")), await text(page, "body"));
     const ways = { notNow: await page.locator("#declineLink").waitFor({ state: "visible", timeout: 4000 }).then(() => true, () => false), restore: await page.locator("#iapRestore").isVisible(),
-      terms: await page.locator('#iapLegal a[href="/terms"]').isVisible(), privacy: await page.locator('#iapLegal a[href="/privacy"]').isVisible(), notNowSays: await text(page, "#declineLink") };
-    ok("…and \"Not now\", Restore, Terms and Privacy are all there", ways.notNow && ways.restore && ways.terms && ways.privacy && /^Not now/.test(ways.notNowSays || ""), ways);
+      terms: await page.locator('#iapLegal a[href="/terms"]').isVisible(), privacy: await page.locator('#iapLegal a[href="/privacy"]').isVisible(), notNowLabel: await page.locator("#declineLink").getAttribute("aria-label") };
+    ok("…and the small X that means \"Not now\", Restore, Terms and Privacy are all there", ways.notNow && ways.restore && ways.terms && ways.privacy && /^Not now/.test(ways.notNowLabel || ""), ways);
     await tap(page, "#iapBuy");
     await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });
     await step(page, "mic");

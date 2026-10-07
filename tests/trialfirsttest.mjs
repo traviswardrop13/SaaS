@@ -134,7 +134,7 @@ try {
       state: g("iapCard").getAttribute("data-state"), card: seen(g("iapCard")), offer: document.body.classList.contains("offer"),
       header: seen(document.querySelector(".family-header")), tabs: seen(document.querySelector(".family-tabs")),
       title: text("offerTitle"), sub: text("offerSub"), check3: text("offerCheck3"),
-      tag: text("iapTag"), price: text("iapPrice"), what: text("iapWhat"), rows: seen(g("iapTL")) ? [...g("iapTL").children].map((li) => [li.querySelector("b").textContent, li.querySelector("p").textContent.replace(/\u00a0/g, " ")]) : [],
+      tag: text("iapTag"), price: text("iapAmt"), under: text("iapLine"), check: text("iapCheck"), what: text("iapWhat"), rows: seen(g("iapTL")) ? [...g("iapTL").children].map((li) => [li.querySelector("b").textContent, li.querySelector("p").textContent.replace(/\u00a0/g, " ")]) : [],
       note: text("iapNote"), none: text("iapNone"), btn: text("iapBuy"), act: g("iapBuy").getAttribute("data-act"), disabled: g("iapBuy").disabled,
       decline: text("declineLink"), declineShown: seen(g("declineRow")), freeCard: seen(g("freeTierCard")),
       line: g("planLine").textContent, cardText: seen(g("iapCard")) ? g("iapCard").innerText : "", body: document.body.innerText.replace(/\u00a0/g, " "),
@@ -153,18 +153,18 @@ try {
       ok("the hand-off from setup opens on the price itself: the two screens that stood before it are gone from the page",
         s.intro.length === 0 && s.card && s.offer, s.intro);
       ok("…as the offer, with no header and no Settings tabs: the grown-up is still in setup", !s.header && !s.tabs, { header: s.header, tabs: s.tabs });
-      ok("…its headline carries on from setup (\"Mia's practice is ready\"), and the line under it says what opens it",
-        s.title === "Mia's practice is ready" && s.sub === "Sona Premium opens it.", [s.title, s.sub]);
+      ok("…its headline carries on from setup (\"Mia's practice is ready\"), with no second line under it",
+        s.title === "Mia's practice is ready" && s.sub === "", [s.title, s.sub]);
       // the day the first charge falls: computed here, in the page's own
       // zone, exactly as a parent's phone would write it. Never a typed date.
       const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
-      ok("the store says the monthly plan starts with 3 free days, so the card says so: the tag, Travis's line, and the button",
-        s.state === "free" && s.tag === "3 DAYS FREE" && s.price === "3 days free, then $9.99 a month." && s.btn === "Start 3 days free" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
-      ok("…with two dated rows above the one button: today, and the day the first charge falls (" + day + "), with where to cancel",
-        s.rows.length === 2 && s.rows[0][0] === "Today" && s.rows[1][0] === day && /\$9\.99 a month starts, unless you cancel at least 24 hours before\./.test(s.rows[1][1]) && /Settings → Subscriptions/.test(s.rows[1][1]), s.rows);
+      ok("the store says the monthly plan starts with 3 free days, so the card says so: the row, the check line, and the button",
+        s.state === "free" && s.under === "3-day free trial" && s.price === "$9.99/mo" && s.check === "No payment today · Subscription auto-renews" && s.btn === "Start 3 days free" && !/a year/i.test(s.body), [s.state, s.tag, s.price, s.btn]);
+      ok("…with no dated rows and no date (" + day + " is nowhere), and one small line under the button: the price, and Cancel anytime",
+        s.rows.length === 0 && s.body.indexOf(day) === -1 && s.note === "3 days free, then $9.99 a month. Cancel anytime.", [s.rows, s.note]);
       ok("…and no promise of a reminder: Sona sends none", !/remind|e-?mail|notif/i.test(s.body), (s.body.match(/[^\n]*(remind|e-?mail|notif)[^\n]*/i) || [""])[0]);
       ok("…\"Not now\" (not \"keep the free version\") under it, and no \"What stays free\"", s.declineShown && s.decline === "Not now" && !s.freeCard, [s.decline, s.freeCard]);
-      ok("…and nothing on it says anything stays free", !/stays? free|free games|free version/i.test(s.body) && s.check3 === "Cancel anytime in Settings" && !/free version/.test(s.line),
+      ok("…and nothing on it says anything stays free", !/stays? free|free games|free version/i.test(s.body) && s.check3 === "No ads, ever" && !/free version/.test(s.line),
         (s.body.match(/[^\n]*(stays? free|free games|free version)[^\n]*/i) || [s.check3, s.line])[0]);
       ok("the price is counted as seen once it is really on the screen, and once", !!s.spent && s.viewed === 1, { spent: s.spent, viewed: s.viewed });
       ok("the price screen from setup: no page errors", errors.length === 0, errors);
@@ -216,7 +216,7 @@ try {
       await priced(page);
       const o = await SEEN(page);
       ok("a tap on grey Fruit Slice opens the price at once, on that game, with \"Not now\" under it", /^Unlock Fruit Slice, and every other game$/.test(o.title) && o.card && o.decline === "Not now", [o.title, o.card, o.decline]);
-      ok("…with the header back (this is not setup) and the line about the games under the headline", o.header && /^Games for /.test(o.sub), [o.header, o.sub]);
+      ok("…with no header there either: the small X is the way out", !o.header && o.sub === "", [o.header, o.sub]);
       ok("Not now: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
@@ -227,7 +227,7 @@ try {
       await priced(page);
       const s = await SEEN(page);
       ok("no free days in the store: the card charges today and says so, on the tile and on the button",
-        s.state === "paid" && s.price === "$9.99 a month, charged today." && s.btn === "Subscribe — $9.99 a month" && /Charged to your Apple ID today, then every month\./.test(s.note), [s.state, s.price, s.btn, s.note]);
+        s.state === "paid" && s.price === "$9.99/mo" && s.under === "Charged today" && s.btn === "Subscribe — $9.99 a month" && /Charged to your Apple ID today, then every month\./.test(s.note), [s.state, s.price, s.btn, s.note]);
       ok("…with no tag, no dated rows, and not one visible word \"free\" anywhere on the screen", !s.tag && s.rows.length === 0 && !/\bfree\b/i.test(s.body), (s.body.match(/[^\n]*\bfree\b[^\n]*/i) || [""])[0]);
       ok("no free days: no page errors", errors.length === 0, errors);
     } finally { await context.close(); }

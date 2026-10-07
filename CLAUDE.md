@@ -206,6 +206,31 @@ changing one. What follows from the rule:
   truly armed for, and is Travis's to approve: it changes what the privacy
   page says. "Paywall viewed" and the one-shot (`planShown`) count only once
   a priced card is on screen.
+- **THE PRICE SCREEN IS ONE ROW, NO DATE, AND AN X (Travis, 6 Oct 2026, with
+  a reference paywall: "too many words ... I don't want it to say Friday
+  October 9th I just want it to say three days", then "Get rid of not now ...
+  just like a subtle X in the top right", "get rid of the built with Rachel
+  information on the bottom", "just say cancel anytime period").** This
+  replaces the two-row timeline described just above and under "THE IPHONE
+  SELLS ONE PLAN". On Apple's card, as an offer: Home's game pictures and
+  Echo, the headline, "Unlimited access", three features with small icons
+  (every game and every book · real speech practice in every game · "No ads,
+  ever"), then one row that looks like a picked radio: "Monthly" over "3-day
+  free trial", the store's price as "$9.99/mo" on the right. Under it one
+  check line, "No payment today · Subscription auto-renews", the button, and
+  one small line: "3 days free, then $9.99 a month. Cancel anytime." No
+  header, no line under the headline, no Rachel line under the offer (her
+  line is still on setup's ready screen and on Settings › Your plan). **The X
+  IS "Not now"** (the same link, labelled "Not now" for a screen reader), so
+  it leaves exactly as before. Every word is still `Sona.planWords`' and the
+  store's: `name`, `sub`, `amount`, `check`, `note`, `noteLast`; `rows` is
+  always empty. Charged today: "Charged today" under the name and
+  "Subscription auto-renews". Not sure of the free days: "3-day free trial
+  for new subscribers", no "No payment today", and the "Only new subscribers
+  …" note between the row and the button. **"No ads, ever" is a promise:**
+  Sona shows a child no ads; do not add one without taking the line off.
+  A yearly or lifetime plan would be a second row above this one; lifetime
+  needs a new App Store product first (Travis's task).
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and the Books card says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".

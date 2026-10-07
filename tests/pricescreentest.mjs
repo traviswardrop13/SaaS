@@ -78,10 +78,11 @@ const SNAP = () => {
   return {
     state: card.getAttribute("data-state"), shown: seen(card),
     title: tidy(g("iapTitle").textContent), titleSeen: seen(g("iapTitle")),
-    tile: seen(g("iapPlan")), name: seen(g("iapPlan")) ? tidy(g("iapPlan").querySelector(".oneplan-name").textContent) : "",
-    tag: text("iapTag"), price: text("iapPrice"), what: text("iapWhat"),
+    tile: seen(g("iapPlan")), name: seen(g("iapPlan")) ? text("iapName") : "",
+    tag: text("iapTag"), price: seen(g("iapPlan")) ? tidy(g("iapPrice").textContent) : "", what: seen(g("iapPlan")) ? tidy(g("iapWhat").textContent) : "",
+    amt: text("iapAmt"), under: text("iapLine"), check: text("iapCheck"),
     rows: seen(tl) ? [...tl.children].map((li) => [li.querySelector("b").textContent, tidy(li.querySelector("p").textContent)]) : [],
-    note: text("iapNote"), noteAbove: seen(note) && seen(tl) ? note.getBoundingClientRect().bottom <= tl.getBoundingClientRect().top : null,
+    note: text("iapNote"), noteAbove: seen(note) ? (note.getBoundingClientRect().top >= g("iapPlan").getBoundingClientRect().bottom && note.getBoundingClientRect().bottom <= g("iapBuy").getBoundingClientRect().top) : null,
     none: text("iapNone"), button: text("iapBuy"), act: g("iapBuy").getAttribute("data-act"), disabled: g("iapBuy").disabled, busy: g("iapBuy").getAttribute("aria-busy"),
     buttons: [...document.querySelectorAll("#iapCard button.go")].filter(seen).length,
     radiosInCard: document.querySelectorAll("#iapCard [role=radio], #iapCard [role=radiogroup]").length,
@@ -111,13 +112,17 @@ function differs(s, w) {
   want("state", s.state, w.state);
   want("title", s.title, flat(w.title));
   want("tile painted", s.tile, priced || w.state === "wait");
-  want("name", s.name, s.tile ? "Sona Premium" : "");
+  want("name", s.name, s.tile ? w.name : "");
+  want("amount", s.amt, s.tile ? w.amount : "");
+  want("line under the name", s.under, s.tile ? w.sub : "");
+  want("check line", s.check, s.tile ? flat(w.check) : "");
   want("tag", s.tag, w.tag);
   want("price", s.price, s.tile ? w.price : "");
   want("what", s.what, s.tile ? w.what : "");
   want("rows", s.rows, w.rows.map((r) => [r.when, flat(r.text)]));
   want("note", s.note, flat(w.note));
-  if (w.noteFirst) want("note above the rows", s.noteAbove, true);
+  if (w.noteFirst) want("note under the row, above the button", s.noteAbove, true);
+  if (w.noteLast) want("small print under the button", s.noteAbove, false);
   want("none", s.none, w.none ? w.none.title + " " + w.none.text : "");
   want("button", s.button, w.button);
   want("act", s.act, w.act);
@@ -189,12 +194,12 @@ try {
     let s = await snap();
     // one check against a label built in the page by the same formatter, one against the calendar
     const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
-    ok("the App Store today: \"3 days free, then $9.99 a month.\", the tag, the button, all from the store",
-      s.tag === "3 DAYS FREE" && s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free", [s.tag, s.price, s.button]);
-    ok("…and two rows: Today, and the day the first charge falls, three exact days on (Thursday, October 8)",
-      s.rows.length === 2 && s.rows[0][0] === "Today" && s.rows[1][0] === day && day === "Thursday, October 8", [s.rows, day]);
-    ok("…that row says the price that starts, when to cancel by, that it renews, and where to cancel",
-      s.rows[1][1] === "$9.99 a month starts, unless you cancel at least 24 hours before. Renews every month unless canceled in Settings → Subscriptions.", s.rows[1][1]);
+    ok("the App Store today: Monthly, 3-day free trial, $9.99/mo, the button, all from the store",
+      s.name === "Monthly" && s.under === "3-day free trial" && s.amt === "$9.99/mo" && s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free", [s.tag, s.price, s.button]);
+    ok("…no dated rows, and the billing day (Thursday, October 8) is nowhere on the screen: just one check line",
+      s.rows.length === 0 && day === "Thursday, October 8" && s.body.indexOf(day) === -1 && !/October/.test(s.body) && s.check === "No payment today · Subscription auto-renews", [s.rows, s.check, day]);
+    ok("…and the small print under the button says the price that starts, and Cancel anytime",
+      s.note === "3 days free, then $9.99 a month. Cancel anytime." && s.noteAbove === false, [s.note, s.noteAbove]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
     ok("buying it opens Apple's sheet once, on the monthly product, with no second ask of the store", same(s.bought, [IDS.monthly]) && s.asked.length === 1, [s.bought, s.asked]);
@@ -205,8 +210,8 @@ try {
     // another store: a week free, another price. Nothing on the card is ours.
     await load(...at(SETUP, { store: { monthly: { price: "$12.49", free: "P1W" }, annual: { price: "$59.99", free: "P3D" } } })); await until("free");
     s = await snap();
-    ok("a store with a week free at $12.49 says 7 days and $12.49 everywhere: the tag, the line, the rows, the button",
-      s.tag === "7 DAYS FREE" && s.price === "7 days free, then $12.49 a month." && s.button === "Start 7 days free" && s.rows[1][0] === "Monday, October 12" && /^\$12\.49 a month starts/.test(s.rows[1][1]) &&
+    ok("a store with a week free at $12.49 says 7 days and $12.49 everywhere: the row, the line, the small print, the button",
+      s.under === "7-day free trial" && s.amt === "$12.49/mo" && s.price === "7 days free, then $12.49 a month." && s.button === "Start 7 days free" && s.note === "7 days free, then $12.49 a month. Cancel anytime." &&
       (s.body.match(/\$[\d.,]+/g) || []).every((x) => x === "$12.49") && !/\b3 days\b/i.test(s.body), [s.tag, s.price, s.button, s.rows]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
@@ -236,10 +241,10 @@ try {
       await load(...at(SETUP, Object.assign({ store: STORES.monthlyFree }, cfg))); await until("free");
       const s = await snap();
       ok(label + ": the free days are shown as the product reports them, for \"new subscribers\", with what happens otherwise",
-        s.note === "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm." && s.button === "Start 3 days free", [s.note, s.button]);
-      ok(label + ": that note sits directly under the tile, above the rows that name a day", s.noteAbove === true, s.noteAbove);
-      ok(label + ": no row states \"nothing to pay today\" or a billing day as plain fact: both say \"new subscribers\"",
-        s.rows.length === 2 && s.rows.every((r) => /new subscribers/i.test(r[1])) && !/Nothing to pay today/.test(s.cardText), s.rows);
+        s.note === "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm. Cancel anytime in Settings → Subscriptions." && s.button === "Start 3 days free", [s.note, s.button]);
+      ok(label + ": that note sits directly under the row, above the button", s.noteAbove === true, s.noteAbove);
+      ok(label + ": nothing states \"No payment today\" as plain fact: the row says \"new subscribers\"",
+        s.rows.length === 0 && /new subscribers$/.test(s.under) && s.check === "Subscription auto-renews" && !/No payment today|Nothing to pay today/.test(s.cardText), [s.under, s.check]);
       ok(label + ": told to the funnel as free days it is not sure of", same(told(s), ["free-unsure"]), told(s));
       await calm(page); await page.locator("#iapBuy").click(); await until("done");
       ok(label + ": and the button still buys the monthly plan", same((await snap()).bought, [IDS.monthly]));
@@ -247,15 +252,15 @@ try {
     }
     await load(...at(SETUP, { store: STORES.monthlyFree, elig: { monthly: 2 } })); await until("free");
     const s = await snap();
-    ok("Apple says this buyer gets the free days: no note, and the rows say it plainly",
-      !s.note && s.rows[0][1] === "Everything opens. Nothing to pay today." && !/new subscribers/i.test(s.cardText) && same(told(s), ["free-sure"]), [s.note, s.rows, told(s)]);
+    ok("Apple says this buyer gets the free days: the check line says it plainly, and the only note is the small print",
+      s.note === "3 days free, then $9.99 a month. Cancel anytime." && s.check === "No payment today · Subscription auto-renews" && !/new subscribers/i.test(s.cardText) && same(told(s), ["free-sure"]), [s.note, s.rows, told(s)]);
     // the two new store calls are optional: slow or broken, the card is as if they did not exist
     for (const [label, cfg, sure] of [["the \"can this buyer have free days\" ask never answers", { elig: "hang" }, false], ["the purchase sync never answers", { sync: "hang" }, true],
       ["the purchase sync fails", { sync: "fail" }, true], ["the customer record cannot be read", { info: "fail" }, true]]) {
       await load(...at(SETUP, Object.assign({ store: STORES.monthlyFree }, cfg)));
       await tick(1300); await until("free");
       const s2 = await snap();
-      ok(label + ": the card is up with its price within the short grace, free days " + (sure ? "stated" : "for \"new subscribers\""), s2.button === "Start 3 days free" && !s2.disabled && !!s2.note === !sure, [s2.button, s2.disabled, s2.note]);
+      ok(label + ": the card is up with its price within the short grace, free days " + (sure ? "stated" : "for \"new subscribers\""), s2.button === "Start 3 days free" && !s2.disabled && /new subscribers/.test(s2.note) === !sure, [s2.button, s2.disabled, s2.note]);
       await calm(page); await page.locator("#iapBuy").click(); await until("done");
       ok(label + ": and the button buys", same((await snap()).bought, [IDS.monthly]));
       await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
@@ -280,9 +285,9 @@ try {
     s = await snap();
     const noteBefore = s.note;
     await tick(900);
-    await page.waitForFunction(() => document.getElementById("iapNote").getBoundingClientRect().height === 0);
+    await page.waitForFunction(() => /^3 days free, then/.test(document.getElementById("iapNote").textContent));
     s = await snap();
-    ok("a late \"eligible\": the \"new subscribers\" note goes and the rows state the free days plainly", !!noteBefore && !s.note && s.rows[0][1] === "Everything opens. Nothing to pay today.", [noteBefore, s.note, s.rows]);
+    ok("a late \"eligible\": the \"new subscribers\" note goes and the check line states it plainly", !!noteBefore && s.note === "3 days free, then $9.99 a month. Cancel anytime." && /^No payment today/.test(s.check), [noteBefore, s.note, s.rows]);
 
     // back at the front with the store out of reach: that is not news about the plan
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
@@ -566,11 +571,11 @@ try {
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
     let s = await snap();
     ok("from setup the header is not on the screen, and the page is the offer", !s.header && !s.tabs && s.offer, [s.header, s.tabs, s.offer]);
-    ok("…its headline is \"Mia's practice is ready\", the line under it \"Sona Premium opens it.\", and there is no pill", s.offerTitle === "Mia's practice is ready" && s.offerSub === "Sona Premium opens it." && !s.pill, [s.offerTitle, s.offerSub, s.pill]);
+    ok("…its headline is \"Mia's practice is ready\", no second line under it, and there is no pill", s.offerTitle === "Mia's practice is ready" && s.offerSub === "" && !s.pill, [s.offerTitle, s.offerSub, s.pill]);
     ok("…\"Not now\" says just that, and nothing says anything stays free", s.decline === "Not now" && !s.freeCard && !/stays? free|free games|free version/i.test(s.body), s.decline);
     await load(...at(DOORS[1], { store: STORES.monthlyFree })); await until("free");
     s = await snap();
-    ok("from a grey game the header is there, and the headline is the game's", s.header && s.offerTitle === "Unlock Fruit Slice, and every other game" && /^Games for /.test(s.offerSub) && /Mia wants to play Fruit Slice/.test(s.pill), [s.header, s.offerTitle, s.offerSub, s.pill]);
+    ok("from a grey game there is no header either (the small X is the way out), and the headline is the game's", !s.header && s.offerTitle === "Unlock Fruit Slice, and every other game" && s.offerSub === "" && /Mia wants to play Fruit Slice/.test(s.pill), [s.header, s.offerTitle, s.offerSub, s.pill]);
     // a family who tapped "Not sure? Explore all sounds", and one with no name
     await load(...at(SETUP, { store: STORES.monthlyFree, local: { "sona.profile.v1": { childName: "Mia", childAge: "7", focusSounds: [], mode: "play", pathReason: "unsure", onboarded: true, voiceOn: false, soundOn: false } } })); await until("free");
     s = await snap();
@@ -580,7 +585,7 @@ try {
     // a family with the free version, sent here by setup (the website selling is the only way; in the app it reads the same)
     await load(...at(SETUP, Object.assign({}, KEPT, { store: STORES.monthlyFree }))); await until("free");
     s = await snap();
-    ok("a family that keeps the free version reads the line about the games there, not \"Sona Premium opens it.\"", /^More games for /.test(s.offerSub) && s.what === "Every game and every book.", [s.offerSub, s.what]);
+    ok("a family that keeps the free version has no second line under the headline either", s.offerSub === "" && s.what === "Every game and every book.", [s.offerSub, s.what]);
 
     // where a buyer goes next
     for (const [label, cfg, act, want] of [
@@ -636,14 +641,14 @@ try {
     await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
     const c = await page.evaluate(() => {
       const paint = (el) => { const cs = getComputedStyle(el); return [cs.backgroundImage, cs.backgroundColor, cs.borderTopColor, cs.boxShadow].join(" "); };
-      const tl = document.getElementById("iapTL");
-      return { today: paint(tl.querySelector(".tli.now .tld")), bill: paint(tl.querySelector(".tli.bill .tld")), tile: paint(document.getElementById("iapPlan")), tag: paint(document.getElementById("iapTag")), rail: getComputedStyle(tl.querySelector(".tli.now"), "::after").backgroundImage };
+      const mark = getComputedStyle(document.getElementById("iapCheck"), "::before");
+      return { dot: paint(document.querySelector("#iapPlan .oneplan-dot")), check: [mark.backgroundColor, mark.color].join(" "), tile: paint(document.getElementById("iapPlan")), icon: (() => { const cs = getComputedStyle(document.querySelector(".offer-checks .oci")); return [cs.backgroundColor, cs.color].join(" "); })() };
     });
     // loadtest's own green list, as the browser reports a colour
     const GREEN = ["58cc02", "46a302", "6edd18", "6fd60e", "5fd216", "3c8c02", "7ee23a"].map((h) => "rgb(" + [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(", ") + ")");
     const green = (css) => GREEN.some((g) => css.indexOf(g) > -1);
     for (const [what, css] of Object.entries(c)) ok("the " + what + " is painted in no orange and no green", !isOrange(css) && !green(css), css);
-    ok("…and the \"today\" dot is teal, with the billing day's dot a teal ring", isTeal(c.today) && isTeal(c.bill), [c.today, c.bill]);
+    ok("…and the row's picked dot, the check mark and the feature icons are teal", isTeal(c.dot) && isTeal(c.check) && isTeal(c.icon), [c.dot, c.check, c.icon]);
   });
 
   // ── 15. the fit: six sizes × three priced shapes × two price strings × four doors ──
@@ -661,7 +666,7 @@ try {
       return { fold: innerHeight - sb, scrollY, overX: document.documentElement.scrollWidth - innerWidth, fit: document.body.className.split(/\s+/).filter((c) => /^fit\d$/.test(c)).join(" "),
         inner: card.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth),
         head: box(g("offerTitle")), tile: box(g("iapPlan")), what: box(g("iapWhat")), note: box(g("iapNote")), tl: box(g("iapTL")), buy: box(g("iapBuy")), decline: box(g("declineLink")),
-        fonts: { price: size("iapPrice"), buy: size("iapBuy"), tag: size("iapTag") }, guard: guard ? getComputedStyle(guard).display : "none" };
+        fonts: { price: size("iapAmt"), buy: size("iapBuy"), tag: size("iapTag") }, guard: guard ? getComputedStyle(guard).display : "none" };
     };
     const results = await Promise.all(SIZES.map(async ([w, h, st, sb]) => {
       const { context, page: pg, errors: errs } = await open(browser, base, { app: "buy", safeArea: { top: st, bottom: sb } }, { width: w, height: h });
@@ -695,14 +700,13 @@ try {
           if (!whole && m.decline.top > m.fold + 72) say("\"Not now\" starts more than 72 px below the first screen");
           if (m.overX > 0) say("the page scrolls sideways by " + m.overX);
           if (Math.abs(m.tile.width - m.inner) > 2) say("the tile is " + m.tile.width + " wide in a " + m.inner + " card");
-          if (!m.what) say("the sentence saying what Premium opens is not painted");
-          if (shape === "free days, not sure" && !(m.note && m.tl && m.note.bottom <= m.tl.top)) say("the not-sure note is not above the rows");
-          if (shape !== "charged today" && !m.tl) say("the dated rows are not painted");
-          if (!(m.fonts.price >= m.fonts.buy && m.fonts.price > m.fonts.tag)) say("the price is not the largest word about money " + JSON.stringify(m.fonts));
+          if (shape === "free days, not sure" && !(m.note && m.note.top >= m.tile.bottom && m.note.bottom <= m.buy.top)) say("the not-sure note is not between the row and the button");
+          if (m.tl) say("dated rows are painted");
+          if (!(m.fonts.price >= m.fonts.buy)) say("the price is not the largest word about money " + JSON.stringify(m.fonts));
           if (m.guard !== "none") say("the rotate cover is showing");
         }
         ok(size + ", " + door[0] + ": in all three priced shapes, with $9.99 and with US$1,299.00, the button and every line above it are on the first screen" +
-          (whole ? ", and \"Not now\" with them" : ", and \"Not now\" starts within 72 px of it") + "; no sideways scroll; the tile fills the card; what Premium opens is always said",
+          ", and the X that means \"Not now\" with them" + "; no sideways scroll; the row fills the card; no dated rows",
           mine.length === 6 && bad.length === 0, bad);
       }
     }
@@ -765,7 +769,7 @@ try {
       const under = await page.evaluate((d) => { const r = document.getElementById("iapBuy").getBoundingClientRect(); return d.x > r.left && d.x < r.right && d.y > r.top && d.y < r.bottom; }, d);
       await page.waitForTimeout(250);
       const s = await snap();
-      ok(w + "×" + h + ": the price arrives and the buy button is now where \"Not now\" was a moment before", under === true, d);
+      ok(w + "×" + h + ": \"Not now\" is the X in the top corner, so the buy button never lands where it was", under === false && d.y < 80, d);
       ok(w + "×" + h + ": …a tap aimed at \"Not now\" in that moment buys nothing and leaves nothing: still here, the button untouched, marker kept",
         s.bought.length === 0 && !s.disabled && s.msg === "" && s.state === "paid" && s.path === "/subscribe.html?setup=1" && !!s.marker && (await dismissals(from)).length === 0, [s.bought, s.disabled, s.msg, s.path]);
     }
@@ -862,7 +866,7 @@ try {
       await until("free");
       let s = await snap();
       ok(label + ": the card still reaches the price, from the monthly product itself, with its free days for \"new subscribers\"",
-        s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free" && !s.disabled && /^Only new subscribers get 3 days free\./.test(s.note) && s.rows.every((r) => /new subscribers/i.test(r[1])) && same(s.asked, [[IDS.monthly]]), [s.price, s.button, s.note, s.asked]);
+        s.price === "3 days free, then $9.99 a month." && s.button === "Start 3 days free" && !s.disabled && /^Only new subscribers get 3 days free\./.test(s.note) && /new subscribers$/.test(s.under) && same(s.asked, [[IDS.monthly]]), [s.price, s.button, s.note, s.asked]);
       await calm(page); await page.locator("#iapBuy").click(); await until("done");
       s = await snap();
       ok(label + ": and it buys that product, once, and says so", same(s.bought, [IDS.monthly]) && s.msg === "Sona Premium is on. Welcome to Sona!" && s.sub.active === true, [s.bought, s.msg]);
@@ -890,7 +894,7 @@ try {
       await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
       const s = await snap();
       ok("storePlan missing, and sona.js hands out its own reader of the free time: the card says what THAT reader read, for \"new subscribers\"",
-        s.tag === "1 MONTH FREE" && s.price === "1 month free, then $9.99 a month." && s.button === "Start 1 month free" && /^Only new subscribers get 1 month free\./.test(s.note) && !/\b3 days\b/i.test(s.cardText), [s.tag, s.price, s.button, s.note]);
+        s.under === "1-month free trial for new subscribers" && s.price === "1 month free, then $9.99 a month." && s.button === "Start 1 month free" && /^Only new subscribers get 1 month free\./.test(s.note) && !/\b3 days\b/i.test(s.cardText), [s.tag, s.price, s.button, s.note]);
     });
     for (const [what, answer] of [["a first period that costs money", "'paid'"], ["an offer it cannot read", "'odd'"], ["nothing it should", "undefined"], ["an error", "(function () { throw new Error('boom'); })()"]])
       await withSona("delete Sona.storePlan; Sona.planFree = function () { return " + answer + "; };", async () => {

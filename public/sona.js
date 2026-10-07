@@ -5601,19 +5601,19 @@
     const w = {
       state: "wait", title: "Sona Premium", tag: "", price: "", what: WHAT,
       rows: [], note: "", noteFirst: false, noteLast: false,
-      name: "", sub: "", amount: "", check: "",
+      name: "Sona Premium", sub: "", amount: "", check: "",
       button: "Checking the App Store…", act: "wait",
       header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
       none: null,
     };
     if (plan == null) return w;
-    if (plan.state === "owned") { w.state = "owned"; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
+    if (plan.state === "owned") { w.state = "owned"; w.name = ""; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
     const P = String(plan.price || ""), per = String(plan.per || "");
     const FREE = (plan.state === "free" && plan.free && plan.free.text) ? String(plan.free.text) : "";
     if (!P || !per || !(plan.state === "paid" || FREE)) {
       // nothing to sell, or a plan too broken to describe: no figure, one way on
       const reach = plan.state === "none" && (plan.why === "timeout" || plan.why === "error");
-      w.state = "none"; w.what = ""; w.button = "Try again"; w.act = "retry";
+      w.state = "none"; w.name = ""; w.what = ""; w.button = "Try again"; w.act = "retry";
       w.none = reach ? { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." }
                      : { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." };
       w.header = w.none.title;
@@ -5648,7 +5648,7 @@
       w.title = "Start Sona Premium with " + FREE + " free";
       w.sub = TRIAL;
       w.check = "No payment today \u00b7 Subscription auto-renews";
-      w.note = w.price + " Cancel anytime in " + PLAN_CANCEL + ".";
+      w.note = w.price + " Cancel anytime.";
       w.noteLast = true;                                   // small print, under the button
       w.header = "Sona Premium: " + FREE + " free, then " + PP + ".";
     } else {

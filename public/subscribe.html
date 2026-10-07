@@ -318,6 +318,7 @@
        plan's name over one short line, the store's price on the right, one
        check line under it. The words are still all planWords'. */
     .oneplan{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;}
+    .oneplan-price,.oneplan-what{display:none !important;}   /* still painted (the full sentence, for a screen reader's card and the tests); the row shows the short form */
     .oneplan-dot{flex:none;width:22px;height:22px;border-radius:50%;border:2.5px solid #14858d;background:radial-gradient(circle,#14858d 0 5px,#fff 6px);}
     .oneplan-l{flex:1;min-width:0;display:block;}
     .oneplan-name{font-family:"Baloo 2";font-size:19px;font-weight:800;letter-spacing:0;line-height:1.15;color:var(--ink);text-transform:none;}
@@ -333,6 +334,13 @@
     body.offer .oneplan-check,body.offer .offer-unl{transition:none !important;}
     body.fit6 .offer-unl{display:none;}
     body.onerow.offer .offer-sub{display:none;}
+    /* Travis, 6 Oct 2026: "Get rid of not now ... just like a subtle X in the
+       top right", no header, no Rachel line under the offer. The X IS the
+       decline link (same href, same handler), so it leaves the same way. */
+    body.onerow.offer .family-header,body.onerow.offer #offerRachel{display:none !important;}
+    body.onerow.offer #declineRow{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;margin:0 !important;z-index:5;}
+    body.onerow.offer #declineLink{width:44px !important;height:44px;min-height:0;padding:0 !important;font-size:0;line-height:44px;background:transparent;border:0;box-shadow:none;color:#a08a70;}
+    body.onerow.offer #declineLink:before{content:"\2715";font-size:19px;font-weight:800;}
     body.fit7.offer .oneplan{padding:10px 12px;}
     /* by id, so the family sheet's sage and the old orange can never repaint
        them; teal from the tokens */
@@ -474,10 +482,10 @@
       <div class="oneplan" id="iapPlan">
         <span class="tag" id="iapTag" hidden></span>
         <span class="oneplan-dot" aria-hidden="true"></span>
-        <span class="oneplan-l"><span class="oneplan-name" id="iapName"></span><span class="oneplan-sub" id="iapSub"></span></span>
+        <span class="oneplan-l"><span class="oneplan-name" id="iapName"></span><span class="oneplan-sub" id="iapLine"></span></span>
         <span class="oneplan-amt" id="iapAmt"></span>
-        <span class="oneplan-price" id="iapPrice" hidden></span>
-        <span class="oneplan-what" id="iapWhat" hidden></span>
+        <span class="oneplan-price" id="iapPrice"></span>
+        <span class="oneplan-what" id="iapWhat"></span>
       </div>
       <p class="oneplan-check" id="iapCheck" hidden></p>
       <ol class="tl days" id="iapTL" hidden aria-label="What happens when"></ol>
@@ -902,8 +910,8 @@
         if (!btn) return;
         var apple = btn.id === "iapBuy";
         var seen = function (id) { var el = document.getElementById(id); return (el && el.getBoundingClientRect().height > 0) ? el : null; };
-        var tgt = apple ? (seen("declineLink") || btn) : btn;
-        var LEVELS = apple ? ["fit1", "fit2", "fit3", "fit6", "fit5", "fit7", "fit8"] : ["fit1", "fit2", "fit3", "fit4", "fit5"];
+        var tgt = apple ? (seen("iapLegal") || btn) : btn;
+        var LEVELS = apple ? ["fit1", "fit2", "fit3", "fit5", "fit7", "fit8", "fit6"] : ["fit1", "fit2", "fit3", "fit4", "fit5"];
         var inset = 0;
         try {
           var probe = document.createElement("div");
@@ -1006,7 +1014,7 @@
         var card = g("iapCard"), elTL = g("iapTL"), elNote = g("iapNote"), elBuy = g("iapBuy"), elMsg = g("iapMsg");
         var buyWrap = card.querySelector(".planbuy");
         card.style.display = "block";
-        document.body.classList.add("onerow");   // the row says it all: the line under the headline steps aside
+        document.body.classList.add("onerow"); try { document.getElementById("declineLink").setAttribute("aria-label", "Not now"); } catch (e) {}   // the row says it all: the line under the headline steps aside
 
         // The three functions ship together in sona.js. A page newer than the
         // sona.js beside it (a deploy caught between two requests) has no
@@ -1038,7 +1046,7 @@
           g("iapTag").textContent = w.tag; g("iapTag").hidden = !w.tag;
           g("iapPrice").textContent = w.price;
           g("iapWhat").textContent = w.what;
-          g("iapName").textContent = w.name || ""; g("iapSub").textContent = w.sub || ""; g("iapSub").hidden = !w.sub;
+          g("iapName").textContent = w.name || ""; g("iapLine").textContent = w.sub || ""; g("iapLine").hidden = !w.sub;
           g("iapAmt").textContent = w.amount || "";
           g("iapCheck").textContent = w.check || ""; g("iapCheck").hidden = done || !w.check || w.state === "none" || w.state === "owned";
           while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
@@ -1637,7 +1645,7 @@
 
         // the games themselves, in Home's art: the tapped one large, or the
         // Premium ones fanned like a hand of cards, with Echo in front
-        var pics = game && art[OFFER_FROM] ? [OFFER_FROM] : open.filter(function (k) { return art[k]; }).slice(0, 4);
+        var pics = game && art[OFFER_FROM] && !document.body.classList.contains("onerow") ? [OFFER_FROM] : open.filter(function (k) { return art[k]; }).slice(0, 4);
         var box = document.getElementById("offerArt");
         if (pics.length === 1) box.className = "offer-art solo";
         box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
