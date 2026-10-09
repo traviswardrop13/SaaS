@@ -516,5 +516,59 @@
   "size": "1024x1536",
   "transparent": true,
   "prompt": "A big happy pink flower in full bloom on a tall green stem with leaves, growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "as-bg-slice",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny orchard fruit market: orange trees at the sides, a few juicy oranges, strawberries and a watermelon slice tumbling at the edges, a low wooden fruit counter along the bottom, warm peach and butter sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-practice",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy sunny meadow with a wooden fence and soft rolling hills, Echo (the round teal clay bird from the reference) small in the bottom left corner cheering, soft sky blue fading to cream. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-tiles",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A little theater stage at night: purple velvet curtains at both sides, golden spotlights from the top corners, a few gold stars and music notes floating at the edges, deep indigo fading lighter. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-hoops",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy children's basketball gym: warm wooden floor along the bottom, triangle bunting along the top edge, a basketball resting in a bottom corner, cream walls. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-books",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy storybook nook: a few colourful picture books stacked in the bottom corners, a soft rug, a reading lamp glow, warm cream and soft green. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-home",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A playful toy world: soft clay hills, a few tiny game props at the edges (a fruit, a balloon, a piano key, a basketball), pastel butter sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-progress",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A calm sunrise garden with tiny flowers growing along the bottom like a little growth chart, soft blue and peach sky, gentle and reassuring for parents. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-rachel",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A warm soft cream and blush background with gentle light, a few small leaves and stars at the edges, calm and trustworthy. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-jungle",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A friendly sunny jungle: big tropical leaves and hanging vines at the sides, a few bananas, mangoes, pineapples and watermelon slices tucked along the bottom edge, a soft warm green and golden sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
  }
 ]
