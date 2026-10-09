@@ -28,7 +28,7 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // as the start card's asks.
 const TTS = { mode: "fail", ms: 900, delay: 0, asks: [], card: [], open: [] };
 const CARD_LINES = ["To keep playing, say", "Go!"];
-const HELP_LINES = ["To slow the course, say", "For a heart and a slower course, say"];
+const HELP_LINES = ["To slow the course, say", "For a new life, say"];
 const server = createServer((req, res) => {
   const u = new URL(req.url, BASE), f = path.join(ROOT, u.pathname);
   if (u.pathname === "/api/tts") {
@@ -167,13 +167,25 @@ await scenario("hearts, pace and best", async () => {
     ok("three hearts fit the smallest phone's existing HUD",await page.evaluate(()=>{const top=document.getElementById("top").getBoundingClientRect(),hs=document.getElementById("gameHearts").getBoundingClientRect();return hs.left>=top.left&&hs.right<=top.right&&hs.bottom<=top.bottom;}));
     await page.evaluate(()=>{dist=cleanSince+40;});await page.waitForFunction(()=>speed>speed0);const fast=await page.evaluate(()=>speed);
     ok("clean metres increase pace and save the child's own best",await page.evaluate(()=>dist>=40&&Sona.gameBest("run")===dist&&saidNewBest));
-    const loss=await page.evaluate(()=>{const metres=dist;SLOW_ASK.soon=1500;startFall();const out={hearts,metres,after:dist,slower:speed<speed0*1.05,at:slowAskAt-slowAskPlay};SLOW_ASK.soon=slowAskAt=1e12;return out;});
-    ok("a tumble costs one heart, backs off pace, preserves metres and brings Echo soon",loss.hearts===2&&loss.after===loss.metres&&loss.slower&&loss.at<=1500,loss);
+    const loss=await page.evaluate(()=>{const metres=dist,at0=slowAskAt;startFall();const out={hearts,metres,after:dist,slower:speed<speed0*1.05,at:slowAskAt,at0};return out;});
+    ok("a tumble costs one heart, backs off pace and preserves metres, and does not bring Echo's next ask forward",loss.hearts===2&&loss.after===loss.metres&&loss.slower&&loss.at===loss.at0,loss);
     await page.evaluate(()=>{falling.on=false;startFall();});ok("one burst of collisions cannot take every heart",await page.evaluate(()=>hearts===2));
     await page.evaluate(()=>{heartHitAt=-1e9;falling.on=false;slowMs=8000;startFall();falling.on=false;slowMs=0;slowTurn={finishing:true};startFall();slowTurn=null;falling.on=false;});
     ok("the power and the speech turn both protect hearts",await page.evaluate(()=>hearts===2));
-    ok("an accepted speech callback restores a heart, capped at three",await page.evaluate(()=>{SLOW_HELP.onHeard();SLOW_HELP.onHeard();return hearts===3;}));
-    await page.evaluate(()=>{hearts=1;heartHitAt=-1e9;startFall();});await page.locator("#endOvl.show").waitFor();
+    ok("a heard sound power gives no heart back any more: only the power",await page.evaluate(()=>!SLOW_HELP.onHeard&&typeof restoreHeart==="undefined"&&hearts===2));
+    const REV0=await page.evaluate(()=>REV);
+    await page.evaluate(()=>{hearts=1;heartHitAt=-1e9;startFall();});
+    // A NEW LIFE ONLY ON A LOSS (8 Oct 2026): the last heart opens the say-it card
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    ok("the last heart opens the new-life card instead of ending the round",await page.evaluate(()=>hearts===0&&lifeCard&&reviveWait&&!playing&&!window.__ended&&/for a new life!$/.test(document.getElementById("revTitle").textContent)));
+    ok("…with empty hearts on the card, and nothing counted yet",await page.evaluate(()=>document.querySelectorAll("#revHearts svg, #revHearts img, #revHearts span").length>0));
+    await page.evaluate(()=>{closeReviveMic();doRevive();});
+    ok("a heard sound on that card brings every heart back, and play goes on where it stopped",await page.evaluate(()=>hearts===3&&playing&&!reviveWait&&!lifeCard&&!window.__ended));
+    ok("…without spending one of the between-round cards",await page.evaluate(()=>REV)===REV0,await page.evaluate(()=>REV));
+    await page.evaluate(()=>{hearts=1;heartHitAt=-1e9;falling.on=false;startFall();});
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    await page.evaluate(()=>{if(reviveWait)document.getElementById("revDone").click();});
+    await page.locator("#endOvl.show").waitFor();
     ok("zero hearts ends kindly with metres, own best, replay and home",await page.evaluate(()=>hearts===0&&!playing&&!reviveWait&&window.__ended&&!finaleDone&&document.getElementById("endTitle").textContent==="Whew — what a run we had!"&&/ m\./.test(document.getElementById("endSub").textContent)&&document.getElementById("endCharge").textContent==="Play again"&&__f.confetti===undefined));
     ok("a finished round spends the turn",await page.evaluate(()=>sessionStorage.getItem("sona.play.active")===null&&sessionStorage.getItem("sona.play.token")===null));
     await page.locator("#endCharge").click();await page.waitForURL(/charge\.html/);ok("replay earns another turn in this same game",new URL(page.url()).searchParams.get("game")==="arcade-run.html");

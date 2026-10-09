@@ -153,7 +153,7 @@
        nobody taps: Echo asks mid-wave ("Super Slice! Say rrrr. Go!") and the
        fruit keep flying while he listens; the sound once, quick or held, is
        ten seconds of Super Slice (/arcade-speech-help.js). -->
-  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",heartSay:"For a heart and Super Slice, say",first:6000,ms:10000,earnSfx:"reward"};</script>
+  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",earned:"SUPER SLICE!",say:"Super Slice! Say",first:6000,ms:10000,earnSfx:"reward"};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -337,11 +337,10 @@
       if(!playing||phase!=="wave"||slowTurn||slowMs>0||now-heartLastAt<1500||hearts<=0) return;
       heartLastAt=now; hearts--; pacePlay=Math.max(0,pacePlay-30000); paintHearts();
       if(!hearts) gameOverPending=true;
-      else if(typeof slowAskSoon==="function") slowAskSoon();
     }
-    function gainHeart(){ hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
-    SLOW_HELP.onHeard=gainHeart;
-    SLOW_HELP.line=function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:SLOW_HELP.say;};
+    // the last heart: the say-it card, on the bare sound, for a new life
+    // (/arcade-speech-help.js, lifeOrEnd)
+    SLOW_HELP.lifeCard=function(){ sayCard("for a new life!","none",0); };
     var wave=0, waveGot=0, waveMs=0, wavePlay=0, nextToss=900, phase="wave", missRun=0, giant=null, finaleDone=false;
 
     // ── the fruit stand from the "Say it 5 times" page, now at the bottom ──
@@ -541,11 +540,12 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; gameOver=false; paintHearts(); }
       // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!life&&!gameOver&&S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
       if(phase==="break") startWave(wave+1);
     }
@@ -630,7 +630,7 @@
             ASK=cardAsk(0); paintAsk(); return t.take();
           });
         }
-        return (lead?t.line(reviveIdea?IDEA_LINE:SayIt.ASK):Promise.resolve()).then(function(){ return t.take(); });
+        return (lead?t.line(lifeCard?LIFE_LINE:reviveIdea?IDEA_LINE:SayIt.ASK):Promise.resolve()).then(function(){ return t.take(); });
       });
     }
     var sayVoice=window.SayIt?SayIt.voice({
@@ -983,7 +983,7 @@
         drawFruit(f.e,fruitSize(f)); ctx.restore();
       }
       // End after walking the array: clearing it inside the loop froze the old game.
-      if(gameOverPending){ gameOverPending=false; gameOver=true; phase="done"; endRound(); }
+      if(gameOverPending){ gameOverPending=false; gameOver=true; if(REV>0&&CAN_LISTEN) lifeOrEnd(); else { phase="done"; endRound(); } }
       // particles + halves
       for(i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;

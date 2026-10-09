@@ -178,6 +178,7 @@ await scenario("hearts and pace", async () => {
     const installed=await page.evaluate(()=>typeof hearts!=="undefined"&&typeof loseHeart==="function");
     ok("three real hearts are installed on the playable board",installed);
     if(!installed)return;
+    const dropLast=async()=>{await page.evaluate(()=>{tiles=[{lane:0,y:HITY()+80,h:88,hit:false,gone:false,note:HZ.C,wait:false,gold:false}];songIx=1;nextAt=1e9;});await page.waitForFunction(()=>reviveWait||window.__ended);};
     const drop=async()=>{await page.evaluate(()=>{tiles=[{lane:0,y:HITY()+80,h:88,hit:false,gone:false,note:HZ.C,wait:false,gold:false}];songIx=1;nextAt=1e9;});await page.waitForFunction(()=>tiles.some(t=>t.gone));};
     ok("the first song starts at the original gentle pace",await page.evaluate(()=>hearts===3&&paceK===1&&Math.abs((HITY()+90)/speedPx()-2.5)<.01));
     await page.evaluate(()=>{paceK=1.3;});await drop();
@@ -185,9 +186,19 @@ await scenario("hearts and pace", async () => {
     await drop();ok("one fumble cannot cascade through the remaining hearts",await page.evaluate(()=>hearts===2));
     await page.evaluate(()=>{slowMs=8000;heartHitAt=-1e9;});await drop();
     ok("slow keys protect hearts",await page.evaluate(()=>hearts===2));
-    await page.evaluate(()=>{slowMs=0;SLOW_HELP.onHeard();});
-    ok("a heard sound gives a heart back, with the three-heart ceiling",await page.evaluate(()=>{SLOW_HELP.onHeard();return hearts===3;}));
-    await page.evaluate(()=>{slowMs=0;hearts=1;heartHitAt=-1e9;comboN=rowBest=5;paintRow();});await drop();
+    ok("a heard sound power gives no heart back any more: only the power",await page.evaluate(()=>{slowMs=0;return !SLOW_HELP.onHeard&&typeof restoreHeart==="undefined"&&hearts===2;}));
+    const REV0=await page.evaluate(()=>REV);
+    await page.evaluate(()=>{slowMs=0;hearts=1;heartHitAt=-1e9;comboN=rowBest=5;paintRow();});await dropLast();
+    // A NEW LIFE ONLY ON A LOSS (8 Oct 2026): the last heart opens the say-it card
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    ok("the last heart opens the new-life card instead of ending the round",await page.evaluate(()=>hearts===0&&lifeCard&&reviveWait&&!playing&&!window.__ended&&/for a new life!$/.test(document.getElementById("revTitle").textContent)));
+    ok("…with empty hearts on the card, and nothing counted yet",await page.evaluate(()=>document.querySelectorAll("#revHearts svg, #revHearts img, #revHearts span").length>0));
+    await page.evaluate(()=>{closeReviveMic();doRevive();});
+    ok("a heard sound on that card brings every heart back, and play goes on where it stopped",await page.evaluate(()=>hearts===3&&playing&&!reviveWait&&!lifeCard&&!window.__ended));
+    ok("…without spending one of the between-round cards",await page.evaluate(()=>REV)===REV0,await page.evaluate(()=>REV));
+    await page.evaluate(()=>{slowMs=0;hearts=1;heartHitAt=-1e9;});await dropLast();
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    await page.evaluate(()=>{if(reviveWait)document.getElementById("revDone").click();});
     await page.locator("#endOvl.show").waitFor();
     ok("zero hearts ends on a kind card with the child's best and replay/home buttons",await page.evaluate(()=>hearts===0&&window.__ended&&!playing&&!reviveWait&&/Lovely music/.test(document.getElementById("endTitle").textContent)&&document.getElementById("endSub").textContent.indexOf("5 notes")>=0&&document.getElementById("endCharge").textContent==="Play again"));
     ok("the hearts fit the smallest phone without pushing Echo below the board",await page.evaluate(()=>{var top=document.getElementById("top").getBoundingClientRect(),h=document.getElementById("gameHearts").getBoundingClientRect();return h.right<=innerWidth&&h.bottom<=top.bottom;}));
