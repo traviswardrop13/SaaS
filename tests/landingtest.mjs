@@ -530,7 +530,7 @@ for (const [when, count, first] of [["2026-10-01T09:00:00", 29, null]]   /* ever
     await page.goto(origin + "/try");
     const got = await page.evaluate(() => ({ h1: document.querySelector("h1").textContent, inputs: document.querySelectorAll("input,form").length,
       href: document.getElementById("go").href, btnBottom: document.getElementById("go").getBoundingClientRect().bottom,
-      rachel: /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship\./.test(document.body.textContent),
+      rachel: /Built with Rachel, a pediatric speech-language pathologist in her clinical fellowship\./.test(document.body.textContent),
       robots: document.querySelector('meta[name="robots"]').content, pixel: !!document.querySelector('script[src="/pixel.js"]') }));
     const who = ua ? "Android" : "iPhone";
     ok(who + ": /try has the headline, no email box and the button on the first screen", got.h1 === "Speech practice kids love." && got.inputs === 0 && got.btnBottom <= 667, got);

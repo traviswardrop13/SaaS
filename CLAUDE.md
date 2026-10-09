@@ -763,7 +763,9 @@ sub-headline, a button. Maybe a picture of a screen"). `public/try.html`,
 rewritten from `/try`: the brand, Echo between the two flat hero screens, "Speech
 practice kids love.", one sub-headline, one teal button ("Try Sona free") to the
 App Store (Android: the web app), "Free to try on iPhone and iPad", and
-Rachel's line word for word. No email box and nothing posted; a tap sends the
+"Built with Rachel, a pediatric speech-language pathologist in her clinical
+fellowship." (Travis, the same day: without "MS, CF-SLP" on this page only;
+`shiptest` allows that exact line there and nowhere else). No email box and nothing posted; a tap sends the
 pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
 (the root is the page search finds), on `OPEN_PAGES` and on the pixel's
 allow-list. The root page with its email box is unchanged. `landingtest` plays
