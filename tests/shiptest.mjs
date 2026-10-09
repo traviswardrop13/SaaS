@@ -359,8 +359,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const visible = (f) => readFileSync(APP + "/" + f, "utf8")
     .replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
   const bare = [], claims = [], anon = [], unpaired = [];
+  // ONE named exception (Travis, 9 Oct 2026, of the ads' bridge page /try:
+  // "take out MS, CF-SLP, just leave in a pediatric speech language pathologist
+  // in her clinical fellowship"). Only that exact line on that page; the
+  // fellowship is still said, so it stays true.
+  const BRIDGE = "Built with Rachel, a pediatric speech-language pathologist in her clinical fellowship.";
   for (const f of files) {
-    const t = visible(f);
+    let t = visible(f);
+    if (f === "public/try.html") t = t.split(BRIDGE).join(" ");
     for (const m of t.match(/Rachel(?: Wardrop)?(?!, MS, CF-SLP)[^<.\n]{0,6}(?:[Ll]icensed|[Pp]ediatric|speech-language|SLP|MS\b)/g) || []) bare.push(f + ": " + m);
     for (const m of t.match(/\bCCC\b|board.certified|ASHA.certified|\bcertified\b|fully licen[sc]ed/gi) || []) claims.push(f + ": " + m);
     for (const m of t.match(/\b(?:built|made|designed|shaped|reviewed|created|developed)\s+(?:with|by)\s+(?:a|an|our)\s+(?:licensed\s+)?(?:pediatric\s+)?(?:SLP|speech-language pathologist)\b|\bour SLP\b/gi) || []) anon.push(f + ": " + m);

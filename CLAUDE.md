@@ -757,6 +757,20 @@ the painted ones "don't go with Echo or the app icon", and "what we had before
 was better even though it's not what the screens actually look like anymore".
 They are decoration (`aria-hidden`), and `landingtest` pins them.
 
+**speaksona.com/try is the ads' bridge page** (Travis, 9 Oct 2026: "more of
+a bridge page. I don't want to collect email ... just like a headline, a
+sub-headline, a button. Maybe a picture of a screen"). `public/try.html`,
+rewritten from `/try`: the brand, Echo between the two flat hero screens, "Speech
+practice kids love.", one sub-headline, one teal button ("Try Sona free") to the
+App Store (Android: the web app), "Free to try on iPhone and iPad", and
+"Built with Rachel, a pediatric speech-language pathologist in her clinical
+fellowship." (Travis, the same day: without "MS, CF-SLP" on this page only;
+`shiptest` allows that exact line there and nowhere else). No email box and nothing posted; a tap sends the
+pixel `ViewContent` (the fact, never who) and leaves 150 ms later. `noindex`
+(the root is the page search finds), on `OPEN_PAGES` and on the pixel's
+allow-list. The root page with its email box is unchanged. `landingtest` plays
+it on an iPhone and an Android phone.
+
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
 who my customer is"): the headline stays, and the one form asks for **an

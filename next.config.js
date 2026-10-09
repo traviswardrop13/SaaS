@@ -52,6 +52,7 @@ const nextConfig = {
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
       { source: "/for-slps", headers: noStore },
+      { source: "/try", headers: noStore },
       { source: "/slps", headers: noStore },
       { source: "/subscribe", headers: noStore },
       { source: "/subscribe/success", headers: noStore },
@@ -69,6 +70,8 @@ const nextConfig = {
       // stays at /for-slps, with its own canonical.
       { source: "/", destination: "/parents.html" },
       { source: "/for-slps", destination: "/for-slps.html" },
+      // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
+      { source: "/try", destination: "/try.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
       { source: "/slps", destination: "/slp.html" },
     ];
