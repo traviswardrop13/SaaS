@@ -286,7 +286,7 @@
         var grant=game.kind==="book"?bookAccess(game):access(game),tier=(grant.reason==="free-mode"||grant.reason==="free")?"free":game.tier==="free"?"premium":game.tier;
         if(game.kind==="book")button.classList.add("book-card");
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
-        // a parked game says its day ("Coming Oct 9"), then "Coming soon"
+        // a parked game says its day ("Coming Oct 16"), then "Coming soon"
         var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.disabled=!!comingSoon;button.classList.toggle("is-coming",!!comingSoon);
         button.dataset.locked=grant.allowed?"false":"true";
