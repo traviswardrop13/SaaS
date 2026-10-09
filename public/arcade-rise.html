@@ -205,7 +205,7 @@
     // wait to be pushed away (they drift off by themselves after ten seconds),
     // then the balloon floats up to a big star. Reaching the top is a win.
     // rise.js is the board; this page is the round, the way Flappy Glide's is.
-    var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.08},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.12}];
+    var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.16},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.22}];
     var STRETCH_SAID=[["The garden","Push the blocks away!"],["The clouds","Up, up, up!"],["The stars","Almost at the top!"]];
     // A block takes FALL_SECS to cross the open sky between Echo's button and
     // the balloon at the start, the same on a small phone and an iPad; it gets
@@ -279,10 +279,31 @@
         var tries=0; do{ id=list[Math.floor(Math.random()*list.length)]; }while(id===lastPattern&&tries++<12);
       }
       lastPattern=id; patternLog.push(id);
-      Rise.spawn(id,STRETCHES[stage].sway);
+      Rise.spawn(id,STRETCHES[stage].sway,aimAt());
+    }
+    // The breeze: how far the balloon is swayed off the middle (px) at a
+    // stretch's climbMs c and breeze clock t. It eases in over the first 3 s.
+    function swayAt(c,t){ var L=STRETCHES[stage]; return L.sway*W*Math.min(1,c/3000)*Math.sin(2*Math.PI*t/8000); }
+    // Where the balloon will be (a share of the width off the middle) when a
+    // group starting above the top bar reaches it: the blocks fall toward the
+    // balloon, not the middle of the sky, so from the clouds on a shield
+    // parked in one place isn't enough on its own. Both the fall and the
+    // breeze slow together under the sound power, so the aim holds then too.
+    function aimAt(){
+      if(!STRETCHES[stage].sway||!W) return 0;
+      var f=fallNow(); if(!(f>0)) return 0;
+      var T=Math.max(0,Rise.balloon.y-(Rise.HUDB-Rise.s))/f*(1000/60);
+      return swayAt(climbMs+T,swayT+T)/W;
     }
 
     var SKY=[$("skyGarden"),$("skyClouds"),$("skyStars")], skyPan=-1;
+    // Where the garden picture's ground begins on the board (px from the
+    // top), so the clouds drifting behind the blocks fade out above the
+    // hills and the flower bed. The sky is 130% of the board tall, anchored
+    // to its foot, and covers it (crafted-rise.css); the picture is 800×1200
+    // and its trees and hills start GROUND of the way down it.
+    var GROUND=0.66;
+    function groundAt(pan){ var bh=1.3*H, sc=Math.max(W/800,bh/1200), ih=1200*sc; return H-bh+Math.max(0,pan)+(bh-ih)/2+GROUND*ih; }
     function showSky(i){ for(var k=0;k<SKY.length;k++){ SKY[k].classList.toggle("on",k===i); } SKY[i].style.transform="translateY(0px)"; skyPan=-1; }
     function startStretch(i){
       stage=i; phase="climb"; climbMs=0; spawnEvery=STRETCHES[i].every; spawnMs=spawnEvery-2000;
@@ -306,8 +327,9 @@
     // No heart can be lost here and Echo asks nothing: reaching the top is
     // the win. A cloud nobody pushes glows after 4 s; from 7 s a tap anywhere
     // sends the nearest one off; from 10 s they drift off by themselves.
+    var CLEAR_MS=450;
     function startFinale(){
-      phase="top"; finaleDone=true; finale={t:0,up:-1,end:-1,drift:0};
+      phase="top"; finaleDone=true; finale={t:0,up:-1,end:-1,drift:0,sx:0,tx:0};
       slowMs=0; Rise.fadeAll(600); Rise.startPuffs(); Rise.showStar=true;
       banner("The top!","Push the clouds away!"); hud();
     }
@@ -344,7 +366,10 @@
     function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
     function sayCard(title,snd){
       if(!playing) return;
-      playing=false; Rise.clear(); releaseFingers(); if(snd!=="none") sfx(snd||"tap");
+      // a finger held down through the card keeps its place (the move
+      // listener keeps it current while the card is up), so it steers again
+      // the moment the card closes, with no jump
+      playing=false; Rise.clear(); if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
         $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=stageDots();
@@ -375,8 +400,12 @@
     // jump. The target is clamped to the shield's box, so turning back at an
     // edge answers at once. Buttons and the cards are left alone.
     var fingers={}, fingerOrder=[];
-    function canDrag(){ return tok&&playing&&!document.hidden&&(phase==="climb"||phase==="rest"||phase==="top"); }
-    function notBoard(t){ return !!(t&&t.closest&&t.closest("button,a,.ovl")); }
+    // At the top, once the last cloud is gone, the shield steps aside for the
+    // balloon's float to the star and the finger has nothing left to do.
+    function canDrag(){ return tok&&playing&&!document.hidden&&(phase==="climb"||phase==="rest"||(phase==="top"&&!(finale&&finale.up>=0))); }
+    // a card that is up, a button or a link is not the board (a card that has
+    // closed is: a finger that went down on it steers once it is gone)
+    function notBoard(t){ return !!(t&&t.closest&&t.closest("button,a,.ovl.show")); }
     function driver(){ return fingerOrder.length?fingerOrder[fingerOrder.length-1]:null; }
     function release(id){ delete fingers[id]; var i=fingerOrder.indexOf(id); if(i>=0)fingerOrder.splice(i,1); }
     function releaseFingers(){ fingers={}; fingerOrder=[]; }
@@ -394,7 +423,15 @@
       if(phase==="top"&&finale&&finale.t>=7000){ var r=$("app").getBoundingClientRect(); Rise.popNearest(e.clientX-r.left,e.clientY-r.top,false); }
     },{passive:false});
     document.addEventListener("pointermove",function(e){
-      var f=fingers[e.pointerId]; if(!f) return;
+      var f=fingers[e.pointerId];
+      // A finger already down that the board doesn't know (it went down on
+      // the card, or the page was away): taken on where it is now, so it
+      // steers from its next move with no jump. It drives only if no other
+      // finger does. A mouse only while a button is held, never a hover.
+      if(!f){
+        if(!canDrag()||notBoard(e.target)||(e.pointerType==="mouse"&&!e.buttons)) return;
+        fingers[e.pointerId]={x:e.clientX,y:e.clientY}; fingerOrder.unshift(e.pointerId); return;
+      }
       var dx=e.clientX-f.x, dy=e.clientY-f.y; f.x=e.clientX; f.y=e.clientY;
       if(e.pointerId!==driver()||!canDrag()) return;
       nudge(dx,dy);
@@ -425,7 +462,7 @@
         if(!slowTurn&&!(slowMs>0)) pacePlay+=dt;
         if(slowMs>0){ slowMs=Math.max(0,slowMs-dt); if(!slowMs)$("slowStatus").textContent=slowIdle(); }
         // from the clouds on, a slow breeze sways the balloon side to side
-        swayNow=L.sway*W*Math.min(1,climbMs/3000)*Math.sin(2*Math.PI*swayT/8000);
+        swayNow=swayAt(climbMs,swayT);
       } else if(playing) swayNow*=0.96;
       paintSlowKeys();
       Rise.balloon.x=W/2+swayNow;
@@ -436,14 +473,24 @@
         if(phase==="top"){
           finale.t+=dt; Rise.puffGlow=finale.t>=4000;
           if(finale.t>=10000&&finale.t-finale.drift>=500&&Rise.puffsLeft()>0){ finale.drift=finale.t; Rise.popNearest(W/2,Rise.balloon.y,true); }
-          if(finale.up<0&&!Rise.puffsLeft()) finale.up=0;
-          if(finale.up>=0){ finale.up+=dt; Rise.balloonUp(Math.min(1,finale.up/1600)); if(finale.up>=1600) arrive(); }
+          // the last cloud gone: the shield glides to the nearer side, out of
+          // the balloon's way (CLEAR_MS), then the balloon floats up to the
+          // star (1.6 s); it never passes through the shield
+          if(finale.up<0&&!Rise.puffsLeft()){ var bx=Rise.shieldBox(), side=Math.max(Rise.shield.r+Rise.balloon.r+16,0.3*W); finale.up=0; finale.sx=Rise.shield.x; finale.tx=Math.max(bx.x0,Math.min(bx.x1,Rise.shield.x<W/2?W/2-side:W/2+side)); releaseFingers(); }
+          if(finale.up>=0){
+            finale.up+=dt;
+            var k=Math.min(1,finale.up/CLEAR_MS), e=k*k*(3-2*k);
+            Rise.shield.tx=finale.sx+(finale.tx-finale.sx)*e; Rise.shield.ty=Rise.shield.y;
+            Rise.balloonUp(Math.max(0,Math.min(1,(finale.up-CLEAR_MS)/1600)));
+            if(finale.up>=CLEAR_MS+1600) arrive();
+          }
         } else if(finale.end>=0){ finale.end-=dt; if(finale.end<=0){ finale.end=-1; endRound(); } }
       }
-      Rise.frame(dt,pace,fallNow(),phase,now,playing);
       // the sky pans down as the balloon rises through it
       var pan=Math.round(Math.min(1,climbMs/L.len)*0.3*H);
       if(pan!==skyPan){ skyPan=pan; SKY[stage].style.transform="translateY("+pan+"px)"; }
+      Rise.horizon=stage===0?groundAt(skyPan):1e9;
+      Rise.frame(dt,pace,fallNow(),phase,now,playing);
       if(climbing) hud();
       if(endPending){ endPending=false; endRound(); }
       if(playing&&phase==="climb"&&climbMs>=L.len) endStretch();

@@ -41,7 +41,7 @@ const BOARD = readFileSync(ROOT + "/rise.js", "utf8"), board = strip(BOARD);
 const scripts = [...code.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join("\n");
 await scenario("source pins", async () => {
   ok("three stretches: the garden 28 s, the clouds 32 s, the stars 36 s, each a little faster and (from the clouds) with a breeze",
-    code.includes('var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.08},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.12}];'));
+    code.includes('var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.16},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.22}];'));
   ok("only the rest between stretches asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to rise higher!","none"\)/.test(code));
   ok("the sound power is the shared helper's: first ask after six seconds, eight seconds of help (no ms set), a heart back",
     PAGE.includes('<script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slower blocks, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>')
@@ -119,9 +119,13 @@ async function open(cfg = {}, size = { width: 390, height: 844 }) {
   // and the star it reuses) fails to load
   if (cfg.noArt) for (const p of ["**/assets/crafted/game/rise-*", "**/game/cloud.webp", "**/game/star.webp"]) await context.route(p, (r) => { blocked++; return r.abort(); });
   await context.addInitScript(fakePhone, cfg);
+  // a whole round on a fake clock, with the same blocks every time
+  if (cfg.clock) await context.addInitScript(() => { let a = 20261009; Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; });
   const page = await context.newPage(); page.setDefaultTimeout(8000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  if (cfg.clock) await page.clock.install();
   await page.goto(BASE + "/arcade-rise.html?from=charge");
+  if (cfg.clock) await page.clock.runFor(200);
   await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startStretch === "function");
   return { context, page, errors, blocked: () => blocked };
 }
@@ -149,6 +153,7 @@ for (const size of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { 
         pacePlay = 0; const clearView = Math.max(120, (bl.y - bl.r) - Rise.BAND), secs = clearView / (fallNow() * 60);
         return { scroll: d.scrollWidth <= innerWidth && d.scrollHeight <= innerHeight, hearts: hs.left >= top.left && hs.right <= top.right && hs.top >= top.top && hs.bottom <= top.bottom && hs.width > 0,
           balloon: bl.x - bl.r >= 0 && bl.x + bl.r <= W && bl.y - bl.r >= Rise.HUDB && bl.y + bl.r <= H, clearOfBalloon: b.y1 + Rise.shield.r < bl.y - bl.hitR, belowEcho: b.y0 >= Rise.BAND,
+          beside: Math.abs(Rise.shield.x - bl.x) >= Rise.shield.r + 4 + 1.4 * Rise.s && Rise.shield.x >= b.x0 && Rise.shield.x <= b.x1,
           secs, sizes: Math.abs(bl.r - clamp(0.085 * U, 22, 46)) < 0.01 && Math.abs(Rise.shield.r - clamp(0.11 * U, 28, 56)) < 0.01 && Math.abs(Rise.s - clamp(0.13 * U, 32, 66)) < 0.01 && Math.abs(bl.hitR - 0.8 * bl.r) < 0.01,
           Rb: bl.r, Rs: Rise.shield.r, s: Rise.s, W, appW: app.width };
       });
@@ -158,6 +163,7 @@ for (const size of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { 
       ok(tag + ": the balloon is fully on screen, below the top bar", fit.balloon, fit);
       ok(tag + ": the lowest the shield can go still leaves air above the balloon, and it never rises behind Echo's button", fit.clearOfBalloon && fit.belowEcho, fit);
       ok(tag + ": a block takes about 3.4 seconds to cross the open sky at the start", fit.secs >= 3.3 && fit.secs <= 3.5, fit.secs);
+      ok(tag + ": the shield starts beside the balloon, so left where it is it shelters nothing (a block or a bar falling at the middle misses it)", fit.beside, fit);
       ok(tag + ": the balloon, the shield and the blocks are sized to the screen, within their limits", fit.sizes && fit.Rb >= 22 && fit.Rb <= 46 && fit.Rs >= 28 && fit.Rs <= 56 && fit.s >= 32 && fit.s <= 66, fit);
       if (size.width === 1024) ok(tag + ": on an iPad the board is 560 wide, like the other round games", fit.W === 560 && fit.appW === 560, fit);
       ok(tag + ": no runtime errors", errors.length === 0, errors);
@@ -248,11 +254,23 @@ await scenario("pushing and the count", async () => {
   const { context, page, errors } = await open();
   try {
     await calm(page); await centre(page); await frames(page);
-    const start = await page.evaluate(() => { const s = Rise.shield, p = Rise.add("cube", s.x, s.y - s.r - Rise.s); window.__p = p; return { pushed, sfx: __f.sfx.length }; });
+    // a block that lands on a shield nobody is moving slides off it: that is
+    // not a push (an untouched round must never be thanked for pushes)
+    const still = await page.evaluate(async () => {
+      const s = Rise.shield, p = Rise.add("cube", s.x, s.y - s.r - Rise.s), n = pushed, f = () => new Promise((r) => requestAnimationFrame(r));
+      while (!p.loose) await f();
+      for (let i = 0; i < 20; i++) await f();
+      return { loose: p.loose, counted: p.counted, grace: p.touchAt > -1e8, pushedBefore: n, pushed, shown: document.getElementById("score").textContent };
+    });
+    ok("a block that lands on a still shield slides off it, uncounted and with no grace: nobody pushed it", still.loose && !still.counted && !still.grace && still.pushed === still.pushedBefore && still.shown === String(still.pushed), still);
+    // the finger pushes the shield into a block: that counts
+    await calm(page); await centre(page); await frames(page);
+    const start = await page.evaluate(() => { const s = Rise.shield, p = Rise.add("cube", s.x - 2.2 * s.r, s.y); window.__p = p; return { pushed, sfx: __f.sfx.length }; });
+    await page.mouse.move(300, 760); await page.mouse.down(); await page.mouse.move(230, 760, { steps: 4 }); await frames(page); await page.mouse.up();
     await page.waitForFunction(() => __p.counted, null, { timeout: 4000 });
     await page.waitForFunction((n) => __f.sfx.length > n, start.sfx, { timeout: 2000 });
-    const one = await page.evaluate(() => ({ loose: __p.loose, counted: __p.counted, pushed, shown: document.getElementById("score").textContent, label: document.getElementById("countPill").getAttribute("aria-label"), sfx: __f.sfx.map((c) => c.name) }));
-    ok("a block that lands on the shield is pushed: loose, counted once, the pill says 1", one.loose && one.counted && one.pushed === start.pushed + 1 && one.shown === String(one.pushed) && one.label === "1 block pushed", one);
+    const one = await page.evaluate(() => ({ loose: __p.loose, counted: __p.counted, grace: __p.touchAt > -1e8, pushed, shown: document.getElementById("score").textContent, label: document.getElementById("countPill").getAttribute("aria-label"), sfx: __f.sfx.map((c) => c.name) }));
+    ok("a block the moving shield runs into is pushed: loose, counted once, the shield's grace, the pill says 1", one.loose && one.counted && one.grace && one.pushed === start.pushed + 1 && one.shown === String(one.pushed) && one.label === "1 block pushed", one);
     ok("…with a small tap", one.sfx.includes("tap"), one.sfx);
     // a block nobody touches falls past the balloon and is gone, uncounted
     await calm(page);
@@ -264,10 +282,18 @@ await scenario("pushing and the count", async () => {
     const chain = await page.evaluate(() => {
       const b = Rise.shieldBox(), s = Rise.shield; s.x = s.tx = b.x1; s.y = s.ty = b.y1;
       const A = Rise.add("cube", W * 0.15, Rise.BAND + 10), B = Rise.add("cube", W * 0.15 + 1.2 * Rise.s, Rise.BAND + 10);
-      A.loose = true; A.vx = 4; window.__A = A; window.__B = B; return pushed;
+      A.loose = true; A.vx = 4; A.pushAt = performance.now(); window.__A = A; window.__B = B; return pushed;
     });
     await page.waitForFunction(() => __B.loose, null, { timeout: 3000 });
-    ok("a loose block knocks one that was still falling with its group: that one is loose and counted", await page.evaluate((n) => __B.loose && __B.counted && !__A.counted && pushed === n + 1, chain), await page.evaluate(() => ({ pushed, A: __A.counted, B: __B.counted })));
+    ok("a block a push just set moving knocks one that was still falling with its group: that one is loose and counted", await page.evaluate((n) => __B.loose && __B.counted && !__A.counted && pushed === n + 1, chain), await page.evaluate(() => ({ pushed, A: __A.counted, B: __B.counted })));
+    // …but a loose block nobody pushed passes nothing on
+    await calm(page);
+    const drift = await page.evaluate(() => {
+      const C = Rise.add("cube", W * 0.15, Rise.BAND + 10), D = Rise.add("cube", W * 0.15 + 1.2 * Rise.s, Rise.BAND + 10);
+      C.loose = true; C.vx = 4; window.__C = C; window.__D = D; return pushed;
+    });
+    await page.waitForFunction(() => __D.loose, null, { timeout: 3000 });
+    ok("a loose block nobody pushed knocks another: it moves, and nothing counts", await page.evaluate((n) => __D.loose && !__D.counted && pushed === n, drift), await page.evaluate(() => ({ pushed, D: __D.counted })));
     // the shield's grace: a block it just pushed onto the balloon costs nothing
     await calm(page); await centre(page);
     await page.evaluate(() => { const p = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); p.touchAt = performance.now(); window.__g = p; heartHitAt = -1e9; graceUntil = 0; bumps = 0; });
@@ -409,9 +435,25 @@ await scenario("a whole climb", async () => {
 await scenario("the top with no touch", async () => {
   const { context, page, errors } = await open();
   try {
-    await page.evaluate(() => { Rise.clear(); startFinale(); });
+    // the shield left right over the balloon, as low as it goes
+    await page.evaluate(() => { Rise.clear(); const b = Rise.shieldBox(), s = Rise.shield; s.x = s.tx = W / 2; s.y = s.ty = b.y1; startFinale(); });
     const early = await page.evaluate(() => ({ lose: loseHeart(performance.now()), phase, hearts }));
     await page.evaluate(() => { finale.t = 9990; });
+    // once the last cloud is gone the shield glides aside, and only then does
+    // the balloon float up: it never passes through the shield
+    await page.waitForFunction(() => finale.up >= 0, null, { timeout: 8000 });
+    const aside = await page.evaluate(async () => {
+      const f = () => new Promise((r) => requestAnimationFrame(r)), out = { through: false, waited: Rise.balloon.y, drag: canDrag() };
+      while (phase === "top") {
+        const s = Rise.shield, b = Rise.balloon, dx = s.x - b.x, dy = s.y - b.y;
+        if (Math.hypot(dx, dy) < s.r + b.hitR) out.through = true;
+        if (finale.up > 0 && finale.up < 400 && b.y !== out.waited) out.early = true;
+        await f();
+      }
+      out.side = Math.abs(Rise.shield.x - W / 2) >= Rise.shield.r + Rise.balloon.r;
+      return out;
+    });
+    ok("at the top the shield glides out of the balloon's way before it floats up, and the finger has nothing left to steer", !aside.through && !aside.early && aside.side && aside.drag === false, aside);
     let lost = false;
     for (let i = 0; i < 40 && !(await page.locator("#endOvl.show").count()); i++) { if (await page.evaluate(() => loseHeart(performance.now()))) lost = true; await page.waitForTimeout(250); }
     await page.locator("#endOvl.show").waitFor({ timeout: 4000 });
@@ -458,6 +500,118 @@ await scenario("pictures fail", async () => {
     await page.waitForFunction(() => __n.hit, null, { timeout: 3000 });
     ok("…and a block on the balloon still costs a heart", await page.evaluate(() => hearts === 2));
     ok("pictures fail: no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
+// ── nobody steering: an untouched round never wins, and a parked shield isn't enough ──
+// (review, 9 Oct 2026: a shield left where it started kept the balloon safe
+// through the garden and the clouds, so a child who never touched the screen
+// climbed to the top and was thanked for 70 pushes.) Whole rounds on a fake
+// clock; each card is answered, nothing else.
+async function untouched(park) {
+  const { context, page, errors } = await open({ clock: true });
+  try {
+    await page.evaluate((park) => {
+      window.__lost = [0, 0, 0]; let hp = hearts;
+      (function tick() { requestAnimationFrame(tick); if (hearts < hp) __lost[stage] += hp - hearts; hp = hearts; })();
+      // one drag puts the shield right over the balloon, and it stays there
+      if (park) { const b = Rise.shieldBox(), s = Rise.shield; s.x = s.tx = W / 2; s.y = s.ty = (b.y0 + b.y1) / 2; }
+    }, park);
+    for (let t = 0; t < 260000; t += 250) {
+      await page.clock.runFor(250);
+      const s = await page.evaluate(() => ({ card: document.getElementById("revOvl").classList.contains("show"), live: __f.live, ended: !!window.__ended }));
+      if (s.ended) break;
+      if (s.card && s.live >= 1) await heard(page);
+    }
+    const end = await page.evaluate(() => ({ ended: !!window.__ended, top: finaleDone, hearts, pushed, lost: __lost, stage, title: document.getElementById("endTitle").textContent,
+      sub: getComputedStyle(document.getElementById("endSub")).display !== "none" ? document.getElementById("endSub").textContent : "" }));
+    return { end, errors };
+  } finally { await context.close(); }
+}
+await scenario("nobody steering", async () => {
+  const idle = await untouched(false);
+  ok("a round nobody touches never reaches the top: it runs out of hearts and ends kindly", idle.end.ended && !idle.end.top && idle.end.hearts === 0 && idle.end.title === "What a climb!", idle.end);
+  ok("…and it is thanked for no pushes: nothing counted, no count line", idle.end.pushed === 0 && idle.end.sub === "", idle.end);
+  const parked = await untouched(true);
+  ok("a shield parked over the balloon pushes nothing", parked.end.pushed === 0, parked.end);
+  ok("…and from the clouds on it isn't enough on its own: the breeze carries the balloon out from under it and the blocks follow", parked.end.lost[1] + parked.end.lost[2] >= 1 && !parked.end.top, parked.end);
+  ok("nobody steering: no runtime errors", idle.errors.length === 0 && parked.errors.length === 0, [idle.errors, parked.errors]);
+});
+
+// ── from the clouds on, the blocks fall toward the balloon, wherever the breeze has it ──
+await scenario("blocks follow the balloon", async () => {
+  const { context, page, errors } = await open();
+  try {
+    await calm(page);
+    const aim = await page.evaluate(() => {
+      startStretch(1); Rise.clear(); spawnMs = 0; spawnEvery = 1e9; heartHitAt = -1e9; graceUntil = 0; bumps = 0;
+      const b = Rise.shieldBox(), s = Rise.shield; s.x = s.tx = b.x0; s.y = s.ty = b.y0;   // out of the way
+      // the breeze eased in, and at its widest when a block from the top gets there
+      climbMs = 6000; const T = (Rise.balloon.y - (Rise.HUDB - Rise.s)) / fallNow() * (1000 / 60); swayT = 2000 - T;
+      const a = aimAt(); Rise.spawn("one", STRETCHES[1].sway, a); window.__aimed = Rise.pieces[0];
+      Rise.spawn("one", STRETCHES[1].sway, 0); window.__mid = Rise.pieces[1];
+      return { a, amp: STRETCHES[1].sway };
+    });
+    await page.waitForFunction(() => __aimed.hit || __aimed.y > Rise.balloon.y + Rise.balloon.r, null, { timeout: 8000 });
+    const r = await page.evaluate(() => ({ aimedHit: __aimed.hit, midHit: __mid.hit, off: Math.abs(Rise.balloon.x - W / 2), bumps }));
+    ok("in the clouds a block falls toward where the breeze will have the balloon, not the middle of the sky", aim.a >= 0.8 * aim.amp && r.aimedHit && !r.midHit && r.off >= 0.8 * aim.amp * 390 && r.bumps >= 1, { aim, r });
+    ok("…and in the garden, with no breeze, they fall at the middle", await page.evaluate(() => { stage = 0; const a = aimAt(); stage = 1; return a === 0; }));
+    ok("blocks follow the balloon: no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
+// ── a finger held down through the say-it card steers again once it closes ──
+await scenario("a finger held through the card", async () => {
+  const { context, page, errors } = await open();
+  try {
+    await calm(page); await centre(page);
+    await page.mouse.move(100, 700); await page.mouse.down(); await page.mouse.move(110, 700); await frames(page);
+    await page.evaluate(() => crash());
+    await page.locator("#revOvl.show").waitFor();
+    await page.mouse.move(150, 700); await frames(page);   // moved while the card is up: kept, not steered
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
+    const a = await page.evaluate(() => { closeReviveMic(); doRevive(); return { x: Rise.shield.x, playing }; });
+    await page.mouse.move(170, 700); await frames(page);
+    const b = await shieldAt(page);
+    ok("a finger held down through the card steers the moment play goes on, by as much as it moves, with no jump", a.playing && near(b.x - a.x, 20), { a, b });
+    await page.mouse.up();
+    await page.mouse.move(260, 700); await frames(page);
+    const c = await shieldAt(page);
+    ok("a mouse only hovering never steers", near(c.x, b.x), { b, c });
+    // a touch that went down on the card (the card holds it) steers once the card is gone
+    await page.evaluate(() => crash());
+    await page.locator("#revOvl.show").waitFor();
+    const card = await page.evaluate(async () => {
+      const el = document.querySelector("#revOvl .ovlCard"), f = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const ev = (type, x) => el.dispatchEvent(new PointerEvent(type, { pointerId: 31, pointerType: "touch", clientX: x, clientY: 600, bubbles: true, cancelable: true }));
+      ev("pointerdown", 200); ev("pointermove", 210); await f();
+      const onCard = Rise.shield.x;
+      while (__f.live !== 1) await f();
+      closeReviveMic(); doRevive();
+      const x0 = Rise.shield.x; ev("pointermove", 215); await f(); ev("pointermove", 240); await f();
+      const moved = Rise.shield.x - x0; ev("pointerup", 240);
+      return { onCard, x0, moved };
+    });
+    ok("…and so does a finger that went down on the card, once the card is gone (never while it is up)", near(card.onCard, card.x0) && near(card.moved, 25), card);
+    ok("a finger held through the card: no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
+// ── the garden's drifting clouds stay in the sky ──
+await scenario("clouds stay in the sky", async () => {
+  const { context, page, errors } = await open();
+  try {
+    await page.waitForTimeout(700);
+    const g = await page.evaluate(async () => {
+      const f = () => new Promise((r) => requestAnimationFrame(r)), out = { horizon: Rise.horizon, low: [] };
+      for (let k = 0; k < 40; k++) { for (const b of Rise.bits) if (!b.dot && b.a > 0 && b.y + 0.25 * b.w >= Rise.horizon) out.low.push(Math.round(b.y)); await f(); }
+      out.shown = Rise.bits.filter((b) => !b.dot && b.a > 0).length;
+      climbMs = STRETCHES[0].len * 0.9; await f(); await f(); out.later = Rise.horizon;
+      return out;
+    });
+    ok("in the garden no drifting cloud is drawn on the hills or the flower bed: each fades out above the ground", g.horizon < 844 * 0.7 && g.low.length === 0 && g.shown >= 2, g);
+    ok("…and the ground line goes down as the sky pans", g.later > g.horizon, g);
+    ok("clouds stay in the sky: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
 

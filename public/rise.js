@@ -29,13 +29,27 @@
   R.calm = false;     // Reduce Motion: smaller wobbles, no blinking, a still hint
   R.puffGlow = false; // the top: the clouds left glow after a while
   R.showStar = false; // the top: the big star the balloon floats up to
+  R.horizon = 1e9;    // the garden's ground (px, set by the page): no drifting cloud lies on it
 
   var W = 0, H = 0, Yb = 0, ctx = null, cb = {}, placed = false;
-  var sparks = [], bits = [], ART = null, cubeTurn = 0;
+  var sparks = [], bits = R.bits = [], ART = null, cubeTurn = 0;
   var shVX = 0, shVY = 0;
   var wobAt = -1e9, ringAt = -1e9;
   var chain = { t: -1e9, n: 0, fired: false };
   var floatF = -1;
+  // The shield starts beside the balloon, not over it (review, 9 Oct 2026:
+  // a shield left where it started kept every block in the garden off the
+  // balloon, so a child who never touched the screen climbed to the top and
+  // was thanked for pushes nobody made). START_X is how far right of the
+  // middle, as a share of the width: far enough that a block or a bar
+  // falling at the middle misses it on every screen.
+  var START_X = 0.34;
+  // A push is the shield moving INTO a block, at least PUSH_MIN px a frame
+  // toward it. Only a push counts, carries the shield's grace, or sends a
+  // block off sideways; a block that lands on a still shield just slides
+  // off it. A block a push set moving passes the push on to the blocks it
+  // knocks for CARRY_MS.
+  var PUSH_MIN = 0.5, CARRY_MS = 1500;
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function now0() { return (global.performance && performance.now) ? performance.now() : Date.now(); }
@@ -72,7 +86,7 @@
 
   function mk(kind, x, y, visible) {
     var p = { kind: kind, x: x, y: y, vx: 0, vy: 0, a: 0, va: 0, s: R.s, loose: false, counted: false, hit: false, gone: false,
-      touchAt: -1e9, alpha: visible ? 1 : 0, age: 0, fin: visible ? 300 : 0, fout: 0, ftot: 1, cf: 0, v: 0 };
+      touchAt: -1e9, pushAt: -1e9, alpha: visible ? 1 : 0, age: 0, fin: visible ? 300 : 0, fout: 0, ftot: 1, cf: 0, v: 0 };
     if (kind === "cube") p.v = (cubeTurn++) % 2;
     return p;
   }
@@ -85,11 +99,16 @@
   // ── the patterns: [kind, x as a fraction of the width, dy (in blocks,
   // upward from the group's lowest), jitter (0 either way; -1 or 1 only away
   // from the middle)] ──
-  function pattern(id, amp, side0) {
-    var c = 0.5, g = amp + 0.16, sd = amp + 0.28, d = side0 < 0 ? -1 : 1;
+  // c is where the balloon will be when the group gets there (aim, from the
+  // page, as a share of the width off the middle): with the breeze swaying
+  // the balloon, the blocks follow it, so a shield parked in one place
+  // isn't enough. The two that always miss stay clear of the balloon's whole
+  // sway, from the middle; the wall of five spans the whole width.
+  function pattern(id, amp, side0, aim) {
+    var m = 0.5, c = 0.5 + (aim || 0), g = amp + 0.16, sd = amp + 0.28, d = side0 < 0 ? -1 : 1;
     switch (id) {
-      case "gate": return [["cube", c - g, 0, -1], ["cube", c + g, 0, 1]];
-      case "side": return [["cube", c + d * sd, 0, d]];
+      case "gate": return [["cube", m - g, 0, -1], ["cube", m + g, 0, 1]];
+      case "side": return [["cube", m + d * sd, 0, d]];
       case "one": return [["cube", c, 0, 0]];
       case "bar": return [["bar", c, 0, 0]];
       case "tower3": return [["cube", c, 0, 0], ["cube", c, 1.05, 0], ["cube", c, 2.1, 0]];
@@ -108,8 +127,8 @@
   }
   // A group falls in step from just above the HUD; it fades in (alpha
   // only), so it never pops into sight.
-  R.spawn = function (id, amp) {
-    var list = pattern(id, amp || 0, Math.random() < 0.5 ? -1 : 1), y0 = R.HUDB - R.s, i;
+  R.spawn = function (id, amp, aim) {
+    var list = pattern(id, amp || 0, Math.random() < 0.5 ? -1 : 1, aim || 0), y0 = R.HUDB - R.s, i;
     for (i = 0; i < list.length; i++) {
       var e = list[i], j = Math.random() * 0.02, fx;
       fx = e[3] ? e[1] + e[3] * j : e[1] + (Math.random() < 0.5 ? -j : j);
@@ -146,8 +165,9 @@
     if (y1 < y0) y1 = y0;
     return { x0: shield.r, x1: Math.max(shield.r, W - shield.r), y0: y0, y1: y1 };
   };
-  // Placed once per round; the game never moves it after that.
-  R.placeShield = function () { var b = R.shieldBox(); shield.x = shield.tx = W / 2; shield.y = shield.ty = (b.y0 + b.y1) / 2; placed = true; };
+  // Placed once per round, beside the balloon (START_X); the game never
+  // moves it after that, but to clear the balloon's way to the star.
+  R.placeShield = function () { var b = R.shieldBox(); shield.x = shield.tx = clamp(W / 2 + START_X * W, b.x0, b.x1); shield.y = shield.ty = (b.y0 + b.y1) / 2; placed = true; };
   R.setup = function (o) {
     ctx = o.ctx; cb = o;
     if (!ART) ART = { balloon: pic(G + "rise-balloon.webp"), shield: pic(G + "rise-shield.webp"), cubeY: pic(G + "rise-cube-yellow.webp"),
@@ -223,27 +243,33 @@
       if (d >= reach) continue;
       var nx = d > 0.001 ? ox / d : 0, ny = d > 0.001 ? oy / d : -1, ov = reach - d;
       p.x += nx * ov; p.y += ny * ov;
-      var vn = p.vx * nx + p.vy * ny, want = Math.max(0, shVX * nx + shVY * ny) * 1.15 + 0.004 * U;
+      var into = shVX * nx + shVY * ny, pushing = into >= PUSH_MIN;
+      var vn = p.vx * nx + p.vy * ny, want = Math.max(0, into) * 1.15 + 0.004 * U;
       if (vn < want) { p.vx += nx * (want - vn); p.vy += ny * (want - vn); }
-      p.vx += (p.x >= balloon.x ? 1 : -1) * 0.002 * U;
+      // a push sends it off by the side away from the balloon; a block on a
+      // still shield only slides off where it sits
+      if (pushing) p.vx += (p.x >= balloon.x ? 1 : -1) * 0.002 * U;
       // spin: off the bar's middle it turns; a cube rolls with a sideways shove
       if (p.kind === "bar") { var rx = cx - p.x, ry = cy - p.y; p.va += (rx * ny - ry * nx) / (1.2 * p.s) * 0.04; }
       else p.va += (shVY * nx - shVX * ny) * 0.004;
       cap(p);
-      p.touchAt = now; p.touch = true;
-      if (!p.loose) { p.loose = true; loosened(p, now, true); }
+      p.touch = true; p.loose = true;
+      if (pushing) { p.touchAt = p.pushAt = now; credit(p, now, true); }
     }
     for (i = 0; i < puffs.length; i++) {
       // a cloud still drifting in from above can't be knocked off on its way down
       var f = puffs[i]; if (f.gone || f.t < 1000) continue;
-      var fx = f.x - shield.x, fy = f.y - shield.y, fd = Math.sqrt(fx * fx + fy * fy);
-      if (fd < shield.r + f.r) popPuff(f, fd > 0.001 ? fx / fd : 0, fd > 0.001 ? fy / fd : -1, false);
+      // only a moving shield sends one off: a cloud resting against a still
+      // shield waits for the finger
+      var fx = f.x - shield.x, fy = f.y - shield.y, fd = Math.sqrt(fx * fx + fy * fy), ux = fd > 0.001 ? fx / fd : 0, uy = fd > 0.001 ? fy / fd : -1;
+      if (fd < shield.r + f.r && shVX * ux + shVY * uy >= PUSH_MIN) popPuff(f, ux, uy, false);
     }
   }
-  // A block counts the first time the shield, or a block the shield set
-  // moving, touches it: never one that has already touched the balloon.
-  // Three or more set moving within 0.8 s of one shield touch is a chain.
-  function loosened(p, now, byShield) {
+  // A block counts the first time the shield pushes it, or a block a push
+  // set moving (in the last CARRY_MS) knocks it: never one that has already
+  // touched the balloon, and never one that only met a still shield.
+  // Three or more counted within 0.8 s of one push is a chain.
+  function credit(p, now, byShield) {
     if (byShield) { if (now - chain.t > 800) { chain.t = now; chain.n = 0; chain.fired = false; } chain.n++; }
     else if (now - chain.t <= 800) chain.n++;
     if (chain.n >= 3 && !chain.fired && now - chain.t <= 800) { chain.fired = true; burst(p.x, p.y, 14, ["#fff6c2", "#ffd84d", "#ffffff"]); if (cb.onChain) cb.onChain(p); }
@@ -271,11 +297,16 @@
         }
         if (!met) continue;
         cap(a); cap(b);
-        // a block the shield just set moving carries the shield's grace:
-        // it never costs a heart in the 0.6 s after that push
+        // a block the shield just pushed carries the shield's grace: it never
+        // costs a heart in the 0.6 s after that push; and the push itself,
+        // so the block it knocks counts too
         var t = Math.max(a.touchAt, b.touchAt); a.touchAt = b.touchAt = t;
-        if (!a.loose) { a.loose = true; loosened(a, now, false); }
-        if (!b.loose) { b.loose = true; loosened(b, now, false); }
+        a.loose = b.loose = true;
+        var k = Math.max(a.pushAt, b.pushAt);
+        if (now - k <= CARRY_MS) {
+          if (a.pushAt < k) { a.pushAt = k; credit(a, now, false); }
+          if (b.pushAt < k) { b.pushAt = k; credit(b, now, false); }
+        }
       }
     }
   }
@@ -357,7 +388,7 @@
   // f from 0 to 1: the balloon floats from its place up to the star
   R.balloonUp = function (f) {
     floatF = clamp(f, 0, 1);
-    var s = starXY(), top = s[1] + s[2] * 0.9 + balloon.r, e = floatF < 0.5 ? 2 * floatF * floatF : 1 - Math.pow(-2 * floatF + 2, 2) / 2;
+    var s = starXY(), top = s[1] + s[2] * 1.05 + balloon.r, e = floatF < 0.5 ? 2 * floatF * floatF : 1 - Math.pow(-2 * floatF + 2, 2) / 2;
     balloon.y = Yb + (top - Yb) * e;
   };
   R.arrive = function () { var s = starXY(); burst(s[0], s[1], 26, ["#ffd21c", "#ffffff", "#ff8fa3", "#8fd3ff"]); };
@@ -365,16 +396,24 @@
   R.safeRing = function () { ringAt = now0(); };
 
   // ── what drifts behind: clouds by day, twinkling stars at night ──
+  // A drifting cloud belongs to the sky: in the garden it fades out before
+  // it reaches the hills and the flower bed (R.horizon, from the page, which
+  // knows where the painted ground is as the sky pans) and comes back in
+  // above the top bar. They start in the upper half of the sky.
   function initBits() {
     bits.length = 0; if (!W) return;
-    for (var i = 0; i < 4; i++) bits.push({ x: ((i * 0.37 + 0.12) % 1) * W, y: R.HUDB + (i / 4) * (H - R.HUDB), w: R.U * (0.24 + (i % 3) * 0.06), k: i });
-    for (i = 0; i < 22; i++) bits.push({ x: ((i * 0.618 + 0.05) % 1) * W, y: ((i * 0.37 + 0.11) % 1) * H, w: 1.5 + (i % 3), k: i, dot: true });
+    for (var i = 0; i < 4; i++) bits.push({ x: ((i * 0.37 + 0.12) % 1) * W, y: R.HUDB + (i / 4) * 0.5 * (H - R.HUDB), w: R.U * (0.24 + (i % 3) * 0.06), k: i, a: 1 });
+    for (i = 0; i < 22; i++) bits.push({ x: ((i * 0.618 + 0.05) % 1) * W, y: ((i * 0.37 + 0.11) % 1) * H, w: 1.5 + (i % 3), k: i, dot: true, a: 1 });
   }
+  // how much of a drifting cloud shows: all of it in open sky, fading to
+  // nothing as its foot comes down to the ground
+  function skyAlpha(b) { return R.sky === 0 ? clamp((R.horizon - (b.y + 0.25 * b.w)) / (0.35 * b.w), 0, 1) : 1; }
   function bitStep(fall, pace) {
     for (var i = 0; i < bits.length; i++) {
       var b = bits[i];
       b.y += (b.dot ? 0.2 : 0.4) * fall * pace;
-      if (b.y > H + 60) { b.y = b.dot ? -4 : R.HUDB - 60 - Math.random() * 80; b.x = Math.random() * W; }
+      if (!b.dot) b.a = skyAlpha(b);
+      if (b.y > H + 60 || (!b.dot && b.a <= 0 && b.y > R.HUDB)) { b.y = b.dot ? -4 : R.HUDB - 60 - Math.random() * 80; b.x = Math.random() * W; if (!b.dot) b.a = skyAlpha(b); }
     }
   }
   function sparkStep(live) {
@@ -400,12 +439,15 @@
   function paint(now, mode) {
     var i;
     // 1. what drifts behind
-    if (R.sky < 2) { ctx.globalAlpha = 0.55; for (i = 0; i < bits.length; i++) if (!bits[i].dot) cloud(bits[i].x, bits[i].y, bits[i].w); ctx.globalAlpha = 1; }
+    if (R.sky < 2) { for (i = 0; i < bits.length; i++) { var c = bits[i]; if (c.dot) continue; c.a = skyAlpha(c); if (c.a <= 0) continue; ctx.globalAlpha = 0.55 * c.a; cloud(c.x, c.y, c.w); } ctx.globalAlpha = 1; }
     else {
       ctx.fillStyle = "#fff6c8";
       for (i = 0; i < bits.length; i++) { var b = bits[i]; if (!b.dot) continue; ctx.globalAlpha = R.calm ? 0.6 : 0.35 + 0.35 * (1 + Math.sin(now / 600 + b.k * 1.7)) / 2; ctx.beginPath(); ctx.arc(b.x, b.y, b.w, 0, 7); ctx.fill(); }
       ctx.globalAlpha = 1;
     }
+    // the big star at the top sits in the sky, behind everything that
+    // moves, so the balloon arriving under it is never washed over
+    if (R.showStar) drawStar(now);
     // 2. soft shadows, 3. the blocks
     for (i = 0; i < pieces.length; i++) drawPiece(pieces[i], true);
     for (i = 0; i < pieces.length; i++) drawPiece(pieces[i], false);
@@ -413,8 +455,7 @@
     drawShield(now);
     // 5. the balloon, last of the playing pieces so it is never hidden
     drawBalloon(now);
-    // 7. sparks, the clouds at the top, the star
-    if (R.showStar) drawStar(now);
+    // 7. the clouds at the top, sparks
     for (i = 0; i < puffs.length; i++) drawPuff(puffs[i], now);
     for (i = 0; i < sparks.length; i++) { var s = sparks[i]; ctx.globalAlpha = Math.max(0, Math.min(1, s.life)); ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1;
@@ -491,9 +532,18 @@
     var rk = (now - ringAt) / 400;
     if (rk >= 0 && rk < 1) { ctx.save(); ctx.strokeStyle = "#fff6e0"; ctx.lineWidth = 5; ctx.globalAlpha = 1 - rk; ctx.beginPath(); ctx.arc(x, y, r * (1.3 + 0.2 * rk), 0, 7); ctx.stroke(); ctx.restore(); }
   }
+  // A glow is light, not paint: a soft warm gradient added to the sky
+  // ("lighter"), so on the night sky it brightens instead of laying a grey
+  // disc over it.
+  function glow(x, y, r, a) {
+    var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, "rgba(255,226,140," + a + ")"); g.addColorStop(0.5, "rgba(255,214,120," + (a * 0.45) + ")"); g.addColorStop(1, "rgba(255,214,120,0)");
+    ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore();
+  }
   function drawStar(now) {
     var s = starXY(), g = R.calm ? 1 : 1 + 0.05 * Math.sin(now / 300);
-    ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = "#fff6c2"; ctx.beginPath(); ctx.arc(s[0], s[1], s[2] * 1.6 * g, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    glow(s[0], s[1], s[2] * 2.2 * g, 0.55);
+    ctx.save();
     if (ready(ART.star)) ctx.drawImage(ART.star, s[0] - s[2] * g, s[1] - s[2] * g, 2 * s[2] * g, 2 * s[2] * g);
     else { ctx.fillStyle = "#ffd21c"; star0(s[0], s[1], s[2] * g); }
     ctx.restore();
@@ -501,8 +551,9 @@
   function drawPuff(f, now) {
     var a = f.gone ? f.fade / 500 : 1; if (a <= 0) return;
     var w = 0.30 * R.U;
+    // a cloud left a while glows softly, to say "push me"
+    if (R.puffGlow && !f.gone) { var k = R.calm ? 0.5 : (1 + Math.sin(now / 250 + f.k)) / 2; glow(f.x, f.y, f.r * 1.9, 0.3 + 0.25 * k); }
     ctx.save(); ctx.globalAlpha = a;
-    if (R.puffGlow && !f.gone) { var k = R.calm ? 0.5 : (1 + Math.sin(now / 250 + f.k)) / 2; ctx.globalAlpha = 0.3 + 0.3 * k; ctx.fillStyle = "#fff6c2"; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 1.5, 0, 7); ctx.fill(); ctx.globalAlpha = a; }
     cloud(f.x, f.y, w);
     ctx.restore();
   }

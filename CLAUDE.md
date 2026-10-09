@@ -1771,8 +1771,9 @@ card between rounds said the bare sound. What is built is the first slice:
   therapist's homework is for another part of the word. Hidden for a child
   aged 2 to 4, whose cards keep the bare sound whatever is saved.
 - **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
-  Sound Sprint, Flappy Glide, Rise Up: their cards are silent, so each page's
-  mic must first learn to wait for Echo's voice); the other 18 sounds; the
+  Sound Sprint, Flappy Glide, Rise Up: Echo says their cards out loud, but
+  they ask only the bare sound; each needs Fruit Slice's one line for the
+  syllable or word, through the say-it helper's `ask` hook); the other 18 sounds; the
   picture games, which keep whole words. Travis plays Fruit Slice on his phone and
   hears "ree", "rah", "roh" and "rot" before any of that starts.
 - **Rachel's calls, built on defaults until she answers:** which syllables
@@ -1861,12 +1862,22 @@ Say & Play game. What it keeps:
 - **The finger only moves the shield, by as much as it moves**, from wherever
   it lands on the screen (an iPad's margins too); the shield never jumps to
   the finger, stays above the balloon so it can never cover it, and can never
-  cost a heart: a block it touched in the last 0.6 seconds bounces off the
-  balloon for free. The newest finger down drives it.
+  cost a heart: a block it pushed in the last 0.6 seconds bounces off the
+  balloon for free. The newest finger down drives it, and a finger held down
+  through the say-it card steers again the moment the card closes.
+- **A round nobody steers never wins** (review, 9 Oct 2026: a shield left where it
+  started kept the balloon safe through the garden and the clouds, and a
+  round nobody touched reached the top, thanked for 70 pushes). The shield
+  starts beside the balloon, not over it, so left alone it shelters nothing;
+  a push is the shield moving INTO a block, and a block that only lands on a
+  still shield slides off it, uncounted and with no grace. A round nobody
+  touches runs out of hearts in the garden or the clouds and ends on "What a
+  climb!" with no count line.
 - **The round:** three stretches of play (Garden 28 s, Clouds 32 s, Stars
   36 s), the say-it card between them ("Say “rrrr” to rise higher!"), then the
   top: five clouds to push away, which drift off by themselves after ten
-  seconds, and the balloon floats up to a big star. Reaching the top is a win.
+  seconds; then the shield glides aside and the balloon floats up to a big
+  star. Reaching the top is a win.
 - **Hearts are the shared rules:** a block on the balloon costs one, and it
   wobbles, never pops; none is lost while Echo asks or listens, while the
   power is on, in a rest, at the top, on a hidden page or within 1.5 seconds
@@ -1876,25 +1887,29 @@ Say & Play game. What it keeps:
 - **The pace:** a block takes 3.4 seconds to cross the open sky at the start,
   and gets faster by stretch and by play, to at most 1.4 times that; a lost
   heart eases it, two in a stretch make the rest of it easier. From the clouds
-  on, a slow breeze sways the balloon side to side, so a shield parked over it
-  isn't enough on its own.
+  on, a slow breeze sways the balloon side to side (to 0.16 of the width in
+  the clouds, 0.22 in the stars, every 8 seconds), and the blocks fall toward
+  where it will be when they get there, so a shield parked over it isn't
+  enough on its own: parked, it runs out of hearts in the clouds or the stars,
+  while a child who follows the balloon can keep all three.
 - **The sound power is the other round games'** (`arcade-speech-help.js`):
   Echo asks after about six seconds of play, then every twenty, "To slow the
   falling blocks, say" (or "For a heart and slower blocks, say"), Rachel's
   take, "Go!". One heard sound: eight seconds at 55% (the shield never slows),
   one heart back, one rep. Never practice data.
 - **The end card counts blocks pushed** ("You pushed 23 blocks out of the
-  way!"): a block counts the first time the shield, or a block the shield set
-  moving, touches it. **No best yet:** Rise Up keeps none until Travis has
-  played Fruit Slice's and Piano Tiles' (see "Beat Your Best"); its count
-  would be blocks pushed.
+  way!"): a block counts the first time the moving shield pushes it, or a
+  block a push set moving knocks it, never one that only met a still shield.
+  **No best yet:** Rise Up keeps none until Travis has played Fruit Slice's
+  and Piano Tiles' (see "Beat Your Best"); its count would be blocks pushed.
 - **Its pictures are painted** (`tools/art/game-sprites.json`, cut by
   `tools/art/cut-rise.py`): three skies, the balloon, the shield, four blocks
   and Home's card; each has a drawn stand-in if it fails to load. Its sounds
   are Sona's chimes only, so in the app they play as media.
 - **Travis plays it before it ships**; the speeds, the breeze, the finale and
   the words are his to change, and a spoken how-to (Sound Sprint has one) is
-  his call. `tests/risetest.mjs` plays a whole climb.
+  his call. `tests/risetest.mjs` plays a whole climb, and on a fake clock a
+  round nobody touches and one with the shield parked over the balloon.
 
 **Beat Your Best: each child's own best in a game** (Travis, 1-2 Oct 2026:
 "whatever you think is best for kids you can do"). A game counts ONE real
