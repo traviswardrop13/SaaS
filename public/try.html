@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <script>
+// The family app is the iPhone app. A link to this page opened inside the
+// native shell goes straight home, before anything here renders or loads.
+(function () {
+  var native = false;
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  document.documentElement.style.visibility = "hidden";
+  window.location.replace("/today.html");
+})();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona: speech practice kids love</title>
+  <!-- speaksona.com/try, THE AD'S BRIDGE PAGE (Travis, 9 Oct 2026: "more of a
+       bridge page. I don't want to collect email ... just like a headline, a
+       sub-headline, a button. Maybe a picture of a screen"). One screen, one
+       button to the App Store (an Android phone gets the web app, as on the
+       root page). No email box, nothing asked. next.config.js rewrites /try to
+       this file. noindex: it is an ad's page, and speaksona.com is the page
+       search should find. -->
+  <meta name="robots" content="noindex" />
+  <meta name="description" content="Games your child plays by saying their speech sound. A few minutes a day at home. Free to try on iPhone and iPad." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sona" />
+  <meta property="og:title" content="Speech practice kids love." />
+  <meta property="og:description" content="Games your child plays by saying their speech sound. Free to try on iPhone and iPad." />
+  <meta property="og:image" content="https://speaksona.com/og-parents.png" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+  <meta name="theme-color" content="#FFF7DE" />
+  <link rel="preload" as="image" href="/assets/site/echo.webp" type="image/webp" />
+  <link href="/fonts.css" rel="stylesheet">
+
+  <!-- The ad lands here, so the pixel does too (tests/telemetrytest.mjs keeps
+       the list of pages allowed it). The button's tap is sent as ViewContent:
+       the fact that someone went to the App Store, never who. -->
+  <script src="/pixel.js"></script>
+  <script src="/analytics.js"></script>
+  <style>
+    :root{
+      --sun:#FFD84A; --butter:#FFF7DE; --butter-2:#FFEFC2;
+      --ink:#1D2B4F; --body:#46506B; --muted:#6D7590;
+      --teal:#1FB3C6; --teal-d:#0E7C89;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,var(--butter) 0%,var(--butter-2) 100%);color:var(--ink);
+      font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+    main{min-height:100%;max-width:520px;margin:0 auto;
+      padding:max(18px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
+      display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;}
+    .brand{display:flex;align-items:center;gap:8px;align-self:center;}
+    .brand img{width:34px;height:34px;border-radius:9px;}
+    .brand b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:24px;letter-spacing:-.4px;}
+
+    /* Echo between two game screens: the root page's picture, smaller. */
+    .stage{position:relative;width:100%;max-width:400px;aspect-ratio:1/0.86;container-type:inline-size;margin:4px 0 0;}
+    .halo{position:absolute;left:14%;top:6%;width:72%;height:84%;border-radius:50%;
+      background:radial-gradient(circle,#FFE9A8 0%,rgba(255,233,168,.7) 50%,rgba(255,233,168,0) 71%);}
+    .ph{position:absolute;width:34%;padding:1.1cqw;background:#fff;border-radius:5.4cqw;
+      box-shadow:0 16px 34px -10px rgba(29,43,79,.35);}
+    .ph img{display:block;width:100%;height:auto;border-radius:4.2cqw;}
+    .ph-l{left:4%;top:8%;transform:rotate(-8deg);}
+    .ph-r{right:4%;top:11%;transform:rotate(7deg);}
+    .echo{position:absolute;left:27%;top:30%;width:46%;}
+    .echo img{display:block;width:100%;height:auto;filter:drop-shadow(0 12px 18px rgba(29,43,79,.22));}
+    @media (prefers-reduced-motion:no-preference){
+      .ph-l{animation:bobL 7s ease-in-out infinite;} .ph-r{animation:bobR 8s ease-in-out infinite;}
+      @keyframes bobL{50%{transform:rotate(-8deg) translateY(-6px);}}
+      @keyframes bobR{50%{transform:rotate(7deg) translateY(-7px);}}
+    }
+
+    h1{font-weight:900;font-size:clamp(30px,8.6vw,42px);line-height:1.05;letter-spacing:-.02em;margin:6px 0 0;text-wrap:balance;}
+    .sub{font-size:clamp(17px,4.6vw,19px);line-height:1.45;color:var(--body);margin:6px 0 0;max-width:30ch;text-wrap:balance;}
+    .go{display:block;width:100%;max-width:360px;margin:18px 0 0;padding:17px 22px;border:0;border-radius:18px;
+      background:var(--teal);color:#fff;font:900 19px/1.2 Nunito,system-ui,sans-serif;text-decoration:none;
+      box-shadow:0 6px 0 var(--teal-d),0 14px 26px -10px rgba(14,124,137,.6);}
+    .go:active{transform:translateY(3px);box-shadow:0 3px 0 var(--teal-d);}
+    .small{font-size:14px;color:var(--muted);margin:10px 0 0;}
+    .rachel{display:flex;align-items:center;gap:10px;margin:18px 0 0;padding:10px 14px;background:rgba(255,255,255,.7);
+      border-radius:16px;text-align:left;font-size:13.5px;line-height:1.4;color:var(--body);max-width:360px;}
+    .rachel img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><img src="/apple-touch-icon.png?v=2" alt="" width="34" height="34"><b>Sona</b></div>
+
+    <div class="stage" aria-hidden="true">
+      <div class="halo"></div>
+      <div class="ph ph-l"><img src="/assets/site/hero-slice.webp" width="356" height="694" alt=""></div>
+      <div class="ph ph-r"><img src="/assets/site/hero-piano.webp" width="342" height="692" alt=""></div>
+      <div class="echo"><img src="/assets/site/echo.webp" width="458" height="458" alt="" fetchpriority="high"></div>
+    </div>
+
+    <h1>Speech practice kids love.</h1>
+    <p class="sub">Games your child plays by saying their speech sound. A few minutes a day, at home.</p>
+
+    <a class="go" id="go" href="https://apps.apple.com/us/app/sona-speech/id6785755867">Try Sona free</a>
+    <p class="small" id="small">Free to try on iPhone and iPad</p>
+
+    <div class="rachel">
+      <img src="/assets/rachel-wardrop-profile.jpg" alt="" width="40" height="40">
+      <span>Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.</span>
+    </div>
+  </main>
+  <script>
+  (function () {
+    var go = document.getElementById("go");
+    // An Android phone has no Sona app to download: it gets the web app, as
+    // on the root page.
+    if (/Android/i.test(navigator.userAgent || "")) {
+      go.href = "/onboarding.html";
+      go.textContent = "Try Sona free";
+      document.getElementById("small").textContent = "Free to try in your browser";
+    }
+    var LEAVE_MS = 150; // time for the pixel's request to get out first
+    go.addEventListener("click", function (e) {
+      try { if (window.sonaTrack) sonaTrack("ViewContent", { content_name: "app_store" }); } catch (x) {}
+      var href = go.href;
+      e.preventDefault();
+      setTimeout(function () { window.location.href = href; }, LEAVE_MS);
+    });
+  })();
+  </script>
+</body>
+</html>
