@@ -162,6 +162,7 @@ body[data-crafted="hoops"] #dots i.on{background:#129fa6;}
 
 body[data-crafted="run"] #app,body[data-crafted="practice"].g-run #app{background-image:url('/assets/crafted/sprint-lane.webp');background-color:#a8bdd0;background-size:100% 100%;}
 body[data-crafted="glide"] #app,body[data-crafted="practice"].g-glide #app{background-image:url('/assets/crafted/glide-countryside.webp');background-color:#a8d2ed;}
+body[data-crafted="practice"].g-rise #app{background-image:url('/assets/crafted/game/rise-garden.webp');background-color:#a9d8f2;}
 body[data-crafted="run"] #tapHint,body[data-crafted="glide"] #tapHint{background:#fff9eae6;color:#52371d;bottom:calc(20px + env(safe-area-inset-bottom));left:16px;right:16px;width:auto;border:1px solid #eadac0;border-radius:16px;padding:10px 12px;text-shadow:none;box-shadow:0 3px 0 #b2946355;}
 
 @media(max-width:370px){

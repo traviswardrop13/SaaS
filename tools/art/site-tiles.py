@@ -33,6 +33,7 @@ TILES = [
     ("hoops", "hoops", 0.5),
     ("soccer", "soccer", 0.5),
     ("dino", "dino", 0.5),
+    ("rise", "rise", 0.5),
     ("feed", "feed", 0.5),
     ("bubbles", "bubbles", 0.45),
 ]

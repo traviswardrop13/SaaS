@@ -50,13 +50,13 @@ for (const age of ["3", "4", "5", "8"]) {
     bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
   }));
   ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
-  // 28 = the six released games, the twenty Say & Play games, and two parked.
+  // 29 = the six released games, Rise Up, the twenty Say & Play games, and two parked.
   // The Say & Play games are Coming soon until each is rebuilt (Travis, 26
   // Sep 2026), so what is playable is the six first games plus any rebuilt.
-  ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 28 && new Set(st.keys).size === 28, JSON.stringify(st.keys));
+  ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 29 && new Set(st.keys).size === 29, JSON.stringify(st.keys));
   ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
     ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
-  ok("age " + age + ": Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 28 - st.playable.length && ["peekaboo"].every(k => st.parked.some(e => e.key === k)) && !st.parked.some(e => e.key === "bubbles") &&
+  ok("age " + age + ": Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 29 - st.playable.length && ["peekaboo"].every(k => st.parked.some(e => e.key === k)) && !st.parked.some(e => e.key === "bubbles") &&
     st.parked.every(e => e.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
@@ -77,7 +77,7 @@ for (const age of ["3", "4", "5", "8"]) {
   }));
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
-  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+parked.length===28&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
+  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+parked.length===29&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
   ok("Coming soon stays disabled even on the paid-state seam", parked.length>=2&&parked.every(c=>c.locked&&c.disabled&&/^Coming (soon|[A-Z][a-z]{2} \d{1,2})$/.test(c.tag)), parked);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
@@ -383,7 +383,7 @@ for (const age of ["3", "4", "5", "8"]) {
 // more — not a read story (gone with the books), not a finished adventure.
 // The only way in is the charge.html hand-off.
 {
-  const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
+  const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html", "arcade-rise.html"];
   async function land(url, prep, withQuery = false) {
     const ctx = await browser.newContext();
     const pg = await ctx.newPage();
@@ -453,8 +453,9 @@ const CHOSEN_ART = {
   stack: {card:"home-stack.webp", scene:"moon-village.webp", title:"Block Stacker"},
   run: {card:"home-run.webp", scene:"sprint-lane.webp", title:"Sound Sprint"},
   glide: {card:"home-glide.webp", scene:"glide-countryside.webp", title:"Flappy Glide"},
+  rise: {card:"home-rise.webp", scene:"game/rise-garden.webp", title:"Rise Up"},
 };
-for (const key of ["feed", "slice", "tiles", "stack", "run", "glide"]) {
+for (const key of ["feed", "slice", "tiles", "stack", "run", "glide", "rise"]) {
   const expected = CHOSEN_ART[key];
   const {ctx, pg} = await home("7", true);
   const card = pg.locator('#activityGroups .game-card[data-game="' + key + '"]');
@@ -517,7 +518,7 @@ for (const round of [0, 2, 5]) {
   await pg.reload();
   await pg.waitForTimeout(700);
   const state = await pg.evaluate(() => ({run:JSON.parse(sessionStorage.getItem("sona.run.v1")),cards:document.querySelectorAll("#activityGroups .game-card").length,oldHero:!!document.getElementById("goBtn")}));
-  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === 28 && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
+  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === 29 && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("saved round " + round + ": a new chosen game still opens its own practice", new URL(pg.url()).searchParams.get("game") === "arcade-slice.html" && await pg.evaluate(() => window.GAME === "arcade-slice.html"), pg.url());
@@ -565,7 +566,7 @@ for (const round of [0, 2, 5]) {
   ok("the fifth return finishes the saved journey",
     done.shown && done.run.active === true && done.run.finishing === true && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
   await pg.goto("http://localhost:8178/today.html");
-  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === 28 && await pg.locator("#goBtn").count() === 0);
+  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === 29 && await pg.locator("#goBtn").count() === 0);
   await pg.goto("http://localhost:8178/charge.html?daily=1");
   ok("the earned legacy finale remains available through its explicit return", await pg.locator("#runOvl").evaluate(e => e.classList.contains("show")));
 
@@ -577,7 +578,7 @@ for (const round of [0, 2, 5]) {
     sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
   });
   await pg.goto("http://localhost:8178/today.html");
-  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === 28);
+  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === 29);
   await ctx.close();
 }
 

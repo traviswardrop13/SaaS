@@ -516,5 +516,65 @@
   "size": "1024x1536",
   "transparent": true,
   "prompt": "A big happy pink flower in full bloom on a tall green stem with leaves, growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "cover-rise",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture that fills the whole frame edge to edge (no border, no frame, no rounded corners, no margin): Echo the round blue clay bird (exactly like the attached reference) holding up a round cream clay shield with a thick teal rim, pushing chunky yellow and purple toy blocks away from a shiny coral-red party balloon that floats up into a bright blue sky with a few soft clouds; the blocks tumble off to the sides. The blocks are plain smooth cubes with flat tops (no studs, no pegs, not building bricks). Wide, cheerful, simple background, the action easy to read at a small size. Keep Echo, the shield and the balloon together in the middle of the picture, the balloon just above the shield, with open sky around them."
+ },
+ {
+  "name": "rise-garden",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game, looking up past a garden into a bright morning sky. The ground is a thin strip along the very bottom edge, no taller than the bottom fifth of the picture: soft green rolling hills, a little white picket fence, round flowers and two small round trees. Everything above that strip, four fifths of the picture, is open, soft blue sky, a little paler toward the top, with two or three small puffy clouds near the left and right edges. Keep the middle and the whole upper sky open and uncluttered (the game draws its pieces there). No path, no distant hills in the sky, no balloon, no blocks, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-clouds",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game, high up among the clouds: a soft pastel sky, clear blue at the top fading to warm peach and pink lower down, big puffy clouds banked along the left and right edges and a soft bed of clouds across the very bottom. Keep the middle open and plain from top to bottom. No balloon, no blocks, no birds, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-stars",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game at the very top of the sky at night: deep friendly blue at the top fading to soft violet and a warm peach glow along the bottom, small round golden stars sprinkled thinly near the edges, a round cream moon with no face in the top right corner. Keep the middle open and uncluttered. No planets, no balloon, no blocks, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-balloon",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One round shiny coral-red party balloon with a soft white highlight on its upper left, a small tied knot at the bottom and a short wavy white string hanging straight down below it. No face. Seen from the front, upright and centred: the round balloon fills the top two thirds of the frame and is the widest part of the picture; the string fills the bottom third and stays narrow."
+ },
+ {
+  "name": "rise-shield",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One round flat toy shield seen straight from the front, like a thick soft clay disc: a smooth cream face, a thick rounded teal rim all the way around, a small shiny gold star in the middle and a soft highlight at the top left. Perfectly circular, centred, filling 90% of the square. No face, no letters."
+ },
+ {
+  "name": "rise-cube-yellow",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One chunky square toy building block seen straight from the front: sunny yellow clay with softly rounded edges and corners and a small raised star on its front face. A plain smooth cube with a flat top: no studs, no pegs, nothing on top. Perfectly square, not tilted, centred, filling 80% of the square."
+ },
+ {
+  "name": "rise-cube-purple",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One chunky square toy building block seen straight from the front: soft grape-purple clay with softly rounded edges and corners and a small raised circle on its front face. Perfectly square, not tilted, centred, filling 80% of the square."
+ },
+ {
+  "name": "rise-bar",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "One long smooth toy plank block, a rounded bar about five times as wide as it is tall, warm honey-brown painted wood with a soft clay finish, softly rounded ends and a lighter top edge, perfectly horizontal, seen straight from the front, filling 90% of the frame's width. Plain, no letters, no nails."
+ },
+ {
+  "name": "rise-bumpy",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One round squishy toy ball covered all over in short, fat, soft bumps with rounded tips, like a sensory ball: lime-green clay with slightly darker tips and a soft highlight. Friendly and toy-like, nothing sharp or pointed, no face. Centred, filling 85% of the square."
  }
 ]

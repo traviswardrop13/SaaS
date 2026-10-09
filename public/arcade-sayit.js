@@ -1,9 +1,9 @@
-/* The say-it card in the five round games (Fruit Slice, Piano Tiles, Block
-   Stacker, Sound Sprint, Flappy Glide): Echo's voice that asks for the sound.
-   Each page keeps its own microphone (openReviveMic, closeReviveMic,
+/* The say-it card in the six round games (Fruit Slice, Piano Tiles, Block
+   Stacker, Sound Sprint, Flappy Glide, Rise Up): Echo's voice that asks for the
+   sound. Each page keeps its own microphone (openReviveMic, closeReviveMic,
    listenFor), its own ear (what counts as the child is unchanged) and its own
    idea of what a heard sound does; this file holds only the voice, which
-   would otherwise be five copies. Static ES5,
+   would otherwise be six copies. Static ES5,
    loaded after sona.js. Nothing here records or sends audio: loudness and
    sound-shape numbers only, on the phone. */
 (function (global) {

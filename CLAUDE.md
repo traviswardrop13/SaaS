@@ -114,8 +114,8 @@ when the launch lock lifts (see "The family app is locked until launch day").
 **The free version:** daily practice, **two games for each age group**
 (Travis, 30 Sep 2026: "the two free games for older kids, the two free games
 for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
-turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Hoops, Soccer
-Goal and Dino Dig are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
+turned free that day; Block Stacker, Sound Sprint, Flappy Glide, Rise Up,
+Hoops, Soccer Goal and Dino Dig are Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
@@ -1302,8 +1302,10 @@ sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
 through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
 painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
 `public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
-drawn, because they move and carry the perspective. On Home the eight big-kid games fill four even rows of two, so
-neither Flappy Glide nor Hoops is full-width any more. `sayplaytest` plays a
+drawn, because they move and carry the perspective. On Home eight of the nine
+big-kid games fill four even rows of two and Rise Up, the ninth, is a
+full-width row on a phone, so neither Flappy Glide nor Hoops is full-width any
+more. `sayplaytest` plays a
 whole game.
 
 **Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
@@ -1444,8 +1446,8 @@ next word".
 sound to get a new life ... start easier and get progressively a little trickier").
 This replaces the five round games' earlier promise of an automatic win. It
 changes finger play, never what passes the speech check:
-- Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint and Flappy Glide start
-  with three hearts. A real gameplay miss costs one. No miss opens the
+- Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide and Rise
+  Up start with three hearts. A real gameplay miss costs one. No miss opens the
   between-round say-it card. At zero hearts the round ends on a kind card,
   with Play again and Back home; it does not claim the finale was completed.
   A retry goes through the existing five-tries practice page.
@@ -1554,15 +1556,15 @@ one only when the voice service is down.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). Since 3 Oct 2026 Echo asks for it by himself mid-song, and the song keeps going while he asks and listens (see "Echo asks, then listens"); a tap on Echo still asks at once. Its notes are silent from his first word until the mic closes. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence and timeout earn nothing. No ask in the Ode to Joy finale. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. It runs on the shared helper (`arcade-speech-help.js`) since that day; `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
-**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: Echo asks (by himself since 3 Oct 2026, see "Echo asks, then listens"; a tap still asks at once), the child hears the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene keeps going during speech; only its sounds hold. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, Flappy Glide slows hedges and their arrival while preserving balloon control, and Rise Up slows its falling blocks, its climb and its breeze, never the shield. Each uses `arcade-speech-help.js`/`.css`: Echo asks (by himself since 3 Oct 2026, see "Echo asks, then listens"; a tap still asks at once), the child hears the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene keeps going during speech; only its sounds hold. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers. Books and parked games are outside this change.
 
 **Echo asks, then listens: nobody taps for a sound power** (Travis, 3 Oct
 2026: "I don't want them to have to tap echo to then say the sound ... I want
 them to be able to just be playing the game and at any given point say the
 sound to slow the game ... have 11 Labs voice maybe say that like mid game").
-All five round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint,
-Flappy Glide), from one copy in `arcade-speech-help.js`:
-- **Echo asks by himself, mid-round:** all five pages first ask after about
+All six round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint,
+Flappy Glide, Rise Up), from one copy in `arcade-speech-help.js`:
+- **Echo asks by himself, mid-round:** all six pages first ask after about
   six seconds of play (`SLOW_HELP.first`); the shared fallback remains ten. Later asks wait 20 seconds of eligible
   play (`SLOW_ASK`), with a heart loss bringing the next forward by 1.5
   seconds. The first ask for each distinct reason in a visit is the game's
@@ -1598,8 +1600,8 @@ Flappy Glide), from one copy in `arcade-speech-help.js`:
   whether that is too often, and whether "Go!" belongs there. What counts is
   unchanged ("a voice of the right kind", Apple's check where it can; "taco"
   and "wow" still fail), and it is still play, never practice data.
-`arcadespeechhelptest` plays the ask in all five games, with
-`tilesspeechtest`, `superslicetest` and `micquietgamestest`; the five round
+`arcadespeechhelptest` plays the ask in all six games, with
+`tilesspeechtest`, `superslicetest` and `micquietgamestest`; the six round
 suites, `sayitcardtest` and `micquietgamestest` hold it so each plays just its
 round (`micquietgamestest` then makes one ask due on purpose).
 
@@ -1609,7 +1611,7 @@ round (`micquietgamestest` then makes one ask due on purpose).
 2 Oct 2026: "when a game will pause and ask them to say the target sound, I
 want the 11 Labs voice to say out loud ... to keep playing ... Most of these
 kids can't read", and "i also wanna try to have the 11 labs voice say
-"Go!""). Only Fruit Slice spoke its card; now all five round games do, from
+"Go!""). Only Fruit Slice spoke its card; now all six round games do, from
 one copy, `public/arcade-sayit.js` (`SayIt.voice`): "To keep playing, say",
 Rachel's one take of the sound, then "Go!", and only then the mic, 250 ms
 after his last word (`VOICE_TAIL_MS`, the tail every listening page keeps),
@@ -1694,8 +1696,8 @@ games copy it one at a time:
   still never practice data. The round still ends on the giant watermelon
   whether or not a child ever says a word. The retired names (STAR MODE,
   FRUIT FRENZY, SLOW-MO…) stay banned. `tests/superslicetest.mjs` plays it;
-  Block Stacker, Sound Sprint and Flappy Glide keep the eight-second slow
-  help (now with the same one-take sound) until each gets its own mode.
+  Block Stacker, Sound Sprint, Flappy Glide and Rise Up keep the eight-second
+  slow help (now with the same one-take sound) until each gets its own mode.
 
 **Games ask for more than the sound: Fruit Slice first, R first** (Travis, 1
 Oct 2026, by voice: "we need to add back the increase of complexity to the
@@ -1768,10 +1770,10 @@ card between rounds said the bare sound. What is built is the first slice:
   what: Sona's sound is off, the sound is not switched on yet, or a speech
   therapist's homework is for another part of the word. Hidden for a child
   aged 2 to 4, whose cards keep the bare sound whatever is saved.
-- **Not built yet:** the other four round games (Piano Tiles, Block Stacker,
-  Sound Sprint, Flappy Glide: their cards are silent, so each page's mic must
-  first learn to wait for Echo's voice); the other 18 sounds; the picture
-  games, which keep whole words. Travis plays Fruit Slice on his phone and
+- **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
+  Sound Sprint, Flappy Glide, Rise Up: their cards are silent, so each page's
+  mic must first learn to wait for Echo's voice); the other 18 sounds; the
+  picture games, which keep whole words. Travis plays Fruit Slice on his phone and
   hears "ree", "rah", "roh" and "rot" before any of that starts.
 - **Rachel's calls, built on defaults until she answers:** which syllables
   and in what order; whether "rot" is the word (and the list for the other
@@ -1844,14 +1846,64 @@ after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
 gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
 control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
+**Rise Up is the sixth round game** (Travis, 9 Oct 2026: "lets build the game
+rise up", after the hit phone game). A balloon floats up through the garden,
+the clouds and the stars; toy blocks fall toward it, and the child drags a
+round shield to push them out of the way. `public/rise.js` is the board (the
+balloon, the shield, the blocks, their pushes and pictures; it never touches
+storage, the mic or a sound) and `public/arcade-rise.html` is the round, its
+hearts, the say-it card and the sound power, the way Flappy Glide's page is.
+It is entered through its practice page (`/charge.html?game=arcade-rise.html`,
+which fills Flappy Glide's balloon), is Premium, and is the ninth card on the
+big kids' shelf (a full-width row on a phone). It is **not** in the old
+five-game run (`adventure: false`, which `adventureGames()` skips) and not a
+Say & Play game. What it keeps:
+- **The finger only moves the shield, by as much as it moves**, from wherever
+  it lands on the screen (an iPad's margins too); the shield never jumps to
+  the finger, stays above the balloon so it can never cover it, and can never
+  cost a heart: a block it touched in the last 0.6 seconds bounces off the
+  balloon for free. The newest finger down drives it.
+- **The round:** three stretches of play (Garden 28 s, Clouds 32 s, Stars
+  36 s), the say-it card between them ("Say “rrrr” to rise higher!"), then the
+  top: five clouds to push away, which drift off by themselves after ten
+  seconds, and the balloon floats up to a big star. Reaching the top is a win.
+- **Hearts are the shared rules:** a block on the balloon costs one, and it
+  wobbles, never pops; none is lost while Echo asks or listens, while the
+  power is on, in a rest, at the top, on a hidden page or within 1.5 seconds
+  of the last. Zero hearts ends on the kind card, which never claims the top.
+  The first two groups of a round always miss, and so does the next after a
+  lost heart.
+- **The pace:** a block takes 3.4 seconds to cross the open sky at the start,
+  and gets faster by stretch and by play, to at most 1.4 times that; a lost
+  heart eases it, two in a stretch make the rest of it easier. From the clouds
+  on, a slow breeze sways the balloon side to side, so a shield parked over it
+  isn't enough on its own.
+- **The sound power is the other round games'** (`arcade-speech-help.js`):
+  Echo asks after about six seconds of play, then every twenty, "To slow the
+  falling blocks, say" (or "For a heart and slower blocks, say"), Rachel's
+  take, "Go!". One heard sound: eight seconds at 55% (the shield never slows),
+  one heart back, one rep. Never practice data.
+- **The end card counts blocks pushed** ("You pushed 23 blocks out of the
+  way!"): a block counts the first time the shield, or a block the shield set
+  moving, touches it. **No best yet:** Rise Up keeps none until Travis has
+  played Fruit Slice's and Piano Tiles' (see "Beat Your Best"); its count
+  would be blocks pushed.
+- **Its pictures are painted** (`tools/art/game-sprites.json`, cut by
+  `tools/art/cut-rise.py`): three skies, the balloon, the shield, four blocks
+  and Home's card; each has a drawn stand-in if it fails to load. Its sounds
+  are Sona's chimes only, so in the app they play as media.
+- **Travis plays it before it ships**; the speeds, the breeze, the finale and
+  the words are his to change, and a spoken how-to (Sound Sprint has one) is
+  his call. `tests/risetest.mjs` plays a whole climb.
+
 **Beat Your Best: each child's own best in a game** (Travis, 1-2 Oct 2026:
 "whatever you think is best for kids you can do"). A game counts ONE real
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
 Home's picture of the game carries a small "Best 17". **Step one is built:**
 the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
-(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Hoops and Soccer
-Goal follow after Travis has played these two; Dino Dig gets no number.
+(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Rise Up, Hoops and
+Soccer Goal follow after Travis has played these two; Dino Dig gets no number.
 - **What binds every game that gets one.** Every ending remains kind; a
   completed finale celebrates a win, and zero hearts ends the round without
   claiming completion. The number on screen never goes
@@ -1957,7 +2009,7 @@ to stand in for it. What was buildable was built on 28 Sep:
   the green GO). The tokens live once, in `public/action.css`; `sona.css`,
   `sayplay.css` and `simple-play.css` `@import` it first, and the books,
   chapter/story pages, Feed Echo, Hoops and the Say & Play pages link it. The
-  crafted pages (the five round games and the practice page `charge.html`)
+  crafted pages (the six round games and the practice page `charge.html`)
   take their colours from `public/crafted-*.css` instead (see "The app's look
   is the crafted world"); where a crafted sheet repaints one of our rules, the
   crafted one wins, and our rule must add nothing that shows through (a teal
@@ -1982,7 +2034,7 @@ to stand in for it. What was buildable was built on 28 Sep:
   "rrrr" is orange whole, and in a sentence only the practice word is marked.
   `paintCard()` stays self-contained (`voicetest3` runs its source), and the
   mic stays a status (`role=img` DIV).
-- **The five round games wear the crafted cards.** The say-it card keeps the
+- **The six round games wear the crafted cards.** The say-it card keeps the
   round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
   letters are orange (`Sona.soundMark`). A miss never opens it
   (`micquietgamestest`). The end card's count names real things, never the

@@ -6,8 +6,8 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const appFree = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
 const BASE = "http://localhost:8196";
-// the eight original titles and the twenty Say & Play games (26 Sep 2026)
-const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "tiles",
+// the eight original titles, the twenty Say & Play games (26 Sep 2026) and Rise Up (9 Oct 2026)
+const ALL = ["bubbles", "feed", "glide", "peekaboo", "rise", "run", "slice", "stack", "tiles",
   "balloon", "cake", "castle", "dino", "fishtank", "flower", "gifts", "hoops", "monster", "pizza",
   "puppy", "racecar", "robot", "rocket", "snowman", "soccer", "space", "stars", "train", "treasure"].sort();
 // Bubble Pop and Peekaboo, and every Say & Play game until it is rebuilt as a

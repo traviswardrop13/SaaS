@@ -30,8 +30,8 @@ async function fixture(config={}){
  const page=await context.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(BASE+'/today.html');return {context,page,errors};
 }
 
-// the eight original titles and the twenty Say & Play games (26 Sep 2026)
-const ALL=['bubbles','feed','glide','peekaboo','run','slice','stack','tiles',
+// the eight original titles, the twenty Say & Play games (26 Sep 2026) and Rise Up (9 Oct 2026)
+const ALL=['bubbles','feed','glide','peekaboo','rise','run','slice','stack','tiles',
  'balloon','cake','castle','dino','fishtank','flower','gifts','hoops','monster','pizza','puppy','racecar','robot','rocket','snowman','soccer','space','stars','train','treasure'].sort();
 async function state(page){return page.evaluate(()=>({
  keys:Array.from(document.querySelectorAll('#activityGroups button[data-game]')).map(el=>el.dataset.game).sort(),

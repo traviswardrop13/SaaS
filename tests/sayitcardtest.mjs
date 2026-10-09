@@ -1,5 +1,6 @@
-// SAYIT1: the say-it card in the five round games (Fruit Slice, Piano Tiles,
-// Block Stacker, Sound Sprint, Flappy Glide), 2 Oct 2026. Travis, on the
+// SAYIT1: the say-it card in the six round games (Fruit Slice, Piano Tiles,
+// Block Stacker, Sound Sprint, Flappy Glide, and since 9 Oct 2026 Rise Up),
+// 2 Oct 2026. Travis, on the
 // iPhone: "there's no voice telling them to say it. Most of these kids can't
 // read ... it took a while to catch the audio. It was kind of frozen", and
 // "i also wanna try to have the 11 labs voice say 'Go!'".
@@ -33,7 +34,7 @@ function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; cons
 // SAYIT_ONLY=<regex> runs only the scenarios whose names match
 const ONLY = process.env.SAYIT_ONLY ? new RegExp(process.env.SAYIT_ONLY) : null;
 async function scenario(name, fn) { if (ONLY && !ONLY.test(name)) return; try { await fn(); } catch (e) { ok(name + " completes without a harness/page exception", false, e.stack); } }
-const GAMES = ["slice", "stack", "run", "glide", "tiles"];
+const GAMES = ["slice", "stack", "run", "glide", "tiles", "rise"];
 // Echo's two lines come back as PCM of different lengths, so the page's media
 // element tells which line it is playing (its WAV is 44 bytes of header more),
 // and on the website so does the Web Audio buffer (two bytes a sample).

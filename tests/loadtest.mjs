@@ -33,6 +33,7 @@ const SKIES = [
   ["arcade-stack.html", "BLOCK STACKER", "moon-village.webp"],
   ["arcade-tiles.html", "PIANO TILES", "piano-stage.webp"],
   ["arcade-glide.html", "FLAPPY GLIDE", "glide-countryside.webp"],
+  ["arcade-rise.html", "RISE UP", "game/rise-garden.webp"],
 ];
 
 async function scene(game, fill) {
@@ -142,7 +143,7 @@ for (const [game, title, art] of SKIES) {
 {
   const KID = new Set(["today.html", "activities.html", "charge.html", "library.html", "story.html", "chapter.html",
     "stickers.html", "customize.html",
-    ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)]);
+    ...["slice", "run", "stack", "tiles", "glide", "rise", "feed"].map((g) => `arcade-${g}.html`)]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
   // and flagged every JS comparison operator in the app, so scripts and
   // comments come out first; copy set from JS is caught by the second pass on
@@ -206,7 +207,7 @@ for (const [game, title, art] of SKIES) {
   const isTeal = (s) => rgbs(s).some((c) => Math.max(...c) - Math.min(...c) > 80 && hue(c) >= 172 && hue(c) <= 195);
   const isCream = (s) => { const c = rgbs(s).filter((x) => x.length); return c.some(([r, g, b]) => r >= 240 && g >= 225 && b >= 200 && r >= g && g >= b) && !isTeal(s); };
 
-  const ARCADE = ["slice", "run", "stack", "tiles", "glide"].map((g) => `arcade-${g}.html`);
+  const ARCADE = ["slice", "run", "stack", "tiles", "glide", "rise"].map((g) => `arcade-${g}.html`);
   const CRAFTED_CSS = readdirSync(ROOT).filter((f) => /^crafted-.*\.css$/.test(f)).concat(["onboarding-crafted.css", "arcade-speech-help.css"]);
   const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
     "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", ...CRAFTED_CSS];
