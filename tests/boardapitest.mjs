@@ -1123,6 +1123,27 @@ try {
   });
 
   // 13. The go-live pin ──────────────────────────────────────────────────────
+  // First the words that ship in BOTH states (11 Oct 2026, spec step 11): the
+  // privacy page's board section, and one line each on Progress, the parents'
+  // FAQ and the clinician's setup step. While the board is dark nobody can
+  // turn it on, so each family page that names it must say so conditionally
+  // ("if Sona offers…"), never as if a family could today.
+  {
+    const page = (n) => readFileSync(path.join(ROOT, 'public', n), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    const sentences = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ')
+      .replace(/&rsquo;|&#8217;/g, '’').replace(/&ldquo;|&rdquo;/g, '"').replace(/\s+/g, ' ')
+      .split(/(?<=[.!?])\s+/).filter((s) => /Practice Board/.test(s));
+    const privacy = page('privacy.html');
+    ok('both states: privacy.html has its board section, "The Practice Board (only if a grown-up turns it on)"', privacy.includes('<h2>The Practice Board (only if a grown-up turns it on)</h2>'));
+    ok('both states: …which says "Sona may offer" it, off unless a grown-up turns it on and confirms by email',
+      privacy.includes('Sona may offer a monthly Practice Board.') && /It is off for every child unless a grown-up turns it\s+on in Settings and confirms by tapping a link we email to them/.test(privacy));
+    ok('both states: …and the COPPA list says the board is off unless a parent turns it on', /<li>The Practice Board is off unless a parent turns it on and confirms by email\./.test(privacy));
+    for (const n of ['progress.html', 'parents.html', 'onboarding.html']) {
+      const found = sentences(page(n));
+      ok('both states: ' + n + ' names the Practice Board only as something Sona may offer',
+        found.length > 0 && found.every((s) => /if Sona offers|if it’s offered|may offer/i.test(s)), found);
+    }
+  }
   {
     const live = /export const BOARD_LIVE = true;/.test(readFileSync(path.join(ROOT, 'lib/board.ts'), 'utf8')) || /const BOARD_LIVE = true;/.test(noComments(SONA));
     if (live) {

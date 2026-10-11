@@ -141,6 +141,25 @@
     deleted a year after the last one arrives &mdash; and the Sona team is notified in Slack. Please
     leave out your child&rsquo;s name and other private details: nothing on that form asks for them.</p>
 
+    <!-- Written true whether the board is switched on or off (BOARD_LIVE in
+         public/sona.js and lib/board.ts): it is off for every child until a
+         grown-up turns it on, and while the switch is off nobody can. -->
+    <h2>The Practice Board (only if a grown-up turns it on)</h2>
+    <p>Sona may offer a monthly Practice Board. It is off for every child unless a grown-up turns it
+    on in Settings and confirms by tapping a link we email to them; it stays off on phones set up
+    through a speech therapist or a school. To send that email we give the address to our email
+    provider (Resend); Sona keeps no copy of it, only a scrambled form for one day so the same address
+    isn&rsquo;t sent repeat emails. If it is on, Sona&rsquo;s server keeps, for each child: a random
+    board number, a nickname Sona makes up (like &ldquo;Brave Fox 42&rdquo;), the buddy picture&rsquo;s
+    name, the time zone setting, the date it was turned on, and which days this month the child met
+    their daily goal. Anyone who turns the board on can see the top ten places, with nicknames, buddy
+    pictures and day counts that update once a day; nobody sees a child&rsquo;s name, age, photo, voice
+    or sounds, and speech therapists never see the board. Month lists are erased about a week after
+    each month ends; an entry is deleted 100 days after its last counted day, and at once when a
+    grown-up turns it off, removes the child, or uses the remove link in the confirmation email. To
+    stop abuse, Sona&rsquo;s server keeps a scrambled form of the internet address a board request came
+    from, for up to an hour, never with the board entry.</p>
+
     <h2>Service providers we share data with</h2>
     <p>We share limited information with trusted providers only so the service can function:</p>
     <ul>
@@ -158,13 +177,16 @@
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
         described above, clinician sign-in sessions, a copy of Stripe&rsquo;s answer about whether a
         clinician&rsquo;s Premium plans are active, the messages parents send from &ldquo;Talk to
-        us&rdquo; and clinicians send from their dashboard, and our own copy of each email address given
-        to join our email list. It never holds audio.</li>
+        us&rdquo; and clinicians send from their dashboard, our own copy of each email address given
+        to join our email list, and, only for a child a grown-up put on the Practice Board, the board
+        entry described above. It never holds audio.</li>
       <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, the one
         thank-you email when you sign up on speaksona.com, and the one
         invite email a clinician can ask us to send a parent. These emails never go to children and never
         contain a child&rsquo;s name. A parent&rsquo;s address is given to Resend only to deliver that one
-        email; Sona keeps no copy of it.</li>
+        email; Sona keeps no copy of it. If Sona offers the Practice Board, Resend also delivers the
+        confirmation email a grown-up asks for to turn it on; the address is used only to send it, and
+        Sona keeps no copy (only a scrambled form for one day).</li>
       <li><strong>Email list</strong> — Kit sends the occasional email a grown-up agreed to when they gave
         us their address. It holds that email address, a clinician&rsquo;s own first name, whether the
         person is a speech therapist, a parent or something else, and, for a parent who gave the app their
@@ -209,6 +231,9 @@
       <li>We do not knowingly use children's personal information for advertising, and we do not sell it.</li>
       <li>Parents can review the personal information we have about their child, ask us to delete it, and
         refuse further collection, by contacting us.</li>
+      <li>The Practice Board is off unless a parent turns it on and confirms by email. It shows only a
+        nickname Sona makes up, a buddy picture and a count of days, and turning it off, or the remove
+        link in that email, deletes the entry.</li>
     </ul>
     <p>If you believe a child has provided us information without a parent's involvement, please contact
     us and we will delete it.</p>
@@ -223,15 +248,17 @@
 
     <h2>Data retention &amp; security</h2>
     <p>Your child&rsquo;s practice history lives on your own device, and stays there until you delete
-    the app or clear it in Settings — we hold no copy.</p>
+    the app or clear it in Settings — we hold no copy, except, for a child a grown-up put on the
+    Practice Board, which days this month met the daily goal.</p>
     <p>What we hold on a server is: a clinician&rsquo;s account (email, name, clinic, their code) for as
     long as that account exists; the caseload information described above, deleted when a parent stops
     sharing, when the clinician removes the child or their account, or automatically about 150 days
     after that caseload last received practice; a pending invite, which deletes itself 30 days
     after it is created if the family never opens it; the messages sent to us from &ldquo;Talk to
     us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
-    and our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or
-    link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it.
+    our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or
+    link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it;
+    and a Practice Board entry, only if a grown-up turned it on, for as long as described above.
     To stop abuse, our server also keeps the internet address a request came from, for up to an hour,
     to count requests (for the Practice Board, only a scrambled form of it).</p>
     <p>We use reasonable safeguards, including encrypted connections. No method of transmission or

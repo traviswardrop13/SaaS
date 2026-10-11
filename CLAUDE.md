@@ -2147,6 +2147,137 @@ games, in painted poses, and every placement keeps that game's rules.
 `tests/buddyplaytest.mjs` plays every placement for a fox and a dragon child,
 the fallbacks, the cheer swap, and the fit at 320 and 390 px.
 
+**The Practice Board (BOARD1, BOARD2; Travis, 9 Oct 2026: "a board of every
+kid in Sona … days practiced"). DARK UNTIL TRAVIS'S GO.** Built in full on 11
+Oct 2026 and switched off: the server is `lib/board.ts` and nine routes under
+`app/api/board/`, the phone's half is block BOARD2 in `sona.js`, the Settings
+card and `board.html`. **`BOARD_LIVE = false` in `public/sona.js` and in
+`lib/board.ts`**, pinned equal by `boardapitest`. While it is off a family
+sees nothing new and the phone sends nothing but a deletion still owed: the
+Settings card is hidden (except "Remove {Name} from the Practice Board" while
+an entry is still on the phone), the road's board link is hidden, `board.html`
+says "The Practice Board is off.", and every route but `leave`, `remove` and
+`admin` answers 503 `{off:true}`. It was built before a lawyer looked (the
+lead's call; the spec asked for one first): the lawyer's answer on the consent
+method still comes before the go, and a stronger method than the email (a
+card check, say) changes the request shapes, the keys, the privacy text and
+the tests first. Whether to switch it on is Travis's, after that.
+- **What it is.** One monthly board of the Sona kids whose grown-up turned it
+  on, counting **goal days**: a day with the daily goal's stamp
+  (`sona.goaldays.v1`) and at least `BOARD_MIN_REPS` (10) reps, so practice,
+  games and books all count, as Settings already tells parents (the 10 is
+  Rachel's to confirm). The top ten places and the child's own entry; ties
+  share a place, and a tie too long to list is one line ("+38 more kids with
+  11 days"). Other children's counts are a snapshot taken once a UTC day, so
+  nobody can watch when another child practiced; the child's own count is
+  live. A sun a day on the child's own card, medals for 1-3; never totals,
+  arrows, "behind", streaks or red. **Nicknames are the server's**
+  ("Brave Fox 42": 32 adjectives, 32 animals, 86 numbers; `NICK_BLOCK` for
+  any pair a reviewer rejects). A child never types anything, and a nickname
+  is never shown beside a real name.
+- **Turning it on: one email for the household, with a code.** Settings ›
+  Practice Board › Learn more (Settings is behind the grown-ups check) asks
+  once per phone "Did a speech therapist or a school send you to Sona?" (the
+  answer stays on the phone, `sona.boardask.v1`; "Yes" keeps the board off),
+  then a sheet with a box per child who may join and an email box. The server
+  keeps a pending request (48 hours) and a hash of a confirm secret that only
+  the email carries; it hands the address to Resend once and keeps only a
+  one-day scrambled form (an HMAC with the day inside), at most two emails an
+  address a day and 300 a day in all. The email's confirm link needs a button
+  press (a mail scanner's GET confirms nothing), the phone's own `pend` can
+  never confirm, and the email's **remove link** deletes the entries from any
+  device, even after the phone is lost. "Finish" (also tried when Settings
+  comes back to the front) claims the members: one atomic script, safe to
+  repeat. Nothing on the phone says "on" before the server has answered.
+  **It does not prove a parent:** a child who can read, on an iPad with the
+  grown-up's Mail open, could tap the button. It raises the bar above the four
+  number words; that is all.
+- **Who can't** (`boardAllowed(slot)`, read for the child the line is about):
+  "off"; "clinic" (a clinician's link on the phone, `sona.slp`, `sona.slpok`,
+  `sona.slpunlock` or `sona.slpticket`; an SLP profile; this child sharing
+  progress; or "Yes" to the therapist question); "many" (more than four
+  children on the phone); "young" (not a whole age of 5 or more: ages 3 and 4
+  never see it, Rachel's to confirm). Checked at join, at every send and at
+  every view; a child who stops being allowed leaves by themselves.
+- **The server counts, never the phone.** The phone says only "this child met
+  the goal so many seconds ago" (`{token, ago, tz, buddy}`); the server works
+  out the day by its own clock, in the time zone the family joined from, and
+  counts it once (a `SET NX` inside the day script). **The server can't prove
+  a child spoke (no audio ever leaves the phone); it can promise each day
+  once, a day late at most, never early.** Only today and yesterday, nothing
+  before joining, and never more days this month than have passed since
+  joining (the ceiling). The time zone moves at most 2 hours from where the
+  family joined, at most once in 20 hours, and only on a counted day. A phone
+  clock change, a pasted backup or backdating adds nothing; someone scripting
+  the routes could mark one day per real day, which at most ties a child who
+  met the goal every day; a forged backup can make one real rep finish
+  today's goal day on that phone.
+- **Keys.** On the phone: `sona.board.v1` and `sona.boardcache.v1` per child
+  (`PER_KID`); `sona.boardpend.v1`, `sona.boardleave.v1` (deletions still to
+  send) and `sona.boardask.v1` for the phone. All five are on `NO_EXPORT` and
+  `NO_IMPORT`: a backup never carries a board entry (the Move box says to turn
+  it off on the old phone first). On the server, the prefix is `board:` in
+  production and `board-pv:` everywhere else (`boardEnv()` fails closed to
+  production), so a preview sharing production's Upstash never touches the
+  real board: `pend:` 48 hours; `mem:`, `nick:` and `rid:` (the remove link's
+  record) 100 days after the last counted day, refreshed only by a counted
+  day; `m:<month>` until 8 days after the month ends; snapshots and per-day
+  counters 2 days; ticks 3 days; the scrambled address 1 day; the daily join
+  count 15 days (no one in it). The board's rate-limit buckets hold an HMAC
+  of the address, never the address, for an hour at most. Every write is one Lua
+  script that first checks its key still exists and sets its own time limit;
+  a KV error answers 503 `{retry}`, never "already done", and the phone keeps
+  what it owes. Nothing stores a name, age, sound, audio, fid, childId,
+  clinician code, address or raw IP, and no key starts with `reps:`.
+- **Deleting always works, live, paused or off:** "Turn off" in Settings,
+  removing the child, a restore that changes which child sits in a slot,
+  becoming ineligible, the email's remove link, and founder removal
+  (`/api/board/admin`, behind `FOUNDER_KEY`, for an email to
+  privacy@speaksona.com). The phone queues a deletion first, then sends it
+  from Settings, the road page, the board page and (at most once a minute)
+  every rep on a practice or game page; never from Home, which calls nothing
+  of the board. `BOARD_PAUSE=1` stops only `start`, `claim`, `view` and
+  `nick`: days still count and deletions still happen. "Reset progress" does
+  not touch the board.
+- **Never the clinician side.** `slp.html`, `app/api/slp/**`, `sendProgress`,
+  `/api/homework`, `/api/pilot` and `reps:<week>` gain nothing, and
+  `/api/reps` stays 410 (the dashboard rule above: no leaderboard there).
+  Events: "board turned on", "board turned off", "board viewed", with no
+  props; never a token, nickname, days or place.
+- **The words already true in both states:** the privacy page's "The Practice
+  Board (only if a grown-up turns it on)" ("Sona may offer…"), Progress's
+  "How scoring works", the parents' "What's stored" answer and the clinician
+  setup step all speak of it as something Sona may offer, never as something
+  a family can turn on today (`boardapitest` holds them to that).
+- **How to turn it on** (its own PR, only on Travis's go, after a lawyer has
+  named the consent method):
+  1. flip `BOARD_LIVE` to `true` in **both** `public/sona.js` and
+     `lib/board.ts` (`boardapitest` fails if they differ);
+  2. set `BOARD_SECRET` in Vercel (a long random value; without it every
+     route answers 503). To rotate it later, move the old value to
+     `BOARD_SECRET_PREV`, so no phone's token stops working;
+  3. add the Terms' "Practice Board" section and the for-slps "What's stored"
+     board line ("…You never see the board and it never appears in your
+     dashboard…"), both written in the spec (§14.4, §14.5);
+  4. NATIVE.md and App Store Connect: App Privacy *Identifiers → User ID*
+     (the random board number) and *Usage Data → Product Interaction* (goal
+     days, board on only), purpose App Functionality, not tracking ("linked to
+     the user" is Travis's call; the careful answer is yes); re-answer the
+     age-rating questions (no user-generated content, no chat: the server
+     makes the nicknames); the review note "Off by default; a grown-up
+     confirms by email; server-assigned nicknames; no free text";
+  5. check that Resend's open and click tracking are off for the sending
+     domain (the email promises no tracking pixel; a Resend setting, not
+     code), and note "Resend open and click tracking" in NATIVE.md;
+  6. run `boardapitest` (its go-live pin then requires the privacy, Terms,
+     for-slps and NATIVE.md copy), `boardtest` and the full battery.
+  To try it before then: on localhost, `sessionStorage` `sona.boardpreview.v1`
+  = "1" turns the phone's half on, and `BOARD_FORCE_LIVE=1` turns a local or
+  preview server's on (never production's, and only under `board-pv:`).
+`boardapitest` plays every route against an in-memory Upstash (or a real
+Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
+Settings card and `board.html`.
+
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
 (`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep
