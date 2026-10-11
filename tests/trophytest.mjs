@@ -20,8 +20,11 @@
 //   - none of it writes the speech ladder or the practice records.
 // Game levels (LEVELS1, section 13) joined in step 3: Level 2 at 150 trophies
 // and Level 3 at 750, per child, picked by a tap, held at Level 1 by a grown-
-// up's cap, each level's own best. The daily chest, the Trophy Road and the
-// shop are added to this suite by the steps that build them.
+// up's cap, each level's own best. The buddies' painted poses (BUDDY2,
+// section 14) joined in step 4: every picture BUDDY_ART names is on disk in
+// its pose's frame, a missing pose falls back in one order, and reading them
+// writes nothing. The daily chest, the Trophy Road and the shop are added to
+// this suite by the steps that build them.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -494,6 +497,98 @@ sec("13f where LEVELS1 lives in sona.js, and what it touches", () => {
     changed.every((f) => !/\bS\.track\("/.test(codeOf(f))) && !/\btrack\(/.test(codeOf("today.html")) && !/level played/.test(codeOf("settings.html")));
   const engines = ["hoops.js", "soccer.js", "dino.js", "bubbles.js"];
   ok("the four engines take the level from the page and never from storage", engines.every((f) => { const src = readFileSync(path.join(ROOT, f), "utf8"); return /setLevel: function \(n\) \{ level = \(n === 2 \|\| n === 3\) \? n : 1; \}/.test(src) && !/localStorage|sessionStorage|playlevel|playLevel/.test(src); }));
+});
+
+// ── 14. the buddies' painted poses (BUDDY2 art, step 4) ──
+// "Play as your buddy" (Travis, 9 Oct 2026: "they actually BE the character in
+// the game") draws each buddy in the pose a scene needs: running from behind
+// in Sound Sprint, standing and cheering beside Echo, peeking over Fruit
+// Slice's counter, sitting on Block Stacker's bench. BUDDY_ART lists only the
+// pictures on disk (R15: no stand-in art), each cut to its pose's one frame
+// so a game places any buddy with one set of numbers; the fox keeps its
+// painted Fruit Slice and Block Stacker scenes, so it has no peek or sit.
+// The size of a WebP is in its first 30 bytes; no decoder needed.
+const webpSize = (file) => {
+  const b = readFileSync(file);
+  if (b.toString("latin1", 0, 4) !== "RIFF" || b.toString("latin1", 8, 12) !== "WEBP") return null;
+  const kind = b.toString("latin1", 12, 16);
+  if (kind === "VP8X") return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+  if (kind === "VP8L") { const v = b.readUInt32LE(21); return [1 + (v & 0x3fff), 1 + ((v >> 14) & 0x3fff)]; }
+  if (kind === "VP8 ") return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+  return null;
+};
+const onDisk = (src) => typeof src === "string" && src.startsWith("/assets/crafted/") && existsSync(path.join(ROOT, src));
+const FRAME = { run: [480, 840], rest: [512, 512], cheer: [512, 512], sit: [512, 512], peek: [512, 384] };
+sec("14a every painted pose BUDDY_ART names is on disk, in its pose's frame", () => {
+  const p = boot(), { S } = p;
+  const ids = S.CHARACTERS.map((c) => c.id);
+  const lit = (SRC.match(/const BUDDY_ART = \{([\s\S]*?)\n  \};/) || ["", ""])[1].replace(/\/\/[^\n]*/g, "");
+  const keys = [...lit.matchAll(/^\s*([a-z]+):\s*\{/gm)].map((m) => m[1]);
+  ok("BUDDY_ART is one literal in sona.js, keyed by buddies the catalog has", keys.length >= 1 && keys.every((k) => ids.includes(k)), keys);
+  const files = [...lit.matchAll(/"(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+  ok("every picture it names is a painted WebP on disk under /assets/crafted/", files.length >= 1 && files.every((f) => /\.webp$/.test(f) && onDisk(f)), files.filter((f) => !onDisk(f)));
+  const bad = [];
+  for (const id of ids) for (const pose of ["run", "rest", "cheer", "peek", "sit"]) {
+    const sp = S.buddySprite(id, pose);
+    if (!sp) continue;
+    if (!onDisk(sp.src)) { bad.push(id + " " + pose + " missing " + sp.src); continue; }
+    const want = FRAME[pose === "cheer" || pose === "sit" ? sp.pose || pose : pose], got = webpSize(path.join(ROOT, sp.src));
+    if (pose === "run" && sp.crop) { if (!(got && sp.crop[0] + sp.crop[2] <= got[0] && sp.crop[1] + sp.crop[3] <= got[1] && sp.crop[2] * 7 === sp.crop[3] * 4)) bad.push(id + " run crop " + sp.crop + " in " + got); }
+    else if (!got || got[0] !== want[0] || got[1] !== want[1]) bad.push(id + " " + pose + " is " + got + ", wants " + want);
+  }
+  ok("each pose is cut to its frame: a runner 480x840 (or a 4:7 crop, the fox's), standing, cheering and sitting 512x512, peeking 512x384", bad.length === 0, bad);
+  ok("the fox runs as it always has, from its own picture's crop", JSON.stringify(S.buddySprite("fox", "run")) === JSON.stringify({ src: "/assets/crafted/fox-runner.webp", crop: [390, 205, 480, 840] }), S.buddySprite("fox", "run"));
+  ok("the fox has no peek and no sit of its own: its painted Fruit Slice and Block Stacker scenes stay", S.buddySprite("fox", "peek") === null && (S.buddySprite("fox", "sit") === null || S.buddySprite("fox", "sit").pose === "rest"), [S.buddySprite("fox", "peek"), S.buddySprite("fox", "sit")]);
+  const portraits = ids.map((id) => S.buddySprite(id, "portrait"));
+  ok("every buddy's round badge is on disk at 288x288", portraits.every((f) => onDisk(f) && String(webpSize(path.join(ROOT, f))) === "288,288"), portraits.filter((f) => !onDisk(f)));
+  const notes = readFileSync(path.resolve(ROOT, "..", "design/crafted-world/buddies-v3.md"), "utf8");
+  const sprites = JSON.parse(readFileSync(path.resolve(ROOT, "..", "tools/art/game-sprites.json"), "utf8"));
+  const drawn = files.filter((f) => !/fox-runner\.webp$/.test(f)).map((f) => path.basename(f, ".webp"));
+  ok("every one has its drawing's entry in tools/art/game-sprites.json and its eye check in design/crafted-world/buddies-v3.md",
+    drawn.every((n) => sprites.some((e) => e.name === n && (e.ref || e.refs)) && notes.includes(n)), drawn.filter((n) => !sprites.some((e) => e.name === n) || !notes.includes(n)));
+});
+sec("14b a missing pose falls back, in one order, and reading writes nothing", () => {
+  const { S } = boot();
+  ok("a pose answers {src, pose}; cheer and sit fall back to rest, peek and rest to nothing", (() => {
+    for (const c of S.CHARACTERS) {
+      const r = S.buddySprite(c.id, "rest"), ch = S.buddySprite(c.id, "cheer"), si = S.buddySprite(c.id, "sit"), pk = S.buddySprite(c.id, "peek");
+      if (r && r.pose !== "rest") return false;
+      if (ch && !(ch.pose === "cheer" || (ch.pose === "rest" && r && ch.src === r.src))) return false;
+      if (!ch && r) return false;
+      if (si && !(si.pose === "sit" || (si.pose === "rest" && r && si.src === r.src))) return false;
+      if (!si && r) return false;
+      if (pk && pk.pose !== "peek") return false;
+    }
+    return true;
+  })(), S.CHARACTERS.map((c) => [c.id, S.buddySprite(c.id, "cheer"), S.buddySprite(c.id, "sit")]));
+  ok("an unknown buddy or pose: the fox's picture, or nothing", JSON.stringify(S.buddySprite("leo", "run")) === JSON.stringify(S.buddySprite("fox", "run")) && S.buddySprite("fox", "wave") === null, S.buddySprite("leo", "run"));
+  ok("the portrait is the round badge each buddy already has", S.buddySprite("bunny", "portrait") === "/assets/crafted/buddy-bunny-v2.webp" && S.buddySprite("nobody", "portrait") === "/assets/crafted/buddy-fox-v2.webp");
+  ok("buddyId reads the child's buddy, and an old \"leo\" or a junk one is the fox", (() => {
+    const a = S.buddyId(); S.saveProfile({ character: "panda" }); const b = S.buddyId();
+    S.saveProfile({ character: "leo" }); const c = S.buddyId();
+    return a === "fox" && b === "panda" && c === "fox";
+  })(), S.buddyId());
+  const q = boot(), was = snap(q);
+  for (const c of q.S.CHARACTERS) for (const pose of ["run", "rest", "cheer", "peek", "sit", "portrait"]) q.S.buddySprite(c.id, pose);
+  q.S.buddyId();
+  ok("buddySprite and buddyId write no key", snap(q) === was);
+});
+sec("14c the Trophy Road's chests and the three scenes without the fox are on disk", () => {
+  const want = { "road-chest": [512, 512], "road-chest-open": [512, 512], "road-bigchest": [512, 512], "road-bigchest-open": [512, 512],
+    "fruit-stand-v2": [1440, 545], "stack-workshop-v3": [768, 1536], "stack-rocket-v3": [267, 400] };
+  const was = { "fruit-stand-v2": "fruit-stand", "stack-workshop-v3": "stack-workshop-v2", "stack-rocket-v3": "stack-rocket-v2" };
+  const bad = Object.entries(want).filter(([n, wh]) => { const f = path.join(ROOT, "assets/crafted/" + n + ".webp"); return !existsSync(f) || String(webpSize(f)) !== String(wh); });
+  ok("each is a WebP of its size (the chests 512x512, a scene the size of the picture it stands in for)", bad.length === 0, bad.map(([n]) => n));
+  ok("…and a scene without the fox is exactly as big as the one with it, so every number a game measures off it holds",
+    Object.entries(was).every(([n, o]) => String(webpSize(path.join(ROOT, "assets/crafted/" + n + ".webp"))) === String(webpSize(path.join(ROOT, "assets/crafted/" + o + ".webp")))));
+});
+sec("14d where BUDDY2 lives in sona.js, and what it touches", () => {
+  const at = SRC.indexOf("// ── BUDDY2"), chars = SRC.indexOf("const CHARACTERS = ["), ask = SRC.indexOf("GAMEASK1");
+  ok("BUDDY2 sits next to CHARACTERS, well before the GAMEASK1 window", at > chars && chars > 0 && at < ask && at - chars < 20000, { at, chars });
+  const next = SRC.indexOf("\n  // ── ", at + 8), code = SRC.slice(at, next).replace(/\/\/[^\n]*/g, "");
+  ok("it only reads: no save, no storage, no network, no event", /function buddySprite\(/.test(code) && /function buddyId\(/.test(code) && !/save\(|setItem|removeItem|fetch\(|sendBeacon|track\(|addCoins|spendCoins/.test(code));
+  const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
+  ok("buddyId and buddySprite are exported on the one export line, before soundMark, clipsSettled", /\bbuddyId, buddySprite,[^\n]*\bsoundMark, clipsSettled\b/.test(line));
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall trophy and coin checks passed");

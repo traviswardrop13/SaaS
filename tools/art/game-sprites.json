@@ -516,5 +516,481 @@
   "size": "1024x1536",
   "transparent": true,
   "prompt": "A big happy pink flower in full bloom on a tall green stem with leaves, growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "buddy-fox-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "Pip the fox from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: bright orange fur, a white muzzle and white chest, dark brown paws and ear tips, a bushy orange tail with a white tip. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bunny-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dragon-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-cat-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bee-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-octopus-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: purple body with lilac spots, four short round tentacles as legs and two as arms. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dino-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-panda-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: white fur with black ears, black eye patches, black arms and legs, a small white tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bunny-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dragon-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-cat-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bee-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-octopus-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: purple body with lilac spots, four short round tentacles as legs and two as arms. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dino-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-panda-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: white fur with black ears, black eye patches, black arms and legs, a small white tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "road-chest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "A small closed wooden treasure chest, honey wood with rounded gold corners and a round gold clasp, front view, slightly from above. Centred, about 80% of the square. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "road-bigchest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "A bigger treasure chest: teal painted wood with cream trim, rounded gold corners and a big round gold clasp, closed, front view, slightly from above. Centred, about 80% of the square. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-fox-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-fox-cheer.webp",
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "Pip the fox from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: bright orange fur, a white muzzle and white chest, dark brown paws and ear tips, a bushy orange tail with a white tip. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bunny-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-dragon-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-cat-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bee-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-octopus-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Small body with short arms and feet. Round lilac spots dot its head and tentacles, exactly as in the second picture. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-dino-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-panda-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bunny-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-dragon-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-cat-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-bee-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-octopus-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-dino-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-panda-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-bunny-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-dragon-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-cat-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Its four paws are peach with cream-white tips, exactly like the second picture; nothing about it is brown. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-bee-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Its round hands resting in its lap and its two round feet are bright sunny yellow, the same yellow as its head, exactly like the hands and feet in the second picture: not brown, not black. Only its stripes and antennae are dark. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-octopus-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Round lilac spots dot its head and tentacles, exactly as in the second picture. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-dino-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-panda-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "road-chest-open",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/road-chest.webp"
+  ],
+  "prompt": "The same chest as the attached picture, lid open, a warm golden glow and a few plain gold coins inside. The chest's body exactly the same size, angle and place in the square as in the attached picture, the open lid rising above it. No ground, no shadow."
+ },
+ {
+  "name": "road-bigchest-open",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/road-bigchest.webp"
+  ],
+  "prompt": "The same big chest as the attached picture, lid open, a golden glow, gold coins and a little rolled-up sticker inside. The chest's body exactly the same size, angle and place in the square as in the attached picture, the open lid rising above it. No ground, no shadow."
+ },
+ {
+  "name": "stack-rocket-v3",
+  "size": "1024x1536",
+  "transparent": false,
+  "ref": "tools/art/out/edit/stack-rocket-v3-in.png",
+  "mask": "tools/art/out/edit/stack-rocket-v3-mask.png",
+  "prompt": "Make the round porthole window empty: pale blue glass with a soft white shine, nothing inside. Change nothing else.",
+  "note": "A masked edit (A9): `python3 tools/art/scene-edit.py prep stack-rocket-v3` writes the picture and mask, `apply` keeps only the masked pixels of what comes back, moved by the entry's `fit` so the model's ring lands on the original's. Drawn opaque so the glass comes back solid."
  }
 ]

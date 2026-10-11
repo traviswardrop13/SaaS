@@ -7,11 +7,12 @@ with the painted character taken out, and only inside the character's box, so
 everything the game measures off the picture (Fruit Slice's STAND_LEDGE and
 fruit wells, the bench line, the tower's stage) stays exactly where it was.
 
-    python3 tools/art/scene-edit.py clear fruit-stand-v2   # alpha 0 in a box of a transparent scene
-    python3 tools/art/scene-edit.py clone fruit-stand-v2   # copy a strip of plain rows over the box
-    python3 tools/art/scene-edit.py prep stack-workshop-v3 # the model's input and mask, in out/edit/
-    python3 tools/art/scene-edit.py apply stack-workshop-v3  # keep only the masked pixels of out/game/<name>.png
-    python3 tools/art/scene-edit.py cut fox-peek-ref       # a reference crop for gen-sprites.mjs (edits nothing)
+    python3 tools/art/scene-edit.py clear fruit-stand-v2      # alpha 0 in a box of a transparent scene
+    python3 tools/art/scene-edit.py clone fruit-stand-v2      # copy a strip of plain rows over the box
+    python3 tools/art/scene-edit.py mirror stack-workshop-v3  # the box's neighbour, flipped left to right, over it
+    python3 tools/art/scene-edit.py prep stack-rocket-v3      # the model's input and mask, in out/edit/
+    python3 tools/art/scene-edit.py apply stack-rocket-v3     # keep only the masked pixels of out/game/<name>.png
+    python3 tools/art/scene-edit.py cut fox-peek-ref          # a reference crop for gen-sprites.mjs (edits nothing)
 
   --lossless  write the scene as lossless WebP. By default it is written at the
               quality in its entry, like the picture it replaces; the edit is
@@ -24,17 +25,24 @@ touches a pixel outside the box: it redraws its whole picture, but `apply`
 keeps the masked pixels of what came back and nothing else, so the rest is the
 untouched original by construction.
 
-The flow for a scripted edit (A7, no model): clear, then clone. The first
-operation of an entry reads its source; each later one reads the working copy
-out/edit/<name>.png the one before it wrote, so running the list again starts
-again from the source. Only the last one writes the scene into public/.
+The flow for a scripted edit (A7 and A8, no model): A7 is clear, then clone;
+A8 is one mirror. The first operation of an entry reads its source; each
+later one reads the working copy out/edit/<name>.png the one before it
+wrote, so running the list again starts again from the source. Only the last
+one writes the scene into public/.
 
-The flow for a model edit (A8, A9):
-    python3 tools/art/scene-edit.py prep stack-workshop-v3
-    NODE_USE_ENV_PROXY=1 node tools/art/gen-sprites.mjs stack-workshop-v3
+The flow for a model edit (A9):
+    python3 tools/art/scene-edit.py prep stack-rocket-v3
+    NODE_USE_ENV_PROXY=1 node tools/art/gen-sprites.mjs stack-rocket-v3
         # its game-sprites.json entry: ref tools/art/out/edit/<name>-in.png,
         # mask tools/art/out/edit/<name>-mask.png, the canvas's size
-    python3 tools/art/scene-edit.py apply stack-workshop-v3
+    python3 tools/art/scene-edit.py apply stack-rocket-v3
+The model redraws its whole picture and does not keep things where they were:
+it drew the rocket's porthole smaller and higher than the original's. An
+entry's `fit` names where the model put the feature and where it belongs,
+and `apply` scales and moves the model's picture to match before keeping its
+masked pixels, so the model's ring lands on the original's and is not seen
+twice.
 
 Boxes are (x0, y0, x1, y1) in the SOURCE picture's pixels, x1 and y1 not
 included (PIL's convention); a circle is (cx, cy, r). The numbers were read off
@@ -75,21 +83,24 @@ EDITS = {
         "clone": ((320, 244, 640, 264), (0, 244)),  # ledge rows 244-263, x 320-640 -> x 0-320
     },
     # A8: Block Stacker's workshop with no fox on the bench's left end, for any
-    # other buddy to sit there. 768x1536 sits in the middle of the API's
-    # 1024x1536 at its own size (the 128 px bands each side are the picture's
-    # edge columns, carried out); the box is the fox on the bench: its ears
-    # from about row 915, its tail against the left edge, its right side about
-    # x 235, and its paws on the bench top (which starts at row 1214) down to
-    # about row 1228. The box runs to 1244, not the plan's 1230, so the mask's
-    # fade lies on bare bench below the paws instead of across them.
+    # other buddy to sit there. The fox sits in x 0-235: its ears from about row
+    # 915, its tail against the left edge, its paws on the bench top (which
+    # starts at row 1214) down to about row 1228. A scripted mirror, not the
+    # model: drawn twice as a masked edit (11 Oct 2026), the model redrew the
+    # whole night brighter both times and once added a step to the bench, so
+    # its pixels inside the box could never match the ones around it. What
+    # stands just right of the fox (bushes, then the bench) is the picture's own
+    # paint, and flipped left to right it meets itself at x 250 with no seam;
+    # over its top 40 rows it fades in from the picture, so the bushes run on
+    # into the trees above. Same size, the same bench line, so the bench and
+    # the tower's stage hold.
     "stack-workshop-v3": {
         "src": "public/assets/crafted/stack-workshop-v2.webp",
         "dst": "public/assets/crafted/stack-workshop-v3.webp",
         "q": 85,
-        "ops": ["prep", "apply"],
-        "canvas": (1024, 1536),
-        "scale": 1,
-        "rect": (0, 900, 250, 1244),
+        "ops": ["mirror"],
+        "mirror": ((250, 860, 500, 1244), (0, 860)),  # x 250-500 flipped -> x 0-250, rows 860-1243
+        "feather": {"top": 40},                      # rows over which the copy fades in from the picture
     },
     # A9: the finale rocket with an empty porthole, so a buddy's portrait can be
     # drawn in it. 267x400 is scaled up to fill the API's 1024x1536 (3.835x),
@@ -106,6 +117,12 @@ EDITS = {
         "canvas": (1024, 1536),
         "scale": "fit",
         "circle": (133, 167, 43),
+        # Where the model drew the empty glass, in source pixels, and where the
+        # original's glass is (x 94-171, y 126-208): (cx, cy, r) each. The first
+        # is read off out/game/stack-rocket-v3.png (the drawing of 11 Oct 2026),
+        # as the centre and the area of its pale-blue glass pixels; a new
+        # drawing puts it elsewhere, so measure it again before applying one.
+        "fit": ((135.1, 162.1, 32.3), (133, 167, 40)),
     },
 }
 
@@ -247,6 +264,24 @@ def scripted(name, op, lossless):
         rect = (dx, dy, dx + w, dy + h)
         a[dy:dy + h, dx:dx + w] = before[sy0:sy1, sx0:sx1]
         report("clone %s -> %s" % ((sx0, sy0, sx1, sy1), rect), before, a, box_of(rect, hw))
+    elif op == "mirror":
+        # a rect beside the box, flipped left to right over it: at their shared
+        # side the copy's edge is the very column it meets, so there is no seam
+        (sx0, sy0, sx1, sy1), (dx, dy) = e["mirror"]
+        w, h = sx1 - sx0, sy1 - sy0
+        rect = (dx, dy, dx + w, dy + h)
+        copy = before[sy0:sy1, sx0:sx1][:, ::-1].astype(np.float64)
+        wgt = np.ones((h, w, 1))
+        for side, n in e.get("feather", {}).items():
+            ramp = (np.arange(n) / float(n))[:, None, None]  # 0 on the box's edge row: the picture's own pixel
+            if side == "top":
+                wgt[:n] = np.minimum(wgt[:n], ramp)
+            elif side == "bottom":
+                wgt[h - n:] = np.minimum(wgt[h - n:], ramp[::-1])
+            else:
+                sys.exit("feather a mirror's top or bottom, not %r" % side)
+        a[dy:dy + h, dx:dx + w] = (before[dy:dy + h, dx:dx + w] * (1 - wgt) + copy * wgt).round().astype(np.uint8)
+        report("mirror %s -> %s" % ((sx0, sy0, sx1, sy1), rect), before, a, box_of(rect, hw))
     save_png(a, work)
     # Only the entry's last operation writes the scene into public/: a scene
     # written after `clear` alone would be a counter with a gap in its ledge,
@@ -259,9 +294,10 @@ def scripted(name, op, lossless):
     union = np.zeros(hw, bool)
     if "clear" in upto:
         union |= box_of(e["clear"], hw)
-    if "clone" in upto:
-        (sx0, sy0, sx1, sy1), (dx, dy) = e["clone"]
-        union |= box_of((dx, dy, dx + sx1 - sx0, dy + sy1 - sy0), hw)
+    for kind in ("clone", "mirror"):
+        if kind in upto:
+            (sx0, sy0, sx1, sy1), (dx, dy) = e[kind]
+            union |= box_of((dx, dy, dx + sx1 - sx0, dy + sy1 - sy0), hw)
     encoded(e, a, original, union, lossless)
 
 
@@ -309,6 +345,15 @@ def apply(name, lossless):
     cw, ch = e["canvas"]
     if gen.size != (cw, ch):
         sys.exit("out/game/%s.png is %dx%d; prep made a %dx%d canvas" % (name, gen.width, gen.height, cw, ch))
+    if "fit" in e:
+        # scale and move the model's picture, on its own canvas, so the circle
+        # where it drew the feature lands on the circle where it belongs
+        (fx, fy, fr), (tx, ty, tr) = e["fit"]
+        F = (fx * s + ox, fy * s + oy, fr * s)
+        T = (tx * s + ox, ty * s + oy, tr * s)
+        k = T[2] / F[2]
+        gen = gen.transform(gen.size, Image.AFFINE, (1 / k, 0, F[0] - T[0] / k, 0, 1 / k, F[1] - T[1] / k), resample=Image.BICUBIC)
+        print("  fit: the model's circle (%.1f, %.1f) r %.1f moved onto (%.1f, %.1f) r %.1f, %.3fx" % (fx, fy, fr, tx, ty, tr, k))
     gen = gen.crop((ox, oy, ox + sw, oy + sh))
     if gen.size != (w, h):
         gen = gen.resize((w, h), Image.LANCZOS)
@@ -337,7 +382,7 @@ def cut(name):
 def main(argv):
     lossless = "--lossless" in argv
     args = [a for a in argv if a != "--lossless"]
-    if len(args) != 2 or args[0] not in ("clear", "clone", "prep", "apply", "cut"):
+    if len(args) != 2 or args[0] not in ("clear", "clone", "mirror", "prep", "apply", "cut"):
         sys.exit(__doc__)
     op, name = args
     if op == "cut":
@@ -348,7 +393,7 @@ def main(argv):
         sys.exit("no edit named %s (have: %s)" % (name, ", ".join(EDITS)))
     if op not in EDITS[name]["ops"]:
         sys.exit("%s is edited by %s, not %s" % (name, " then ".join(EDITS[name]["ops"]), op))
-    if op in ("clear", "clone"):
+    if op in ("clear", "clone", "mirror"):
         scripted(name, op, lossless)
     elif op == "prep":
         prep(name)
