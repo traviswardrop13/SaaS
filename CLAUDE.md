@@ -1943,8 +1943,6 @@ never measured against a level whose top it cannot reach.
 - **The old five-game run's card** (`?daily=1`; Home never opens it, a saved
   run or a typed address still can) banks the round and moves on as before;
   it says "Great round!" and "On to the next game…", never "+N points!".
-  Block Stacker, Sound Sprint and Flappy Glide still say "points" there and
-  still write the old shared keys until their turn.
 - **Rachel's to rule on:** children will say the bare sound more often in a
   round, alone and quickly, because it is the best helper; whether that
   wants a limit. And a child the phone hears poorly earns less help, so
@@ -2157,7 +2155,8 @@ sees nothing new and the phone sends nothing but a deletion still owed: the
 Settings card is hidden (except "Remove {Name} from the Practice Board" while
 an entry is still on the phone), the road's board link is hidden, `board.html`
 says "The Practice Board is off.", and every route but `leave`, `remove` and
-`admin` answers 503 `{off:true}`. It was built before a lawyer looked (the
+`admin` answers 503 (`{off:true}`; the email's confirm link, a page saying
+it is off right now). It was built before a lawyer looked (the
 lead's call; the spec asked for one first): the lawyer's answer on the consent
 method still comes before the go, and a stronger method than the email (a
 card check, say) changes the request shapes, the keys, the privacy text and
@@ -2220,8 +2219,8 @@ the tests first. Whether to switch it on is Travis's, after that.
   production and `board-pv:` everywhere else (`boardEnv()` fails closed to
   production), so a preview sharing production's Upstash never touches the
   real board: `pend:` 48 hours; `mem:`, `nick:` and `rid:` (the remove link's
-  record) 100 days after the last counted day, refreshed only by a counted
-  day; `m:<month>` until 8 days after the month ends; snapshots and per-day
+  record) 100 days from joining, started again only by a counted day;
+  `m:<month>` until 8 days after the month ends; snapshots and per-day
   counters 2 days; ticks 3 days; the scrambled address 1 day; the daily join
   count 15 days (no one in it). The board's rate-limit buckets hold an HMAC
   of the address, never the address, for an hour at most. Every write is one Lua
@@ -2248,7 +2247,9 @@ the tests first. Whether to switch it on is Travis's, after that.
   Board (only if a grown-up turns it on)" ("Sona may offer…"), Progress's
   "How scoring works", the parents' "What's stored" answer and the clinician
   setup step all speak of it as something Sona may offer, never as something
-  a family can turn on today (`boardapitest` holds them to that).
+  a family can turn on today (`boardapitest` holds them to that). The
+  clinician's step says only that it stays off on any phone holding their
+  link: none of their families can be on it.
 - **How to turn it on** (its own PR, only on Travis's go, after a lawyer has
   named the consent method):
   1. flip `BOARD_LIVE` to `true` in **both** `public/sona.js` and

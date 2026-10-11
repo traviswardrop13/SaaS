@@ -1143,6 +1143,12 @@ try {
       ok('both states: ' + n + ' names the Practice Board only as something Sona may offer',
         found.length > 0 && found.every((s) => /if Sona offers|if it’s offered|may offer/i.test(s)), found);
     }
+    // The clinician's setup step is read by a speech therapist, none of whose
+    // families can ever be on the board (a phone holding their link is
+    // "clinic"), so it says that and never that "a family may choose" it.
+    const obClin = sentences(page('onboarding.html'));
+    ok('both states: the clinician setup step says the board stays off on any phone holding their link',
+      obClin.some((s) => /stays off on any phone that holds your link/.test(s)) && !obClin.some((s) => /may (also )?choose/i.test(s)), obClin);
   }
   {
     const live = /export const BOARD_LIVE = true;/.test(readFileSync(path.join(ROOT, 'lib/board.ts'), 'utf8')) || /const BOARD_LIVE = true;/.test(noComments(SONA));
