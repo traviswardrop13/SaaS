@@ -41,7 +41,7 @@
     <a class="back" id="privacyBack" href="/">&lsaquo; Back</a>
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: September 30, 2026</div>
+    <div class="updated">Last updated: October 11, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -63,6 +63,8 @@
       <li><strong>Practice activity</strong> — which games and sounds are practiced, how many attempts,
         how many the app judged a match, streaks and progress, so it can show progress and adapt the
         level. This is counted on the device; what leaves it is described below.</li>
+      <li><strong>Trophies, coins and game levels</strong> — counted on the device from your child's
+        practice and play, and never sold. They live in the app's own storage (a backup moves them).</li>
       <li><strong>Voice recordings</strong> — when a child practices, Sona records short audio clips of
         practice for local playback. The sound checks run on the device; Sona does not receive these clips.</li>
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
@@ -173,7 +175,7 @@
         notification carries that message and what came with it: for a parent, everything listed under
         &ldquo;Talk to us&rdquo; above; for a clinician, their name, clinic code and reply email. It is
         never given audio or anything from a child&rsquo;s practice.</li>
-      <li><strong>Analytics</strong> — PostHog, on grown-up pages only, as described below.</li>
+      <li><strong>Analytics</strong> — PostHog, on grown-up pages, and the anonymous counts our server passes on from children&rsquo;s screens, as described below.</li>
     </ul>
     <p>These providers may only use the information to perform their service for Sona.</p>
     <p><strong>If something goes wrong.</strong> If we confirm a breach affecting your information we
@@ -188,6 +190,9 @@
     children's practice screens — those screens talk only to our own servers, which may record
     anonymous usage counts (for example, that a practice session was completed, its sound and its
     duration) tied to a random device identifier, never to a name, email, voice, or recording.
+    Our server passes those counts on to PostHog under the same random identifier: for example, that
+    a practice session was completed, that a chest or a Trophy Road gift was opened, or that a game
+    level was played.
     Limited, privacy-respecting analytics (PostHog, configured with session recording and
     autocapture disabled) run on adult-facing pages of our website and of the app — such as
     marketing, parent setup, and settings — to understand general usage under the same anonymous
@@ -226,7 +231,9 @@
     after it is created if the family never opens it; the messages sent to us from &ldquo;Talk to
     us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
     and our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or
-    link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it.</p>
+    link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it.
+    To stop abuse, our server also keeps the internet address a request came from, for up to an hour,
+    to count requests (for the Practice Board, only a scrambled form of it).</p>
     <p>We use reasonable safeguards, including encrypted connections. No method of transmission or
     storage is 100% secure, but we work to protect your data.</p>
 

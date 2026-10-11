@@ -4248,6 +4248,232 @@
     } catch (e) {}
   }
 
+  // ── CHEST1: the daily chest (Travis, 9 Oct 2026: "a currency so they can
+  // buy stuff"; D2, 11 Oct 2026). One chest a day, on a day the daily goal is
+  // met (the same stamp dayGoal() reads). Fixed contents, shown before it
+  // opens: 10 coins, and every fifth chest is a Big Chest of 25 coins and a
+  // sticker. Nothing random, no timer; a day without the goal shows nothing
+  // missed, and no chest piles up for later. Opened only on the Trophy Road
+  // page, after three taps; Home only reads chestState().
+  const CHESTKEY = "sona.chest.v1", CHEST_COINS = 10, CHEST_BIG_EVERY = 5, CHEST_BIG_COINS = 25;
+  // Pure. big/coins/sticker describe the next chest to open (today's, when it
+  // is still shut).
+  function chestState() {
+    const c = load(CHESTKEY, {}), opened = c.last === today(), big = ((c.n | 0) + 1) % CHEST_BIG_EVERY === 0;
+    return { ready: !opened && dayGoal().done, opened, big, coins: big ? CHEST_BIG_COINS : CHEST_COINS, sticker: big };
+  }
+  function chestOpen() {
+    const st = chestState(); if (!st.ready) return null;
+    // the ledger first: a crash under-pays, never pays twice
+    const c = load(CHESTKEY, {}); c.n = (c.n | 0) + 1; c.last = today(); save(CHESTKEY, c);
+    const got = [{ coins: st.coins }]; addCoins(st.coins);
+    if (st.sticker) got.push(_grantSticker());
+    try { track("chest opened"); } catch (e) {}
+    return got;
+  }
+  // the next sticker in the book; a full book pays 20 coins instead
+  function _grantSticker() { const s = awardNextSticker(); if (s) return { sticker: s.id, name: s.name }; addCoins(20); return { coins: 20, full: true }; }
+
+  // ── ROAD1 / MONTH1: the Trophy Road (Travis, 9 Oct 2026: "motivated over
+  // weeks and months like Clash Royale"). Numbered stops across five lands, by
+  // lifetime trophies, each gift fixed and shown before it is reached: coins,
+  // stickers, "Level 2 opens in every game" (levels open by the trophy count
+  // itself, LEVELS1; the stop is the celebration), and later buddies, hats and
+  // places. Nothing random, no timer, nothing lost: a reached stop waits until
+  // it is opened. An item a child already owns pays its coins (ROAD_ALT); an
+  // item listed on a stop AFTER a child opened it is still given, once
+  // (roadSettle). A new item joins its stop only once its painted art is on
+  // disk; until then the stop pays what that item is worth in coins.
+  // "October path" (MONTH_STEPS) is a small path by the trophies earned this
+  // calendar month; it starts again each month, and every reached step of an
+  // ended month is handed out by roadSettle(), which only the road page calls
+  // (never Home). Kept per child. No event carries a stop or step number.
+  const ROADKEY = "sona.road.v1", MONTH_SINCE = "2026-10", ROAD_BONUS_EVERY = 150;
+  const ROAD_ALT = { characters: 100, outfits: 50, backdrops: 80 };
+  const ROAD_LANDS = [
+    { id: "meadow", name: "Sunny Meadow", from: 0, art: "customize-forest-v2" }, { id: "beach", name: "Beach Bay", from: 300, art: "customize-beach-v2" },
+    { id: "snow", name: "Snowy Peak", from: 750, art: "customize-snow-v2" }, { id: "sea", name: "Under the Sea", from: 1350, art: "customize-sea-v2" },
+    { id: "sky", name: "Starry Sky", from: 2100, art: "customize-space-v2" }, { id: "champ", name: "Champion Trail", from: 3000, art: "customize-mountain-v2" } ];
+  // The stop table Travis approved (11 Oct 2026). The road's own buddies, hats and places
+  // (frog, penguin, lion, unicorn; sunhat, starclip, headphones; snow, sea)
+  // join their stops in the art step that lands them. Until then a stop whose
+  // only gift is that item pays the coins an item already owned would
+  // (ROAD_ALT), so no stop ever opens empty.
+  const ROAD_STOPS = [
+    { n: 1, at: 30, gift: [{ coins: 20 }] },
+    { n: 2, at: 80, gift: [{ sticker: 1 }] },
+    { n: 3, at: 150, gift: [{ level: 2 }, { coins: 20 }] },
+    { n: 4, at: 220, gift: [{ coins: 30 }] },
+    { n: 5, at: 300, big: true, gift: [{ coins: 40 }, { sticker: 1 }, { land: "beach" }] },
+    { n: 6, at: 380, gift: [{ coins: 50 }] },                                  // the Sun hat's stop
+    { n: 7, at: 460, gift: [{ coins: 40 }] },
+    { n: 8, at: 540, gift: [{ sticker: 1 }] },
+    { n: 9, at: 640, gift: [{ coins: 50 }] },
+    { n: 10, at: 750, big: true, gift: [{ level: 3 }, { coins: 50 }, { land: "snow" }] },   // and Hops the frog
+    { n: 11, at: 850, gift: [{ sticker: 1 }] },
+    { n: 12, at: 950, gift: [{ coins: 80 }] },                                 // the Snow place's stop
+    { n: 13, at: 1050, gift: [{ coins: 60 }] },
+    { n: 14, at: 1150, gift: [{ sticker: 1 }] },
+    { n: 15, at: 1250, gift: [{ coins: 50 }] },                                // the Star clip's stop
+    { n: 16, at: 1350, big: true, gift: [{ coins: 60 }, { land: "sea" }] },          // and Pebble the penguin
+    { n: 17, at: 1475, gift: [{ coins: 70 }] },
+    { n: 18, at: 1600, gift: [{ sticker: 1 }] },
+    { n: 19, at: 1725, gift: [{ coins: 80 }] },                                // the Under the sea place's stop
+    { n: 20, at: 1850, gift: [{ coins: 80 }] },
+    { n: 21, at: 1975, gift: [{ sticker: 1 }] },
+    { n: 22, at: 2100, big: true, gift: [{ coins: 80 }, { land: "sky" }] },          // and Sunny the lion
+    { n: 23, at: 2250, gift: [{ coins: 90 }] },
+    { n: 24, at: 2400, gift: [{ sticker: 1 }] },
+    { n: 25, at: 2550, gift: [{ coins: 50 }] },                                // the Headphones' stop
+    { n: 26, at: 2700, gift: [{ coins: 100 }] },
+    { n: 27, at: 2850, gift: [{ sticker: 1 }] },
+    { n: 28, at: 3000, big: true, gift: [{ coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];   // and Luna the unicorn
+  const MONTH_STEPS = [
+    { n: 1, at: 40, gift: [{ coins: 5 }] }, { n: 2, at: 100, gift: [{ sticker: 1 }] }, { n: 3, at: 180, gift: [{ coins: 10 }] },
+    { n: 4, at: 260, gift: [{ sticker: 1 }] }, { n: 5, at: 340, gift: [{ coins: 15 }] }, { n: 6, at: 420, gift: [{ sticker: 1 }] },
+    { n: 7, at: 500, gift: [{ coins: 20 }] }, { n: 8, at: 600, big: true, gift: [{ coins: 30 }, { sticker: 1 }] } ];
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const _ROAD_KINDS = { buddy: "characters", hat: "outfits", place: "backdrops" };
+  // A stop by number: the table up to 28, then the Champion Trail's bonus
+  // stops every 150 trophies, 30 coins and a sticker by turns.
+  function roadStop(n) {
+    n = parseInt(n, 10); if (!(n >= 1)) return null;
+    if (n <= ROAD_STOPS.length) return ROAD_STOPS[n - 1];
+    const k = n - ROAD_STOPS.length;
+    return { n, at: ROAD_STOPS[ROAD_STOPS.length - 1].at + k * ROAD_BONUS_EVERY, gift: k % 2 ? [{ coins: 30 }] : [{ sticker: 1 }] };
+  }
+  function _roadReached(t) {             // the highest stop a lifetime count reaches (0 before the first)
+    const last = ROAD_STOPS[ROAD_STOPS.length - 1];
+    if (t >= last.at) return ROAD_STOPS.length + Math.floor((t - last.at) / ROAD_BONUS_EVERY);
+    let n = 0; ROAD_STOPS.forEach((s) => { if (t >= s.at) n = s.n; }); return n;
+  }
+  function _roadRec() {
+    const r = load(ROADKEY, {}), o = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    return { got: o(r.got), items: o(r.items), m: typeof r.m === "string" ? r.m : "", mgot: o(r.mgot), rolled: Array.isArray(r.rolled) ? r.rolled : [] };
+  }
+  // an item gift on a stop: {kind, id, name}, only for a catalog entry (never byId's fallback)
+  function _roadItem(g) {
+    for (const k in _ROAD_KINDS) if (g && typeof g[k] === "string") {
+      const kind = _ROAD_KINDS[k], list = kind === "characters" ? CHARACTERS : kind === "outfits" ? OUTFITS : BACKDROPS;
+      for (let i = 0; i < list.length; i++) if (list[i].id === g[k]) return { kind, id: g[k], name: list[i].name };
+      return null;
+    }
+    return null;
+  }
+  function _ymNext(ym) { const y = +ym.slice(0, 4), m = +ym.slice(5, 7); return m === 12 ? (y + 1) + "-01" : y + "-" + String(m + 1).padStart(2, "0"); }
+  function _monthName(ym) { return MONTH_NAMES[(+String(ym).slice(5, 7) || 1) - 1] || ""; }
+  // Pure: every ended month not yet settled, with the reached steps it still
+  // owes ({m, steps}). The month last visited owes what was not opened then;
+  // a first visit starts at the later of MONTH_SINCE and the first month of
+  // the child's trophy history.
+  function _monthsOwed(r) {
+    const cur = today().slice(0, 7), out = [];
+    let from = r.m;
+    if (!from) { const days = Object.keys(_repDays(null, false)).sort(); from = days.length ? days[0].slice(0, 7) : cur; }
+    if (from < MONTH_SINCE) from = MONTH_SINCE;
+    if (!/^\d{4}-\d{2}$/.test(from) || from >= cur) return out;
+    const tr = load(TROPHYKEY, {});
+    for (let m = from, guard = 0; m < cur && guard < 240; m = _ymNext(m), guard++) {
+      const count = (tr.v >= 1 && tr.m === m) ? (tr.mn | 0) : (tr.v >= 1 && tr.pm === m) ? (tr.pmn | 0) : _trophyHist(m);
+      const done = m === r.m ? r.mgot : {};
+      const steps = MONTH_STEPS.filter((s) => count >= s.at && !done[s.n]);
+      out.push({ m, steps });
+    }
+    return out;
+  }
+  // Pure: the item gifts listed on stops already opened that were never handed over.
+  function _roadLate(r) {
+    const out = [];
+    Object.keys(r.got).forEach((k) => {
+      const s = roadStop(k); if (!s || !r.got[k]) return;
+      s.gift.forEach((g) => { const it = _roadItem(g); if (it && !r.items[s.n + ":" + it.id]) out.push({ n: s.n, item: it }); });
+    });
+    return out;
+  }
+  // Pure: everything the road page and Home's card show.
+  function roadState() {
+    const ts = trophyState(), t = ts.total, r = _roadRec(), cur = ts.ym, stop = _roadReached(t);
+    let land = ROAD_LANDS[0]; ROAD_LANDS.forEach((l) => { if (t >= l.from) land = l; });
+    let waiting = 0, lowest = null;
+    for (let n = 1; n <= stop; n++) if (!r.got[n]) { waiting++; if (lowest === null) lowest = n; }
+    const mgot = r.m === cur ? r.mgot : {};
+    const steps = MONTH_STEPS.map((s) => ({ n: s.n, at: s.at, gift: s.gift, big: !!s.big, reached: ts.month >= s.at, got: !!mgot[s.n] }));
+    steps.forEach((s) => { if (s.reached && !s.got) waiting++; });
+    _monthsOwed(r).forEach((o) => { waiting += o.steps.length; });
+    _roadLate(r).forEach((x) => { if (!owns(x.item.kind, x.item.id)) waiting++; });
+    const nx = roadStop(stop + 1);
+    return { trophies: t, coins: coinsNow(), land: { id: land.id, name: land.name, art: land.art }, stop, got: Object.assign({}, r.got),
+      next: { n: nx.n, at: nx.at, gift: nx.gift, big: !!nx.big }, waiting, lowestWaiting: lowest,
+      month: { ym: cur, name: _monthName(cur), count: ts.month, steps }, chest: chestState(), rolled: r.rolled.slice() };
+  }
+  // Hands over one gift and says what the child got. An item is recorded
+  // before this runs (the ledger first); one already owned pays its coins.
+  function _roadGive(g) {
+    if (g.coins) { const c = _coinInt(g.coins); if (c) addCoins(c); return { coins: c }; }
+    if (g.sticker) return _grantSticker();
+    if (g.level) return { level: g.level | 0 };
+    if (g.land) { const l = ROAD_LANDS.filter((x) => x.id === g.land)[0]; return { land: g.land, name: l ? l.name : "" }; }
+    const it = _roadItem(g); if (!it) return null;
+    if (owns(it.kind, it.id)) { const c = ROAD_ALT[it.kind] | 0; addCoins(c); return { alt: { kind: it.kind, id: it.id, name: it.name, coins: c } }; }
+    addOwned(it.kind, it.id); return { item: it };
+  }
+  function roadOpen(n) {
+    const s = roadStop(n); if (!s) return { ok: false, reason: "not-yet" };
+    const r = _roadRec();
+    if (r.got[s.n]) return { ok: false, reason: "opened" };
+    if (trophies() < s.at) return { ok: false, reason: "not-yet" };
+    r.got[s.n] = 1; s.gift.forEach((g) => { const it = _roadItem(g); if (it) r.items[s.n + ":" + it.id] = 1; });
+    save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("road gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  function monthOpen(step) {
+    const s = MONTH_STEPS.filter((x) => x.n === parseInt(step, 10))[0]; if (!s) return { ok: false, reason: "not-yet" };
+    const ts = trophyState(); let r = _roadRec();
+    if (r.m !== ts.ym) { roadSettle(); r = _roadRec(); }   // a page left open across the month's end
+    if (r.m !== ts.ym) return { ok: false, reason: "not-yet" };
+    if (r.mgot[s.n]) return { ok: false, reason: "opened" };
+    if (ts.month < s.at) return { ok: false, reason: "not-yet" };
+    r.mgot[s.n] = 1; save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("month gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  // The road page's load, and only the road page's: every ended month's
+  // reached steps go into the wallet (listed in rolled for one notice), then
+  // any item listed on an opened stop after it was opened is given. null when
+  // nothing was handed out.
+  function roadSettle() {
+    try {
+      const cur = today().slice(0, 7); let r = _roadRec();
+      const owed = (r.m && r.m > cur) ? [] : _monthsOwed(r), rolled = [], late = [];
+      if (!r.m || r.m < cur) {
+        // the ledger first (a crash under-pays, never pays twice): the month
+        // moves on and the notice names each month that handed something out
+        r.m = cur; r.mgot = {};
+        owed.forEach((o) => { if (o.steps.length) r.rolled.push({ m: o.m, gifts: [].concat.apply([], o.steps.map((s) => s.gift)) }); });
+        r.rolled = r.rolled.slice(-12);
+        save(ROADKEY, r);
+        owed.forEach((o) => {
+          if (!o.steps.length) return;
+          const gifts = []; o.steps.forEach((s) => s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); }));
+          rolled.push({ m: o.m, gifts });
+        });
+      }
+      r = _roadRec();
+      const owe = _roadLate(r);
+      if (owe.length) {
+        owe.forEach((x) => { r.items[x.n + ":" + x.item.id] = 1; });
+        save(ROADKEY, r);
+        owe.forEach((x) => { if (!owns(x.item.kind, x.item.id)) { addOwned(x.item.kind, x.item.id); late.push(x.item); } });
+      }
+      return (rolled.length || late.length) ? { rolled, late } : null;
+    } catch (e) { return null; }
+  }
+  // the road page's month notice was seen: it is not shown again
+  function roadRolledSeen() { const r = _roadRec(); if (!r.rolled.length) return; r.rolled = []; save(ROADKEY, r); }
+
   // ── LEVELS1 (Travis, 9 Oct 2026: "levels inside games"). Every game opens
   // exactly as before: nothing here is read by gameAccess, gated, premium or
   // the catalog, and a level is never sold. Inside nine of them, Level 2 opens
@@ -6120,5 +6346,5 @@
   try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

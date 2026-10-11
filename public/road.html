@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Trophy Road</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/action.css" rel="stylesheet" />
+  <link href="/crafted-road.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+</head>
+<!-- THE TROPHY ROAD (ROAD1, CHEST1, MONTH1; Travis, 9 Oct 2026: "motivated
+     over weeks and months like Clash Royale"). A child's trophies (one a rep,
+     30 a day at the goal) move them along a road of fixed gifts: coins,
+     stickers, "Level 2 opens in every game", and later buddies, hats and
+     places. Every gift is shown before it is reached; nothing is random and
+     nothing counts down. The day's chest opens here, once, on a day the goal
+     is met. "October path" is a small path by this month's trophies; the gifts
+     of a month that ended are handed out when this page loads (roadSettle),
+     and only here, never on Home. The page never speaks (menus are silent):
+     the tap chime, and the reward chime when a gift opens. Events are sent by
+     sona.js, never by this page. Pictures lead, numbers are small: most of
+     the children who open it can't read yet, and the words a grown-up might
+     read out are in each part's label. -->
+<body>
+  <main class="rd-wrap" id="road" hidden>
+    <header class="rd-head">
+      <a id="roadBack" class="rd-x" href="/today.html" aria-label="Back to games">✕</a>
+      <h1 class="rd-title">Trophy Road</h1>
+      <span class="rd-chips">
+        <span class="rd-chip" id="chipTrophy" role="img" aria-label="0 trophies"><span class="rd-ic" data-ic="trophy" aria-hidden="true"></span><b id="trophyN" aria-hidden="true">0</b></span>
+        <span class="rd-chip" id="chipCoin" role="img" aria-label="0 coins"><span class="rd-ic" data-ic="coin" aria-hidden="true"></span><b id="coinN" aria-hidden="true">0</b></span>
+      </span>
+    </header>
+    <p class="rd-note" id="rolledNote" role="status" hidden><span id="rolledText"></span><button id="rolledOk" type="button" aria-label="OK">✕</button></p>
+
+    <section class="rd-hero" id="hero" aria-labelledby="landName">
+      <div class="rd-band" id="heroBand">
+        <img id="heroBuddy" class="rd-buddy" alt="" aria-hidden="true" />
+        <h2 class="rd-land" id="landName">Sunny Meadow</h2>
+        <div class="rd-next" id="heroNext" role="img" aria-label="">
+          <span class="rd-gift" id="nextArt" aria-hidden="true"></span>
+          <span class="rd-also" id="nextAlso" aria-hidden="true" hidden></span>
+          <span class="rd-bar" id="nextBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="rd-at" id="nextAt" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="rd-wait" id="heroWait" hidden>
+        <span id="waitText">A gift is waiting!</span>
+        <button id="openNext" type="button" class="act-pill rd-go" hidden>Open next</button>
+      </div>
+    </section>
+
+    <section class="rd-card rd-chest is-shut" id="chestCard" aria-labelledby="chestTitle">
+      <span class="rd-chest-art" id="chestArt" aria-hidden="true"></span>
+      <div class="rd-chest-copy">
+        <h2 id="chestTitle">Today's chest</h2>
+        <span class="rd-inside" id="chestInside"></span>
+        <p class="rd-say" id="chestLine">Reach your goal today to open your chest!</p>
+        <span class="rd-meter" id="chestMeter" role="img" aria-label=""><span class="rd-ic" data-ic="bolt" aria-hidden="true"></span><span class="rd-meter-bar" aria-hidden="true"><i id="chestFill" style="width:0%"></i></span><b id="chestCount" aria-hidden="true">0/30</b></span>
+        <button id="chestOpen" type="button" class="act-pill rd-open-it" hidden>Open it</button>
+      </div>
+    </section>
+
+    <section class="rd-card rd-month" id="monthCard" aria-labelledby="monthTitle">
+      <div class="rd-month-head"><h2 id="monthTitle">October path</h2><span class="rd-chip" id="monthChip" role="img" aria-label=""><span class="rd-ic" data-ic="trophy" aria-hidden="true"></span><b id="monthN" aria-hidden="true">0</b></span></div>
+      <div class="rd-pips" id="monthPips"></div>
+    </section>
+
+    <section class="rd-road" id="roadList" aria-label="The road"></section>
+
+    <section class="rd-card rd-levels" id="levelsCard" aria-labelledby="levelsTitle" hidden>
+      <h2 id="levelsTitle">Game levels</h2>
+      <div id="levelRows"></div>
+      <p id="levelsNote" role="status"></p>
+    </section>
+
+    <nav class="rd-links" aria-label="More">
+      <a id="shopLink" class="cream-pill" href="/customize.html"><span id="shopFace" aria-hidden="true"></span>Buddy Shop</a>
+      <a id="stickerLink" class="cream-pill" href="/stickers.html"><span class="rd-ic" data-ic="star" aria-hidden="true"></span>Sticker book</a>
+      <a id="boardLink" class="cream-pill" href="/board.html" hidden><span class="rd-ic" data-ic="medalGold" aria-hidden="true"></span>Practice Board</a>
+    </nav>
+  </main>
+
+  <!-- the gift moment: a chest takes three taps, then each gift shows in turn -->
+  <div class="rd-ovl" id="giftOvl" role="dialog" aria-modal="true" aria-labelledby="giftLine" hidden>
+    <div class="rd-modal" id="giftModal">
+      <button id="giftShut" class="rd-shut" type="button" aria-label="Not now">✕</button>
+      <img id="giftBuddy" class="rd-cheer" alt="" aria-hidden="true" hidden />
+      <button id="giftBox" class="rd-box" type="button" aria-label="Tap the chest to open it"><img id="giftBoxImg" alt="" /></button>
+      <div id="giftArt" class="rd-reveal" aria-hidden="true" hidden></div>
+      <p id="giftLine" class="rd-line" aria-live="polite"></p>
+      <div class="rd-actions">
+        <a id="giftTry" class="cream-pill" href="/customize.html" hidden>Try it on</a>
+        <button id="giftGo" type="button" class="act-pill rd-yay" hidden>Yay!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-rewards.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,$=function(id){return document.getElementById(id);};
+      // an older cached sona.js has no road: Home is the way back
+      if(!S||!S.roadState||!S.getProfile){location.replace("/today.html");return;}
+      var P=S.getProfile();
+      if(!P.onboarded&&!P.childName){location.replace("/today.html");return;}
+      var RM=false;try{RM=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){}
+      function sfx(n){try{if(S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
+      function ic(n,px){try{return S.icon?S.icon(n,px||20):"";}catch(e){return "";}}
+      // the thousands comma by hand (no regex replace: no dollar sign before a digit on a kid page)
+      function repNum(n){n=String(Math.max(0,Math.floor(Number(n)||0)));var o="";while(n.length>3){o=","+n.slice(-3)+o;n=n.slice(0,-3);}return n+o;}
+      function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+      function icon(name,px){var s=el("span","rd-ic");s.setAttribute("aria-hidden","true");s.innerHTML=ic(name,px);return s;}
+      function paintIcons(root){var l=(root||document).querySelectorAll("[data-ic]");for(var i=0;i<l.length;i++){var m=ic(l[i].getAttribute("data-ic"),20);if(m)l[i].innerHTML=m;}}
+      var BID=S.buddyId?S.buddyId():"fox",CARDS=S.CRAFTED_CARDS||{},BUD=window.SonaCraftedBuddies||null;
+      var LAND_TINT={meadow:["#cfe8c0","#eef7e4"],beach:["#bfefff","#fff1d6"],snow:["#d9ebff","#f7fbff"],sea:["#b6e0f0","#e4f5fb"],sky:["#cdd6ff","#eef1ff"],champ:["#d6e6ff","#f0f5ff"]};
+      // a land's painted picture over its colours: a picture not on disk yet shows the colours
+      function landBg(l){var t=LAND_TINT[l.id]||LAND_TINT.meadow;return 'url("/assets/crafted/'+l.art+'.webp"),linear-gradient(180deg,'+t[0]+','+t[1]+')';}
+      function landOf(at){var lands=S.ROAD_LANDS||[],l=lands[0];for(var i=0;i<lands.length;i++)if(at>=lands[i].from)l=lands[i];return l;}
+
+      // ── a gift's picture ──
+      function coinArt(n){var a=el("span","ga ga-coins"),pile=el("span","ga-pile"),k=n>=40?3:n>=15?2:1;for(var i=0;i<k;i++){var c=el("span");c.innerHTML=ic("coin",40);pile.appendChild(c);}a.appendChild(pile);a.appendChild(el("b","",repNum(n)));return a;}
+      function stickerArt(id){var a=el("span","ga ga-stk"),s=el("span");s.innerHTML=window.SonaRewardArt?window.SonaRewardArt(id||"star"):ic("star",40);a.appendChild(s);return a;}
+      function levelArt(n){var a=el("span","ga ga-lv"),pics=el("span","ga-lvpics");["slice","tiles","hoops"].forEach(function(k){var i=el("i");if(CARDS[k])i.style.backgroundImage='url("/assets/crafted/home-'+CARDS[k]+'.webp")';pics.appendChild(i);});a.appendChild(pics);a.appendChild(el("b","",String(n)));return a;}
+      function imgArt(src,fallback,cls){var a=el("span","ga"+(cls?" "+cls:"")),im=new Image();im.alt="";im.decoding="async";im.onerror=function(){a.textContent="";a.innerHTML=fallback||"";};im.src=src;a.appendChild(im);return a;}
+      function chestArt(big,open){return imgArt("/assets/crafted/road-"+(big?"bigchest":"chest")+(open?"-open":"")+".webp",ic("chest",64));}
+      function landArt(id){var l=null;(S.ROAD_LANDS||[]).forEach(function(x){if(x.id===id)l=x;});var a=el("span","ga ga-place");if(l)a.style.backgroundImage=landBg(l);return a;}
+      // under a grown-up's "Level 1 only" a level gift is never shown or
+      // celebrated: the levels stay shut for that child, and the road says
+      // nothing that isn't true for them
+      var CAP=false;
+      function capRead(){try{CAP=!!(S.playLevelInfo&&S.playLevelInfo("slice").cap);}catch(e){CAP=false;}}
+      function shown(gs){return CAP?gs.filter(function(g){return !g.level;}):gs;}
+      function itemOf(g){var k=g.buddy?"characters":g.hat?"outfits":g.place?"backdrops":"";return k?{kind:k,id:g.buddy||g.hat||g.place}:null;}
+      function catalogName(kind,id){var l=kind==="characters"?S.CHARACTERS:kind==="outfits"?S.OUTFITS:S.BACKDROPS,n="";(l||[]).forEach(function(x){if(x.id===id)n=x.name;});return n;}
+      function itemArt(kind,id){
+        if(kind==="characters"){var a=el("span","ga ga-buddy");a.innerHTML=BUD?BUD.markup(id,96):"";return a;}
+        if(kind==="outfits"){var o=null;(S.OUTFITS||[]).forEach(function(x){if(x.id===id)o=x;});if(o&&o.art)return imgArt(o.art,ic("gift",64));var h=el("span","ga");h.innerHTML=ic("gift",64);return h;}
+        var p=el("span","ga ga-place");p.style.backgroundImage='url("/assets/crafted/customize-'+id+'-v2.webp")';return p;
+      }
+      function giftArt(g){
+        var it=itemOf(g);if(it)return itemArt(it.kind,it.id);
+        if(g.level)return levelArt(g.level);
+        if(g.coins)return coinArt(g.coins);
+        if(g.sticker)return stickerArt();
+        return landArt(g.land);
+      }
+      // a stop's one picture: a Big Chest's chest, else its first gift
+      function mainArt(s){if(s.big)return chestArt(true,false);var gs=shown(s.gift).filter(function(g){return !g.land;});return giftArt(gs[0]||s.gift[0]);}
+      function giftWords(g){var it=itemOf(g);if(it)return catalogName(it.kind,it.id)||"a new friend";if(g.level)return "Level "+g.level+" in every game";if(g.coins)return g.coins+" coins";if(g.sticker)return "a sticker";return "";}
+      function stopWords(s){var w=shown(s.gift).map(giftWords).filter(Boolean);var list=w.length>1?w.slice(0,-1).join(", ")+" and "+w[w.length-1]:(w[0]||"a gift");return s.big?"a big chest with "+list:list;}
+      // the small chips beside a stop's picture: everything inside, shown before it opens
+      function alsoChips(s){
+        var box=el("span","rd-also"),gs=shown(s.gift).filter(function(g){return !g.land;}),skip=s.big?-1:0;
+        gs.forEach(function(g,i){
+          if(i===skip)return;
+          var m=el("span","rd-mini"),it=itemOf(g);
+          if(it)m.appendChild(el("span","",catalogName(it.kind,it.id)));
+          else if(g.coins){m.appendChild(icon("coin",16));m.appendChild(el("span","",repNum(g.coins)));}
+          else if(g.sticker)m.appendChild(icon("star",16));
+          else if(g.level)m.appendChild(el("span","","Level "+g.level));
+          box.appendChild(m);
+        });
+        return box;
+      }
+
+      // ── painting the page from Sona.roadState() ──
+      var st=null;
+      function paintHead(){
+        $("trophyN").textContent=repNum(st.trophies);$("chipTrophy").setAttribute("aria-label",repNum(st.trophies)+(st.trophies===1?" trophy":" trophies"));
+        $("coinN").textContent=repNum(st.coins);$("chipCoin").setAttribute("aria-label",repNum(st.coins)+(st.coins===1?" coin":" coins"));
+      }
+      function firstMonthOpen(){var m=st.month.steps.filter(function(x){return x.reached&&!x.got;})[0];return m?m.n:0;}
+      function paintHero(){
+        $("heroBand").style.backgroundImage=landBg(st.land);$("landName").textContent=st.land.name;
+        var nx=S.roadStop(st.next.n),prev=st.stop>0?S.roadStop(st.stop).at:0;
+        var art=$("nextArt");art.textContent="";art.appendChild(mainArt(nx));
+        // a Big Chest (or a stop with more than one gift) shows what is inside too
+        var also=$("nextAlso");also.textContent="";var ch=alsoChips(nx);while(ch.firstChild)also.appendChild(ch.firstChild);also.hidden=!also.childNodes.length;
+        var frac=Math.max(0,Math.min(1,(st.trophies-prev)/Math.max(1,nx.at-prev))),on=Math.floor(frac*5+1e-9),bars=$("nextBar").children;
+        for(var i=0;i<bars.length;i++)bars[i].className=i<on?"on":"";
+        var at=$("nextAt");at.textContent="";at.appendChild(icon("trophy",15));at.appendChild(document.createTextNode(repNum(nx.at)));
+        $("heroNext").setAttribute("aria-label","Next gift at "+repNum(nx.at)+" trophies: "+stopWords(nx)+".");
+        var w=st.waiting,canOpen=!!(st.lowestWaiting||firstMonthOpen());
+        $("heroWait").hidden=!(w>0&&canOpen);
+        $("waitText").textContent=w===1?"A gift is waiting!":w+" gifts waiting!";
+        $("openNext").hidden=!(w>0&&canOpen);
+      }
+      function paintChest(){
+        var c=st.chest,g={n:0,goal:30,done:false};try{if(S.dayGoal)g=S.dayGoal();}catch(e){}
+        var card=$("chestCard");card.className="rd-card rd-chest "+(c.ready?"is-ready":c.opened?"is-done":"is-shut");
+        var art=$("chestArt");art.textContent="";art.appendChild(chestArt(c.big,c.opened));
+        var inside=$("chestInside");inside.textContent="";inside.hidden=!!c.opened;
+        inside.appendChild(icon("coin",18));inside.appendChild(document.createTextNode(c.big?"Big chest: "+c.coins+" coins and a sticker":"Inside: "+c.coins+" coins"));
+        $("chestLine").textContent=c.ready?"Your chest is ready!":c.opened?"You opened today's chest!":"Reach your goal today to open your chest!";
+        var n=Math.max(0,g.n|0),goal=Math.max(1,g.goal|0);
+        $("chestMeter").hidden=!!(c.ready||c.opened);
+        $("chestFill").style.width=Math.min(100,Math.round(n/goal*100))+"%";
+        $("chestCount").textContent=repNum(Math.min(n,goal))+"/"+repNum(goal);
+        $("chestMeter").setAttribute("aria-label",repNum(n)+" of "+repNum(goal)+" reps today");
+        $("chestOpen").hidden=!c.ready;
+      }
+      function paintMonth(){
+        var m=st.month;$("monthTitle").textContent=m.name+" path";
+        $("monthN").textContent=repNum(m.count);$("monthChip").setAttribute("aria-label",repNum(m.count)+" trophies this month");
+        var host=$("monthPips");host.textContent="";
+        m.steps.forEach(function(s){
+          var open=s.reached&&!s.got,p=el(open?"button":"div","rd-pip "+(open?"open":s.got?"done":"ahead"));
+          var g=el("span","rd-gift");g.setAttribute("aria-hidden","true");g.appendChild(s.big?chestArt(true,false):giftArt(s.gift[0]));p.appendChild(g);
+          if(s.big){var inside=alsoChips(s);inside.setAttribute("aria-hidden","true");p.appendChild(inside);}
+          var at=el("span","rd-pat");at.setAttribute("aria-hidden","true");at.appendChild(icon("trophy",12));at.appendChild(document.createTextNode(repNum(s.at)));p.appendChild(at);
+          var words=(s.big?"A big chest with "+s.gift.map(giftWords).join(" and "):giftWords(s.gift[0]))+", at "+repNum(s.at)+" trophies this month.";
+          if(open){p.type="button";var f=el("span","rd-flag","Open!");f.setAttribute("aria-hidden","true");p.appendChild(f);p.setAttribute("aria-label",words+" Open!");p.onclick=function(){openStep(s.n);};}
+          else{if(s.got){var t=el("span","rd-tick","✓");t.setAttribute("aria-hidden","true");p.appendChild(t);}p.setAttribute("role","img");p.setAttribute("aria-label",words+(s.got?" Opened.":""));}
+          host.appendChild(p);
+        });
+      }
+      // before the first stop: the child's buddy at the start of the road
+      function startRow(){var r=el("div","rd-start"),n=el("span","rd-node");n.setAttribute("aria-hidden","true");n.innerHTML=BUD?BUD.markup(BID,58):"";r.appendChild(n);r.setAttribute("role","img");r.setAttribute("aria-label","You are here.");return r;}
+      function hereFace(){var h=el("span","rd-here");h.setAttribute("aria-hidden","true");h.innerHTML=BUD?BUD.markup(BID,34):"";return h;}
+      function stopRow(s,cur){
+        var reached=s.n<=cur,got=!!st.got[s.n],open=reached&&!got;
+        var row=el(open?"button":"div","rd-stop "+(open?"open reached":got?"done reached":reached?"reached":"ahead"));
+        row.setAttribute("data-stop",String(s.n));
+        var node=el("span","rd-node");node.setAttribute("aria-hidden","true");node.appendChild(icon("trophy",18));node.appendChild(document.createTextNode(repNum(s.at)));
+        if(s.n===cur)node.appendChild(hereFace());
+        row.appendChild(node);
+        var gift=el("span","rd-sgift");gift.setAttribute("aria-hidden","true");var g=el("span","rd-gift");g.appendChild(mainArt(s));gift.appendChild(g);
+        var also=alsoChips(s);if(also.childNodes.length)gift.appendChild(also);row.appendChild(gift);
+        var state=el("span","rd-state");state.setAttribute("aria-hidden","true");
+        if(open)state.appendChild(el("span","rd-flag","Open!"));else if(got)state.appendChild(el("span","rd-tick","✓"));
+        row.appendChild(state);
+        var words="At "+repNum(s.at)+" trophies: "+stopWords(s)+"."+(s.n===cur?" You are here.":"");
+        if(open){row.type="button";row.setAttribute("aria-label",words+" Open!");row.onclick=function(){openStop(s.n);};}
+        else{row.setAttribute("role","img");row.setAttribute("aria-label",words+(got?" Opened.":""));}
+        return row;
+      }
+      // the stops from the lowest one waiting (or three behind the child)
+      // to ten ahead, in their lands: a child whose history put twenty
+      // stops behind them sees every one of them waiting
+      // (while the page is open the road never starts later than it did, so
+      // a stop just opened stays where the child's finger was)
+      var roadFrom=0;
+      function paintRoad(){
+        var host=$("roadList"),cur=st.stop,low=st.lowestWaiting!=null?st.lowestWaiting:cur;
+        var from=Math.max(1,Math.min(low,cur-3)),to=cur+10,land=null,list=null;
+        if(roadFrom&&roadFrom<from)from=roadFrom;roadFrom=from;
+        host.textContent="";
+        for(var n=from;n<=to;n++){
+          var s=S.roadStop(n);if(!s)continue;var l=landOf(s.at);
+          if(!land||l.id!==land.id){
+            land=l;var head=el("div","rd-landhead");head.style.backgroundImage=landBg(l);head.appendChild(el("h3","",l.name));host.appendChild(head);
+            list=el("div","rd-stops");host.appendChild(list);
+            if(n===from&&cur===0)list.appendChild(startRow());
+          }
+          list.appendChild(stopRow(s,cur));
+        }
+      }
+      // GAME LEVELS (LEVELS1): how a child changes a game's level after the
+      // first pick, for every released game this family can open; gone under
+      // a grown-up's "Level 1 only" (then only one level is open)
+      function paintLevels(){
+        var card=$("levelsCard"),host=$("levelRows"),open=1;
+        try{open=S.playLevelsOpen?S.playLevelsOpen():1;}catch(e){open=1;}
+        if(open<2||!S.playLevelInfo||!S.PLAY_LEVEL_LINES){card.hidden=true;return;}
+        host.textContent="";
+        Object.keys(S.PLAY_LEVEL_LINES).forEach(function(key){
+          var a=null;try{a=S.gameAccess?S.gameAccess(key):null;}catch(e){}
+          if(!a||!a.allowed)return;
+          var info=S.playLevelInfo(key);if(!info||!info.levels||info.levels.length<2||info.cap)return;
+          var name=(S.GAME_ACTS&&S.GAME_ACTS[key]&&S.GAME_ACTS[key].name)||key;
+          var row=el("div","rd-lvrow");row.setAttribute("role","group");row.setAttribute("aria-label",name);
+          var art=el("span","rd-lvart"),pic=el("i");pic.setAttribute("aria-hidden","true");if(CARDS[key])pic.style.backgroundImage='url("/assets/crafted/home-'+CARDS[key]+'.webp")';art.appendChild(pic);art.appendChild(el("span","",name));row.appendChild(art);
+          var set=el("span","rd-lvset");
+          info.levels.forEach(function(lv){
+            var col=el("span","rd-lvcol"),b=el("button","rd-lvbtn");b.type="button";b.setAttribute("data-game",key);b.setAttribute("data-level",String(lv.n));
+            b.appendChild(el("b","",String(lv.n)));var pp=el("span","rd-pips3");for(var i=1;i<=3;i++)pp.appendChild(el("i",i<=lv.n?"on":""));b.appendChild(pp);
+            var need=el("span","rd-lvneed");need.setAttribute("aria-hidden","true");
+            if(lv.open){
+              var picked=lv.n===info.pick;b.setAttribute("aria-pressed",picked?"true":"false");b.setAttribute("aria-label","Level "+lv.n+". "+lv.line);
+              if(picked){var t=el("span","rd-tick","✓");t.setAttribute("aria-hidden","true");b.appendChild(t);}
+              b.onclick=function(){sfx("tap");if(S.setPlayLevel&&S.setPlayLevel(key,lv.n)){$("levelsNote").textContent="";paintLevels();var again=document.querySelector('.rd-lvbtn[data-game="'+key+'"][data-level="'+lv.n+'"]');if(again)try{again.focus();}catch(e){}}};
+            }else{
+              b.setAttribute("aria-disabled","true");b.setAttribute("aria-label","Level "+lv.n+". Opens at "+lv.at+" trophies. You have "+lv.have+".");
+              var lk=icon("lock",18);lk.className="rd-ic rd-lock";b.appendChild(lk);
+              need.appendChild(icon("trophy",11));need.appendChild(document.createTextNode(repNum(lv.at)));
+              b.onclick=function(){$("levelsNote").textContent="Level "+lv.n+" opens at "+lv.at+" trophies. Keep practicing!";};
+            }
+            col.appendChild(b);col.appendChild(need);set.appendChild(col);
+          });
+          row.appendChild(set);host.appendChild(row);
+        });
+        card.hidden=!host.childNodes.length;
+      }
+      function paintLinks(){
+        var on=false;try{on=!!(S.boardLive&&S.boardLive()&&S.boardState&&S.boardState().on);}catch(e){on=false;}
+        $("boardLink").hidden=!on;
+      }
+      var rolledShown=false;
+      function paintRolled(){
+        var ms=(st.rolled||[]).map(function(x){return x&&x.m;}).filter(function(m,i,a){return m&&a.indexOf(m)===i;});
+        var names=ms.map(function(m){var i=(+String(m).slice(5,7))-1;return ["January","February","March","April","May","June","July","August","September","October","November","December"][i]||"";}).filter(Boolean);
+        if(!names.length){$("rolledNote").hidden=true;return;}
+        var list=names.length>1?names.slice(0,-1).join(", ")+" and "+names[names.length-1]:names[0];
+        $("rolledText").textContent="Your "+list+" gifts are in your wallet!";
+        $("rolledNote").hidden=false;rolledShown=true;
+      }
+      function seenRolled(){if(!rolledShown)return;rolledShown=false;try{if(S.roadRolledSeen)S.roadRolledSeen();}catch(e){}}
+      $("rolledOk").onclick=function(){sfx("tap");seenRolled();$("rolledNote").hidden=true;};
+      function render(){
+        capRead();st=S.roadState();
+        paintHead();paintHero();paintChest();paintMonth();paintRoad();paintLevels();paintLinks();paintRolled();
+      }
+
+      // ── the gift moment ──
+      var ovl=$("giftOvl"),box=$("giftBox"),queue=[],taps=0,openAt=0,backTo=null,boxFlow=null;
+      function settling(){return Date.now()-openAt<400;}
+      function cheer(){
+        var im=$("giftBuddy"),c=null,pt=null;
+        try{c=S.buddySprite?S.buddySprite(BID,"cheer"):null;pt=S.buddySprite?S.buddySprite(BID,"portrait"):null;}catch(e){}
+        im.className="rd-cheer";im.hidden=false;
+        im.onerror=function(){if(pt&&im.getAttribute("src")!==pt){im.className="rd-cheer badge";im.src=pt;}else{im.hidden=true;}};
+        if(c&&c.src)im.src=c.src;else if(pt){im.className="rd-cheer badge";im.src=pt;}else im.hidden=true;
+      }
+      function showOvl(){backTo=document.activeElement;ovl.hidden=false;openAt=Date.now();}
+      function closeOvl(){
+        ovl.hidden=true;box.onclick=null;boxFlow=null;queue=[];$("giftBuddy").hidden=true;
+        render();
+        var to=!$("openNext").hidden?$("openNext"):backTo&&document.body.contains(backTo)?backTo:$("roadBack");
+        try{to.focus({preventScroll:true});}catch(e){}
+      }
+      function party(){if(RM)return;try{if(S.confetti)S.confetti();}catch(e){}}
+      function revealOf(g){
+        var it=g.item,line;
+        if(g.alt)line="You have this one! Here are "+g.alt.coins+" coins!";
+        else if(it&&it.kind==="characters")line=it.name+(["frog","penguin","lion","unicorn"].indexOf(it.id)>=0?" the "+it.id:"")+" joined you!";
+        else if(it&&it.kind==="outfits")line="You got the "+it.name+"!";
+        else if(it)line="You got "+it.name+"!";
+        else if(g.full)line="Your sticker book is full! Here are "+g.coins+" coins!";
+        else if(g.sticker)line="You found the "+g.name+" sticker!";
+        else if(g.level)line="Level "+g.level+" is open in every game!";
+        else if(g.land)line=g.land==="champ"?"You reached the Champion Trail!":"Welcome to "+g.name+"!";
+        else line="+"+g.coins+" coins!";
+        var art=g.alt?coinArt(g.alt.coins):it?itemArt(it.kind,it.id):g.full?coinArt(g.coins):g.sticker?stickerArt(g.sticker):g.level?levelArt(g.level):g.land?landArt(g.land):coinArt(g.coins);
+        var to=it?"/customize.html#"+(it.kind==="characters"?"buddies":it.kind==="outfits"?"hats":"places"):"";
+        return {art:art,line:line,to:to};
+      }
+      function nextReveal(){
+        var r=queue.shift();if(!r){closeOvl();return;}
+        openAt=Date.now();box.hidden=true;$("giftShut").hidden=true;cheer();
+        var art=$("giftArt");art.hidden=false;art.textContent="";art.appendChild(r.art);
+        art.className="rd-reveal";if(!RM){void art.offsetWidth;art.className="rd-reveal pop";}
+        $("giftLine").textContent=r.line;
+        var t=$("giftTry");t.hidden=!r.to;if(r.to)t.href=r.to;
+        var go=$("giftGo");go.hidden=false;try{go.focus();}catch(e){}
+      }
+      function reveal(list){queue=list.slice();nextReveal();}
+      $("giftGo").onclick=function(){if(settling())return;sfx("tap");nextReveal();};
+      // a chest: three taps, then what is inside (the opener runs on the third tap, not before)
+      function chestFlow(big,opener){
+        showOvl();taps=0;queue=[];
+        $("giftBuddy").hidden=true;$("giftArt").hidden=true;$("giftGo").hidden=true;$("giftTry").hidden=true;$("giftShut").hidden=false;
+        box.hidden=false;box.className="rd-box"+(RM?"":" tease");
+        // the painted chest; the drawn one if the picture won't load
+        if(!$("giftBoxImg"))box.innerHTML='<img id="giftBoxImg" alt="">';
+        var img=$("giftBoxImg");img.onerror=function(){img.onerror=null;box.innerHTML='<span aria-hidden="true">'+ic("chest",160)+"</span>";};
+        img.src="/assets/crafted/road-"+(big?"bigchest":"chest")+".webp";
+        $("giftLine").textContent="Tap, tap, tap!";
+        boxFlow=opener;
+        box.onclick=function(){
+          if(settling()||!boxFlow)return;
+          taps++;sfx("tap");box.className="rd-box";if(!RM){void box.offsetWidth;box.className="rd-box thump";}
+          if(taps<3){$("giftLine").textContent=taps===1?"Tap, tap!":"One more tap!";return;}
+          var run=boxFlow;boxFlow=null;box.onclick=null;$("giftShut").hidden=true;
+          var list=run();
+          if(!list||!list.length){closeOvl();return;}
+          var im=$("giftBoxImg");if(im)im.src="/assets/crafted/road-"+(big?"bigchest":"chest")+"-open.webp";
+          $("giftLine").textContent="";sfx("reward");party();
+          setTimeout(function(){if(!ovl.hidden)reveal(list);},650);
+        };
+        try{box.focus();}catch(e){}
+      }
+      $("giftShut").onclick=function(){if(boxFlow){sfx("tap");closeOvl();}};
+      document.addEventListener("keydown",function(e){if((e.key==="Escape"||e.key==="Esc")&&!ovl.hidden&&boxFlow)closeOvl();});
+      function openDaily(){
+        var c=S.chestState();if(!c.ready){render();return;}
+        sfx("tap");
+        chestFlow(c.big,function(){
+          var got=S.chestOpen();if(!got)return null;
+          var list=[{art:chestArt(c.big,true),line:c.big?"+"+got[0].coins+" coins and a sticker!":"+"+got[0].coins+" coins!",to:""}];
+          for(var i=1;i<got.length;i++)list.push(revealOf(got[i]));
+          return list;
+        });
+      }
+      $("chestOpen").onclick=openDaily;
+      function openStop(n){
+        var s=S.roadStop(n);if(!s)return;
+        sfx("tap");
+        if(s.big){chestFlow(true,function(){var r=S.roadOpen(n);return r&&r.ok?shown(r.gifts).map(revealOf):null;});return;}
+        var r=S.roadOpen(n);if(!r||!r.ok){render();return;}
+        showOvl();sfx("reward");party();reveal(shown(r.gifts).map(revealOf));
+      }
+      function openStep(n){
+        var s=(S.MONTH_STEPS||[]).filter(function(x){return x.n===n;})[0];if(!s)return;
+        sfx("tap");
+        if(s.big){chestFlow(true,function(){var r=S.monthOpen(n);return r&&r.ok?r.gifts.map(revealOf):null;});return;}
+        var r=S.monthOpen(n);if(!r||!r.ok){render();return;}
+        showOvl();sfx("reward");party();reveal(r.gifts.map(revealOf));
+      }
+      $("openNext").onclick=function(){if(st.lowestWaiting)openStop(st.lowestWaiting);else{var m=firstMonthOpen();if(m)openStep(m);}};
+
+      // ── load: settle the month, send any board leave, then paint ──
+      var settled=null;try{settled=S.roadSettle?S.roadSettle():null;}catch(e){settled=null;}
+      try{var bp=S.boardFlush?S.boardFlush():null;if(bp&&bp.then)bp.then(null,function(){});}catch(e){}
+      paintIcons();
+      var face=$("shopFace");if(face&&BUD)face.innerHTML=BUD.markup(BID,30);
+      if(BUD&&BUD.stand)BUD.stand($("heroBuddy"),BID);
+      else{var hb=$("heroBuddy");try{hb.src=S.buddySprite(BID,"portrait");hb.className="rd-buddy badge";}catch(e){hb.hidden=true;}}
+      $("road").hidden=false;
+      render();
+      // an item listed on a stop after the child passed it: shown once, now
+      if(settled&&settled.late&&settled.late.length){
+        showOvl();sfx("reward");
+        reveal(settled.late.map(function(it){var r=revealOf({item:it});r.line="A new gift came to a stop you passed: "+it.name+(it.kind==="characters"&&["frog","penguin","lion","unicorn"].indexOf(it.id)>=0?" the "+it.id:"")+"!";return r;}));
+      }
+      // the month's notice shows once: seen when tapped away, or when the child leaves
+      window.addEventListener("pagehide",seenRolled);
+      window.addEventListener("pageshow",function(e){if(e.persisted)location.reload();});
+      document.addEventListener("visibilitychange",function(){if(!document.hidden&&ovl.hidden)render();});
+    })();
+  </script>
+</body>
+</html>

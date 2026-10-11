@@ -187,6 +187,16 @@
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
     <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
+    <!-- THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): Home's one new thing. A
+         picture leads (the next gift, the waiting one, or the chest when it is
+         ready) beside a bar filling toward it; the counts are small, and the
+         words are in its label. It only reads (Sona.roadState): opening the
+         chest, settling the month and every event belong to the road page. -->
+    <a id="roadCard" href="/road.html" aria-label="Trophy Road" hidden>
+      <span class="road-pic" id="roadPic" aria-hidden="true"></span>
+      <span class="road-copy"><span class="road-bar" id="roadBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="road-small" id="roadSmall" aria-hidden="true"></span></span>
+      <span class="road-dot" id="roadDot" hidden></span><span class="road-go" aria-hidden="true">›</span>
+    </a>
     <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
@@ -532,7 +542,66 @@
       }
     }
     paintReps();
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden) paintReps(); });
+    // ── the Trophy Road card (HOME3). It reads Sona.roadState() and nothing
+    // else, on load and when Home comes back to the front (a reload on a
+    // restored page already repaints it): the chest when today's is ready,
+    // else a gift waiting on the road, else the next gift with the bar filling
+    // toward it. It never opens a chest, settles a month or sends an event: a
+    // tap goes to the road page, which does those. An older cached sona.js has
+    // no trophies, and then the card stays hidden.
+    function roadIcon(name,px){var s=document.createElement("span");s.className="road-ic";s.innerHTML=(S&&S.icon)?S.icon(name,px||16):"";return s;}
+    function roadImg(src,fallback){var im=new Image();im.alt="";im.decoding="async";im.onerror=function(){var p=im.parentNode;if(p){p.removeChild(im);p.appendChild(roadIcon(fallback,44));}};im.src=src;return im;}
+    function roadArt(stop){
+      var box=document.createElement("span"),g=null,i;box.className="road-art";
+      if(stop.big){box.appendChild(roadImg("/assets/crafted/road-bigchest.webp","chest"));return box;}
+      // (under a grown-up's "Level 1 only" a level gift is not shown: it opens nothing for this child)
+      for(i=0;i<stop.gift.length;i++){if(!stop.gift[i].land&&!(roadCap&&stop.gift[i].level)){g=stop.gift[i];break;}}
+      if(!g)g=stop.gift[0]||{};
+      var it=g.buddy?["characters",g.buddy]:g.hat?["outfits",g.hat]:g.place?["backdrops",g.place]:null;
+      if(it&&it[0]==="characters"&&window.SonaCraftedBuddies){box.innerHTML=SonaCraftedBuddies.markup(it[1],48);return box;}
+      if(it&&it[0]==="backdrops"){box.className="road-art road-place";box.style.backgroundImage='url("/assets/crafted/customize-'+it[1]+'-v2.webp")';return box;}
+      if(it){box.appendChild(roadIcon("gift",44));return box;}
+      if(g.level){
+        box.className="road-art road-level";var pics=document.createElement("span");pics.className="road-lvpics";
+        var cards=(S&&S.CRAFTED_CARDS)||{};["slice","tiles","hoops"].forEach(function(k){var e=document.createElement("i");if(cards[k])e.style.backgroundImage='url("/assets/crafted/home-'+cards[k]+'.webp")';pics.appendChild(e);});
+        box.appendChild(pics);var b=document.createElement("b");b.textContent=String(g.level);box.appendChild(b);return box;
+      }
+      if(g.sticker){box.className="road-art road-stk";var d=document.createElement("span");d.appendChild(roadIcon("star",30));box.appendChild(d);return box;}
+      box.className="road-art road-coins";var n=g.coins|0,k=n>=40?3:n>=15?2:1;for(i=0;i<k;i++)box.appendChild(roadIcon("coin",30));return box;
+    }
+    var roadCap=false;
+    function paintRoad(){
+      var card=$("roadCard");if(!card)return;
+      try{roadCap=!!(S&&S.playLevelInfo&&S.playLevelInfo("slice").cap);}catch(e){roadCap=false;}
+      var st=null;try{if(S&&S.trophyState&&S.roadState)st=S.roadState();}catch(e){st=null;}
+      if(!st){card.hidden=true;return;}
+      var pic=$("roadPic"),bars=$("roadBar").children,fill=5,label="Trophy Road. "+repNum(st.trophies)+(st.trophies===1?" trophy. ":" trophies. ")+repNum(st.coins)+(st.coins===1?" coin. ":" coins. ");
+      pic.textContent="";
+      if(st.chest&&st.chest.ready){
+        var ch=document.createElement("span");ch.className="road-art";ch.appendChild(roadImg("/assets/crafted/road-"+(st.chest.big?"bigchest":"chest")+".webp","chest"));pic.appendChild(ch);
+        label+="Your chest is ready.";
+      }else if(st.waiting>0){
+        if(st.lowestWaiting)pic.appendChild(roadArt(S.roadStop(st.lowestWaiting)));
+        else{var gb=document.createElement("span");gb.className="road-art";gb.appendChild(roadIcon("gift",44));pic.appendChild(gb);}
+        label+=st.waiting===1?"A gift is waiting.":st.waiting+" gifts are waiting.";
+      }else{
+        var nx=S.roadStop(st.next.n),prev=st.stop>0?S.roadStop(st.stop).at:0,lv=0;
+        pic.appendChild(roadArt(nx));
+        fill=Math.floor(Math.max(0,Math.min(1,(st.trophies-prev)/Math.max(1,nx.at-prev)))*5+1e-9);
+        nx.gift.forEach(function(g){if(g.level&&!roadCap)lv=g.level;});
+        label+=lv?"Level "+lv+" at "+repNum(nx.at)+" trophies.":"Next gift at "+repNum(nx.at)+" trophies.";
+      }
+      for(var i=0;i<bars.length;i++)bars[i].className=i<fill?"on":"";
+      var sm=$("roadSmall");sm.textContent="";
+      sm.appendChild(roadIcon("trophy",15));sm.appendChild(document.createTextNode(repNum(st.trophies)));
+      sm.appendChild(roadIcon("coin",15));sm.appendChild(document.createTextNode(repNum(st.coins)));
+      $("roadDot").hidden=!((st.chest&&st.chest.ready)||st.waiting>0);
+      card.setAttribute("aria-label",label);
+      card.hidden=false;
+    }
+    paintRoad();
+    $("roadCard").addEventListener("click",function(){ sfx("tap"); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden){ paintReps(); paintRoad(); } });
     $("repPill").onclick=function(){ sfx("tap"); openGate(function(){ location.href="/settings.html#reps"; }); };
     (function(){
       var pad=$("pad"); var keys=[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"];

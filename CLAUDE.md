@@ -879,7 +879,11 @@ officer, an engineer — whose rulings are now rules:
 - **No caseload-wide average.** An unweighted mean of percentages across
   children is meaningless; the one number is "N of M children practiced this
   week". No leaderboard, no ranking, no comparison across families — a
-  district officer ends the app's use on that alone.
+  district officer ends the app's use on that alone. This binds the
+  clinician side. A family Practice Board is Travis's decision (9 Oct 2026):
+  opt-in by a grown-up's email, off on clinician-linked and many-child phones
+  and for families who say a therapist or school sent them, and never in
+  `slp.html`, `sendProgress` or any clinician route.
 - **Invites hold initials, never a name.** The SLP may add a child before the
   family joins, but the placeholder is a label ("MK"), an optional age and a
   target; the family types the name when they join, so nobody at a school or
@@ -976,7 +980,11 @@ redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
 Fruit Slice from 5; see "The ask happens after the product proves itself"),
 and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
-profiles, earned coins, homework and entitlement sync remain available.
+profiles, earned coins (now visible, on the Trophy Road), homework and
+entitlement sync remain available. Home gains one Trophy Road card under
+"Pick a game!" (read-only), a level badge on a card's picture, and a level
+sheet that opens only from a tap (see "Trophies, coins and the Trophy Road"
+and "Levels inside games").
 
 **The fuller books** (Travis, 26 Sep 2026: "do one for each letter"): one
 twelve-page story per sound, first on each sound's shelf in `library.html`.
@@ -1795,8 +1803,10 @@ between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
 Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
 word and each accepted book key word (one a page).
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
-enter `outcomes()`, so no pass rate, clinician's note, shared progress or
-coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
+enter `outcomes()`, so no pass rate, clinician's note or shared progress
+sees them: the hard rule "voice boosts never logged as SLP data" holds. Since
+11 Oct 2026 they earn trophies and goal days (TROPHY1), a play currency that
+never enters `outcomes()`.
 Only a voiced try that passed the game's own check counts, once per ask;
 silence never does. **Progress keeps practice apart:** its "tries" and
 everything it hands a clinician (the summary, the card, "Free-play games are
@@ -1848,10 +1858,12 @@ control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 "whatever you think is best for kids you can do"). A game counts ONE real
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
-Home's picture of the game carries a small "Best 17". **Step one is built:**
-the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
-(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Hoops and Soccer
-Goal follow after Travis has played these two; Dino Dig gets no number.
+Home's picture of the game carries a small "Best 17". All five round games
+keep one (Fruit Slice and Piano Tiles a row, Block Stacker, Sound Sprint and
+Flappy Glide their own counts); Hoops and Soccer Goal have none yet, and Dino
+Dig gets no number. Level 1's best is `sona.bests.v1`; a game's Level 2 and 3
+bests live in `sona.playlevel.v1` (see "Levels inside games"), so a best is
+never measured against a level whose top it cannot reach.
 - **What binds every game that gets one.** Every ending remains kind; a
   completed finale celebrates a win, and zero hearts ends the round without
   claiming completion. The number on screen never goes
@@ -1933,6 +1945,94 @@ Goal follow after Travis has played these two; Dino Dig gets no number.
 `tests/besttest.mjs` pins the store, the leaks and Home's tag; `tilestest`
 and `slicetest` play each game's row and every line; `superslicetest` plays
 the extras through the real earned turn.
+
+**Trophies, coins and the Trophy Road (Travis, 9–11 Oct 2026: "a currency so
+they can buy stuff like characters"; "motivated over weeks and months like
+Clash Royale").** A child's practice now fills a road of gifts they can see.
+- **Trophies follow the honest rep** (TROPHY1, `sona.trophy.v1`, per child):
+  a practice try (a miss the same as a pass), an accepted game ask or an
+  accepted book word. **A day at the goal is always 30 trophies, whatever the
+  goal**: a family goal of 100 earns no more, a speech therapist's 10 a day no
+  less (at the default goal of 30, one trophy a rep). They are never spent and
+  never lost; the ledger pays only the difference from what today already
+  paid, so nothing pays twice. "Reset progress" leaves them. A child already
+  on Sona started with what their reps since 21 Sep 2026 earned. Silence, a
+  tap, a page load, a best, a heart or an arcade score earns nothing.
+- **Coins come from two places only** (COIN3, CHEST1): the **daily chest**
+  (`sona.chest.v1`: once, on a day the daily goal is met; 10 coins, every
+  fifth a Big Chest of 25 and a sticker; a skipped day piles up nothing) and
+  **gifts on the road and the month's path**. The arcade end cards, the daily
+  run, Coach Call, the story and the reps mint no longer pay coins; balances
+  from before are kept (and now show). **Coins are never sold**: no coin
+  product, ever, in `IAP_PRODUCTS`. The wallet refuses junk amounts.
+- **The road** (ROAD1, `sona.road.v1`): numbered stops by lifetime trophies
+  across five lands (Sunny Meadow, Beach Bay, Snowy Peak, Under the Sea,
+  Starry Sky, then the Champion Trail's bonus stops every 150). The table is
+  `ROAD_STOPS` in `sona.js`; stop 3 (150) and stop 10 (750) celebrate Level 2
+  and Level 3, which the trophy count itself opens. An item a child already
+  owns pays coins instead (`ROAD_ALT`). **A road item joins its stop only
+  once its painted art is on disk; until then a stop whose only gift is that
+  item pays what an owned one would** (the Sun hat's stop 50 coins, a place's
+  80): the lead's choice in the build, Travis's to change. **An item listed on
+  a stop after a child opened it is still given, once** (`roadSettle`), with
+  no coins a second time.
+- **"October path"** (MONTH1): eight steps by this calendar month's trophies,
+  named for the month, coins kept small and four stickers. **Only the road
+  page settles a month** (`roadSettle()` on its load, never Home): every
+  ended month since `MONTH_SINCE` ("2026-10") hands its reached, unopened
+  steps to the wallet once, and the page says so in one line ("Your October
+  gifts are in your wallet!"), shown once. Nothing says "missed".
+- **Nothing random, no timers, every gift shown before it opens.** A chest
+  takes three taps ("Tap, tap!", "One more tap!") and shows each gift in turn.
+  No countdown, no "ends in", no rarity word, no price on any kid page.
+- **The road page** (`road.html`, `crafted-road.css`): the land and the
+  child's buddy, the next gift filling up, "Open next" when gifts wait,
+  today's chest, the month's path, the stops (from the lowest one waiting, so
+  a child whose history passed twenty stops sees them all), "Game levels",
+  and links to the Buddy Shop and the sticker book (which now shows no count:
+  "Your stickers"). Silent but the tap and reward chimes. Its events ("chest
+  opened", "road gift opened", "month gift opened") are sent by `sona.js` and
+  carry nothing: no stop or step number (a stop is a lifetime trophy count),
+  no coins.
+- **Home's one card** (`#roadCard`, under "Pick a game!"): the next gift's
+  picture (or the waiting one, or the chest when it is ready) and a five-part
+  bar; the counts are small and the words are in its label; a teal dot when
+  something is ready. It only reads `Sona.roadState()`; a tap goes to the road.
+- **Test seeds may set `sona.trophy.v1` directly** (`{v:1, t, d, dn, m, mn}`)
+  rather than replay weeks of reps. `trophytest` pins the economy (no browser);
+  `roadtest` plays Home's card, the road page and the sticker book.
+- **For Rachel:** a try counts toward the goal, and so earns trophies, even
+  when Apple's listener heard a clearly different word ("taco"); whether it
+  should is hers. **For Travis and Rachel:** a little one who only plays Feed
+  Echo and Bubble Pop needs six rounds to open the chest at the default goal.
+
+**Levels inside games (LEVELS1, Travis, 9 Oct 2026: "kids see games and
+levels but have to unlock them"; he chose levels inside games, not locked
+games).** Every game opens exactly as before (access, Premium, the trial and
+Coming soon are untouched); inside nine of them Level 2 opens at **150
+trophies** (five goal days) and Level 3 at **750**, for every game at once,
+per child (`sona.playlevel.v1`). Feed Echo keeps one level until Rachel says;
+a parked game has none.
+- **One tap still plays.** The first tap on a game after a new level opens
+  shows "Pick a level" for that game, once (`playLevelAsk`); every tap after
+  plays the level last picked. The road page's "Game levels" changes it. A
+  card playing Level 2 or 3 carries a small numeral and pips. A grown-up's
+  "Level 1 only" (Settings, Buddy & world) turns it all off.
+- **Level 1 is today's game, byte for byte:** each page keeps its Level 1
+  tables and best lines on their own lines and overrides after them.
+- **Finger play only.** A level never changes what a child says or how often,
+  the say-it card, the hearts, the sound powers, `CHARGE_NEED`, `ROT_LEN`,
+  `SOUND_NORM` or the speech ladder. **Every help path reads Level 1's
+  numbers**: once a help starts (the two-miss help, "every ball ends in a
+  basket", Dino Dig's glow and crumble, Bubble Pop's touch-anywhere, the safe
+  landing), the game is no harder than Level 1. `levelstest` and
+  `levelsplaytest` hold each help value equal at all three levels.
+- **Bests per level:** Level 1's stays Beat Your Best's; Level 2 and 3 keep
+  their own, so a best is never measured against a level whose top it cannot
+  reach.
+- **Never sold, never on a grey card:** Premium opens every game, not the
+  levels inside them (the Terms say so). "level played" is sent by the game
+  page, once a load at Level 2 or 3, never by Home.
 
 **Play as your buddy (BUDDY2, 11 Oct 2026)** (Travis, 9 Oct 2026: "a
 currency so they can buy stuff like characters, and they actually BE the
@@ -2266,7 +2366,7 @@ days (before 5 Oct 2026) preserving existing weeks. An unfinished week does not
 break the prior completed-week streak. `momWeek().days/done` remain actual
 practice days for the clinical summary; `.metDays/.goalDone` serve the goal.
 Game and book reps remain outside outcomes, clinician summaries, shared
-progress, practice coins and homework reports. Settings explicitly explains
+progress and homework reports. They earn trophies (TROPHY1). Settings explicitly explains
 the homework report's practice-only count. No child name enters goal analytics.
 `dailygoaltest`, `repweektest`, `momweek` and `booktest` pin the boundaries.
 

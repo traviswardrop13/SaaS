@@ -63,7 +63,7 @@ ok("the note names the day Travis emailed the list", /^Sona launches Friday, Oct
 // ── 2. which pages lock ──
 const pages = readdirSync(PUB).filter((f) => f.endsWith(".html"));
 ok("every open page is a real page (a typo would lock the one it meant)", L.OPEN_PAGES.every((f) => existsSync(path.join(PUB, f))), L.OPEN_PAGES.filter((f) => !existsSync(path.join(PUB, f))));
-const mustLock = ["today.html", "onboarding.html", "charge.html", "arcade-slice.html", "arcade-feed.html", "arcade-hoops.html", "library.html", "join.html", "subscribe.html", "settings.html", "progress.html", "check.html", "customize.html", "stickers.html", "premium.html", "trial.html"];
+const mustLock = ["today.html", "onboarding.html", "charge.html", "arcade-slice.html", "arcade-feed.html", "arcade-hoops.html", "library.html", "join.html", "subscribe.html", "settings.html", "progress.html", "check.html", "customize.html", "stickers.html", "road.html", "premium.html", "trial.html"];
 ok("the family app locks: Home, setup, practice, every game, the books, a clinician's family link, the plan and grown-up pages",
   mustLock.every((f) => L.lockedPage("/" + f)), mustLock.filter((f) => !L.lockedPage("/" + f)));
 const mustOpen = ["parents.html", "for-slps.html", "slp.html", "slp-login.html", "leads.html", "founders.html", "privacy.html", "launching.html"];

@@ -270,6 +270,23 @@ export default function TermsPage() {
         accounts that violate these Terms.
       </Section>
 
+      {/* The Trophy Road (11 Oct 2026). Trophies, coins and the things they
+          open are a play economy, never money: nothing in it is sold, and
+          Premium (which opens every game and every book) does not open the
+          levels inside games. Promised here: an item a child has is never
+          taken away. */}
+      <Section title="Trophies, coins and game levels">
+        Children earn trophies by saying their sounds and words out loud, up to
+        the day&apos;s goal, and coins from the daily chest and the Trophy Road.
+        Trophies, coins, and the buddies, hats, places, stickers and game levels
+        they open have no money value: they can&apos;t be bought, sold, traded or
+        cashed out, and they live on your device (a backup moves them). Some
+        levels inside games open as your child earns trophies; buying Premium
+        does not open them. We may add items or change prices, but we won&apos;t
+        take away an item a child already has, on this device or one a backup
+        moves it to.
+      </Section>
+
       <Section title="Your content &amp; our content">
         You keep ownership of information you provide. You grant us a limited
         license to use it to operate the service. Sona&apos;s software, content,

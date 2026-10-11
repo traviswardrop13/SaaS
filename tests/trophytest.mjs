@@ -23,8 +23,12 @@
 // up's cap, each level's own best. The buddies' painted poses (BUDDY2,
 // section 14) joined in step 4: every picture BUDDY_ART names is on disk in
 // its pose's frame, a missing pose falls back in one order, and reading them
-// writes nothing. The daily chest, the Trophy Road and the shop are added to
-// this suite by the steps that build them.
+// writes nothing. The daily chest, the Trophy Road and the month's path
+// (CHEST1, ROAD1, MONTH1, sections 15 to 18) joined in step 6: one chest a
+// day the goal is met, every fifth a Big Chest; numbered stops with fixed
+// gifts by lifetime trophies; a small path by this month's, every ended
+// month handed out once, only by the road page; nothing random, nothing
+// lost. The shop is added to this suite by the step that builds it.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -63,7 +67,7 @@ function boot(opts = {}) {
     local["sona.freever.v1"] = "kept";
     if (opts.profile !== null) local["sona.profile.v1"] = JSON.stringify(Object.assign({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }, opts.profile || {}));
   }
-  vm.runInContext(readFileSync(ROOT + "/sona.js", "utf8"), ctx, { filename: "sona.js" });
+  vm.runInContext(opts.src || readFileSync(ROOT + "/sona.js", "utf8"), ctx, { filename: "sona.js" });
   return { S: ctx.Sona, ctx, local, session, clock };
 }
 const DAY = 864e5;
@@ -602,6 +606,244 @@ sec("14d where BUDDY2 lives in sona.js, and what it touches", () => {
   ok("it only reads: no save, no storage, no network, no event", /function buddySprite\(/.test(code) && /function buddyId\(/.test(code) && !/save\(|setItem|removeItem|fetch\(|sendBeacon|track\(|addCoins|spendCoins/.test(code));
   const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
   ok("buddyId and buddySprite are exported on the one export line, before soundMark, clipsSettled", /\bbuddyId, buddySprite,[^\n]*\bsoundMark, clipsSettled\b/.test(line));
+});
+
+// ── 15. the daily chest (CHEST1, step 6) ──
+sec("15a one chest a day, on a day the goal is met", () => {
+  const p = boot(), { S } = p;
+  ok("Sona exports chestState() and chestOpen()", typeof S.chestState === "function" && typeof S.chestOpen === "function");
+  let st = S.chestState();
+  ok("before the goal the chest is shut, and says what is inside: 10 coins", !st.ready && !st.opened && !st.big && st.coins === 10 && !st.sticker, st);
+  const before = snap(p);
+  ok("…and opening it does nothing, and writes nothing", S.chestOpen() === null && snap(p) === before);
+  reps(S, 29);
+  ok("29 reps of a goal of 30: still shut", !S.chestState().ready);
+  S.gameRep("R");
+  st = S.chestState();
+  ok("the 30th rep meets the goal: the chest is ready", st.ready && !st.opened, st);
+  const got = S.chestOpen();
+  ok("opening it gives exactly 10 coins", JSON.stringify(got) === JSON.stringify([{ coins: 10 }]) && S.coinsNow() === 10, got);
+  st = S.chestState();
+  ok("…once: it reads opened, no longer ready, and a second open gives nothing", st.opened && !st.ready && S.chestOpen() === null && S.coinsNow() === 10, st);
+  reps(S, 40);
+  ok("more reps that day open no second chest", !S.chestState().ready && S.chestOpen() === null && S.coinsNow() === 10);
+});
+sec("15b every fifth chest is a Big Chest, and skipped days pile up nothing", () => {
+  const p = boot(), { S } = p, seen = [];
+  for (let d = 0; d < 4; d++) { reps(S, 30); seen.push(JSON.stringify(S.chestOpen())); p.clock.now += DAY; }
+  p.clock.now += 3 * DAY;   // three days without the goal
+  let st = S.chestState();
+  ok("a day without the goal shows nothing missed: not ready, not opened", !st.ready && !st.opened, st);
+  ok("the next chest (the 5th) says before it opens: 25 coins and a sticker", st.big && st.coins === 25 && st.sticker, st);
+  reps(S, 30);
+  const big = S.chestOpen();
+  ok("the 5th chest gives 25 coins and the next sticker in the book, by name", big && big.length === 2 && big[0].coins === 25 && big[1].sticker === "star" && big[1].name === "Star" && S.hasSticker("star"), big);
+  ok("the four before it were 10 coins each, and the skipped days added no chest", seen.every((g) => g === JSON.stringify([{ coins: 10 }])) && S.coinsNow() === 40 + 25 && JSON.parse(p.local["sona.chest.v1"]).n === 5, { seen, coins: S.coinsNow() });
+  p.clock.now += DAY; reps(S, 30); st = S.chestState();
+  ok("…and the 6th is an ordinary chest again", st.ready && !st.big && st.coins === 10, st);
+});
+sec("15c a full sticker book pays 20 coins, and the ledger is written first", () => {
+  const p = boot(), { S } = p;
+  p.local["sona.chest.v1"] = JSON.stringify({ n: 4, last: "2026-10-01" });
+  const all = {}; S.STICKERS.forEach((s) => { all[s.id] = { at: 1 }; }); p.local["sona.stickers.v1"] = JSON.stringify(all);
+  reps(S, 30);
+  const got = S.chestOpen();
+  ok("a Big Chest with every sticker collected pays 20 coins for the sticker", JSON.stringify(got) === JSON.stringify([{ coins: 25 }, { coins: 20, full: true }]) && S.coinsNow() === 45, got);
+  const body = (SRC.match(/function chestOpen\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("chestOpen saves its ledger before it pays (a crash under-pays, never pays twice)", body.indexOf("save(CHESTKEY") > 0 && body.indexOf("save(CHESTKEY") < body.indexOf("addCoins("), body.slice(0, 160));
+});
+sec("15d the chest reads the goal stamp, per child", () => {
+  const p = boot({ profile: { dailyGoal: 50 } }), { S } = p;
+  reps(S, 30);
+  ok("with a goal of 50, 30 reps leave it shut", !S.chestState().ready);
+  p.local["sona.goaldays.v1"] = JSON.stringify({ "2026-10-20": 30 });
+  ok("a day already stamped as met (before the goal was raised) keeps it ready", S.chestState().ready);
+  S.chestOpen();
+  S.addKid("Ben", "6");
+  ok("a brother or sister has their own chest and their own coins", !S.chestState().opened && S.coinsNow() === 0 && !("sona.chest.v1@" + S.activeKid().slot in p.local));
+});
+
+// ── 16. the Trophy Road (ROAD1, step 6) ──
+const setTrophies = (p, t) => { p.local[p.S.kkey("sona.trophy.v1")] = JSON.stringify({ v: 1, t, d: "2026-10-20", dn: 0, m: "2026-10", mn: 0 }); };
+sec("16a the stop table", () => {
+  const { S } = boot(), st = S.ROAD_STOPS;
+  ok("28 stops numbered 1..28, each further than the last, at the trophies the table names",
+    st.length === 28 && st.every((s, i) => s.n === i + 1 && (i === 0 || s.at > st[i - 1].at)) &&
+    JSON.stringify(st.map((s) => s.at)) === JSON.stringify([30, 80, 150, 220, 300, 380, 460, 540, 640, 750, 850, 950, 1050, 1150, 1250, 1350, 1475, 1600, 1725, 1850, 1975, 2100, 2250, 2400, 2550, 2700, 2850, 3000]), st.map((s) => s.at));
+  const lands = st.filter((s) => s.gift.some((g) => g.land)).map((s) => [s.n, s.gift.filter((g) => g.land)[0].land]);
+  ok("the Big Chests are stops 5, 10, 16, 22 and 28, and each crosses into the next land", JSON.stringify(lands) === JSON.stringify([[5, "beach"], [10, "snow"], [16, "sea"], [22, "sky"], [28, "champ"]]) && st.filter((s) => s.big).map((s) => s.n).join() === "5,10,16,22,28", lands);
+  ok("the lands begin where their Big Chests are", JSON.stringify(S.ROAD_LANDS.map((l) => [l.id, l.name, l.from])) === JSON.stringify([["meadow", "Sunny Meadow", 0], ["beach", "Beach Bay", 300], ["snow", "Snowy Peak", 750], ["sea", "Under the Sea", 1350], ["sky", "Starry Sky", 2100], ["champ", "Champion Trail", 3000]]) && S.ROAD_LANDS.every((l, i) => i === 0 || st.some((s) => s.at === l.from && s.big)));
+  ok("Level 2 is the gift at 150 and Level 3 at 750, the trophies that open them", st[2].gift.some((g) => g.level === 2) && st[9].gift.some((g) => g.level === 3) && S.PLAY_LEVEL_AT[1] === 150 && S.PLAY_LEVEL_AT[2] === 750);
+  ok("no stop opens empty: each gives coins, a sticker, a level or an item", st.every((s) => s.gift.some((g) => g.coins > 0 || g.sticker || g.level || g.buddy || g.hat || g.place)));
+  const items = []; st.forEach((s) => s.gift.forEach((g) => ["buddy", "hat", "place"].forEach((k) => { if (g[k]) items.push([k, g[k]]); })));
+  const lists = { buddy: S.CHARACTERS, hat: S.OUTFITS, place: S.BACKDROPS };
+  const art = (k, it) => k === "buddy" ? (it.portrait || "/assets/crafted/buddy-" + it.id + "-v2.webp") : k === "hat" ? it.art : "/assets/crafted/customize-" + it.id + "-v2.webp";
+  ok("every item a stop names is a road-only catalog entry whose painted art is on disk (an item joins its stop only with its art)",
+    items.every(([k, id]) => { const it = lists[k].filter((x) => x.id === id)[0]; return it && it.source === "road" && art(k, it) && existsSync(path.join(ROOT, art(k, it))); }), items);
+  ok("the Champion Trail's bonus stops come every 150 trophies, 30 coins and a sticker by turns",
+    JSON.stringify([29, 30, 31, 32].map((n) => S.roadStop(n))) === JSON.stringify([{ n: 29, at: 3150, gift: [{ coins: 30 }] }, { n: 30, at: 3300, gift: [{ sticker: 1 }] }, { n: 31, at: 3450, gift: [{ coins: 30 }] }, { n: 32, at: 3600, gift: [{ sticker: 1 }] }]) && S.roadStop(0) === null && S.roadStop(3) === st[2]);
+});
+sec("16b opening a stop", () => {
+  const p = boot(), { S } = p;
+  setTrophies(p, 100);
+  let r = S.roadState();
+  ok("at 100 trophies stops 1 and 2 are reached and waiting, and the next is stop 3 at 150, Level 2",
+    r.trophies === 100 && r.stop === 2 && r.waiting === 2 && r.lowestWaiting === 1 && r.next.n === 3 && r.next.at === 150 && r.next.gift.some((g) => g.level === 2) && r.land.id === "meadow" && r.land.name === "Sunny Meadow" && r.land.art === "customize-forest-v2", r);
+  ok("a stop not reached refuses to open", JSON.stringify(S.roadOpen(3)) === JSON.stringify({ ok: false, reason: "not-yet" }) && S.coinsNow() === 0);
+  const a = S.roadOpen(1);
+  ok("stop 1 opens: 20 coins", a.ok && JSON.stringify(a.gifts) === JSON.stringify([{ coins: 20 }]) && S.coinsNow() === 20, a);
+  ok("…once: opening it again is refused and pays nothing", JSON.stringify(S.roadOpen(1)) === JSON.stringify({ ok: false, reason: "opened" }) && S.coinsNow() === 20);
+  const b = S.roadOpen(2);
+  ok("stop 2 gives the next sticker, by name", b.ok && b.gifts.length === 1 && b.gifts[0].sticker === "star" && b.gifts[0].name === "Star" && S.hasSticker("star"), b);
+  r = S.roadState();
+  ok("then nothing waits", r.waiting === 0 && r.lowestWaiting === null && r.coins === 20, r);
+  setTrophies(p, 160);
+  const c = S.roadOpen(3);
+  ok("stop 3 celebrates Level 2 (the trophies already opened it) and gives 20 coins", c.ok && JSON.stringify(c.gifts) === JSON.stringify([{ level: 2 }, { coins: 20 }]) && S.playLevelsOpen() === 2, c);
+  setTrophies(p, 300);
+  const d = S.roadOpen(5);
+  ok("a Big Chest gives every gift on it, and welcomes the child to the next land", d.ok && d.gifts.length === 3 && d.gifts[0].coins === 40 && d.gifts[1].sticker && JSON.stringify(d.gifts[2]) === JSON.stringify({ land: "beach", name: "Beach Bay" }) && S.roadState().land.id === "beach", d);
+  ok("a stop can be opened out of order, and the one before it still waits", S.roadState().lowestWaiting === 4 && S.roadOpen(4).ok && S.roadState().waiting === 0);
+  ok("junk stop numbers are refused", ["x", 0, -1, null, undefined, 1.5e9].every((n) => S.roadOpen(n).ok === false));
+  setTrophies(p, 2000);
+  r = S.roadState();
+  ok("with 2,000 trophies every reached stop waits, and the lowest is the first one not opened", r.stop === 21 && r.waiting === 21 - 5 && r.lowestWaiting === 6 && r.next.n === 22 && r.land.id === "sea", r);
+});
+// an art step lists items on stops: played by booting a sona.js whose table
+// names them, on the same phone (a new build reaching a child who already
+// passed the stop)
+const WITH_ITEMS = SRC.replace("{ n: 4, at: 220, gift: [{ coins: 30 }] }", '{ n: 4, at: 220, gift: [{ buddy: "cat" }] }')
+  .replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ coins: 50 }, { hat: "sunhat" }] }')
+  .replace('{ id: "party",  name: "Party",  emoji: "🥳", cost: 40 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", cost: 0 },');
+sec("16c a gift already owned, and an item listed after its stop was opened", () => {
+  ok("(this test's table names a cat on stop 4 and the Sun hat on stop 6)", WITH_ITEMS !== SRC && /gift: \[\{ coins: 50 \}, \{ hat: "sunhat" \}\]/.test(WITH_ITEMS) && /buddy: "cat"/.test(WITH_ITEMS) && /id: "sunhat"/.test(WITH_ITEMS));
+  const o = boot({ profile: { owned: { characters: ["cat"], outfits: ["sunhat"] } }, src: WITH_ITEMS });
+  setTrophies(o, 400);
+  const four = o.S.roadOpen(4);
+  ok("a buddy the child already has pays 100 coins instead", JSON.stringify(four.gifts) === JSON.stringify([{ alt: { kind: "characters", id: "cat", name: "Mochi", coins: 100 } }]) && o.S.coinsNow() === 100, four);
+  const six = o.S.roadOpen(6);
+  ok("…and a hat already owned pays 50", six.ok && JSON.stringify(six.gifts[1]) === JSON.stringify({ alt: { kind: "outfits", id: "sunhat", name: "Sun hat", coins: 50 } }) && o.S.coinsNow() === 200, six);
+  ok("an item handed over at its stop is never handed over again", o.S.roadSettle() === null && o.S.coinsNow() === 200);
+  const n = boot({ src: WITH_ITEMS }); setTrophies(n, 400);
+  const g = n.S.roadOpen(6);
+  ok("an item the child doesn't have is theirs from the stop", g.ok && JSON.stringify(g.gifts[1]) === JSON.stringify({ item: { kind: "outfits", id: "sunhat", name: "Sun hat" } }) && n.S.owns("outfits", "sunhat") && JSON.parse(n.local["sona.road.v1"]).items["6:sunhat"] === 1, g);
+
+  const p = boot(); setTrophies(p, 400);
+  const first = p.S.roadOpen(6);
+  ok("today stop 6 opens with its coins (the Sun hat's art is not on disk yet)", first.ok && JSON.stringify(first.gifts) === JSON.stringify([{ coins: 50 }]) && p.S.coinsNow() === 50, first);
+  const q = boot({ local: p.local, src: WITH_ITEMS, clock: p.clock });
+  ok("after the build that lists it, the hat counts as a gift waiting, before the road page loads", q.S.roadState().waiting === 5 + 1, q.S.roadState().waiting);
+  const s1 = q.S.roadSettle();
+  ok("the road page's settle hands over the Sun hat once, records it, and pays no coins",
+    s1 && JSON.stringify(s1.late) === JSON.stringify([{ kind: "outfits", id: "sunhat", name: "Sun hat" }]) && q.S.owns("outfits", "sunhat") && JSON.parse(q.local["sona.road.v1"]).items["6:sunhat"] === 1 && q.S.coinsNow() === 50, s1);
+  ok("…and a second settle gives nothing", q.S.roadSettle() === null && q.S.coinsNow() === 50 && q.S.roadState().waiting === 5);
+  const r = boot(); setTrophies(r, 400); r.S.roadOpen(6); r.S.saveProfile({ owned: { outfits: ["sunhat"] } });
+  const r2 = boot({ local: r.local, src: WITH_ITEMS, clock: r.clock });
+  ok("an item listed late that the child already has is only recorded: no coins", r2.S.roadSettle() === null && r2.S.coinsNow() === 50 && JSON.parse(r2.local["sona.road.v1"]).items["6:sunhat"] === 1);
+});
+
+// ── 17. the month's path (MONTH1, step 6) ──
+const OCT20 = () => { const days = {}; for (let d = 1; d <= 20; d++) days["2026-10-" + String(d).padStart(2, "0")] = { tries: 30, a: 1, p: 0 }; return JSON.stringify({ R: { attempts: 600, passes: 0, days } }); };
+sec("17a this month's path", () => {
+  const p = boot(), { S } = p;
+  ok("eight steps at 40..600 trophies this month, the last a Big Chest", JSON.stringify(S.MONTH_STEPS.map((s) => s.at)) === "[40,100,180,260,340,420,500,600]" && S.MONTH_STEPS.filter((s) => s.big).map((s) => s.n).join() === "8");
+  const coins = S.MONTH_STEPS.reduce((n, s) => n + s.gift.reduce((m, g) => m + (g.coins || 0), 0), 0);
+  ok("its coins stay modest: 50 over the first seven steps, 30 in the Big Chest, and four stickers", coins === 80 && S.MONTH_STEPS[7].gift.some((g) => g.coins === 30) && S.MONTH_STEPS.filter((s) => s.gift.some((g) => g.sticker)).length === 4, coins);
+  reps(S, 30); p.clock.now += DAY; reps(S, 30);
+  let m = S.roadState().month;
+  ok("it is named for the month, counts this month's trophies, and marks what is reached", m.name === "October" && m.ym === "2026-10" && m.count === 60 && m.steps[0].reached && !m.steps[0].got && !m.steps[1].reached, m);
+  ok("a step not reached is refused", !S.monthOpen(2).ok && S.coinsNow() === 0);
+  const a = S.monthOpen(1);
+  ok("a reached step opens once: 5 coins", a.ok && JSON.stringify(a.gifts) === JSON.stringify([{ coins: 5 }]) && !S.monthOpen(1).ok && S.coinsNow() === 5, a);
+  m = S.roadState().month;
+  ok("…and reads opened", m.steps[0].got && S.roadState().waiting === 1 + 0, { m, w: S.roadState().waiting });
+});
+sec("17b the month's end: every ended month handed out once, by the road page", () => {
+  const p = boot(), { S } = p;
+  p.local["sona.outcomes.v1"] = OCT20();
+  ok("(20 goal days in October: 600 trophies)", S.trophyState().month === 600 && S.trophies() === 600, S.trophyState());
+  ok("inside the ship month a first visit hands out nothing (October is still going)", S.roadSettle() === null && JSON.parse(p.local["sona.road.v1"]).m === "2026-10" && S.roadState().month.steps.every((s) => s.reached && !s.got) && S.coinsNow() === 0);
+  const q = boot(); q.local["sona.outcomes.v1"] = OCT20(); q.clock.now = new Date(2026, 10, 5, 10).getTime();
+  const before = q.S.roadState();
+  ok("a child whose first road visit is in November: October's eight steps count as waiting before it loads", before.month.name === "November" && before.month.count === 0 && before.waiting === 8 + 8 && before.rolled.length === 0, before);
+  const s = q.S.roadSettle();
+  ok("…and the visit hands out every October step: 80 coins and four stickers", s && s.rolled.length === 1 && s.rolled[0].m === "2026-10" && q.S.coinsNow() === 80 && Object.keys(JSON.parse(q.local["sona.stickers.v1"])).length === 4, s);
+  const st = q.S.roadState();
+  ok("the month moved on, and the notice waits for the page to say it was seen", JSON.parse(q.local["sona.road.v1"]).m === "2026-11" && st.rolled.length === 1 && st.rolled[0].m === "2026-10" && st.waiting === 8, st);
+  ok("a second settle hands out nothing", q.S.roadSettle() === null && q.S.coinsNow() === 80);
+  q.S.roadRolledSeen();
+  ok("once seen, the notice is gone and the coins stay", q.S.roadState().rolled.length === 0 && q.S.coinsNow() === 80);
+  const e = boot(); e.local["sona.outcomes.v1"] = JSON.stringify({ R: { attempts: 99, passes: 0, days: { "2026-09-25": { tries: 30, a: 1, p: 0 }, "2026-09-28": { tries: 30, a: 1, p: 0 } } } });
+  ok("months before the ship month are never handed out", e.S.roadSettle() === null && e.S.coinsNow() === 0 && JSON.parse(e.local["sona.road.v1"]).m === "2026-10");
+});
+sec("17c a gap of two months settles both, once each", () => {
+  const p = boot(), { S } = p;
+  p.clock.now = new Date(2026, 11, 3, 10).getTime();   // 3 December
+  p.local["sona.trophy.v1"] = JSON.stringify({ v: 1, t: 900, d: "2026-11-30", dn: 30, m: "2026-11", mn: 200, pm: "2026-10", pmn: 300 });
+  p.local["sona.road.v1"] = JSON.stringify({ got: {}, items: {}, m: "2026-10", mgot: { 1: 1 } });
+  ok("before the road page loads, both months' steps count as waiting (with the 11 stops 900 trophies reach)", S.roadState().waiting === 11 + 3 + 3, S.roadState().waiting);
+  const s = S.roadSettle();
+  // October 300: steps 1..4 reached, step 1 opened then → 2, 3, 4; November 200: 1, 2, 3
+  ok("October gives the steps not opened then, November every reached step, and the notice lists both",
+    s && JSON.stringify(s.rolled.map((x) => x.m)) === JSON.stringify(["2026-10", "2026-11"]) && S.coinsNow() === 10 + 5 + 10 && Object.keys(JSON.parse(p.local["sona.stickers.v1"])).length === 3 && JSON.stringify(S.roadState().rolled.map((x) => x.m)) === JSON.stringify(["2026-10", "2026-11"]), s);
+  ok("…once each: the next call returns null", S.roadSettle() === null && S.coinsNow() === 25);
+  const c = boot(); c.local["sona.road.v1"] = JSON.stringify({ got: {}, items: {}, m: "2026-12", mgot: { 1: 1 } });
+  ok("a phone clock set back before the month last visited settles nothing and keeps what was opened", c.S.roadSettle() === null && JSON.parse(c.local["sona.road.v1"]).m === "2026-12" && JSON.parse(c.local["sona.road.v1"]).mgot[1] === 1);
+});
+
+// ── 18. reading writes nothing, the ladder is never touched, and where it lives ──
+sec("18a reading the chest, the road and the month writes nothing", () => {
+  const p = boot(), { S } = p;
+  reps(S, 30);
+  p.local["sona.road.v1"] = JSON.stringify({ got: {}, items: {}, m: "2026-09", mgot: {} });   // a stop waiting, and a month never settled
+  const before = snap(p);
+  for (let i = 0; i < 10; i++) { S.chestState(); S.roadState(); S.roadStop(3); S.roadStop(40); S.trophyState(); S.coinsNow(); }
+  ok("chestState, roadState and roadStop write no key, with a chest ready and a month to settle", snap(p) === before && S.chestState().ready && S.roadState().waiting >= 1);
+  const q = boot({ profile: null });
+  const b2 = snap(q);
+  q.S.chestState(); q.S.roadState();
+  ok("…nor on a phone with no child and no records", snap(q) === b2);
+});
+sec("18b the chest, the road and the month never write the speech ladder or the practice records", () => {
+  const p = boot(), { S } = p;
+  p.local["sona.progress.v1"] = JSON.stringify(S.getProgress());
+  p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" });
+  p.local["sona.rotation.v1"] = JSON.stringify({ i: 2 });
+  const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);
+  p.local["sona.outcomes.v1"] = OCT20();
+  p.local["sona.goaldays.v1"] = JSON.stringify({ "2026-10-20": 30 });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, goals: p.local["sona.goaldays.v1"], tro: p.local["sona.trophy.v1"] || null });
+  const before = pin();
+  for (let i = 0; i < 50; i++) { S.chestState(); S.chestOpen(); S.roadState(); S.roadOpen(1 + (i % 12)); S.monthOpen(1 + (i % 8)); S.roadSettle(); S.roadRolledSeen(); S.playLevelInfo("slice"); }
+  ok("50 rounds of chest, road and month opens, settles and reads leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, goal stamps and trophies byte-identical",
+    pin() === before && S.coinsNow() > 100, { coins: S.coinsNow() });
+});
+sec("18c where CHEST1 and ROAD1 live in sona.js, and what they touch", () => {
+  const ch = SRC.indexOf("// ── CHEST1"), rd = SRC.indexOf("// ── ROAD1"), tr = SRC.indexOf("// ── TROPHY1"), lv = SRC.indexOf("// ── LEVELS1"), bests = SRC.indexOf("// ── BESTS1:");
+  ok("CHEST1 and ROAD1 sit after TROPHY1, before LEVELS1 and BESTS1, outside the GAMEASK1 window", tr > 0 && tr < ch && ch < rd && rd < lv && lv < bests && ch > SRC.indexOf("the week, narrated"));
+  const code = SRC.slice(ch, lv).replace(/\/\/[^\n]*/g, "");
+  const saves = code.match(/\bsave\(\s*[A-Z_a-z]+/g) || [];
+  ok("their only writes are their own two ledgers (coins through addCoins, stickers and items through their own writers)", saves.length >= 4 && saves.every((x) => /^save\((CHESTKEY|ROADKEY)$/.test(x.replace(/\s/g, ""))), saves);
+  ok("they never read a pass, a verdict, a best or access, and never write practice or send anything but their three events",
+    !/\bpass\b|passes|hearVerdict|sendProgress|fetch\(|sendBeacon|logAttempt|gameRep\(|_trophyAdd|setItem|removeItem|gameAccess|premium\(|gated\(|sona\.bests|gameBest/.test(code) &&
+    JSON.stringify((code.match(/\btrack\([^)]*\)/g) || []).sort()) === JSON.stringify(['track("chest opened")', 'track("month gift opened")', 'track("road gift opened")']), (code.match(/[^\n]*(track\(|fetch\(|setItem|gameBest)[^\n]*/g) || []).slice(0, 5));
+  const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");
+  const events = (route.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
+  ok("the relay takes the three gift events (each carries nothing: no stop, step or count)", ["chest opened", "road gift opened", "month gift opened"].every((e) => events.includes('"' + e + '"')));
+  const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
+  ok("the chest's and the road's names are on the one export line, before soundMark, clipsSettled", /\bchestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, soundMark, clipsSettled\b/.test(line));
+  const codeOf = (f) => readFileSync(path.join(ROOT, f), "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("Home never opens, settles or sends: no chestOpen, roadOpen, monthOpen, roadSettle, roadRolledSeen or track( in today.html", !/chestOpen|roadOpen|monthOpen|roadSettle|roadRolledSeen|\btrack\(/.test(codeOf("today.html")));
+  ok("the road and sticker pages fire no event themselves (sona.js says them)", ["road.html", "stickers.html"].every((f) => existsSync(path.join(ROOT, f)) && !/\btrack\(/.test(codeOf(f))));
+});
+sec("18d the words a child can see on the road, the sticker book and Home's road card", () => {
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/<[^>]+>/g, " ");
+  const home = readFileSync(path.join(ROOT, "today.html"), "utf8");
+  const card = (home.match(/<a id="roadCard"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintRoad\(\)\{[\s\S]*?\n {4}\}/) || [""])[0];
+  ok("(Home's road card and its painter are found)", card.length > 400, card.length);
+  const text = ["road.html", "stickers.html"].map((f) => strip(readFileSync(path.join(ROOT, f), "utf8"))).join(" ") + strip(card) + JSON.stringify((SRC.match(/const ROAD_LANDS = \[[\s\S]*?const _ROAD_KINDS/) || [""])[0].replace(/\/\/[^\n]*/g, ""));
+  const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left|countdown)\b|\$\d/gi);
+  ok("no word a child must never see (score, points, rare, mystery, missed, hurry, ends in, streak…) and no price", !bad, bad);
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall trophy and coin checks passed");

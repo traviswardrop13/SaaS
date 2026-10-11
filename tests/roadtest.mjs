@@ -18,7 +18,17 @@
 //     on a child's tap; nothing fits off the screen at 320 px;
 //   - Settings' "Game levels" picker starts on "Open as earned", fits a
 //     closed picker at 320 px and saves "Level 1 only" for the selected child.
-// The Trophy Road card and page join this suite in the step that builds them.
+// The Trophy Road (step 6, 11 Oct 2026) joined in sections 7 to 10:
+//   - Home's one card under "Pick a game!": the next gift's picture (or the
+//     waiting one, or the chest when it is ready) and a bar filling toward
+//     it, the words in its label; it only reads, and sends nothing;
+//   - the road page: today's chest in each state and its three taps, a Big
+//     Chest every fifth day, stops that wait until opened and say what they
+//     gave, every waiting stop shown however far back, the month's gifts
+//     handed out once when a month has ended, "Game levels" for the games
+//     this family can open, no confetti under Reduce Motion, silent, nothing
+//     third-party, and nothing off the side of a small phone;
+//   - the sticker book: back to the road, and no count.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -48,8 +58,10 @@ const TODAY = (() => { const d = new Date(); return d.getFullYear() + "-" + Stri
 // stamp. Trophies are seeded straight into the ledger rather than replaying
 // weeks of reps. The paid seam is on, so Premium games are greyed unless
 // premium (a subscription) opens every game.
-async function fresh({ width = 375, height = 812, trophies = 0, levels = null, premium = false, bests = null, extra = null } = {}) {
-  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+async function fresh({ width = 375, height = 812, trophies = 0, levels = null, premium = false, bests = null, extra = null, now = 0, ledger = null, motion = false } = {}) {
+  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: motion ? "no-preference" : "reduce" });
+  // a phone whose clock says another day (the month's end), set before any page script runs
+  if (now) await context.addInitScript((at) => { const R = Date, off = at - R.now(); function D(a, b, c, d, e, f, g) { const n = arguments.length; return n === 0 ? new R(R.now() + off) : n === 1 ? new R(a) : new R(a, b, c || 1, d || 0, e || 0, f || 0, g || 0); } D.prototype = R.prototype; D.now = () => R.now() + off; D.parse = R.parse; D.UTC = R.UTC; window.Date = D; }, now);
   await context.route("**/*", (route) => {
     const u = new URL(route.request().url());
     if (u.origin !== origin) return route.abort();
@@ -61,22 +73,25 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
     const record = (text) => { if (String(text || "").trim()) { const calls = JSON.parse(sessionStorage.getItem("test.speech") || "[]"); calls.push(String(text)); sessionStorage.setItem("test.speech", JSON.stringify(calls)); } return Promise.resolve(); };
     let sona; Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v; v.speak = record; v.speakNow = record; } });
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => record(u && u.text);
+    // every event a page sends to the relay, by name
+    const sb = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
+    navigator.sendBeacon = function (u, b) { try { if (/\/api\/track/.test(String(u))) { const l = JSON.parse(sessionStorage.getItem("test.beacons") || "[]"); l.push(JSON.parse(b).e); sessionStorage.setItem("test.beacons", JSON.stringify(l)); } } catch (e) {} return sb ? sb(u, b) : true; };
   });
   const page = await context.newPage(); page.setDefaultTimeout(5000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => { const u = new URL(r.url()); if (u.pathname.startsWith("/api/")) asked.push({ path: u.pathname, from: (() => { try { return new URL(r.frame().url()).pathname; } catch (e) { return ""; } })() }); });
   await page.goto(origin + "/__seed");
-  await page.evaluate(({ trophies, levels, premium, bests, extra, TODAY }) => {
+  await page.evaluate(({ trophies, levels, premium, bests, extra, TODAY, ledger }) => {
     ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
     localStorage.setItem("sona.freever.v1", "kept");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
     sessionStorage.setItem("sona.paidui", "1");
     if (premium) localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, since: Date.now(), source: "stripe" }));
-    localStorage.setItem("sona.trophy.v1", JSON.stringify({ v: 1, t: trophies, d: TODAY, dn: 0, m: TODAY.slice(0, 7), mn: 0 }));
+    localStorage.setItem("sona.trophy.v1", JSON.stringify(ledger || { v: 1, t: trophies, d: TODAY, dn: 0, m: TODAY.slice(0, 7), mn: 0 }));
     if (levels) localStorage.setItem("sona.playlevel.v1", JSON.stringify(levels));
     if (bests) localStorage.setItem("sona.bests.v1", JSON.stringify(bests));
     Object.keys(extra || {}).forEach((k) => localStorage.setItem(k, extra[k]));
-  }, { trophies, levels, premium, bests, extra, TODAY });
+  }, { trophies, levels, premium, bests, extra, TODAY, ledger });
   return { context, page, errors };
 }
 async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
@@ -312,6 +327,285 @@ await section("Settings' Game levels", async () => {
   const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak)\b|\$\d/gi);
   ok("no word on the sheet or in the level lines is one a child must never see (score, points, rare, missed, hurry, streak…)", !bad, bad);
 }
+
+// ── 7. Home's Trophy Road card ──────────────────────────────────────────
+const roadSeen = { got: {}, items: {}, m: TODAY.slice(0, 7), mgot: {} };
+const opened = (...ns) => JSON.stringify(Object.assign({}, roadSeen, { got: Object.fromEntries(ns.map((n) => [n, 1])) }));
+const cardOf = (page) => page.evaluate(() => {
+  const c = document.getElementById("roadCard"); if (!c) return null;
+  const r = c.getBoundingClientRect(), intro = document.querySelector(".library-intro");
+  return { shown: !c.hidden && r.height > 0, label: c.getAttribute("aria-label"), href: c.getAttribute("href"), dot: !document.getElementById("roadDot").hidden,
+    bar: [...document.querySelectorAll("#roadBar i")].map((i) => (i.className === "on" ? 1 : 0)).join(""),
+    pic: (() => { const p = document.getElementById("roadPic"), im = p.querySelector("img"); return im ? im.getAttribute("src") : p.querySelector(".road-level") ? "level" : p.querySelector(".road-coins") ? "coins" : p.querySelector(".road-stk") ? "sticker" : p.innerHTML.slice(0, 40); })(),
+    small: document.getElementById("roadSmall").textContent, afterIntro: intro && intro.nextElementSibling === c, h1: document.querySelector("h1") && document.querySelector("h1").textContent,
+    gameish: c.hasAttribute("data-game") || c.hasAttribute("data-locked") || c.classList.contains("game-card"), h: r.height, w: r.width, l: r.left, rt: r.right };
+});
+await section("Home's road card", async () => {
+  let f = await fresh({ trophies: 0 });
+  try {
+    await f.page.goto(origin + "/__seed");
+    const before = await store(f.page);
+    asked.length = 0;
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("the card sits right under \"Pick a game!\", which stays the page's first heading, and opens the road", c && c.shown && c.afterIntro && c.h1 === "Pick a game!" && c.href === "/road.html", c);
+    ok("a new child: the first gift's picture (coins), an empty bar, no dot, and its label says where the next gift is", c.pic === "coins" && c.bar === "00000" && !c.dot && c.label === "Trophy Road. 0 trophies. 0 coins. Next gift at 30 trophies.", c);
+    ok("the counts under the bar are small numbers beside the drawn trophy and coin, never a word to read", /^0\s*0$/.test(c.small.trim()) && (await f.page.locator("#roadSmall svg").count()) === 2, c.small);
+    ok("it is a link, not a game card: no data-game, data-locked or .game-card", !c.gameish);
+    ok("loading Home with the card writes nothing", (await store(f.page)) === before);
+    await f.page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); Sona.gameRep("R"); Sona.gameRep("R"); Sona.gameRep("R"); Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
+    await f.page.waitForTimeout(150);
+    const c2 = await cardOf(f.page);
+    ok("a rep made while Home was behind a game repaints the card when Home comes back to the front", /^Trophy Road\. 3 trophies\./.test(c2.label) && c2.bar === "00000" && /^3/.test(c2.small.trim()), c2);
+    const own = asked.filter((a) => a.from === "/today.html" && /^\/api\/(board|track)\b/.test(a.path));
+    ok("Home made no /api/board or /api/track request on load or coming back", own.length === 0, own);
+    ok("Home never spoke", (await speech(f.page)).length === 0);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 120, extra: { "sona.road.v1": opened(1, 2) } });
+  try {
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("the next stop is a level: its picture leads with the numeral, the bar is two-fifths full, and the label says \"Level 2 at 150 trophies.\"",
+      c.pic === "level" && c.bar === "11000" && !c.dot && c.label === "Trophy Road. 120 trophies. 0 coins. Level 2 at 150 trophies.", c);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 50 });
+  try {
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("a gift waiting on the road: its picture, a full bar, the teal dot, and \"A gift is waiting.\"", c.pic === "coins" && c.bar === "11111" && c.dot && /A gift is waiting\.$/.test(c.label), c);
+    const dot = await f.page.evaluate(() => getComputedStyle(document.getElementById("roadDot")).backgroundColor);
+    ok("…the dot is teal, never orange (orange is only the practice sound's letters)", dot === "rgb(20, 133, 141)", dot);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 100 });
+  try { await home(f.page); const c = await cardOf(f.page); ok("two waiting say so in the label", c.dot && /2 gifts are waiting\.$/.test(c.label), c.label); } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 30, extra: { "sona.road.v1": opened(1), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
+  try {
+    await f.page.goto(origin + "/__seed");
+    const before = await store(f.page);
+    asked.length = 0;
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("today's goal met (a stamp): the painted chest leads, the bar is full, the dot shows, and \"Your chest is ready.\"", /road-chest\.webp$/.test(c.pic) && c.bar === "11111" && c.dot && /Your chest is ready\.$/.test(c.label), c);
+    ok("…and Home still writes nothing: it never opens the chest, settles a month or sends an event", (await store(f.page)) === before && asked.filter((a) => a.from === "/today.html" && /^\/api\/(board|track)\b/.test(a.path)).length === 0);
+  } finally { await f.context.close(); }
+
+  for (const vp of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 768, height: 1024 }]) {
+    f = await fresh({ ...vp, trophies: 1350, extra: { "sona.road.v1": opened(...Array.from({ length: 14 }, (_, i) => i + 1)), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
+    try {
+      await home(f.page);
+      const c = await cardOf(f.page), w = vp.width + "px: ";
+      const hdr = await f.page.evaluate(() => { const p = document.getElementById("repPill").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45 }; });
+      ok(w + "the card fits inside the page, at least 60 px tall, with no sideways scroll, and the header still fits", c.shown && c.l >= 0 && c.rt <= vp.width && c.h >= 60 && (await overflow(f.page)) <= 1 && hdr.apart && hdr.inside && hdr.oneLine, { c, hdr });
+      if (vp.width === 320) await f.page.screenshot({ path: path.join(OUT, "roadtest-card-320.png") });
+    } finally { await f.context.close(); }
+  }
+});
+
+// ── 8. the road page ────────────────────────────────────────────────────
+async function road(page) { await page.goto(origin + "/road.html"); await page.waitForFunction(() => window.Sona && !document.getElementById("road").hidden && document.querySelector("#roadList .rd-stop")); await page.waitForTimeout(150); }
+const beacons = (page) => page.evaluate(() => JSON.parse(sessionStorage.getItem("test.beacons") || "[]"));
+const coins = (page) => page.evaluate(() => Sona.coinsNow());
+const line = (page) => page.locator("#giftLine").innerText();
+async function yay(page) { await page.waitForTimeout(450); await page.click("#giftGo"); await page.waitForTimeout(80); }
+async function tapBox(page, n = 3) { await page.waitForTimeout(450); for (let i = 0; i < n; i++) { await page.click("#giftBox"); await page.waitForTimeout(60); } }
+await section("the road page: today's chest", async () => {
+  let f = await fresh({ trophies: 14, extra: { "sona.gamereps.v1": JSON.stringify({ [TODAY]: { R: 14 } }) } });
+  try {
+    await road(f.page);
+    const shut = await f.page.evaluate(() => ({ line: document.getElementById("chestLine").textContent, inside: document.getElementById("chestInside").textContent, count: document.getElementById("chestCount").textContent, meter: !document.getElementById("chestMeter").hidden, btn: !document.getElementById("chestOpen").hidden, art: (document.querySelector("#chestArt img") || {}).getAttribute && document.querySelector("#chestArt img").getAttribute("src") }));
+    ok("before the goal: the painted chest, what is inside, \"Reach your goal today to open your chest!\" and the day's meter, 14/30", shut.line === "Reach your goal today to open your chest!" && shut.inside === "Inside: 10 coins" && shut.count === "14/30" && shut.meter && !shut.btn && /road-chest\.webp$/.test(shut.art), shut);
+    ok("the page settled nothing and sent nothing on load", (await beacons(f.page)).length === 0 && asked.filter((a) => a.from === "/road.html" && /^\/api\/track/.test(a.path)).length === 0);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 30, extra: { "sona.gamereps.v1": JSON.stringify({ [TODAY]: { R: 30 } }), "sona.road.v1": opened(1) } });
+  try {
+    await road(f.page);
+    ok("the goal met: \"Your chest is ready!\" and the teal \"Open it\"", (await f.page.locator("#chestLine").innerText()) === "Your chest is ready!" && (await f.page.locator("#chestOpen").isVisible()) && (await f.page.locator("#chestOpen").innerText()) === "Open it");
+    await f.page.click("#chestOpen");
+    await tapBox(f.page, 1);
+    const a = await line(f.page);
+    await tapBox(f.page, 1);
+    const b = await line(f.page);
+    ok("the chest takes taps: \"Tap, tap!\", \"One more tap!\", and nothing is paid yet", a === "Tap, tap!" && b === "One more tap!" && (await coins(f.page)) === 0, [a, b]);
+    await tapBox(f.page, 1);
+    await f.page.waitForTimeout(900);
+    ok("the third tap opens it: \"+10 coins!\", 10 coins in the wallet, the reward chime and no voice", (await line(f.page)) === "+10 coins!" && (await coins(f.page)) === 10 && (await speech(f.page)).length === 0, await line(f.page));
+    ok("…and sona.js (not the page) tells the relay \"chest opened\", with nothing else", JSON.stringify(await beacons(f.page)) === JSON.stringify(["chest opened"]), await beacons(f.page));
+    ok("…with no confetti under Reduce Motion", (await f.page.evaluate(() => document.querySelectorAll("body > canvas").length)) === 0);
+    await yay(f.page);
+    ok("Yay! closes it; the card says \"You opened today's chest!\" and the header counts 10 coins", (await f.page.locator("#giftOvl").isHidden()) && (await f.page.locator("#chestLine").innerText()) === "You opened today's chest!" && (await f.page.locator("#coinN").innerText()) === "10" && (await f.page.locator("#chipCoin").getAttribute("aria-label")) === "10 coins");
+    await f.page.reload(); await f.page.waitForTimeout(300);
+    ok("a reload still says \"You opened today's chest!\", with no button and nothing paid again", (await f.page.locator("#chestLine").innerText()) === "You opened today's chest!" && (await f.page.locator("#chestOpen").isHidden()) && (await coins(f.page)) === 10);
+    ok("no page errors", f.errors.length === 0, f.errors);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 30, motion: true, extra: { "sona.gamereps.v1": JSON.stringify({ [TODAY]: { R: 30 } }), "sona.road.v1": opened(1), "sona.chest.v1": JSON.stringify({ n: 4, last: "2026-10-01" }) } });
+  try {
+    await road(f.page);
+    ok("the 5th chest says what is inside before it opens: \"Big chest: 25 coins and a sticker\"", (await f.page.locator("#chestInside").innerText()) === "Big chest: 25 coins and a sticker" && /road-bigchest\.webp$/.test(await f.page.locator("#chestArt img").getAttribute("src")));
+    await f.page.click("#chestOpen"); await tapBox(f.page, 3); await f.page.waitForTimeout(900);
+    const l1 = await line(f.page), confetti = await f.page.evaluate(() => document.querySelectorAll("body > canvas").length);
+    await yay(f.page);
+    const l2 = await line(f.page);
+    ok("it opens to \"+25 coins and a sticker!\", then \"You found the Star sticker!\"", l1 === "+25 coins and a sticker!" && l2 === "You found the Star sticker!" && (await coins(f.page)) === 25 && (await f.page.evaluate(() => Sona.hasSticker("star"))), [l1, l2]);
+    ok("…and with motion allowed it throws confetti (so the Reduce Motion check above means something)", confetti >= 1, confetti);
+  } finally { await f.context.close(); }
+});
+
+await section("the road page: stops and the month", async () => {
+  let f = await fresh({ trophies: 2000 });
+  try {
+    await road(f.page);
+    const stops = await f.page.evaluate(() => [...document.querySelectorAll("#roadList .rd-stop")].map((r) => ({ n: +r.dataset.stop, open: r.classList.contains("open"), tag: r.tagName, flag: (r.querySelector(".rd-flag") || {}).textContent || "" })));
+    const ns = stops.map((s) => s.n);
+    ok("with 2,000 trophies and nothing opened, every stop from 1 to 21 waits on the page, each a button that says \"Open!\"", [...Array(21)].every((_, i) => ns.includes(i + 1)) && stops.filter((s) => s.n <= 21).every((s) => s.open && s.tag === "BUTTON" && s.flag === "Open!"), stops.slice(0, 3));
+    ok("…and the stops ahead (to ten past the child) are shown, not buttons", ns.includes(31) && !ns.includes(32) && stops.filter((s) => s.n > 21).every((s) => !s.open && s.tag === "DIV"), ns.slice(-3));
+    const hero = await f.page.evaluate(() => ({ wait: document.getElementById("waitText").textContent, next: !document.getElementById("openNext").hidden, land: document.getElementById("landName").textContent, lands: [...document.querySelectorAll(".rd-landhead h3")].map((h) => h.textContent), here: !!document.querySelector('.rd-stop[data-stop="21"] .rd-here'), band: getComputedStyle(document.getElementById("heroBand")).backgroundImage, buddy: document.getElementById("heroBuddy").getAttribute("src") }));
+    ok("the hero says how many wait (\"21 gifts waiting!\"), shows \"Open next\", the land, and the buddy standing", hero.wait === "21 gifts waiting!" && hero.next && hero.land === "Under the Sea" && /buddy-fox-rest\.webp$/.test(hero.buddy || ""), hero);
+    ok("each land has its own band, in order, with its painted picture over its colours", JSON.stringify(hero.lands) === JSON.stringify(["Sunny Meadow", "Beach Bay", "Snowy Peak", "Under the Sea", "Starry Sky", "Champion Trail"]) && /customize-forest-v2\.webp/.test(await f.page.evaluate(() => getComputedStyle(document.querySelector(".rd-landhead")).backgroundImage)) && /linear-gradient/.test(hero.band), hero);
+    ok("\"You are here\" is the buddy's face on the stop the child reached", hero.here);
+    await f.page.click("#openNext"); await f.page.waitForTimeout(500);
+    ok("\"Open next\" opens stop 1: \"+20 coins!\"", (await line(f.page)) === "+20 coins!" && (await coins(f.page)) === 20 && (await f.page.evaluate(() => JSON.parse(localStorage.getItem("sona.road.v1")).got[1])) === 1, await line(f.page));
+    await yay(f.page);
+    await f.page.click('#roadList .rd-stop[data-stop="2"]'); await f.page.waitForTimeout(500);
+    ok("stop 2: \"You found the Star sticker!\"", (await line(f.page)) === "You found the Star sticker!", await line(f.page));
+    await yay(f.page);
+    await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
+    const l3 = await line(f.page); await yay(f.page); const l3b = await line(f.page);
+    ok("stop 3: \"Level 2 is open in every game!\", then \"+20 coins!\"", l3 === "Level 2 is open in every game!" && l3b === "+20 coins!", [l3, l3b]);
+    await yay(f.page);
+    await f.page.click('#roadList .rd-stop[data-stop="4"]'); await f.page.waitForTimeout(500); await yay(f.page);
+    await f.page.click('#roadList .rd-stop[data-stop="5"]'); await f.page.waitForTimeout(300);
+    ok("stop 5 is a Big Chest: it takes three taps", (await line(f.page)) === "Tap, tap, tap!" && (await f.page.locator("#giftBox").isVisible()));
+    await tapBox(f.page, 3); await f.page.waitForTimeout(900);
+    const big = [await line(f.page)]; await yay(f.page); big.push(await line(f.page)); await yay(f.page); big.push(await line(f.page));
+    ok("…then shows each gift in turn: \"+40 coins!\", the next sticker, \"Welcome to Beach Bay!\"", big[0] === "+40 coins!" && /^You found the .+ sticker!$/.test(big[1]) && big[2] === "Welcome to Beach Bay!", big);
+    await yay(f.page);
+    const after = await f.page.evaluate(() => ({ first: +document.querySelector("#roadList .rd-stop").dataset.stop, done: [...document.querySelectorAll("#roadList .rd-stop.done")].map((r) => r.dataset.stop).join(), got: JSON.parse(localStorage.getItem("sona.road.v1")).got, wait: document.getElementById("waitText").textContent, coins: Sona.coinsNow() }));
+    ok("the hero counts what is left, the stops just opened stay where they were (a ✓ each), and the coins add up (20 + 20 + 30 + 40)", after.first === 1 && after.done === "1,2,3,4,5" && JSON.stringify(after.got) === JSON.stringify({ 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }) && after.wait === "16 gifts waiting!" && after.coins === 110, after);
+    await f.page.reload(); await f.page.waitForTimeout(300);
+    ok("on the next visit the road starts at the lowest stop still waiting", (await f.page.evaluate(() => +document.querySelector("#roadList .rd-stop").dataset.stop)) === 6);
+    ok("each gift told the relay once, by kind only", JSON.stringify(await beacons(f.page)) === JSON.stringify(Array(5).fill("road gift opened")), await beacons(f.page));
+    ok("the road page never spoke, and logged no page error", (await speech(f.page)).length === 0 && f.errors.length === 0, f.errors);
+  } finally { await f.context.close(); }
+
+  // the month's path, and a month that ended while the child was away
+  const DEC3 = new Date(2026, 11, 3, 10).getTime();
+  f = await fresh({ now: DEC3, ledger: { v: 1, t: 900, d: "2026-11-30", dn: 30, m: "2026-11", mn: 200, pm: "2026-10", pmn: 300 },
+    extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [i + 1, 1])), items: {}, m: "2026-10", mgot: { 1: 1 } }) } });
+  try {
+    await road(f.page);
+    const n = await f.page.evaluate(() => ({ note: document.getElementById("rolledText").textContent, shown: !document.getElementById("rolledNote").hidden, title: document.getElementById("monthTitle").textContent, coins: Sona.coinsNow(), stk: Object.keys(JSON.parse(localStorage.getItem("sona.stickers.v1") || "{}")).length, m: JSON.parse(localStorage.getItem("sona.road.v1")).m }));
+    ok("in December, the road page hands out October's and November's steps once and says so in one line", n.shown && n.note === "Your October and November gifts are in your wallet!" && n.coins === 25 && n.stk === 3 && n.m === "2026-12", n);
+    ok("…the path is December's now", n.title === "December path", n.title);
+    ok("…and nothing in the overlay blocks the page", await f.page.locator("#giftOvl").isHidden());
+    await f.page.reload(); await f.page.waitForTimeout(300);
+    const n2 = await f.page.evaluate(() => ({ shown: !document.getElementById("rolledNote").hidden, coins: Sona.coinsNow() }));
+    ok("a reload pays nothing again, and the line has been seen (it shows once)", !n2.shown && n2.coins === 25, n2);
+    ok("no page errors", f.errors.length === 0, f.errors);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 30, ledger: { v: 1, t: 130, d: TODAY, dn: 0, m: TODAY.slice(0, 7), mn: 120 }, extra: { "sona.road.v1": opened(1, 2) } });
+  try {
+    await road(f.page);
+    const pips = await f.page.evaluate(() => [...document.querySelectorAll("#monthPips .rd-pip")].map((p) => p.className.replace("rd-pip ", "") + ":" + (p.querySelector(".rd-flag") ? "Open!" : "")));
+    const done = await f.page.evaluate(() => [...document.querySelectorAll("#roadList .rd-stop")].slice(0, 3).map((r) => [+r.dataset.stop, r.classList.contains("done"), !!r.querySelector(".rd-tick"), r.tagName]));
+    ok("an opened stop shows a ✓ and is no longer a button; the next one waits dimmed", JSON.stringify(done) === JSON.stringify([[1, true, true, "DIV"], [2, true, true, "DIV"], [3, false, false, "DIV"]]), done);
+    ok("the month's path: the two steps 120 trophies reach say \"Open!\", the rest wait dimmed", JSON.stringify(pips) === JSON.stringify(["open:Open!", "open:Open!", "ahead:", "ahead:", "ahead:", "ahead:", "ahead:", "ahead:"]), pips);
+    await f.page.click("#openNext"); await f.page.waitForTimeout(500);
+    ok("with no stop waiting, \"Open next\" opens the month's first step: \"+5 coins!\"", (await line(f.page)) === "+5 coins!" && (await coins(f.page)) === 5, await line(f.page));
+    await yay(f.page);
+    ok("…it reads opened, and told the relay \"month gift opened\"", (await f.page.locator("#monthPips .rd-pip").first().getAttribute("class")) === "rd-pip done" && JSON.stringify(await beacons(f.page)) === JSON.stringify(["month gift opened"]));
+  } finally { await f.context.close(); }
+});
+
+await section("the road page: game levels, fit, and what never happens", async () => {
+  let f = await fresh({ trophies: 200, levels: { pick: { slice: 2 } } });
+  try {
+    await road(f.page);
+    const rows = await f.page.evaluate(() => [...document.querySelectorAll("#levelRows .rd-lvrow")].map((r) => r.getAttribute("aria-label")));
+    ok("\"Game levels\" lists only the games this family can open (the free version: Fruit Slice, Piano Tiles, Bubble Pop; never Feed Echo, a grey Premium game or a Coming soon one)", JSON.stringify(rows) === JSON.stringify(["Fruit Slice", "Piano Tiles", "Bubble Pop"]), rows);
+    const slice = await f.page.evaluate(() => [...document.querySelectorAll('.rd-lvbtn[data-game="slice"]')].map((b) => [b.getAttribute("aria-pressed"), b.getAttribute("aria-disabled"), b.getAttribute("aria-label")]));
+    ok("each level is a round button with its numeral: Level 2 picked (✓), Level 3 locked with what it needs", JSON.stringify(slice) === JSON.stringify([["false", null, "Level 1. The fruit stand"], ["true", null, "Level 2. Faster fruit!"], [null, "true", "Level 3. Opens at 750 trophies. You have 200."]]), slice);
+    await f.page.click('.rd-lvbtn[data-game="slice"][data-level="3"]', { force: true });
+    ok("a tap on a locked level only says so", (await f.page.locator("#levelsNote").innerText()) === "Level 3 opens at 750 trophies. Keep practicing!" && (await levels(f.page)).pick.slice === 2);
+    await f.page.click('.rd-lvbtn[data-game="tiles"][data-level="2"]'); await f.page.waitForTimeout(100);
+    ok("a tap on an open level picks it for that game, and it shows picked", (await levels(f.page)).pick.tiles === 2 && (await f.page.locator('.rd-lvbtn[data-game="tiles"][data-level="2"]').getAttribute("aria-pressed")) === "true" && new URL(f.page.url()).pathname === "/road.html");
+    ok("…sending nothing (the game page says \"level played\")", (await beacons(f.page)).length === 0);
+  } finally { await f.context.close(); }
+
+  f = await fresh({ trophies: 800, levels: { cap: 1 }, premium: true });
+  try {
+    await road(f.page);
+    ok("under a grown-up's \"Level 1 only\" there is no Game levels panel", await f.page.locator("#levelsCard").isHidden());
+    const s3 = await f.page.evaluate(() => { const r = document.querySelector('#roadList .rd-stop[data-stop="3"]'); return { level: !!r.querySelector(".ga-lv"), label: r.getAttribute("aria-label") }; });
+    ok("…and the road never says a level opened for that child: stop 3 shows only its coins", !s3.level && s3.label === "At 150 trophies: 20 coins. Open!", s3);
+    await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
+    const l = await line(f.page); await yay(f.page);
+    ok("…and opening it shows \"+20 coins!\" alone", l === "+20 coins!" && (await f.page.locator("#giftOvl").isHidden()), l);
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("Home's card says the same: no level, only gifts", !/Level/.test(c.label), c.label);
+  } finally { await f.context.close(); }
+  f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
+  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows its coins and \"Next gift at 150 trophies.\"", c.pic === "coins" && /Next gift at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
+  f = await fresh({ trophies: 120 });
+  try { await road(f.page); ok("before Level 2 opens there is no Game levels panel", await f.page.locator("#levelsCard").isHidden()); } finally { await f.context.close(); }
+
+  for (const vp of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+    f = await fresh({ ...vp, trophies: 520, premium: true, ledger: { v: 1, t: 520, d: TODAY, dn: 14, m: TODAY.slice(0, 7), mn: 120 }, extra: { "sona.road.v1": opened(1, 2, 3), "sona.gamereps.v1": JSON.stringify({ [TODAY]: { R: 14 } }) } });
+    const third = [];
+    f.page.on("request", (r) => { const u = new URL(r.url()); if (u.origin !== origin) third.push(u.href); });
+    try {
+      await road(f.page);
+      const w = vp.width + "px: ";
+      const fit = await f.page.evaluate(() => {
+        const vw = document.documentElement.clientWidth, out = [];
+        document.querySelectorAll("#road *").forEach((e) => { const r = e.getBoundingClientRect(); if (r.width && (r.right > vw + 0.5 || r.left < -0.5) && !e.closest(".rd-band")) out.push(e.className || e.tagName); });
+        const h = document.querySelector(".rd-head").getBoundingClientRect(), x = document.getElementById("roadBack").getBoundingClientRect(), c = document.querySelector(".rd-chips").getBoundingClientRect(), t = document.querySelector(".rd-title");
+        const small = [...document.querySelectorAll("#road button, #road a")].filter((b) => { const r = b.getBoundingClientRect(); return r.width && (r.width < 44 || r.height < 36); }).map((b) => b.id || b.className);
+        return { scroll: document.documentElement.scrollWidth - vw, out: out.slice(0, 5), head: h.height <= 56 && x.width >= 44 && x.height >= 44 && c.right <= vw && t.scrollWidth <= t.clientWidth + 1, small };
+      });
+      ok(w + "nothing on the road page runs off the side, the header fits on one line with a 44 px ✕, and every button is a full tap target", fit.scroll <= 1 && fit.out.length === 0 && fit.head && fit.small.length === 0, fit);
+      await f.page.screenshot({ path: path.join(OUT, "roadtest-road-" + vp.width + ".png"), fullPage: true });
+      ok(w + "no third-party request, no voice, no page error", third.length === 0 && (await speech(f.page)).length === 0 && f.errors.length === 0, { third, errors: f.errors });
+    } finally { await f.context.close(); }
+  }
+});
+
+// ── 9. the sticker book, linked from the road ───────────────────────────
+await section("the sticker book", async () => {
+  const f = await fresh({ trophies: 0, extra: { "sona.stickers.v1": JSON.stringify({ star: { at: 1 }, trophy: { at: 1 } }) } });
+  try {
+    await f.page.goto(origin + "/stickers.html"); await f.page.waitForSelector("#grid .st");
+    const t = await f.page.evaluate(() => ({ count: document.getElementById("count").textContent, body: document.body.innerText, bar: !!document.getElementById("barFill") }));
+    ok("it shows no count (\"Your stickers\", never \"2 of 24\") and no fill bar", t.count === "Your stickers" && !/\bof 24\b|collected/.test(t.body) && !t.bar, t.count);
+    await f.page.click("#grid .st.next"); await f.page.waitForTimeout(100);
+    const next = await f.page.locator("#toast").innerText();
+    await f.page.click("#grid .st.locked:not(.next)"); await f.page.waitForTimeout(100);
+    const other = await f.page.locator("#toast").innerText();
+    ok("a tap on a sticker not found yet points to the road (\"This one's next!\", \"Open gifts on the Trophy Road to collect it!\")", next === "This one's next!" && other === "Open gifts on the Trophy Road to collect it!", [next, other]);
+    const went = f.page.waitForURL((u) => u.pathname === "/road.html", { timeout: 2500 }).then(() => true, () => false);
+    await f.page.click("#back");
+    ok("its back button goes to the Trophy Road", await went);
+    ok("no page errors", f.errors.length === 0, f.errors);
+  } finally { await f.context.close(); }
+  const e = await fresh({ trophies: 0 });
+  try { await e.page.goto(origin + "/stickers.html"); await e.page.waitForSelector("#grid .st"); ok("an empty book says where stickers come from", (await e.page.locator("#empty").innerText()) === "Open gifts on the Trophy Road to fill your book!"); } finally { await e.context.close(); }
+});
+
+// ── 10. the copy a child can see on the road and Home's card ────────────
+await section("the copy", async () => {
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/<[^>]+>/g, " ");
+  const home = readFileSync(path.join(ROOT, "today.html"), "utf8");
+  const text = strip(readFileSync(path.join(ROOT, "road.html"), "utf8")) + strip((home.match(/<a id="roadCard"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintRoad\(\)\{[\s\S]*?\n {4}\}/) || [""])[0]);
+  const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left)\b|\$\d/gi);
+  ok("no word on the road page or Home's card is one a child must never see, and no price", text.length > 3000 && !bad, bad);
+});
 
 console.log(fails ? `\n${fails} FAILED` : "\nall road and level checks passed");
 await browser.close(); server.close();
