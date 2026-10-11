@@ -158,6 +158,36 @@ for (const level of [1, 2, 3]) await section("Bubble Pop at Level " + level, asy
   } finally { await context.close(); }
 });
 
+// ── 2b. Bubble Pop at Level 3: a late help already on stays on through the bonus puff ──
+// At Level 1, once the touch-anywhere help comes on (about fifteen seconds
+// without every bubble popped) it stays on for that word. The bonus puff is
+// still that word's, so a child who waited for the help is not made to wait
+// for it again; a child who never needed it gets the bonus puff's help on a
+// word's clock (the loop above checks the step waits for the puff).
+await section("Bubble Pop at Level 3, with the late help on", async () => {
+  const { context, page, errors } = await open("arcade-bubbles.html", "bubbles", { level: 3, age: "4" });
+  try {
+    const L = "Bubble Pop L3: ";
+    await page.evaluate(() => Bubbles.onWord());
+    // every plain bubble popped at once, then the gold one left alone until
+    // the late help comes on, and popped with it on (the gold one is last)
+    const s = await snap(page, "Bubbles");
+    await page.waitForTimeout(1300); await space(page, s.left - 1, 60);
+    ok(L + "the touch-anywhere help comes on for the bubble left alone", await until(page, () => { const b = Bubbles.snapshot(); return b.left === 1 && b.bubbles[0].gold && b.any; }, 20000), await snap(page, "Bubbles"));
+    await space(page, 1, 60);
+    ok(L + "the bonus puff blows once the picture lands", await until(page, () => { const b = Bubbles.snapshot(); return b.bonus && b.left === 3; }, 3000), await snap(page, "Bubbles"));
+    ok(L + "…and the help is still on for it, after the same short beat between pops", await until(page, () => { const b = Bubbles.snapshot(); return b.bonus && b.left === 3 && b.any && b.help; }, 1700), await snap(page, "Bubbles"));
+    // a touch far from every bubble pops the nearest, as the late help does
+    // (a point of the sky the canvas itself takes the touch on, as far from every bubble as there is)
+    const box = await page.locator("#sky").boundingBox(), b = await snap(page, "Bubbles");
+    const spots = await page.evaluate((box) => { const out = []; for (let i = 1; i < 10; i++) for (let j = 1; j < 10; j++) { const x = box.width * i / 10, y = box.height * j / 10, e = document.elementFromPoint(box.x + x, box.y + y); if (e && e.id === "sky") out.push([x, y]); } return out; }, box);
+    const far = spots.map((c) => [c, Math.min(...b.bubbles.map((q) => Math.hypot(q.x - c[0], q.y - c[1]) - q.r))]).sort((x, y) => y[1] - x[1])[0] || [[0, 0], 0];
+    await page.mouse.click(box.x + far[0][0], box.y + far[0][1]);
+    ok(L + "a touch far from every bonus bubble pops one", far[1] > 40 && await until(page, () => Bubbles.snapshot().left === 2, 1500), { far, left: (await snap(page, "Bubbles")).left });
+    ok(L + "no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 // ── 3. Hoops ──
 for (const level of [1, 2, 3]) await section("Hoops at Level " + level, async () => {
   const { context, page, errors } = await open("arcade-hoops.html", "hoops", { level });

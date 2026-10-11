@@ -118,9 +118,13 @@ await section("levels on Home", async () => {
     await home(f.page);
     const before = await geometry(f.page, "slice");
     ok("with nothing picked yet the card carries no level badge, and keeps its Level 1 best", before && before.text === null && /Your best: 17\.$/.test(before.label), before);
-    await card(f.page, "slice").click();
+    // a three-year-old's double tap: the first tap opens the sheet, and the
+    // second lands on whatever the sheet put under the finger
+    await card(f.page, "slice").dblclick();
     await f.page.waitForTimeout(150);
     ok("at 200 trophies the FIRST tap on Fruit Slice opens \"Pick a level\" instead of the game", (await sheetOpen(f.page)) && new URL(f.page.url()).pathname === "/today.html");
+    ok("…and a double tap's second tap neither closes it (spending the one ask) nor picks a level", (await sheetOpen(f.page)) && JSON.stringify(await levels(f.page)) === JSON.stringify({ seen: { slice: 2 } }), await levels(f.page));
+    await f.page.waitForTimeout(450);   // the sheet takes taps half a second after it opens
     const sheet = await f.page.evaluate(() => ({
       title: document.getElementById("levelTitle").textContent, ask: document.querySelector("#levelModal .level-ask").textContent,
       tiles: [...document.querySelectorAll("#levelList .level-tile")].map((b) => ({ n: b.dataset.level, aria: b.getAttribute("aria-label"), disabled: b.getAttribute("aria-disabled"), pressed: b.getAttribute("aria-pressed"), art: getComputedStyle(b.querySelector(".level-art")).backgroundImage, num: b.querySelector(".level-num b").textContent, pips: b.querySelectorAll(".level-pips i.on").length, check: !!b.querySelector(".level-check"), lock: !!b.querySelector(".level-need svg") })),
@@ -152,7 +156,7 @@ await section("levels on Home", async () => {
     // Level 3 opens: one more question for this game, then never again
     await f.page.evaluate(() => { const t = JSON.parse(localStorage.getItem("sona.trophy.v1")); t.t = 800; localStorage.setItem("sona.trophy.v1", JSON.stringify(t)); });
     await home(f.page);
-    await card(f.page, "slice").click(); await f.page.waitForTimeout(150);
+    await card(f.page, "slice").click(); await f.page.waitForTimeout(600);
     const s3 = await f.page.evaluate(() => [...document.querySelectorAll("#levelList .level-tile")].map((b) => [b.getAttribute("aria-disabled"), b.getAttribute("aria-pressed")]));
     ok("at 800 trophies the sheet opens once more for Fruit Slice: all three open, Level 2 still picked", (await sheetOpen(f.page)) && JSON.stringify(s3) === JSON.stringify([[null, "false"], [null, "true"], [null, "false"]]), s3);
     await f.page.locator("#levelClose").click();
@@ -160,7 +164,7 @@ await section("levels on Home", async () => {
     const to3 = await tapAway(f.page, card(f.page, "slice"));
     ok("…and from then on a tap plays the remembered level", to3 && new URL(to3).searchParams.get("game") === "arcade-slice.html");
     await home(f.page);
-    await card(f.page, "tiles").click(); await f.page.waitForTimeout(150);
+    await card(f.page, "tiles").click(); await f.page.waitForTimeout(600);
     ok("another game asks for itself, once", await sheetOpen(f.page));
     await f.page.mouse.click(5, 5); await f.page.waitForTimeout(100);
     ok("a tap on the backdrop closes it", !(await sheetOpen(f.page)));
@@ -225,7 +229,7 @@ await section("Home only reads", async () => {
     asked.length = 0;
     await f.page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.playlevel.v1")); delete p.seen.slice; localStorage.setItem("sona.playlevel.v1", JSON.stringify(p)); });
     await home(f.page);
-    await card(f.page, "slice").click(); await f.page.waitForTimeout(150);
+    await card(f.page, "slice").click(); await f.page.waitForTimeout(600);
     await tapAway(f.page, f.page.locator('#levelList .level-tile[data-level="2"]'));
     await f.page.waitForTimeout(150);
     ok("a level picked on the sheet sends nothing either (the game page says \"level played\")", asked.filter((a) => /^\/api\/(board|track)\b/.test(a.path)).length === 0, asked);

@@ -35,7 +35,9 @@
    the word's step counts once those are popped. Never more than eight on
    the sky, the same sizes, and they still bob in place; the glow and the
    touch-anywhere help come at the same times for a bonus puff as for a
-   word's. The word, saying it once, and the five words never change.
+   word's, and a touch-anywhere help already on for the word stays on
+   through its bonus puff. The word, saying it once, and the five words
+   never change.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
@@ -49,6 +51,7 @@
   var PER_WORD = [6, 7, 7, 8, 8];                          // bubbles a word blows, the gold one included
   var PER_WORD_UP = [8, 8, 8, 8, 8];                       // …at Level 2 and 3
   var level = 1, bonus = false;                            // the level the page set; a Level 3 bonus puff is out
+  var lateOn = false;                                      // the late help came on for this word (it stays on: popBubble)
 
   // state: idle (no bubbles: a word turn) | ready (bubbles out) | placed (all
   // popped, the picture in the basket: the cheer, then the next word) | giant
@@ -316,7 +319,7 @@
     // for this word: the child who needs it most was waiting the whole fourteen
     // seconds again for every bubble. A beat, not zero: a dragged finger
     // touches on every move, and would empty the sky in one stroke.
-    if (clock >= anyAt) anyAt = clock + 1.5; else { helpAt = clock + HELP_S; anyAt = clock + ANY_S; }
+    if (clock >= anyAt) { anyAt = clock + 1.5; lateOn = true; } else { helpAt = clock + HELP_S; anyAt = clock + ANY_S; }
     if (b.gold) {
       // the picture falls out and flies to the basket
       sound("gold"); sparks(p.x, p.y, 10);
@@ -358,9 +361,12 @@
         try { api.hint("Pop the big bubble!"); } catch (e2) {}
       } else if (level === 3 && !bonus) {
         // Level 3: a bonus puff of three, and the step waits for them too.
-        // Its help starts over exactly as a word's puff does (onWord).
+        // Its help starts over exactly as a word's puff does (onWord), unless
+        // the late help already came on for this word: the puff is still this
+        // word's, and once that help is on it stays on for the word, as at
+        // Level 1 (a child who waited for it is never made to wait again).
         bonus = true; blow(3, { noGold: true });
-        helpAt = clock + HELP_S + 1; anyAt = clock + ANY_S + 1;
+        if (!lateOn) { helpAt = clock + HELP_S + 1; anyAt = clock + ANY_S + 1; }
         echo("wave"); sound("blow");
         try { api.hint("Pop the bubbles!"); } catch (e3) {}
       } else {
@@ -440,7 +446,7 @@
     onWord: function () {
       if (words >= count) return;
       var per = level > 1 ? PER_WORD_UP : PER_WORD;
-      bonus = false;
+      bonus = false; lateOn = false;
       blow(per[Math.min(words, per.length - 1)]);
       var gold = null; for (var i = 0; i < left.length; i++) if (left[i].gold) gold = left[i];
       prize = { b: gold, fly: null, landed: false, x: RING.x, y: RING.y, k: 0.2 };
@@ -458,7 +464,7 @@
       publish();
     },
     reset: function () {
-      words = 0; total = 0; left = []; fx = []; prize = null; giant = null; state = "idle"; doneAt = 0; bonus = false;
+      words = 0; total = 0; left = []; fx = []; prize = null; giant = null; state = "idle"; doneAt = 0; bonus = false; lateOn = false;
       try { var ws = wells(); for (var i = 0; i < ws.length; i++) { ws[i].innerHTML = ""; ws[i].classList.remove("full"); } var p = el("prize"); if (p) { p.hidden = true; p.innerHTML = ""; } } catch (e) {}
       echo("wave"); publish();
     },

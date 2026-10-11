@@ -308,6 +308,44 @@ await section("bests per level", async () => {
   posts.length = 0;
 });
 
+// ── 7b. the practice page's "Up next" names the level, whole, on a small phone ──
+// It is the one place the level is named before a round game. On one line,
+// "Block Stacker · Level 3" is wider than the room a 320 px (and even a 390 px)
+// phone gives it, and the ellipsis cut off the level itself. So the level has
+// a line of its own; the words, read out by the status, are the same.
+for (const [game, level, name] of [["slice", 1, "Fruit Slice"], ["slice", 2, "Fruit Slice"], ["stack", 3, "Block Stacker"]]) await section("Up next for " + name + " at Level " + level, async () => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+  await context.route("**/*", (r) => {
+    const u = r.request().url();
+    if (!u.startsWith(origin + "/")) return r.abort();
+    if (/\/arcade-[a-z]+\.html/.test(u)) return r.fulfill({ contentType: "text/html", body: "<!doctype html><title>Game</title>" });
+    return r.continue();
+  });
+  await context.addInitScript(fakePhone, { game, trophies: AT[level], levels: level > 1 ? { pick: { [game]: level } } : null, bests: null, today: TODAY });
+  const page = await context.newPage(); page.setDefaultTimeout(8000);
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  try {
+    await page.goto(origin + "/charge.html?game=arcade-" + game + ".html");
+    await page.waitForFunction(() => typeof launchGame === "function" && document.fonts && document.fonts.status === "loaded");
+    await page.evaluate(() => { launchGame(); });
+    await page.locator("#launchBar.show").waitFor();
+    const u = await page.evaluate(() => {
+      const bar = document.getElementById("launchBar"), nm = bar.querySelector(".launch-name"), lines = [...nm.querySelectorAll(".launch-line")];
+      const fits = (e) => e.scrollWidth <= e.clientWidth + 1;
+      const shown = lines.map((e) => [...e.childNodes].filter((n) => n.nodeType === 3 || getComputedStyle(n).display !== "none").map((n) => n.textContent).join(""));
+      const b = bar.getBoundingClientRect();
+      return { text: nm.textContent, lines: lines.length, shown, levelFits: lines.length ? fits(lines[lines.length - 1]) : fits(nm), status: bar.getAttribute("role"), inside: b.left >= 0 && b.right <= document.documentElement.clientWidth };
+    });
+    const L = "\"Up next\" for " + name + " at Level " + level + ": ";
+    if (level === 1) ok(L + "the game's name alone, as before", u.text === name && u.lines === 0, u);
+    else {
+      ok(L + "says \"" + name + " · Level " + level + "\"", u.text === name + " · Level " + level && u.status === "status", u);
+      ok(L + "the level has a line of its own, drawn whole on a 320 px phone", u.lines === 2 && u.shown[0] === name && u.shown[1] === "Level " + level && u.levelFits && u.inside, u);
+    }
+    ok(L + "no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 // ── 8. the source: Level 1's pinned lines are where they were ──
 {
   const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");

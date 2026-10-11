@@ -342,13 +342,19 @@
       // a locked one says what it needs and goes nowhere. Its only writes are
       // the "seen" mark (on the tap that opened it) and the pick. It sends
       // nothing: the game page says "level played".
-      var levelOvl=document.getElementById("levelOvl"),levelList=document.getElementById("levelList"),levelNote=document.getElementById("levelNote"),levelFrom=null;
+      var levelOvl=document.getElementById("levelOvl"),levelList=document.getElementById("levelList"),levelNote=document.getElementById("levelNote"),levelFrom=null,levelAt=-1e9;
+      // A double tap on a game card: the first tap opens the sheet, and the
+      // second would land on whatever the sheet put under the finger, the
+      // backdrop (closing it, and spending the one ask) or a level the child
+      // never chose. So for half a second after it opens the sheet takes no
+      // tap (CLAUDE.md: nothing moves under a finger). Esc still closes it.
+      function levelSettling(){return Date.now()-levelAt<500;}
       function tapChime(){try{if(S.sfx&&S.sfx.tap)S.sfx.tap();}catch(e){}}
       function closeLevels(){levelOvl.classList.remove("show");levelList.textContent="";levelNote.textContent="";var b=levelFrom;levelFrom=null;if(b)try{b.focus();}catch(e){}}
       function openLevels(game){
         var info=S.playLevelInfo?S.playLevelInfo(game.key):null;
         if(!info||!info.levels||!info.levels.length){location.href=game.go;return;}
-        levelFrom=document.activeElement;
+        levelFrom=document.activeElement;levelAt=Date.now();
         document.getElementById("levelTitle").textContent=game.name;
         levelList.textContent="";levelNote.textContent="";
         var art=craftedCards[game.key]?"/assets/crafted/home-"+craftedCards[game.key]+".webp":"",first=null;
@@ -361,21 +367,23 @@
             var picked=lv.n===info.pick;b.setAttribute("aria-pressed",picked?"true":"false");
             b.setAttribute("aria-label","Level "+lv.n+". "+lv.line);
             if(picked){var ck=node("span","level-check","\u2713");ck.setAttribute("aria-hidden","true");b.appendChild(ck);}
-            b.onclick=function(){tapChime();if(S.setPlayLevel)S.setPlayLevel(game.key,lv.n);location.href=game.go;};
+            b.onclick=function(){if(levelSettling())return;tapChime();if(S.setPlayLevel)S.setPlayLevel(game.key,lv.n);location.href=game.go;};
             if(picked||!first)first=b;
           }else{
             b.setAttribute("aria-disabled","true");
             b.setAttribute("aria-label","Level "+lv.n+". Opens at "+lv.at+" trophies. You have "+lv.have+".");
             var need=node("span","level-need");need.innerHTML=(S.icon?S.icon("lock",14)+S.icon("trophy",14):"");need.appendChild(document.createTextNode(String(lv.at)));line.appendChild(need);
-            b.onclick=function(){levelNote.textContent="Level "+lv.n+" opens at "+lv.at+" trophies. Keep practicing!";};
+            b.onclick=function(){if(levelSettling())return;levelNote.textContent="Level "+lv.n+" opens at "+lv.at+" trophies. Keep practicing!";};
           }
           levelList.appendChild(b);
         });
         levelOvl.classList.add("show");
         if(first)try{first.focus();}catch(e){}
       }
-      document.getElementById("levelClose").onclick=closeLevels;
-      levelOvl.addEventListener("click",function(e){if(e.target===levelOvl)closeLevels();});
+      document.getElementById("levelClose").onclick=function(){if(!levelSettling())closeLevels();};
+      levelOvl.addEventListener("click",function(e){if(e.target===levelOvl&&!levelSettling())closeLevels();});
+      // (and that ignored tap keeps the focus where the sheet put it)
+      levelOvl.addEventListener("mousedown",function(e){if(levelSettling())e.preventDefault();});
       document.addEventListener("keydown",function(e){if((e.key==="Escape"||e.key==="Esc")&&levelOvl.classList.contains("show"))closeLevels();});
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
