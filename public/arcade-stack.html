@@ -718,8 +718,6 @@
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("stack",isDaily?score:null);
       playing=false; reviveWait=false; phase=outOfHearts?"ended":"done"; keepBest();
-      var coins=Math.min(10,(score/3)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       best=Math.max(startBest,rowBest);
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){

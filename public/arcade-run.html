@@ -861,8 +861,7 @@
       S.finishGameTurn("run",isDaily?score():null);
       playing=false; reviveWait=false; phase="done"; clearInterval(distIv); clearInterval(rampIv);
       keepBest(); var isBest=dist>startBest; BEST=Math.max(startBest,dist);
-      var pts=score(), cshare=Math.min(10,(coins/2)|0);
-      try{ if(cshare&&S&&S.addCoins)S.addCoins(cshare); }catch(e){}
+      var pts=score();
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         if(pts===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm

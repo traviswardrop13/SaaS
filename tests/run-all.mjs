@@ -28,6 +28,7 @@ const SUITES = [
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; Settings' pick, the practice page's floor, homework; it only reads
+  "trophytest.mjs", // TROPHY1/COIN3: trophies follow the honest rep, a day at the goal is 30 whatever the goal, never spent or lost; coins no longer minted, a hardened wallet, never sold
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "dailygoaltest.mjs", // daily rep goals, quiet once-a-day celebration, and weekly goal-day streaks
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere

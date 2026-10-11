@@ -2426,7 +2426,7 @@
         if(!DEMO_REPLAY){
           S.dailyFinish(run.sum);
           if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
-          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);}
           if(S.episodeAdvance)S.episodeAdvance();
         }
         run.finishRecorded=true;

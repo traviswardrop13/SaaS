@@ -850,8 +850,6 @@
       S.finishGameTurn("tiles",isDaily?score:null);
       playing=false; reviveWait=false; phase="done";
       keepBest();
-      var coins=Math.min(10,(score/5)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // The old five-game run (charge.html?daily=1): Home no longer opens

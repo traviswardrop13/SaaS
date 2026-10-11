@@ -217,6 +217,9 @@
     // old "sona.best.<game>" keys were one per phone, so siblings overwrote
     // each other; they are not carried over.
     "sona.bests.v1",
+    // each child's own trophies, daily chest, Trophy Road and game levels (11
+    // Oct 2026, TROPHY1 and after): a play economy, never practice data
+    "sona.trophy.v1", "sona.chest.v1", "sona.road.v1", "sona.playlevel.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -628,8 +631,12 @@
   // hours that day a saved 7 read as 5.
   function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4; }
   function weeklyGoalDays() { return goalDays(); }
+  // A pure read (load, not getProgress): getProgress() saves the one-time
+  // ladder migration on a record without it, and Home used to make that write
+  // on every load through mintCoins(). Since COIN3 (11 Oct 2026) Home only
+  // reads, so a reader must not be the one to write it either.
   function momWeek() {
-    const g = getProgress(), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
+    const g = load(GKEY, DEFAULT_PROGRESS), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
     if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1;
     const now = new Date(), dow = (now.getDay() + 6) % 7;
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
@@ -762,8 +769,8 @@
       if (!code || !childId || !ticket) return Promise.resolve(null);
       const body = { code: code, childId: childId, ticket: ticket };
       // TODAY'S TOTAL, never a delta — a retried request cannot inflate it,
-      // the same reason mintCoins() derives from the day's count rather than
-      // incrementing. Reps only; no audio, no name, nothing else.
+      // the same reason the trophy ledger (TROPHY1) pays only the difference
+      // from the day's count. Reps only; no audio, no name, nothing else.
       const cur = homework();
       if (cur) { body.forId = cur.id; body.reps = repsToday(); }
       return fetch("/api/homework", {
@@ -1405,7 +1412,6 @@
   function markStoryRead() {
     dailyStory();                                   // ensure the day is pinned
     const d = load(DAYKEY, {}); d.read = true; save(DAYKEY, d);
-    try { mintStoryBonus(); } catch (e) {}          // once per day, guarded in the ledger
     try { episodeAdvance(); } catch (e) {}          // day-guarded: sets up tomorrow
     return true;
   }
@@ -1479,40 +1485,24 @@
     return { n, goal, pct: Math.max(0, Math.min(1, n / goal)), full: n >= goal };
   }
 
-  // ── COIN1: coins spend across days, the meter resets each night ────────
-  // Two different jobs. The meter answers "am I done today?"; coins answer
-  // "what did all those days add up to?" — which is what carries a kid over a
-  // day when none of today's three games appeal.
-  //
-  // Coins are minted from reps, NOT from time in the app and NOT from opening
-  // things. Same rule as the meter: only a child's actual voice earns.
-  const COINS_PER = 5;                       // one coin per 5 honest reps
-  const COIN_STORY = 5;                      // finishing the daily chapter
+  // ── COIN1, now COIN3: the meter resets each night, coins are spent ─────
+  // Different jobs. The meter answers "am I done today?"; trophies (TROPHY1)
+  // answer "what did all those days add up to?", and they follow the honest
+  // rep. Coins are what a child spends (11 Oct 2026, D2): they may come only
+  // from the daily chest on a day the goal is met and from Trophy Road gifts,
+  // never from time in the app, opening things, a finished story or an arcade
+  // score, and never from a purchase. Reps used to mint them here (one coin per
+  // 5, plus 5 for the daily chapter, ledger "sona.coinmint.v1"); that mint is
+  // retired, and a balance already earned is kept. mintCoins() and
+  // mintStoryBonus() stay for cached pages, and only read the balance.
   const MYSTERY_COST = 15;                   // the 4th game, bought for a day
-  const COINKEY = "sona.coinmint.v1";
-  // Minting is derived from the day's rep count rather than incremented per
-  // rep, so a double-fired bumpReps can't double-pay — the ledger records how
-  // many coins today has already yielded and only ever pays the difference.
-  function mintCoins() {
-    const t = today(); const led = load(COINKEY, {});
-    const paid = (led.d === t ? led.paid : 0) | 0;
-    const earned = Math.floor(repsToday() / COINS_PER);
-    const owed = earned - paid;
-    if (owed > 0) { addCoins(owed); save(COINKEY, { d: t, paid: earned, story: !!(led.d === t && led.story) }); }
-    return getCoins();
-  }
-  function mintStoryBonus() {
-    const t = today(); const led = load(COINKEY, {});
-    if (led.d === t && led.story) return getCoins();      // once per day only
-    addCoins(COIN_STORY);
-    save(COINKEY, { d: t, paid: (led.d === t ? led.paid : 0) | 0, story: true });
-    return getCoins();
-  }
+  function mintCoins() { return coinsNow(); }
+  function mintStoryBonus() { return coinsNow(); }
   // The mystery game: one extra game for today, drawn from the ones NOT in
   // today's trio. Deliberately ADDITIVE — it never opens the whole deck. It
   // used to wait on today's story being read; that gate went with the books
-  // (GAMES1, 19 Sep 2026). Coins only come from reps, so a purchase is still
-  // practice-backed.
+  // (GAMES1, 19 Sep 2026). Coins come only from what practice earns (COIN3),
+  // so a purchase is still practice-backed.
   function mysteryCost() { return MYSTERY_COST; }
   function mysteryGame() {
     const d = _day();
@@ -1521,9 +1511,9 @@
   }
   // The mystery door is a PREMIUM door (24 Sep 2026): the free version is
   // practice plus its free games, and a fourth game a day is exactly what
-  // Premium adds. Coins still mint from reps for everyone — they are practice
-  // made visible, not a currency the paywall owns — so a family who upgrades
-  // later finds their jar already full.
+  // Premium adds. Coins are earned by practice for everyone (COIN3) — they
+  // are practice made visible, not a currency the paywall owns — so a family
+  // who upgrades later finds their jar already full.
   function canBuyMystery() {
     if (!isFree() && !premium()) return false;
     return !mysteryGame() && getCoins() >= MYSTERY_COST && GAME_KEYS.some(function (key) {
@@ -1927,10 +1917,17 @@
   function chestClaimed(sound) { return !!getProgress().chests[sound]; }
   function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); try { awardNextSticker(); } catch (e) {} return true; }
 
-  // --- coins (earned in lessons, spent in the shop) ---
+  // --- coins: COIN3 (11 Oct 2026, D2): a play currency with two sources only,
+  // the daily chest and Trophy Road / month gifts. Never sold. Validated: a
+  // typo'd price can no longer make the wallet NaN or string-join it ("40"+"5"),
+  // and a zero, negative or junk amount changes nothing (not even the ladder
+  // migration getProgress() may save, so it is never called for one).
+  function _coinInt(n) { n = Math.floor(Number(n)); return (isFinite(n) && n > 0 && n < 100000) ? n : 0; }
+  // pure: reads the balance without getProgress()'s one-time ladder migration write
+  function coinsNow() { try { const g = load(GKEY, DEFAULT_PROGRESS); return Math.max(0, (g.totals && g.totals.coins) | 0); } catch (e) { return 0; } }
   function getCoins() { return getProgress().totals.coins || 0; }
-  function addCoins(n) { const g = getProgress(); g.totals.coins = (g.totals.coins || 0) + (n || 0); save(GKEY, g); return g.totals.coins; }
-  function spendCoins(n) { const g = getProgress(); if ((g.totals.coins || 0) < n) return false; g.totals.coins -= n; save(GKEY, g); return true; }
+  function addCoins(n) { const v = _coinInt(n); if (!v) return coinsNow(); const g = getProgress(); g.totals.coins = (g.totals.coins | 0) + v; save(GKEY, g); return g.totals.coins; }
+  function spendCoins(n) { const v = _coinInt(n); if (!v) return false; const g = getProgress(); if ((g.totals.coins | 0) < v) return false; g.totals.coins = (g.totals.coins | 0) - v; save(GKEY, g); return true; }
   // --- owned cosmetics (shop) ---
   function owns(kind, id) { const o = getProfile().owned || {}; return (o[kind] || []).indexOf(id) !== -1; }
   function addOwned(kind, id) { const p = getProfile(); const o = p.owned || { outfits: [], backdrops: [] }; o[kind] = o[kind] || []; if (o[kind].indexOf(id) === -1) o[kind].push(id); saveProfile({ owned: o }); }
@@ -4014,6 +4011,7 @@
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
       try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + reps; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      _trophyAdd();
       _goalCheck();
       // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
       try { sendProgress("auto"); } catch (e3) {}
@@ -4112,15 +4110,16 @@
   // word, Feed Echo's picture hint) adds one here, and the week's count
   // above reads it with the practice page's tries. It is NOT practice data:
   // it never enters outcomes(), so no pass rate, clinician's note or shared
-  // progress sees it, and it mints no coins. Only a voiced try that passed
-  // the game's own check ever calls it, so silence still never counts.
+  // progress sees it; since 11 Oct 2026 it earns trophies, a play currency
+  // (TROPHY1). Only a voiced try that passed the game's own check ever calls
+  // it, so silence still never counts.
   const GAMEREPKEY = "sona.gamereps.v1";
   function gameRep(sound) {
     try {
       const s = String(sound || "").toUpperCase(); if (ALL_SOUNDS.indexOf(s) < 0) return;
       const t = today(), gr = load(GAMEREPKEY, {}), d = gr[t] || (gr[t] = {});
       // kept like the day ledger, unpruned: the best week reads all of it
-      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _goalCheck();
+      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _trophyAdd(); _goalCheck();
     } catch (e) {}
   }
   // sound narrows the count to one sound — Progress names the week's busiest
@@ -4150,6 +4149,58 @@
   // Retained as a no-op for cached pages. Family comparisons and their beacon
   // are retired; counts remain local except consented pilot progress sharing.
   function repsBeacon() {}
+
+  // ── TROPHY1 (Travis, 9 Oct 2026: "a currency so they can buy stuff"; D1,
+  // refined 11 Oct 2026). Trophies follow the honest rep (a practice try
+  // through logAttempt, an accepted game ask or book word through gameRep),
+  // and a day at the goal is always 30 of them, whatever the goal: a grown-up
+  // raising the goal cannot earn more, and a speech therapist's low dose cannot
+  // earn less. At the default goal of 30 that is one trophy a rep. Never spent,
+  // never lost: the ledger is "paid up to today's derived count", so a double
+  // call, a reload or a goal change can never pay twice or take one back. A
+  // pass and a miss count the same (effort, not accuracy). It never enters
+  // outcomes(), sendProgress or any clinician view, and "Reset progress"
+  // leaves it. A child already on Sona starts with what their real reps since
+  // REPS_SINCE earned, counted once, at the first rep after this build.
+  const TROPHYKEY = "sona.trophy.v1", TROPHY_FILL = 30;
+  // The goal a day is measured against: the stamp it met (the goal at that
+  // moment); today's goal for today; 30 before goal stamps existed; and for a
+  // past day that never met its goal, never less than 30, so it is never
+  // over-paid.
+  function _goalOn(k, stamps) {
+    const s = stamps[k] | 0; if (s > 0) return s;
+    if (k < GOAL_SINCE) return TROPHY_FILL;
+    const g = Math.max(1, repGoal() | 0);
+    return k === today() ? g : Math.max(TROPHY_FILL, g);
+  }
+  function _dayTrophies(k, reps, stamps) { return Math.min(TROPHY_FILL, Math.floor(TROPHY_FILL * Math.max(0, reps | 0) / _goalOn(k, stamps))); }
+  function _trophyToday() { const t = today(); return _dayTrophies(t, dayReps(t), load(GOALKEY, {})); }
+  // every day BEFORE today (or only one month of them). Pure.
+  function _trophyHist(ym) {
+    const days = _repDays(null, false), stamps = load(GOALKEY, {}), t = today(); let n = 0;
+    Object.keys(days).forEach((k) => { if (k >= t || (ym && k.slice(0, 7) !== ym)) return; n += _dayTrophies(k, days[k], stamps); });
+    return n;
+  }
+  // Pure: Home, the road and the levels read this, and it writes nothing.
+  function trophyState() {
+    const t = today(), ym = t.slice(0, 7), s = load(TROPHYKEY, {});
+    if (!(s.v >= 1)) { const dn = _trophyToday(); return { total: _trophyHist() + dn, today: dn, month: _trophyHist(ym) + dn, ym }; }
+    const dn = s.d === t ? (s.dn | 0) : 0, mn = s.m === ym ? (s.mn | 0) : 0;
+    return { total: s.t | 0, today: dn, month: mn, ym };
+  }
+  function trophies() { return trophyState().total; }
+  // Only logAttempt and gameRep call this, after the rep is saved.
+  function _trophyAdd() {
+    try {
+      const t = today(), ym = t.slice(0, 7); let s = load(TROPHYKEY, {});
+      if (!(s.v >= 1)) s = { v: 1, t: _trophyHist(), d: t, dn: 0, m: ym, mn: _trophyHist(ym) };
+      if (s.d !== t) { s.d = t; s.dn = 0; }
+      if (s.m !== ym) { if (s.m) { s.pm = s.m; s.pmn = s.mn | 0; } s.m = ym; s.mn = 0; }
+      const add = _trophyToday() - (s.dn | 0);
+      if (add > 0) { s.dn = (s.dn | 0) + add; s.t = (s.t | 0) + add; s.mn = (s.mn | 0) + add; }
+      save(TROPHYKEY, s);
+    } catch (e) {}
+  }
 
   // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
   // best for kids you can do"). Each big-kid game counts ONE real thing the
@@ -5925,5 +5976,5 @@
   try { _keepFreeVersion(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

@@ -306,9 +306,14 @@ await scenario("heard", async () => {
   ok("The End: Echo cheers on the card", end && endEcho.src === "/assets/crafted/echo-cheer.webp" && endEcho.loaded, endEcho);
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
   ok("a book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Rory and the Rainbow/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…two accepted words add exactly 2 play reps", (await page.evaluate(() => Sona.dayReps())) === 2);
+  // TROPHY1 (11 Oct 2026): an accepted book word is a play rep, so it earns
+  // trophies at the seeded goal (the default 30: one trophy a rep); still never
+  // practice data (the key scan above and the line below).
+  const trophies = await page.evaluate(() => Sona.trophyState ? Sona.trophyState() : null);
+  ok("…and the two accepted words earn exactly 2 trophies at the default goal of 30", !!trophies && trophies.today === 2 && trophies.total === 2, trophies);
   ok("…and never logs an attempt, practice rep or coin", !/"(attempts|reps|coins)"/.test(JSON.stringify(moved)));
   clean("heard", errors);
   await context.close();
@@ -660,7 +665,7 @@ await scenario("six-page book", async () => {
   ok("…and the sixth ends on The End, with a chime for each page heard", end && l.sfx.filter((x) => x.name === "correct").length === 6 && l.mics.length === 6, { end, sfx: l.sfx.map((x) => x.name), mics: l.mics.length });
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
   ok("…a six-page book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Reba the Robot/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…six accepted words add exactly 6 play reps", (await page.evaluate(() => Sona.dayReps())) === 6);
   noOverlap("six-page book", l);

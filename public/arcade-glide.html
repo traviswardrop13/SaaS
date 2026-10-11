@@ -636,8 +636,6 @@
       S.finishGameTurn("glide",isDaily?score:null);
       playing=false; reviveWait=false; phase="done";
       keepBest(); var isBest=rowBest>startBest; BEST=Math.max(startBest,rowBest);
-      var coins=Math.min(10,(score/3)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
