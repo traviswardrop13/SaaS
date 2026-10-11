@@ -245,6 +245,21 @@ sec("7a reading never writes", () => {
   S.trophyState(); S.trophies();
   ok("…nor on a new day (the day's and the month's rollover waits for a rep)", snap(p) === before && S.trophyState().today === 0 && S.trophies() === 9);
 });
+sec("7b reading never writes", () => {
+  // Home used to create the progress record on every first load, through the
+  // coin mint; with the mint retired, a page that only looks (a game a child
+  // cannot open, bounced Home) must not create it either (freemiumtest's
+  // "denied routes preserve real family state").
+  const p = boot(), { S } = p;
+  const before = snap(p);
+  const g = S.getProgress(); S.getCoins(); S.coinsNow(); S.mintCoins(); S.stageOf("R"); S.rungOf("R"); S.momWeek(); S.trophyState();
+  ok("on a phone with no progress record, reading progress, coins, a stage or the week creates none", snap(p) === before && !("sona.progress.v1" in p.local) && g.ladderV === 2, Object.keys(p.local));
+  S.addCoins(4);
+  const stored = JSON.parse(p.local["sona.progress.v1"] || "null");
+  ok("…and the first real write stores it already migrated (the ladder flag rides along)", !!stored && stored.ladderV === 2 && stored.totals.coins === 4, stored);
+  const q = boot(); q.local["sona.progress.v1"] = JSON.stringify({ stage: { R: 3 }, totals: {} });
+  ok("a stored record from before the ladder change is still migrated and saved on its first read", q.S.getProgress().stage.R === 2 && JSON.parse(q.local["sona.progress.v1"]).ladderV === 2 && JSON.parse(q.local["sona.progress.v1"]).stage.R === 2);
+});
 
 // ── 8. coins: no more minting, a hardened wallet, never sold ──
 sec("8a coins: no more minting, a hardened wallet, never sold", () => {
@@ -300,7 +315,7 @@ sec("8c coins: no more minting, a hardened wallet, never sold", () => {
 // ── 9. the speech ladder and the practice records are never written by any of it ──
 sec("9a the speech ladder and the practice records are never written by any of it", () => {
   const p = boot(), { S } = p;
-  S.getProgress();   // a brand-new child's first read saves the ladder migration once; that is not ours
+  p.local["sona.progress.v1"] = JSON.stringify(S.getProgress());   // a stored record, born migrated (a read alone stores none)
   p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" });
   p.local["sona.rotation.v1"] = JSON.stringify({ i: 2 });
   const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);

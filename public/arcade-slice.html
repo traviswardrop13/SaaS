@@ -266,11 +266,11 @@
     // row carries on from wave to wave: the say-it card between them neither
     // breaks it nor adds to it.
     // It counts the finger and only the finger. The score (a golden fruit is
-    // 3, the giant's cuts 5) is still kept for the coin purse and the old
-    // five-game run, but it is no longer shown: a hidden number beside a
-    // count of fruit is what the old "Best" got wrong. The old quick-slice
-    // "N COMBO!" is gone with it: two counts with two meanings on one screen
-    // is one too many. Nothing here is practice data.
+    // 3, the giant's cuts 5) is still kept for the old five-game run (it pays
+    // no coins since 11 Oct 2026, COIN3), but it is no longer shown: a hidden
+    // number beside a count of fruit is what the old "Best" got wrong. The old
+    // quick-slice "N COMBO!" is gone with it: two counts with two meanings on
+    // one screen is one too many. Nothing here is practice data.
     // This child's best lives in Sona.gameBest/gameBestOffer (one record per
     // child, sona.js BESTS1). The old "sona.best.slice" was one number for
     // every child on the phone and counted the score: it is no longer read
@@ -877,7 +877,7 @@
       if(g.y>g.ty+g.r*0.6) return;                    // still rising
       if(dx*dx+dy*dy>g.r*g.r*1.1) g.inside=false;      // out again: the next pass is a new cut
       if(g.inside||now-g.lastCut<160||!segHit(x1,y1,x2,y2,g.x,gy,g.r)) return;
-      g.inside=true; g.lastCut=now; g.cuts++; g.shake=12; g.hint=now+4000; score++;   // the score is kept for the coin purse; the pill shows the row
+      g.inside=true; g.lastCut=now; g.cuts++; g.shake=12; g.hint=now+4000; score++;   // the score is kept for the old five-game run; the pill shows the row
       var a=Math.atan2(y2-y1,x2-x1), o=(x1-g.x)*-Math.sin(a)+(y1-gy)*Math.cos(a);   // the swipe's line: angle, and offset from the centre
       for(var j=0;j<g.gashes.length;j++) if(Math.abs(g.gashes[j].o-o)<g.r*0.2&&Math.abs(Math.sin(g.gashes[j].a-a))<0.3) o+=(o>0?-1:1)*g.r*0.34;
       g.gashes.push({a:a,o:Math.max(-g.r*0.7,Math.min(g.r*0.7,o))});

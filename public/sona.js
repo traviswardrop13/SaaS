@@ -582,7 +582,15 @@
   }
 
   function getProgress() {
+    // A read never CREATES the record (11 Oct 2026). A phone with none has no
+    // rungs to remap, so the fresh default is born migrated and nothing is
+    // saved; the first real write (a try, a coin) stores it with the flag.
+    // Home used to create it on every first load through the coin mint
+    // (retired, COIN3), which hid that any page reading progress, a game a
+    // child cannot open included, wrote this key just by looking.
+    let had = false; try { had = localStorage.getItem(_k(GKEY)) != null; } catch (e) {}
     const g = load(GKEY, DEFAULT_PROGRESS);
+    if (!had) g.ladderV = 2;
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
