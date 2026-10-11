@@ -199,7 +199,7 @@ await section("Fruit Slice", async () => {
       const s = await page.evaluate(() => { const a = getComputedStyle(document.getElementById("app")), f = document.getElementById("standFront"), b = document.getElementById("sliceBuddy");
         return { bg: a.backgroundImage, size: a.backgroundSize, pos: a.backgroundPosition, cls: document.body.className, front: getComputedStyle(f).display, buddy: b.getAttribute("src"), buddyShown: getComputedStyle(b).display }; });
       const want = 'url("' + origin + '/assets/crafted/fruit-stand.webp"), url("' + origin + '/assets/crafted/fruit-market-v3.webp")';
-      ok("Slice (fox): the market is today's, byte for byte: the counter with the fox painted in, over the orchard", s.bg === want && s.size === "100%, cover" && s.pos === "50% 100%, 50% 100%" && !/buddy-scene/.test(s.cls), s);
+      ok("Slice (fox): the market is today's, byte for byte: the counter with the fox painted in, over the orchard", s.bg === want && s.size.replace(/100% auto/g, "100%") === "100%, cover" && s.pos === "50% 100%, 50% 100%" && !/buddy-scene/.test(s.cls), s);
       ok("Slice (fox): no counter layer and no buddy picture", s.front === "none" && s.buddy === null && s.buddyShown === "none", s);
       ok("Slice (fox): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
