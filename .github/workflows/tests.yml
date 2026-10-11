@@ -16,7 +16,12 @@ jobs:
     # say-it card's suite (sayitcardtest) took it past 45 on #190, cancelled
     # mid-sayplaytest with every check so far passing. Room to grow, still a
     # cap on a hung run.
-    timeout-minutes: 75
+    # 90, not 75 (11 Oct 2026): the battery runs about 62 minutes on main,
+    # and trophies, the Trophy Road, the Buddy Shop, playing as your buddy,
+    # game levels and the Practice Board bring eight new suites (six drive a
+    # browser), about 15 minutes more. Without the room the job would be
+    # cancelled mid-run, which reads as neither pass nor fail.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
