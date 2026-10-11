@@ -4,9 +4,11 @@ place that shows them expects.
 Playing as your buddy (11 Oct 2026): a child's buddy runs in Sound Sprint,
 stands beside Echo in the play games and cheers with him, peeks over Fruit
 Slice's counter and sits on Block Stacker's bench. Each pose is drawn once per
-buddy (tools/art/gen-sprites.mjs, with that buddy's model sheet attached) and
-cut here, so every buddy fills the same frame the same way and a game places
-any of them with one set of numbers.
+buddy (tools/art/gen-sprites.mjs, with that buddy's model sheet attached, or,
+for the eight drawn on 11 Oct 2026, its checked cheer pose in the sheet's
+place: design/crafted-world/buddies-v3.md) and cut here, so every buddy
+fills the same frame the same way and a game places any of them with one set
+of numbers.
 
     python3 tools/art/cut-buddies.py buddy-bunny-run buddy-bunny-rest
     python3 tools/art/cut-buddies.py buddy-bunny-run=path/to/drawing.png

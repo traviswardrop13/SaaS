@@ -537,6 +537,19 @@ sec("14a every painted pose BUDDY_ART names is on disk, in its pose's frame", ()
     else if (!got || got[0] !== want[0] || got[1] !== want[1]) bad.push(id + " " + pose + " is " + got + ", wants " + want);
   }
   ok("each pose is cut to its frame: a runner 480x840 (or a 4:7 crop, the fox's), standing, cheering and sitting 512x512, peeking 512x384", bad.length === 0, bad);
+  // The other way round: a picture that landed but has no line (or a line
+  // under a misspelt pose, which buddySprite would quietly skip for the
+  // fallback) is art a child never sees.
+  const poseKeys = [...lit.matchAll(/\b([a-z]+):\s*[["]/g)].map((m) => m[1]);
+  ok("BUDDY_ART names only the five poses", poseKeys.length >= 1 && poseKeys.every((k) => FRAME[k]), [...new Set(poseKeys)].filter((k) => !FRAME[k]));
+  const unreached = [];
+  for (const f of readdirSync(path.join(ROOT, "assets/crafted"))) {
+    const m = /^buddy-([a-z]+)-(run|rest|cheer|peek|sit)\.webp$/.exec(f);
+    if (!m || !ids.includes(m[1])) continue;
+    const sp = S.buddySprite(m[1], m[2]);
+    if (!sp || sp.src !== "/assets/crafted/" + f || (m[2] !== "run" && sp.pose !== m[2])) unreached.push(f);
+  }
+  ok("every buddy pose picture on disk is the one buddySprite answers for that pose", unreached.length === 0, unreached);
   ok("the fox runs as it always has, from its own picture's crop", JSON.stringify(S.buddySprite("fox", "run")) === JSON.stringify({ src: "/assets/crafted/fox-runner.webp", crop: [390, 205, 480, 840] }), S.buddySprite("fox", "run"));
   ok("the fox has no peek and no sit of its own: its painted Fruit Slice and Block Stacker scenes stay", S.buddySprite("fox", "peek") === null && (S.buddySprite("fox", "sit") === null || S.buddySprite("fox", "sit").pose === "rest"), [S.buddySprite("fox", "peek"), S.buddySprite("fox", "sit")]);
   const portraits = ids.map((id) => S.buddySprite(id, "portrait"));

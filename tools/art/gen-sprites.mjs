@@ -10,7 +10,9 @@
 //                    `refs` and no `ref` sends its refs alone, never the shared
 //                    style picture in front of them. One model sheet per buddy
 //                    rides along with every pose of that buddy, the way
-//                    gen-books.mjs attaches a character lineup to every page;
+//                    gen-books.mjs attaches a character lineup to every page
+//                    (the first eight buddies use their checked cheer pose in
+//                    its place: design/crafted-world/buddies-v3.md);
 //   mask: path       a PNG the size of the FIRST picture, transparent where the
 //                    model may repaint (tools/art/scene-edit.py prep writes one).
 //                    The model still redraws the whole picture, so scene-edit.py
