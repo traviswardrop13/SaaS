@@ -886,10 +886,11 @@ officer, an engineer — whose rulings are now rules:
   children is meaningless; the one number is "N of M children practiced this
   week". No leaderboard, no ranking, no comparison across families — a
   district officer ends the app's use on that alone. This binds the
-  clinician side. A family Practice Board is Travis's decision (9 Oct 2026):
-  opt-in by a grown-up's email, off on clinician-linked and many-child phones
-  and for families who say a therapist or school sent them, and never in
-  `slp.html`, `sendProgress` or any clinician route.
+  clinician side. The family Practice Board exists by Travis's decision (9
+  Oct 2026), built switched off until his go (`BOARD_LIVE`, BOARD1/BOARD2).
+  It is opt-in by a grown-up's email, off on clinician-linked and many-child
+  phones and for families who say a therapist or school sent them, and never
+  in `slp.html`, `sendProgress` or any clinician route.
 - **Invites hold initials, never a name.** The SLP may add a child before the
   family joins, but the placeholder is a label ("MK"), an optional age and a
   target; the family types the name when they join, so nobody at a school or
@@ -2425,7 +2426,9 @@ days (before 5 Oct 2026) preserving existing weeks. An unfinished week does not
 break the prior completed-week streak. `momWeek().days/done` remain actual
 practice days for the clinical summary; `.metDays/.goalDone` serve the goal.
 Game and book reps remain outside outcomes, clinician summaries, shared
-progress and homework reports. They earn trophies (TROPHY1). Settings explicitly explains
+progress and homework reports. They earn trophies (TROPHY1), and a goal day
+they complete can count on the Practice Board if a grown-up turned it on
+(BOARD2; the board ships switched off). Settings explicitly explains
 the homework report's practice-only count. No child name enters goal analytics.
 `dailygoaltest`, `repweektest`, `momweek` and `booktest` pin the boundaries.
 

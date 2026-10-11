@@ -95,6 +95,7 @@ const SUITES = [
   "levelstest.mjs", // LEVELS1 in the five round games: Level 1 is today's game, a level changes only the finger's part, every help reads Level 1's numbers, each level keeps its own best
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
+  "boardtest.mjs", // BOARD2: the Practice Board's phone half, built dark: nothing shows while off, a grown-up's email turns it on, a goal day goes once with 10 reps, Home sends nothing, deletion always works
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
   "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout

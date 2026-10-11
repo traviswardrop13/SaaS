@@ -50,6 +50,13 @@ const EVENTS = new Set([
   // buddy, hat or place with coins. It carries the kind, the catalog id and
   // its price in coins (coins are never sold): no balance, no name.
   "shop item got",
+  // The Practice Board (11 Oct 2026, BOARD2; built dark until Travis's go):
+  // sent by sona.js when a grown-up's link puts children on the board, when
+  // one leaves it, and when the board page shows it. They carry nothing: no
+  // token, nickname, days or place.
+  "board turned on",
+  "board turned off",
+  "board viewed",
 ]);
 // `plan` and `surface` join the list for the events above, and `level` (2 or
 // 3) for "level played". Still no name, no age, no email, no word a child

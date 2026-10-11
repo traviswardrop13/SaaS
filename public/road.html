@@ -419,7 +419,7 @@
 
       // ── load: settle the month, send any board leave, then paint ──
       var settled=null;try{settled=S.roadSettle?S.roadSettle():null;}catch(e){settled=null;}
-      try{var bp=S.boardFlush?S.boardFlush():null;if(bp&&bp.then)bp.then(null,function(){});}catch(e){}
+      try{var bp=S.boardFlush?S.boardFlush():null;if(bp&&bp.then)bp.then(paintLinks,function(){});}catch(e){}
       paintIcons();
       var face=$("shopFace");if(face&&BUD)face.innerHTML=BUD.markup(BID,30);
       if(BUD&&BUD.stand)BUD.stand($("heroBuddy"),BID);

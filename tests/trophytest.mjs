@@ -38,6 +38,10 @@
 // their stops with their painted art in step 8 (14e, 16a, 16c, 19): a child
 // who opened one of those stops before is handed its item once, and keeps the
 // coins it paid then.
+// The Practice Board's phone half (BOARD2, section 20) joined in step 10,
+// built dark: where it sits, its keys per child and never in a backup, who
+// may be on it, and that reading it, or 40 reps with the board off, sends
+// and writes nothing. boardtest plays it in a browser.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -1136,6 +1140,93 @@ sec("19h the shop page", () => {
   ok("(the page's sentences are found: \"Hold to get it!\", \"It's yours!\")", said.includes("Hold to get it!") && said.includes("It's yours!") && said.includes("Open chests to earn coins!"), said.slice(0, 12));
   const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|countdown|buy|bought|purchase|price)\b|\$/gi);
   ok("no word a child must never see, and no buy, purchase or price, and no dollar sign", !bad, bad);
+});
+
+// ── 20. the Practice Board's phone half (BOARD2, step 10; built dark) ──
+// The browser suite (boardtest) plays it; here, where it sits, what it keeps,
+// what never travels in a backup, and that reading it writes nothing.
+const preview = (p) => { p.ctx.location.hostname = "localhost"; p.session["sona.boardpreview.v1"] = "1"; };
+const BOARD_KEYS = ["sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
+sec("20a where BOARD2 lives in sona.js, and what it touches", () => {
+  const at = SRC.indexOf("// ── BOARD2"), lv = SRC.indexOf("// ── LEVELS1"), bests = SRC.indexOf("// ── BESTS1:");
+  ok("BOARD2 sits after LEVELS1 and before BESTS1, outside the GAMEASK1 window", lv > 0 && at > lv && bests > at && at > SRC.indexOf("the week, narrated"));
+  const code = SRC.slice(at, bests).replace(/\/\/[^\n]*/g, "");
+  ok("one switch, written once: const BOARD_LIVE, and the preview seam answers only on localhost with sona.boardpreview.v1", (code.match(/const BOARD_LIVE = (true|false);/g) || []).length === 1 && /localhost\|127\\\.0\\\.0\\\.1/.test(code) && /sona\.boardpreview\.v1/.test(code));
+  ok("it calls only the board's own routes, and sends only its three events",
+    (code.match(/fetch\(/g) || []).length === 1 && /fetch\("\/api\/board\/" \+ name/.test(code) && !/\/api\/(?:reps|track|pilot|homework|slp)/.test(code) &&
+    JSON.stringify([...new Set(code.match(/\btrack\("[^"]*"/g))].sort()) === JSON.stringify(['track("board turned off"', 'track("board turned on"', 'track("board viewed"']), code.match(/\btrack\("[^"]*"/g));
+  ok("it never reads a pass, a verdict, a name to send, outcomes or the ladder, and never pays or spends",
+    !/\bpass\b|hearVerdict|outcomes\(\)|sendProgress|logAttempt|gameRep\(|_trophyAdd|addCoins|spendCoins|childId|fid\(\)|sona\.bests|gameBest|save\(GKEY/.test(code));
+  ok("every reply that can arrive after a switch of child writes through saveFor, never save(), for a child's key",
+    !/\bsave\(\s*BOARD(?:KEY|CACHEKEY)\b/.test(code) && /saveFor\(slot, BOARDKEY/.test(code) && /saveFor\(slot, BOARDCACHEKEY/.test(code));
+  const gc = (SRC.match(/function _goalCheck\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("_goalCheck sends owed deletions first (at most once a minute), stamps once, then asks the board's queue on every call",
+    /^function _goalCheck\(\) \{\n\s*try \{ _boardSendLeaves\(true\); \} catch \(e\) \{\}/.test(gc) && /if \(!d\.done\) return;\n\s*if \(!stamps\[t\]\) \{ stamps\[t\] = d\.goal; save\(GOALKEY, stamps\); track\("rep goal met"\); _goalBanner\(d\.n\); \}\n\s*try \{ _boardQueue\(_slot\(\)\); \} catch \(e\) \{\}/.test(gc), gc);
+  const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
+  ok("the board's names are on the one export line, before soundMark, clipsSettled",
+    /\bBOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, (?:[\w$]+, )*soundMark, clipsSettled\b/.test(line));
+  const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");
+  const events = (route.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
+  ok("the relay takes the three board events", ["board turned on", "board turned off", "board viewed"].every((e) => events.includes('"' + e + '"')));
+  const codeOf = (f) => readFileSync(path.join(ROOT, f), "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("Home never touches the board (no board call in today.html), and the board page fires no event itself",
+    !/\bboard(?:Flush|View|Claim|Start|Leave|Nick|State|Live)\b/.test(codeOf("today.html")) && existsSync(path.join(ROOT, "board.html")) && !/\btrack\(/.test(codeOf("board.html")) && !/\bS\.track\("/.test(codeOf("settings.html")));
+});
+sec("20b the board's keys: per child where they belong, and never in a backup", () => {
+  const perKid = (SRC.match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
+  ok("PER_KID holds the two per-child board keys (and the economy's four)", ['"sona.board.v1"', '"sona.boardcache.v1"', '"sona.trophy.v1"', '"sona.playlevel.v1"'].every((k) => perKid.includes(k)) && !/sona\.board(?:pend|leave|ask)/.test(perKid));
+  const noExport = (SRC.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (SRC.match(/const NO_IMPORT = \[[\s\S]*?\];/) || [""])[0];
+  ok("NO_EXPORT and NO_IMPORT hold all five board keys, and NO_IMPORT still holds the kept-buddies stamp", BOARD_KEYS.every((k) => noExport.includes('"' + k + '"') && noImport.includes('"' + k + '"')) && noImport.includes('"sona.buddyset.v1"'));
+  ok("no board key's name matches /rep|week/i (Home may write no such key)", BOARD_KEYS.concat(["sona.boardpreview.v1"]).every((k) => !/rep|week/i.test(k)));
+  const p = boot(), { S } = p;
+  S.addKid("Leo", "6"); S.switchKid("");
+  p.local["sona.board.v1"] = JSON.stringify({ on: true, token: "m.a", nick: "Brave Fox 42", joined: "2026-10-20", q: [], qd: "", days: 2 });
+  p.local["sona.board.v1@k2"] = JSON.stringify({ on: true, token: "m.b", nick: "Calm Otter 17", joined: "2026-10-20", q: [], qd: "", days: 1 });
+  p.local["sona.boardcache.v1@k2"] = JSON.stringify({ ok: true, at: 1 }); p.local["sona.boardpend.v1"] = JSON.stringify({ pend: "p.x", at: 1, slots: [""], code: "K7Q" });
+  p.local["sona.boardleave.v1"] = JSON.stringify([{ t: "m.old", at: 1 }]); p.local["sona.boardask.v1"] = "no";
+  const out = S.exportData(), keys = Object.keys(out.data);
+  ok("a backup holds none of them, for any child", !keys.some((k) => /^sona\.board/.test(k)) && keys.includes("sona.profile.v1@k2"), keys.filter((k) => /board/.test(k)));
+  const q = boot({ profile: null });
+  const r = q.S.importData({ app: "sona", v: 1, data: Object.assign({ "sona.profile.v1": JSON.stringify({ childName: "Mia", childAge: "7", onboarded: true }) },
+    { "sona.board.v1": p.local["sona.board.v1"], "sona.board.v1@k2": p.local["sona.board.v1@k2"], "sona.boardcache.v1@k2": "{}", "sona.boardpend.v1": p.local["sona.boardpend.v1"], "sona.boardleave.v1": "[]", "sona.boardask.v1": "\"no\"" }) });
+  ok("a backup that carries them (hand-made) brings none in: the restore skips every one", r.ok && r.skipped === 6 && !Object.keys(q.local).some((k) => /^sona\.board/.test(k)), { r, keys: Object.keys(q.local).filter((k) => /board/.test(k)) });
+});
+sec("20c reading the board writes nothing, and nothing shows or sends while it is off", () => {
+  const p = boot(), { S } = p;
+  p.local["sona.board.v1"] = JSON.stringify({ on: true, token: "m.a", nick: "Brave Fox 42", joined: "2026-10-20", q: [{ at: 1 }], qd: "", days: 2 });
+  const calls = []; p.ctx.fetch = (u, o) => { calls.push([String(u), o && o.body]); return Promise.reject(new Error("offline")); };
+  const before = snap(p);
+  for (let i = 0; i < 5; i++) { S.boardLive(); S.boardAllowed(); S.boardAllowed("k9"); S.boardState(); S.boardState(""); S.boardAsk(); S.trophyState(); }
+  ok("with the board off: boardLive() is false, every child is \"off\", and the reads write no key", S.boardLive() === false && S.boardAllowed().why === "off" && S.boardState().why === "off" && S.boardState().on === true && snap(p) === before);
+  reps(S, 40);
+  ok("…and 40 reps past the goal send nothing anywhere for the board (no day, no view), though the entry says on", !calls.some((c) => /\/api\/board\//.test(c[0])), calls.map((c) => c[0]));
+  preview(p);
+  const b2 = snap(p);
+  for (let i = 0; i < 5; i++) { S.boardLive(); S.boardAllowed(); S.boardState(); S.boardAsk(); }
+  ok("with the preview seam on localhost the board is live, and reading it still writes nothing", S.boardLive() === true && S.boardAllowed().ok === true && snap(p) === b2);
+  const q = boot(); q.ctx.location.hostname = "speaksona.com"; q.session["sona.boardpreview.v1"] = "1";
+  ok("the preview seam does nothing anywhere but localhost", q.S.boardLive() === false);
+});
+sec("20d who may be on the board (boardAllowed)", () => {
+  const why = (seed, profile, fn) => { const p = boot({ profile }); preview(p); Object.assign(p.local, seed || {}); if (fn) fn(p); return p.S.boardAllowed().why || "ok"; };
+  ok("a child of 7 on a family's own phone: allowed", why() === "ok");
+  ok("a child of 4, or with no age, is \"young\"", why({}, { childAge: "4" }) === "young" && why({}, { childAge: "" }) === "young" && why({}, { childAge: "5.5" }) === "young" && why({}, { childAge: "5" }) === "ok");
+  ok("a clinician's link on the phone (any of its four keys) is \"clinic\"", ["sona.slp", "sona.slpok", "sona.slpunlock", "sona.slpticket"].every((k) => why({ [k]: "X1" }) === "clinic"));
+  ok("…and so is a clinician's own setup on any profile, this child's shared progress, or a grown-up's \"Yes\" to the therapist question",
+    why({}, null, (p) => { p.local["sona.profile.v1"] = JSON.stringify({ childName: "Mia", childAge: "7", onboarded: true, role: "slp" }); }) === "clinic" &&
+    why({ "sona.pilot.v1": JSON.stringify({ code: "ABC", consent: true }) }) === "clinic" && why({ "sona.boardask.v1": "clinic" }) === "clinic" && why({ "sona.boardask.v1": "no" }) === "ok");
+  ok("five children on one phone is \"many\"", why({}, undefined, (p) => { ["A", "B", "C", "D"].forEach((n) => p.S.addKid(n, "7")); p.S.switchKid(""); }) === "many" &&
+    why({}, undefined, (p) => { ["A", "B", "C"].forEach((n) => p.S.addKid(n, "7")); p.S.switchKid(""); }) === "ok");
+  const p = boot(); preview(p); p.S.addKid("Tot", "3"); p.S.switchKid("");
+  ok("it is read for the child the line is about, not the one playing", p.S.boardAllowed("").ok === true && p.S.boardAllowed("k2").why === "young" && p.S.boardAllowed("k9").why === "none");
+});
+sec("20e the words on the board page", () => {
+  const html = readFileSync(path.join(ROOT, "board.html"), "utf8");
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/<[^>]+>/g, " ");
+  const text = strip(html);
+  ok("(its words are found: the off line, the sun line, the footer)", /The Practice Board is off\./.test(text) && /Meet your goal today to get your first sun!/.test(text) && /A sun is a day your child met the daily goal\./.test(text));
+  const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left|countdown|passed you|total)\b|\$\d/gi);
+  ok("no word a child must never see (score, behind, passed you, streak, total…) and no price", !bad, bad);
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall trophy and coin checks passed");

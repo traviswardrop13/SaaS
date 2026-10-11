@@ -286,6 +286,9 @@
     // each child's own trophies, daily chest, Trophy Road and game levels (11
     // Oct 2026, TROPHY1 and after): a play economy, never practice data
     "sona.trophy.v1", "sona.chest.v1", "sona.road.v1", "sona.playlevel.v1",
+    // each child's Practice Board entry and the last board they saw (BOARD2,
+    // 11 Oct 2026): never in a backup, and gone when the child is removed
+    "sona.board.v1", "sona.boardcache.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -325,6 +328,11 @@
   // response that arrives after a switch lands under the wrong name.
   function saveFor(slot, key, val) {
     try { localStorage.setItem((slot && PER_KID.has(key)) ? key + "@" + slot : key, JSON.stringify(val)); } catch {}
+  }
+  // …and its mirror: read one child's key whoever is active (the Practice
+  // Board sends for every child on the phone, not only the one playing).
+  function _loadFor(slot, key, def) {
+    try { const v = JSON.parse(localStorage.getItem((slot && PER_KID.has(key)) ? key + "@" + slot : key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); }
   }
 
   // The switcher's list, each entry carrying the name from that kid's OWN
@@ -371,6 +379,11 @@
     // child's clips under this very slot (removing used to leave them). A new
     // slot can own none, so clear whatever is stamped with it.
     _dropRecordings(slot);
+    // …and the Practice Board: a restored list can bring a lower `hi`, and a
+    // slot handed out again must never inherit another child's board entry or
+    // the grown-up's yes for them (BOARD2). A stray entry is queued for
+    // deletion, never kept.
+    _boardDrop(slot); _boardPendForget([slot]);
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
@@ -401,6 +414,11 @@
   function removeKid(slot) {
     const v = _kids();
     if (v.list.length < 2) return false;              // never leave zero children
+    // a child on the Practice Board leaves it with the rest of their data:
+    // the deletion is queued first and goes out from the next practice,
+    // game, road or Settings page, and slot "" is cleared here because the
+    // PER_KID sweep below leaves the first child's keys (BOARD2)
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
@@ -2146,7 +2164,13 @@
   // this device", and a backup code is something a family copies, emails to
   // itself or pastes into another phone. Left out here AND refused by
   // importData below, so neither half can be undone by the other.
-  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1"];
+  // THE PRACTICE BOARD'S FIVE KEYS never leave either (BOARD2, 11 Oct 2026):
+  // a child's board token belongs to this phone (a copy on a second phone
+  // would post days for a child twice over, and a pasted one is somebody
+  // else's entry), the pending request and the deletions still to send are
+  // this phone's errands, and the therapist answer stays here, as the sheet
+  // says. A new phone asks again and joins again.
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
   function exportData() {
     const out = {};
     try {
@@ -2190,15 +2214,18 @@
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
   //
-  // SETUP'S TWO ANSWERS AND ITS DRAFT are the last two (NO_EXPORT above): a
-  // backup made by this build never holds them, and one that does (hand-made,
-  // or from a build that slips) is not let in either.
+  // SETUP'S TWO ANSWERS AND ITS DRAFT, and the Practice Board's five keys, are
+  // on NO_EXPORT above too: a backup made by this build never holds them, and
+  // one that does (hand-made, or from a build that slips) is not let in either.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
     "sona.setupasks.v1", "sona.obdraft.v1",
     // the kept-buddies stamp (OWN1) is true of this device, like freever; what
     // a household owns travels inside each child's profile instead
-    "sona.buddyset.v1"];
+    "sona.buddyset.v1",
+    // the Practice Board's keys (BOARD2): never brought in, so a restore can
+    // never put a child on the board, or hand one child another's entry
+    "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -2223,6 +2250,10 @@
       // brings only the list it holds. Forging one only adds cosmetic items on
       // the phone that pastes it, which the spec accepts (§11).
       const keptBackup = data[BUDDYSET_KEY] !== "post";
+      // THE PRACTICE BOARD FOLLOWS THE CHILD, NOT THE SLOT (BOARD2). Board
+      // keys never come in (NO_IMPORT), but a restore can put a different
+      // child into a slot, or take one away; who sits where is noted first.
+      let boardBefore = []; try { boardBefore = _boardSlots(); } catch (e) {}
       let n = 0, skipped = 0, ticket = false;
       Object.keys(data).forEach((k) => {
         if (k.indexOf("sona.") !== 0) return;
@@ -2246,6 +2277,11 @@
         }
         try { localStorage.setItem(k, v); n++; if (base === "sona.slpticket" && v) ticket = true; } catch (e) {}
       });
+      // A slot whose child changed (a new name) or that left the list loses
+      // its board entry here, and the entry is queued for deletion: a new
+      // child's grown-up is never told "removed after a long break", and
+      // nobody inherits another child's place or the grown-up's yes.
+      try { _boardAfterImport(boardBefore); } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
       // profile may no longer be in it. Access was the household's, so it
@@ -4274,11 +4310,17 @@
       document.body.appendChild(b); setTimeout(() => b.remove(), 4000);
     } catch (e) {}
   }
+  // The stamp, the event and the banner happen once a day, as before; the
+  // early return moved (11 Oct 2026) so the Practice Board's hook can run
+  // after the stamp on a later rep (a board day needs BOARD_MIN_REPS too),
+  // and queued board deletions go out from practice and game pages. Home
+  // never calls this.
   function _goalCheck() {
+    try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
     const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
-    if (!d.done || stamps[t]) return;
-    stamps[t] = d.goal; save(GOALKEY, stamps);
-    track("rep goal met"); _goalBanner(d.n);
+    if (!d.done) return;
+    if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
+    try { _boardQueue(_slot()); } catch (e) {}     // BOARD2: a no-op unless this child is on the board
   }
   // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
   // 2026: "yeah count as reps"). Every place a game asks for the sound and
@@ -4324,6 +4366,8 @@
   }
   // Retained as a no-op for cached pages. Family comparisons and their beacon
   // are retired; counts remain local except consented pilot progress sharing.
+  // The opt-in Practice Board (BOARD2, below) is a separate thing: goal days
+  // only, under a nickname, after a grown-up's email confirmation.
   function repsBeacon() {}
 
   // ── TROPHY1 (Travis, 9 Oct 2026: "a currency so they can buy stuff"; D1,
@@ -4707,6 +4751,364 @@
       save(PLAYLEVELKEY, p);
     } catch (e) {}
     return out;
+  }
+
+  // ── BOARD2: the Practice Board, the phone's half (Travis, 9 Oct 2026: "a
+  // board of every kid in Sona … days practiced"; D8, 11 Oct 2026). BUILT
+  // DARK: BOARD_LIVE is false here and in lib/board.ts (boardapitest pins the
+  // two equal), and only a preview seam on localhost turns it on, for tests.
+  // Switching it on is Travis's go, after a lawyer has named the consent
+  // method; nothing in this block shows or sends anything while it is off,
+  // except a deletion still owed (below).
+  //   - A day on the board is a goal day (today's goal stamp) with at least
+  //     BOARD_MIN_REPS reps. The phone only says "this child met the goal so
+  //     many seconds ago"; the server works the day out by its own clock and
+  //     counts it once, a day late at most and never early (lib/board.ts).
+  //   - A grown-up turns it on for the household's children at once, by a
+  //     link emailed to them (the four number words stop a child who can't
+  //     read, not one who can). Nothing here says "on" until the server has
+  //     handed back a member for that child (boardClaim), and the address is
+  //     never kept.
+  //   - Off for a phone set up through a speech therapist or a school, one
+  //     shared by more than four children, a family who says a therapist or a
+  //     school sent them, and a child under 5 (boardAllowed): checked at join,
+  //     at every send and at every view, and a child who stops being allowed
+  //     leaves by themselves.
+  //   - Deleting always works: a deletion is queued on the phone FIRST, then
+  //     sent whether or not the board is live, from Settings, the road page,
+  //     the board page and (at most once a minute) every rep on a practice or
+  //     game page. Home never calls anything here.
+  //   - Never a name, an age, a sound, audio, fid or childId: the server gets
+  //     a buddy id per child, a time-zone offset and "how long ago".
+  // Every reply can arrive after a switch of child, so each async function
+  // takes its slot first and writes through saveFor, never save().
+  const BOARD_LIVE = false;   // pinned equal to lib/board.ts by boardapitest; flipping it is Travis's go (spec §16 step 12)
+  function boardLive() {
+    if (BOARD_LIVE) return true;
+    try { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && sessionStorage.getItem("sona.boardpreview.v1") === "1"; } catch (e) { return false; }
+  }
+  const BOARDKEY = "sona.board.v1", BOARDCACHEKEY = "sona.boardcache.v1", BOARDPENDKEY = "sona.boardpend.v1", BOARDLEAVEKEY = "sona.boardleave.v1", BOARDASKKEY = "sona.boardask.v1";
+  // a board day needs this many reps as well as the goal stamp (Rachel to confirm, R-B1)
+  const BOARD_MIN_REPS = 10, BOARD_PEND_MS = 48 * 3600 * 1000, BOARD_AGO_MAX = 172800, BOARD_LEAVE_GIVEUP = 30 * 864e5;
+  // the family's offset from UTC, in minutes, to the nearest quarter hour
+  function _tz() { return Math.round(-new Date().getTimezoneOffset() / 15) * 15; }
+  function _boardSlot(slot) { return (slot === undefined || slot === null) ? _slot() : String(slot); }
+  function _boardSlots() { return _kids().list.map((k) => { const s = k.slot || ""; return { slot: s, name: String(_loadFor(s, PKEY, {}).childName || "") }; }); }
+  function _boardBuddy(slot) { try { return characterById(_loadFor(slot, PKEY, {}).character).id; } catch (e) { return "fox"; } }
+  function _boardClear(slot, key) { try { localStorage.removeItem((slot && PER_KID.has(key)) ? key + "@" + slot : key); } catch (e) {} }
+  function _leaveList() { const l = load(BOARDLEAVEKEY, []); return Array.isArray(l) ? l.filter((x) => x && typeof x.t === "string" && x.t) : []; }
+  function _boardQueueLeave(token) {
+    if (typeof token !== "string" || !token) return;
+    const l = _leaveList(); if (l.some((x) => x.t === token)) return;
+    l.push({ t: token, at: Date.now() }); save(BOARDLEAVEKEY, l);
+  }
+  // steps 1 and 2 of leaving: the token is queued for deletion FIRST, then
+  // this phone's two keys go (slot "" too). Answers the entry that was there.
+  function _boardDrop(slot) {
+    let e = {};
+    try { e = _loadFor(slot, BOARDKEY, {}); if (e && typeof e.token === "string" && e.token) _boardQueueLeave(e.token); } catch (x) {}
+    _boardClear(slot, BOARDKEY); _boardClear(slot, BOARDCACHEKEY);
+    return e || {};
+  }
+  // A pending request was asked for these slots by position. A slot whose
+  // child is gone keeps its place as null, so a claim deletes that member
+  // instead of handing it to whoever sits in the slot next.
+  function _boardPendForget(slots) {
+    try {
+      const p = load(BOARDPENDKEY, null); if (!p || !Array.isArray(p.slots)) return;
+      let hit = false; p.slots = p.slots.map((s) => { if (s !== null && slots.indexOf(s) >= 0) { hit = true; return null; } return s; });
+      if (hit) save(BOARDPENDKEY, p);
+    } catch (e) {}
+  }
+  function _boardAfterImport(before) {
+    const now = _kids().list.map((k) => k.slot || ""), changed = [];
+    (before || []).forEach((b) => {
+      if (now.indexOf(b.slot) >= 0 && String(_loadFor(b.slot, PKEY, {}).childName || "") === b.name) return;
+      _boardDrop(b.slot); changed.push(b.slot);
+    });
+    if (changed.length) _boardPendForget(changed);
+  }
+  // a live pending request (48 hours), or null. Pure.
+  function _boardPend() {
+    const p = load(BOARDPENDKEY, null);
+    if (!p || typeof p.pend !== "string" || !p.pend || !Array.isArray(p.slots) || !(Date.now() - (Number(p.at) || 0) < BOARD_PEND_MS)) return null;
+    return p;
+  }
+  function _boardPendDrop(pend) { try { const p = load(BOARDPENDKEY, null); if (!pend || !p || p.pend === pend) _boardClear("", BOARDPENDKEY); } catch (e) {} }
+  // One POST to a board route. Never throws: an error, a timeout or no
+  // network is status 0, which every caller treats as "try again later".
+  function _boardPost(name, body) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 10000); } catch (e) { ctl = null; }
+    const done = (x) => { clearTimeout(to); return x; };
+    try {
+      return fetch("/api/board/" + name, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "same-origin", signal: ctl ? ctl.signal : undefined })
+        .then((r) => r.text().then((t) => { let j = {}; try { j = JSON.parse(t); } catch (e) {} return { status: r.status, j: (j && typeof j === "object" && !Array.isArray(j)) ? j : {} }; }), () => ({ status: 0, j: {} }))
+        .then(done, () => done({ status: 0, j: {} }));
+    } catch (e) { return Promise.resolve(done({ status: 0, j: {} })); }
+  }
+
+  // Who may be on the board: { ok, why }. Read for the child the line is
+  // about (slot), never just the one playing. "off" only pauses: it never
+  // deletes anything here, and queued deletions still go out.
+  function _boardClinic(slot) {
+    try {
+      if (["sona.slp", "sona.slpok", "sona.slpunlock", "sona.slpticket"].some((k) => !!localStorage.getItem(k))) return true;
+      if (localStorage.getItem(BOARDASKKEY) === "clinic") return true;
+      if (_kids().list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return true;
+      const pi = _loadFor(slot, "sona.pilot.v1", {});
+      if (pi.consent || pi.code) return true;
+      return false;
+    } catch (e) { return true; }   // can't tell: off
+  }
+  function boardAllowed(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, why: "off" };
+    if (!_kids().list.some((k) => (k.slot || "") === slot)) return { ok: false, why: "none" };
+    if (_boardClinic(slot)) return { ok: false, why: "clinic" };
+    if (_kids().list.length > 4) return { ok: false, why: "many" };
+    const age = _loadFor(slot, PKEY, {}).childAge, a = String(age == null ? "" : age).trim();
+    if (!/^\d+$/.test(a) || parseInt(a, 10) < 5) return { ok: false, why: "young" };
+    return { ok: true, why: "" };
+  }
+  // Pure: what Settings, the road and the board page show for one child.
+  function boardState(slot) {
+    slot = _boardSlot(slot);
+    const e = _loadFor(slot, BOARDKEY, {}), p = _boardPend(), a = boardAllowed(slot), on = !!(e.on && typeof e.token === "string" && e.token);
+    return { on, nick: on && typeof e.nick === "string" ? e.nick : "", days: on ? Math.max(0, e.days | 0) : 0, joined: on ? String(e.joined || "") : "",
+      pending: !!p, code: p ? String(p.code || "") : "", asked: !!p && p.slots.indexOf(slot) >= 0, gone: !on && !!e.gone, why: a.ok ? "" : a.why, leaving: _leaveList().length };
+  }
+  // The Settings sheet's question, "Did a speech therapist or a school send
+  // you to Sona?": "clinic" or "no", kept on this phone only (a new phone
+  // asks again). Called with no answer it only reads.
+  function boardAsk(ans) {
+    try {
+      if (ans === "clinic" || ans === "no") localStorage.setItem(BOARDASKKEY, ans);
+      const v = localStorage.getItem(BOARDASKKEY); return (v === "clinic" || v === "no") ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  // "Email me the link": up to four children the grown-up ticked, in order.
+  // The phone sends their buddies, its time zone and the address, and keeps
+  // only what the server hands back (a pending value and a short code). The
+  // address is never stored here. "Send it again" is the same call: it adds
+  // the pending value when the same children are asked for again.
+  async function boardStart(email, slots) {
+    if (!boardLive()) return { ok: false, error: "off" };
+    const em = typeof email === "string" ? email.trim() : "";
+    if (!em || em.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return { ok: false, error: "email" };
+    if (!Array.isArray(slots) || slots.length < 1 || slots.length > 4) return { ok: false, error: "kids" };
+    const want = slots.map(String);
+    if (want.some((s, i) => want.indexOf(s) !== i) || want.some((s) => !boardAllowed(s).ok)) return { ok: false, error: "kids" };
+    const old = _boardPend(), body = { email: em, kids: want.map((s) => ({ buddy: _boardBuddy(s) })), tz: _tz() };
+    if (old && old.slots.length === want.length && old.slots.every((s, i) => s === want[i])) body.pend = old.pend;
+    const r = await _boardPost("start", body), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.pend === "string" && j.pend) {
+      const code = String(j.code || "").slice(0, 8);
+      save(BOARDPENDKEY, { pend: j.pend, at: Date.now(), slots: want, code });
+      return { ok: true, code };
+    }
+    if (r.status === 400 && j.error === "email") return { ok: false, error: "email" };
+    if (r.status === 429 || j.limit) return { ok: false, error: "limit" };
+    if (r.status === 503 && (j.paused || j.resting)) return { ok: false, error: "resting" };
+    if (r.status === 503 && j.off) return { ok: false, error: "off" };
+    return { ok: false, error: "busy" };
+  }
+  // "Cancel" while waiting: this phone forgets the request. The server's
+  // half holds nothing about a child and runs out by itself in 48 hours;
+  // no child is put on the board without this phone's Finish.
+  function boardCancel() { _boardPendDrop(); return true; }
+  // "Finish": once the grown-up has pressed the email's button, one member
+  // per ticked child, in order. Repeatable: a repeated answer changes nothing,
+  // and a member this phone cannot place (the child is gone, no longer
+  // allowed, or already on with another entry) is queued for deletion.
+  async function boardClaim() {
+    if (!boardLive()) return { ok: false, off: true };
+    if (!load(BOARDPENDKEY, null)) return { ok: false, none: true };
+    const p = _boardPend();
+    if (!p) { _boardPendDrop(); return { ok: false, expired: true }; }
+    const r = await _boardPost("claim", { pend: p.pend }), j = r.j;
+    if (r.status === 202 || (r.status === 200 && j.waiting)) return { ok: false, waiting: true };
+    if (r.status === 404 || r.status === 401 || j.expired) { _boardPendDrop(p.pend); return { ok: false, expired: true }; }
+    if (r.status === 503 && j.paused) return { ok: false, resting: true };
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    if (!(r.status === 200 && j.ok && Array.isArray(j.members))) return { ok: false, busy: true };
+    const now = load(BOARDPENDKEY, null), slots = (now && now.pend === p.pend && Array.isArray(now.slots)) ? now.slots : p.slots;
+    const here = _kids().list.map((k) => k.slot || ""), got = [];
+    let fresh = 0;
+    j.members.forEach((m, i) => {
+      if (!m || typeof m.token !== "string" || !m.token) return;
+      // taken off since by the email's remove link: nothing to turn on
+      if (typeof m.nick !== "string" || !m.nick) return;
+      const slot = i < slots.length ? slots[i] : null;
+      if (slot === null || here.indexOf(slot) < 0 || !boardAllowed(slot).ok) { _boardQueueLeave(m.token); return; }
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (e.on && e.token) { if (e.token !== m.token) _boardQueueLeave(m.token); got.push({ slot, nick: String(e.nick || "") }); return; }
+      saveFor(slot, BOARDKEY, { on: true, token: m.token, nick: m.nick.slice(0, 40), joined: _localDay(), q: [], qd: "", days: 0 });
+      _boardClear(slot, BOARDCACHEKEY);
+      fresh++; got.push({ slot, nick: m.nick.slice(0, 40) });
+    });
+    _boardPendDrop(p.pend);
+    // today counts for the child using Sona now; a brother or sister's today
+    // counts from their next rep
+    try { _boardQueue(_slot()); } catch (e) {}
+    try { await boardFlush(); } catch (e) {}
+    if (fresh) track("board turned on");
+    return { ok: true, members: got };
+  }
+  // A goal day for the child playing now: queued once a day, after the goal
+  // stamp and at least BOARD_MIN_REPS reps, then sent. Only from _goalCheck
+  // (every rep on a practice or game page) and boardClaim.
+  function _boardQueue(slot) {
+    if (slot !== _slot() || !boardLive()) return;
+    const e = _loadFor(slot, BOARDKEY, {}), t = today();
+    if (!e.on || !e.token || e.qd === t) return;
+    if (!dayGoal().done || dayReps() < BOARD_MIN_REPS) return;
+    e.qd = t; e.q = (Array.isArray(e.q) ? e.q : []).concat([{ at: Date.now() }]).slice(-3);
+    saveFor(slot, BOARDKEY, e);
+    try { const f = boardFlush(); if (f && f.catch) f.catch(() => {}); } catch (x) {}
+  }
+  // Every deletion still owed, sent whether or not the board is live. A
+  // deletion goes when the server says it is done (or there is nothing to
+  // delete); a rotated key (401) is retried for 30 days; a busy server or no
+  // network keeps it for next time. throttle: at most once a minute (the
+  // per-rep caller).
+  let _leaveAt = 0, _leaveRun = null;
+  function _boardSendLeaves(throttle) {
+    if (!_leaveList().length) return Promise.resolve();
+    if (_leaveRun) return throttle ? _leaveRun : _leaveRun.then(() => _boardSendLeaves(false));
+    if (throttle && Date.now() - _leaveAt < 60000 && Date.now() >= _leaveAt) return Promise.resolve();
+    _leaveAt = Date.now();
+    _leaveRun = (async () => {
+      const drop = [];
+      for (const x of _leaveList()) {
+        const r = await _boardPost("leave", { token: x.t });
+        if ((r.status === 200 && r.j.deleted) || r.status === 404) drop.push(x.t);
+        else if (r.status === 401 && Date.now() - (Number(x.at) || 0) > BOARD_LEAVE_GIVEUP) drop.push(x.t);
+      }
+      if (drop.length) save(BOARDLEAVEKEY, _leaveList().filter((x) => drop.indexOf(x.t) < 0));
+    })().catch(() => {}).then(() => { _leaveRun = null; });
+    return _leaveRun;
+  }
+  // Deletions first, live or not; then, only while the board is on, every
+  // child on this phone (not only the one playing): a child no longer allowed
+  // leaves, and each queued day goes out. Never from Home.
+  async function _boardFlushOnce() {
+    try { await _boardSendLeaves(false); } catch (e) {}
+    if (!boardLive()) return;
+    const slots = _kids().list.map((k) => k.slot || "");
+    for (const slot of slots) {
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (!e.on || typeof e.token !== "string" || !e.token) continue;
+      if (!boardAllowed(slot).ok) { await boardLeave(slot); continue; }
+      const q = Array.isArray(e.q) ? e.q : [];
+      if (!q.length) continue;
+      const done = [], buddy = _boardBuddy(slot);
+      let days = null, gone = false;
+      for (const item of q) {
+        const at = Number(item && item.at) || 0;
+        let ago = Math.round((Date.now() - at) / 1000);
+        // older than two days (or a clock moved back): the server would refuse it, so it goes
+        if (!(ago >= -300 && ago <= BOARD_AGO_MAX)) { done.push(at); continue; }
+        ago = Math.max(0, ago);
+        const r = await _boardPost("day", { token: e.token, ago, tz: _tz(), buddy });
+        if (r.status === 200 && r.j.ok) { done.push(at); if (typeof r.j.days === "number") days = Math.max(0, r.j.days | 0); }
+        else if (r.status === 404 && r.j.gone) { gone = true; break; }
+        else if (r.status === 400) done.push(at);
+        // 401 (a rotated key, never "gone"), 429, 503, 5xx, offline: kept for the next send
+      }
+      // written to the child the work started for, onto what is there NOW
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) continue;   // turned off meanwhile
+      if (gone) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); continue; }
+      cur.q = (Array.isArray(cur.q) ? cur.q : []).filter((x) => done.indexOf(Number(x && x.at) || 0) < 0);
+      if (days !== null) cur.days = days;
+      saveFor(slot, BOARDKEY, cur);
+    }
+  }
+  let _flushRun = null, _flushMore = false;
+  function boardFlush() {
+    if (_flushRun) { _flushMore = true; return _flushRun; }
+    _flushRun = (async () => { do { _flushMore = false; await _boardFlushOnce(); } while (_flushMore); })().catch(() => {}).then(() => { _flushRun = null; });
+    return _flushRun;
+  }
+  // The board page's one read, for the child playing now (or slot). Other
+  // children's rows are the server's once-a-day snapshot; the child's own
+  // days are live. A failure shows the last board from earlier today.
+  function _boardRow(x) {
+    const b = x && typeof x.buddy === "string" ? characterById(x.buddy).id : "fox";
+    return { place: Math.max(1, x && x.place | 0), nick: String((x && x.nick) || "").slice(0, 40), buddy: b, days: Math.max(0, x && x.days | 0), me: !!(x && x.me) };
+  }
+  async function boardView(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { ok: false, notOn: true, gone: !!e.gone };
+    if (!boardAllowed(slot).ok) { await boardLeave(slot); return { ok: false, off: true }; }
+    const mine = { nick: String(e.nick || ""), buddy: _boardBuddy(slot), days: Math.max(0, e.days | 0), place: null };
+    const r = await _boardPost("view", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok) {
+      const me = j.me && typeof j.me === "object" ? j.me : {};
+      const view = { ok: true, month: String(j.month || "").slice(0, 7), quiet: !!j.quiet,
+        top: (Array.isArray(j.top) ? j.top : []).slice(0, 20).map(_boardRow),
+        more: (Array.isArray(j.more) ? j.more : []).slice(0, 10).map((x) => ({ place: Math.max(1, x && x.place | 0), n: Math.max(0, x && x.n | 0), days: Math.max(0, x && x.days | 0) })),
+        me: { nick: String(me.nick || mine.nick).slice(0, 40), buddy: typeof me.buddy === "string" ? characterById(me.buddy).id : mine.buddy, days: Math.max(0, me.days | 0), place: (me.place | 0) > 0 ? me.place | 0 : null } };
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) return { ok: false, off: true };
+      saveFor(slot, BOARDCACHEKEY, Object.assign({}, view, { at: Date.now() }));
+      cur.days = view.me.days; if (view.me.nick) cur.nick = view.me.nick; saveFor(slot, BOARDKEY, cur);
+      track("board viewed");
+      return view;
+    }
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { ok: false, gone: true };
+    }
+    // resting: the days still count, so the child's own card shows what this phone knows
+    if (r.status === 503 && j.paused) { track("board viewed"); return { ok: false, resting: true, me: mine }; }
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    const c = _loadFor(slot, BOARDCACHEKEY, null);
+    if (c && c.ok && typeof c.at === "number" && c.at <= Date.now() && Date.now() - c.at < 864e5 && _localDay(c.at) === today()) {
+      track("board viewed");
+      return Object.assign({}, c, { stale: true });
+    }
+    return { ok: false, busy: true, me: mine };
+  }
+  // "New nickname": another made-up one from the server's lists, at most one
+  // a day and three a month. Never typed.
+  async function boardNick(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { off: true };
+    const r = await _boardPost("nick", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.nick === "string" && j.nick) {
+      const nick = j.nick.slice(0, 40), cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token === e.token) {
+        cur.nick = nick; saveFor(slot, BOARDKEY, cur);
+        const c = _loadFor(slot, BOARDCACHEKEY, null);
+        if (c && c.me) { c.me.nick = nick; (Array.isArray(c.top) ? c.top : []).forEach((x) => { if (x && x.me) x.nick = nick; }); saveFor(slot, BOARDCACHEKEY, c); }
+      }
+      return { nick };
+    }
+    if (r.status === 429 || j.limit) return { limit: true };
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { gone: true };
+    }
+    if (r.status === 503 && j.paused) return { resting: true };
+    return { busy: true };
+  }
+  // "Turn off" (and every other way a child leaves): (1) the deletion is
+  // queued first, (2) this phone's keys go, slot "" included, (3) it is sent
+  // now, live or not, (4) "board turned off". queued says it is still owed
+  // (no network): the next practice, game, road or Settings page sends it.
+  async function boardLeave(slot) {
+    slot = _boardSlot(slot);
+    const e = _boardDrop(slot), had = typeof e.token === "string" && !!e.token;
+    try { await _boardSendLeaves(false); } catch (x) {}
+    if (had) track("board turned off");
+    return { ok: true, nick: had ? String(e.nick || "") : "", queued: had && _leaveList().some((x) => x.t === e.token) };
   }
 
   // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
@@ -6522,5 +6924,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);
