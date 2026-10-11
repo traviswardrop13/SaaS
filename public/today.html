@@ -560,7 +560,8 @@
       var it=g.buddy?["characters",g.buddy]:g.hat?["outfits",g.hat]:g.place?["backdrops",g.place]:null;
       if(it&&it[0]==="characters"&&window.SonaCraftedBuddies){box.innerHTML=SonaCraftedBuddies.markup(it[1],48);return box;}
       if(it&&it[0]==="backdrops"){box.className="road-art road-place";box.style.backgroundImage='url("/assets/crafted/customize-'+it[1]+'-v2.webp")';return box;}
-      if(it){box.appendChild(roadIcon("gift",44));return box;}
+      // a hat shows its painted picture (OUTFITS[i].art), else a gift
+      if(it){var hat=null;((S&&S.OUTFITS)||[]).forEach(function(o){if(o.id===it[1])hat=o;});if(hat&&hat.art){box.appendChild(roadImg(hat.art,"gift"));return box;}box.appendChild(roadIcon("gift",44));return box;}
       if(g.level){
         box.className="road-art road-level";var pics=document.createElement("span");pics.className="road-lvpics";
         var cards=(S&&S.CRAFTED_CARDS)||{};["slice","tiles","hoops"].forEach(function(k){var e=document.createElement("i");if(cards[k])e.style.backgroundImage='url("/assets/crafted/home-'+cards[k]+'.webp")';pics.appendChild(e);});

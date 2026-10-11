@@ -33,7 +33,11 @@
 // place it could pick (written into each child's profile, so a backup carries
 // it), a new family starts with three buddies and buys the rest with coins at
 // the catalog's price, a buy can be given back within 10 seconds, and nothing
-// in it reads or writes practice.
+// in it reads or writes practice. The road's own buddies, hats and places
+// (and the Flower crown and Candy land, for coins) joined the catalog and
+// their stops with their painted art in step 8 (14e, 16a, 16c, 19): a child
+// who opened one of those stops before is handed its item once, and keeps the
+// coins it paid then.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -526,6 +530,7 @@ const webpSize = (file) => {
 };
 const onDisk = (src) => typeof src === "string" && src.startsWith("/assets/crafted/") && existsSync(path.join(ROOT, src));
 const FRAME = { run: [480, 840], rest: [512, 512], cheer: [512, 512], sit: [512, 512], peek: [512, 384] };
+const LEGACY_PLACES = ["sky", "jungle", "forest", "mountain", "space", "beach"];
 sec("14a every painted pose BUDDY_ART names is on disk, in its pose's frame", () => {
   const p = boot(), { S } = p;
   const ids = S.CHARACTERS.map((c) => c.id);
@@ -601,6 +606,19 @@ sec("14c the Trophy Road's chests and the three scenes without the fox are on di
   ok("each is a WebP of its size (the chests 512x512, a scene the size of the picture it stands in for)", bad.length === 0, bad.map(([n]) => n));
   ok("…and a scene without the fox is exactly as big as the one with it, so every number a game measures off it holds",
     Object.entries(was).every(([n, o]) => String(webpSize(path.join(ROOT, "assets/crafted/" + n + ".webp"))) === String(webpSize(path.join(ROOT, "assets/crafted/" + o + ".webp")))));
+});
+sec("14e the road's own buddies, the painted hats and the new places: each drawn, cut and checked on the record", () => {
+  const { S } = boot();
+  const notes = readFileSync(path.resolve(ROOT, "..", "design/crafted-world/buddies-v3.md"), "utf8");
+  const sprites = JSON.parse(readFileSync(path.resolve(ROOT, "..", "tools/art/game-sprites.json"), "utf8"));
+  const names = [].concat(S.CHARACTERS.filter((c) => c.portrait).map((c) => path.basename(c.portrait, ".webp")), S.OUTFITS.filter((o) => o.art).map((o) => path.basename(o.art, ".webp")),
+    S.BACKDROPS.filter((b) => LEGACY_PLACES.indexOf(b.id) < 0).map((b) => "customize-" + b.id + "-v2"));
+  ok("(the four new badges, ten hats and three places)", names.length === 17, names);
+  ok("each has its drawing's entry in tools/art/game-sprites.json (with its reference pictures) and its eye check in design/crafted-world/buddies-v3.md",
+    names.every((n) => sprites.some((e) => e.name === n && (e.ref || e.refs)) && notes.includes(n)), names.filter((n) => !sprites.some((e) => e.name === n && (e.ref || e.refs)) || !notes.includes(n)));
+  ok("a new buddy's entry in the catalog has no sticker drawing (its painted badge is its picture), and the badge is its own file", S.CHARACTERS.filter((c) => c.portrait).every((c) => c.svg === "" && c.portrait === "/assets/crafted/buddy-" + c.id + "-v2.webp" && S.buddySprite(c.id, "portrait") === c.portrait));
+  ok("every hat but None has its painted picture, named for it", S.OUTFITS.every((o) => o.id === "none" ? !o.art : o.art === "/assets/crafted/hat-" + o.id + ".webp"));
+  ok("every buddy in the catalog has all five poses on disk (none falls back)", S.CHARACTERS.every((c) => c.id === "fox" || ["run", "rest", "cheer", "peek", "sit"].every((pose) => { const sp = S.buddySprite(c.id, pose); return sp && (pose === "run" || sp.pose === pose); })));
 });
 sec("14d where BUDDY2 lives in sona.js, and what it touches", () => {
   const at = SRC.indexOf("// ── BUDDY2"), chars = SRC.indexOf("const CHARACTERS = ["), ask = SRC.indexOf("GAMEASK1");
@@ -690,6 +708,13 @@ sec("16a the stop table", () => {
   ok("the lands begin where their Big Chests are", JSON.stringify(S.ROAD_LANDS.map((l) => [l.id, l.name, l.from])) === JSON.stringify([["meadow", "Sunny Meadow", 0], ["beach", "Beach Bay", 300], ["snow", "Snowy Peak", 750], ["sea", "Under the Sea", 1350], ["sky", "Starry Sky", 2100], ["champ", "Champion Trail", 3000]]) && S.ROAD_LANDS.every((l, i) => i === 0 || st.some((s) => s.at === l.from && s.big)));
   ok("Level 2 is the gift at 150 and Level 3 at 750, the trophies that open them", st[2].gift.some((g) => g.level === 2) && st[9].gift.some((g) => g.level === 3) && S.PLAY_LEVEL_AT[1] === 150 && S.PLAY_LEVEL_AT[2] === 750);
   ok("no stop opens empty: each gives coins, a sticker, a level or an item", st.every((s) => s.gift.some((g) => g.coins > 0 || g.sticker || g.level || g.buddy || g.hat || g.place)));
+  // the table Travis approved (spec §4.2), with the road's own items on their stops since their art landed (step 8)
+  const want = { 6: [{ hat: "sunhat" }], 10: [{ level: 3 }, { buddy: "frog" }, { coins: 50 }, { land: "snow" }], 12: [{ place: "snow" }], 15: [{ hat: "starclip" }],
+    16: [{ buddy: "penguin" }, { coins: 60 }, { land: "sea" }], 19: [{ place: "sea" }], 22: [{ buddy: "lion" }, { coins: 80 }, { land: "sky" }], 25: [{ hat: "headphones" }],
+    28: [{ buddy: "unicorn" }, { coins: 100 }, { sticker: 1 }, { land: "champ" }] };
+  ok("the road's own buddies, hats and places are on their stops: Sun hat 6, Hops the frog 10, Snow 12, Star clip 15, Pebble the penguin 16, Under the sea 19, Sunny the lion 22, Headphones 25, Luna the unicorn 28",
+    Object.keys(want).every((n) => JSON.stringify(st[n - 1].gift) === JSON.stringify(want[n])), Object.keys(want).map((n) => [n, st[n - 1].gift]));
+  ok("…and on no other stop, each once", JSON.stringify(st.filter((s) => s.gift.some((g) => g.buddy || g.hat || g.place)).map((s) => s.n)) === JSON.stringify([6, 10, 12, 15, 16, 19, 22, 25, 28]));
   const items = []; st.forEach((s) => s.gift.forEach((g) => ["buddy", "hat", "place"].forEach((k) => { if (g[k]) items.push([k, g[k]]); })));
   const lists = { buddy: S.CHARACTERS, hat: S.OUTFITS, place: S.BACKDROPS };
   const art = (k, it) => k === "buddy" ? (it.portrait || "/assets/crafted/buddy-" + it.id + "-v2.webp") : k === "hat" ? it.art : "/assets/crafted/customize-" + it.id + "-v2.webp";
@@ -724,36 +749,55 @@ sec("16b opening a stop", () => {
   r = S.roadState();
   ok("with 2,000 trophies every reached stop waits, and the lowest is the first one not opened", r.stop === 21 && r.waiting === 21 - 5 && r.lowestWaiting === 6 && r.next.n === 22 && r.land.id === "sea", r);
 });
-// an art step lists items on stops: played by booting a sona.js whose table
-// names them, on the same phone (a new build reaching a child who already
-// passed the stop)
-const WITH_ITEMS = SRC.replace("{ n: 4, at: 220, gift: [{ coins: 30 }] }", '{ n: 4, at: 220, gift: [{ buddy: "cat" }] }')
-  .replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ coins: 50 }, { hat: "sunhat" }] }')
-  .replace('{ id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", source: "road", cost: null },');
-sec("16c a gift already owned, and an item listed after its stop was opened", () => {
-  ok("(this test's table names a cat on stop 4 and the Sun hat on stop 6)", WITH_ITEMS !== SRC && /gift: \[\{ coins: 50 \}, \{ hat: "sunhat" \}\]/.test(WITH_ITEMS) && /buddy: "cat"/.test(WITH_ITEMS) && /id: "sunhat"/.test(WITH_ITEMS));
-  const o = boot({ profile: { owned: { characters: ["cat"], outfits: ["sunhat"] } }, src: WITH_ITEMS });
-  setTrophies(o, 400);
-  const four = o.S.roadOpen(4);
-  ok("a buddy the child already has pays 100 coins instead", JSON.stringify(four.gifts) === JSON.stringify([{ alt: { kind: "characters", id: "cat", name: "Mochi", coins: 100 } }]) && o.S.coinsNow() === 100, four);
+// Step 8 put the road's own items on their stops once their art was on
+// disk. Before that, stops 6, 12, 15, 19 and 25 paid their item's coins
+// (ROAD_ALT) and the Big Chests at 10, 16, 22 and 28 had no buddy. STEP6 is
+// this sona.js with that table back, to play a child who opened those stops
+// on the earlier build and then gets this one.
+const STEP6_STOPS = [
+  ['{ n: 6, at: 380, gift: [{ hat: "sunhat" }] },', '{ n: 6, at: 380, gift: [{ coins: 50 }] },'],
+  ['{ n: 10, at: 750, big: true, gift: [{ level: 3 }, { buddy: "frog" }, { coins: 50 }, { land: "snow" }] },', '{ n: 10, at: 750, big: true, gift: [{ level: 3 }, { coins: 50 }, { land: "snow" }] },'],
+  ['{ n: 12, at: 950, gift: [{ place: "snow" }] },', '{ n: 12, at: 950, gift: [{ coins: 80 }] },'],
+  ['{ n: 15, at: 1250, gift: [{ hat: "starclip" }] },', '{ n: 15, at: 1250, gift: [{ coins: 50 }] },'],
+  ['{ n: 16, at: 1350, big: true, gift: [{ buddy: "penguin" }, { coins: 60 }, { land: "sea" }] },', '{ n: 16, at: 1350, big: true, gift: [{ coins: 60 }, { land: "sea" }] },'],
+  ['{ n: 19, at: 1725, gift: [{ place: "sea" }] },', '{ n: 19, at: 1725, gift: [{ coins: 80 }] },'],
+  ['{ n: 22, at: 2100, big: true, gift: [{ buddy: "lion" }, { coins: 80 }, { land: "sky" }] },', '{ n: 22, at: 2100, big: true, gift: [{ coins: 80 }, { land: "sky" }] },'],
+  ['{ n: 25, at: 2550, gift: [{ hat: "headphones" }] },', '{ n: 25, at: 2550, gift: [{ coins: 50 }] },'],
+  ['{ n: 28, at: 3000, big: true, gift: [{ buddy: "unicorn" }, { coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];', '{ n: 28, at: 3000, big: true, gift: [{ coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];']];
+const STEP6 = STEP6_STOPS.reduce((src, [now, was]) => src.replace(now, was), SRC);
+const LATE = [[6, "outfits", "sunhat", "Sun hat"], [10, "characters", "frog", "Hops"], [12, "backdrops", "snow", "Snow"], [15, "outfits", "starclip", "Star clip"], [16, "characters", "penguin", "Pebble"],
+  [19, "backdrops", "sea", "Under the sea"], [22, "characters", "lion", "Sunny"], [25, "outfits", "headphones", "Headphones"], [28, "characters", "unicorn", "Luna"]];
+sec("16c a gift already owned, and the road's own items reaching a child who passed their stops", () => {
+  ok("(this test can rebuild the step-6 table: every stop it changes is in sona.js as written)", STEP6_STOPS.every(([now]) => SRC.includes(now)) && !/\{ (?:buddy|hat|place): "/.test(STEP6.match(/const ROAD_STOPS = \[[\s\S]*?\];/)[0]));
+  const o = boot({ profile: { owned: { characters: ["frog"], outfits: ["sunhat"], backdrops: ["snow"] } } });
+  setTrophies(o, 1000);
   const six = o.S.roadOpen(6);
-  ok("…and a hat already owned pays 50", six.ok && JSON.stringify(six.gifts[1]) === JSON.stringify({ alt: { kind: "outfits", id: "sunhat", name: "Sun hat", coins: 50 } }) && o.S.coinsNow() === 200, six);
-  ok("an item handed over at its stop is never handed over again", o.S.roadSettle() === null && o.S.coinsNow() === 200);
-  const n = boot({ src: WITH_ITEMS }); setTrophies(n, 400);
-  const g = n.S.roadOpen(6);
-  ok("an item the child doesn't have is theirs from the stop", g.ok && JSON.stringify(g.gifts[1]) === JSON.stringify({ item: { kind: "outfits", id: "sunhat", name: "Sun hat" } }) && n.S.owns("outfits", "sunhat") && JSON.parse(n.local["sona.road.v1"]).items["6:sunhat"] === 1, g);
+  ok("a hat the child already has pays 50 coins instead", JSON.stringify(six.gifts) === JSON.stringify([{ alt: { kind: "outfits", id: "sunhat", name: "Sun hat", coins: 50 } }]) && o.S.coinsNow() === 50, six);
+  const ten = o.S.roadOpen(10);
+  ok("…a buddy 100 (and the Big Chest's other gifts still come)", ten.ok && JSON.stringify(ten.gifts) === JSON.stringify([{ level: 3 }, { alt: { kind: "characters", id: "frog", name: "Hops", coins: 100 } }, { coins: 50 }, { land: "snow", name: "Snowy Peak" }]) && o.S.coinsNow() === 200, ten);
+  const twelve = o.S.roadOpen(12);
+  ok("…and a place 80", JSON.stringify(twelve.gifts) === JSON.stringify([{ alt: { kind: "backdrops", id: "snow", name: "Snow", coins: 80 } }]) && o.S.coinsNow() === 280, twelve);
+  ok("an item handed over at its stop is never handed over again", o.S.roadSettle() === null && o.S.coinsNow() === 280);
+  const n = boot(); setTrophies(n, 1000);
+  const g = n.S.roadOpen(6), f = n.S.roadOpen(10);
+  ok("an item the child doesn't have is theirs from the stop, and recorded", g.ok && JSON.stringify(g.gifts) === JSON.stringify([{ item: { kind: "outfits", id: "sunhat", name: "Sun hat" } }]) && n.S.owns("outfits", "sunhat") &&
+    JSON.stringify(f.gifts[1]) === JSON.stringify({ item: { kind: "characters", id: "frog", name: "Hops" } }) && n.S.owns("characters", "frog") && n.S.coinsNow() === 50 &&
+    JSON.parse(n.local["sona.road.v1"]).items["6:sunhat"] === 1 && JSON.parse(n.local["sona.road.v1"]).items["10:frog"] === 1, [g, f]);
 
-  const p = boot(); setTrophies(p, 400);
-  const first = p.S.roadOpen(6);
-  ok("today stop 6 opens with its coins (the Sun hat's art is not on disk yet)", first.ok && JSON.stringify(first.gifts) === JSON.stringify([{ coins: 50 }]) && p.S.coinsNow() === 50, first);
-  const q = boot({ local: p.local, src: WITH_ITEMS, clock: p.clock });
-  ok("after the build that lists it, the hat counts as a gift waiting, before the road page loads", q.S.roadState().waiting === 5 + 1, q.S.roadState().waiting);
+  // a child who opened every stop on the step-6 build
+  const p = boot({ src: STEP6 }); setTrophies(p, 3000);
+  for (let s = 1; s <= 28; s++) p.S.roadOpen(s);
+  const paid = p.S.coinsNow();
+  ok("(on the step-6 build stops 6, 12, 15, 19 and 25 paid coins, and no road item was given)", paid > 0 && LATE.every(([, k, id]) => !p.S.owns(k, id)) && JSON.stringify(JSON.parse(p.local["sona.road.v1"]).items) === "{}", paid);
+  const q = boot({ local: p.local, clock: p.clock });
+  ok("after this build, the nine road items count as gifts waiting, before the road page loads", q.S.roadState().waiting === 9, q.S.roadState().waiting);
   const s1 = q.S.roadSettle();
-  ok("the road page's settle hands over the Sun hat once, records it, and pays no coins",
-    s1 && JSON.stringify(s1.late) === JSON.stringify([{ kind: "outfits", id: "sunhat", name: "Sun hat" }]) && q.S.owns("outfits", "sunhat") && JSON.parse(q.local["sona.road.v1"]).items["6:sunhat"] === 1 && q.S.coinsNow() === 50, s1);
-  ok("…and a second settle gives nothing", q.S.roadSettle() === null && q.S.coinsNow() === 50 && q.S.roadState().waiting === 5);
-  const r = boot(); setTrophies(r, 400); r.S.roadOpen(6); r.S.saveProfile({ owned: { outfits: ["sunhat"] } });
-  const r2 = boot({ local: r.local, src: WITH_ITEMS, clock: r.clock });
+  ok("the road page's settle hands over each one once, in stop order, and records it",
+    s1 && JSON.stringify(s1.late) === JSON.stringify(LATE.map(([, kind, id, name]) => ({ kind, id, name }))) && LATE.every(([n2, k, id]) => q.S.owns(k, id) && JSON.parse(q.local["sona.road.v1"]).items[n2 + ":" + id] === 1), s1);
+  ok("…the coins those stops already paid stay, and nothing is paid twice", q.S.coinsNow() === paid);
+  ok("…and a second settle gives nothing", q.S.roadSettle() === null && q.S.coinsNow() === paid && q.S.roadState().waiting === 0);
+  const r = boot({ src: STEP6 }); setTrophies(r, 400); r.S.roadOpen(6); r.S.saveProfile({ owned: { outfits: ["sunhat"] } });
+  const r2 = boot({ local: r.local, clock: r.clock });
   ok("an item listed late that the child already has is only recorded: no coins", r2.S.roadSettle() === null && r2.S.coinsNow() === 50 && JSON.parse(r2.local["sona.road.v1"]).items["6:sunhat"] === 1);
 });
 
@@ -891,11 +935,25 @@ sec("19a the catalog: how a new family gets each item, and its price", () => {
   const want = { characters: { fox: null, bunny: null, panda: null, cat: 100, bee: 100, dino: 120, dragon: 150, octopus: 150 },
     outfits: { none: null, cap: 40, bow: 40, tophat: 60, shades: 60, crown: 80, party: 80 },
     backdrops: { sky: null, jungle: 80, forest: 80, mountain: 120, beach: 120, space: 150 } };
+  // what step 8 added once its art was on disk: two shop items, the rest on the road
+  const added = { characters: { frog: ["road", null, "Hops"], penguin: ["road", null, "Pebble"], lion: ["road", null, "Sunny"], unicorn: ["road", null, "Luna"] },
+    outfits: { flowercrown: ["shop", 150, "Flower crown"], sunhat: ["road", null, "Sun hat"], starclip: ["road", null, "Star clip"], headphones: ["road", null, "Headphones"] },
+    backdrops: { candy: ["shop", 250, "Candy land"], snow: ["road", null, "Snow"], sea: ["road", null, "Under the sea"] } };
   const lists = { characters: S.CHARACTERS, outfits: S.OUTFITS, backdrops: S.BACKDROPS };
   const got = {}; KINDS.forEach((k) => { got[k] = {}; lists[k].forEach((it) => { got[k][it.id] = [it.source, it.cost]; }); });
   ok("every entry says how a new family gets it: the starters (fox, bunny, panda, no hat, the sky) cost nothing, every other item its table price",
     KINDS.every((k) => Object.keys(want[k]).every((id) => got[k][id] && got[k][id][0] === (want[k][id] === null ? "starter" : "shop") && got[k][id][1] === want[k][id])), got);
   ok("…and every entry is a starter, a shop item or a road item, a shop item with a whole price", KINDS.every((k) => lists[k].every((it) => ["starter", "shop", "road"].indexOf(it.source) >= 0 && (it.source !== "shop" || (Number.isInteger(it.cost) && it.cost > 0)))));
+  const nm = {}; KINDS.forEach((k) => { nm[k] = {}; lists[k].forEach((it) => { nm[k][it.id] = it.name; }); });
+  ok("the new items, appended in this order with their names: Hops, Pebble, Sunny, Luna; the Flower crown at 150 coins; Candy land at 250; the rest on the road",
+    KINDS.every((k) => JSON.stringify(lists[k].slice(LEGACY[k].length).map((it) => it.id)) === JSON.stringify(Object.keys(added[k])) &&
+      Object.keys(added[k]).every((id) => got[k][id][0] === added[k][id][0] && got[k][id][1] === added[k][id][1] && nm[k][id] === added[k][id][2])), got);
+  ok("no new buddy is called Bo (the bear in goal) or Robot (Robot Builder)", S.CHARACTERS.every((c) => !/^(Bo|Robot)$/i.test(c.name)));
+  ok("a new family's whole shop is 1,930 coins: buddies 620, hats 510, places 800", (() => { const sum = (k) => lists[k].filter((it) => it.source === "shop").reduce((a, it) => a + it.cost, 0); return sum("characters") === 620 && sum("outfits") === 510 && sum("backdrops") === 800; })());
+  const webp = (f) => { try { const b = readFileSync(path.join(ROOT, f)); return b.toString("latin1", 0, 4) === "RIFF" && b.toString("latin1", 8, 12) === "WEBP" ? webpSize(path.join(ROOT, f)) : null; } catch (e) { return null; } };
+  const arts = [].concat(S.CHARACTERS.map((c) => [c.id, S.buddySprite(c.id, "portrait"), "288,288"]), S.OUTFITS.filter((o) => o.id !== "none").map((o) => [o.id, o.art, "256,256"]),
+    S.BACKDROPS.map((b) => [b.id, "/assets/crafted/customize-" + b.id + "-v2.webp", "600,399"]));
+  ok("every item has its painted picture on disk at its size: a badge 288x288, every hat but none 256x256, a place 600x399", arts.every(([, f, wh]) => typeof f === "string" && String(webp(f)) === wh), arts.filter(([, f, wh]) => String(webp(f)) !== wh));
   ok("nothing was renamed or reordered: the fox is still item 0 (byId's fallback), and the eight buddies, seven hats and six places keep their order",
     JSON.stringify(KINDS.map((k) => lists[k].slice(0, LEGACY[k].length).map((it) => it.id))) === JSON.stringify(KINDS.map((k) => (k === "characters" ? ["fox", "bunny", "dragon", "cat", "bee", "octopus", "dino", "panda"] : k === "outfits" ? ["none", "crown", "tophat", "cap", "shades", "bow", "party"] : ["sky", "jungle", "forest", "mountain", "space", "beach"]))) && S.characterById("leo").id === "fox");
   const lit = (SRC.match(/const LEGACY_SET = \{[\s\S]*?\};/) || [""])[0];
@@ -991,12 +1049,17 @@ sec("19d what the shop shows, and buying with coins", () => {
   ok("one \"shop item got\" event, carrying the kind, the item and its price, and nothing about the child", sent.length === 1 && /\/api\/track/.test(sent[0][0]) && ev[0].e === "shop item got" && JSON.stringify(ev[0].p) === JSON.stringify({ kind: "characters", item: "dragon", cost: 150 }), ev);
   ok("buying it again is refused as owned", S.buyItem("characters", "dragon").reason === "owned");
   ok("junk is refused: an unknown id or kind", S.buyItem("characters", "leo").reason === "bad" && S.buyItem("nope", "x").reason === "bad" && S.buyItem().reason === "bad");
-  const road = seeded(POST, {}, SRC.replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ coins: 50 }, { hat: "sunhat" }] }')
-    .replace('{ id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", source: "road", cost: null },'));
+  const road = seeded(POST);
   wallet(road, 999);
-  const sh = road.S.shopItem("outfits", "sunhat");
-  ok("(this test's table names the Sun hat on stop 6) a road item shows its stop and trophies, with no price", sh && sh.state === "road" && sh.stop === 6 && sh.at === 380 && sh.cost === null, sh);
+  const sh = road.S.shopItem("outfits", "sunhat"), fr = road.S.shopItem("characters", "frog");
+  ok("a road item shows its stop and trophies, with no price: the Sun hat at stop 6 (380), Hops the frog at stop 10 (750)", sh && sh.state === "road" && sh.stop === 6 && sh.at === 380 && sh.cost === null && sh.art === "/assets/crafted/hat-sunhat.webp" &&
+    fr && fr.state === "road" && fr.stop === 10 && fr.at === 750 && fr.art === "/assets/crafted/buddy-frog-v2.webp", [sh, fr]);
   ok("…and can't be bought, whatever the wallet holds", JSON.stringify(road.S.buyItem("outfits", "sunhat")) === JSON.stringify({ ok: false, reason: "road" }) && road.S.coinsNow() === 999 && !road.S.owns("outfits", "sunhat"));
+  const fc = road.S.shopItem("outfits", "flowercrown"), cl = road.S.shopItem("backdrops", "candy");
+  ok("the Flower crown is for 150 coins and Candy land for 250, on a post phone and on a kept one", fc.state === "buy" && fc.cost === 150 && cl.state === "buy" && cl.cost === 250 &&
+    k.S.shopItem("outfits", "flowercrown").state === "buy" && k.S.shopItem("backdrops", "candy").cost === 250, [fc, cl]);
+  const gc = road.S.buyItem("backdrops", "candy");
+  ok("…and Candy land costs exactly 250", gc.ok && road.S.coinsNow() === 749 && road.S.owns("backdrops", "candy"), gc);
 });
 sec("19e giving it back within 10 seconds", () => {
   const p = seeded(POST), { S } = p;

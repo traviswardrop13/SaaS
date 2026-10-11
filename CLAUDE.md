@@ -1976,12 +1976,16 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   Starry Sky, then the Champion Trail's bonus stops every 150). The table is
   `ROAD_STOPS` in `sona.js`; stop 3 (150) and stop 10 (750) celebrate Level 2
   and Level 3, which the trophy count itself opens. An item a child already
-  owns pays coins instead (`ROAD_ALT`). **A road item joins its stop only
-  once its painted art is on disk; until then a stop whose only gift is that
-  item pays what an owned one would** (the Sun hat's stop 50 coins, a place's
-  80): the lead's choice in the build, Travis's to change. **An item listed on
-  a stop after a child opened it is still given, once** (`roadSettle`), with
-  no coins a second time.
+  owns pays coins instead (`ROAD_ALT`: a buddy 100, a hat 50, a place 80).
+  **The road's own items** (four buddies, Hops the frog at 750, Pebble the
+  penguin at 1,350, Sunny the lion at 2,100, Luna the unicorn at 3,000; three
+  hats, the Sun hat, the Star clip and Headphones; two places, Snow and Under
+  the sea) are on their stops since their painted art landed (11 Oct 2026),
+  and only there: never for coins. A road item joins a stop only with its art
+  on disk. Before it landed, stops 6, 12, 15, 19 and 25 paid their item's
+  worth in coins; **an item listed on a stop after a child opened it is still
+  given, once** (`roadSettle`), and the coins already paid stay, with no
+  coins a second time.
 - **"October path"** (MONTH1): eight steps by this calendar month's trophies,
   named for the month, coins kept small and four stickers. **Only the road
   page settles a month** (`roadSettle()` on its load and when it comes back
@@ -2065,9 +2069,13 @@ Buddy & world) is the Buddy Shop: buddies, hats and places.
 - **Ownership** is `Sona.owns(kind, id)`: a starter, what the child is
   wearing, the kept household's promise, or the child's own list. Every
   catalog entry carries `source` ("starter", "shop" or "road") and `cost`;
-  the prices are the catalog's (buddies 100–150, hats 40–80, places 80–150,
+  the prices are the catalog's (buddies 100–150, hats 40–150, places 80–250,
   `sona.js`), never a page's. New items join only with their painted art; a
-  kept household can buy only what came after the sweep.
+  kept household can buy only what came after the sweep (today the Flower
+  crown, 150, and Candy land, 250). Every hat is painted (`OUTFITS[i].art`,
+  `hat-<id>.webp`), each with its own place on the preview's badge
+  (`#heroOutfit.painted` in `crafted-customize.css`); the page's drawn hats
+  stay only for a phone holding an older `sona.js`.
 - **Getting one.** A tap on anything not owned tries it on the preview;
   only "Get it", held for a second (a keyboard or switch press confirms at
   once), spends the coins (`Sona.buyItem`: the coins first, then the item,

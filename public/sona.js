@@ -94,20 +94,33 @@
     { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false, source: 'shop', cost: 150 },
     { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false, source: 'shop', cost: 120 },
     { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    // The Trophy Road's own four (step 8, 11 Oct 2026): painted, no sticker
+    // svg (buddyMarkup shows the emoji; the painted badge sits over it).
+    // Never Bo (the bear in goal) or Robot (Robot Builder): taken names.
+    { id: 'frog', name: 'Hops', emoji: '🐸', svg: '', portrait: "/assets/crafted/buddy-frog-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'penguin', name: 'Pebble', emoji: '🐧', svg: '', portrait: "/assets/crafted/buddy-penguin-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'lion', name: 'Sunny', emoji: '🦁', svg: '', portrait: "/assets/crafted/buddy-lion-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'unicorn', name: 'Luna', emoji: '🦄', svg: '', portrait: "/assets/crafted/buddy-unicorn-v2.webp", locked: false, source: 'road', cost: null },
   ];
   // Hats and places. `source` is how a family that set up after the Buddy
   // Shop (11 Oct 2026, SHOP1) gets each one: "starter" (theirs from the
   // start), "shop" (for `cost` coins) or "road" (a Trophy Road stop gives it);
   // a household already on Sona kept everything it could pick that day
   // (LEGACY_SET, the OWN1 sweep). An entry joins only with its painted art.
+  // `art` is a hat's painted picture (step 8): the shop shows it where the
+  // page's drawn hat used to be, and a new hat joins only with its picture.
   const OUTFITS = [
     { id: "none",   name: "None",   emoji: "",   source: "starter", cost: null },
-    { id: "crown",  name: "Crown",  emoji: "👑", source: "shop", cost: 80 },
-    { id: "tophat", name: "Top hat",emoji: "🎩", source: "shop", cost: 60 },
-    { id: "cap",    name: "Cap",    emoji: "🧢", source: "shop", cost: 40 },
-    { id: "shades", name: "Cool",   emoji: "🕶️", source: "shop", cost: 60 },
-    { id: "bow",    name: "Bow",    emoji: "🎀", source: "shop", cost: 40 },
-    { id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },
+    { id: "crown",  name: "Crown",  emoji: "👑", source: "shop", cost: 80, art: "/assets/crafted/hat-crown.webp" },
+    { id: "tophat", name: "Top hat",emoji: "🎩", source: "shop", cost: 60, art: "/assets/crafted/hat-tophat.webp" },
+    { id: "cap",    name: "Cap",    emoji: "🧢", source: "shop", cost: 40, art: "/assets/crafted/hat-cap.webp" },
+    { id: "shades", name: "Cool",   emoji: "🕶️", source: "shop", cost: 60, art: "/assets/crafted/hat-shades.webp" },
+    { id: "bow",    name: "Bow",    emoji: "🎀", source: "shop", cost: 40, art: "/assets/crafted/hat-bow.webp" },
+    { id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80, art: "/assets/crafted/hat-party.webp" },
+    { id: "flowercrown", name: "Flower crown", emoji: "🌸", source: "shop", cost: 150, art: "/assets/crafted/hat-flowercrown.webp" },
+    { id: "sunhat",     name: "Sun hat",    emoji: "👒", source: "road", cost: null, art: "/assets/crafted/hat-sunhat.webp" },
+    { id: "starclip",   name: "Star clip",  emoji: "⭐", source: "road", cost: null, art: "/assets/crafted/hat-starclip.webp" },
+    { id: "headphones", name: "Headphones", emoji: "🎧", source: "road", cost: null, art: "/assets/crafted/hat-headphones.webp" },
   ];
   const BACKDROPS = [
     { id: "sky",      name: "Sky",       source: "starter", cost: null, css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
@@ -116,6 +129,9 @@
     { id: "mountain", name: "Mountains", source: "shop", cost: 120, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
     { id: "space",    name: "Space",     source: "shop", cost: 150, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
     { id: "beach",    name: "Beach",     source: "shop", cost: 120, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "candy",    name: "Candy land", source: "shop", cost: 250, css: "linear-gradient(180deg,#ffd9ec,#fff3f8)", scene: ["🍭", "🍬", "🧁"] },
+    { id: "snow",     name: "Snow",      source: "road", cost: null, css: "linear-gradient(180deg,#d9ebff,#f7fbff)", scene: ["❄️", "⛄", "🌲"] },
+    { id: "sea",      name: "Under the sea", source: "road", cost: null, css: "linear-gradient(180deg,#a9dcef,#e2f5fb)", scene: ["🐠", "🐚", "🌊"] },
   ];
   const byId = (list, id) => list.find((x) => x.id === id) || list[0];
   const characterById = (id) => byId(CHARACTERS, id);
@@ -154,6 +170,10 @@
     octopus: { run: ["/assets/crafted/buddy-octopus-run.webp"], rest: "/assets/crafted/buddy-octopus-rest.webp", cheer: "/assets/crafted/buddy-octopus-cheer.webp", peek: "/assets/crafted/buddy-octopus-peek.webp", sit: "/assets/crafted/buddy-octopus-sit.webp" },
     dino:    { run: ["/assets/crafted/buddy-dino-run.webp"], rest: "/assets/crafted/buddy-dino-rest.webp", cheer: "/assets/crafted/buddy-dino-cheer.webp", peek: "/assets/crafted/buddy-dino-peek.webp", sit: "/assets/crafted/buddy-dino-sit.webp" },
     panda:   { run: ["/assets/crafted/buddy-panda-run.webp"], rest: "/assets/crafted/buddy-panda-rest.webp", cheer: "/assets/crafted/buddy-panda-cheer.webp", peek: "/assets/crafted/buddy-panda-peek.webp", sit: "/assets/crafted/buddy-panda-sit.webp" },
+    frog:    { run: ["/assets/crafted/buddy-frog-run.webp"], rest: "/assets/crafted/buddy-frog-rest.webp", cheer: "/assets/crafted/buddy-frog-cheer.webp", peek: "/assets/crafted/buddy-frog-peek.webp", sit: "/assets/crafted/buddy-frog-sit.webp" },
+    penguin: { run: ["/assets/crafted/buddy-penguin-run.webp"], rest: "/assets/crafted/buddy-penguin-rest.webp", cheer: "/assets/crafted/buddy-penguin-cheer.webp", peek: "/assets/crafted/buddy-penguin-peek.webp", sit: "/assets/crafted/buddy-penguin-sit.webp" },
+    lion:    { run: ["/assets/crafted/buddy-lion-run.webp"], rest: "/assets/crafted/buddy-lion-rest.webp", cheer: "/assets/crafted/buddy-lion-cheer.webp", peek: "/assets/crafted/buddy-lion-peek.webp", sit: "/assets/crafted/buddy-lion-sit.webp" },
+    unicorn: { run: ["/assets/crafted/buddy-unicorn-run.webp"], rest: "/assets/crafted/buddy-unicorn-rest.webp", cheer: "/assets/crafted/buddy-unicorn-cheer.webp", peek: "/assets/crafted/buddy-unicorn-peek.webp", sit: "/assets/crafted/buddy-unicorn-sit.webp" },
   };
   const BUDDY_POSE_ORDER = { rest: ["rest"], cheer: ["cheer", "rest"], peek: ["peek"], sit: ["sit", "rest"] };
   // "leo" (an old pick) or anything unknown is the fox, as characterById says
@@ -4390,12 +4410,12 @@
   // weeks and months like Clash Royale"). Numbered stops across five lands, by
   // lifetime trophies, each gift fixed and shown before it is reached: coins,
   // stickers, "Level 2 opens in every game" (levels open by the trophy count
-  // itself, LEVELS1; the stop is the celebration), and later buddies, hats and
-  // places. Nothing random, no timer, nothing lost: a reached stop waits until
-  // it is opened. An item a child already owns pays its coins (ROAD_ALT); an
-  // item listed on a stop AFTER a child opened it is still given, once
-  // (roadSettle). A new item joins its stop only once its painted art is on
-  // disk; until then the stop pays what that item is worth in coins.
+  // itself, LEVELS1; the stop is the celebration), and the road's own
+  // buddies, hats and places. Nothing random, no timer, nothing lost: a
+  // reached stop waits until it is opened. An item a child already owns pays
+  // its coins (ROAD_ALT); an item listed on a stop AFTER a child opened it is
+  // still given, once (roadSettle). A new item joins its stop only once its
+  // painted art is on disk.
   // "October path" (MONTH_STEPS) is a small path by the trophies earned this
   // calendar month; it starts again each month, and every reached step of an
   // ended month is handed out by roadSettle(), which only the road page calls
@@ -4406,40 +4426,42 @@
     { id: "meadow", name: "Sunny Meadow", from: 0, art: "customize-forest-v2" }, { id: "beach", name: "Beach Bay", from: 300, art: "customize-beach-v2" },
     { id: "snow", name: "Snowy Peak", from: 750, art: "customize-snow-v2" }, { id: "sea", name: "Under the Sea", from: 1350, art: "customize-sea-v2" },
     { id: "sky", name: "Starry Sky", from: 2100, art: "customize-space-v2" }, { id: "champ", name: "Champion Trail", from: 3000, art: "customize-mountain-v2" } ];
-  // The stop table Travis approved (11 Oct 2026). The road's own buddies, hats and places
-  // (frog, penguin, lion, unicorn; sunhat, starclip, headphones; snow, sea)
-  // join their stops in the art step that lands them. Until then a stop whose
-  // only gift is that item pays the coins an item already owned would
-  // (ROAD_ALT), so no stop ever opens empty.
+  // The stop table Travis approved (11 Oct 2026), with the road's own
+  // buddies, hats and places (frog, penguin, lion, unicorn; sunhat, starclip,
+  // headphones; snow, sea), which joined their stops once their painted art
+  // was on disk (step 8). Before that, stops 6, 12, 15, 19 and 25 paid what
+  // their item is worth in coins (ROAD_ALT); a child who opened one then
+  // keeps those coins and is handed the item by roadSettle, once, with no
+  // second payment.
   const ROAD_STOPS = [
     { n: 1, at: 30, gift: [{ coins: 20 }] },
     { n: 2, at: 80, gift: [{ sticker: 1 }] },
     { n: 3, at: 150, gift: [{ level: 2 }, { coins: 20 }] },
     { n: 4, at: 220, gift: [{ coins: 30 }] },
     { n: 5, at: 300, big: true, gift: [{ coins: 40 }, { sticker: 1 }, { land: "beach" }] },
-    { n: 6, at: 380, gift: [{ coins: 50 }] },                                  // the Sun hat's stop
+    { n: 6, at: 380, gift: [{ hat: "sunhat" }] },
     { n: 7, at: 460, gift: [{ coins: 40 }] },
     { n: 8, at: 540, gift: [{ sticker: 1 }] },
     { n: 9, at: 640, gift: [{ coins: 50 }] },
-    { n: 10, at: 750, big: true, gift: [{ level: 3 }, { coins: 50 }, { land: "snow" }] },   // and Hops the frog
+    { n: 10, at: 750, big: true, gift: [{ level: 3 }, { buddy: "frog" }, { coins: 50 }, { land: "snow" }] },
     { n: 11, at: 850, gift: [{ sticker: 1 }] },
-    { n: 12, at: 950, gift: [{ coins: 80 }] },                                 // the Snow place's stop
+    { n: 12, at: 950, gift: [{ place: "snow" }] },
     { n: 13, at: 1050, gift: [{ coins: 60 }] },
     { n: 14, at: 1150, gift: [{ sticker: 1 }] },
-    { n: 15, at: 1250, gift: [{ coins: 50 }] },                                // the Star clip's stop
-    { n: 16, at: 1350, big: true, gift: [{ coins: 60 }, { land: "sea" }] },          // and Pebble the penguin
+    { n: 15, at: 1250, gift: [{ hat: "starclip" }] },
+    { n: 16, at: 1350, big: true, gift: [{ buddy: "penguin" }, { coins: 60 }, { land: "sea" }] },
     { n: 17, at: 1475, gift: [{ coins: 70 }] },
     { n: 18, at: 1600, gift: [{ sticker: 1 }] },
-    { n: 19, at: 1725, gift: [{ coins: 80 }] },                                // the Under the sea place's stop
+    { n: 19, at: 1725, gift: [{ place: "sea" }] },
     { n: 20, at: 1850, gift: [{ coins: 80 }] },
     { n: 21, at: 1975, gift: [{ sticker: 1 }] },
-    { n: 22, at: 2100, big: true, gift: [{ coins: 80 }, { land: "sky" }] },          // and Sunny the lion
+    { n: 22, at: 2100, big: true, gift: [{ buddy: "lion" }, { coins: 80 }, { land: "sky" }] },
     { n: 23, at: 2250, gift: [{ coins: 90 }] },
     { n: 24, at: 2400, gift: [{ sticker: 1 }] },
-    { n: 25, at: 2550, gift: [{ coins: 50 }] },                                // the Headphones' stop
+    { n: 25, at: 2550, gift: [{ hat: "headphones" }] },
     { n: 26, at: 2700, gift: [{ coins: 100 }] },
     { n: 27, at: 2850, gift: [{ sticker: 1 }] },
-    { n: 28, at: 3000, big: true, gift: [{ coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];   // and Luna the unicorn
+    { n: 28, at: 3000, big: true, gift: [{ buddy: "unicorn" }, { coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];
   const MONTH_STEPS = [
     { n: 1, at: 40, gift: [{ coins: 5 }] }, { n: 2, at: 100, gift: [{ sticker: 1 }] }, { n: 3, at: 180, gift: [{ coins: 10 }] },
     { n: 4, at: 260, gift: [{ sticker: 1 }] }, { n: 5, at: 340, gift: [{ coins: 15 }] }, { n: 6, at: 420, gift: [{ sticker: 1 }] },

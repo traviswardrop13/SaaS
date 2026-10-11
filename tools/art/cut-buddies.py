@@ -5,7 +5,7 @@ Playing as your buddy (11 Oct 2026): a child's buddy runs in Sound Sprint,
 stands beside Echo in the play games and cheers with him, peeks over Fruit
 Slice's counter and sits on Block Stacker's bench. Each pose is drawn once per
 buddy (tools/art/gen-sprites.mjs, with that buddy's model sheet attached, or,
-for the eight drawn on 11 Oct 2026, its checked cheer pose in the sheet's
+for the twelve drawn on 11 Oct 2026, its checked cheer pose in the sheet's
 place: design/crafted-world/buddies-v3.md) and cut here, so every buddy
 fills the same frame the same way and a game places any of them with one set
 of numbers.
@@ -35,11 +35,15 @@ writes), or the file after "=", and the name says how it is cut:
                           padded, 512x384
   buddy-<id>-v2           the round badge every screen shows: 288x288, no
                           alpha, the corners (outside the disc) the existing
-                          set's off-white, (254, 250, 242)
+                          set's off-white, (254, 250, 242); a disc drawn with
+                          a margin is cut to the disc first, so it fills the
+                          square edge to edge like the existing set's
   <id>-sheet              a model sheet (front, side, back): 1536x1024 kept,
                           into design/crafted-world/buddies-v3/. A reference for
                           drawing the poses; never shipped in public/
   hat-<id>                a hat (the Buddy Shop): cropped, square, 256x256
+                          (a hat the shop used to draw is drawn from that
+                          drawing: node tools/art/hat-refs.mjs renders them)
   customize-<id>-v2       a place (the Buddy Shop): 600x399, no alpha, like
                           customize-sky-v2.webp
   road-<id>               a chest (the Trophy Road): 512x512, framed as drawn
@@ -178,6 +182,22 @@ def cut(name, src, out_dir, force=False):
             sys.exit("  FAIL: a badge is drawn square; this one is %dx%d" % (W, H))
         flat = Image.new("RGB", im.size, OFFWHITE)
         flat.paste(im, mask=im.split()[3])
+        # The existing badges' disc fills its square edge to edge; the model
+        # draws it with a margin of the paper colour (about 5% a side on 11 Oct
+        # 2026, and not quite round). So the disc is found (everything that
+        # differs from the corners' paper) and the square cut to it, its side
+        # the disc's smaller extent, so no sliver of paper shows inside the rim.
+        rgb = np.array(flat).astype(np.int32)
+        paper = (rgb[2, 2] + rgb[2, -3] + rgb[-3, 2] + rgb[-3, -3]) / 4.0
+        ys, xs = np.where(np.abs(rgb - paper).sum(2) > 30)
+        if len(xs):
+            w, h = xs.max() + 1 - xs.min(), ys.max() + 1 - ys.min()
+            side = min(w, h)
+            if side < 0.97 * W:
+                cx, cy = (xs.min() + xs.max() + 1) / 2.0, (ys.min() + ys.max() + 1) / 2.0
+                flat = flat.crop((int(round(cx - side / 2)), int(round(cy - side / 2)),
+                                  int(round(cx - side / 2)) + side, int(round(cy - side / 2)) + side))
+                note = "disc %dx%d at (%d, %d), cut to a %d px square on it" % (w, h, xs.min(), ys.min(), side)
         a = np.array(flat.resize((PORTRAIT, PORTRAIT), Image.LANCZOS)).astype(np.float64)
         # outside the disc every badge is the same off-white, so badges side by
         # side (the shop, the board) never show a different paper behind each.

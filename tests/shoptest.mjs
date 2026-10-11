@@ -125,6 +125,12 @@ await section("1 kept", async () => {
   const later = extra.filter((x) => LEGACY[x[0]].indexOf(x[1]) < 0);
   ok("anything added after 11 Oct 2026 shows its price (a shop item) or its trophies (a road item), even here",
     later.every(([k, id, src, cost]) => { const x = t[k].find((y) => y.id === id); return x && (src === "road" ? x.road && /Trophy Road/.test(x.label) : x.price === String(cost)); }), later);
+  const fc = t.outfits.find((x) => x.id === "flowercrown"), cl = t.backdrops.find((x) => x.id === "candy");
+  ok("the Flower crown shows 150 coins and Candy land 250, even here: the two new things a kept household can get",
+    fc && fc.price === "150" && fc.label === "Flower crown. 150 coins. You have 85." && cl && cl.price === "250" && cl.label === "Candy land. 250 coins. You have 85.", [fc, cl]);
+  const ROAD_ITEMS = { characters: { frog: ["Hops", 750], penguin: ["Pebble", 1350], lion: ["Sunny", 2100], unicorn: ["Luna", 3000] }, outfits: { sunhat: ["Sun hat", 380], starclip: ["Star clip", 1250], headphones: ["Headphones", 2550] }, backdrops: { snow: ["Snow", 950], sea: ["Under the sea", 1725] } };
+  ok("the road's own buddies, hats and places show the trophies that bring them: \"Hops. On the Trophy Road at 750 trophies.\"",
+    Object.keys(ROAD_ITEMS).every((k) => Object.keys(ROAD_ITEMS[k]).every((id) => { const x = t[k].find((y) => y.id === id), w = ROAD_ITEMS[k][id]; return x && x.price === null && x.road === w[1].toLocaleString("en-US") && x.label === w[0] + ". On the Trophy Road at " + w[1].toLocaleString("en-US") + " trophies."; })), t);
   ok("the worn buddy is ticked, and its tile says it is pressed", t.characters[0].worn && t.characters[0].pressed === "true" && t.characters.filter((x) => x.worn).length === 1);
   ok("the wallet shows the coins: \"85 coins\"", JSON.stringify(await wallet(page)) === JSON.stringify({ n: "85", label: "85 coins" }), await wallet(page));
   // (once later items join the catalog, the bar is there for them instead)
@@ -148,8 +154,9 @@ await section("2 post", async () => {
   const t = await tiles(page);
   const owned = (k, id) => /\. Yours\.$/.test(t[k].find((x) => x.id === id).label);
   ok("the three starter buddies, no hat and the sky are theirs", ["fox", "bunny", "panda"].every((id) => owned("characters", id)) && owned("outfits", "none") && owned("backdrops", "sky"));
-  const PRICES = { characters: { cat: 100, bee: 100, dino: 120, dragon: 150, octopus: 150 }, outfits: { cap: 40, bow: 40, tophat: 60, shades: 60, crown: 80, party: 80 }, backdrops: { jungle: 80, forest: 80, mountain: 120, beach: 120, space: 150 } };
+  const PRICES = { characters: { cat: 100, bee: 100, dino: 120, dragon: 150, octopus: 150 }, outfits: { cap: 40, bow: 40, tophat: 60, shades: 60, crown: 80, party: 80, flowercrown: 150 }, backdrops: { jungle: 80, forest: 80, mountain: 120, beach: 120, space: 150, candy: 250 } };
   ok("everything else shows its coin price", Object.keys(PRICES).every((k) => Object.keys(PRICES[k]).every((id) => t[k].find((x) => x.id === id).price === String(PRICES[k][id]))), t);
+  ok("…the Flower crown 150 coins and Candy land 250", t.outfits.find((x) => x.id === "flowercrown").price === "150" && t.backdrops.find((x) => x.id === "candy").price === "250");
   ok("…and says it in its label: \"Ziggy. 150 coins. You have 160.\"", t.characters.find((x) => x.id === "dragon").label === "Ziggy. 150 coins. You have 160.");
   const ring = await page.evaluate(() => getComputedStyle(document.querySelector('#chars .opt[data-id="dragon"] .tag-ring')).getPropertyValue("--f").trim());
   ok("the price's ring is full when the wallet covers it", ring === "1.000", ring);
@@ -201,12 +208,8 @@ await section("2 post", async () => {
 
 // ── 3. a road item, confetti with motion, the hash, and Settings ──
 await section("3 road", async () => {
-  // a build whose catalog lists a road-only hat on stop 6 (the art step adds the real ones)
-  const src = readFileSync(path.join(ROOT, "sona.js"), "utf8")
-    .replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ hat: "sunhat" }] }')
-    .replace('{ id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", source: "road", cost: null },');
-  ok("(this test's catalog lists a Sun hat on the Trophy Road at 380)", /id: "sunhat"/.test(src) && /hat: "sunhat"/.test(src));
-  const f = await fresh({ post: true, coins: 999, sona: src, motion: true }), { page } = f;
+  // the Sun hat is the Trophy Road's, at stop 6 (380 trophies)
+  const f = await fresh({ post: true, coins: 999, motion: true }), { page } = f;
   await shop(page, "#hats");
   const scrolled = await page.evaluate(() => { const r = document.getElementById("hats").getBoundingClientRect(); return Math.abs(r.top) < 40 && window.pageYOffset > 100; });
   ok("#hats opens at the hats", scrolled);
@@ -216,6 +219,12 @@ await section("3 road", async () => {
   await tryOn(page, "outfits", "sunhat");
   const b = await bar(page);
   ok("tapped, it is tried on and says where it comes from, with no way to get it with coins", !b.get && b.road && b.line === "Find it on the Trophy Road!" && b.name === "Sun hat", b);
+  const hero = await page.evaluate(() => { const o = document.getElementById("heroOutfit"), i = o.querySelector("img.hat-art"); return { cls: o.className, src: i && i.getAttribute("src"), w: i && i.naturalWidth, box: o.getBoundingClientRect().width }; });
+  ok("the painted Sun hat is on the preview, in a painted hat's own place", hero.cls === "painted" && hero.src === "/assets/crafted/hat-sunhat.webp" && hero.w === 256 && hero.box > 90, hero);
+  await page.evaluate(() => Promise.all([...document.querySelectorAll("#outfits img, #backdrops img, #chars img")].map((i) => i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
+  const broken = await page.evaluate(() => [...document.querySelectorAll("#outfits img, #backdrops img, #chars img")].filter((i) => !i.naturalWidth || i.style.display === "none").map((i) => i.getAttribute("src")));
+  const hatImgs = await page.evaluate(() => [...document.querySelectorAll("#outfits .opt")].map((b) => [b.dataset.id, (b.querySelector("img.hat-art") || {}).getAttribute ? b.querySelector("img.hat-art").getAttribute("src") : null]));
+  ok("every hat tile but None shows its painted hat, and every badge, hat and place picture loads", broken.length === 0 && hatImgs.every(([id, src]) => id === "none" ? !src : src === "/assets/crafted/hat-" + id + ".webp"), [broken, hatImgs]);
   ok("…the coins are untouched and it isn't theirs", await coinsOf(page) === 999 && !(await page.evaluate(() => Sona.owns("outfits", "sunhat"))) && JSON.stringify(await page.evaluate(() => Sona.buyItem("outfits", "sunhat"))) === JSON.stringify({ ok: false, reason: "road" }));
   ok("\"See the road\" goes to the Trophy Road", await page.locator("#roadLink").getAttribute("href") === "/road.html");
   await tryOn(page, "outfits", "party");

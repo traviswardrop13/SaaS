@@ -152,7 +152,7 @@
         cap:'<path d="M10 39v-6a22 22 0 0 1 44 0v6Z" fill="#3b9c9e"/><path d="M32 11c-8 6-10 15-10 28M32 11c8 6 10 15 10 28" stroke="#6ec1b9" stroke-width="2" fill="none"/><path d="M10 39c20-7 37-2 48 7-18 5-33 7-48-7Z" fill="#207980"/><circle cx="32" cy="11" r="3" fill="#247c81"/>',
         shades:'<path d="M5 23h21l-2 16q-8 9-16 0ZM38 23h21l-3 16q-8 9-16 0Z" fill="#526477" stroke="#384757" stroke-width="3"/><path d="M26 28q6-5 12 0M1 23h4M59 23h4" stroke="#384757" stroke-width="4" fill="none"/><path d="m11 28 7 1m27-1 7 1" stroke="#a4c5cf" stroke-width="3" stroke-linecap="round"/>',
         bow:'<path d="M30 30C10 10 4 17 10 42c4 7 12 1 20-7ZM34 30c20-20 26-13 20 12-4 7-12 1-20-7Z" fill="#de7d89" stroke="#b35772" stroke-width="2"/><rect x="26" y="25" width="12" height="15" rx="4" fill="#ed9fa5"/><path d="m26 34-7 17 12-5 4-10m4-2 7 17-12-5-4-10" fill="#ca6980"/>',
-        party:'<path d="m32 8 22 44H10Z" fill="#d5b0df" stroke="#a37cb6" stroke-width="2"/><path d="m24 24 14-5 6 11-27 9m-3 8 35-6" stroke="#faf0ce" stroke-width="6"/><ellipse cx="32" cy="52" rx="23" ry="4" fill="#9b75b1"/><circle cx="32" cy="7" r="5" fill="#f0cc6b"/>'
+        party:'<path d="m32 8 22 44H10Z" fill="#d5b0df" stroke="#a37cb6" stroke-width="2"/><path d="m24 24 14-5 6 11-27 9m-3 8 35-6" stroke="#faf0ce" stroke-width="6" fill="none"/><ellipse cx="32" cy="52" rx="23" ry="4" fill="#9b75b1"/><circle cx="32" cy="7" r="5" fill="#f0cc6b"/>'
       };
       return '<svg viewBox="0 0 64 64" aria-hidden="true">' + (paths[id] || paths.none) + '</svg>';
     }
@@ -186,6 +186,9 @@
       $("sceneName").textContent = b.name;
       heroOutfit.innerHTML = s.outfit === "none" ? "" : outfitArt(s.outfit);
       heroOutfit.setAttribute("data-outfit", s.outfit);
+      // a painted hat has its own place on the badge (crafted-customize.css);
+      // the drawn one (an older cached sona.js) keeps the old place
+      var oi = find("outfits", s.outfit); heroOutfit.className = oi && oi.art ? "painted" : "";
       previewEl.style.background = b.css;
       sceneEl.innerHTML = backdropArt(s.backdrop);
     }

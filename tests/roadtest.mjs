@@ -374,6 +374,13 @@ await section("Home's road card", async () => {
       c.pic === "level" && c.bar === "11000" && !c.dot && c.label === "Trophy Road. 120 trophies. 0 coins. Level 2 at 150 trophies.", c);
   } finally { await f.context.close(); }
 
+  f = await fresh({ trophies: 340, extra: { "sona.road.v1": opened(1, 2, 3, 4, 5) } });
+  try {
+    await home(f.page);
+    const c = await cardOf(f.page);
+    ok("the next stop is the Sun hat: its painted picture, and \"Next gift at 380 trophies.\"", c.pic === "/assets/crafted/hat-sunhat.webp" && !c.dot && c.label === "Trophy Road. 340 trophies. 0 coins. Next gift at 380 trophies.", c);
+  } finally { await f.context.close(); }
+
   f = await fresh({ trophies: 50 });
   try {
     await home(f.page);
@@ -513,9 +520,11 @@ await section("the road page: stops and the month", async () => {
   } finally { await f.context.close(); }
 
   // the month's path, and a month that ended while the child was away
+  // (stops 1 to 11 opened on this build: the Sun hat and Hops the frog
+  // already handed over, so only the months are owed)
   const DEC3 = new Date(2026, 11, 3, 10).getTime();
   f = await fresh({ now: DEC3, ledger: { v: 1, t: 900, d: "2026-11-30", dn: 30, m: "2026-11", mn: 200, pm: "2026-10", pmn: 300 },
-    extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [i + 1, 1])), items: {}, m: "2026-10", mgot: { 1: 1 } }) } });
+    extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [i + 1, 1])), items: { "6:sunhat": 1, "10:frog": 1 }, m: "2026-10", mgot: { 1: 1 } }) } });
   try {
     await road(f.page);
     const n = await f.page.evaluate(() => ({ note: document.getElementById("rolledText").textContent, shown: !document.getElementById("rolledNote").hidden, title: document.getElementById("monthTitle").textContent, coins: Sona.coinsNow(), stk: Object.keys(JSON.parse(localStorage.getItem("sona.stickers.v1") || "{}")).length, m: JSON.parse(localStorage.getItem("sona.road.v1")).m }));
@@ -525,6 +534,33 @@ await section("the road page: stops and the month", async () => {
     await f.page.reload(); await f.page.waitForTimeout(300);
     const n2 = await f.page.evaluate(() => ({ shown: !document.getElementById("rolledNote").hidden, coins: Sona.coinsNow() }));
     ok("a reload pays nothing again, and the line has been seen (it shows once)", !n2.shown && n2.coins === 25, n2);
+    ok("no page errors", f.errors.length === 0, f.errors);
+  } finally { await f.context.close(); }
+
+  // the road's own items joined their stops with their art (step 8): a child
+  // who opened stop 6 and the Big Chest at 10 before then (their coins
+  // paid, no item) is handed the Sun hat and Hops the frog on the road
+  // page's load, one reveal each, and keeps the coins
+  f = await fresh({ trophies: 800, extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 1])), items: {}, m: new Date().toISOString().slice(0, 7), mgot: {} }) } });
+  try {
+    await f.page.goto(origin + "/road.html"); await f.page.waitForFunction(() => window.Sona && !document.getElementById("giftOvl").hidden); await f.page.waitForTimeout(500);
+    const seen = [];
+    for (let i = 0; i < 2; i++) { seen.push({ line: await line(f.page), art: await f.page.evaluate(() => { const i = document.querySelector("#giftArt img"); return i ? i.getAttribute("src") : ""; }), tryOn: await f.page.evaluate(() => { const t = document.getElementById("giftTry"); return t.hidden ? "" : t.getAttribute("href"); }) }); await yay(f.page); }
+    ok("a stop passed before its item joined: \"A new gift came to a stop you passed: Sun hat!\", then Hops the frog, each with its painted picture and \"Try it on\"",
+      seen[0].line === "A new gift came to a stop you passed: Sun hat!" && seen[0].art === "/assets/crafted/hat-sunhat.webp" && seen[0].tryOn === "/customize.html#hats" &&
+      seen[1].line === "A new gift came to a stop you passed: Hops the frog!" && /buddy-frog-v2\.webp$/.test(seen[1].art) && seen[1].tryOn === "/customize.html#buddies", seen);
+    const st = await f.page.evaluate(() => ({ hat: Sona.owns("outfits", "sunhat"), frog: Sona.owns("characters", "frog"), coins: Sona.coinsNow(), items: JSON.parse(localStorage.getItem("sona.road.v1")).items, ovl: document.getElementById("giftOvl").hidden }));
+    ok("…both are the child's, recorded once, no coins paid for them, and the overlay is gone", st.hat && st.frog && st.coins === 0 && st.items["6:sunhat"] === 1 && st.items["10:frog"] === 1 && st.ovl, st);
+    await f.page.reload(); await f.page.waitForTimeout(500);
+    ok("…and a reload hands over nothing again", await f.page.locator("#giftOvl").isHidden() && await f.page.evaluate(() => Sona.coinsNow()) === 0);
+    const band = await f.page.evaluate(async () => {
+      const heads = [...document.querySelectorAll("#roadList .rd-landhead")].filter((h) => /Snowy Peak|Under the Sea/.test(h.textContent)).map((h) => getComputedStyle(h).backgroundImage);
+      const hero = getComputedStyle(document.getElementById("heroBand")).backgroundImage;
+      const ok = await Promise.all(["/assets/crafted/customize-snow-v2.webp", "/assets/crafted/customize-sea-v2.webp"].map((u) => fetch(u).then((r) => r.ok && /image\/webp/.test(r.headers.get("content-type") || ""))));
+      return { heads, hero, ok };
+    });
+    ok("the Snowy Peak and Under the Sea bands are their painted places now, and the hero's too (the child is in Snowy Peak)",
+      band.heads.length === 2 && /customize-snow-v2\.webp/.test(band.heads[0]) && /customize-sea-v2\.webp/.test(band.heads[1]) && /customize-snow-v2\.webp/.test(band.hero) && band.ok.every(Boolean), band);
     ok("no page errors", f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 
