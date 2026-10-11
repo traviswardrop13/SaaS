@@ -195,7 +195,7 @@
       function paintChest(){
         var c=st.chest,g={n:0,goal:30,done:false};try{if(S.dayGoal)g=S.dayGoal();}catch(e){}
         var card=$("chestCard");card.className="rd-card rd-chest "+(c.ready?"is-ready":c.opened?"is-done":"is-shut");
-        var art=$("chestArt");art.textContent="";art.appendChild(chestArt(c.big,c.opened));
+        var art=$("chestArt");art.textContent="";art.appendChild(chestArt(c.opened?!!c.openedBig:c.big,c.opened));
         var inside=$("chestInside");inside.textContent="";inside.hidden=!!c.opened;
         inside.appendChild(icon("coin",18));inside.appendChild(document.createTextNode(c.big?"Big chest: "+c.coins+" coins and a sticker":"Inside: "+c.coins+" coins"));
         $("chestLine").textContent=c.ready?"Your chest is ready!":c.opened?"You opened today's chest!":"Reach your goal today to open your chest!";
@@ -393,7 +393,9 @@
         sfx("tap");
         chestFlow(c.big,function(){
           var got=S.chestOpen();if(!got)return null;
-          var list=[{art:chestArt(c.big,true),line:c.big?"+"+got[0].coins+" coins and a sticker!":"+"+got[0].coins+" coins!",to:""}];
+          // a full sticker book pays coins instead: the first line then promises no sticker
+          var stk=!!(got[1]&&got[1].sticker);
+          var list=[{art:chestArt(c.big,true),line:stk?"+"+got[0].coins+" coins and a sticker!":"+"+got[0].coins+" coins!",to:""}];
           for(var i=1;i<got.length;i++)list.push(revealOf(got[i]));
           return list;
         });
@@ -432,7 +434,9 @@
       // the month's notice shows once: seen when tapped away, or when the child leaves
       window.addEventListener("pagehide",seenRolled);
       window.addEventListener("pageshow",function(e){if(e.persisted)location.reload();});
-      document.addEventListener("visibilitychange",function(){if(!document.hidden&&ovl.hidden)render();});
+      // back to the front (a page left open past a month's end): that month's
+      // gifts go to the wallet now, as on a load, rather than wait unshown
+      document.addEventListener("visibilitychange",function(){if(!document.hidden&&ovl.hidden){try{if(S.roadSettle)S.roadSettle();}catch(e){}render();}});
     })();
   </script>
 </body>

@@ -663,6 +663,18 @@ sec("15d the chest reads the goal stamp, per child", () => {
   ok("a brother or sister has their own chest and their own coins", !S.chestState().opened && S.coinsNow() === 0 && !("sona.chest.v1@" + S.activeKid().slot in p.local));
 });
 
+sec("15e the chest the child opened today is the one the road shows", () => {
+  const p = boot(), { S } = p;
+  p.local["sona.chest.v1"] = JSON.stringify({ n: 3, last: "2026-10-01" });
+  reps(S, 30); S.chestOpen();
+  let st = S.chestState();
+  ok("after the 4th chest (an ordinary one) today's opened chest is not big, though the next one is", st.opened && st.openedBig === false && st.big === true, st);
+  p.clock.now += DAY; reps(S, 30); S.chestOpen(); st = S.chestState();
+  ok("after the 5th (a Big Chest) today's opened chest is big, though the next one is not", st.opened && st.openedBig === true && st.big === false, st);
+  p.clock.now += DAY; st = S.chestState();
+  ok("…and on a day not opened yet, openedBig is false", !st.opened && st.openedBig === false, st);
+});
+
 // ── 16. the Trophy Road (ROAD1, step 6) ──
 const setTrophies = (p, t) => { p.local[p.S.kkey("sona.trophy.v1")] = JSON.stringify({ v: 1, t, d: "2026-10-20", dn: 0, m: "2026-10", mn: 0 }); };
 sec("16a the stop table", () => {
@@ -789,6 +801,12 @@ sec("17c a gap of two months settles both, once each", () => {
   ok("…once each: the next call returns null", S.roadSettle() === null && S.coinsNow() === 25);
   const c = boot(); c.local["sona.road.v1"] = JSON.stringify({ got: {}, items: {}, m: "2026-12", mgot: { 1: 1 } });
   ok("a phone clock set back before the month last visited settles nothing and keeps what was opened", c.S.roadSettle() === null && JSON.parse(c.local["sona.road.v1"]).m === "2026-12" && JSON.parse(c.local["sona.road.v1"]).mgot[1] === 1);
+  // reps made while the clock is behind fill a month the road can't open
+  // (opening it would open a month twice), so nothing says "Open!" for it
+  const k = boot(); k.local["sona.road.v1"] = JSON.stringify({ got: {}, items: {}, m: "2026-12", mgot: {} });
+  k.local["sona.trophy.v1"] = JSON.stringify({ v: 1, t: 20, d: "2026-10-20", dn: 0, m: "2026-10", mn: 120 });
+  const ks = k.S.roadState();
+  ok("…and with this month's trophies past two steps, no step reads reached and none counts as waiting", k.S.trophyState().month === 120 && ks.month.steps.every((x) => !x.reached) && ks.waiting === 0 && k.S.monthOpen(1).ok === false && k.S.coinsNow() === 0, { month: ks.month.steps.map((x) => x.reached), w: ks.waiting });
 });
 
 // ── 18. reading writes nothing, the ladder is never touched, and where it lives ──

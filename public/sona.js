@@ -4257,10 +4257,12 @@
   // page, after three taps; Home only reads chestState().
   const CHESTKEY = "sona.chest.v1", CHEST_COINS = 10, CHEST_BIG_EVERY = 5, CHEST_BIG_COINS = 25;
   // Pure. big/coins/sticker describe the next chest to open (today's, when it
-  // is still shut).
+  // is still shut); openedBig says whether the one opened today was a Big
+  // Chest, so the road shows the chest the child really opened.
   function chestState() {
     const c = load(CHESTKEY, {}), opened = c.last === today(), big = ((c.n | 0) + 1) % CHEST_BIG_EVERY === 0;
-    return { ready: !opened && dayGoal().done, opened, big, coins: big ? CHEST_BIG_COINS : CHEST_COINS, sticker: big };
+    return { ready: !opened && dayGoal().done, opened, big, coins: big ? CHEST_BIG_COINS : CHEST_COINS, sticker: big,
+      openedBig: opened && (c.n | 0) > 0 && (c.n | 0) % CHEST_BIG_EVERY === 0 };
   }
   function chestOpen() {
     const st = chestState(); if (!st.ready) return null;
@@ -4396,8 +4398,11 @@
     let land = ROAD_LANDS[0]; ROAD_LANDS.forEach((l) => { if (t >= l.from) land = l; });
     let waiting = 0, lowest = null;
     for (let n = 1; n <= stop; n++) if (!r.got[n]) { waiting++; if (lowest === null) lowest = n; }
-    const mgot = r.m === cur ? r.mgot : {};
-    const steps = MONTH_STEPS.map((s) => ({ n: s.n, at: s.at, gift: s.gift, big: !!s.big, reached: ts.month >= s.at, got: !!mgot[s.n] }));
+    // a phone clock set back before the month last visited: monthOpen can't
+    // open this month's steps (that would open a month twice), so none is
+    // shown reached or counted as waiting until the clock catches up
+    const mgot = r.m === cur ? r.mgot : {}, frozen = !!r.m && r.m > cur;
+    const steps = MONTH_STEPS.map((s) => ({ n: s.n, at: s.at, gift: s.gift, big: !!s.big, reached: !frozen && ts.month >= s.at, got: !!mgot[s.n] }));
     steps.forEach((s) => { if (s.reached && !s.got) waiting++; });
     _monthsOwed(r).forEach((o) => { waiting += o.steps.length; });
     _roadLate(r).forEach((x) => { if (!owns(x.item.kind, x.item.id)) waiting++; });

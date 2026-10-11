@@ -1978,7 +1978,8 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   no coins a second time.
 - **"October path"** (MONTH1): eight steps by this calendar month's trophies,
   named for the month, coins kept small and four stickers. **Only the road
-  page settles a month** (`roadSettle()` on its load, never Home): every
+  page settles a month** (`roadSettle()` on its load and when it comes back
+  to the front, never Home): every
   ended month since `MONTH_SINCE` ("2026-10") hands its reached, unopened
   steps to the wallet once, and the page says so in one line ("Your October
   gifts are in your wallet!"), shown once. Nothing says "missed".

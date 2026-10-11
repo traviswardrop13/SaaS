@@ -453,6 +453,21 @@ await section("the road page: today's chest", async () => {
     const l2 = await line(f.page);
     ok("it opens to \"+25 coins and a sticker!\", then \"You found the Star sticker!\"", l1 === "+25 coins and a sticker!" && l2 === "You found the Star sticker!" && (await coins(f.page)) === 25 && (await f.page.evaluate(() => Sona.hasSticker("star"))), [l1, l2]);
     ok("…and with motion allowed it throws confetti (so the Reduce Motion check above means something)", confetti >= 1, confetti);
+    await yay(f.page);
+    ok("once it is open the card shows the Big Chest the child opened, not the ordinary one that comes next", (await f.page.locator("#giftOvl").isHidden()) && /road-bigchest-open\.webp$/.test(await f.page.locator("#chestArt img").getAttribute("src")), await f.page.locator("#chestArt img").getAttribute("src"));
+  } finally { await f.context.close(); }
+
+  // the 5th chest with every sticker already in the book: its first line promises no sticker
+  f = await fresh({ trophies: 30, extra: { "sona.gamereps.v1": JSON.stringify({ [TODAY]: { R: 30 } }), "sona.road.v1": opened(1), "sona.chest.v1": JSON.stringify({ n: 4, last: "2026-10-01" }) } });
+  try {
+    await f.page.goto(origin + "/__sona"); await f.page.waitForFunction(() => window.Sona && Sona.STICKERS);
+    await f.page.evaluate(() => { const all = {}; Sona.STICKERS.forEach((x) => { all[x.id] = { at: 1 }; }); localStorage.setItem("sona.stickers.v1", JSON.stringify(all)); });
+    await road(f.page);
+    await f.page.click("#chestOpen"); await tapBox(f.page, 3); await f.page.waitForTimeout(900);
+    const f1 = await line(f.page); await yay(f.page); const f2 = await line(f.page);
+    ok("with a full sticker book the Big Chest says \"+25 coins!\", then \"Your sticker book is full! Here are 20 coins!\"", f1 === "+25 coins!" && f2 === "Your sticker book is full! Here are 20 coins!" && (await coins(f.page)) === 45, [f1, f2]);
+    await yay(f.page);
+    ok("…and an ordinary chest comes next while the card shows the open Big Chest", /road-bigchest-open\.webp$/.test(await f.page.locator("#chestArt img").getAttribute("src")));
   } finally { await f.context.close(); }
 });
 
