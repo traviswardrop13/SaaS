@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { kvConfigured, kvCmd } from "@/lib/slpAuth";
-import { PAGES, SCRIPT_REMOVE, boardPrefix, boardSecrets, cidHash, hmget, leaveArgs, overLimit, readBody, readSigned, runScript } from "@/lib/board";
+import { PAGES, SCRIPT_REMOVE, boardPrefix, boardSecrets, cidHash, hmget, holdsRemove, leaveArgs, overLimit, readBody, readSigned, runScript } from "@/lib/board";
 
 /**
  * PRACTICE BOARD: the email's "Take them off the board" link (BOARD1, 11 Oct
@@ -25,15 +25,15 @@ function parts(v: unknown): { rid: string; cidh: string } | null {
 
 export async function GET(req: NextRequest) {
   if (!boardSecrets()[0] || !kvConfigured()) return PAGES.off();
-  if (await overLimit(req, "board-remove-get", 30, boardSecrets()[0])) return PAGES.limit();
+  if (await overLimit(req, "board-remove-get", 20, boardSecrets()[0])) return PAGES.limit();
   const x = new URL(req.url).searchParams.get("x") || "";
   const p = parts(x);
   if (!p) return PAGES.nothing(400);
   const P = boardPrefix();
-  const rk = hmget(await kvCmd(["HMGET", P + "rid:" + p.rid, "cidh1", "cidh2", "cidh3"]), 3);
-  const pk = hmget(await kvCmd(["HMGET", P + "pend:" + p.rid, "cidh1", "cidh2", "cidh3"]), 3);
+  const rk = hmget(await kvCmd(["HMGET", P + "rid:" + p.rid, "cidh1", "cidh2", "cidh3", "xh"]), 4);
+  const pk = hmget(await kvCmd(["HMGET", P + "pend:" + p.rid, "cidh1", "cidh2", "cidh3", "xh"]), 4);
   if (!rk || !pk) return PAGES.error();
-  if (!rk.includes(p.cidh) && !pk.includes(p.cidh)) return PAGES.nothing();
+  if (!holdsRemove(rk, p.cidh) && !holdsRemove(pk, p.cidh)) return PAGES.nothing();
   return PAGES.removeAsk(x);
 }
 

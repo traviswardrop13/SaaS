@@ -171,16 +171,18 @@ const SCRIPTS = {
     const pend = K[0];
     if (A[0] === 'new') {
       if (M('EXISTS', pend)) return 0;
-      M('HSET', pend, 'n', A[3], 'buddies', A[4], 'tz', A[5], 'code', A[6], 'ok', '0', 'cidh1', A[2]); M('EXPIRE', pend, A[1]);
+      M('HSET', pend, 'n', A[3], 'buddies', A[4], 'tz', A[5], 'code', A[6], 'ok', '0', 'cidh1', A[2], 'xh', A[2]); M('EXPIRE', pend, A[1]);
       return 1;
     }
     if (!M('EXISTS', pend)) return 0;
-    const f = M('HMGET', pend, 'mids', 'cidh1', 'cidh2', 'cidh3');
+    const f = M('HMGET', pend, 'mids', 'cidh1', 'cidh2', 'cidh3', 'xh');
     if (f[0]) return 0;
     if (!f[1]) M('HSET', pend, 'cidh1', A[2]);
     else if (!f[2]) M('HSET', pend, 'cidh2', A[2]);
     else if (!f[3]) M('HSET', pend, 'cidh3', A[2]);
     else M('HSET', pend, 'cidh1', f[2], 'cidh2', f[3], 'cidh3', A[2]);
+    const xs = (f[4] || '').split(' ').filter(Boolean); xs.push(A[2]);
+    M('HSET', pend, 'xh', xs.slice(-Number(A[3])).join(' ')); M('EXPIRE', pend, A[1]);
     return 1;
   },
   'board:confirm'(K, A) {
@@ -192,7 +194,7 @@ const SCRIPTS = {
   'board:claim'(K, A) {
     const [pend, rk, jk] = K; const [P, rid, joined] = A; const ttl = Number(A[3]), per = Number(A[4]), given = Number(A[5]);
     if (!M('EXISTS', pend)) return enc({ s: 'expired' });
-    const f = M('HMGET', pend, 'ok', 'mids', 'n', 'buddies', 'tz', 'code', 'cidh1', 'cidh2', 'cidh3');
+    const f = M('HMGET', pend, 'ok', 'mids', 'n', 'buddies', 'tz', 'code', 'cidh1', 'cidh2', 'cidh3', 'xh');
     if (f[0] !== '1') return enc({ s: 'waiting' });
     if (f[1]) return enc({ s: 'done', m: f[1].split(',').filter(Boolean).map((id) => [id, M('HGET', P + 'mem:' + id, 'nick') || '']) });
     const n = Number(f[2]) || 0;
@@ -212,6 +214,7 @@ const SCRIPTS = {
     }
     const r = [rk, 'ids', ids.join(','), 'code', f[5]];
     for (let i = 6; i <= 8; i++) if (f[i]) r.push('cidh' + (i - 5), f[i]);
+    if (f[9]) r.push('xh', f[9]);
     M('HSET', ...r); M('EXPIRE', rk, ttl);
     M('HSET', pend, 'mids', ids.join(','));
     const joins = M('INCRBY', jk, n); if (M('TTL', jk) < 0) M('EXPIRE', jk, A[6]);
@@ -278,7 +281,7 @@ const SCRIPTS = {
   'board:leave'(K, A) { const [zkeys, days] = listsM(A, 3); return leaveM(A[0], A[1], zkeys, days); },
   'board:remove'(K, A) {
     const [pend, rk] = K; const [P, cidh] = A; const [zkeys, days] = listsM(A, 3);
-    const holds = (key) => M('HMGET', key, 'cidh1', 'cidh2', 'cidh3').includes(cidh);
+    const holds = (key) => { const h = M('HMGET', key, 'cidh1', 'cidh2', 'cidh3', 'xh'); return h.slice(0, 3).includes(cidh) || (h[3] || '').split(' ').includes(cidh); };
     let found = 0, n = 0;
     if (M('EXISTS', rk) && holds(rk)) { found = 1; for (const id of (M('HGET', rk, 'ids') || '').split(',').filter(Boolean)) n += leaveM(P, id, zkeys, days); M('DEL', rk); }
     if (M('EXISTS', pend) && holds(pend)) { found = 1; for (const id of (M('HGET', pend, 'mids') || '').split(',').filter(Boolean)) n += leaveM(P, id, zkeys, days); M('DEL', pend); }
@@ -574,7 +577,10 @@ try {
     ok('…with a new link in the new email', linkA1.c !== linkA2.c && ridOf(linkA1.c) === ridOf(linkA2.c));
     ok('the first email\'s link confirms', (await confirm(linkA1.c)).status === 200 && (await kv(['HGET', ak, 'ok'])) === '1');
     const b = await start(nextEmail(), ['fox']);
+    const bk = P() + 'pend:' + ridOf(b.json.pend);
+    await kv(['EXPIRE', bk, 3600]);
     await start(nextEmail(), ['fox'], { pend: b.json.pend });
+    ok('a resend starts the request\'s 48 hours again, so the new email\'s "The link works for 2 days" is true', Math.abs((await kv(['TTL', bk])) - 172800) <= 2, await kv(['TTL', bk]));
     const linkB2 = linksOf(emails[emails.length - 1]);
     ok('the second email\'s link confirms too', (await confirm(linkB2.c)).status === 200 && (await kv(['HGET', P() + 'pend:' + ridOf(b.json.pend), 'ok'])) === '1');
     const cc = await start(nextEmail(), ['fox']);
@@ -583,6 +589,8 @@ try {
     const ch = await kv(['HMGET', P() + 'pend:' + ridOf(cc.json.pend), 'cidh1', 'cidh2', 'cidh3', 'cidh4']);
     ok('at most three confirm hashes are kept; the oldest goes', !!ch[0] && !!ch[1] && !!ch[2] && ch[3] === null);
     ok('…so the oldest email\'s link has run out', /run out/.test((await confirm(first.c)).text) && (await kv(['HGET', P() + 'pend:' + ridOf(cc.json.pend), 'ok'])) === '0');
+    const xg = await call('remove', 'GET', null, { query: '?x=' + encodeURIComponent(first.x) });
+    ok('…but its remove link still shows its button', xg.status === 200 && /<form method="POST" action="\/api\/board\/remove">/.test(xg.text), xg.text.slice(0, 200));
     const again = await start(nextEmail(), ['fox'], { pend: a.json.pend });
     ok('a resend after the grown-up confirmed sends nothing more and says so', again.status === 200 && again.json.confirmed === true && again.json.pend === a.json.pend);
 
@@ -1011,6 +1019,21 @@ try {
     const k = await join(['fox']);
     await call('remove', 'POST', { x: k.x }, { form: true });
     ok('remove right after a claim deletes the member and the request', (await kv(['EXISTS', P() + 'mem:' + k.ids[0]])) === 0 && (await claim(k.pend)).json.expired === true);
+    // Four emails for one request: the first can no longer confirm, but it can always remove.
+    const many = await start(nextEmail(), ['fox', 'cat']);
+    const firstMail = linksOf(emails[emails.length - 1]);
+    for (let i = 0; i < 3; i++) await start(nextEmail(), ['fox', 'cat'], { pend: many.json.pend });
+    const lastMail = linksOf(emails[emails.length - 1]);
+    ok('after four emails for one request the first one\'s confirm link has run out', /run out/.test((await confirm(firstMail.c)).text));
+    await confirm(lastMail.c);
+    const mc = await claim(many.json.pend);
+    for (const m of mc.json.members) await day(m.token, 0);
+    await kv(['DEL', P() + 'pend:' + ridOf(many.json.pend)]);
+    const mg = await call('remove', 'GET', null, { query: '?x=' + encodeURIComponent(firstMail.x) });
+    const mr = await call('remove', 'POST', { x: firstMail.x }, { form: true });
+    let manyLeft = 0;
+    for (const m of mc.json.members) manyLeft += await kv(['EXISTS', P() + 'mem:' + idOf(m.token)]);
+    ok('…but its remove link still takes the children off, after the claim and after the request expired', mc.json.members.length === 2 && mg.status === 200 && /method="POST"/.test(mg.text) && mr.status === 200 && /deleted/.test(mr.text) && manyLeft === 0 && (await kv(['EXISTS', P() + 'rid:' + ridOf(many.json.pend)])) === 0, [mg.status, mr.status, manyLeft]);
     failOn = (cmd) => isEval(cmd, 'remove');
     const k2 = await join(['fox']);
     const rf = await call('remove', 'POST', { x: k2.x }, { form: true });

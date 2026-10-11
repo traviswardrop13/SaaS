@@ -311,26 +311,42 @@ if redis.call('TTL', KEYS[2]) < 0 then redis.call('EXPIRE', KEYS[2], ARGV[2]) en
 return {g, a}
 `;
 
+/** How many emails' remove links one request remembers (`xh`); far more than a family sends at two a day. */
+export const REMOVE_KEEP = 20;
+
 /**
  * -- board:start — a new pending request ("new": only when the key is new),
  * or one more confirm secret on a live, unclaimed one ("add": at most three
- * kept, the oldest dropped). The request keeps its own 48 hours.
+ * kept for confirming, the oldest dropped).
+ * Every email's own remove link keeps working all the same: `xh` holds the
+ * hash of every secret emailed for the request (the last REMOVE_KEEP), so the
+ * oldest email can still take the children off once it can no longer
+ * confirm. "Deletion always works from the email's remove link."
+ * A resend starts the request's 48 hours again, so the new email's "The link
+ * works for 2 days" is true.
  */
 export const SCRIPT_START = `-- board:start
 local pend = KEYS[1]
 if ARGV[1] == 'new' then
   if redis.call('EXISTS', pend) == 1 then return 0 end
-  redis.call('HSET', pend, 'n', ARGV[4], 'buddies', ARGV[5], 'tz', ARGV[6], 'code', ARGV[7], 'ok', '0', 'cidh1', ARGV[3])
+  redis.call('HSET', pend, 'n', ARGV[4], 'buddies', ARGV[5], 'tz', ARGV[6], 'code', ARGV[7], 'ok', '0', 'cidh1', ARGV[3], 'xh', ARGV[3])
   redis.call('EXPIRE', pend, ARGV[2])
   return 1
 end
 if redis.call('EXISTS', pend) == 0 then return 0 end
-local f = redis.call('HMGET', pend, 'mids', 'cidh1', 'cidh2', 'cidh3')
+local f = redis.call('HMGET', pend, 'mids', 'cidh1', 'cidh2', 'cidh3', 'xh')
 if f[1] then return 0 end
 if not f[2] then redis.call('HSET', pend, 'cidh1', ARGV[3])
 elseif not f[3] then redis.call('HSET', pend, 'cidh2', ARGV[3])
 elseif not f[4] then redis.call('HSET', pend, 'cidh3', ARGV[3])
 else redis.call('HSET', pend, 'cidh1', f[3], 'cidh2', f[4], 'cidh3', ARGV[3]) end
+local xs = {}
+for h in string.gmatch(f[5] or '', '%S+') do xs[#xs + 1] = h end
+xs[#xs + 1] = ARGV[3]
+local keep = tonumber(ARGV[4]) or 20
+while #xs > keep do table.remove(xs, 1) end
+redis.call('HSET', pend, 'xh', table.concat(xs, ' '))
+redis.call('EXPIRE', pend, ARGV[2])
 return 1
 `;
 
@@ -348,13 +364,16 @@ return 1
  * -- board:claim — once the grown-up has confirmed, one member per child,
  * each with the first free nickname. Repeatable: a second claim, a retry or
  * a lost answer gets the same members back (`mids`), never a second set.
- * If any child gets no nickname, every key it made is taken back.
+ * If any child gets no nickname, every key it made is taken back. The
+ * remove-link record copies every emailed secret's hash (`cidh1..3`, `xh`),
+ * so each of those emails can take the children off for as long as they are
+ * on the board.
  */
 export const SCRIPT_CLAIM = `-- board:claim
 local pend, rk, jk = KEYS[1], KEYS[2], KEYS[3]
 local P, rid, joined, ttl, per, given = ARGV[1], ARGV[2], ARGV[3], tonumber(ARGV[4]), tonumber(ARGV[5]), tonumber(ARGV[6])
 if redis.call('EXISTS', pend) == 0 then return cjson.encode({s = 'expired'}) end
-local f = redis.call('HMGET', pend, 'ok', 'mids', 'n', 'buddies', 'tz', 'code', 'cidh1', 'cidh2', 'cidh3')
+local f = redis.call('HMGET', pend, 'ok', 'mids', 'n', 'buddies', 'tz', 'code', 'cidh1', 'cidh2', 'cidh3', 'xh')
 if f[1] ~= '1' then return cjson.encode({s = 'waiting'}) end
 if f[2] then
   local out = {}
@@ -392,6 +411,7 @@ for i = 1, n do
 end
 local r = {'HSET', rk, 'ids', table.concat(ids, ','), 'code', f[6]}
 for i = 7, 9 do if f[i] then r[#r + 1] = 'cidh' .. (i - 6); r[#r + 1] = f[i] end end
+if f[10] then r[#r + 1] = 'xh'; r[#r + 1] = f[10] end
 redis.call(unpack(r))
 redis.call('EXPIRE', rk, ttl)
 redis.call('HSET', pend, 'mids', table.concat(ids, ','))
@@ -549,15 +569,18 @@ return leave(ARGV[1], ARGV[2], zkeys, days)
 /**
  * -- board:remove — the email's remove link: every member of that request,
  * the remove-link record, and the pending request if it is still there
- * (claimed or not). Answers {found, keys removed}.
+ * (claimed or not). Any email sent for the request works (`xh`), even one
+ * whose confirm link the later emails have pushed out. Answers {found, keys
+ * removed}.
  */
 export const SCRIPT_REMOVE = `-- board:remove
 ${LEAVE_FN}local pend, rk = KEYS[1], KEYS[2]
 local P, cidh = ARGV[1], ARGV[2]
 local zkeys, days = lists(3)
 local function holds(key)
-  local h = redis.call('HMGET', key, 'cidh1', 'cidh2', 'cidh3')
-  return h[1] == cidh or h[2] == cidh or h[3] == cidh
+  local h = redis.call('HMGET', key, 'cidh1', 'cidh2', 'cidh3', 'xh')
+  if h[1] == cidh or h[2] == cidh or h[3] == cidh then return true end
+  return h[4] and string.find(' ' .. h[4] .. ' ', ' ' .. cidh .. ' ', 1, true) ~= nil
 end
 local found, n = 0, 0
 if redis.call('EXISTS', rk) == 1 and holds(rk) then
@@ -595,6 +618,15 @@ export function parseAnswer(r: unknown): Record<string, unknown> | undefined {
 export function hmget(r: unknown, n: number): (string | null)[] | undefined {
   if (!Array.isArray(r) || r.length !== n) return undefined;
   return r.map((v) => (v === null || v === undefined || v === false ? null : String(v)));
+}
+
+/**
+ * Whether a request or remove-link record (its `cidh1..3, xh` read in that
+ * order) holds this emailed secret's hash: the remove script's own test.
+ */
+export function holdsRemove(f: (string | null)[], cidh: string): boolean {
+  if (f.slice(0, 3).includes(cidh)) return true;
+  return typeof f[3] === "string" && f[3].split(" ").includes(cidh);
 }
 
 /** A cjson list: an empty Lua table encodes as {} rather than []. */

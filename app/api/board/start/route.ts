@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { kvCmd } from "@/lib/slpAuth";
 import {
-  BUDDY_IDS, EMAIL, LONE_SURROGATE, MAILTO_CAP, MAILTO_TTL, MAIL_CAP, DAY_TTL, PEND_TTL, RETRY, SCRIPT_MAIL, SCRIPT_START,
+  BUDDY_IDS, EMAIL, LONE_SURROGATE, MAILTO_CAP, MAILTO_TTL, MAIL_CAP, DAY_TTL, PEND_TTL, REMOVE_KEEP, RETRY, SCRIPT_MAIL, SCRIPT_START,
   boardJson, cidHash, gateJson, hmget, mailKey, makeCode, makeId, offsetOk, overLimit, readSigned, runScript,
   sendBoardConfirmEmail, sign, utcDay,
 } from "@/lib/board";
@@ -19,10 +19,11 @@ import {
  * never confirm. No response ever carries a link.
  *
  * "Send it again" posts `pend` too: the same request, the same code, one
- * more confirm secret (three kept), so whichever email the grown-up opens
- * works. At most two emails to one address a day (a one-day HMAC of it is
- * the only trace), at most 300 a day in all, and ten requests an hour from
- * one network.
+ * more confirm secret (three kept for confirming; every email's remove link
+ * keeps working), and the request's 48 hours start again, so whichever email
+ * the grown-up opens works as it says. At most two emails to one address a
+ * day (a one-day HMAC of it is the only trace), at most 300 a day in all,
+ * and ten requests an hour from one network.
  */
 export const runtime = "nodejs";
 
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
   const cid = makeId();
   let made = false;
   if (again) {
-    const r = await runScript(SCRIPT_START, [P + "pend:" + rid], ["add", PEND_TTL, cidHash(cid)]);
+    const r = await runScript(SCRIPT_START, [P + "pend:" + rid], ["add", PEND_TTL, cidHash(cid), REMOVE_KEEP]);
     if (r === undefined) return boardJson(RETRY, 503);
     if (r !== 1) again = false; // claimed or gone in between: a new request instead
   }
