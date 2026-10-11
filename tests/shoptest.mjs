@@ -127,7 +127,9 @@ await section("1 kept", async () => {
     later.every(([k, id, src, cost]) => { const x = t[k].find((y) => y.id === id); return x && (src === "road" ? x.road && /Trophy Road/.test(x.label) : x.price === String(cost)); }), later);
   ok("the worn buddy is ticked, and its tile says it is pressed", t.characters[0].worn && t.characters[0].pressed === "true" && t.characters.filter((x) => x.worn).length === 1);
   ok("the wallet shows the coins: \"85 coins\"", JSON.stringify(await wallet(page)) === JSON.stringify({ n: "85", label: "85 coins" }), await wallet(page));
-  ok("with nothing to get, no try bar takes room under the preview", !(await bar(page)).shown || later.length > 0);
+  // (once later items join the catalog, the bar is there for them instead)
+  ok(later.length ? "with items added after the sweep to get, the try bar waits under the preview" : "with nothing to get, no try bar takes room under the preview",
+    later.length ? (await bar(page)).shown : !(await bar(page)).shown, await bar(page));
   await tile(page, "characters", "dragon").click();
   await page.waitForTimeout(150);
   ok("a tap wears a buddy it owns and saves it, as before", (await prof(page)).character === "dragon" && await page.locator("#heroName").textContent() === "Ziggy" && await page.locator("#choiceSaved").textContent() === "Saved — looking good!");
@@ -249,6 +251,17 @@ await section("4 backup", async () => {
   ok("…while the phone stays \"post\" (the stamp never travels)", await b.page.evaluate(() => localStorage.getItem("sona.buddyset.v1")) === "post");
   ok("no page error", b.errors.length === 0, b.errors);
   await b.context.close();
+  // a backup made before the Buddy Shop: no stamp, no list (every family
+  // could pick everything then), restored on a new phone
+  const c = await fresh({ post: true });
+  await c.page.evaluate(() => localStorage.clear());
+  await c.page.goto(origin + "/__sona");
+  const rc = await c.page.evaluate(() => Sona.importData({ app: "sona", v: 1, data: { "sona.profile.v1": JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, character: "cat", owned: { outfits: ["none"], backdrops: ["sky"] } }) } }));
+  await shop(c.page);
+  const tc = await tiles(c.page);
+  ok("a backup made before the Buddy Shop, restored on a new phone, keeps every buddy, hat and place too", rc.ok && Object.keys(LEGACY).every((k) => LEGACY[k].every((id) => /\. Yours\.$/.test(tc[k].find((x) => x.id === id).label))) && await c.page.evaluate(() => localStorage.getItem("sona.buddyset.v1")) === "post", tc);
+  ok("no page error", c.errors.length === 0, c.errors);
+  await c.context.close();
 });
 
 // ── 5. setup's hidden buddy step offers only what a family has ──

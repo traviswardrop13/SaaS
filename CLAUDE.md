@@ -2055,8 +2055,12 @@ Buddy & world) is the Buddy Shop: buddies, hats and places.
   bunny, Bao the panda, no hat, the sky). The stamp is on `NO_IMPORT` (true of
   the device); the list rides in the profile, so a backup carries it to a new
   phone or into the iPhone app, which stamps "post" on its own first load.
-  `addKid` writes the legacy set into a new child's profile on a kept device,
-  as it copies `earlyAdopter`. It reads no other sweep's stamp. **Preserve it
+  `importData` also writes the legacy set into every set-up child's profile
+  when the backup says "kept" or carries no stamp at all (made before the
+  shop): the Terms promise a backup never takes away an item a child already
+  has. A backup stamped "post" brings only its own list. `addKid` writes
+  the legacy set into a new child's profile on a kept device, as it copies
+  `earlyAdopter`. It reads no other sweep's stamp. **Preserve it
   like the free-era sweeps: never clean it up, never re-run it.**
 - **Ownership** is `Sona.owns(kind, id)`: a starter, what the child is
   wearing, the kept household's promise, or the child's own list. Every

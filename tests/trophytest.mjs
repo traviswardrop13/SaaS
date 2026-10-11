@@ -947,6 +947,25 @@ sec("19c a brother or sister, and a move to a new phone", () => {
   const lone = seeded(POST, { owned: { characters: ["cat"] } });
   const from = lone.S.exportString(), into = seeded({}, null); into.S.importData(from);
   ok("a backup from a post phone carries what that family bought, and nothing more", into.S.owns("characters", "cat") && !into.S.owns("characters", "dragon"));
+  // a backup made BEFORE the Buddy Shop carries no stamp and no list: that
+  // household could pick everything, and the Terms promise a backup never
+  // takes away an item a child already has
+  const pre = JSON.stringify({ app: "sona", v: 1, data: { "sona.profile.v1": JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, character: "dragon", owned: { outfits: ["none"], backdrops: ["sky"] } }),
+    "sona.kids.v1": JSON.stringify({ active: "", hi: 2, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Leo" }] }),
+    "sona.profile.v1@k2": JSON.stringify({ childName: "Leo", childAge: "5", onboarded: true }) } });
+  const old = seeded({}, null); const ro = old.S.importData(pre);
+  ok("a backup made before the Buddy Shop (no stamp), restored on a post phone: every child keeps every legacy item, in their own profile",
+    ro.ok && old.local["sona.buddyset.v1"] === "post" && ownsAll(old.S, LEGACY) && KINDS.every((k) => LEGACY[k].every((id) => prof(old).owned[k].indexOf(id) >= 0 && prof(old, "k2").owned[k].indexOf(id) >= 0)) && old.S.switchKid("k2") && ownsAll(old.S, LEGACY), [ro, prof(old), prof(old, "k2")]);
+  // a kept phone whose child was set up after the sweep ran (mid-setup that
+  // day) has a profile without the list; the backup's "kept" brings it
+  const midway = seeded({ "sona.buddyset.v1": "kept" }, { onboarded: false, childName: "" });
+  midway.S.saveProfile({ childName: "Ana", onboarded: true });
+  const mb = JSON.parse(midway.S.exportString());
+  const lacked = !(JSON.parse(mb.data["sona.profile.v1"]).owned || {}).characters, dest = seeded({}, null); dest.S.importData(mb);
+  ok("a kept phone's backup gives the list to a child whose profile was saved without it", lacked && mb.data["sona.buddyset.v1"] === "kept" && ownsAll(dest.S, LEGACY) && dest.local["sona.buddyset.v1"] === "post", JSON.parse(dest.local["sona.profile.v1"]).owned);
+  const postOnly = seeded({}, null); postOnly.S.importData({ app: "sona", v: 1, data: { "sona.buddyset.v1": "post", "sona.profile.v1": JSON.stringify({ childName: "Zoe", childAge: "6", onboarded: true }) } });
+  ok("…while a backup stamped \"post\" brings no legacy item, and a profile never set up gets no list", !postOnly.S.owns("characters", "dragon") && !JSON.parse(postOnly.local["sona.profile.v1"]).owned &&
+    (() => { const q = seeded({}, null); q.S.importData({ app: "sona", v: 1, data: { "sona.profile.v1": JSON.stringify({ childName: "", onboarded: false }) } }); return !JSON.parse(q.local["sona.profile.v1"]).owned; })());
   const noImport = (SRC.match(/const NO_IMPORT = \[[\s\S]*?\];/) || [""])[0], noExport = (SRC.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0];
   ok("sona.buddyset.v1 is on NO_IMPORT, not NO_EXPORT, and its name is not a rep or week key", /"sona\.buddyset\.v1"/.test(noImport) && !/buddyset/.test(noExport) && !/rep|week/i.test("sona.buddyset.v1"));
 });

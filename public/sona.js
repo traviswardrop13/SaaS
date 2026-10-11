@@ -2193,6 +2193,16 @@
       // over a profile that was grandfathered HERE silently ended a promise
       // this device's own sweep made. Snapshot the household first.
       const wasGrandfathered = earlyAdopterAnyKid();
+      // THE KEPT BUDDIES COME WITH THE HOUSEHOLD (OWN1, 11 Oct 2026). The
+      // stamp never comes in (NO_IMPORT), but what it says does: a backup
+      // stamped "kept", or one with no stamp at all (made before the Buddy
+      // Shop, when every family could pick everything), brings the legacy set
+      // in every set-up child's profile, a profile saved without the list (a
+      // child set up after the sweep ran) included. The Terms promise a backup
+      // never takes away an item a child already has. A backup stamped "post"
+      // brings only the list it holds. Forging one only adds cosmetic items on
+      // the phone that pastes it, which the spec accepts (§11).
+      const keptBackup = data[BUDDYSET_KEY] !== "post";
       let n = 0, skipped = 0, ticket = false;
       Object.keys(data).forEach((k) => {
         if (k.indexOf("sona.") !== 0) return;
@@ -2209,6 +2219,7 @@
               // …and the marks this device already held on this very key stay
               let here = null; try { here = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) {}
               if (here && typeof here === "object") ERA_MARKS.forEach((m) => { if (here[m]) p[m] = here[m]; });
+              if (keptBackup && (p.onboarded || p.childName)) p.owned = _legacyInto(p.owned);
               v = JSON.stringify(p);
             }
           } catch (e) {}
