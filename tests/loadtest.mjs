@@ -343,6 +343,8 @@ for (const [game, title, art] of SKIES) {
     ["today.html", ["#libraryUnlock"]],
     // the Trophy Road (11 Oct 2026): the chest's "Open it" and "Open next"
     ["road.html", ["#chestOpen", "#openNext"]],
+    // the Buddy Shop (11 Oct 2026): "Get it", the one action a child holds
+    ["customize.html", ["#getBtn"]],
     ["settings.html", ["button.btn:not(.ghost):not(.blue)"]],
   ];
   const notTeal = [];

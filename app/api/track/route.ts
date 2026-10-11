@@ -46,12 +46,17 @@ const EVENTS = new Set([
   "chest opened",
   "road gift opened",
   "month gift opened",
+  // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a
+  // buddy, hat or place with coins. It carries the kind, the catalog id and
+  // its price in coins (coins are never sold): no balance, no name.
+  "shop item got",
 ]);
 // `plan` and `surface` join the list for the events above, and `level` (2 or
 // 3) for "level played". Still no name, no age, no email, no word a child
 // said — an unlisted key is dropped silently, which is the whole point of an
-// allow-list.
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level"]);
+// allow-list. `kind`, `item` and `cost` are the Buddy Shop's ("characters",
+// "dragon", 150): a catalog entry and its coin price, never a balance.
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost"]);
 
 export async function POST(req: NextRequest) {
   try {

@@ -601,9 +601,12 @@
       return Sona.buddyMarkup(id, 64);
     }
 
-    // buddy grid
+    // buddy grid: only the buddies this family has (SHOP1, 11 Oct 2026). On
+    // a phone set up after the Buddy Shop that is the three starters; the
+    // rest are got in the shop. An older cached sona.js has no owns().
     var bg = document.getElementById("obBuddies");
-    Sona.CHARACTERS.forEach(function(c){
+    var mine = Sona.CHARACTERS.filter(function(c){ return !Sona.owns || !Sona.shopItem || Sona.owns("characters", c.id); });
+    mine.forEach(function(c){
       var el=document.createElement("div");
       el.className="bopt"+(c.id===draft.character?" on":"")+(c.locked?" locked":"");
       el.innerHTML='<span class="be">'+Sona.buddyMarkup(c.id,38)+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
@@ -614,7 +617,7 @@
     // buddy always starts selected so the step is a single tap
     if(!bg.querySelector(".bopt.on")){
       var first=bg.querySelector(".bopt:not(.locked)");
-      if(first){ first.classList.add("on"); draft.character=Sona.CHARACTERS[0].id; }
+      if(first){ first.classList.add("on"); draft.character=mine[0].id; }
     }
     // kit icons replace the last chrome emoji (fix pack 1b/1e) — the emoji in
     // the HTML stays as the fallback if the icon kit is ever missing
@@ -625,7 +628,7 @@
       var el=document.createElement("div"); el.className="bopt";
       el.innerHTML='<span class="be">'+((window.Sona&&Sona.icon&&Sona.icon("star",30))||"⭐")+'</span><span class="bn">Surprise me</span>';
       el.onclick=function(){
-        var pick=Sona.CHARACTERS[(Math.random()*Sona.CHARACTERS.length)|0];
+        var pick=mine[(Math.random()*mine.length)|0];
         Sona.sfx.tap(); draft.character=pick.id;
         bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");});
         bg.children[Array.prototype.findIndex.call(bg.children,function(n){return n.textContent.indexOf(pick.name)>=0;})].classList.add("on");

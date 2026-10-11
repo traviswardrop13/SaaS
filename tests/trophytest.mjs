@@ -28,7 +28,12 @@
 // day the goal is met, every fifth a Big Chest; numbered stops with fixed
 // gifts by lifetime trophies; a small path by this month's, every ended
 // month handed out once, only by the road page; nothing random, nothing
-// lost. The shop is added to this suite by the step that builds it.
+// lost. The Buddy Shop and the kept-buddies sweep (SHOP1, OWN1, section 19)
+// joined in step 7: a household already on Sona keeps every buddy, hat and
+// place it could pick (written into each child's profile, so a backup carries
+// it), a new family starts with three buddies and buys the rest with coins at
+// the catalog's price, a buy can be given back within 10 seconds, and nothing
+// in it reads or writes practice.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -304,12 +309,10 @@ sec("8b coins: no more minting, a hardened wallet, never sold", () => {
 sec("8c coins: no more minting, a hardened wallet, never sold", () => {
   const pub = path.join(ROOT);
   const pages = readdirSync(pub).filter((f) => f.endsWith(".html"));
-  // customize.html still carries a buy branch that never runs (its shop sets
-  // `var owned = true` for every item); the Buddy Shop rebuild replaces it, and
-  // from then on it is held to this rule like every page.
-  const deadShop = (f, src) => f === "customize.html" && /var owned = true; \/\/ beta/.test(src);
-  const payers = pages.filter((f) => { const src = readFileSync(path.join(pub, f), "utf8"); return /\b(addCoins|spendCoins)\(/.test(deadShop(f, src) ? src.replace(/[^\n]*Sona\.spendCoins\(it\.cost\)[^\n]*/, "") : src); });
-  ok("no page pays or takes coins itself: no addCoins( or spendCoins( in any public page (end cards, the daily run, Coach Call, the story)", pages.length > 40 && payers.length === 0, payers);
+  // the Buddy Shop (customize.html) spends through Sona.buyItem, which takes
+  // the price from the catalog; it is held to this rule like every page
+  const payers = pages.filter((f) => /\b(addCoins|spendCoins)\(/.test(readFileSync(path.join(pub, f), "utf8")));
+  ok("no page pays or takes coins itself: no addCoins( or spendCoins( in any public page (end cards, the daily run, Coach Call, the story, the Buddy Shop)", pages.length > 40 && payers.length === 0, payers);
   const engines = ["hoops.js", "soccer.js", "dino.js", "bubbles.js", "sayplay.js"].filter((f) => existsSync(path.join(pub, f)));
   ok("…nor any game engine", engines.length === 5 && engines.every((f) => !/addCoins|spendCoins|mintCoins/.test(readFileSync(path.join(pub, f), "utf8"))));
   ok("Home never mints coins on load", !/mintCoins|mintStoryBonus/.test(readFileSync(path.join(pub, "today.html"), "utf8")));
@@ -726,7 +729,7 @@ sec("16b opening a stop", () => {
 // passed the stop)
 const WITH_ITEMS = SRC.replace("{ n: 4, at: 220, gift: [{ coins: 30 }] }", '{ n: 4, at: 220, gift: [{ buddy: "cat" }] }')
   .replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ coins: 50 }, { hat: "sunhat" }] }')
-  .replace('{ id: "party",  name: "Party",  emoji: "🥳", cost: 40 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", cost: 0 },');
+  .replace('{ id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", source: "road", cost: null },');
 sec("16c a gift already owned, and an item listed after its stop was opened", () => {
   ok("(this test's table names a cat on stop 4 and the Sun hat on stop 6)", WITH_ITEMS !== SRC && /gift: \[\{ coins: 50 \}, \{ hat: "sunhat" \}\]/.test(WITH_ITEMS) && /buddy: "cat"/.test(WITH_ITEMS) && /id: "sunhat"/.test(WITH_ITEMS));
   const o = boot({ profile: { owned: { characters: ["cat"], outfits: ["sunhat"] } }, src: WITH_ITEMS });
@@ -849,7 +852,7 @@ sec("18c where CHEST1 and ROAD1 live in sona.js, and what they touch", () => {
   const events = (route.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
   ok("the relay takes the three gift events (each carries nothing: no stop, step or count)", ["chest opened", "road gift opened", "month gift opened"].every((e) => events.includes('"' + e + '"')));
   const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
-  ok("the chest's and the road's names are on the one export line, before soundMark, clipsSettled", /\bchestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, soundMark, clipsSettled\b/.test(line));
+  ok("the chest's and the road's names are on the one export line, before soundMark, clipsSettled", /\bchestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, (?:[\w$]+, )*soundMark, clipsSettled\b/.test(line));
   const codeOf = (f) => readFileSync(path.join(ROOT, f), "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   ok("Home never opens, settles or sends: no chestOpen, roadOpen, monthOpen, roadSettle, roadRolledSeen or track( in today.html", !/chestOpen|roadOpen|monthOpen|roadSettle|roadRolledSeen|\btrack\(/.test(codeOf("today.html")));
   ok("the road and sticker pages fire no event themselves (sona.js says them)", ["road.html", "stickers.html"].every((f) => existsSync(path.join(ROOT, f)) && !/\btrack\(/.test(codeOf(f))));
@@ -862,6 +865,195 @@ sec("18d the words a child can see on the road, the sticker book and Home's road
   const text = ["road.html", "stickers.html"].map((f) => strip(readFileSync(path.join(ROOT, f), "utf8"))).join(" ") + strip(card) + JSON.stringify((SRC.match(/const ROAD_LANDS = \[[\s\S]*?const _ROAD_KINDS/) || [""])[0].replace(/\/\/[^\n]*/g, ""));
   const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left|countdown)\b|\$\d/gi);
   ok("no word a child must never see (score, points, rare, mystery, missed, hurry, ends in, streak…) and no price", !bad, bad);
+});
+
+// ── 19. the Buddy Shop and the kept buddies (SHOP1, OWN1, step 7) ──
+const LEGACY = {
+  characters: ["fox", "bunny", "dragon", "cat", "bee", "octopus", "dino", "panda"],
+  outfits: ["none", "crown", "tophat", "cap", "shades", "bow", "party"],
+  backdrops: ["sky", "jungle", "forest", "mountain", "space", "beach"] };
+const KINDS = Object.keys(LEGACY);
+// a phone seeded the way main's rules say, plus whatever this test adds before sona.js first loads
+const seeded = (extra = {}, profile = {}, src) => {
+  const local = {};
+  ["", "2", "3", "4", "5"].forEach((n) => { local["sona.freeera" + n + ".v1"] = n ? "done" : "post"; });
+  local["sona.freever.v1"] = "kept";
+  if (profile !== null) local["sona.profile.v1"] = JSON.stringify(Object.assign({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }, profile));
+  Object.assign(local, extra);
+  return boot({ local, src });
+};
+const POST = { "sona.buddyset.v1": "post" };
+const prof = (p, slot) => JSON.parse(p.local[slot ? "sona.profile.v1@" + slot : "sona.profile.v1"] || "null");
+const wallet = (p, n) => { const g = p.S.getProgress(); g.totals.coins = n; p.local[p.S.kkey("sona.progress.v1")] = JSON.stringify(g); };
+const ownsAll = (S, set) => KINDS.every((k) => set[k].every((id) => S.owns(k, id)));
+sec("19a the catalog: how a new family gets each item, and its price", () => {
+  const { S } = boot();
+  const want = { characters: { fox: null, bunny: null, panda: null, cat: 100, bee: 100, dino: 120, dragon: 150, octopus: 150 },
+    outfits: { none: null, cap: 40, bow: 40, tophat: 60, shades: 60, crown: 80, party: 80 },
+    backdrops: { sky: null, jungle: 80, forest: 80, mountain: 120, beach: 120, space: 150 } };
+  const lists = { characters: S.CHARACTERS, outfits: S.OUTFITS, backdrops: S.BACKDROPS };
+  const got = {}; KINDS.forEach((k) => { got[k] = {}; lists[k].forEach((it) => { got[k][it.id] = [it.source, it.cost]; }); });
+  ok("every entry says how a new family gets it: the starters (fox, bunny, panda, no hat, the sky) cost nothing, every other item its table price",
+    KINDS.every((k) => Object.keys(want[k]).every((id) => got[k][id] && got[k][id][0] === (want[k][id] === null ? "starter" : "shop") && got[k][id][1] === want[k][id])), got);
+  ok("…and every entry is a starter, a shop item or a road item, a shop item with a whole price", KINDS.every((k) => lists[k].every((it) => ["starter", "shop", "road"].indexOf(it.source) >= 0 && (it.source !== "shop" || (Number.isInteger(it.cost) && it.cost > 0)))));
+  ok("nothing was renamed or reordered: the fox is still item 0 (byId's fallback), and the eight buddies, seven hats and six places keep their order",
+    JSON.stringify(KINDS.map((k) => lists[k].slice(0, LEGACY[k].length).map((it) => it.id))) === JSON.stringify(KINDS.map((k) => (k === "characters" ? ["fox", "bunny", "dragon", "cat", "bee", "octopus", "dino", "panda"] : k === "outfits" ? ["none", "crown", "tophat", "cap", "shades", "bow", "party"] : ["sky", "jungle", "forest", "mountain", "space", "beach"]))) && S.characterById("leo").id === "fox");
+  const lit = (SRC.match(/const LEGACY_SET = \{[\s\S]*?\};/) || [""])[0];
+  ok("LEGACY_SET is a literal of exactly what every family could pick on 11 Oct 2026", lit && KINDS.every((k) => new RegExp(k + ': \\[' + LEGACY[k].map((id) => '"' + id + '"').join(", ") + "\\]").test(lit)), lit);
+});
+sec("19b the sweep: a household already set up keeps everything, a new phone starts with the starters", () => {
+  const p = seeded();
+  ok("an onboarded phone on its first load of this build is stamped \"kept\"", p.local["sona.buddyset.v1"] === "kept" && p.S.buddiesKept() === true);
+  ok("…and that child's profile now lists every buddy, hat and place it could pick", KINDS.every((k) => LEGACY[k].every((id) => prof(p).owned[k].indexOf(id) >= 0)), prof(p).owned);
+  ok("…so it owns all of them", ownsAll(p.S, LEGACY));
+  const two = seeded({ "sona.kids.v1": JSON.stringify({ active: "", hi: 3, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Leo" }, { slot: "k3", name: "" }] }),
+    "sona.profile.v1@k2": JSON.stringify({ childName: "Leo", childAge: "5", onboarded: true, owned: { outfits: ["none", "crown"], backdrops: ["sky"] }, volume: 0 }),
+    "sona.profile.v1@k3": JSON.stringify({ childName: "", onboarded: false, volume: 0 }) });
+  ok("every set-up child gets the list, keeping what was there; a child never set up gets nothing",
+    KINDS.every((k) => LEGACY[k].every((id) => prof(two, "k2").owned[k].indexOf(id) >= 0)) && prof(two, "k2").owned.outfits.filter((x) => x === "crown").length === 1 && !prof(two, "k3").owned, [prof(two, "k2").owned, prof(two, "k3")]);
+  const fresh = seeded({}, null);
+  ok("a phone with no child yet is stamped \"post\", and writes no profile", fresh.local["sona.buddyset.v1"] === "post" && fresh.S.buddiesKept() === false && !fresh.local["sona.profile.v1"]);
+  const kept = seeded(POST);
+  ok("an existing stamp is never touched: an onboarded seed stamped \"post\" stays post, its profile unchanged", kept.local["sona.buddyset.v1"] === "post" && !prof(kept).owned);
+  ok("…and on it a new family owns the three starter buddies, no hat and the sky, and nothing else",
+    ["fox", "bunny", "panda"].every((id) => kept.S.owns("characters", id)) && kept.S.owns("outfits", "none") && kept.S.owns("backdrops", "sky") &&
+    ["dragon", "cat", "bee", "octopus", "dino"].every((id) => !kept.S.owns("characters", id)) && ["crown", "tophat", "cap", "shades", "bow", "party"].every((id) => !kept.S.owns("outfits", id)) &&
+    ["jungle", "forest", "mountain", "space", "beach"].every((id) => !kept.S.owns("backdrops", id)));
+  const other = seeded({ "sona.freever.v1": "post", "sona.freeera5.v1": "" });
+  ok("it reads no other sweep's stamp: a trial-first phone already set up still keeps its buddies", other.local["sona.buddyset.v1"] === "kept" && ownsAll(other.S, LEGACY));
+  const reload = boot({ local: kept.local, clock: kept.clock });
+  ok("…and a second load changes nothing", reload.local["sona.buddyset.v1"] === "post" && !prof(reload).owned);
+  ok("a stamp nobody can read is \"kept\" (fails open: nothing is taken away)", (() => { const q = seeded(); delete q.local["sona.buddyset.v1"]; return q.S.buddiesKept() === true; })());
+  const sw = SRC.indexOf("function _keepFreeVersion()"), kb = SRC.indexOf("function _keepBuddies()"), boot2 = SRC.indexOf("try { _keepFreeVersion(); } catch (e) {}");
+  ok("the sweep sits right after _keepFreeVersion and runs right after it on load", sw > 0 && kb > sw && kb - sw < 3000 && /try \{ _keepFreeVersion\(\); \} catch \(e\) \{\}\n[^\n]*\n\s*try \{ _keepBuddies\(\); \} catch \(e\) \{\}/.test(SRC.slice(boot2, boot2 + 300)));
+  const code = (SRC.match(/function _keepBuddies\(\) \{[\s\S]*?\n {2}\}\n/) || [""])[0];
+  ok("…reading no free-era, trial or founding stamp", code.length > 200 && !/FREEVER|freeera|FREEERA|GFKEY|founding|earlyAdopter/.test(code));
+});
+sec("19c a brother or sister, and a move to a new phone", () => {
+  const p = seeded();
+  p.S.addKid("Leo", "5");
+  ok("addKid on a kept phone gives the new child the whole list in their own profile", p.S.kkey("sona.profile.v1") === "sona.profile.v1@k2" && KINDS.every((k) => LEGACY[k].every((id) => prof(p, "k2").owned[k].indexOf(id) >= 0)) && ownsAll(p.S, LEGACY));
+  const q = seeded(POST);
+  q.S.addKid("Leo", "5");
+  ok("addKid on a post phone gives only the defaults", JSON.stringify(prof(q, "k2").owned) === JSON.stringify({ outfits: ["none"], backdrops: ["sky"] }) && !q.S.owns("characters", "dragon") && q.S.owns("characters", "bunny"));
+  const backup = p.S.exportString();
+  ok("the kept stamp is in a backup (it is not on NO_EXPORT)…", /sona\.buddyset\.v1/.test(backup));
+  const fresh = seeded({}, null);
+  ok("(the new phone is \"post\")", fresh.local["sona.buddyset.v1"] === "post");
+  const r = fresh.S.importData(backup);
+  ok("…but a restore never brings it: the new phone stays \"post\"", r.ok && r.skipped >= 1 && fresh.local["sona.buddyset.v1"] === "post", r);
+  ok("…and the household still owns every buddy, hat and place, on both children, because the list rode in each profile",
+    ownsAll(fresh.S, LEGACY) && fresh.S.switchKid("") && ownsAll(fresh.S, LEGACY));
+  const lone = seeded(POST, { owned: { characters: ["cat"] } });
+  const from = lone.S.exportString(), into = seeded({}, null); into.S.importData(from);
+  ok("a backup from a post phone carries what that family bought, and nothing more", into.S.owns("characters", "cat") && !into.S.owns("characters", "dragon"));
+  const noImport = (SRC.match(/const NO_IMPORT = \[[\s\S]*?\];/) || [""])[0], noExport = (SRC.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0];
+  ok("sona.buddyset.v1 is on NO_IMPORT, not NO_EXPORT, and its name is not a rep or week key", /"sona\.buddyset\.v1"/.test(noImport) && !/buddyset/.test(noExport) && !/rep|week/i.test("sona.buddyset.v1"));
+});
+sec("19d what the shop shows, and buying with coins", () => {
+  const k = seeded();
+  ok("on a kept phone every legacy item shows as owned, with no price", KINDS.every((kd) => LEGACY[kd].every((id) => { const it = k.S.shopItem(kd, id); return it.state === "owned" && it.kind === kd && it.id === id; })));
+  ok("…and buying one is refused as already owned, for no coins", k.S.buyItem("characters", "dragon").reason === "owned" && k.S.coinsNow() === 0);
+  const p = seeded(POST), { S } = p;
+  const dr = S.shopItem("characters", "dragon");
+  ok("on a post phone the dragon is for 150 coins, with its name and its painted badge", JSON.stringify(dr) === JSON.stringify({ kind: "characters", id: "dragon", name: "Ziggy", cost: 150, source: "shop", stop: null, at: null, art: "/assets/crafted/buddy-dragon-v2.webp", state: "buy" }), dr);
+  ok("a hat's and a place's entries", S.shopItem("outfits", "crown").cost === 80 && S.shopItem("outfits", "crown").state === "buy" && S.shopItem("backdrops", "beach").art === "/assets/crafted/customize-beach-v2.webp" && S.shopItem("outfits", "none").state === "owned" && S.shopItem("outfits", "none").cost === null);
+  ok("an unknown id is null (an old \"leo\" is no shop item), and so is an unknown kind", S.shopItem("characters", "leo") === null && S.shopItem("hats", "crown") === null && S.shopItem("constructor", "fox") === null && S.owns("characters", "leo") === false);
+  const sent = []; p.ctx.fetch = (u, o) => { sent.push([u, o && o.body]); return Promise.reject(new Error("offline")); };
+  wallet(p, 149);
+  const short = S.buyItem("characters", "dragon");
+  ok("one coin short: refused, with how many more it needs, and nothing changes", JSON.stringify(short) === JSON.stringify({ ok: false, reason: "short", need: 1 }) && S.coinsNow() === 149 && !S.owns("characters", "dragon") && sent.length === 0, short);
+  wallet(p, 150);
+  const got = S.buyItem("characters", "dragon");
+  const lb = prof(p).lastBuy;
+  ok("with exactly the price: the dragon is theirs, worn, and the coins go down by exactly 150", got.ok && got.coins === 0 && S.coinsNow() === 0 && S.owns("characters", "dragon") && prof(p).character === "dragon" && prof(p).owned.characters.indexOf("dragon") >= 0, got);
+  ok("…and the buy is remembered for the undo: what, how much, what was worn before, when", lb && lb.kind === "characters" && lb.id === "dragon" && lb.cost === 150 && lb.prev === "fox" && lb.at === p.clock.now, lb);
+  const ev = sent.map((x) => JSON.parse(x[1]));
+  ok("one \"shop item got\" event, carrying the kind, the item and its price, and nothing about the child", sent.length === 1 && /\/api\/track/.test(sent[0][0]) && ev[0].e === "shop item got" && JSON.stringify(ev[0].p) === JSON.stringify({ kind: "characters", item: "dragon", cost: 150 }), ev);
+  ok("buying it again is refused as owned", S.buyItem("characters", "dragon").reason === "owned");
+  ok("junk is refused: an unknown id or kind", S.buyItem("characters", "leo").reason === "bad" && S.buyItem("nope", "x").reason === "bad" && S.buyItem().reason === "bad");
+  const road = seeded(POST, {}, SRC.replace("{ n: 6, at: 380, gift: [{ coins: 50 }] }", '{ n: 6, at: 380, gift: [{ coins: 50 }, { hat: "sunhat" }] }')
+    .replace('{ id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80 },', '$&\n    { id: "sunhat", name: "Sun hat", emoji: "👒", source: "road", cost: null },'));
+  wallet(road, 999);
+  const sh = road.S.shopItem("outfits", "sunhat");
+  ok("(this test's table names the Sun hat on stop 6) a road item shows its stop and trophies, with no price", sh && sh.state === "road" && sh.stop === 6 && sh.at === 380 && sh.cost === null, sh);
+  ok("…and can't be bought, whatever the wallet holds", JSON.stringify(road.S.buyItem("outfits", "sunhat")) === JSON.stringify({ ok: false, reason: "road" }) && road.S.coinsNow() === 999 && !road.S.owns("outfits", "sunhat"));
+});
+sec("19e giving it back within 10 seconds", () => {
+  const p = seeded(POST), { S } = p;
+  wallet(p, 200);
+  S.buyItem("characters", "dragon");
+  p.clock.now += 9000;
+  const u = S.undoBuy();
+  ok("within 10 s: the dragon goes, the 150 coins come back, the fox is worn again", u.ok && S.coinsNow() === 200 && !S.owns("characters", "dragon") && prof(p).character === "fox" && !prof(p).lastBuy, u);
+  ok("…once: a second undo gives nothing", S.undoBuy().ok === false && S.coinsNow() === 200);
+  S.buyItem("backdrops", "space");
+  p.clock.now += 10001;
+  ok("after 10 s it is refused and the place stays theirs", S.undoBuy().ok === false && S.owns("backdrops", "space") && S.coinsNow() === 50);
+  S.buyItem("outfits", "cap"); S.equip("outfits", "none");
+  ok("if the child has already put something else on, giving it back leaves that on", S.undoBuy().ok && prof(p).outfit === "none" && !S.owns("outfits", "cap") && S.coinsNow() === 50);
+  p.clock.now += 60000;
+  S.buyItem("outfits", "bow"); p.clock.now -= 5000;
+  ok("a clock set back before the buy refuses the undo", S.undoBuy().ok === false && S.owns("outfits", "bow"));
+  const f = seeded(POST, { owned: { characters: ["dragon"] }, character: "dragon", lastBuy: { kind: "characters", id: "dragon", cost: 99999, prev: "fox", at: new Date(2026, 9, 20, 10, 0, 0).getTime() } });
+  const fu = f.S.undoBuy();
+  ok("a forged undo never pays back more than the catalog price", fu.ok && f.S.coinsNow() === 150, fu);
+  const g = seeded(POST, { lastBuy: { kind: "characters", id: "dragon", cost: 150, prev: "fox", at: new Date(2026, 9, 20, 10, 0, 0).getTime() } });
+  ok("an undo for something the child doesn't have pays nothing", g.S.undoBuy().ok === false && g.S.coinsNow() === 0);
+});
+sec("19f wearing: only what is yours, and what you wear is yours", () => {
+  const p = seeded(POST), { S } = p;
+  ok("equip refuses what the child doesn't own", S.equip("characters", "dragon") === false && prof(p).character !== "dragon");
+  ok("…and wears what they do", S.equip("characters", "panda") === true && prof(p).character === "panda" && S.equip("outfits", "none") && S.equip("backdrops", "sky"));
+  ok("equip refuses an unknown kind or id", S.equip("hats", "crown") === false && S.equip("characters", "leo") === false);
+  const w = seeded(POST, { character: "dragon", outfit: "crown" });
+  ok("a buddy worn before the shop (a backup from before it, say) is owned while worn", w.S.owns("characters", "dragon") && w.S.shopItem("characters", "dragon").state === "owned" && w.S.owns("outfits", "crown"));
+  ok("switching away writes it into the child's own list first, so it is never lost", w.S.equip("characters", "fox") && prof(w).owned.characters.indexOf("dragon") >= 0 && w.S.owns("characters", "dragon") && w.S.equip("characters", "dragon"));
+  const leo = seeded(POST, { character: "leo" });
+  ok("an old \"leo\" pick switches to a starter without inventing a buddy", leo.S.equip("characters", "bunny") && !(prof(leo).owned.characters || []).length && prof(leo).character === "bunny");
+});
+sec("19g the shop only reads when it shows, and never touches practice", () => {
+  const p = seeded(POST), { S } = p;
+  wallet(p, 500);
+  const before = snap(p);
+  for (let i = 0; i < 5; i++) KINDS.forEach((k) => (k === "characters" ? S.CHARACTERS : k === "outfits" ? S.OUTFITS : S.BACKDROPS).forEach((it) => { S.shopItem(k, it.id); S.owns(k, it.id); }));
+  S.buddiesKept(); S.coinsNow();
+  ok("shopItem, owns and buddiesKept write no key", snap(p) === before);
+  p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" });
+  p.local["sona.rotation.v1"] = JSON.stringify({ i: 2 });
+  const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);
+  p.local["sona.outcomes.v1"] = OCT20();
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, tro: p.local["sona.trophy.v1"] || null, goals: p.local["sona.goaldays.v1"] || null });
+  const pinned = pin();
+  for (let i = 0; i < 50; i++) { S.buyItem("characters", ["cat", "bee", "dino"][i % 3]); S.undoBuy(); S.equip("characters", ["fox", "bunny", "panda"][i % 3]); S.shopItem("backdrops", "beach"); S.buyItem("outfits", "cap"); }
+  ok("50 rounds of buying, giving back and wearing leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, trophies and goal stamps byte-identical", pin() === pinned, { coins: S.coinsNow() });
+  const at = SRC.indexOf("const LEGACY_SET = {"), end = SRC.indexOf("function undoBuy()"), wal = SRC.indexOf("function spendCoins(n)"), ga = SRC.indexOf("GAMEASK1"), wk = SRC.indexOf("the week, narrated", ga);
+  ok("SHOP1 sits next to owns, by the wallet, outside the GAMEASK1 window", at > wal && at - wal < 2000 && end > at && (at > wk || end < ga));
+  const code = SRC.slice(at, SRC.indexOf("\n  }\n", end) + 4).replace(/\/\/[^\n]*/g, "");
+  ok("its writes go only through the profile and the wallet, and it sends only \"shop item got\"",
+    !/\bsave\(|setItem|removeItem|fetch\(|sendBeacon|logAttempt|gameRep\(|_trophyAdd|\bpass\b|hearVerdict|gameAccess|premium\(|sona\.bests|gameBest/.test(code) &&
+    JSON.stringify(code.match(/\btrack\("[^"]*"/g)) === JSON.stringify(['track("shop item got"']), (code.match(/[^\n]*(save\(|setItem|track\()[^\n]*/g) || []).slice(0, 4));
+  const line = (SRC.match(/\n\s*global\.Sona = \{[^\n]*\};/) || [""])[0];
+  ok("the shop's names are on the one export line, before soundMark, clipsSettled, and owns, addOwned, the wallet and the catalogs keep theirs",
+    /\bbuddiesKept, shopItem, buyItem, undoBuy, equip, (?:[\w$]+, )*soundMark, clipsSettled\b/.test(line) && /\bowns, addOwned\b/.test(line) && /\bgetCoins, addCoins, spendCoins\b/.test(line) && /\bCHARACTERS, OUTFITS, BACKDROPS\b/.test(line));
+  const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");
+  const events = (route.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1], props = (route.match(/const PROPS = new Set\(\[([^\]]*)\]\)/) || ["", ""])[1];
+  ok("the relay takes \"shop item got\" and its three props (kind, item, cost), and still no stop or step", events.includes('"shop item got"') && ['"kind"', '"item"', '"cost"'].every((x) => props.includes(x)) && !/"(stop|step)"/.test(props), props);
+});
+sec("19h the shop page", () => {
+  const html = readFileSync(path.join(ROOT, "customize.html"), "utf8");
+  const code = html.replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("the dead beta branch is gone: no `var owned = true`, no undeclared coins or setCoinBal, no confirm or alert, no \"leo\" default", !/var owned = true|setCoinBal|\bconfirm\(|\balert\(|\|\|\s*"leo"/.test(code) && /S\.buddyId\(\)/.test(code));
+  ok("it spends through Sona.buyItem and gives back through Sona.undoBuy, and sends no event itself", /\.buyItem\(/.test(code) && /\.undoBuy\(/.test(code) && !/\btrack\(/.test(code) && !/addOwned\(/.test(code));
+  // what a child can read: the markup's text, and every sentence the script
+  // writes (a string literal with a capital letter or ending like a sentence;
+  // a state name like "buy" from sona.js is not copy)
+  const markup = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ");
+  const said = [...code.replace(/[\s\S]*?<script>/, "").matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)].map((m) => m[1]).filter((t) => /[A-Z]|[.!?]$/.test(t) && !/^[A-Z_]+$|^\/|^[#.]|^\[|svg|\.webp/.test(t));
+  const text = markup + " " + said.join(" | ");
+  ok("(the page's sentences are found: \"Hold to get it!\", \"It's yours!\")", said.includes("Hold to get it!") && said.includes("It's yours!") && said.includes("Open chests to earn coins!"), said.slice(0, 12));
+  const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|countdown|buy|bought|purchase|price)\b|\$/gi);
+  ok("no word a child must never see, and no buy, purchase or price, and no dollar sign", !bad, bad);
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall trophy and coin checks passed");

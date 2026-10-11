@@ -303,9 +303,13 @@
       <div class="set-head"><h2 id="buddyTitle">Buddy &amp; world</h2></div>
       <a class="set-row" href="/customize.html?from=settings">
         <span class="set-row-art"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span>
-        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, an outfit, and a backdrop.</span></span>
+        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, a hat and a place. Coins open new ones.</span></span>
         <span class="set-chev" aria-hidden="true">›</span>
       </a>
+      <!-- THE BUDDY SHOP (SHOP1, 11 Oct 2026): what a child earns, in one
+           line. Trophies follow reps and are never spent; coins come only
+           from the daily chest and the Trophy Road, and nothing is sold. -->
+      <p class="muted set-lead" id="economyNote">Trophies come from reps: a day at the daily goal is 30 trophies. Coins come from the daily chest and the Trophy Road. Nothing here is ever sold.</p>
       <!-- GAME LEVELS (LEVELS1, 11 Oct 2026). Inside nine games, Level 2 opens
            at 150 trophies and Level 3 at 750 (a day at the daily goal is 30);
            a child picks a level from Home. A grown-up can keep this child on
@@ -736,7 +740,11 @@
     document.getElementById("reset").onclick = function () {
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       var nm = (childEl.value || "").trim();
-      if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " progress on this device? This cannot be undone.")) return;
+      // Reset rewrites the practice record only (sona.progress.v1: the
+      // practice steps, practice days and the coins kept there). Trophies,
+      // what a child owns, stickers, the road and game levels are their own
+      // keys and stay, so the dialog says exactly that.
+      if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " practice steps and coins on this device? Trophies, buddies and stickers stay. This cannot be undone.")) return;
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       Sona.resetProgress(); alert("Progress reset.");
     };

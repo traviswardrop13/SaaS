@@ -661,7 +661,13 @@ and silently disables the paywall inside that test. This has bitten once per
 era across `iaptest`, `progtest`, `loadtest` and `hwtest`. The trial-first
 stamp works the other way round: an onboarded seed without `sona.freever.v1`
 is judged "kept" and has the free version, as every suite before it assumed;
-a test about trial first seeds "post".
+a test about trial first seeds "post". The kept-buddies stamp (11 Oct 2026, OWN1)
+works the same way: an onboarded seed without `sona.buddyset.v1` is judged
+"kept" (its profile gains every legacy buddy, hat and place on first load);
+a suite about a new family's Buddy Shop seeds "post". A suite that loads a
+page before it seeds must set the stamp itself: that first load stamps
+"post". A suite that holds a page's first load to writing nothing seeds
+"kept", as it seeds `sona.freever.v1`: the sweep writes on that first load.
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -980,7 +986,7 @@ redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
 Fruit Slice from 5; see "The ask happens after the product proves itself"),
 and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
-profiles, earned coins (now visible, on the Trophy Road), homework and
+profiles, earned coins (now visible on the Trophy Road, and spent in the Buddy Shop), homework and
 entitlement sync remain available. Home gains one Trophy Road card under
 "Pick a game!" (read-only), a level badge on a card's picture, and a level
 sheet that opens only from a tap (see "Trophies, coins and the Trophy Road"
@@ -2034,6 +2040,46 @@ a parked game has none.
 - **Never sold, never on a grey card:** Premium opens every game, not the
   levels inside them (the Terms say so). "level played" is sent by the game
   page, once a load at Level 2 or 3, never by Home.
+
+**The Buddy Shop and the kept buddies (SHOP1, OWN1, 11 Oct 2026)** (Travis,
+9 Oct 2026: "a currency so they can buy stuff like characters"). The buddy
+screen (`customize.html`, still reached from Home's buddy and Settings ›
+Buddy & world) is the Buddy Shop: buddies, hats and places.
+- **Who keeps what.** `_keepBuddies()`, a one-shot sweep in
+  `_keepFreeVersion`'s shape, runs right after it on load: a device already
+  set up on its first load of this build is stamped `sona.buddyset.v1`
+  "kept" **and every set-up child's `profile.owned` gets the whole legacy
+  set** (`LEGACY_SET`: the eight buddies, seven hats and six places every
+  family could pick on 11 Oct 2026); a device not set up yet is stamped
+  "post" and a new family starts with the starters (Pip the fox, Miso the
+  bunny, Bao the panda, no hat, the sky). The stamp is on `NO_IMPORT` (true of
+  the device); the list rides in the profile, so a backup carries it to a new
+  phone or into the iPhone app, which stamps "post" on its own first load.
+  `addKid` writes the legacy set into a new child's profile on a kept device,
+  as it copies `earlyAdopter`. It reads no other sweep's stamp. **Preserve it
+  like the free-era sweeps: never clean it up, never re-run it.**
+- **Ownership** is `Sona.owns(kind, id)`: a starter, what the child is
+  wearing, the kept household's promise, or the child's own list. Every
+  catalog entry carries `source` ("starter", "shop" or "road") and `cost`;
+  the prices are the catalog's (buddies 100–150, hats 40–80, places 80–150,
+  `sona.js`), never a page's. New items join only with their painted art; a
+  kept household can buy only what came after the sweep.
+- **Getting one.** A tap on anything not owned tries it on the preview;
+  only "Get it", held for a second (a keyboard or switch press confirms at
+  once), spends the coins (`Sona.buyItem`: the coins first, then the item,
+  then it is worn), with "Oops? Give it back" for ten seconds
+  (`Sona.undoBuy`, never more than the catalog price). A child without enough
+  coins sees "Open chests to earn coins!"; a Trophy Road item shows its
+  trophies and "Find it on the Trophy Road!". No dialogs, no voice, no price
+  sign and no "buy" in a child's words; no confetti under Reduce Motion.
+  `sona.js` sends "shop item got" (the kind, the item and its coin price,
+  never a balance). Settings' Buddy & world card says where trophies and
+  coins come from, and "Reset progress" says it keeps trophies, buddies and
+  stickers (it resets the practice steps and the coins).
+- **Setup's hidden buddy step** offers only the buddies the family has (the
+  starters on a new phone).
+`trophytest` pins the sweep, the prices, buying and giving back (no
+browser); `shoptest` plays the shop for a kept and a new family.
 
 **Play as your buddy (BUDDY2, 11 Oct 2026)** (Travis, 9 Oct 2026: "a
 currency so they can buy stuff like characters, and they actually BE the

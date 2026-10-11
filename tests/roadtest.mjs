@@ -84,6 +84,10 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
   await page.evaluate(({ trophies, levels, premium, bests, extra, TODAY, ledger }) => {
     ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
     localStorage.setItem("sona.freever.v1", "kept");
+    // the kept-buddies stamp (OWN1, step 7) too: unset, the sweep would stamp
+    // it and write the legacy set on Home's first load, and the snapshots
+    // below hold Home to writing nothing
+    localStorage.setItem("sona.buddyset.v1", "kept");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
     sessionStorage.setItem("sona.paidui", "1");
     if (premium) localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, since: Date.now(), source: "stripe" }));

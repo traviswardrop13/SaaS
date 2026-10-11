@@ -54,6 +54,7 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "homepickstest.mjs", // deterministic daily picks stay in the child's sound and age
+  "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and in Settings: one tap still plays, "Pick a level" once per game when a level opens, the level badge, "Level 1 only"; Home only reads
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
