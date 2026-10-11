@@ -187,6 +187,9 @@ function device(cfg) {
       localStorage.setItem("sona.progress.v1", JSON.stringify(cfg.progress));
       localStorage.setItem("sona.rateask.v1", JSON.stringify({ next: Date.now() + 90 * 86400000 }));
       Object.keys(cfg.seed || {}).forEach((k) => localStorage.setItem(k, cfg.seed[k]));
+      // today's goal already reached, so the once-a-day "You did it!" note
+      // does not land on a game shot when the shot's own reps cross it
+      if (cfg.goalMet) { const d = new Date(), p2 = (n) => String(n).padStart(2, "0"); localStorage.setItem("sona.goaldays.v1", JSON.stringify({ [d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate())]: 1 })); }
     }
   }
   Object.keys(cfg.session || {}).forEach((k) => sessionStorage.setItem(k, cfg.session[k]));
@@ -275,7 +278,7 @@ const cutIn = (page, f) => page.evaluate(async (f) => {
   window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 7, bubbles: true }));
 }, f);
 SCENES.slice = async (devName) => {
-  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" } });
+  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
   const { page } = s;
   await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
   await settle(page);
@@ -336,6 +339,30 @@ SCENES.slice = async (devName) => {
   return s;
 };
 
+// 1b. Fruit Slice on its last heart, with Echo asking for the sound that
+// brings one back ("For a heart and Super Slice, say"). The two hearts are
+// taken off directly (a staged moment, like the example week on Progress);
+// the ask is the real one, opened by a tap on Echo.
+SCENES.hearts = async (devName) => {
+  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
+  const { page } = s;
+  await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
+  await settle(page);
+  await until(page, () => fruits.filter((q) => !q.sliced).length >= 2, 8000);
+  await page.evaluate(() => { hearts = 1; paintHearts(); });
+  await page.evaluate(() => document.getElementById("slowKeys").click());
+  await until(page, () => /heart|Say /i.test(document.getElementById("slowStatus").textContent) && document.getElementById("slowControl").classList.contains("asking"), 12000);
+  // two or more fruit in the air, none sitting on another
+  await until(page, () => {
+    const up = fruits.filter((q) => !q.sliced && q.y < H * 0.7 && q.y > H * 0.25);
+    return up.length >= 2 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > 150));
+  }, 8000);
+  await page.evaluate(() => { __dev.frozen = true; });
+  s.note = await page.evaluate(() => "hearts " + hearts + ", status: " + document.getElementById("slowStatus").textContent);
+  await shot(page, devName, "hearts");
+  return s;
+};
+
 // 2. The practice page ("Say it 5 times") mid-try: Echo's bubble, the stand
 // filling with fruit, the mic listening.
 SCENES.charge = async (devName) => {
@@ -352,7 +379,7 @@ SCENES.charge = async (devName) => {
 
 // 3. Piano Tiles in play: tiles coming down, one key just played.
 SCENES.tiles = async (devName) => {
-  const s = await open(devName, "/arcade-tiles.html?from=charge", { session: { "sona.play.token": "arcade-tiles.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" } });
+  const s = await open(devName, "/arcade-tiles.html?from=charge", { session: { "sona.play.token": "arcade-tiles.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
   const { page } = s;
   await until(page, () => window.gameEntryAllowed === true && typeof startSong === "function", 15000);
   await settle(page);
@@ -364,12 +391,27 @@ SCENES.tiles = async (devName) => {
     return t.note;
   });
   let got = 0; const t0 = Date.now();
-  while (got < 9 && Date.now() - t0 < 30000) { if (await tapKeys()) got++; await page.waitForTimeout(40); }
-  // the moment: a few tiles on the way down, the last one just played
-  await until(page, () => tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 3, 8000);
+  while (got < 3 && Date.now() - t0 < 30000) { if (await tapKeys()) got++; await page.waitForTimeout(40); }
+  // Slow keys, earned the real way: a tap on Echo, his ask, the child's sound
+  // heard through the mic. The shot shows the song still going, slowed.
+  for (let tries = 0; tries < 3 && !(await page.evaluate(() => slowMs > 0)); tries++) {
+    const mics = await page.evaluate(() => __dev.mics);
+    await page.evaluate(() => document.getElementById("slowKeys").click());
+    if (!(await until(page, (m) => __dev.mics > m, 12000, mics))) continue;
+    await page.waitForTimeout(350);
+    await page.evaluate(() => { __dev.voice = true; });
+    await until(page, () => slowMs > 0, 3000);
+    await page.evaluate(() => { __dev.voice = false; });
+    await page.waitForTimeout(400);
+  }
+  for (let i = 0; i < 4; i++) { if (!(await tapKeys())) await page.waitForTimeout(250); await page.waitForTimeout(40); }
+  // the moment: a few tiles on the way down, the last one just played, the
+  // song still going with slow keys on
+  await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 2, 8000);
   for (let i = 0; i < 40; i++) { if (await tapKeys()) break; await page.waitForTimeout(40); }
   await page.waitForTimeout(90);
   await page.evaluate(() => { __dev.frozen = true; });
+  s.note = await page.evaluate(() => "slow keys " + (slowMs > 0 ? "on" : "OFF") + ", phase " + phase);
   await shot(page, devName, "tiles");
   return s;
 };

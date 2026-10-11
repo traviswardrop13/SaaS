@@ -37,14 +37,48 @@
       "bgImage": "home.webp"
     },
     {
-      "id": "02-piano-tiles",
-      "scene": "tiles",
+      "id": "02-fruit-slice",
+      "scene": "slice",
       "title": [
-        "Tap the tiles,",
-        "play a song"
+        "Say the sound,",
+        "power up the game"
       ],
       "accent": 1,
-      "sub": "Say the sound when Echo asks to slow the keys.",
+      "sub": "Saying it out loud slows the fruit.",
+      "bg": [
+        "#fff5dc",
+        "#ffe0c2"
+      ],
+      "status": "dark",
+      "decor": [],
+      "bgImage": "slice.webp"
+    },
+    {
+      "id": "03-hearts",
+      "scene": "hearts",
+      "title": [
+        "Low on hearts?",
+        "Say the sound"
+      ],
+      "accent": 1,
+      "sub": "Saying the sound brings a heart back.",
+      "bg": [
+        "#e4f3fb",
+        "#fff3e2"
+      ],
+      "status": "dark",
+      "decor": [],
+      "bgImage": "practice.webp"
+    },
+    {
+      "id": "04-piano-tiles",
+      "scene": "tiles",
+      "title": [
+        "Too fast?",
+        "Say the sound"
+      ],
+      "accent": 1,
+      "sub": "The keys slow down, and the song plays on.",
       "bg": [
         "#eee8ff",
         "#fff1e6"
@@ -57,58 +91,7 @@
       "bgImage": "tiles.webp"
     },
     {
-      "id": "03-practice",
-      "scene": "charge",
-      "title": [
-        "Real practice,",
-        "then play"
-      ],
-      "accent": 1,
-      "sub": "Echo says it first. Five tries out loud.",
-      "bg": [
-        "#e4f3fb",
-        "#fff3e2"
-      ],
-      "status": "dark",
-      "decor": [],
-      "bgImage": "practice.webp"
-    },
-    {
-      "id": "04-books",
-      "scene": "book",
-      "title": [
-        "Stories for",
-        "their sound"
-      ],
-      "accent": 1,
-      "sub": "Echo reads. Say the word to turn the page.",
-      "bg": [
-        "#e8f5e4",
-        "#fff4e4"
-      ],
-      "status": "dark",
-      "decor": [],
-      "bgImage": "books.webp"
-    },
-    {
-      "id": "05-fruit-slice",
-      "scene": "slice",
-      "title": [
-        "Say the sound,",
-        "power up the game"
-      ],
-      "accent": 1,
-      "sub": "Say it out loud to slow the fruit.",
-      "bg": [
-        "#fff5dc",
-        "#ffe0c2"
-      ],
-      "status": "dark",
-      "decor": [],
-      "bgImage": "slice.webp"
-    },
-    {
-      "id": "06-hoops",
+      "id": "05-hoops",
       "scene": "hoops",
       "title": [
         "Say the word,",
@@ -123,6 +106,23 @@
       "status": "dark",
       "decor": [],
       "bgImage": "hoops.webp"
+    },
+    {
+      "id": "06-books",
+      "scene": "book",
+      "title": [
+        "Stories for",
+        "their sound"
+      ],
+      "accent": 1,
+      "sub": "Read aloud. Say the word to turn the page.",
+      "bg": [
+        "#e8f5e4",
+        "#fff4e4"
+      ],
+      "status": "dark",
+      "decor": [],
+      "bgImage": "books.webp"
     },
     {
       "id": "07-progress",
