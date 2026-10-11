@@ -23,11 +23,11 @@
       "scene": "home",
       "detail": true,
       "title": [
-        "Pick a game,",
-        "play with Echo"
+        "Speech practice",
+        "kids love"
       ],
       "accent": 1,
-      "sub": "Arcade for ages 5–8. Simple play for ages 3–4.",
+      "sub": "Fun games for ages 3–8.",
       "bg": [
         "#fff6e2",
         "#ffe9c6"
