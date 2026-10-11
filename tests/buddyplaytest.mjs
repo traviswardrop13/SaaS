@@ -69,7 +69,8 @@ function seed(cfg) {
   // a stand-in sona.js or helper, as an older or broken phone might have
   let sona, cb;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
-    if (cfg.noRun && v.buddySprite) { const real = v.buddySprite; v.buddySprite = function (id, pose) { return pose === "run" ? null : real.apply(this, arguments); }; } } });
+    const no = (cfg.noPoses || []).concat(cfg.noRun ? ["run"] : []);
+    if (no.length && v.buddySprite) { const real = v.buddySprite; v.buddySprite = function (id, pose) { return no.includes(pose) ? null : real.apply(this, arguments); }; } } });
   Object.defineProperty(window, "SonaCraftedBuddies", { configurable: true, get: () => cb, set: (v) => { cb = v; if (cfg.noCircle) delete v.drawCircle; } });
   if (sessionStorage.getItem("test.seeded")) return;
   sessionStorage.setItem("test.seeded", "1");
@@ -166,6 +167,11 @@ await section("Sound Sprint", async () => {
     ok("Sprint: a buddy with no runner is its round badge, clipped to a circle", clipThen(ev, "buddy-dragon-v2.webp") && !drew(ev, "buddy-dragon-run.webp").length, ev.slice(-6));
     ok("Sprint: …and on the start card its badge", tip.cls === "" && /buddy-dragon-v2\.webp/.test(tip.html), tip);
   });
+  await run({ buddy: "dragon", missing: ["/assets/crafted/buddy-dragon-run.webp"] }, "a runner that won't load", async (ev, tip, page) => {
+    ok("Sprint: a runner that won't load is the round badge on the road", clipThen(ev, "buddy-dragon-v2.webp"), ev.slice(-6));
+    const t = await page.evaluate(() => { const e = document.getElementById("tipBuddy"); return { cls: e.className, bg: e.style.backgroundImage, html: e.innerHTML }; });
+    ok("Sprint: …and on the start card its badge, never an empty lane", t.cls === "" && !t.bg && /buddy-dragon-v2\.webp/.test(t.html), t);
+  });
   await run({ buddy: "dragon", noRun: true, noCircle: true }, "an old helper with no drawCircle", async (ev) => {
     ok("Sprint: with the helper's drawCircle gone, the page still draws the buddy", drew(ev, "buddy-dragon-v2.webp").length > 0, ev.slice(-4));
   });
@@ -217,6 +223,16 @@ await section("Fruit Slice", async () => {
     } finally { await context.close(); }
   }
   {
+    // no peek picture (or one that won't load): the round badge on the same ledge
+    const { context, page, errors } = await open("arcade-slice.html?from=charge", { buddy: "dragon", missing: ["/assets/crafted/buddy-dragon-peek.webp"] });
+    try {
+      await until(page, () => { const b = document.getElementById("sliceBuddy"); return b.complete && b.naturalWidth > 0 && /buddy-dragon-v2/.test(b.src); }, 5000);
+      const b = await box(page, "#sliceBuddy"), w = await page.evaluate(() => document.getElementById("app").clientWidth), cls = await page.evaluate(() => document.getElementById("sliceBuddy").className);
+      ok("Slice: a peek picture that won't load is the round badge, on the ledge, in the scene without the fox", file(b.src) === "buddy-dragon-v2.webp" && cls === "badge" && b.shown && Math.abs((b.vh - b.b) - w * 289 / 1440) < 1.5 && await page.evaluate(() => document.body.classList.contains("buddy-scene")), { b, cls });
+      ok("Slice (no peek): no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  }
+  {
     const { context, page, errors } = await open("arcade-slice.html?from=charge", { buddy: "dragon", missing: ["/assets/crafted/fruit-stand-v2.webp"] });
     try {
       await page.waitForTimeout(900);
@@ -262,7 +278,7 @@ await section("Block Stacker", async () => {
       ok("Stack (dragon): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   }
-  for (const gone of ["stack-workshop-v3.webp", "stack-rocket-v3.webp"]) {
+  for (const gone of ["stack-workshop-v3.webp", "stack-rocket-v3.webp", "buddy-dragon-v2.webp"]) {
     const { context, page, errors } = await open("arcade-stack.html?from=charge", { buddy: "dragon", missing: ["/assets/crafted/" + gone] });
     try {
       await page.waitForTimeout(600);
@@ -272,7 +288,7 @@ await section("Block Stacker", async () => {
       await page.waitForTimeout(200);
       const ev = await events(page), s = await page.evaluate(() => ({ cls: document.body.className, rocket: ROCKET_ART.src }));
       const scene = gone === "stack-workshop-v3.webp";
-      ok("Stack: " + (scene ? "a workshop without the fox that won't load puts the old scene back, the old rocket with it" : "a rocket without Echo that won't load is the old one, with nobody added"),
+      ok("Stack: " + (scene ? "a workshop without the fox that won't load puts the old scene back, the old rocket with it" : gone === "stack-rocket-v3.webp" ? "a rocket without Echo that won't load is the old one, with nobody added" : "a badge that won't load is the old rocket, never an empty porthole"),
         (scene ? !/buddy-scene/.test(s.cls) : /buddy-scene/.test(s.cls)) && file(s.rocket) === "stack-rocket-v2.webp" && !drew(ev, "buddy-dragon-v2.webp").length, { s, ev: ev.slice(-3) });
       ok("Stack (no " + gone + "): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
@@ -325,9 +341,19 @@ const PLAYED = [
       if (d.state !== "ready" || !d.bone) break;
       for (let r = -1; r <= 1; r++) await rub(page, b, d.bone.x - d.bone.w / 2, d.bone.x + d.bone.w / 2, d.bone.y + r * d.bone.h * 0.3, 3);
     }
-    return until(page, () => Dino.snapshot().found === 1 && Dino.snapshot().state === "placed", 6000);
+    return until(page, () => Dino.snapshot().found === 1, 6000);
   }],
 ];
+// Every picture Echo and the buddy show, and every hop, as it happens: the
+// cheer lasts 900 ms of a page that may be slow, so the suite records the
+// swaps rather than sampling a moment.
+const watch = (page, ids) => page.evaluate((ids) => {
+  const log = window.__swaps = [];
+  for (const id of ids) { const el = document.getElementById(id);
+    new MutationObserver((ms) => ms.forEach((m) => log.push({ id, attr: m.attributeName, src: el.getAttribute("src"), hop: el.classList.contains("hop") || el.classList.contains("munch") }))).observe(el, { attributes: true, attributeFilter: ["src", "class"] }); }
+}, ids);
+const swaps = (page, id) => page.evaluate((id) => window.__swaps.filter((e) => e.id === id), id);
+const srcs = (log) => log.filter((e) => e.attr === "src").map((e) => file(e.src));
 for (const [pg, eng, echo, bud, canvas, what, play] of PLAYED) await section(eng, async () => {
   {
     const { context, page, errors } = await open(pg, { buddy: "dragon", standin: true });
@@ -335,15 +361,16 @@ for (const [pg, eng, echo, bud, canvas, what, play] of PLAYED) await section(eng
       await until(page, (bud) => { const b = document.getElementById(bud); return b.complete && b.naturalWidth > 0; }, 5000, bud);
       const rest = await box(page, "#" + bud);
       ok(eng + " (dragon): the dragon stands opposite Echo in its rest pose, and takes no finger", file(rest.src) === "buddy-dragon-rest.webp" && rest.pe === "none" && inside(rest), rest);
+      ok(eng + " (dragon): its cheering picture is fetched before the first cheer, so the swap never waits on the network", await until(page, () => performance.getEntriesByType("resource").some((r) => /buddy-dragon-cheer\.webp/.test(r.name)), 3000));
+      await watch(page, [echo, bud]);
       ok(eng + ": " + what + " is made", await play(page), await page.evaluate((eng) => window[eng].snapshot(), eng));
-      const now = await page.evaluate(([echo, bud]) => ({ echo: document.getElementById(echo).classList.contains("hop"), bud: document.getElementById(bud).classList.contains("hop"), echoSrc: document.getElementById(echo).getAttribute("src"), budSrc: document.getElementById(bud).getAttribute("src") }), [echo, bud]);
-      ok(eng + ": " + what + " hops Echo and the buddy, each in its own cheer picture", now.echo && now.bud && file(now.echoSrc) === "echo-cheer.webp" && file(now.budSrc) === "buddy-dragon-cheer.webp", now);
       await page.waitForTimeout(1000);
-      const later = await page.evaluate(([echo, bud]) => ({ echoSrc: document.getElementById(echo).getAttribute("src"), budSrc: document.getElementById(bud).getAttribute("src") }), [echo, bud]);
-      ok(eng + ": a second later the buddy rests again in its own picture, never Echo's", file(later.budSrc) === "buddy-dragon-rest.webp" && file(later.echoSrc) === "echo-welcome.webp", later);
+      const e = await swaps(page, echo), b = await swaps(page, bud), now = await page.evaluate(([echo, bud]) => ({ echo: document.getElementById(echo).getAttribute("src"), bud: document.getElementById(bud).getAttribute("src") }), [echo, bud]);
+      ok(eng + ": " + what + " hops Echo and the buddy, each in its own cheer picture", e.some((x) => x.hop) && b.some((x) => x.hop) && srcs(e).includes("echo-cheer.webp") && JSON.stringify(srcs(b)) === '["buddy-dragon-cheer.webp","buddy-dragon-rest.webp"]', { e, b });
+      ok(eng + ": a second later the buddy rests again in its own picture, never Echo's", file(now.bud) === "buddy-dragon-rest.webp" && file(now.echo) === "echo-welcome.webp" && !srcs(b).some((x) => /^echo-/.test(x)), now);
       if (eng === "Dino") {
-        const d = await page.evaluate(() => Dino.snapshot()), c = await page.locator("#dig").boundingBox(), b = await box(page, "#digBuddy");
-        ok("Dino: the buddy stands clear of the pit", apart(b, { l: c.x + d.pit.x, t: c.y + d.pit.y, r: c.x + d.pit.x + d.pit.w, b: c.y + d.pit.y + d.pit.h }), { b, pit: d.pit });
+        const d = await page.evaluate(() => Dino.snapshot()), c = await page.locator("#dig").boundingBox(), bb = await box(page, "#digBuddy");
+        ok("Dino: the buddy stands clear of the pit", apart(bb, { l: c.x + d.pit.x, t: c.y + d.pit.y, r: c.x + d.pit.x + d.pit.w, b: c.y + d.pit.y + d.pit.h }), { bb, pit: d.pit });
       }
       ok(eng + " (dragon): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
@@ -356,11 +383,30 @@ for (const [pg, eng, echo, bud, canvas, what, play] of PLAYED) await section(eng
       await until(page, (bud) => { const b = document.getElementById(bud); return b.complete && b.naturalWidth > 0; }, 5000, bud);
       const s = await page.evaluate(([eng, bud]) => { const before = window[eng].snapshot(); window[eng].setBuddy({ rest: 1, cheer: null }); return { src: document.getElementById(bud).getAttribute("src"), ok: !!before }; }, [eng, bud]);
       ok(eng + " (fox): the fox stands there in its own rest pose", file(s.src) === "buddy-fox-rest.webp", s);
-      ok(eng + ": setBuddy refuses anything but two picture paths, and then only the hop runs", await play(page) && file(await page.evaluate((bud) => document.getElementById(bud).getAttribute("src"), bud)) === "buddy-fox-rest.webp" && await page.evaluate((bud) => document.getElementById(bud).classList.contains("hop"), bud));
+      await watch(page, [bud]);
+      const made = await play(page);
+      await page.waitForTimeout(300);
+      const b = await swaps(page, bud);
+      ok(eng + ": setBuddy refuses anything but two picture paths, and then only the hop runs", made && b.some((x) => x.hop) && srcs(b).length === 0 && file(await page.evaluate((bud) => document.getElementById(bud).getAttribute("src"), bud)) === "buddy-fox-rest.webp", b);
       ok(eng + " (fox): no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   }
 });
+{
+  // a cheering picture that won't load: the buddy stays standing, never its
+  // badge, and the swap stops
+  const { context, page, errors } = await open("arcade-hoops.html", { buddy: "dragon", standin: true, missing: ["/assets/crafted/buddy-dragon-cheer.webp"] });
+  try {
+    await until(page, () => { const b = document.getElementById("courtBuddy"); return b.complete && b.naturalWidth > 0; }, 5000);
+    await page.waitForTimeout(500);
+    await watch(page, ["courtBuddy"]);
+    const made = await PLAYED[0][6](page);
+    await page.waitForTimeout(1000);
+    const b = await swaps(page, "courtBuddy"), el = await page.evaluate(() => { const e = document.getElementById("courtBuddy"); return { src: e.getAttribute("src"), cls: e.className }; });
+    ok("Hoops: a cheering picture that won't load leaves the buddy standing, hopping, never its badge", made && b.some((x) => x.hop) && file(el.src) === "buddy-dragon-rest.webp" && !/badge/.test(el.cls) && !srcs(b).includes("buddy-dragon-v2.webp"), { el, b });
+    ok("Hoops (no cheer picture): no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+}
 
 // ── 7. Feed Echo: the buddy watches; Echo is still the one fed ──
 await section("Feed Echo", async () => {
@@ -390,12 +436,14 @@ await section("Feed Echo", async () => {
     await until(page, () => !document.getElementById("grid").classList.contains("locked"), 6000);
     await page.evaluate(() => { window.__mic.voice = false; });
     const word = await page.locator("#bMain b").innerText();
+    await watch(page, ["feedBuddy"]);
     await page.locator("#grid .cardBtn").filter({ hasText: new RegExp("^" + word + "$") }).click();
     await page.waitForTimeout(250);
-    const fed = await page.evaluate(() => ({ munch: document.getElementById("feedBuddy").classList.contains("munch"), src: document.getElementById("feedBuddy").getAttribute("src"), echo: document.getElementById("echo").classList.contains("munch"), wells: document.querySelectorAll("#plate .well .fd").length }));
-    ok("Feed: a right feed is Echo's: he munches and the plate fills; the buddy hops in its own cheer picture", fed.echo && fed.wells === 1 && fed.munch && file(fed.src) === "buddy-dragon-cheer.webp", fed);
+    const fed = await page.evaluate(() => ({ echo: document.getElementById("echo").classList.contains("munch"), wells: document.querySelectorAll("#plate .well .fd").length }));
     await page.waitForTimeout(1000);
-    ok("Feed: …and rests again a second later", file(await page.evaluate(() => document.getElementById("feedBuddy").getAttribute("src"))) === "buddy-dragon-rest.webp");
+    const fb = await swaps(page, "feedBuddy"), restAgain = file(await page.evaluate(() => document.getElementById("feedBuddy").getAttribute("src")));
+    ok("Feed: a right feed is Echo's: he munches and the plate fills; the buddy hops in its own cheer picture", fed.echo && fed.wells === 1 && fb.some((x) => x.hop) && srcs(fb)[0] === "buddy-dragon-cheer.webp", { fed, fb });
+    ok("Feed: …and rests again a second later", restAgain === "buddy-dragon-rest.webp" && JSON.stringify(srcs(fb)) === '["buddy-dragon-cheer.webp","buddy-dragon-rest.webp"]', fb);
     ok("Feed: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });

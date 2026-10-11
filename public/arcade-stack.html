@@ -660,12 +660,16 @@
     // A fox child's rocket is the old one, Echo in its window. Any other
     // buddy rides in the rocket with an empty porthole (stack-rocket-v3.webp,
     // the same picture outside the glass), its badge clipped into the glass
-    // in drawRocket. A rocket that won't load, or an older cached helper that
-    // can't clip, is the old one, with nobody added.
-    if(STACK_BUDDY&&window.SonaCraftedBuddies&&SonaCraftedBuddies.image&&SonaCraftedBuddies.drawCircle){
-      ROCKET_PIC=SonaCraftedBuddies.image(BID,"portrait");
-      ROCKET_ART.onerror=function(){ ROCKET_PIC=null; ROCKET_ART.onerror=null; ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp"; };
+    // in drawRocket. A rocket that won't load, a badge that won't (the glass
+    // would stay empty), or an older cached helper that can't clip, is the old
+    // one, with nobody added.
+    if(STACK_BUDDY&&window.SonaCraftedBuddies&&SonaCraftedBuddies.image&&SonaCraftedBuddies.drawCircle) ROCKET_PIC=SonaCraftedBuddies.image(BID,"portrait");
+    if(ROCKET_PIC){
+      var oldRocket=function(){ if(!ROCKET_PIC) return; ROCKET_PIC=null; ROCKET_ART.onerror=null; ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp"; };
+      ROCKET_ART.onerror=oldRocket;
+      ROCKET_PIC.addEventListener("error",oldRocket);
       ROCKET_ART.src="/assets/crafted/stack-rocket-v3.webp";
+      if(ROCKET_PIC.complete&&!ROCKET_PIC.naturalWidth) oldRocket();
     } else ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp";
     function drawBlock(b,y,index){
       paintBlock(b.x,y,b.w,BH-3,b.c);

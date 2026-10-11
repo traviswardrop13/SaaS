@@ -61,23 +61,35 @@
   // standing (its rest pose), else its badge (class "badge", made round by the
   // page), else its sticker; hidden if none of them loads. Answers {rest,
   // cheer} when it has both standing pictures, for the 900 ms cheer swap, and
-  // calls onLost() if the standing picture fails and the badge takes over,
-  // so the swap stops.
+  // calls onLost() if the swap must stop: the standing picture failed and the
+  // badge took over, or the cheering one won't load (the buddy then simply
+  // stays standing). The cheering picture is fetched now and held here, so the
+  // first swap does not wait on the network (an unheld Image is thrown away).
   function stand(img,id,onLost){
     if(!img)return null;
-    var rest=poseSrc(id,"rest"),cheer=poseSrc(id,"cheer"),pt=source(id),sv=svgSrc(id),list=[],at=-1;
+    var rest=poseSrc(id,"rest"),cheer=poseSrc(id,"cheer"),pt=source(id),sv=svgSrc(id),list=[],at=-1,swap=!!(rest&&cheer);
     if(rest)list.push(rest);
     if(pt&&pt!==rest)list.push(pt);
     if(sv)list.push(sv);
+    function lose(){ swap=false; if(typeof onLost==="function"){ var f=onLost; onLost=null; try{ f(); }catch(e){} } }
     function next(){
       at++;
-      if(at>0&&rest&&list[0]===rest&&typeof onLost==="function"){ var f=onLost; onLost=null; try{ f(); }catch(e){} }
+      if(at>0&&rest&&list[0]===rest)lose();
       if(at>=list.length){ img.removeAttribute("src"); img.style.display="none"; return; }
       if(list[at]===rest)img.classList.remove("badge"); else img.classList.add("badge");
       img.src=list[at];
     }
-    img.onerror=next; next();
-    return rest&&cheer?{rest:rest,cheer:cheer}:null;
+    img.onerror=function(){
+      if(cheer&&cheer!==rest&&img.getAttribute("src")===cheer){ lose(); if(at<list.length)img.src=list[at]; return; }
+      next();
+    };
+    next();
+    if(swap&&cheer!==rest){
+      var held=image(id,"cheer");
+      if(!held||(held.complete&&!held.naturalWidth&&held.getAttribute("src")))lose();
+      else held.addEventListener("error",lose);
+    }
+    return swap?{rest:rest,cheer:cheer}:null;
   }
   global.SonaCraftedBuddies={ids:ids,source:source,markup:markup,image:image,drawCircle:drawCircle,svgSrc:svgSrc,stand:stand};
 })(window);

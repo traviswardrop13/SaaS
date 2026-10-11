@@ -1953,8 +1953,12 @@ games, in painted poses, and every placement keeps that game's rules.
   fall back to rest), then the round badge clipped to a circle, then the flat
   sticker (with `xmlns` added), then a plain dot. `crafted-buddies.js` holds
   the page helpers: `image`, `drawCircle`, `svgSrc`, and `stand` for a buddy
-  beside Echo. Every caller checks a helper exists first, so a phone holding
-  an older file still plays.
+  beside Echo (it fetches and holds the cheer picture as the page opens; a
+  cheer that won't load leaves the buddy standing, never its badge). A
+  picture that won't load falls to the next: a runner to the badge (on the
+  start card too), a peek to the badge on the same ledge, a badge for the
+  rocket's porthole to the old rocket. Every caller checks a helper exists
+  first, so a phone holding an older file still plays.
 - **Where it is:** Sound Sprint runs as the buddy's runner (and the start
   card's lane shows it); Flappy Glide carries its badge in the basket,
   clipped round, the fox's too; Fruit Slice: it peeks over the counter where

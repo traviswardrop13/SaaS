@@ -426,8 +426,18 @@
     // buddySprite) still runs the fox as before.
     var BID=S.buddyId?S.buddyId():(((S.getProfile&&S.getProfile())||{}).character||"fox");
     var RUN=S.buddySprite?S.buddySprite(BID,"run"):(BID==="fox"?{src:"/assets/crafted/fox-runner.webp",crop:[390,205,480,840]}:null);
-    var RUNIMG=null;
-    if(RUN&&RUN.src){ (function(){ var im=new Image(); im.onload=function(){ if(im.naturalWidth)RUNIMG=im; }; im.src=RUN.src; })(); }
+    var RUNIMG=null, RUNBAD=false;
+    if(RUN&&RUN.src){ (function(){ var im=new Image(); im.onload=function(){ if(im.naturalWidth)RUNIMG=im; }; im.onerror=function(){ RUNBAD=true; tipFace(true); }; im.src=RUN.src; })(); }
+    // The start card's lane picture, as the race draws the runner: the fox
+    // keeps its CSS crop; another buddy shows its own runner, or (no runner,
+    // or one that won't load) its badge.
+    function tipFace(lost){
+      var el=$("tipBuddy"); if(!el||BID==="fox"||(lost&&el.className!=="runner")) return;
+      if(!lost&&!RUNBAD&&RUN&&RUN.src&&!RUN.crop){ el.className="runner"; el.style.backgroundImage="url('"+RUN.src+"')"; return; }
+      el.style.backgroundImage="";
+      var face=window.SonaCraftedBuddies?SonaCraftedBuddies.markup(BID,36):"";
+      if(face){ el.className=""; el.innerHTML=face; }
+    }
     var CB=window.SonaCraftedBuddies||null, BUDDYPIC=null, BUDDYSVG=null;
     if(CB&&CB.image) BUDDYPIC=CB.image(BID,"portrait");
     else if(CB&&CB.source){ BUDDYPIC=new Image(); BUDDYPIC.src=CB.source(BID)||""; }
@@ -705,11 +715,7 @@
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&raceHeld&&!sc.saying&&sc.line&&sc.ready&&!sc.bytes&&startVoiceOn()) loadStartLine(); });
     if(raceHeld){
       // the lane picture shows the child's own runner, as the race draws it
-      // (the fox keeps its CSS crop; another buddy shows its own runner, or its badge)
-      (function(){ var el=$("tipBuddy"); if(BID==="fox") return;
-        if(RUN&&RUN.src&&!RUN.crop){ el.className="runner"; el.style.backgroundImage="url('"+RUN.src+"')"; return; }
-        var face=window.SonaCraftedBuddies?SonaCraftedBuddies.markup(BID,36):"";
-        if(face){ el.className=""; el.innerHTML=face; } })();
+      tipFace(false);
       if(startVoiceOn()) loadStartLine();
       $("startOvl").classList.add("show");
     } else beginRace();
