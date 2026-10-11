@@ -322,18 +322,20 @@ SCENES.slice = async (devName) => {
     await page.waitForTimeout(400);
   }
   await until(page, () => fruits.filter((q) => !q.sliced).length >= 4, 6000);
-  // A short real swipe through an isolated fruit below Echo, after the
-  // "SUPER SLICE!" banner fades, keeps the action readable.
-  let best = null; const t0 = Date.now();
-  while (Date.now() - t0 < (devName === "iphone" ? 24000 : 11000)) {
-    const f = await pick(110, true);
-    const calm = await page.evaluate(() => Number(getComputedStyle(document.getElementById("banner")).opacity) < 0.05);
-    if (f && f.n >= 2 && f.n <= 4 && f.gap >= 120 && f.lowerClear && calm) { best = f; break; }
-    if (f && f.n <= 4 && f.gap >= 90 && f.lowerClear && calm && Date.now() - t0 > 5000) { best = f; break; }
-    await page.waitForTimeout(30);
-  }
-  if (!best) throw new Error("No readable Fruit Slice capture moment");
-  await cutIn(page, Object.assign(best, { freeze: true }));
+  // The moment: Super Slice still on, its banner gone, three or four whole
+  // fruit in the open sky and none sitting on another. No cut in the frame:
+  // a blade caught mid-swipe reads as a smear across the fruit at this size
+  // (Travis, 11 Oct 2026: "the weird stuff in between the strawberry").
+  const ok = await until(page, () => {
+    if (!(slowMs > 1200) || Number(getComputedStyle(document.getElementById("banner")).opacity) > 0.05) return false;
+    const up = fruits.filter((q) => !q.sliced && q.y < standTop() - 60 && q.y > H * 0.22);
+    return up.length >= 3 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > a.r + b.r + 14));
+  }, 9000) || await until(page, () => {
+    const up = fruits.filter((q) => !q.sliced && q.y < standTop() - 60 && q.y > H * 0.22);
+    return slowMs > 0 && up.length >= 2 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > a.r + b.r + 6));
+  }, 6000);
+  if (!ok) throw new Error("No readable Fruit Slice capture moment: " + await page.evaluate(() => "slowMs " + Math.round(slowMs) + ", fruit " + fruits.filter((q) => !q.sliced).map((q) => Math.round(q.y) + "/" + Math.round(q.r)).join(" ") + ", H " + H + ", stand " + Math.round(standTop())));
+  await page.evaluate(() => { __dev.frozen = true; });
   s.note = await page.evaluate(() => "row " + rowN + ", " + fruits.filter((q) => !q.sliced).length + " fruit up, Super Slice " + (slowMs > 0 ? "on" : "OFF") + (document.getElementById("slowControl").hidden ? ", Echo's button HIDDEN" : ""));
   await shot(page, devName, "slice");
   return s;
@@ -407,7 +409,8 @@ SCENES.tiles = async (devName) => {
   for (let i = 0; i < 4; i++) { if (!(await tapKeys())) await page.waitForTimeout(250); await page.waitForTimeout(40); }
   // the moment: a few tiles on the way down, the last one just played, the
   // song still going with slow keys on
-  await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 2, 8000);
+  await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 3, 8000) ||
+    await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 2, 4000);
   for (let i = 0; i < 40; i++) { if (await tapKeys()) break; await page.waitForTimeout(40); }
   await page.waitForTimeout(90);
   await page.evaluate(() => { __dev.frozen = true; });

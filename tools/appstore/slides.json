@@ -68,17 +68,35 @@
       ],
       "status": "dark",
       "decor": [],
-      "bgImage": "practice.webp"
+      "bgImage": "practice.webp",
+      "zoom": {
+        "pill": true,
+        "at": 0.42,
+        "iphone": {
+          "x": 0.3349,
+          "y": 0.0869,
+          "w": 0.2535,
+          "h": 0.0275,
+          "size": 0.66
+        },
+        "ipad": {
+          "x": 0.3682,
+          "y": 0.0334,
+          "w": 0.2316,
+          "h": 0.0185,
+          "size": 0.56
+        }
+      }
     },
     {
       "id": "04-piano-tiles",
       "scene": "tiles",
       "title": [
-        "Too fast?",
-        "Say the sound"
+        "Say the sound",
+        "to slow the keys"
       ],
       "accent": 1,
-      "sub": "The keys slow down, and the song plays on.",
+      "sub": "Then tap the tiles to play the song.",
       "bg": [
         "#eee8ff",
         "#fff1e6"

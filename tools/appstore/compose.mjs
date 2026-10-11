@@ -92,6 +92,18 @@ function slideHTML(slide, dev, copyBottom) {
     const w = d.w * CW;
     return `<img class="decor${d.behind ? " behind" : ""}" src="/public/${d.src}" style="width:${w}px;left:${d.x * CW - w / 2}px;top:${d.y * CH - w / 2}px;transform:rotate(${d.rot || 0}deg)" alt="">`;
   }).join("");
+  // A close-up of one part of the real screen (Travis, 11 Oct 2026: show the
+  // hearts on the heart slide): the same captured pixels, enlarged in a card
+  // over the phone, never a drawn stand-in. zoom[dev] is the part, as
+  // fractions of the shot; zoom.at is where its middle sits, down the phone.
+  const Z = slide.zoom && slide.zoom[dev];
+  let zoom = "";
+  if (Z) {
+    const zw = CW * (Z.size || slide.zoom.w || 0.8), zh = zw * (Z.h * sh) / (Z.w * sw), bw = zw / Z.w, bh = bw * sh / sw;
+    zoom = `<div class="zoom" style="width:${zw}px;height:${zh}px;left:${(CW - zw) / 2}px;top:${fy + fh * (slide.zoom.at || 0.6) - zh / 2}px;
+      background:url(${shotURL}) ${-Z.x * bw}px ${-Z.y * bh}px/${bw}px ${bh}px no-repeat;border-radius:${slide.zoom.pill ? zh : CW * 0.045}px;border:${CW * 0.009}px solid #fff;box-sizing:content-box;margin-left:${-CW * 0.009}px;
+      box-shadow:0 ${CW * 0.025}px ${CW * 0.05}px rgba(70,40,15,.28)"></div>`;
+  }
   const title = slide.title.map((t, i) => `<span class="${i === slide.accent ? "acc" : ""}">${esc(t)}</span>`).join("");
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     @font-face{font-family:"Baloo 2";font-weight:400 800;src:url(/public/fonts/baloo2.woff2) format("woff2");}
@@ -126,6 +138,7 @@ function slideHTML(slide, dev, copyBottom) {
     .screen{position:relative;width:${sw}px;height:${sh}px;border-radius:${R}px;overflow:hidden;background:#fff;}
     .screen img.shot{display:block;width:100%;height:100%;}
     .sb{position:absolute;left:0;right:0;top:0;z-index:2;}
+    .zoom{position:absolute;z-index:4;}
     .island{position:absolute;z-index:3;left:50%;top:${11 * k}px;width:${126 * k}px;height:${37 * k}px;margin-left:${-63 * k}px;border-radius:${18.5 * k}px;background:#000;}
   </style></head><body>
     ${slide.bgImage ? '<div class="paint"></div>' : ""}
@@ -136,6 +149,7 @@ function slideHTML(slide, dev, copyBottom) {
       ${slide.detail ? "" : statusBar(dev, k, typeof slide.status === "object" ? slide.status[dev] : slide.status)}
       ${F.island ? '<div class="island"></div>' : ""}
     </div></div></div>
+    ${zoom}
   </body></html>`;
 }
 
