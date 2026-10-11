@@ -541,7 +541,7 @@ await section("the road page: stops and the month", async () => {
   // who opened stop 6 and the Big Chest at 10 before then (their coins
   // paid, no item) is handed the Sun hat and Hops the frog on the road
   // page's load, one reveal each, and keeps the coins
-  f = await fresh({ trophies: 800, extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 1])), items: {}, m: new Date().toISOString().slice(0, 7), mgot: {} }) } });
+  f = await fresh({ trophies: 800, extra: { "sona.road.v1": JSON.stringify({ got: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 1])), items: {}, m: TODAY.slice(0, 7), mgot: {} }) } });
   try {
     await f.page.goto(origin + "/road.html"); await f.page.waitForFunction(() => window.Sona && !document.getElementById("giftOvl").hidden); await f.page.waitForTimeout(500);
     const seen = [];

@@ -94,7 +94,7 @@
     { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false, source: 'shop', cost: 150 },
     { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false, source: 'shop', cost: 120 },
     { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
-    // The Trophy Road's own four (step 8, 11 Oct 2026): painted, no sticker
+    // The Trophy Road's own four (11 Oct 2026): painted, no sticker
     // svg (buddyMarkup shows the emoji; the painted badge sits over it).
     // Never Bo (the bear in goal) or Robot (Robot Builder): taken names.
     { id: 'frog', name: 'Hops', emoji: '🐸', svg: '', portrait: "/assets/crafted/buddy-frog-v2.webp", locked: false, source: 'road', cost: null },
@@ -107,7 +107,7 @@
   // start), "shop" (for `cost` coins) or "road" (a Trophy Road stop gives it);
   // a household already on Sona kept everything it could pick that day
   // (LEGACY_SET, the OWN1 sweep). An entry joins only with its painted art.
-  // `art` is a hat's painted picture (step 8): the shop shows it where the
+  // `art` is a hat's painted picture (11 Oct 2026): the shop shows it where the
   // page's drawn hat used to be, and a new hat joins only with its picture.
   const OUTFITS = [
     { id: "none",   name: "None",   emoji: "",   source: "starter", cost: null },
@@ -4429,10 +4429,10 @@
   // The stop table Travis approved (11 Oct 2026), with the road's own
   // buddies, hats and places (frog, penguin, lion, unicorn; sunhat, starclip,
   // headphones; snow, sea), which joined their stops once their painted art
-  // was on disk (step 8). Before that, stops 6, 12, 15, 19 and 25 paid what
-  // their item is worth in coins (ROAD_ALT); a child who opened one then
-  // keeps those coins and is handed the item by roadSettle, once, with no
-  // second payment.
+  // was on disk. An earlier build of the road paid stops 6, 12, 15, 19 and
+  // 25 what their item is worth in coins (ROAD_ALT); a child who opened one
+  // then keeps those coins and is handed the item by roadSettle, once, with
+  // no second payment.
   const ROAD_STOPS = [
     { n: 1, at: 30, gift: [{ coins: 20 }] },
     { n: 2, at: 80, gift: [{ sticker: 1 }] },
