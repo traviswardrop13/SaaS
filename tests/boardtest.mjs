@@ -241,6 +241,13 @@ await section("3b card states", async () => {
   await tap(f.page, "Email me the link");
   ok("nothing ticked: \"Tick a child first.\", and nothing sent", (await card(f.page)).text.includes("Tick a child first.") && !f.calls.length);
   await f.page.locator('#boardCard input[data-slot=""]').check(); await f.page.fill("#boardEmail", "grownup@example.com");
+  // a grown-up who leaves for Mail to look up the address and comes back
+  // finds the sheet as they left it (the card repaints on coming back)
+  await f.page.focus("#boardEmail");
+  await f.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await settle(f.page);
+  const keptSheet = await f.page.evaluate(() => ({ email: document.getElementById("boardEmail").value, ticked: !!document.querySelector('#boardCard input[data-slot=""]:checked'), focus: (document.activeElement || {}).id }));
+  ok("coming back to the front keeps the sheet as it was: the child ticked, the address typed (not the setup one), the box still focused", keptSheet.email === "grownup@example.com" && keptSheet.ticked && keptSheet.focus === "boardEmail" && !f.calls.length, keptSheet);
   await tap(f.page, "Email me the link");
   await f.page.fill("#boardEmailAgain", "grownup@example.com");
   startAns = [429, { ok: false, limit: true }];
@@ -278,6 +285,29 @@ await section("3b card states", async () => {
   await f.page.setViewportSize({ width: 320, height: 640 });
   ok("no sideways scroll at 320", (await overflow(f.page)) <= 0);
   ok("no page errors (card states)", f.errors.length === 0, f.errors);
+  await f.context.close();
+});
+
+// ── 3c. "Send it again" after the grown-up already pressed the email's
+// button: the server sends nothing more, so the phone finishes instead of
+// saying an email went ──
+await section("3c send again, already confirmed", async () => {
+  const at = Date.now() - 3600e3;
+  const PEND = JSON.stringify({ pend: "p.req9", at, slots: [""], code: "W4X" });
+  const f = await fresh({ seed: { "sona.boardask.v1": "no", "sona.boardpend.v1": PEND },
+    mock: { start: (b) => [200, { ok: true, pend: b.pend, code: "W4X", confirmed: true }], claim: () => [200, { ok: true, members: [{ token: "m.mia", nick: "Brave Fox 42" }], month: TODAY.slice(0, 7) }], day: () => [200, { ok: true, counted: false, days: 0 }] } });
+  await store(f.page);
+  const r = await f.page.evaluate(() => Sona.boardStart("grownup@example.com", [""]));
+  const p = JSON.parse(await get(f.page, "sona.boardpend.v1") || "null");
+  ok("boardStart says so (confirmed) and keeps the request's own clock", r.ok && r.confirmed === true && p && p.pend === "p.req9" && p.at === at, { r, p });
+  await f.page.evaluate((v) => localStorage.setItem("sona.boardpend.v1", v), PEND);
+  await settings(f.page);
+  await f.page.fill("#boardEmailAgain", "grownup@example.com");
+  await tap(f.page, "Send it again"); await settle(f.page, 400);
+  const c = await card(f.page), mia = JSON.parse(await get(f.page, "sona.board.v1") || "null");
+  ok("in Settings, Send it again then finishes: the child is on, and it never says an email was sent again", f.calls.filter((x) => x.name === "claim").length === 1 && mia && mia.on && mia.token === "m.mia" &&
+    c.text.includes("Mia is on the board as Brave Fox 42") && !c.text.includes("Sent again"), { c, mia, calls: f.calls.map((x) => x.name) });
+  ok("no page errors (send again, confirmed)", f.errors.length === 0, f.errors);
   await f.context.close();
 });
 

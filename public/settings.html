@@ -800,6 +800,10 @@
           msg = document.getElementById("boardMsg"), moveNote = document.getElementById("boardMoveNote");
       if (!card || !body || !Sona.boardState || !Sona.boardLive || !Sona.kids) return;
       var view = "", confirmSlot = null, expired = false, typed = "", busy = false;
+      // what the grown-up has ticked and typed, carried through a repaint (the
+      // card repaints when the page comes back to the front and when the
+      // load's flush answers, which used to wipe the sheet mid-way)
+      var kept = { email: null, again: null, slots: null, focus: "", sel: null };
       var NOT_ALLOWED = "The Practice Board is only for a family's own phone. It's off on phones set up through a speech therapist or a school, or shared by more than four children.";
       var YOUNG = "The Practice Board is for ages 5 and up.";
       var RESTING = "The Practice Board is resting right now. Nothing new was shared, and days still count.";
@@ -850,7 +854,13 @@
         if (busy) return; busy = true; say("");
         Sona.boardStart(email, slots).then(function (r) {
           busy = false;
-          if (r && r.ok) { typed = email; expired = false; view = ""; paint(); if (again) say("Sent again. Check your email for code " + r.code + "."); return; }
+          if (r && r.ok) {
+            typed = email; expired = false; view = ""; paint();
+            // already confirmed in the email: nothing was sent again, so finish
+            if (r.confirmed) { finish(false); return; }
+            if (again) say("Sent again. Check your email for code " + r.code + ".");
+            return;
+          }
           var e = r && r.error;
           if (e === "limit") say("We just sent that address a link. Check the inbox, or try again tomorrow.");
           else if (e === "email") say("Check the email address and try again.");
@@ -863,7 +873,8 @@
       function emailBox(id) {
         var lab = el("label", "field bd-email", "Grown-up's email"); lab.setAttribute("for", id);
         var inp = el("input"); inp.id = id; inp.type = "email"; inp.setAttribute("inputmode", "email"); inp.setAttribute("autocomplete", "email");
-        inp.value = typed || (Sona.parentEmail ? Sona.parentEmail() : "") || "";
+        var was = id === "boardEmail" ? kept.email : id === "boardEmailAgain" ? kept.again : null;
+        inp.value = was != null ? was : (typed || (Sona.parentEmail ? Sona.parentEmail() : "") || "");
         return { label: lab, input: inp };
       }
       function paintAsk() {
@@ -885,11 +896,12 @@
         var kidsBox = el("div", "bd-kids"); kidsBox.setAttribute("role", "group"); kidsBox.setAttribute("aria-label", "Children");
         list.forEach(function (x) {
           var lab = el("label"), box = el("input"), txt = el("span", "", nameOf(x.k)), why = "";
-          box.type = "checkbox"; box.value = x.k.slot; box.setAttribute("data-slot", x.k.slot);
+          box.type = "checkbox"; box.value = x.k.slot || ""; box.setAttribute("data-slot", x.k.slot || "");
           if (x.s.on) why = "on the board";
           else if (x.s.why === "young") why = "for ages 5 and up";
           else if (x.s.why) why = "off on this phone";
           if (why) { box.disabled = true; box.checked = !!x.s.on; lab.className = "off"; txt.appendChild(el("small", "", why)); }
+          else if (kept.slots && kept.slots.indexOf(x.k.slot || "") >= 0) box.checked = true;
           lab.appendChild(box); lab.appendChild(txt); kidsBox.appendChild(lab);
         });
         s.appendChild(kidsBox);
@@ -919,7 +931,20 @@
         })));
         body.appendChild(again);
       }
+      // Every repaint keeps what is half-done on the sheet (the ticks, the
+      // typed address, the caret), then forgets it: a later screen starts fresh.
       function paint() {
+        var e1 = document.getElementById("boardEmail"), e2 = document.getElementById("boardEmailAgain"), act = document.activeElement;
+        kept = { email: e1 ? e1.value : null, again: e2 ? e2.value : null, slots: null, focus: "", sel: null };
+        if (e1) kept.slots = [].map.call(body.querySelectorAll(".bd-kids input:checked:not(:disabled)"), function (b) { return b.getAttribute("data-slot"); });
+        if (act && (act === e1 || act === e2)) { kept.focus = act.id; try { kept.sel = [act.selectionStart, act.selectionEnd]; } catch (e) { kept.sel = null; } }
+        try { paintNow(); } finally {
+          var f = kept.focus ? document.getElementById(kept.focus) : null;
+          if (f) { try { f.focus(); if (kept.sel) f.setSelectionRange(kept.sel[0], kept.sel[1]); } catch (e) {} }
+          kept = { email: null, again: null, slots: null, focus: "", sel: null };
+        }
+      }
+      function paintNow() {
         var live = false; try { live = !!Sona.boardLive(); } catch (e) {}
         var list = rows(), anyOn = list.some(function (x) { return x.s.on; }), owed = list.length ? list[0].s.leaving : 0;
         if (moveNote) moveNote.hidden = !anyOn;

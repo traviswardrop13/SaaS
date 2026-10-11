@@ -383,7 +383,7 @@
     // slot handed out again must never inherit another child's board entry or
     // the grown-up's yes for them (BOARD2). A stray entry is queued for
     // deletion, never kept.
-    _boardDrop(slot); _boardPendForget([slot]);
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
@@ -4905,8 +4905,12 @@
     const r = await _boardPost("start", body), j = r.j;
     if (r.status === 200 && j.ok && typeof j.pend === "string" && j.pend) {
       const code = String(j.code || "").slice(0, 8);
-      save(BOARDPENDKEY, { pend: j.pend, at: Date.now(), slots: want, code });
-      return { ok: true, code };
+      // "confirmed": the grown-up already pressed the email's button, so the
+      // server sent nothing and kept the request's own 48 hours; Finish is
+      // all that is left (Settings runs it), and the clock is not reset
+      const kept = !!(j.confirmed && old && old.pend === j.pend);
+      save(BOARDPENDKEY, { pend: j.pend, at: kept ? old.at : Date.now(), slots: want, code });
+      return kept ? { ok: true, code, confirmed: true } : { ok: true, code };
     }
     if (r.status === 400 && j.error === "email") return { ok: false, error: "email" };
     if (r.status === 429 || j.limit) return { ok: false, error: "limit" };
