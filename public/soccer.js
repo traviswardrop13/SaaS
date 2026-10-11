@@ -54,6 +54,7 @@
   var keeperX = 0, keeperPhase = 0, keeperClock = 0, dive = null, net = { bulge: 0, x: 0, y: 1 }, fx = [];
   var hintAt = 0, doneAt = 0, cheerAt = -9, crowd = [], lastSwipe = null, napSide = 1;
   var level = 1;                            // from the page (setLevel): 1, 2 or 3
+  var buddy = null;                         // from the page (setBuddy): { rest, cheer } picture paths
 
   function project(x, y, z) {
     var dx = x - CAM.x, dy = y - CAM.y, dz = z - CAM.z;
@@ -424,6 +425,14 @@
     ball.fx = Math.max(-2.2, Math.min(2.2, ball.x)); ball.fz = Math.max(SPOT.z + 1.5, Math.min(GOAL_Z - 1, ball.z)); ball.k = 0;
     publish();
   }
+  // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The child's buddy by the pitch cheers
+  // with Echo: the same hop, and its OWN cheer picture for 900 ms, then its
+  // own rest picture. Echo's own block, below, swaps Echo's pictures, so it never
+  // runs on the buddy. Without both pictures (setBuddy) only the hop runs.
+  function cheerBuddy(id) {
+    try { var b = document.getElementById(id); if (!b) return; b.classList.remove("hop"); void b.offsetWidth; b.classList.add("hop");
+      if (buddy) { b.src = buddy.cheer; clearTimeout(cheerBuddy.t); cheerBuddy.t = setTimeout(function () { if (buddy) b.src = buddy.rest; }, 900); } } catch (x) {}
+  }
   function scored() {
     state = "scored"; goals++; misses = 0; ball.t = 0; ball.vy = 0.5;
     net.bulge = 1; net.x = ball.x; net.y = Math.max(0.3, Math.min(GOAL_H - 0.2, ball.y));
@@ -437,6 +446,7 @@
     // Echo by the pitch cheers for the length of his hop, then rests again
     try { var e = document.getElementById("pitchEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop");
       e.src = "/assets/crafted/echo-cheer.webp"; clearTimeout(scored.t); scored.t = setTimeout(function () { e.src = "/assets/crafted/echo-welcome.webp"; }, 900); } } catch (x) {}
+    cheerBuddy("pitchBuddy");
     // the next word waits for the celebration, on the game's own clock, so a
     // pause in between holds it rather than skipping it
     doneAt = clock + 1.3;
@@ -562,6 +572,9 @@
     },
     // the level, from the page (2 or 3; anything else is Level 1)
     setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
+    // the buddy's own standing and cheering pictures, from the page (paths
+    // only; anything else, or null, leaves the buddy to hop without a swap)
+    setBuddy: function (p) { buddy = (p && typeof p.rest === "string" && typeof p.cheer === "string") ? { rest: p.rest, cheer: p.cheer } : null; },
     snapshot: function () { return window.__soccer; },
   };
   window.Soccer = Soccer;

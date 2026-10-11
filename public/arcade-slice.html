@@ -93,6 +93,12 @@
 </head>
 <body data-crafted="slice">
   <div id="app">
+    <!-- BUDDY2: the counter without the fox, and the child's own buddy over its
+         ledge (crafted-slice.css). Earlier than the canvas and with no z-index,
+         so both paint under the fruit. Shown only for a buddy that is not the
+         fox: a fox child keeps the counter with the fox painted in. -->
+    <div id="standFront" aria-hidden="true"></div>
+    <img id="sliceBuddy" alt="" aria-hidden="true">
     <canvas id="cv"></canvas>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
@@ -182,6 +188,36 @@
     // the hearts or Super Slice, and every help reads Level 1's numbers. An
     // older cached sona.js has no levels, so the page plays Level 1.
     var LV=(S&&S.playLevel)?S.playLevel("slice"):1; if(LV!==2&&LV!==3) LV=1;
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The fox is painted into the
+    // counter (fruit-stand.webp), so a fox child sees today's market exactly:
+    // nothing below runs for them. Any other buddy gets the counter without
+    // the fox (fruit-stand-v2.webp: the same picture outside the fox's box, so
+    // STAND_LEDGE and the wells hold) as its own layer, and peeks over the
+    // ledge where the fox did (its peek pose; else its badge in a circle,
+    // then its sticker). Nothing follows the finger: it hops once as a wave
+    // ends, and not under Reduce Motion. A counter that fails to load puts
+    // the old market back.
+    var BID=S.buddyId?S.buddyId():"fox";
+    (function(){
+      if(BID==="fox") return;
+      var body=document.body, sb=$("sliceBuddy"), CB=window.SonaCraftedBuddies||null, srcs=[], at=-1;
+      var peek=S.buddySprite?S.buddySprite(BID,"peek"):null, pt=CB&&CB.source?CB.source(BID):null, sv=CB&&CB.svgSrc?CB.svgSrc(BID):null;
+      if(peek&&peek.src) srcs.push(peek.src);
+      if(pt) srcs.push(pt);
+      if(sv) srcs.push(sv);
+      if(!sb||!srcs.length) return;
+      function next(){
+        at++;
+        if(at>=srcs.length){ sb.removeAttribute("src"); sb.className="gone"; return; }
+        sb.className=peek&&srcs[at]===peek.src?"":"badge"; sb.src=srcs[at];
+      }
+      var stand=new Image();
+      stand.onerror=function(){ body.classList.remove("buddy-scene"); };
+      stand.src="/assets/crafted/fruit-stand-v2.webp";
+      sb.onerror=next; next();
+      body.classList.add("buddy-scene");
+    })();
+    function buddyHop(){ var e=$("sliceBuddy"); if(!e||!document.body.classList.contains("buddy-scene")) return; e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); }
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -435,7 +471,7 @@
         var wait=bestBannerAt+1900-performance.now();
         if(wait>0){ setTimeout(cheer,wait); return; }
         banner(last?"Amazing slicing!":"Wave "+(wave+1)+" done!", last?"Here comes a giant watermelon…":"Great job!");
-        sfx("complete"); echoHop();
+        sfx("complete"); echoHop(); buddyHop();
         setTimeout(function(){
           if(window.__ended||!playing) return;
           if(last) startFinale();

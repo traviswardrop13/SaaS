@@ -1934,6 +1934,55 @@ Goal follow after Travis has played these two; Dino Dig gets no number.
 and `slicetest` play each game's row and every line; `superslicetest` plays
 the extras through the real earned turn.
 
+**Play as your buddy (BUDDY2, 11 Oct 2026)** (Travis, 9 Oct 2026: "a
+currency so they can buy stuff like characters, and they actually BE the
+character in the game"). The buddy a child picked is in eight of the ten
+games, in painted poses, and every placement keeps that game's rules.
+- **One list of pictures:** `BUDDY_ART` in `sona.js` (block BUDDY2, beside
+  `CHARACTERS`), read through `Sona.buddySprite(id, pose)` and
+  `Sona.buddyId()` ("leo" or anything unknown is the fox). The poses: **run**
+  (seen from behind, Sound Sprint; the fox's is the crop of
+  `fox-runner.webp` at 390, 205, 480, 840, every other buddy's a file already
+  cut to that 480x840 frame), **rest** and **cheer** (standing, like Echo's
+  welcome and cheer, swapped the way his are), **peek** (over Fruit Slice's
+  counter) and **sit** (on Block Stacker's bench). How each was drawn, cut and
+  checked, and the placement numbers, are in
+  `design/crafted-world/buddies-v3.md`. A buddy, or a pose, ships only with
+  its painted art (no stand-ins).
+- **The fallback order:** the pose, then its fallback pose (cheer and sit
+  fall back to rest), then the round badge clipped to a circle, then the flat
+  sticker (with `xmlns` added), then a plain dot. `crafted-buddies.js` holds
+  the page helpers: `image`, `drawCircle`, `svgSrc`, and `stand` for a buddy
+  beside Echo. Every caller checks a helper exists first, so a phone holding
+  an older file still plays.
+- **Where it is:** Sound Sprint runs as the buddy's runner (and the start
+  card's lane shows it); Flappy Glide carries its badge in the basket,
+  clipped round, the fox's too; Fruit Slice: it peeks over the counter where
+  the fox did; Block Stacker: it sits on the bench where the fox sat and rides
+  in the finale rocket, its badge clipped into the porthole; Hoops, Soccer
+  Goal and Dino Dig: it stands opposite Echo and hops with him; Feed Echo: it
+  watches beside Echo, behind the plate, and hops on each right feed (Echo is
+  still the one fed). Every buddy picture is decoration: `alt=""`,
+  `aria-hidden`, no finger, never on a playable part.
+- **A fox child keeps today's Fruit Slice and Block Stacker pictures.** The
+  fox is painted into `fruit-stand.webp` and `stack-workshop-v2.webp`, and
+  Echo into `stack-rocket-v2.webp`: for the fox nothing changes, not a picture
+  and not a rule that applies. Any other buddy gets the same scene without the
+  fox (`fruit-stand-v2.webp`, `stack-workshop-v3.webp`, `stack-rocket-v3.webp`
+  with an empty porthole: identical outside the fox's box, so the ledge and
+  the fruit wells hold) through `body.buddy-scene`; a scene that will not load
+  puts the old one back.
+- **The engines' Echo cheer block never runs on the buddy.** `hoops.js`,
+  `soccer.js` and `dino.js` swap Echo's own pictures on a basket, goal or
+  bone; the buddy has its own `cheerBuddy`, with the pictures the page hands
+  over through `setBuddy({rest, cheer})` (paths only; the engines still read
+  no storage).
+- **Bubble Pop and Piano Tiles are unchanged:** Echo floats up in Bubble
+  Pop's giant bubble, and nothing may sit on the piano's lanes. Hats in games,
+  places as game skies and buddies in the parked games are later.
+`tests/buddyplaytest.mjs` plays every placement for a fox and a dragon child,
+the fallbacks, the cheer swap, and the fit at 320 and 390 px.
+
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
 (`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep

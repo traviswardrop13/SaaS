@@ -322,6 +322,7 @@
   var doneAt = 0, glowAt = 0, crumbleAt = 0, wakeAt = -1, lastRub = 0;
   // the level, from the page (setLevel), and when this bone's brush came out
   var level = 1, brushAt = 0, LEVEL_BACK_S = 6;
+  var buddy = null;                         // from the page (setBuddy): { rest, cheer } picture paths
   // how much of the bone must show, and the brush's size against Level 1's:
   // the level's own for the first six seconds of a bone, then Level 1's
   function need() { return (level === 1 || clock - brushAt >= LEVEL_BACK_S) ? 0.6 : level === 2 ? 0.68 : 0.76; }
@@ -610,12 +611,21 @@
     try { api.cheer("You found it!"); api.hint(""); if (api.face) api.face("cheer"); } catch (e) {}
     publish();
   }
+  // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The child's buddy at the dig cheers
+  // with Echo: the same hop, and its OWN cheer picture for 900 ms, then its
+  // own rest picture. Echo's own block, below, swaps Echo's pictures, so it never
+  // runs on the buddy. Without both pictures (setBuddy) only the hop runs.
+  function cheerBuddy(id) {
+    try { var b = document.getElementById(id); if (!b) return; b.classList.remove("hop"); void b.offsetWidth; b.classList.add("hop");
+      if (buddy) { b.src = buddy.cheer; clearTimeout(cheerBuddy.t); cheerBuddy.t = setTimeout(function () { if (buddy) b.src = buddy.rest; }, 900); } } catch (x) {}
+  }
   function placed() {
     var p = boardPt(cur.bones[fly.i]);
     fly = null; found++; dig = null; sand = null; sandCtx = null; state = "placed";
     burst(p.x, p.y, 14); sound("clack");
     try { var e = document.getElementById("digEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop");
       e.src = "/assets/crafted/echo-cheer.webp"; clearTimeout(placed.t); placed.t = setTimeout(function () { e.src = "/assets/crafted/echo-welcome.webp"; }, 900); } } catch (x) {}
+    cheerBuddy("digBuddy");
     // the next word waits for the cheer, on the game's own clock, so a pause
     // in between holds it rather than skipping it
     doneAt = clock + 0.9;
@@ -763,6 +773,9 @@
     },
     // the level, from the page (2 or 3; anything else is Level 1)
     setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
+    // the buddy's own standing and cheering pictures, from the page (paths
+    // only; anything else, or null, leaves the buddy to hop without a swap)
+    setBuddy: function (p) { buddy = (p && typeof p.rest === "string" && typeof p.cheer === "string") ? { rest: p.rest, cheer: p.cheer } : null; },
     snapshot: function () { return window.__dino; },
   };
   window.Dino = Dino;

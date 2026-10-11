@@ -76,6 +76,10 @@
 </head>
 <body data-crafted="stack">
   <div id="app">
+    <!-- BUDDY2: the child's own buddy on the bench, when it is not the fox
+         (crafted-stack.css). Earlier than the canvas and with no z-index, so
+         the tower paints over it as it did over the painted fox. -->
+    <img id="stackBuddy" alt="" aria-hidden="true">
     <canvas id="cv"></canvas>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
@@ -127,6 +131,7 @@
 
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>window.SLOW_HELP={phase:"floor",action:"slow the block",earned:"Slow blocks!",eligible:function(){return !dropping;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slow blocks, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
@@ -157,6 +162,36 @@
     // next one is never faster than Level 1's floor would be. An older cached
     // sona.js has no levels, so the page plays Level 1.
     var LV=(S&&S.playLevel)?S.playLevel("stack"):1; if(LV!==2&&LV!==3) LV=1;
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The fox is painted on the
+    // workshop's bench (stack-workshop-v2.webp) and Echo in the rocket's
+    // window, so a fox child sees today's pictures exactly: nothing below
+    // runs for them. Any other buddy gets the workshop without the fox
+    // (stack-workshop-v3.webp, the same picture outside the fox's box) and
+    // sits where it sat (its sit pose; else standing; else its badge, then its
+    // sticker), and rides in the rocket (drawRocket). A workshop that fails to
+    // load puts the old scene back, the old rocket with it.
+    var BID=S.buddyId?S.buddyId():"fox", STACK_BUDDY=false;
+    (function(){
+      if(BID==="fox") return;
+      var body=document.body, sb=$("stackBuddy"), CB=window.SonaCraftedBuddies||null, srcs=[], at=-1, posed=null;
+      var sit=S.buddySprite?S.buddySprite(BID,"sit"):null, pt=CB&&CB.source?CB.source(BID):null, sv=CB&&CB.svgSrc?CB.svgSrc(BID):null;
+      if(sit&&sit.src){ srcs.push(sit.src); posed=sit.src; }
+      if(pt) srcs.push(pt);
+      if(sv) srcs.push(sv);
+      if(!sb||!srcs.length) return;
+      function next(){
+        at++;
+        if(at>=srcs.length){ sb.removeAttribute("src"); sb.className="gone"; return; }
+        sb.className=srcs[at]===posed?"":"badge"; sb.src=srcs[at];
+      }
+      var room=new Image();
+      room.onerror=function(){ body.classList.remove("buddy-scene"); STACK_BUDDY=false;
+        if(typeof ROCKET_ART!=="undefined"&&ROCKET_PIC){ ROCKET_PIC=null; ROCKET_ART.onerror=null; ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp"; } };
+      room.src="/assets/crafted/stack-workshop-v3.webp";
+      sb.onerror=next; next();
+      body.classList.add("buddy-scene");
+      STACK_BUDDY=true;
+    })();
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -621,7 +656,17 @@
 
     var WOOD={}, WOOD_COLORS={"#ff6b6b":"coral","#ff8787":"coral","#ffa94d":"orange","#ffb86b":"orange","#ffd43b":"yellow","#ffe066":"yellow","#69db7c":"green","#85e099":"green","#4dabf7":"blue","#9775fa":"purple","#b197fc":"purple","#f783ac":"pink","#ffd21c":"gold"};
     ["coral","orange","yellow","green","blue","purple","pink","gold"].forEach(function(name){var im=new Image();im.src="/assets/crafted/stack-block-"+name+"-v2.webp";WOOD[name]=im;});
-    var ROCKET_ART=new Image();ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp";
+    var ROCKET_ART=new Image(), ROCKET_PIC=null;
+    // A fox child's rocket is the old one, Echo in its window. Any other
+    // buddy rides in the rocket with an empty porthole (stack-rocket-v3.webp,
+    // the same picture outside the glass), its badge clipped into the glass
+    // in drawRocket. A rocket that won't load, or an older cached helper that
+    // can't clip, is the old one, with nobody added.
+    if(STACK_BUDDY&&window.SonaCraftedBuddies&&SonaCraftedBuddies.image&&SonaCraftedBuddies.drawCircle){
+      ROCKET_PIC=SonaCraftedBuddies.image(BID,"portrait");
+      ROCKET_ART.onerror=function(){ ROCKET_PIC=null; ROCKET_ART.onerror=null; ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp"; };
+      ROCKET_ART.src="/assets/crafted/stack-rocket-v3.webp";
+    } else ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp";
     function drawBlock(b,y,index){
       paintBlock(b.x,y,b.w,BH-3,b.c);
       // A few of the wooden toys smile, without making faces a game signal.
@@ -639,7 +684,10 @@
         ctx.fillStyle="#ffb100"; ctx.beginPath(); ctx.moveTo(-11,-2); ctx.quadraticCurveTo(0,f+10,11,-2); ctx.closePath(); ctx.fill();
         ctx.fillStyle="#fff1a8"; ctx.beginPath(); ctx.moveTo(-6,-2); ctx.quadraticCurveTo(0,f*0.6,6,-2); ctx.closePath(); ctx.fill();
       }
-      if(ROCKET_ART.complete&&ROCKET_ART.naturalWidth){ctx.drawImage(ROCKET_ART,-41,-119,82,123);ctx.restore();return;}
+      if(ROCKET_ART.complete&&ROCKET_ART.naturalWidth){ctx.drawImage(ROCKET_ART,-41,-119,82,123);
+        // the porthole's glass: centre (-0.15,-67.65), radius 12.3 in these units (buddies-v3.md)
+        if(ROCKET_PIC&&window.SonaCraftedBuddies&&SonaCraftedBuddies.drawCircle) SonaCraftedBuddies.drawCircle(ctx,ROCKET_PIC,-0.15,-67.65,23);
+        ctx.restore();return;}
       ctx.fillStyle="#ff5c5c";
       ctx.beginPath(); ctx.moveTo(-13,-6); ctx.lineTo(-26,4); ctx.lineTo(-24,-18); ctx.lineTo(-13,-28); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(13,-6); ctx.lineTo(26,4); ctx.lineTo(24,-18); ctx.lineTo(13,-28); ctx.closePath(); ctx.fill();

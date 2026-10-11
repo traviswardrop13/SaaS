@@ -2,8 +2,8 @@
 
 Travis, 9 Oct 2026: "a currency so they can buy stuff like characters, and they
 actually BE the character in the game." This is the painted art for that (the
-spec's art list, P1: A2 to A13). It is what the games will show; placing it in
-the games is the next step, and nothing here is on a child's screen until it is.
+spec's art list, P1: A2 to A13). The games place it since the next step (BUDDY2
+in CLAUDE.md, "Play as your buddy"), with the numbers below.
 
 What landed, all in `public/assets/crafted/`:
 
@@ -144,7 +144,7 @@ gets the old one, any other buddy the new one.
   r 43; 5,795 pixels): one ring, one set of rivets, empty glass. The first
   drawing is the one that shipped.
 
-## Where each game puts them (for the next step; measured, not yet used)
+## Where each game puts them (measured here, used by the games)
 
 - **Fruit Slice (peek).** The counter (`fruit-stand-v2.webp`) spans the full
   width at the bottom. The fox it replaces spans x 12-315 and y 5-256 of the
@@ -174,6 +174,26 @@ gets the old one, any other buddy the new one.
 - **Hoops, Soccer Goal, Dino Dig, Feed Echo (rest, swapped with cheer for 900
   ms).** Same 512 x 512 frame as Echo's poses, the figure standing on the
   bottom margin, so the two swap without a jump.
+
+As built (BUDDY2, `tests/buddyplaytest.mjs` holds each):
+- Fruit Slice: `#sliceBuddy` 23% wide, `left:0`, its bottom
+  `min(100vw,560px) * 0.2007` above #app's (289 / 1440 of the width).
+- Block Stacker: `#stackBuddy` is the 42% frame from -4%, drawn as a 38% box
+  at `left:0` whose `object-fit:cover; object-position:right bottom` cuts the
+  4% beyond the edge, so the element itself stays on screen; its bottom at
+  `20.05% - min(100vw,560px) * 0.0252` puts the seat on row 1228.
+- The rocket: `drawCircle(ctx, portrait, -0.15, -67.65, 23)` right after the
+  rocket is drawn.
+- Hoops, Soccer Goal: Echo's frame mirrored (`right:3%; bottom:2%`, 16%
+  wide, at most 74 px). Dino Dig: `left:3%; top:44%`, 15%, at most 70 px,
+  above the pit and clear of every woken dinosaur.
+- Feed Echo: inside `#echoSpot`, 72 px, its box ending 10 px inside Echo's
+  (its drawing has a quarter of its width empty on each side), its feet at
+  the plate's rim (`crafted-games.css`: the crafted Echo is
+  `clamp(116px,19dvh,180px)` and the plate 45 px tall, 110 px and 35 px under
+  700 px of height). The spec's numbers (`right: calc(50% + 62px); bottom:
+  4%`) were read off the page's own sheet, which the crafted one overrides:
+  with them the buddy stood behind the plate with only its head showing.
 
 ## Eye check (each picture, by eye, at full size and at game size, over a light and a dark ground)
 

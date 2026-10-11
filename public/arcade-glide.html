@@ -232,13 +232,23 @@
     var GSPEED_L1=gspeed0, GATE_EVERY_L1=gateEvery, GATE_EVERY=[2900,2700,2500][LV-1];
     if(LV>1){ gspeed0=GSPEED_L1*[1,1.1,1.2][LV-1]; gspeed=gspeed0; gateEvery=GATE_EVERY; }
     var falling={on:false,t0:0}, mercyT=0;
-    var RUNNER="🦊";
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
-    var CRAFTBUDDY=null,buddyPortrait=new Image();
-    buddyPortrait.onload=function(){CRAFTBUDDY=buddyPortrait;};
-    buddyPortrait.src=SonaCraftedBuddies.source((S.getProfile()||{}).character||"fox")||"";
-    function drawBuddy(x,y,sz){ if(CRAFTBUDDY){ctx.drawImage(CRAFTBUDDY,x-sz/2,y-sz/2,sz,sz);return true;} if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
-    try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy rides in
+    // the basket as its round badge, clipped to a circle so no square corner
+    // shows behind the ropes (the fox too); then the flat sticker; then the
+    // dot at the draw calls below. Sizes are as before (34 px, 52 px).
+    var BID=S.buddyId?S.buddyId():(((S.getProfile&&S.getProfile())||{}).character||"fox");
+    var CB=window.SonaCraftedBuddies||null, BUDDYPIC=null, BUDDYSVG=null;
+    if(CB&&CB.image) BUDDYPIC=CB.image(BID,"portrait");
+    else if(CB&&CB.source){ BUDDYPIC=new Image(); BUDDYPIC.src=CB.source(BID)||""; }
+    if(CB&&CB.svgSrc){ (function(){ var sv=CB.svgSrc(BID); if(sv){ BUDDYSVG=new Image(); BUDDYSVG.src=sv; } })(); }
+    function drawBuddy(x,y,sz){
+      if(BUDDYPIC&&BUDDYPIC.complete&&BUDDYPIC.naturalWidth){
+        if(window.SonaCraftedBuddies&&SonaCraftedBuddies.drawCircle){ if(SonaCraftedBuddies.drawCircle(ctx,BUDDYPIC,x,y,sz)) return true; }
+        else { ctx.drawImage(BUDDYPIC,x-sz/2,y-sz/2,sz,sz); return true; }
+      }
+      if(BUDDYSVG&&BUDDYSVG.complete&&BUDDYSVG.naturalWidth){ ctx.drawImage(BUDDYSVG,x-sz/2,y-sz/2,sz,sz); return true; }
+      return false;
+    }
 
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }

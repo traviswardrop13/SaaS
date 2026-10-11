@@ -16,6 +16,37 @@ body[data-crafted="slice"] #app{
  background-repeat:no-repeat;background-color:#efd69e;
 }
 body[data-crafted="slice"] #sliceEcho{display:none;}
+/* PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). A fox child keeps the two layers
+   above, the fox painted into the counter. For any other buddy the page adds
+   .buddy-scene: #app keeps only the orchard (all three properties, so a tall
+   phone never shows a strip of the colour under it), and the counter without
+   the fox (fruit-stand-v2.webp, the same picture outside the fox's box) is
+   its own layer, pinned to the bottom at #app's full width as before. The
+   buddy's peek picture stands in front of it, under the canvas: its frame
+   23% of the width, at the left edge, its flat bottom on the counter's row
+   256 of 545, where the fox's paws ended ((545-256)/1440 of the width above
+   the bottom); measured in design/crafted-world/buddies-v3.md. */
+body[data-crafted="slice"].buddy-scene #app{
+ background-image:url('/assets/crafted/fruit-market-v3.webp');
+ background-size:cover;background-position:center bottom;
+}
+body[data-crafted="slice"] #standFront,body[data-crafted="slice"] #sliceBuddy{display:none;}
+body[data-crafted="slice"] #standFront{
+ position:absolute;left:0;right:0;bottom:0;aspect-ratio:1440/545;
+ background:url('/assets/crafted/fruit-stand-v2.webp') center bottom/100% auto no-repeat;
+ pointer-events:none;
+}
+body[data-crafted="slice"].buddy-scene #standFront{display:block;}
+body[data-crafted="slice"].buddy-scene #sliceBuddy[src]{display:block;}
+body[data-crafted="slice"] #sliceBuddy{
+ position:absolute;left:0;width:23%;height:auto;
+ bottom:calc(min(100vw,560px)*0.2007);pointer-events:none;
+}
+/* no peek picture: the round badge, 0.7 times as wide, on the same ledge */
+body[data-crafted="slice"] #sliceBuddy.badge{left:3.45%;width:16.1%;border-radius:50%;}
+body[data-crafted="slice"] #sliceBuddy.hop{animation:buddyHop .3s ease-out;}
+@keyframes buddyHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14%)}}
+@media (prefers-reduced-motion: reduce){ body[data-crafted="slice"] #sliceBuddy.hop{animation:none;} }
 body[data-crafted="slice"] #top{gap:9px;padding-left:14px;padding-right:14px;}
 body[data-crafted="slice"] #close{width:46px;height:46px;font-size:26px;}
 body[data-crafted="slice"] .hudpill{padding:10px 14px;min-height:45px;font-size:18px;}

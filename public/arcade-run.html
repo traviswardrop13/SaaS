@@ -88,12 +88,14 @@
     #tipBuddy .crafted-buddy{width:100%!important;height:100%!important;}
     /* the fox is the race's own runner, seen from behind: the same crop the canvas draws */
     #tipBuddy.fox{width:27px;height:47px;bottom:5px;background:url('/assets/crafted/fox-runner.webp') 50.4% 49.5%/261.25% auto no-repeat;}
+    /* every other buddy runs as its own runner, already cut to the fox's frame (BUDDY2) */
+    #tipBuddy.runner{width:27px;height:47px;bottom:5px;background:center bottom/contain no-repeat;}
     /* Echo names each picture as he says it */
     .tip.on .tipPic{transform:translateY(-4px);box-shadow:0 7px 0 #cbb694,0 0 0 3px #19b6bb;}
     #startAct{display:flex;align-items:center;justify-content:center;width:100%;min-height:62px;}
     #startGo{margin-top:0;}
     #startGo svg{width:17px;height:17px;vertical-align:-2px;margin-right:5px;fill:#fff;}
-    @media (max-width:350px){ .tipPic .arrow{width:14px;height:14px;bottom:15px;} #tipBuddy{width:27px;height:27px;} #tipBuddy.fox{width:24px;height:42px;} }
+    @media (max-width:350px){ .tipPic .arrow{width:14px;height:14px;bottom:15px;} #tipBuddy{width:27px;height:27px;} #tipBuddy.fox,#tipBuddy.runner{width:24px;height:42px;} }
     @media (prefers-reduced-motion: reduce){ .tipPic{transition:none;} .tip.on .tipPic{transform:none;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
@@ -415,18 +417,30 @@
       ctx.fillStyle="#ffd15b";ctx.beginPath();ctx.arc(x,y,size*.3,0,Math.PI*2);ctx.fill();
     }
 
-    // the runner = the kid's own buddy character (mascot-neutral)
-    var RUNNER="🦊";
-    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
-    var CRAFTFOX=null;
-    if(((S.getProfile()||{}).character||"fox")==="fox"){var fox=new Image();fox.onload=function(){CRAFTFOX=fox;};fox.src="/assets/crafted/fox-runner.webp";}
-    var CRAFTBUDDY=null,buddyPortrait=new Image();
-    buddyPortrait.onload=function(){CRAFTBUDDY=buddyPortrait;};
-    buddyPortrait.src=SonaCraftedBuddies.source((S.getProfile()||{}).character||"fox")||"";
-    function drawBuddy(x,y,sz){ if(CRAFTFOX){ctx.drawImage(CRAFTFOX,390,205,480,840,x-sz/2,y-sz*.7,sz,sz*1.4);return true;} if(CRAFTBUDDY){ctx.drawImage(CRAFTBUDDY,x-sz/2,y-sz/2,sz,sz);return true;} if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
-
-    try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the runner is the child's own
+    // buddy, seen from behind (Sona.buddySprite(id,"run")): the fox is
+    // fox-runner.webp's crop as it always was, every other buddy its own runner
+    // already cut to the same 480x840 frame, drawn in the same box. Without a
+    // runner: the round badge clipped to a circle, then the flat sticker, then
+    // the dot at the two draw calls below. An older cached sona.js (no
+    // buddySprite) still runs the fox as before.
+    var BID=S.buddyId?S.buddyId():(((S.getProfile&&S.getProfile())||{}).character||"fox");
+    var RUN=S.buddySprite?S.buddySprite(BID,"run"):(BID==="fox"?{src:"/assets/crafted/fox-runner.webp",crop:[390,205,480,840]}:null);
+    var RUNIMG=null;
+    if(RUN&&RUN.src){ (function(){ var im=new Image(); im.onload=function(){ if(im.naturalWidth)RUNIMG=im; }; im.src=RUN.src; })(); }
+    var CB=window.SonaCraftedBuddies||null, BUDDYPIC=null, BUDDYSVG=null;
+    if(CB&&CB.image) BUDDYPIC=CB.image(BID,"portrait");
+    else if(CB&&CB.source){ BUDDYPIC=new Image(); BUDDYPIC.src=CB.source(BID)||""; }
+    if(CB&&CB.svgSrc){ (function(){ var sv=CB.svgSrc(BID); if(sv){ BUDDYSVG=new Image(); BUDDYSVG.src=sv; } })(); }
+    function drawBuddy(x,y,sz){
+      if(RUNIMG){ var c=RUN.crop||[0,0,RUNIMG.naturalWidth,RUNIMG.naturalHeight]; ctx.drawImage(RUNIMG,c[0],c[1],c[2],c[3],x-sz/2,y-sz*.7,sz,sz*1.4); return true; }
+      if(BUDDYPIC&&BUDDYPIC.complete&&BUDDYPIC.naturalWidth){
+        if(window.SonaCraftedBuddies&&SonaCraftedBuddies.drawCircle){ if(SonaCraftedBuddies.drawCircle(ctx,BUDDYPIC,x,y,sz)) return true; }
+        else { ctx.drawImage(BUDDYPIC,x-sz/2,y-sz/2,sz,sz); return true; }
+      }
+      if(BUDDYSVG&&BUDDYSVG.complete&&BUDDYSVG.naturalWidth){ ctx.drawImage(BUDDYSVG,x-sz/2,y-sz/2,sz,sz); return true; }
+      return false;
+    }
 
     function laneCX(l){ var road=W*ROADF, lw=road/LANES; return (W-road)/2+lw*l+lw/2; }
     function laneAtX(x){ var road=W*ROADF, lw=road/LANES, rx=(W-road)/2; return Math.max(0,Math.min(LANES-1,Math.floor((x-rx)/lw))); }
@@ -691,7 +705,10 @@
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&raceHeld&&!sc.saying&&sc.line&&sc.ready&&!sc.bytes&&startVoiceOn()) loadStartLine(); });
     if(raceHeld){
       // the lane picture shows the child's own runner, as the race draws it
-      (function(){ var id=(S.getProfile()||{}).character||"fox", el=$("tipBuddy"), face=id!=="fox"&&window.SonaCraftedBuddies?SonaCraftedBuddies.markup(id,36):"";
+      // (the fox keeps its CSS crop; another buddy shows its own runner, or its badge)
+      (function(){ var el=$("tipBuddy"); if(BID==="fox") return;
+        if(RUN&&RUN.src&&!RUN.crop){ el.className="runner"; el.style.backgroundImage="url('"+RUN.src+"')"; return; }
+        var face=window.SonaCraftedBuddies?SonaCraftedBuddies.markup(BID,36):"";
         if(face){ el.className=""; el.innerHTML=face; } })();
       if(startVoiceOn()) loadStartLine();
       $("startOvl").classList.add("show");
