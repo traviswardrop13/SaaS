@@ -54,6 +54,7 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "homepickstest.mjs", // deterministic daily picks stay in the child's sound and age
+  "roadtest.mjs", // ROAD1/LEVELS1 on Home and in Settings: one tap still plays, "Pick a level" once per game when a level opens, the level badge, "Level 1 only"; Home only reads
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
@@ -88,6 +89,8 @@ const SUITES = [
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
   "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
+  "levelstest.mjs", // LEVELS1 in the five round games: Level 1 is today's game, a level changes only the finger's part, every help reads Level 1's numbers, each level keeps its own best
+  "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership

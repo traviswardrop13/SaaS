@@ -112,6 +112,14 @@
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain * vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
     }
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). The
+    // engine takes it from here and never reads storage; an engine or sona.js
+    // the phone saved before levels has none, and plays Level 1. The start
+    // card names the level once; nothing else in the game does.
+    var LV = (window.Sona && Sona.playLevel) ? Sona.playLevel("hoops") : 1; if (LV !== 2 && LV !== 3) LV = 1;
+    if (window.Hoops && Hoops.setLevel) Hoops.setLevel(LV);
+    if (LV > 1) { try { document.getElementById("startTitle").textContent = "Hoops \u00b7 Level " + LV; } catch (e) {} }
     SayPlay.start({
       key: "hoops", intro: "Say each word two times to get a ball.", title: "Hoops",
       steps: [[], [], [], [], [], [], [], []], finale: [],
@@ -125,6 +133,9 @@
       },
       soundMs: { swish: 450, clank: 250, bounce: 200, whoosh: 300 },
     });
+    // once per load, and only at Level 2 or 3 in a game this family can open
+    // (a bounced page is hidden): the game and the level, nothing else
+    if (LV > 1 && !document.body.hidden) { try { Sona.track("level played", { game: "hoops", level: LV }); } catch (e) {} }
   </script>
 </body>
 </html>

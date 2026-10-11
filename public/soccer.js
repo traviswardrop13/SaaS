@@ -21,6 +21,14 @@
    falls back to the drawn one until it loads. The pitch, goal and net stay
    drawn: they move and carry the perspective.
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above. At
+   Level 2 Bo stands to one side for the first ball only, then slides; at
+   Level 3 he slides from the first ball, wider and quicker, and reaches a
+   little further while nobody has missed yet. The help never changes with
+   the level: after a save he reaches less (0.6, then 0.45), slows, and
+   after two misses he dozes off; from the third any swipe up goes in.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -45,6 +53,7 @@
   var state = "idle", ball = null, goals = 0, count = 8, misses = 0, kicks = 0, lastKick = "";
   var keeperX = 0, keeperPhase = 0, keeperClock = 0, dive = null, net = { bulge: 0, x: 0, y: 1 }, fx = [];
   var hintAt = 0, doneAt = 0, cheerAt = -9, crowd = [], lastSwipe = null, napSide = 1;
+  var level = 1;                            // from the page (setLevel): 1, 2 or 3
 
   function project(x, y, z) {
     var dx = x - CAM.x, dy = y - CAM.y, dz = z - CAM.z;
@@ -60,14 +69,17 @@
   function keeperMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
   function keeperTarget(t) {
     if (misses >= 2) return napSide * (GOAL_HALF - 0.85);
-    if (goals < 2) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
-    var amp = goals < 5 ? 1.25 : 1.6;
-    var period = (goals < 5 ? 5.2 : 4.0) * (misses === 1 ? 2 : 1);
+    // Level 2: off to one side for the first ball only; Level 3: never
+    if (goals < (level === 3 ? 0 : level === 2 ? 1 : 2)) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
+    var amp = level === 3 ? 1.6 : level === 2 ? (goals < 4 ? 1.25 : 1.6) : (goals < 5 ? 1.25 : 1.6);
+    var period = (level === 3 ? (goals < 4 ? 4.2 : 3.4) : level === 2 ? (goals < 4 ? 4.8 : 3.8) : (goals < 5 ? 5.2 : 4.0)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(keeperPhase + (t / period) * Math.PI * 2);
   }
   function keeperAt(dt) { return keeperTarget(keeperClock + dt); }
-  // how far either side of his middle the keeper's gloves reach
-  function reach() { return [0.78, 0.6, 0.45][Math.min(misses, 2)]; }
+  // how far either side of his middle the keeper's gloves reach (a little
+  // further at Level 3 while nobody has missed; the help after a miss is the
+  // same at every level)
+  function reach() { return [level === 3 ? 0.85 : 0.78, 0.6, 0.45][Math.min(misses, 2)]; }
 
   // ── sizing ──
   function resize() {
@@ -507,7 +519,7 @@
   // ── what the engine calls ──
   function publish() {
     try { window.__soccer = { state: state, goals: goals, misses: misses, kicks: kicks, lastKick: lastKick, keeperX: +keeperX.toFixed(3), count: count, frozen: frozen, swipe: lastSwipe, napping: misses >= 2,
-      aimScale: cv ? +aimScale().toFixed(3) : 0, openSide: misses >= 2 ? +openSide().toFixed(3) : null,
+      aimScale: cv ? +aimScale().toFixed(3) : 0, openSide: misses >= 2 ? +openSide().toFixed(3) : null, level: level, reach: reach(),
       ball: ball && state === "flying" ? { x: +ball.x.toFixed(3), z: +ball.z.toFixed(3) } : null }; } catch (e) {}
   }
   var Soccer = {
@@ -548,6 +560,8 @@
       burst(p.x, p.y, 24); burst(W * 0.25, H * 0.45, 16); burst(W * 0.75, H * 0.45, 16);
       shout(count + " goals!", null, true, { x: W / 2, y: H * 0.56 });
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
     snapshot: function () { return window.__soccer; },
   };
   window.Soccer = Soccer;

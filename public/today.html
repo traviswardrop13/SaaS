@@ -140,6 +140,40 @@
     #toast.show{opacity:1;}
     .modal{max-height:calc(100dvh - 48px);overflow-y:auto;}
     #trialBanner{margin-top:18px;}
+    /* LEVELS1 (11 Oct 2026): a game whose child plays Level 2 or 3 carries
+       the numeral and three pips, top right of its picture (the best keeps
+       the top left, Free / Included the bottom right, New the bottom left).
+       Cream with ink like the other labels; part of the picture, so a tap
+       on it is a tap on the game. Narrow and tall, so it stays clear of the
+       best tag on the smallest phone. */
+    .game-level{position:absolute;right:6px;top:6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:24px;padding:3px 5px 4px;border-radius:10px;background:#fffdf2f2;color:var(--ink);box-shadow:0 1px 4px #583e2930;pointer-events:none;}
+    .game-level b{font:800 15px/1 "Baloo 2",sans-serif;}
+    .level-pips{display:flex;gap:2px;}
+    .level-pips i{display:block;width:5px;height:5px;border-radius:50%;background:#e2d2b8;}
+    .level-pips i.on{background:var(--ink);}
+    /* the level sheet: opened only by a tap on a game, once per game when a
+       new level opens. Each level leads with what a child who can't read yet
+       can use: the game's picture, a big numeral and its pips. */
+    #levelModal{position:relative;text-align:left;padding:20px 18px 16px;}
+    #levelModal h3{text-align:center;padding:0 34px;}
+    #levelModal .level-ask{text-align:center;margin-top:2px;}
+    #levelClose{position:absolute;top:10px;right:10px;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;line-height:1;cursor:pointer;}
+    .level-list{display:flex;flex-direction:column;gap:9px;margin-top:12px;}
+    .level-tile{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:7px 10px 7px 7px;border:2px solid #f0e2cc;border-radius:16px;background:#fffdf7;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 3px 0 #ecdcc3;}
+    .level-tile[aria-pressed="true"]{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);}
+    .level-tile:not([aria-disabled="true"]):active{transform:translateY(2px);box-shadow:none;}
+    .level-tile[aria-disabled="true"]{cursor:default;background:#f6efe4;box-shadow:none;}
+    .level-tile[aria-disabled="true"] .level-art{opacity:.45;filter:saturate(.4);}
+    .level-art{display:block;flex:none;width:58px;height:36px;border-radius:9px;background:#efe6d5 center/cover no-repeat;}
+    .level-num{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;min-width:26px;}
+    .level-num b{font:800 26px/1 "Baloo 2",sans-serif;}
+    .level-num .level-pips i{width:6px;height:6px;}
+    .level-line{flex:1;min-width:0;font-size:12px;font-weight:800;line-height:1.3;color:var(--muted);}
+    .level-need{display:flex;align-items:center;gap:3px;margin-top:3px;font:800 13px/1 "Baloo 2",sans-serif;color:var(--ink);}
+    .level-need svg{width:14px;height:14px;display:block;}
+    .level-check{flex:none;width:24px;height:24px;border-radius:50%;background:var(--act);color:#fff;font-size:14px;font-weight:900;line-height:24px;text-align:center;}
+    #levelNote{min-height:18px;text-align:center;margin-top:10px;}
+    @media(prefers-reduced-motion:reduce){.level-tile:not([aria-disabled="true"]):active{transform:none;}}
   </style>
   <link href="/crafted-home.css" rel="stylesheet" />
 </head>
@@ -171,6 +205,12 @@
     <p class="age-note">Ages are a guide. Explore any game that fits.</p>
     <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
   </main>
+  <!-- LEVELS1 (11 Oct 2026): "Pick a level", once per game when a new level
+       opens, from a tap on that game only. Silent but the tap chime. -->
+  <div class="ovl" id="levelOvl" role="dialog" aria-modal="true" aria-labelledby="levelTitle">
+    <div class="modal" id="levelModal"><button id="levelClose" type="button" aria-label="Close">×</button>
+      <h3 id="levelTitle"></h3><p class="level-ask">Pick a level</p><div id="levelList" class="level-list"></div><p id="levelNote" role="status"></p></div>
+  </div>
   <!-- parent gate -->
   <div class="ovl" id="gateOvl">
     <div class="modal" id="gateModal">
@@ -254,6 +294,9 @@
           showLocked(game);return;
         }
         clearMessage();
+        // LEVELS1: the first tap after a new level opens asks which to play;
+        // every other tap plays the level last picked (the game page reads it)
+        if(S.playLevelAsk&&S.playLevelAsk(game.key)){openLevels(game);return;}
         location.href=game.go;
       }
       // BESTS1 ("Beat Your Best", Travis, 1-2 Oct 2026): a game this child can
@@ -267,18 +310,73 @@
       // hidden from a screen reader, so the card's own label says it too.
       // An older cached sona.js has no gameBest, and then nothing is drawn.
       var bestCards=[];
+      // LEVELS1: the level a tap will play (1 unless Level 2 or 3 is picked
+      // and open; always 1 under a grown-up's "Level 1 only")
+      function levelOf(key){var lv=1;try{lv=S.playLevel?S.playLevel(key):1;}catch(e){lv=1;}return (lv===2||lv===3)?lv:1;}
       function paintBest(card){
-        var n=0;try{n=S.gameBest?S.gameBest(card.key):0;}catch(e){n=0;}
+        // the best of the level that will play: Level 2 and 3 keep their own
+        var lv=levelOf(card.key),n=0;try{n=lv>1?(S.playBest?S.playBest(card.key,lv):0):(S.gameBest?S.gameBest(card.key):0);}catch(e){n=0;}
         n=(typeof n==="number"&&n>=1)?Math.floor(n):0;
-        var tag=card.art.querySelector(".game-best");
-        if(!n){if(tag)card.art.removeChild(tag);card.button.setAttribute("aria-label",card.label);return;}
+        var tag=card.art.querySelector(".game-best"),tail=lv>1?" Level "+lv+".":"";
+        paintLevel(card,lv);
+        if(!n){if(tag)card.art.removeChild(tag);card.button.setAttribute("aria-label",card.label+tail);return;}
         if(!tag){tag=node("span","game-best");card.art.appendChild(tag);}
         tag.textContent="";
         var star=node("span","game-best-star");star.innerHTML=S.icon?S.icon("star",12):"";tag.appendChild(star);
         tag.appendChild(document.createTextNode("Best "));tag.appendChild(node("b","",String(n)));
-        card.button.setAttribute("aria-label",card.label+" Your best: "+n+".");
+        card.button.setAttribute("aria-label",card.label+" Your best: "+n+"."+tail);
+      }
+      // the numeral and its pips (●●○), top right of the picture, only for
+      // Level 2 or 3; never a button inside the card's button
+      function pips(lv){var p=node("span","level-pips");for(var i=1;i<=3;i++)p.appendChild(node("i",i<=lv?"on":""));return p;}
+      function paintLevel(card,lv){
+        var tag=card.art.querySelector(".game-level");
+        if(lv<2){if(tag)card.art.removeChild(tag);return;}
+        if(!tag){tag=node("span","game-level");card.art.appendChild(tag);}
+        tag.textContent="";tag.appendChild(node("b","",String(lv)));tag.appendChild(pips(lv));
       }
       function paintBests(){bestCards.forEach(paintBest);}
+      // ── the level sheet (LEVELS1) ──
+      // Opened only by a tap, once per game when a new level opens
+      // (Sona.playLevelAsk). An open level plays at once and is remembered;
+      // a locked one says what it needs and goes nowhere. Its only writes are
+      // the "seen" mark (on the tap that opened it) and the pick. It sends
+      // nothing: the game page says "level played".
+      var levelOvl=document.getElementById("levelOvl"),levelList=document.getElementById("levelList"),levelNote=document.getElementById("levelNote"),levelFrom=null;
+      function tapChime(){try{if(S.sfx&&S.sfx.tap)S.sfx.tap();}catch(e){}}
+      function closeLevels(){levelOvl.classList.remove("show");levelList.textContent="";levelNote.textContent="";var b=levelFrom;levelFrom=null;if(b)try{b.focus();}catch(e){}}
+      function openLevels(game){
+        var info=S.playLevelInfo?S.playLevelInfo(game.key):null;
+        if(!info||!info.levels||!info.levels.length){location.href=game.go;return;}
+        levelFrom=document.activeElement;
+        document.getElementById("levelTitle").textContent=game.name;
+        levelList.textContent="";levelNote.textContent="";
+        var art=craftedCards[game.key]?"/assets/crafted/home-"+craftedCards[game.key]+".webp":"",first=null;
+        info.levels.forEach(function(lv){
+          var b=node("button","level-tile");b.type="button";b.setAttribute("data-level",String(lv.n));
+          var a=node("span","level-art");a.setAttribute("aria-hidden","true");if(art)a.style.backgroundImage='url("'+art+'")';b.appendChild(a);
+          var num=node("span","level-num");num.setAttribute("aria-hidden","true");num.appendChild(node("b","",String(lv.n)));num.appendChild(pips(lv.n));b.appendChild(num);
+          var line=node("span","level-line",lv.line);line.setAttribute("aria-hidden","true");b.appendChild(line);
+          if(lv.open){
+            var picked=lv.n===info.pick;b.setAttribute("aria-pressed",picked?"true":"false");
+            b.setAttribute("aria-label","Level "+lv.n+". "+lv.line);
+            if(picked){var ck=node("span","level-check","\u2713");ck.setAttribute("aria-hidden","true");b.appendChild(ck);}
+            b.onclick=function(){tapChime();if(S.setPlayLevel)S.setPlayLevel(game.key,lv.n);location.href=game.go;};
+            if(picked||!first)first=b;
+          }else{
+            b.setAttribute("aria-disabled","true");
+            b.setAttribute("aria-label","Level "+lv.n+". Opens at "+lv.at+" trophies. You have "+lv.have+".");
+            var need=node("span","level-need");need.innerHTML=(S.icon?S.icon("lock",14)+S.icon("trophy",14):"");need.appendChild(document.createTextNode(String(lv.at)));line.appendChild(need);
+            b.onclick=function(){levelNote.textContent="Level "+lv.n+" opens at "+lv.at+" trophies. Keep practicing!";};
+          }
+          levelList.appendChild(b);
+        });
+        levelOvl.classList.add("show");
+        if(first)try{first.focus();}catch(e){}
+      }
+      document.getElementById("levelClose").onclick=closeLevels;
+      levelOvl.addEventListener("click",function(e){if(e.target===levelOvl)closeLevels();});
+      document.addEventListener("keydown",function(e){if((e.key==="Escape"||e.key==="Esc")&&levelOvl.classList.contains("show"))closeLevels();});
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         // "Free" means open as free HERE: since 3 Oct 2026 (trial first) a

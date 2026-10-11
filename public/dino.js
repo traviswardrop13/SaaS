@@ -37,6 +37,15 @@
    bone for bone. The skeleton, its outline and the bones stay drawn: they are
    what the child places. Each falls back to the drawn one until it loads.
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above. At
+   Level 2 the brush is a little smaller and a bone shows itself once 68% of
+   it is uncovered (60% at Level 1); at Level 3 smaller still, and 76%. Six
+   seconds after the brush comes out both go back to Level 1's, wherever the
+   child rubs: rubbing near the bone puts the glow and the crumble off, so a
+   return on the clock is the one that reaches the child rubbing the right
+   spot. The glow (about 4 s) and the crumble (about 8 s) are unchanged.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -311,6 +320,12 @@
   // placed (the cheer, then the next word)
   var state = "idle", count = 8, found = 0, rubs = 0, dig = null, fly = null, fx = [];
   var doneAt = 0, glowAt = 0, crumbleAt = 0, wakeAt = -1, lastRub = 0;
+  // the level, from the page (setLevel), and when this bone's brush came out
+  var level = 1, brushAt = 0, LEVEL_BACK_S = 6;
+  // how much of the bone must show, and the brush's size against Level 1's:
+  // the level's own for the first six seconds of a bone, then Level 1's
+  function need() { return (level === 1 || clock - brushAt >= LEVEL_BACK_S) ? 0.6 : level === 2 ? 0.68 : 0.76; }
+  function brushK() { return (level === 1 || clock - brushAt >= LEVEL_BACK_S) ? 1 : level === 2 ? 0.85 : 0.72; }
 
   // the sand over the current bone: a canvas the finger erases, and a coarse
   // grid of the same erasing, which is what decides how much of the bone shows
@@ -577,7 +592,7 @@
   function step(dt) {
     if (doneAt && clock >= doneAt) { doneAt = 0; state = "idle"; remakeSand(false); publish(); if (api) api.done(); }
     if (state === "ready") {
-      if (revealed() >= 0.6) uncover();
+      if (revealed() >= need()) uncover();
       publish();
     } else if (state === "found") {
       if (clock - dig.foundAt > 0.55) { state = "flying"; fly = { i: found, x: dig.ox, y: dig.oy, k: dig.k, t: 0, dur: 0.75 }; sound("whoosh"); publish(); }
@@ -613,7 +628,7 @@
   function inPit(p) { return p.x >= pit.x && p.x <= pit.x + pit.w && p.y >= pit.y && p.y <= pit.y + pit.h; }
   function rubAt(p) {
     if (state !== "ready" || frozen || !inPit(p)) return;
-    var r = Math.max(13, pit.w * 0.072);
+    var r = Math.max(13, pit.w * 0.072) * brushK();
     if (touch && touch.last) {                           // fill in between quick moves
       var dx = p.x - touch.last.x, dy = p.y - touch.last.y, n = Math.min(12, Math.ceil(Math.sqrt(dx * dx + dy * dy) / (r * 0.5)));
       for (var i = 1; i <= n; i++) brush(touch.last.x + dx * i / n, touch.last.y + dy * i / n, r);
@@ -682,7 +697,7 @@
       dinos: DINOS.map(function (d) { return { id: d.id, name: d.name, fill: d.fill, paint: d.paint }; }),
       pit: { x: +pit.x.toFixed(1), y: +pit.y.toFixed(1), w: +pit.w.toFixed(1), h: +pit.h.toFixed(1) },
       bone: dig ? { id: dig.bone.id, x: +dig.x.toFixed(1), y: +dig.y.toFixed(1), w: +dig.w.toFixed(1), h: +dig.h.toFixed(1) } : null,
-      glow: !!(dig && state === "ready" && clock >= glowAt), awake: wakeAt >= 0 }; } catch (e) {}
+      glow: !!(dig && state === "ready" && clock >= glowAt), awake: wakeAt >= 0, level: level, need: need(), brushK: brushK() }; } catch (e) {}
   }
   var Dino = {
     // The page hands over the child's own keeping: read() gives back what
@@ -719,7 +734,7 @@
       // (x, y) is the middle of the bone; (ox, oy) is where its own drawing starts from
       dig = { bone: b, k: k, x: x, y: y, ox: x - box.x * k, oy: y - box.y * k, w: bw, h: bh, foundAt: 0 };
       remakeSand(false); dig.cells = boneCells();
-      state = "ready"; rubs = 0; glowAt = clock + 4; crumbleAt = clock + 8;
+      state = "ready"; rubs = 0; glowAt = clock + 4; crumbleAt = clock + 8; brushAt = clock;
       sound("brush");
       try { api.hint("Rub the sand to dig!"); } catch (e) {}
       publish();
@@ -746,6 +761,8 @@
       remember(); paintCards();
       publish();
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
     snapshot: function () { return window.__dino; },
   };
   window.Dino = Dino;

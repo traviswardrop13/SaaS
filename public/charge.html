@@ -2390,7 +2390,10 @@
       // Up next: the game's painted Home card, else its sticker (crafted-games.css)
       try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"),_card=(S.CRAFTED_CARDS||{})[GAME.replace(/^arcade-|\.html$/g,"")];
         _lb.innerHTML='<span id="launchArt" aria-hidden="true"></span><span class="launch-text"><span class="launch-up">Up next</span><span class="launch-name"></span></span><i class="launch-go" aria-hidden="true"></i>';
-        _lb.querySelector(".launch-name").textContent=GMETA.n;
+        // LEVELS1: the one place the level is named before the game (and its
+        // start card): "Fruit Slice · Level 2", only at Level 2 or 3
+        var _lv=1;try{_lv=S.playLevel?S.playLevel(GAME.replace(/^arcade-|\.html$/g,"")):1;}catch(e){_lv=1;}
+        _lb.querySelector(".launch-name").textContent=GMETA.n+(_lv>1?" \u00b7 Level "+_lv:"");
         if(_card)$("launchArt").style.backgroundImage='url("/assets/crafted/home-'+_card+'.webp")';
         else{var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]);}
         _lb.classList.add("show"); }catch(e){}

@@ -148,6 +148,15 @@
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the flight as it always was: its legs and numbers stay on their own
+    // lines below and a level only overrides them after. Harder levels fly
+    // more gaps, a little narrower, quicker and closer together; the balloon's
+    // float, the soft bounce, the stars and the cards never change, and after
+    // a bump the hedges are never faster or closer than Level 1's. An older
+    // cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("glide"):1; if(LV!==2&&LV!==3) LV=1;
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -182,6 +191,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Flappy Glide needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"glide",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -205,10 +216,21 @@
     // in the gaps to catch. (Hold-to-rise, the review's other idea, changes the
     // control, so it waits for Travis.)
     var LEGS=[{goal:6},{goal:7},{goal:8}];
+    // Level 2 and 3 (LEVELS1): a gap more on each leg, and each leg's gap a
+    // little narrower (SHRINK). LEG_TOP is every gap of the flight: the
+    // longest row there is at this level (21, 24, 27).
+    var LEGS_L1=LEGS;
+    if(LV===2) LEGS=[{goal:7},{goal:8},{goal:9}]; else if(LV===3) LEGS=[{goal:8},{goal:9},{goal:10}];
+    var LEG_TOP=0; (function(){ for(var i=0;i<LEGS.length;i++) LEG_TOP+=LEGS[i].goal; })();
+    var SHRINK=[[0,.06,.12],[.04,.10,.16],[.08,.14,.20]][LV-1];
     var leg=0, legGot=0, phase="fly", bumps=0, landing=null, finaleDone=false, echoT=-1e9, sparks=[];
     var G=H*0.00028, FLAP=-H*0.0072, VMAX=H*0.0058;   // floaty: a tap about every second holds it level
     var py=H*0.45, vy=0, px=W*0.32;
     var gates=[], gapBase=H*0.46, gapH=gapBase, gspeed0=W*0.0026, gspeed=gspeed0, gateEvery=2900, gateMs=2000;
+    // Level 2 and 3: hedges a little quicker and closer together. Level 1's
+    // numbers are kept (GSPEED_L1, GATE_EVERY_L1): a bump goes back to them.
+    var GSPEED_L1=gspeed0, GATE_EVERY_L1=gateEvery, GATE_EVERY=[2900,2700,2500][LV-1];
+    if(LV>1){ gspeed0=GSPEED_L1*[1,1.1,1.2][LV-1]; gspeed=gspeed0; gateEvery=GATE_EVERY; }
     var falling={on:false,t0:0}, mercyT=0;
     var RUNNER="🦊";
     var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
@@ -232,9 +254,12 @@
     var rowN=0, rowBest=0, startBest=0, keptRow=0, saidNewBest=false;
     var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
     try{if(CAN_BEST)startBest=S.gameBest("glide")|0;}catch(e){}
+    // Level 2 and 3 keep their own best (each level's flight has its own top)
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("glide",LV)|0; }catch(e){} }
     function rowSaid(n){return n===1?"1 gap":n+" gaps in a row";}
     function keepBest(){
       var n=rowBest;
+      if(LV>1){ if(n>keptRow){ keptRow=n; try{ S.playBestOffer("glide",LV,n); }catch(e){} } return; }
       if(!CAN_BEST||n<=keptRow)return;
       keptRow=n;try{S.gameBestOffer("glide",n);}catch(e){}
     }
@@ -249,7 +274,7 @@
       if(!CAN_BEST)return [did,""];
       if(startBest<=0)return [did,"Your best: "+n+"!"];
       if(n>startBest)return [did,"A new best!"];
-      if(n>=21)return [did,"That is every gap!"];
+      if(n>=LEG_TOP)return [did,"That is every gap!"];
       if(n===startBest)return [did,"The same as your best!"];
       return [did,"Your best: "+startBest+"."+(startBest-n<=5?" "+(startBest-n)+" away!":"")];
     }
@@ -259,7 +284,7 @@
       gates.push({x:W+70,cy:cy,passed:false,hit:false,star:Math.random()<0.7,gold:leg>0&&Math.random()<0.15,got:false});
     }
     function startLeg(i){
-      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase*(1-[0,.06,.12][i]*(1+Math.min(.3,startBest/21*.3))); gspeed=gspeed0; gateMs=gateEvery-900; gates=[]; landing=null;
+      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase*(1-SHRINK[i]*(1+Math.min(.3,startBest/21*.3))); gspeed=gspeed0; if(LV>1)gateEvery=GATE_EVERY; gateMs=gateEvery-900; gates=[]; landing=null;
       py=H*0.45; vy=0; mercyT=performance.now(); hud();
       banner("Leg "+(i+1),"Fly through "+LEGS[i].goal+" gaps!");
     }
@@ -339,7 +364,9 @@
     // leg and the gaps open wider and the hedges slow down
     function bump(g){
       if(!playing||phase!=="fly"||g.hit)return;g.hit=true; mercyT=performance.now(); bumps++;rowN=0;
-      if(loseHeart(mercyT)){gapH=Math.min(H*.6,gapBase*1.12);gspeed=Math.max(gspeed0*.8,gspeed*.9);}
+      // the bump help reads Level 1's numbers: at Level 2 or 3 the hedges
+      // first come back to Level 1's speed and spacing (startLeg restores the level's)
+      if(loseHeart(mercyT)){gapH=Math.min(H*.6,gapBase*1.12);if(LV>1){gspeed=Math.min(gspeed,GSPEED_L1);gateEvery=GATE_EVERY_L1;}gspeed=Math.max(GSPEED_L1*.8,gspeed*.9);}
       vy=(py<g.cy?1:-1)*H*0.004; py+=(py<g.cy?1:-1)*10;
       flash("Boing!"); sfx("drop");
       if(outOfHearts)endRound();

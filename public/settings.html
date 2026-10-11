@@ -107,6 +107,8 @@
        grey line under it carries the rest. If one is ever longer, the cut
        ends in "…" instead of mid-letter. */
     .family-settings #gameLevel{text-overflow:ellipsis;}
+    /* game levels (LEVELS1): under the buddy row, with the same short-choice rule */
+    .family-settings #playLevelCap{text-overflow:ellipsis;}
     /* sound: one slim line, and only while Sona itself is muted. A .card, so
        the cards on either side keep their gap whether it shows or not. */
     .family-settings .set-soundoff{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px 10px 16px;}
@@ -304,6 +306,20 @@
         <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, an outfit, and a backdrop.</span></span>
         <span class="set-chev" aria-hidden="true">›</span>
       </a>
+      <!-- GAME LEVELS (LEVELS1, 11 Oct 2026). Inside nine games, Level 2 opens
+           at 150 trophies and Level 3 at 750 (a day at the daily goal is 30);
+           a child picks a level from Home. A grown-up can keep this child on
+           Level 1. Parent copy says "game level", apart from Progress's
+           "Practice levels". The two choices are short, so they fit a closed
+           picker on a 320 px phone (roadtest measures them). -->
+      <div id="playLevelBox">
+        <label class="field" for="playLevelCap">Game levels</label>
+        <select id="playLevelCap" aria-describedby="playLevelNote">
+          <option value="">Open as earned</option>
+          <option value="1">Level 1 only</option>
+        </select>
+        <p class="muted set-lead" id="playLevelNote"></p>
+      </div>
     </section>
 
     <!-- No Parent code (Travis, 30 Sep 2026). The grown-ups check on Home is
@@ -696,6 +712,20 @@
       document.getElementById("goalWeekLine").textContent = w.goalDone + " of " + w.goal + " days at the goal this week" + (w.weekStreak ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row" : "");
       document.getElementById("goalHelp").textContent = pick.disabled ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only." : "A day counts when the daily goal is met. Practice, games and books all count.";
     }
+    // Game levels: for the child this page was painted for, and saved only
+    // while that child is still the active one (the rule every picker here
+    // keeps). Hidden if sona.js has no levels (an older cached copy).
+    (function () {
+      var el = document.getElementById("playLevelCap"), box = document.getElementById("playLevelBox");
+      if (!el || !Sona.setPlayLevelCap || !Sona.playLevelInfo) { if (box) box.hidden = true; return; }
+      var nm = (p.childName || "").trim();
+      document.getElementById("playLevelNote").textContent = "Harder levels change only how fast or busy a game is, never what " + (nm || "your child") + " says.";
+      el.value = Sona.playLevelInfo("slice").cap ? "1" : "";
+      el.onchange = function () {
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        Sona.setPlayLevelCap(this.value === "1" ? 1 : 0); showSaved(this);
+      };
+    })();
     document.getElementById("dailyGoalPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({dailyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
     document.getElementById("goalDaysPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({weeklyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
     paintGoals();

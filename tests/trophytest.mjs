@@ -18,8 +18,10 @@
 //     score (mintCoins and mintStoryBonus only read), are never sold, and the
 //     wallet refuses a junk amount;
 //   - none of it writes the speech ladder or the practice records.
-// The daily chest, the Trophy Road, the shop and game levels are added to this
-// suite by the steps that build them.
+// Game levels (LEVELS1, section 13) joined in step 3: Level 2 at 150 trophies
+// and Level 3 at 750, per child, picked by a tap, held at Level 1 by a grown-
+// up's cap, each level's own best. The daily chest, the Trophy Road and the
+// shop are added to this suite by the steps that build them.
 //
 // No browser: sona.js runs in node's vm with a stub window and a clock this
 // suite sets (the gameasktest harness), so it is fast and binds no port.
@@ -329,7 +331,10 @@ sec("9a the speech ladder and the practice records are never written by any of i
 sec("10a where it lives in sona.js, and what it is allowed to touch", () => {
   const at = SRC.indexOf("// ── TROPHY1"), beacon = SRC.indexOf("function repsBeacon() {}"), bests = SRC.indexOf("// ── BESTS1:");
   ok("TROPHY1 sits after repsBeacon and before BESTS1", at > beacon && beacon > 0 && bests > at);
-  const block = SRC.slice(at, bests), code = block.replace(/\/\/[^\n]*/g, "");
+  // the block runs to the next block's header (LEVELS1 and the others the
+  // later steps add sit between it and BESTS1, each checked on its own)
+  const next = SRC.indexOf("\n  // ── ", at + 8);
+  const block = SRC.slice(at, next > at && next < bests ? next : bests), code = block.replace(/\/\/[^\n]*/g, "");
   const saves = code.match(/\bsave\(\s*[A-Z_a-z]+/g) || [];
   ok("its only write is the trophy ledger", saves.length === 1 && saves[0].replace(/\s/g, "") === "save(TROPHYKEY", saves);
   ok("it never reads a pass, a verdict or a best, and never pays coins, sends or logs", !/\bpass|passes|hearVerdict|addCoins|spendCoins|sendProgress|track\(|fetch\(|sendBeacon|logAttempt|outcomes\(\)|setItem|sona\.bests|gameBest/.test(code), (code.match(/[^\n]*(\bpass|hearVerdict|addCoins|sendProgress|track\(|fetch\(|setItem)[^\n]*/) || [""])[0]);
@@ -346,7 +351,7 @@ sec("10a where it lives in sona.js, and what it is allowed to touch", () => {
   ok("nothing saves between GAMEASK1 and \"the week, narrated\" (gameasktest's window)", ga > 0 && wk > ga && !/\bsave\(|setItem/.test(SRC.slice(ga, wk).replace(/\/\/[^\n]*/g, "")));
   const exp = (SRC.match(/\n {2}global\.Sona = \{[^\n]*\};\n/) || [""])[0];
   ok("the export line is still one line, keeps planwordstest's tail, and the new names sit just before soundMark, clipsSettled",
-    exp.length > 1000 && /trophyState, trophies, coinsNow, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY \};\n$/.test(exp) && /\bmintCoins, mintStoryBonus\b/.test(exp));
+    exp.length > 1000 && /trophyState, trophies, coinsNow, (?:[\w$]+, )*soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY \};\n$/.test(exp) && /\bmintCoins, mintStoryBonus\b/.test(exp));
   // pages this feature changes fire events through Sona.track(, which telemetrytest can see
   const changed = ["today.html", "arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html", "charge.html", "coach-call.html", "story.html"];
   ok("no page this feature changes fires an event as S.track(\"…\") (invisible to telemetrytest)", changed.every((f) => !/\bS\.track\("/.test(readFileSync(path.join(ROOT, f), "utf8"))), changed.filter((f) => /\bS\.track\("/.test(readFileSync(path.join(ROOT, f), "utf8"))));
@@ -368,6 +373,127 @@ sec("12a telemetry: never a count", () => {
   const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");
   const props = (route.match(/const PROPS = new Set\(\[([^\]]*)\]\)/) || ["", ""])[1];
   ok("the relay's PROPS holds no stop or step (a road stop is a lifetime trophy threshold) and no trophy or coin count", props.length > 10 && !/"(stop|step|trophies|trophy|coins|coin|balance)"/.test(props), props);
+});
+
+// ── 13. levels inside games (LEVELS1, step 3) ──
+// Every game opens as before; inside nine of them Level 2 opens at 150
+// trophies and Level 3 at 750, per child. A tap plays the level last picked,
+// Home asks once per game per newly opened level, a grown-up can hold a child
+// at Level 1, and Level 2 and 3 keep their own longest rows (Level 1's stays
+// with Beat Your Best, untouched).
+const seedTrophies = (p, t) => { p.local[p.S.kkey("sona.trophy.v1")] = JSON.stringify({ v: 1, t, d: "2026-10-20", dn: 0, m: "2026-10", mn: 0 }); };
+const lvRec = (p) => JSON.parse(p.local[p.S.kkey("sona.playlevel.v1")] || "null");
+sec("13a levels open with lifetime trophies", () => {
+  const p = boot(), { S } = p;
+  ok("Sona exports the levels' readers and writers", ["playLevelsOpen", "playLevel", "playLevelAsk", "setPlayLevel", "setPlayLevelCap", "playLevelInfo", "playBest", "playBestOffer"].every((f) => typeof S[f] === "function") && Array.isArray(S.PLAY_LEVEL_AT) && !!S.PLAY_LEVEL_LINES);
+  ok("thresholds are 150 and 750 trophies", JSON.stringify(S.PLAY_LEVEL_AT) === "[0,150,750]");
+  ok("nine released games have three levels each; Feed Echo and every parked game have none",
+    JSON.stringify(Object.keys(S.PLAY_LEVEL_LINES).sort()) === JSON.stringify(["bubbles", "dino", "glide", "hoops", "run", "slice", "soccer", "stack", "tiles"]) && Object.values(S.PLAY_LEVEL_LINES).every((l) => l.length === 3)
+    && Object.keys(S.PLAY_LEVEL_LINES).every((k) => S.GAME_ACTS[k] && !S.GAME_ACTS[k].comingSoon));
+  const opens = [0, 149, 150, 749, 750, 5000].map((t) => { seedTrophies(p, t); return S.playLevelsOpen(); });
+  ok("playLevelsOpen() is 1, 1, 2, 2, 3, 3 at 0, 149, 150, 749, 750, 5000 trophies", JSON.stringify(opens) === "[1,1,2,2,3,3]", opens);
+  S.setPlayLevelCap(1);
+  const capped = [0, 150, 750, 5000].map((t) => { seedTrophies(p, t); return S.playLevelsOpen(); });
+  ok("with a grown-up's \"Level 1 only\" it is 1 at any count", capped.every((n) => n === 1) && lvRec(p).cap === 1, capped);
+  S.setPlayLevelCap(0);
+  ok("\"Open as earned\" lifts the cap", S.playLevelsOpen() === 3 && !("cap" in lvRec(p)));
+});
+sec("13b what a game page plays", () => {
+  const p = boot(), { S } = p;
+  seedTrophies(p, 149);
+  ok("below 150 every game plays Level 1 and nothing can be picked", S.playLevel("slice") === 1 && S.setPlayLevel("slice", 2) === false && !lvRec(p));
+  seedTrophies(p, 800);
+  ok("with nothing picked a game plays Level 1 (a tap plays the level last picked)", S.playLevel("slice") === 1 && S.playLevel("hoops") === 1);
+  ok("Feed Echo plays Level 1 at any count, and refuses a pick", S.playLevel("feed") === 1 && S.setPlayLevel("feed", 2) === false);
+  ok("a parked game, an unknown key and a key off Object.prototype play Level 1 and refuse a pick",
+    ["peekaboo", "balloon", "nope", "constructor", "__proto__", "", null, undefined].every((k) => S.playLevel(k) === 1 && S.setPlayLevel(k, 2) === false));
+  ok("setPlayLevel saves an open level and the game plays it", S.setPlayLevel("slice", 3) === true && S.playLevel("slice") === 3 && lvRec(p).pick.slice === 3);
+  ok("…per game", S.setPlayLevel("tiles", "2") === true && S.playLevel("tiles") === 2 && S.playLevel("slice") === 3 && S.playLevel("stack") === 1);
+  ok("…and refuses 0, 4, junk", [0, 4, "x", NaN, -1].every((n) => S.setPlayLevel("stack", n) === false) && S.playLevel("stack") === 1);
+  seedTrophies(p, 200);
+  ok("after trophies drop (an older backup) a pick of 3 plays Level 2 and is kept", S.playLevel("slice") === 2 && lvRec(p).pick.slice === 3);
+  ok("…and a locked level is refused", S.setPlayLevel("slice", 3) === false);
+  S.setPlayLevelCap(1);
+  ok("under \"Level 1 only\" every game plays Level 1 whatever was picked", S.playLevel("slice") === 1 && S.playLevel("tiles") === 1);
+  const info = S.playLevelInfo("slice");
+  ok("playLevelInfo says the cap, the pick and each level's line, threshold and lock", info.cap === true && info.pick === 1 && info.levels.length === 3 && info.levels[0].open && !info.levels[1].open && info.levels[2].at === 750 && info.levels[1].line === "Faster fruit!" && info.levels[2].have === 200, info);
+  S.setPlayLevelCap(0);
+  const i2 = S.playLevelInfo("slice");
+  ok("…and without the cap, Level 1 and 2 open at 200 trophies, Level 3 locked at 750", !i2.cap && i2.pick === 2 && i2.levels.map((l) => l.open).join() === "true,true,false", i2);
+  ok("Feed Echo's info lists no levels", S.playLevelInfo("feed").levels.length === 0);
+});
+sec("13c Home asks once per game per newly opened level", () => {
+  const p = boot(), { S } = p;
+  seedTrophies(p, 149);
+  ok("below 150 Home never asks, and writes nothing", S.playLevelAsk("slice") === false && !lvRec(p));
+  seedTrophies(p, 200);
+  ok("at 200 the first tap on a game asks", S.playLevelAsk("slice") === true && lvRec(p).seen.slice === 2);
+  ok("…then never again for that game", S.playLevelAsk("slice") === false && S.playLevelAsk("slice") === false);
+  ok("…while another game asks once too", S.playLevelAsk("tiles") === true && S.playLevelAsk("tiles") === false);
+  ok("Feed Echo and a parked game never ask", S.playLevelAsk("feed") === false && S.playLevelAsk("peekaboo") === false);
+  seedTrophies(p, 800);
+  ok("when Level 3 opens, the game asks once more", S.playLevelAsk("slice") === true && S.playLevelAsk("slice") === false && lvRec(p).seen.slice === 3);
+  S.setPlayLevelCap(1);
+  ok("under \"Level 1 only\" nothing asks", S.playLevelAsk("stack") === false);
+});
+sec("13d Level 2 and 3 keep their own longest rows", () => {
+  const p = boot(), { S } = p;
+  seedTrophies(p, 800);
+  const bestsBefore = p.local[S.kkey("sona.bests.v1")];
+  ok("a level never played has no best", S.playBest("tiles", 2) === 0 && S.playBest("tiles", 3) === 0);
+  const a = S.playBestOffer("tiles", 3, 56);
+  ok("a first row at Level 3 sets it: {best 56, prev 0, isNew}", a.best === 56 && a.prev === 0 && a.isNew === true && S.playBest("tiles", 3) === 56 && S.playBest("tiles", 2) === 0, a);
+  const b = S.playBestOffer("tiles", 3, 40);
+  ok("a lower row changes nothing and answers the best", b.best === 56 && b.prev === 56 && b.isNew === false && S.playBest("tiles", 3) === 56, b);
+  const c = S.playBestOffer("tiles", 3, 56);
+  ok("matching it is not new", c.isNew === false && c.best === 56);
+  const d = S.playBestOffer("tiles", 3, 57);
+  ok("beating it keeps the new row", d.isNew && d.best === 57 && d.prev === 56 && lvRec(p).best.tiles["3"].n === 57 && lvRec(p).best.tiles["3"].at === "2026-10-20");
+  const junk = [0, -3, 2.5, NaN, "60", 100000, Infinity, null].map((n) => S.playBestOffer("tiles", 2, n));
+  ok("only whole numbers from 1 to 99,999 count", junk.every((r) => !r.isNew && r.best === 0) && S.playBest("tiles", 2) === 0, junk);
+  ok("Level 1 and unknown keys or levels are refused (Level 1's best stays with Beat Your Best)",
+    [["tiles", 1], ["tiles", 4], ["feed", 2], ["nope", 2], ["constructor", 2]].every(([k, lv]) => !S.playBestOffer(k, lv, 30).isNew && S.playBest(k, lv) === 0));
+  ok("Level 1's record is never touched", p.local[S.kkey("sona.bests.v1")] === bestsBefore && S.gameBest("tiles") === 0);
+});
+sec("13e per child, reads write nothing, the ladder untouched", () => {
+  const p = boot(), { S } = p;
+  seedTrophies(p, 800); S.setPlayLevel("slice", 3);
+  S.addKid("Ben", "6");
+  ok("a brother or sister starts with nothing picked and no trophies", S.playLevel("slice") === 1 && S.playLevelsOpen() === 1 && !p.local[S.kkey("sona.playlevel.v1")]);
+  S.switchKid("");
+  ok("…and the first child keeps theirs", S.playLevel("slice") === 3);
+  const before = snap(p);
+  for (let i = 0; i < 10; i++) { S.playLevel("slice"); S.playLevelsOpen(); S.playLevelInfo("tiles"); S.playBest("tiles", 2); S.playLevel("feed"); }
+  ok("playLevel, playLevelsOpen, playLevelInfo and playBest write no key", snap(p) === before);
+  p.local["sona.progress.v1"] = JSON.stringify(Object.assign(S.getProgress(), { stage: { R: 2 }, rungWins: { "R:2": 1 } }));
+  p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" }); p.local["sona.rotation.v1"] = JSON.stringify({ i: 1 });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, coins: S.coinsNow(), t: S.trophies() });
+  const was = pin();
+  for (let i = 0; i < 50; i++) { S.setPlayLevel("slice", 1 + (i % 3)); S.playLevelAsk("tiles"); S.playBestOffer("stack", 2, i + 1); S.setPlayLevelCap(i % 2); S.playLevelInfo("run"); }
+  ok("50 level picks, asks, bests and caps leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, coins and trophies byte-identical", pin() === was);
+  const r = S.exportData(), q = boot({ profile: null });
+  ok("a backup carries the levels", JSON.stringify(r).includes("sona.playlevel.v1") && q.S.importData(r).ok && q.S.playBest("stack", 2) === 50, q.S.playBest("stack", 2));
+});
+sec("13f where LEVELS1 lives in sona.js, and what it touches", () => {
+  const at = SRC.indexOf("// ── LEVELS1"), tr = SRC.indexOf("// ── TROPHY1"), bests = SRC.indexOf("// ── BESTS1:");
+  ok("LEVELS1 sits after TROPHY1 and before BESTS1, outside the GAMEASK1 window", at > tr && tr > 0 && bests > at && at > SRC.indexOf("the week, narrated"));
+  const next = SRC.indexOf("\n  // ── ", at + 8), block = SRC.slice(at, next > at ? next : bests), code = block.replace(/\/\/[^\n]*/g, "");
+  const saves = code.match(/\bsave\(\s*[A-Z_a-z]+/g) || [];
+  ok("its only write is the levels record", saves.length >= 1 && saves.every((x) => x.replace(/\s/g, "") === "save(PLAYLEVELKEY"), saves);
+  ok("it never reads access, a pass or a verdict, never pays coins, sends, logs or writes practice",
+    !/gameAccess|gated\(|premium\(|freeVersion|offerOnLock|trialFirst|\bpass\b|hearVerdict|addCoins|spendCoins|sendProgress|track\(|fetch\(|sendBeacon|logAttempt|gameRep\(|setItem|outcomes\(\)/.test(code), (code.match(/[^\n]*(gameAccess|track\(|fetch\(|setItem|addCoins)[^\n]*/) || [""])[0]);
+  ok("its names keep clear of the say-it card's GAME_LEVELS and profile.gameLevel", !/GAME_LEVELS|gameLevel\b/.test(code));
+  const perKid = (SRC.match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
+  ok("the record is per child (PER_KID), and its name matches no /rep|week/ key Home may not write", perKid.includes('"sona.playlevel.v1"') && !/rep|week/i.test("sona.playlevel.v1"));
+  const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");
+  const events = (route.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1], props = (route.match(/const PROPS = new Set\(\[([^\]]*)\]\)/) || ["", ""])[1];
+  ok("the relay takes \"level played\" with a level, and still no stop, step or count", events.includes('"level played"') && props.includes('"level"') && !/"(stop|step|trophies|trophy|coins|coin)"/.test(props), props);
+  const changed = ["today.html", "settings.html", "charge.html", "arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html", "arcade-bubbles.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"];
+  const codeOf = (f) => readFileSync(path.join(ROOT, f), "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("no page levels change fires an event as S.track(\"…\"); Home fires none at all, and Settings never \"level played\"",
+    changed.every((f) => !/\bS\.track\("/.test(codeOf(f))) && !/\btrack\(/.test(codeOf("today.html")) && !/level played/.test(codeOf("settings.html")));
+  const engines = ["hoops.js", "soccer.js", "dino.js", "bubbles.js"];
+  ok("the four engines take the level from the page and never from storage", engines.every((f) => { const src = readFileSync(path.join(ROOT, f), "utf8"); return /setLevel: function \(n\) \{ level = \(n === 2 \|\| n === 3\) \? n : 1; \}/.test(src) && !/localStorage|sessionStorage|playlevel|playLevel/.test(src); }));
 });
 
 console.log(fails ? `\n${fails} FAILED` : "\nall trophy and coin checks passed");

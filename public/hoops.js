@@ -15,6 +15,13 @@
    miss until the next flick cannot miss — the last thing a child does is make
    the shot (Rachel's rule: end every round on a success).
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above. At
+   Level 2 the hoop slides from the first basket, and at Level 3 it slides
+   wider and quicker. The help never changes with the level: one miss slows
+   it to half speed, two stop it and make it glow, and from the third any
+   swipe up goes in. Eight words, said two times each, at every level.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -37,6 +44,7 @@
   var state = "idle", ball = null, baskets = 0, count = 8, misses = 0, shots = 0, lastShot = "";
   var hoopX = 0, hoopPhase = 0, net = { stretch: 0, sway: 0, swayV: 0 }, fx = [];
   var hintAt = 0, doneAt = 0, cheerAt = -9, crowd = [], lastFlick = null, hoopClock = 0;
+  var level = 1;                            // from the page (setLevel): 1, 2 or 3
 
   function project(x, y, z) {
     var dx = x - CAM.x, dy = y - CAM.y, dz = z - CAM.z;
@@ -48,10 +56,17 @@
   // wider later on. After a miss it slows; after two it eases to a stop. It
   // holds still while the word is being said and while a basket is cheered.
   function hoopMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
+  // At Level 2 it slides from the first basket, and at Level 3 wider and
+  // quicker; the help (a miss doubles the period, two stop it) is the same.
+  function hoopAmp() {
+    if (level === 2) return baskets < 3 ? 0.6 : 0.9;
+    if (level === 3) return baskets < 3 ? 0.9 : 1.0;
+    return baskets < 2 ? 0 : baskets < 5 ? 0.6 : 0.9;
+  }
   function hoopTarget(t) {
     if (misses >= 2) return hoopX;
-    var amp = baskets < 2 ? 0 : baskets < 5 ? 0.6 : 0.9;
-    var period = (baskets < 5 ? 5.6 : 4.3) * (misses === 1 ? 2 : 1);
+    var amp = hoopAmp();
+    var period = (level === 2 ? (baskets < 3 ? 5.0 : 4.0) : level === 3 ? (baskets < 3 ? 4.4 : 3.6) : (baskets < 5 ? 5.6 : 4.3)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(hoopPhase + (t / period) * Math.PI * 2);
   }
 
@@ -511,7 +526,7 @@
 
   // ── what the engine calls ──
   function publish() {
-    try { window.__hoops = { state: state, baskets: baskets, misses: misses, shots: shots, lastShot: lastShot, hoopX: +hoopX.toFixed(3), count: count, frozen: frozen, flick: lastFlick,
+    try { window.__hoops = { state: state, baskets: baskets, misses: misses, shots: shots, lastShot: lastShot, hoopX: +hoopX.toFixed(3), count: count, frozen: frozen, flick: lastFlick, level: level, amp: hoopAmp(),
       ball: ball && state === "flying" ? { y: +ball.y.toFixed(3), z: +ball.z.toFixed(3) } : null }; } catch (e) {}
   }
   var Hoops = {
@@ -548,6 +563,8 @@
       burst(p.x, p.y, 24); burst(W * 0.25, H * 0.45, 16); burst(W * 0.75, H * 0.45, 16);
       shout(count + " baskets!", null, true, { x: W / 2, y: H * 0.56 });
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
     snapshot: function () { return window.__hoops; },
   };
   window.Hoops = Hoops;

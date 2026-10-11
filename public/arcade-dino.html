@@ -149,7 +149,18 @@
       write: function (v) { try { localStorage.setItem(DINOKEY, JSON.stringify(v)); } catch (e) {} },
       found: function (d) { GAME.done.title = "You found " + d.a + " " + d.name + "!"; },
     });
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). The
+    // engine takes it from here and never reads storage; an engine or sona.js
+    // the phone saved before levels has none, and plays Level 1. The start
+    // card names the level once; nothing else in the game does.
+    var LV = (window.Sona && Sona.playLevel) ? Sona.playLevel("dino") : 1; if (LV !== 2 && LV !== 3) LV = 1;
+    if (window.Dino && Dino.setLevel) Dino.setLevel(LV);
+    if (LV > 1) { try { document.getElementById("startTitle").textContent = "Dino Dig \u00b7 Level " + LV; } catch (e) {} }
     SayPlay.start(GAME);
+    // once per load, and only at Level 2 or 3 in a game this family can open
+    // (a bounced page is hidden): the game and the level, nothing else
+    if (LV > 1 && !document.body.hidden) { try { Sona.track("level played", { game: "dino", level: LV }); } catch (e) {} }
   </script>
 </body>
 </html>

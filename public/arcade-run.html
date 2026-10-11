@@ -190,6 +190,16 @@
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the race as it always was. Harder levels run the same park, beach
+    // and forest a little faster, with rows of rocks a little closer; never a
+    // new card, heart or rule, and after a tumble the road is never faster
+    // than Level 1's would be, nor the rocks closer while they are thinned.
+    // An older cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("run"):1; if(LV!==2&&LV!==3) LV=1;
+    // each stretch's pace, and how fast the road may get, at this level
+    var SPEEDS=[[1,1.15,1.30],[1.10,1.25,1.40],[1.20,1.35,1.50]][LV-1], SPEED_CAP=[1.75,1.85,1.95][LV-1];
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -224,6 +234,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Sound Sprint needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"run",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -262,6 +274,8 @@
       {name:"the beach",len:190,grass:"#f6dfa4",edge:"#67c6ef",side:"palm"},
       {name:"the forest",len:220,grass:"#5cb35a",edge:"#3f8f47",side:"pine"}
     ];
+    // every metre of the race (570): the same three stretches at every level
+    var RUN_TOP=0; (function(){ for(var i=0;i<STRETCHES.length;i++) RUN_TOP+=STRETCHES[i].len; })();
     var stretch=0, stretchStart=0, phase="run", tumbles=0, magnetUntil=0, finishY=null, finaleDone=false, echoT=-1e9, sideOff=0;
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }
@@ -277,9 +291,12 @@
     var rowN=0, rowBest=0, startBest=0, keptRow=0, saidNewBest=false;
     var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
     try{if(CAN_BEST)startBest=S.gameBest("run")|0;}catch(e){}
+    // Level 2 and 3 keep their own best
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("run",LV)|0; }catch(e){} }
     function rowSaid(n){return n+" m";}
     function keepBest(){
       var n=dist;
+      if(LV>1){ if(n>keptRow){ keptRow=n; try{ S.playBestOffer("run",LV,n); }catch(e){} } return; }
       if(!CAN_BEST||n<=keptRow)return;
       keptRow=n;try{S.gameBestOffer("run",n);}catch(e){}
     }
@@ -294,14 +311,20 @@
       if(!CAN_BEST)return [did,""];
       if(startBest<=0)return [did,"Your best: "+n+"!"];
       if(n>startBest)return [did,"A new best!"];
-      if(n>=570)return [did,"That is every metre!"];
+      if(n>=RUN_TOP)return [did,"That is every metre!"];
       if(n===startBest)return [did,"The same as your best!"];
       return [did,"Your best: "+startBest+"."+(startBest-n<=50?" "+(startBest-n)+" away!":"")];
     }
     paintHearts();
     var cleanSince=0, obstacleHelpUntil=0;
+    // the space before the next row: Level 1's, or a little less at Level 2
+    // and 3, and always Level 1's while the rocks are thinned after a tumble
+    function rowGap(){
+      if(LV===1||dist<obstacleHelpUntil) return 170+Math.random()*130;
+      return LV===2?160+Math.random()*125:150+Math.random()*120;
+    }
     function startStretch(i){
-      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*[1,1.15,1.30][i]; cleanSince=dist; things=[]; spawnGap=140; hud();
+      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*SPEEDS[i]; cleanSince=dist; things=[]; spawnGap=140; hud();
       banner("Stretch "+(i+1),"Run through "+STRETCHES[i].name+"!");
     }
     function endStretch(){
@@ -442,7 +465,7 @@
         if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
         distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
         dist+=metres; bestReached(); $("score").textContent=dist+"m"; hud();
-        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*1.75,speed*(1.05+Math.min(.02,startBest/570*.02)));cleanSince=dist;}
+        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*SPEED_CAP,speed*(1.05+Math.min(.02,startBest/570*.02)));cleanSince=dist;}
         if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
       },100);
       // a touch faster through a stretch, unless the child keeps tumbling
@@ -456,7 +479,9 @@
       if(!playing||phase!=="run"||falling.on)return;
       falling={on:true,t0:performance.now()};
       tumbles++;
-      if(loseHeart(performance.now())){speed=Math.max(speed0*[1,1.15,1.30][stretch]*.85,speed/1.1025);cleanSince=dist;obstacleHelpUntil=dist+60;}
+      // the tumble help reads Level 1's numbers, written out (never SPEEDS):
+      // at Level 2 or 3 the road first comes back to Level 1's pace here
+      if(loseHeart(performance.now())){if(LV>1)speed=Math.min(speed,speed0*[1,1.15,1.30][stretch]);speed=Math.max(speed0*[1,1.15,1.30][stretch]*.85,speed/1.1025);cleanSince=dist;obstacleHelpUntil=dist+60;}
       flash("WHOOOA!"); sfx("drop");
     }
 
@@ -505,7 +530,7 @@
       ctx.fillStyle="rgba(255,255,255,.85)";
       for(var l=1;l<LANES;l++){ for(var y=-56;y<H;y+=56){ ctx.fillRect(rx+lw*l-3,y+dashOff,6,30); } }
       // spawn pacing tied to speed
-      if(playing&&!document.hidden&&phase==="run"){ spawnGap-=step; if(spawnGap<=0){ spawnRow(); spawnGap=170+Math.random()*130; } }
+      if(playing&&!document.hidden&&phase==="run"){ spawnGap-=step; if(spawnGap<=0){ spawnRow(); spawnGap=rowGap(); } }
       // things — opaque paint first: canvases modulate color-emoji glyphs by
       // the fill's alpha, and the lane dashes just left a translucent white
       ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="44px sans-serif";
