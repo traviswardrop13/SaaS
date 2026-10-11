@@ -423,14 +423,15 @@ export async function sendMagicEmail(
 }
 
 /**
- * One Resend call for the two emails below. sendMagicEmail keeps its own copy
+ * One Resend call for the two emails below, and for the Practice Board's
+ * confirmation email (lib/board.ts, 11 Oct 2026). sendMagicEmail keeps its own copy
  * on purpose — its wording and its log line are pinned, and it is the sign-in
  * door. `logBody` is false for any email addressed to someone who is not a
  * Sona account holder: Resend's refusal text can quote the recipient, and a
  * parent's address must not land in a server log (it is used for one send
  * and kept nowhere).
  */
-async function resendSend(
+export async function resendSend(
   msg: { to: string; subject: string; html: string; text: string },
   label: string,
   logBody: boolean,
