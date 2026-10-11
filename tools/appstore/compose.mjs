@@ -45,6 +45,9 @@ const LAYOUT = {
   ipad: { top: 140, h1: 132, sub: 54, gap: 30, phoneTop: 44, bottom: 120, maxW: 0.78 },
 };
 const INK = "#28285c", ACCENT = "#ef6f23", SUBINK = "#5b5a7e";
+// How much of a painted background shows: faded to this, and blurred by this
+// share of the canvas width. One place, so "plainer" or "busier" is one number.
+const PAINT_FADE = 0.45, PAINT_BLUR = 0.012;
 
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -97,7 +100,13 @@ function slideHTML(slide, dev, copyBottom) {
     *{margin:0;padding:0;box-sizing:border-box;}
     html,body{width:${CW}px;height:${CH}px;overflow:hidden;}
     body{position:relative;background:linear-gradient(180deg,${slide.bg[0]} 0%,${slide.bg[1]} 100%);-webkit-font-smoothing:antialiased;}
-    ${slide.bgImage ? `body{background:url(/bg/${slide.bgImage}) center/cover no-repeat,${slide.bg[0]};}
+    ${slide.bgImage ? `/* the painting is a quiet hint of the game's world, never a second picture:
+       blurred and faded over the slide's own soft colours, so the eye goes to
+       the phone (Travis, 11 Oct 2026: "a little bit more plain ... I don't want
+       the background to take away from ... the little phone screen") */
+    .paint{position:absolute;z-index:0;left:-4%;top:-4%;width:108%;height:108%;
+      background:url(/bg/${slide.bgImage}) center/cover no-repeat;opacity:${PAINT_FADE};filter:blur(${CW * PAINT_BLUR}px) saturate(.85);}
+    body::before{z-index:1;}
     /* a soft wash behind the headline so painted art never fights the words */
     body::after{content:"";position:absolute;left:0;right:0;top:0;height:${L.top + L.h1 * 3.6}px;background:linear-gradient(180deg,rgba(255,250,240,.82),rgba(255,250,240,.55) 70%,rgba(255,250,240,0));z-index:0;}
     .copy{z-index:1;}` : ""}
@@ -119,6 +128,7 @@ function slideHTML(slide, dev, copyBottom) {
     .sb{position:absolute;left:0;right:0;top:0;z-index:2;}
     .island{position:absolute;z-index:3;left:50%;top:${11 * k}px;width:${126 * k}px;height:${37 * k}px;margin-left:${-63 * k}px;border-radius:${18.5 * k}px;background:#000;}
   </style></head><body>
+    ${slide.bgImage ? '<div class="paint"></div>' : ""}
     <header class="copy"><h1>${title}</h1><p class="sub">${esc(slide.sub)}</p></header>
     ${decor}
     <div class="phone"><div class="bezel"><div class="screen">
