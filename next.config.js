@@ -47,8 +47,9 @@ const nextConfig = {
       { source: "/mouthcue.js", headers: noStore },
       { source: "/sona.css", headers: noStore },
       // Pages call these by name (11 Oct 2026): the buddy helpers draw a
-      // child's buddy in the games, the four play engines take a buddy and a
-      // level from the page, and the Trophy Road's sheet styles its page. A
+      // child's buddy in the games, the four play engines take a level from
+      // the page (Hoops, Soccer and Dino a buddy too; Bubble Pop keeps Echo
+      // alone), and the Trophy Road's sheet styles its page. A
       // cached old copy next to a fresh page is a missing method; every page
       // checks before it calls, so it still plays, just without the new part.
       { source: "/crafted-buddies.js", headers: noStore },

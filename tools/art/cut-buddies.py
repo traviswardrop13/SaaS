@@ -12,6 +12,10 @@ any of them with one set of numbers.
     python3 tools/art/cut-buddies.py buddy-bunny-run=path/to/drawing.png
     python3 tools/art/cut-buddies.py --out /tmp/look buddy-bunny-run   # write somewhere else
 
+A file already committed is never written over (the eight badges and six
+places that match these names are shipped art; new art gets a new name), unless
+--force says so.
+
 Each NAME reads tools/art/out/game/NAME.png (git-ignored; where gen-sprites.mjs
 writes), or the file after "=", and the name says how it is cut:
 
@@ -47,6 +51,7 @@ in design/crafted-world/buddies-v3.md. Needs PIL and numpy.
 """
 import os
 import re
+import subprocess
 import sys
 import numpy as np
 from PIL import Image
@@ -107,7 +112,20 @@ def needs_alpha(im, name):
         sys.exit("  FAIL: %s has no transparent background; draw it with \"transparent\": true" % name)
 
 
-def cut(name, src, out_dir):
+def tracked(p):
+    """Is this file already committed? Eight badges (buddy-fox-v2 and the rest)
+    and six places (customize-sky-v2 and the rest) match the names this script
+    writes, and they are shipped art, never a draft to cut over."""
+    if not os.path.exists(p):
+        return False
+    try:
+        return subprocess.run(["git", "-C", ROOT, "ls-files", "--error-unmatch", os.path.relpath(p, ROOT)],
+                              capture_output=True).returncode == 0
+    except OSError:
+        return True  # no git to ask: an existing file is treated as shipped
+
+
+def cut(name, src, out_dir, force=False):
     kind = kind_of(name)
     if not kind:
         sys.exit("don't know how to cut %r (see the names in this script's help)" % name)
@@ -158,13 +176,17 @@ def cut(name, src, out_dir):
             sys.exit("  FAIL: a badge is drawn square; this one is %dx%d" % (W, H))
         flat = Image.new("RGB", im.size, OFFWHITE)
         flat.paste(im, mask=im.split()[3])
-        a = np.array(flat.resize((PORTRAIT, PORTRAIT), Image.LANCZOS))
+        a = np.array(flat.resize((PORTRAIT, PORTRAIT), Image.LANCZOS)).astype(np.float64)
         # outside the disc every badge is the same off-white, so badges side by
-        # side (the shop, the board) never show a different paper behind each
+        # side (the shop, the board) never show a different paper behind each.
+        # The disc fills the square, as in the existing set, and its rim is
+        # blended over one pixel the way theirs is: a hard cut steps like a
+        # staircase on a phone's sharp screen.
         ys, xs = np.mgrid[0:PORTRAIT, 0:PORTRAIT]
         r = PORTRAIT / 2
-        a[np.hypot(xs + 0.5 - r, ys + 0.5 - r) > r] = OFFWHITE
-        out, size = Image.fromarray(a), (PORTRAIT, PORTRAIT)
+        cover = np.clip(r - np.hypot(xs + 0.5 - r, ys + 0.5 - r) + 0.5, 0, 1)[:, :, None]
+        a = a * cover + np.array(OFFWHITE, np.float64) * (1 - cover)
+        out, size = Image.fromarray(a.round().astype(np.uint8)), (PORTRAIT, PORTRAIT)
     elif kind == "sheet":
         if (W, H) != (1536, 1024):
             sys.exit("  FAIL: a model sheet is drawn 1536x1024; this one is %dx%d" % (W, H))
@@ -172,6 +194,7 @@ def cut(name, src, out_dir):
     elif kind == "place":
         out, size = im.convert("RGB").resize(PLACE, Image.LANCZOS), PLACE
     else:  # road
+        needs_alpha(im, name)
         if W != H:
             sys.exit("  FAIL: a chest is drawn square; this one is %dx%d" % (W, H))
         out, size = im.resize((ROAD, ROAD), Image.LANCZOS), (ROAD, ROAD)
@@ -181,6 +204,9 @@ def cut(name, src, out_dir):
         dst = os.path.join(SHEETS, name + ".webp")
     else:
         dst = os.path.join(CRAFTED, name + ".webp")
+    if not out_dir and not force and tracked(dst):
+        sys.exit("  FAIL: %s is already in the repo. New art gets a new name (-v2 -> -v3); "
+                 "--force writes over it anyway" % os.path.relpath(dst, ROOT))
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     q = 84 if kind == "place" else 85
     out.save(dst, "WEBP", quality=q, method=6)
@@ -192,6 +218,8 @@ def cut(name, src, out_dir):
 
 def main(argv):
     out_dir = None
+    force = "--force" in argv
+    argv = [a for a in argv if a != "--force"]
     if "--out" in argv:
         i = argv.index("--out")
         if i + 1 >= len(argv):
@@ -202,7 +230,7 @@ def main(argv):
         sys.exit(__doc__)
     for arg in argv:
         name, _, path = arg.partition("=")
-        cut(name, os.path.abspath(path) if path else os.path.join(SRC, name + ".png"), out_dir)
+        cut(name, os.path.abspath(path) if path else os.path.join(SRC, name + ".png"), out_dir, force)
 
 
 if __name__ == "__main__":

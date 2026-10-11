@@ -27,7 +27,7 @@ untouched original by construction.
 The flow for a scripted edit (A7, no model): clear, then clone. The first
 operation of an entry reads its source; each later one reads the working copy
 out/edit/<name>.png the one before it wrote, so running the list again starts
-again from the source.
+again from the source. Only the last one writes the scene into public/.
 
 The flow for a model edit (A8, A9):
     python3 tools/art/scene-edit.py prep stack-workshop-v3
@@ -40,8 +40,8 @@ Boxes are (x0, y0, x1, y1) in the SOURCE picture's pixels, x1 and y1 not
 included (PIL's convention); a circle is (cx, cy, r). The numbers were read off
 the pictures on main 796e5c6; a repainted scene puts its character elsewhere:
 re-read them before running this on it. Writes into the git-ignored
-tools/art/out/edit/ and, for an edit, the entry's `dst` in public/. Needs PIL
-and numpy.
+tools/art/out/edit/ and, once an edit's last operation has run, the entry's
+`dst` in public/. Needs PIL and numpy.
 """
 import os
 import sys
@@ -248,6 +248,12 @@ def scripted(name, op, lossless):
         a[dy:dy + h, dx:dx + w] = before[sy0:sy1, sx0:sx1]
         report("clone %s -> %s" % ((sx0, sy0, sx1, sy1), rect), before, a, box_of(rect, hw))
     save_png(a, work)
+    # Only the entry's last operation writes the scene into public/: a scene
+    # written after `clear` alone would be a counter with a gap in its ledge,
+    # one commit away from a child's screen.
+    if op != e["ops"][-1]:
+        print("  wrote out/edit/%s.png only; run %s %s next, which writes %s" % (name, e["ops"][-1], name, e["dst"]))
+        return
     # every box this entry's operations so far have touched
     upto = e["ops"][: e["ops"].index(op) + 1]
     union = np.zeros(hw, bool)
