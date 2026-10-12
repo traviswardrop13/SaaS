@@ -141,7 +141,7 @@ for (const [game, title, art] of SKIES) {
 // child can read counts.
 {
   const KID = new Set(["today.html", "activities.html", "charge.html", "library.html", "story.html", "chapter.html",
-    "stickers.html", "customize.html",
+    "stickers.html", "customize.html", "road.html", "board.html",
     ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
   // and flagged every JS comparison operator in the app, so scripts and
@@ -317,7 +317,7 @@ for (const [game, title, art] of SKIES) {
   // every kid page gets its button colours from a shared sheet: /action.css
   // (linked, or through sona.css), or the crafted layer it opts into
   const links = (f, href) => [...srcOf(f).replace(/<!--[\s\S]*?-->/g, "").matchAll(/<link\b[^>]*>/gi)].some((m) => m[0].includes('href="' + href + '"') && /rel="stylesheet"/.test(m[0]));
-  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html"]
+  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html", "road.html", "board.html"]
     .filter((f) => !links(f, "/action.css") && !links(f, "/sona.css") && !(craftedPage(f) && links(f, "/crafted-games.css")));
   ok("every kid page takes its action colour from a shared sheet: action.css, or the crafted layer it opts into", noSheet.length === 0, noSheet.join(" | "));
 
@@ -341,6 +341,12 @@ for (const [game, title, art] of SKIES) {
     // 29 Sep 2026: "Share this week" left the Grown-ups pop-up (Progress keeps
     // it); on 30 Sep 2026 the pop-up itself went (the code opens Settings)
     ["today.html", ["#libraryUnlock"]],
+    // the Trophy Road (11 Oct 2026): the chest's "Open it" and "Open next"
+    ["road.html", ["#chestOpen", "#openNext"]],
+    // the Buddy Shop (11 Oct 2026): "Get it", the one action a child holds
+    ["customize.html", ["#getBtn"]],
+    // the Practice Board (11 Oct 2026, built dark): "Home" when it is off
+    ["board.html", ["#boardHome"]],
     ["settings.html", ["button.btn:not(.ghost):not(.blue)"]],
   ];
   const notTeal = [];

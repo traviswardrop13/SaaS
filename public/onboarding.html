@@ -365,7 +365,12 @@
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
       <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <!-- The Practice Board line (11 Oct 2026) speaks of it only as something
+           Sona may offer, and says what is true for THIS reader: a phone
+           holding a clinician's link (sona.slp, slpok, slpunlock, slpticket),
+           or set up by a clinician, can never turn it on (boardAllowed's
+           "clinic"), so none of their families is on it. -->
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. If Sona offers its Practice Board, it stays off on any phone that holds your link. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -601,9 +606,12 @@
       return Sona.buddyMarkup(id, 64);
     }
 
-    // buddy grid
+    // buddy grid: only the buddies this family has (SHOP1, 11 Oct 2026). On
+    // a phone set up after the Buddy Shop that is the three starters; the
+    // rest are got in the shop. An older cached sona.js has no owns().
     var bg = document.getElementById("obBuddies");
-    Sona.CHARACTERS.forEach(function(c){
+    var mine = Sona.CHARACTERS.filter(function(c){ return !Sona.owns || !Sona.shopItem || Sona.owns("characters", c.id); });
+    mine.forEach(function(c){
       var el=document.createElement("div");
       el.className="bopt"+(c.id===draft.character?" on":"")+(c.locked?" locked":"");
       el.innerHTML='<span class="be">'+Sona.buddyMarkup(c.id,38)+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
@@ -614,7 +622,7 @@
     // buddy always starts selected so the step is a single tap
     if(!bg.querySelector(".bopt.on")){
       var first=bg.querySelector(".bopt:not(.locked)");
-      if(first){ first.classList.add("on"); draft.character=Sona.CHARACTERS[0].id; }
+      if(first){ first.classList.add("on"); draft.character=mine[0].id; }
     }
     // kit icons replace the last chrome emoji (fix pack 1b/1e) — the emoji in
     // the HTML stays as the fallback if the icon kit is ever missing
@@ -625,7 +633,7 @@
       var el=document.createElement("div"); el.className="bopt";
       el.innerHTML='<span class="be">'+((window.Sona&&Sona.icon&&Sona.icon("star",30))||"⭐")+'</span><span class="bn">Surprise me</span>';
       el.onclick=function(){
-        var pick=Sona.CHARACTERS[(Math.random()*Sona.CHARACTERS.length)|0];
+        var pick=mine[(Math.random()*mine.length)|0];
         Sona.sfx.tap(); draft.character=pick.id;
         bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");});
         bg.children[Array.prototype.findIndex.call(bg.children,function(n){return n.textContent.indexOf(pick.name)>=0;})].classList.add("on");

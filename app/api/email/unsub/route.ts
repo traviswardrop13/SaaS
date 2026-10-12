@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
   const v = validate(req);
   if (!v) return page("That link didn't work", "It may have expired. Reply to any Sona email and we'll take care of it by hand.");
   return page(
-    "Unsubscribe from the weekly email?",
+    "Unsubscribe from Sona emails?",
     "One tap and you're out — your child's practice and report stay right in the app, always.",
     { e: v.email, k: String(req.nextUrl.searchParams.get("k") || "") },
   );
@@ -75,5 +75,5 @@ export async function POST(req: NextRequest) {
   if (res === undefined) {
     return page("Almost — one hiccup", "We couldn't save that just now. Reply to any Sona email and we'll unsubscribe you by hand today.");
   }
-  return page("You're unsubscribed 🧡", "No more weekly emails. Your child's practice and report stay right in the app, always.");
+  return page("You're unsubscribed 🧡", "No more emails from Sona. Your child's practice and report stay right in the app, always.");
 }

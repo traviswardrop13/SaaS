@@ -45,7 +45,7 @@ const tts = { up: false, said: [], all: [], delay: 0 };
 // lines, "To keep playing, say" and "Go!", as the page loads, whatever the
 // card will ask: every request is kept in tts.all, and tts.said holds only
 // the card's own asks (a syllable or word line, Echo's idea).
-const HELPER_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a heart and Super Slice, say"]);
+const HELPER_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a new life, say"]);
 const server = createServer((req, res) => {
   const u = new URL(req.url, BASE), f = path.join(ROOT, u.pathname);
   // Echo's voice: down unless a scenario turns it on (tts.up), and every line asked for is kept
@@ -244,7 +244,7 @@ const WIN = /^(You sliced the giant watermelon!|I saw the fruit fly! So fun!)$/;
 await scenario("three lives and an earned heart", async () => {
   const {context,page,errors}=await open();
   try {
-    const built=await page.evaluate(() => typeof loseHeart === "function" && typeof gainHeart === "function");
+    const built=await page.evaluate(() => typeof loseHeart === "function" && typeof lifeOrEnd === "function");
     ok("Fruit Slice has three real lives", built);
     if(!built) return;
     await page.evaluate(() => { fruits=[]; nextToss=1e9; WAVES[0].goal=999; });
@@ -254,11 +254,22 @@ await scenario("three lives and an earned heart", async () => {
     ok("one pile of fruit cannot take all three hearts",out===2,out);
     out=await page.evaluate(() => { heartLastAt=-1e9; slowMs=8000; loseHeart(performance.now()); slowMs=0; slowTurn={finishing:true}; loseHeart(performance.now()); slowTurn=null; return hearts; });
     ok("a speaking turn and an earned power protect the remaining lives",out===2,out);
-    out=await page.evaluate(() => { gainHeart(); gainHeart(); return hearts; });
-    ok("a heard sound restores one life, never more than three",out===3,out);
+    out=await page.evaluate(() => (!SLOW_HELP.onHeard && typeof gainHeart === "undefined") ? hearts : -1);
+    ok("a heard Super Slice gives no heart back any more: only the power",out===2,out);
+    const REV0=await page.evaluate(()=>REV);
     const pace=await page.evaluate(() => { pacePlay=0; const first=slicePace(); pacePlay=90000; const later=slicePace(); heartLastAt=-1e9; loseHeart(performance.now()); return {first,later,back:slicePace()}; });
     ok("fruit starts slow, gets harder, and backs off after a miss",pace.first===1&&pace.later>pace.first&&pace.back<pace.later,pace);
     await page.evaluate(() => { hearts=1; heartLastAt=-1e9; loseHeart(performance.now()); });
+    // A NEW LIFE ONLY ON A LOSS (8 Oct 2026): the last heart opens the say-it card
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    ok("the last heart opens the new-life card instead of ending the round",await page.evaluate(()=>hearts===0&&lifeCard&&reviveWait&&!playing&&!window.__ended&&/for a new life!$/.test(document.getElementById("revTitle").textContent)));
+    ok("…with empty hearts on the card, and nothing counted yet",await page.evaluate(()=>document.querySelectorAll("#revHearts svg, #revHearts img, #revHearts span").length>0));
+    await page.evaluate(()=>{closeReviveMic();doRevive();});
+    ok("a heard sound on that card brings every heart back, and play goes on where it stopped",await page.evaluate(()=>hearts===3&&playing&&!reviveWait&&!lifeCard&&!window.__ended));
+    ok("…without spending one of the between-round cards",await page.evaluate(()=>REV)===REV0,await page.evaluate(()=>REV));
+    await page.evaluate(() => { hearts=1; heartLastAt=-1e9; loseHeart(performance.now()); });
+    await page.waitForFunction(()=>reviveWait||window.__ended);
+    await page.evaluate(()=>{if(reviveWait)document.getElementById("revDone").click();});
     await page.waitForFunction(() => !!window.__ended);
     ok("zero hearts ends on Play again and Back home with the mic closed",await page.evaluate(() => hearts===0&&!playing&&!reviveWait&&!rv.st&&document.getElementById("endOvl").classList.contains("show")&&getComputedStyle(document.getElementById("endCharge")).display!=="none"));
     ok("lives produce no page errors",errors.length===0,errors);

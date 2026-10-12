@@ -81,33 +81,57 @@
   // (e.g. /coach/echo/echo-idle.svg) once the separated character poses arrive.
   // The buddy cast — 8 original sticker characters (design handoff, section 06).
   // `svg` is the circular sticker (120 viewBox); `emoji` stays as the canvas-game
-  // fallback until each game draws the sticker sprite directly.
+  // fallback until each game draws the sticker sprite directly. `source` and
+  // `cost` are the Buddy Shop's (SHOP1, 11 Oct 2026; see OUTFITS just below).
+  // A new buddy is appended, never inserted (item 0 is byId's fallback), and
+  // only once its painted portrait is on disk.
   const CHARACTERS = [
-    { id: 'fox', name: 'Pip', emoji: '🦊', svg: '<svg viewBox="0 0 120 120"><clipPath id="bFox"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe29a"></circle><g clip-path="url(#bFox)"><path d="M30 32l16 18-22 6Z" fill="#ff8a3d"></path><path d="M90 32l-16 18 22 6Z" fill="#ff8a3d"></path><path d="M34 38l9 10-12 3.5Z" fill="#e5672a"></path><path d="M86 38l-9 10 12 3.5Z" fill="#e5672a"></path><circle cx="60" cy="72" r="28" fill="#ff8a3d"></circle><ellipse cx="60" cy="83" rx="14" ry="10" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><circle cx="60" cy="79" r="3.5" fill="#3d2a1a"></circle><circle cx="41" cy="78" r="4" fill="#ffb98a"></circle><circle cx="79" cy="78" r="4" fill="#ffb98a"></circle></g></svg>', locked: false },
-    { id: 'bunny', name: 'Miso', emoji: '🐰', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBun"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#cdefff"></circle><g clip-path="url(#bBun)"><ellipse cx="47" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(-8 47 30)"></ellipse><ellipse cx="73" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(8 73 30)"></ellipse><ellipse cx="47" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(-8 47 33)"></ellipse><ellipse cx="73" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(8 73 33)"></ellipse><circle cx="60" cy="74" r="27" fill="#f7f3ee"></circle><ellipse cx="49" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="50" cy="69" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="70" cy="69" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff8fa3"></path><rect x="55" y="84" width="10" height="8" rx="2.5" fill="#fff" stroke="#e8ddd2" stroke-width="1"></rect><line x1="60" y1="84" x2="60" y2="92" stroke="#e8ddd2" stroke-width="1.5"></line><circle cx="41" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="79" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false },
-    { id: 'dragon', name: 'Ziggy', emoji: '🐲', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDrg"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffd9e8"></circle><g clip-path="url(#bDrg)"><path d="M44 38l-6-16 13 10Z" fill="#ffe9c9"></path><path d="M76 38l6-16-13 10Z" fill="#ffe9c9"></path><path d="M52 34l4-9 4 9Z" fill="#3cae7d"></path><path d="M62 33l4-9 4 9Z" fill="#3cae7d"></path><circle cx="60" cy="72" r="28" fill="#63d6a3"></circle><ellipse cx="60" cy="84" rx="15" ry="10" fill="#a5ecc9"></ellipse><circle cx="55" cy="82" r="2" fill="#2e8f68"></circle><circle cx="65" cy="82" r="2" fill="#2e8f68"></circle><ellipse cx="48" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="65" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="65" r="3" fill="#2b2a4a"></circle><path d="M50 92q10 6 20 0" stroke="#2e8f68" stroke-width="3.5" fill="none" stroke-linecap="round"></path></g></svg>', locked: false },
-    { id: 'cat', name: 'Mochi', emoji: '🐱', svg: '<svg viewBox="0 0 120 120"><clipPath id="bCat"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#e5dcff"></circle><g clip-path="url(#bCat)"><path d="M36 32l14 14-19 7Z" fill="#ff9d7a"></path><path d="M84 32l-14 14 19 7Z" fill="#ff9d7a"></path><path d="M40 38l7 8-10 3.5Z" fill="#ffc9b3"></path><path d="M80 38l-7 8 10 3.5Z" fill="#ffc9b3"></path><circle cx="60" cy="72" r="27" fill="#ff9d7a"></circle><ellipse cx="60" cy="83" rx="13" ry="9" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff6b8a"></path><path d="M54 86q6 4 12 0" stroke="#e5764f" stroke-width="2.5" fill="none" stroke-linecap="round"></path><line x1="28" y1="76" x2="40" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="28" y1="84" x2="40" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="76" x2="80" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="84" x2="80" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line></g></svg>', locked: false },
-    { id: 'bee', name: 'Buzz', emoji: '🐝', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBee"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#dff5c2"></circle><g clip-path="url(#bBee)"><line x1="48" y1="38" x2="42" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><line x1="72" y1="38" x2="78" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><circle cx="42" cy="22" r="4.5" fill="#3d3d3d"></circle><circle cx="78" cy="22" r="4.5" fill="#3d3d3d"></circle><ellipse cx="26" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(-24 26 58)"></ellipse><ellipse cx="94" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(24 94 58)"></ellipse><clipPath id="bBeeB"><circle cx="60" cy="70" r="27"></circle></clipPath><circle cx="60" cy="70" r="27" fill="#ffd43b"></circle><g clip-path="url(#bBeeB)"><rect x="30" y="78" width="60" height="9" fill="#3d3d3d"></rect><rect x="30" y="92" width="60" height="9" fill="#3d3d3d"></rect></g><ellipse cx="49" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="50" cy="63" r="3" fill="#2b2a4a"></circle><ellipse cx="71" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="70" cy="63" r="3" fill="#2b2a4a"></circle><path d="M53 71q7 5 14 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path></g></svg>', locked: false },
-    { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false },
-    { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false },
-    { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false },
+    { id: 'fox', name: 'Pip', emoji: '🦊', svg: '<svg viewBox="0 0 120 120"><clipPath id="bFox"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe29a"></circle><g clip-path="url(#bFox)"><path d="M30 32l16 18-22 6Z" fill="#ff8a3d"></path><path d="M90 32l-16 18 22 6Z" fill="#ff8a3d"></path><path d="M34 38l9 10-12 3.5Z" fill="#e5672a"></path><path d="M86 38l-9 10 12 3.5Z" fill="#e5672a"></path><circle cx="60" cy="72" r="28" fill="#ff8a3d"></circle><ellipse cx="60" cy="83" rx="14" ry="10" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><circle cx="60" cy="79" r="3.5" fill="#3d2a1a"></circle><circle cx="41" cy="78" r="4" fill="#ffb98a"></circle><circle cx="79" cy="78" r="4" fill="#ffb98a"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    { id: 'bunny', name: 'Miso', emoji: '🐰', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBun"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#cdefff"></circle><g clip-path="url(#bBun)"><ellipse cx="47" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(-8 47 30)"></ellipse><ellipse cx="73" cy="30" rx="9" ry="22" fill="#f7f3ee" transform="rotate(8 73 30)"></ellipse><ellipse cx="47" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(-8 47 33)"></ellipse><ellipse cx="73" cy="33" rx="4.5" ry="14" fill="#ffb9c8" transform="rotate(8 73 33)"></ellipse><circle cx="60" cy="74" r="27" fill="#f7f3ee"></circle><ellipse cx="49" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="50" cy="69" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="68" rx="6" ry="7" fill="#fff" stroke="#e8ddd2" stroke-width="1"></ellipse><circle cx="70" cy="69" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff8fa3"></path><rect x="55" y="84" width="10" height="8" rx="2.5" fill="#fff" stroke="#e8ddd2" stroke-width="1"></rect><line x1="60" y1="84" x2="60" y2="92" stroke="#e8ddd2" stroke-width="1.5"></line><circle cx="41" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="79" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    { id: 'dragon', name: 'Ziggy', emoji: '🐲', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDrg"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffd9e8"></circle><g clip-path="url(#bDrg)"><path d="M44 38l-6-16 13 10Z" fill="#ffe9c9"></path><path d="M76 38l6-16-13 10Z" fill="#ffe9c9"></path><path d="M52 34l4-9 4 9Z" fill="#3cae7d"></path><path d="M62 33l4-9 4 9Z" fill="#3cae7d"></path><circle cx="60" cy="72" r="28" fill="#63d6a3"></circle><ellipse cx="60" cy="84" rx="15" ry="10" fill="#a5ecc9"></ellipse><circle cx="55" cy="82" r="2" fill="#2e8f68"></circle><circle cx="65" cy="82" r="2" fill="#2e8f68"></circle><ellipse cx="48" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="65" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="64" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="65" r="3" fill="#2b2a4a"></circle><path d="M50 92q10 6 20 0" stroke="#2e8f68" stroke-width="3.5" fill="none" stroke-linecap="round"></path></g></svg>', locked: false, source: 'shop', cost: 150 },
+    { id: 'cat', name: 'Mochi', emoji: '🐱', svg: '<svg viewBox="0 0 120 120"><clipPath id="bCat"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#e5dcff"></circle><g clip-path="url(#bCat)"><path d="M36 32l14 14-19 7Z" fill="#ff9d7a"></path><path d="M84 32l-14 14 19 7Z" fill="#ff9d7a"></path><path d="M40 38l7 8-10 3.5Z" fill="#ffc9b3"></path><path d="M80 38l-7 8 10 3.5Z" fill="#ffc9b3"></path><circle cx="60" cy="72" r="27" fill="#ff9d7a"></circle><ellipse cx="60" cy="83" rx="13" ry="9" fill="#fff"></ellipse><ellipse cx="49" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="50" cy="67" r="3" fill="#3d2a1a"></circle><ellipse cx="71" cy="66" rx="6" ry="7" fill="#fff"></ellipse><circle cx="70" cy="67" r="3" fill="#3d2a1a"></circle><path d="M57 78h6l-3 4Z" fill="#ff6b8a"></path><path d="M54 86q6 4 12 0" stroke="#e5764f" stroke-width="2.5" fill="none" stroke-linecap="round"></path><line x1="28" y1="76" x2="40" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="28" y1="84" x2="40" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="76" x2="80" y2="78" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line><line x1="92" y1="84" x2="80" y2="83" stroke="#e5764f" stroke-width="2" stroke-linecap="round"></line></g></svg>', locked: false, source: 'shop', cost: 100 },
+    { id: 'bee', name: 'Buzz', emoji: '🐝', svg: '<svg viewBox="0 0 120 120"><clipPath id="bBee"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#dff5c2"></circle><g clip-path="url(#bBee)"><line x1="48" y1="38" x2="42" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><line x1="72" y1="38" x2="78" y2="24" stroke="#3d3d3d" stroke-width="3" stroke-linecap="round"></line><circle cx="42" cy="22" r="4.5" fill="#3d3d3d"></circle><circle cx="78" cy="22" r="4.5" fill="#3d3d3d"></circle><ellipse cx="26" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(-24 26 58)"></ellipse><ellipse cx="94" cy="58" rx="14" ry="9" fill="#fff" opacity=".85" transform="rotate(24 94 58)"></ellipse><clipPath id="bBeeB"><circle cx="60" cy="70" r="27"></circle></clipPath><circle cx="60" cy="70" r="27" fill="#ffd43b"></circle><g clip-path="url(#bBeeB)"><rect x="30" y="78" width="60" height="9" fill="#3d3d3d"></rect><rect x="30" y="92" width="60" height="9" fill="#3d3d3d"></rect></g><ellipse cx="49" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="50" cy="63" r="3" fill="#2b2a4a"></circle><ellipse cx="71" cy="62" rx="6" ry="7" fill="#fff" stroke="#e8c86a" stroke-width="1"></ellipse><circle cx="70" cy="63" r="3" fill="#2b2a4a"></circle><path d="M53 71q7 5 14 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path></g></svg>', locked: false, source: 'shop', cost: 100 },
+    { id: 'octopus', name: 'Otto', emoji: '🐙', svg: '<svg viewBox="0 0 120 120"><clipPath id="bOct"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffe9c9"></circle><g clip-path="url(#bOct)"><circle cx="60" cy="64" r="28" fill="#a86ee3"></circle><circle cx="38" cy="92" r="9" fill="#a86ee3"></circle><circle cx="53" cy="97" r="9" fill="#a86ee3"></circle><circle cx="68" cy="97" r="9" fill="#a86ee3"></circle><circle cx="83" cy="92" r="9" fill="#a86ee3"></circle><circle cx="38" cy="90" r="3" fill="#c79bf0"></circle><circle cx="53" cy="95" r="3" fill="#c79bf0"></circle><circle cx="68" cy="95" r="3" fill="#c79bf0"></circle><circle cx="83" cy="90" r="3" fill="#c79bf0"></circle><ellipse cx="49" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="50" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="71" cy="58" rx="6.5" ry="7.5" fill="#fff"></ellipse><circle cx="70" cy="59" r="3.2" fill="#2b2a4a"></circle><ellipse cx="60" cy="72" rx="7" ry="5.5" fill="#5c3494"></ellipse><ellipse cx="60" cy="74.5" rx="4" ry="2.5" fill="#ff8fa3"></ellipse><circle cx="41" cy="68" r="4.5" fill="#c79bf0"></circle><circle cx="79" cy="68" r="4.5" fill="#c79bf0"></circle></g></svg>', locked: false, source: 'shop', cost: 150 },
+    { id: 'dino', name: 'Rocky', emoji: '🦖', svg: '<svg viewBox="0 0 120 120"><clipPath id="bDin"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#d6f0ff"></circle><g clip-path="url(#bDin)"><path d="M42 36l5-12 5 12Z" fill="#ffe9c9"></path><path d="M55 32l5-12 5 12Z" fill="#ffe9c9"></path><path d="M68 36l5-12 5 12Z" fill="#ffe9c9"></path><circle cx="60" cy="72" r="28" fill="#4dc6b8"></circle><ellipse cx="60" cy="85" rx="16" ry="11" fill="#a8e8e0"></ellipse><circle cx="54" cy="83" r="2.2" fill="#2e8f83"></circle><circle cx="66" cy="83" r="2.2" fill="#2e8f83"></circle><ellipse cx="48" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="49" cy="64" r="3" fill="#2b2a4a"></circle><ellipse cx="72" cy="63" rx="6" ry="7" fill="#fff"></ellipse><circle cx="71" cy="64" r="3" fill="#2b2a4a"></circle><path d="M50 93q10 7 20 0" stroke="#2e8f83" stroke-width="3.5" fill="none" stroke-linecap="round"></path><path d="M55 94l3 4 3-4Z" fill="#fff"></path></g></svg>', locked: false, source: 'shop', cost: 120 },
+    { id: 'panda', name: 'Bao', emoji: '🐼', svg: '<svg viewBox="0 0 120 120"><clipPath id="bPan"><circle cx="60" cy="60" r="56"></circle></clipPath><circle cx="60" cy="60" r="56" fill="#ffdf9e"></circle><g clip-path="url(#bPan)"><circle cx="38" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="82" cy="42" r="11" fill="#3d3d3d"></circle><circle cx="60" cy="72" r="28" fill="#fff"></circle><ellipse cx="47" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(-14 47 64)"></ellipse><ellipse cx="73" cy="64" rx="9" ry="11" fill="#3d3d3d" transform="rotate(14 73 64)"></ellipse><circle cx="48" cy="64" r="3.6" fill="#fff"></circle><circle cx="49" cy="65" r="2" fill="#2b2a4a"></circle><circle cx="72" cy="64" r="3.6" fill="#fff"></circle><circle cx="71" cy="65" r="2" fill="#2b2a4a"></circle><ellipse cx="60" cy="79" rx="4" ry="3" fill="#3d3d3d"></ellipse><path d="M54 87q6 4 12 0" stroke="#3d3d3d" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="40" cy="80" r="4.5" fill="#ffd6c9"></circle><circle cx="80" cy="80" r="4.5" fill="#ffd6c9"></circle></g></svg>', locked: false, source: 'starter', cost: null },
+    // The Trophy Road's own four (11 Oct 2026): painted, no sticker
+    // svg (buddyMarkup shows the emoji; the painted badge sits over it).
+    // Never Bo (the bear in goal) or Robot (Robot Builder): taken names.
+    { id: 'frog', name: 'Hops', emoji: '🐸', svg: '', portrait: "/assets/crafted/buddy-frog-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'penguin', name: 'Pebble', emoji: '🐧', svg: '', portrait: "/assets/crafted/buddy-penguin-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'lion', name: 'Sunny', emoji: '🦁', svg: '', portrait: "/assets/crafted/buddy-lion-v2.webp", locked: false, source: 'road', cost: null },
+    { id: 'unicorn', name: 'Luna', emoji: '🦄', svg: '', portrait: "/assets/crafted/buddy-unicorn-v2.webp", locked: false, source: 'road', cost: null },
   ];
+  // Hats and places. `source` is how a family that set up after the Buddy
+  // Shop (11 Oct 2026, SHOP1) gets each one: "starter" (theirs from the
+  // start), "shop" (for `cost` coins) or "road" (a Trophy Road stop gives it);
+  // a household already on Sona kept everything it could pick that day
+  // (LEGACY_SET, the OWN1 sweep). An entry joins only with its painted art.
+  // `art` is a hat's painted picture (11 Oct 2026): the shop shows it where the
+  // page's drawn hat used to be, and a new hat joins only with its picture.
   const OUTFITS = [
-    { id: "none",   name: "None",   emoji: "",   cost: 0 },
-    { id: "crown",  name: "Crown",  emoji: "👑", cost: 30 },
-    { id: "tophat", name: "Top hat",emoji: "🎩", cost: 25 },
-    { id: "cap",    name: "Cap",    emoji: "🧢", cost: 20 },
-    { id: "shades", name: "Cool",   emoji: "🕶️", cost: 25 },
-    { id: "bow",    name: "Bow",    emoji: "🎀", cost: 20 },
-    { id: "party",  name: "Party",  emoji: "🥳", cost: 40 },
+    { id: "none",   name: "None",   emoji: "",   source: "starter", cost: null },
+    { id: "crown",  name: "Crown",  emoji: "👑", source: "shop", cost: 80, art: "/assets/crafted/hat-crown.webp" },
+    { id: "tophat", name: "Top hat",emoji: "🎩", source: "shop", cost: 60, art: "/assets/crafted/hat-tophat.webp" },
+    { id: "cap",    name: "Cap",    emoji: "🧢", source: "shop", cost: 40, art: "/assets/crafted/hat-cap.webp" },
+    { id: "shades", name: "Cool",   emoji: "🕶️", source: "shop", cost: 60, art: "/assets/crafted/hat-shades.webp" },
+    { id: "bow",    name: "Bow",    emoji: "🎀", source: "shop", cost: 40, art: "/assets/crafted/hat-bow.webp" },
+    { id: "party",  name: "Party",  emoji: "🥳", source: "shop", cost: 80, art: "/assets/crafted/hat-party.webp" },
+    { id: "flowercrown", name: "Flower crown", emoji: "🌸", source: "shop", cost: 150, art: "/assets/crafted/hat-flowercrown.webp" },
+    { id: "sunhat",     name: "Sun hat",    emoji: "👒", source: "road", cost: null, art: "/assets/crafted/hat-sunhat.webp" },
+    { id: "starclip",   name: "Star clip",  emoji: "⭐", source: "road", cost: null, art: "/assets/crafted/hat-starclip.webp" },
+    { id: "headphones", name: "Headphones", emoji: "🎧", source: "road", cost: null, art: "/assets/crafted/hat-headphones.webp" },
   ];
   const BACKDROPS = [
-    { id: "sky",      name: "Sky",       cost: 0,  css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
-    { id: "jungle",   name: "Jungle",    cost: 40, css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
-    { id: "forest",   name: "Forest",    cost: 40, css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
-    { id: "mountain", name: "Mountains", cost: 50, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
-    { id: "space",    name: "Space",     cost: 60, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
-    { id: "beach",    name: "Beach",     cost: 50, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "sky",      name: "Sky",       source: "starter", cost: null, css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
+    { id: "jungle",   name: "Jungle",    source: "shop", cost: 80,  css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
+    { id: "forest",   name: "Forest",    source: "shop", cost: 80,  css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
+    { id: "mountain", name: "Mountains", source: "shop", cost: 120, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
+    { id: "space",    name: "Space",     source: "shop", cost: 150, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
+    { id: "beach",    name: "Beach",     source: "shop", cost: 120, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "candy",    name: "Candy land", source: "shop", cost: 250, css: "linear-gradient(180deg,#ffd9ec,#fff3f8)", scene: ["🍭", "🍬", "🧁"] },
+    { id: "snow",     name: "Snow",      source: "road", cost: null, css: "linear-gradient(180deg,#d9ebff,#f7fbff)", scene: ["❄️", "⛄", "🌲"] },
+    { id: "sea",      name: "Under the sea", source: "road", cost: null, css: "linear-gradient(180deg,#a9dcef,#e2f5fb)", scene: ["🐠", "🐚", "🌊"] },
   ];
   const byId = (list, id) => list.find((x) => x.id === id) || list[0];
   const characterById = (id) => byId(CHARACTERS, id);
@@ -119,6 +143,48 @@
     if (c.svg) return '<span style="display:inline-block;width:' + s + 'px;height:' + s + 'px;border-radius:50%;overflow:hidden;vertical-align:middle;">' + c.svg + '</span>';
     if (c.img) return '<img src="' + c.img + '" alt="' + c.name + '" style="width:' + s + 'px;height:' + s + 'px;object-fit:contain;display:inline-block;vertical-align:middle;" />';
     return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
+  }
+
+  // ── BUDDY2: every painted picture of a buddy, by pose (11 Oct 2026) ──
+  // Play as your buddy (Travis, 9 Oct 2026: "they actually BE the character in
+  // the game"). A pose with no picture on disk is simply absent (no stand-in
+  // art), and each game falls back in one order: its pose → that pose's
+  // fallback pose → the portrait in a circle → the sticker SVG (xmlns added)
+  // → a plain dot.
+  // "run"   = seen from behind, running (Sound Sprint): [src, sx, sy, sw, sh] (a crop),
+  //           or just [src] when the file is already cut to the 480x840 frame.
+  // "rest"  = front, full body, standing calmly, like echo-welcome (512x512).
+  // "cheer" = front, full body, arms up, like echo-cheer (512x512); falls back to rest.
+  // "peek"  = head and paws over a ledge, bottom cut flat (Fruit Slice, 512x384).
+  // "sit"   = sitting on Block Stacker's bench (512x512); falls back to rest.
+  // "portrait" = the 288px round badge every screen uses.
+  // The fox keeps its painted Fruit Slice counter and Block Stacker bench, so
+  // it has no peek or sit. Each line is added by the art step that lands its
+  // files; how each was drawn, cut and checked is design/crafted-world/buddies-v3.md.
+  const BUDDY_ART = {
+    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp" },
+    bunny:   { run: ["/assets/crafted/buddy-bunny-run.webp"], rest: "/assets/crafted/buddy-bunny-rest.webp", cheer: "/assets/crafted/buddy-bunny-cheer.webp", peek: "/assets/crafted/buddy-bunny-peek.webp", sit: "/assets/crafted/buddy-bunny-sit.webp" },
+    dragon:  { run: ["/assets/crafted/buddy-dragon-run.webp"], rest: "/assets/crafted/buddy-dragon-rest.webp", cheer: "/assets/crafted/buddy-dragon-cheer.webp", peek: "/assets/crafted/buddy-dragon-peek.webp", sit: "/assets/crafted/buddy-dragon-sit.webp" },
+    cat:     { run: ["/assets/crafted/buddy-cat-run.webp"], rest: "/assets/crafted/buddy-cat-rest.webp", cheer: "/assets/crafted/buddy-cat-cheer.webp", peek: "/assets/crafted/buddy-cat-peek.webp", sit: "/assets/crafted/buddy-cat-sit.webp" },
+    bee:     { run: ["/assets/crafted/buddy-bee-run.webp"], rest: "/assets/crafted/buddy-bee-rest.webp", cheer: "/assets/crafted/buddy-bee-cheer.webp", peek: "/assets/crafted/buddy-bee-peek.webp", sit: "/assets/crafted/buddy-bee-sit.webp" },
+    octopus: { run: ["/assets/crafted/buddy-octopus-run.webp"], rest: "/assets/crafted/buddy-octopus-rest.webp", cheer: "/assets/crafted/buddy-octopus-cheer.webp", peek: "/assets/crafted/buddy-octopus-peek.webp", sit: "/assets/crafted/buddy-octopus-sit.webp" },
+    dino:    { run: ["/assets/crafted/buddy-dino-run.webp"], rest: "/assets/crafted/buddy-dino-rest.webp", cheer: "/assets/crafted/buddy-dino-cheer.webp", peek: "/assets/crafted/buddy-dino-peek.webp", sit: "/assets/crafted/buddy-dino-sit.webp" },
+    panda:   { run: ["/assets/crafted/buddy-panda-run.webp"], rest: "/assets/crafted/buddy-panda-rest.webp", cheer: "/assets/crafted/buddy-panda-cheer.webp", peek: "/assets/crafted/buddy-panda-peek.webp", sit: "/assets/crafted/buddy-panda-sit.webp" },
+    frog:    { run: ["/assets/crafted/buddy-frog-run.webp"], rest: "/assets/crafted/buddy-frog-rest.webp", cheer: "/assets/crafted/buddy-frog-cheer.webp", peek: "/assets/crafted/buddy-frog-peek.webp", sit: "/assets/crafted/buddy-frog-sit.webp" },
+    penguin: { run: ["/assets/crafted/buddy-penguin-run.webp"], rest: "/assets/crafted/buddy-penguin-rest.webp", cheer: "/assets/crafted/buddy-penguin-cheer.webp", peek: "/assets/crafted/buddy-penguin-peek.webp", sit: "/assets/crafted/buddy-penguin-sit.webp" },
+    lion:    { run: ["/assets/crafted/buddy-lion-run.webp"], rest: "/assets/crafted/buddy-lion-rest.webp", cheer: "/assets/crafted/buddy-lion-cheer.webp", peek: "/assets/crafted/buddy-lion-peek.webp", sit: "/assets/crafted/buddy-lion-sit.webp" },
+    unicorn: { run: ["/assets/crafted/buddy-unicorn-run.webp"], rest: "/assets/crafted/buddy-unicorn-rest.webp", cheer: "/assets/crafted/buddy-unicorn-cheer.webp", peek: "/assets/crafted/buddy-unicorn-peek.webp", sit: "/assets/crafted/buddy-unicorn-sit.webp" },
+  };
+  const BUDDY_POSE_ORDER = { rest: ["rest"], cheer: ["cheer", "rest"], peek: ["peek"], sit: ["sit", "rest"] };
+  // "leo" (an old pick) or anything unknown is the fox, as characterById says
+  function buddyId() { try { return characterById(getProfile().character).id; } catch (e) { return "fox"; } }
+  function buddySprite(id, pose) {
+    const c = characterById(id), a = BUDDY_ART[c.id] || {};
+    if (pose === "portrait") return c.portrait || ("/assets/crafted/buddy-" + c.id + "-v2.webp");
+    if (pose === "run") { const r = a.run; return r ? { src: r[0], crop: r.length === 5 ? r.slice(1) : null } : null; }
+    const order = BUDDY_POSE_ORDER[pose] || [];
+    for (let i = 0; i < order.length; i++) if (a[order[i]]) return { src: a[order[i]], pose: order[i] };
+    return null;
   }
 
   // ── Sound Town houses: shared art + per-sound color theme ──
@@ -217,6 +283,12 @@
     // old "sona.best.<game>" keys were one per phone, so siblings overwrote
     // each other; they are not carried over.
     "sona.bests.v1",
+    // each child's own trophies, daily chest, Trophy Road and game levels (11
+    // Oct 2026, TROPHY1 and after): a play economy, never practice data
+    "sona.trophy.v1", "sona.chest.v1", "sona.road.v1", "sona.playlevel.v1",
+    // each child's Practice Board entry and the last board they saw (BOARD2,
+    // 11 Oct 2026): never in a backup, and gone when the child is removed
+    "sona.board.v1", "sona.boardcache.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -256,6 +328,11 @@
   // response that arrives after a switch lands under the wrong name.
   function saveFor(slot, key, val) {
     try { localStorage.setItem((slot && PER_KID.has(key)) ? key + "@" + slot : key, JSON.stringify(val)); } catch {}
+  }
+  // …and its mirror: read one child's key whoever is active (the Practice
+  // Board sends for every child on the phone, not only the one playing).
+  function _loadFor(slot, key, def) {
+    try { const v = JSON.parse(localStorage.getItem((slot && PER_KID.has(key)) ? key + "@" + slot : key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); }
   }
 
   // The switcher's list, each entry carrying the name from that kid's OWN
@@ -302,12 +379,20 @@
     // child's clips under this very slot (removing used to leave them). A new
     // slot can own none, so clear whatever is stamped with it.
     _dropRecordings(slot);
+    // …and the Practice Board: a restored list can bring a lower `hi`, and a
+    // slot handed out again must never inherit another child's board entry or
+    // the grown-up's yes for them (BOARD2). A stray entry is queued for
+    // deletion, never kept.
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     // A grandfathered household stays grandfathered through its NEW children
     // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
     // list, so a family who added a sibling and then removed the first child
     // — the only one the sweep ever marked — dropped to the free version.
     // Read BEFORE the list changes; copied, never invented.
     const household = earlyAdopterAnyKid();
+    // A household that kept its buddies (OWN1) keeps them for a new child too,
+    // written into the profile so a backup carries them to another phone.
+    const keptSet = buddiesKept();
     v.list.push({ slot, name: String(name || "").slice(0, 24) });
     _switchRun(v.active, slot);
     v.active = slot;
@@ -317,7 +402,7 @@
       childName: String(name || "").slice(0, 24),
       childAge: String(age || ""),
       onboarded: false,
-    }, household ? { earlyAdopter: true } : {}));
+    }, household ? { earlyAdopter: true } : {}, keptSet ? { owned: _legacyInto(clone(DEFAULT_PROFILE.owned)) } : {}));
     return slot;
   }
   function switchKid(slot) {
@@ -329,6 +414,11 @@
   function removeKid(slot) {
     const v = _kids();
     if (v.list.length < 2) return false;              // never leave zero children
+    // a child on the Practice Board leaves it with the rest of their data:
+    // the deletion is queued first and goes out from the next practice,
+    // game, road or Settings page, and slot "" is cleared here because the
+    // PER_KID sweep below leaves the first child's keys (BOARD2)
+    try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
@@ -575,11 +665,23 @@
     const dailyChange = patch && Object.prototype.hasOwnProperty.call(patch, "dailyGoal");
     const previousGoal = dailyChange ? repGoal() : null;
     save(PKEY, Object.assign(getProfile(), patch || {}));
-    if (dailyChange && repGoal() < previousGoal) _goalCheck();
+    // …and pay it: today's reps already said earn against the lowered goal
+    // now (30 once it is met, like any goal day), not at a next rep that may
+    // never come that day (the ledger never goes back to an earlier day).
+    // Only the difference is paid, so nothing pays twice.
+    if (dailyChange && repGoal() < previousGoal) { if (dayReps() > 0) _trophyAdd(); _goalCheck(); }
   }
 
   function getProgress() {
+    // A read never CREATES the record (11 Oct 2026). A phone with none has no
+    // rungs to remap, so the fresh default is born migrated and nothing is
+    // saved; the first real write (a try, a coin) stores it with the flag.
+    // Home used to create it on every first load through the coin mint
+    // (retired, COIN3), which hid that any page reading progress, a game a
+    // child cannot open included, wrote this key just by looking.
+    let had = false; try { had = localStorage.getItem(_k(GKEY)) != null; } catch (e) {}
     const g = load(GKEY, DEFAULT_PROGRESS);
+    if (!had) g.ladderV = 2;
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
@@ -628,8 +730,12 @@
   // hours that day a saved 7 read as 5.
   function goalDays() { const n = parseInt(getProfile().weeklyGoal, 10); return (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4; }
   function weeklyGoalDays() { return goalDays(); }
+  // A pure read (load, not getProgress): getProgress() saves the one-time
+  // ladder migration on a record without it, and Home used to make that write
+  // on every load through mintCoins(). Since COIN3 (11 Oct 2026) Home only
+  // reads, so a reader must not be the one to write it either.
   function momWeek() {
-    const g = getProgress(), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
+    const g = load(GKEY, DEFAULT_PROGRESS), pd = Object.assign({}, g.practiceDays || {}), stamps = load(GOALKEY, {}), t = today();
     if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1;
     const now = new Date(), dow = (now.getDay() + 6) % 7;
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
@@ -762,8 +868,8 @@
       if (!code || !childId || !ticket) return Promise.resolve(null);
       const body = { code: code, childId: childId, ticket: ticket };
       // TODAY'S TOTAL, never a delta — a retried request cannot inflate it,
-      // the same reason mintCoins() derives from the day's count rather than
-      // incrementing. Reps only; no audio, no name, nothing else.
+      // the same reason the trophy ledger (TROPHY1) pays only the difference
+      // from the day's count. Reps only; no audio, no name, nothing else.
       const cur = homework();
       if (cur) { body.forId = cur.id; body.reps = repsToday(); }
       return fetch("/api/homework", {
@@ -1405,7 +1511,6 @@
   function markStoryRead() {
     dailyStory();                                   // ensure the day is pinned
     const d = load(DAYKEY, {}); d.read = true; save(DAYKEY, d);
-    try { mintStoryBonus(); } catch (e) {}          // once per day, guarded in the ledger
     try { episodeAdvance(); } catch (e) {}          // day-guarded: sets up tomorrow
     return true;
   }
@@ -1479,40 +1584,24 @@
     return { n, goal, pct: Math.max(0, Math.min(1, n / goal)), full: n >= goal };
   }
 
-  // ── COIN1: coins spend across days, the meter resets each night ────────
-  // Two different jobs. The meter answers "am I done today?"; coins answer
-  // "what did all those days add up to?" — which is what carries a kid over a
-  // day when none of today's three games appeal.
-  //
-  // Coins are minted from reps, NOT from time in the app and NOT from opening
-  // things. Same rule as the meter: only a child's actual voice earns.
-  const COINS_PER = 5;                       // one coin per 5 honest reps
-  const COIN_STORY = 5;                      // finishing the daily chapter
+  // ── COIN1, now COIN3: the meter resets each night, coins are spent ─────
+  // Different jobs. The meter answers "am I done today?"; trophies (TROPHY1)
+  // answer "what did all those days add up to?", and they follow the honest
+  // rep. Coins are what a child spends (11 Oct 2026, D2): they may come only
+  // from the daily chest on a day the goal is met and from Trophy Road gifts,
+  // never from time in the app, opening things, a finished story or an arcade
+  // score, and never from a purchase. Reps used to mint them here (one coin per
+  // 5, plus 5 for the daily chapter, ledger "sona.coinmint.v1"); that mint is
+  // retired, and a balance already earned is kept. mintCoins() and
+  // mintStoryBonus() stay for cached pages, and only read the balance.
   const MYSTERY_COST = 15;                   // the 4th game, bought for a day
-  const COINKEY = "sona.coinmint.v1";
-  // Minting is derived from the day's rep count rather than incremented per
-  // rep, so a double-fired bumpReps can't double-pay — the ledger records how
-  // many coins today has already yielded and only ever pays the difference.
-  function mintCoins() {
-    const t = today(); const led = load(COINKEY, {});
-    const paid = (led.d === t ? led.paid : 0) | 0;
-    const earned = Math.floor(repsToday() / COINS_PER);
-    const owed = earned - paid;
-    if (owed > 0) { addCoins(owed); save(COINKEY, { d: t, paid: earned, story: !!(led.d === t && led.story) }); }
-    return getCoins();
-  }
-  function mintStoryBonus() {
-    const t = today(); const led = load(COINKEY, {});
-    if (led.d === t && led.story) return getCoins();      // once per day only
-    addCoins(COIN_STORY);
-    save(COINKEY, { d: t, paid: (led.d === t ? led.paid : 0) | 0, story: true });
-    return getCoins();
-  }
+  function mintCoins() { return coinsNow(); }
+  function mintStoryBonus() { return coinsNow(); }
   // The mystery game: one extra game for today, drawn from the ones NOT in
   // today's trio. Deliberately ADDITIVE — it never opens the whole deck. It
   // used to wait on today's story being read; that gate went with the books
-  // (GAMES1, 19 Sep 2026). Coins only come from reps, so a purchase is still
-  // practice-backed.
+  // (GAMES1, 19 Sep 2026). Coins come only from what practice earns (COIN3),
+  // so a purchase is still practice-backed.
   function mysteryCost() { return MYSTERY_COST; }
   function mysteryGame() {
     const d = _day();
@@ -1521,9 +1610,9 @@
   }
   // The mystery door is a PREMIUM door (24 Sep 2026): the free version is
   // practice plus its free games, and a fourth game a day is exactly what
-  // Premium adds. Coins still mint from reps for everyone — they are practice
-  // made visible, not a currency the paywall owns — so a family who upgrades
-  // later finds their jar already full.
+  // Premium adds. Coins are earned by practice for everyone (COIN3) — they
+  // are practice made visible, not a currency the paywall owns — so a family
+  // who upgrades later finds their jar already full.
   function canBuyMystery() {
     if (!isFree() && !premium()) return false;
     return !mysteryGame() && getCoins() >= MYSTERY_COST && GAME_KEYS.some(function (key) {
@@ -1927,13 +2016,105 @@
   function chestClaimed(sound) { return !!getProgress().chests[sound]; }
   function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); try { awardNextSticker(); } catch (e) {} return true; }
 
-  // --- coins (earned in lessons, spent in the shop) ---
+  // --- coins: COIN3 (11 Oct 2026, D2): a play currency with two sources only,
+  // the daily chest and Trophy Road / month gifts. Never sold. Validated: a
+  // typo'd price can no longer make the wallet NaN or string-join it ("40"+"5"),
+  // and a zero, negative or junk amount changes nothing (not even the ladder
+  // migration getProgress() may save, so it is never called for one).
+  function _coinInt(n) { n = Math.floor(Number(n)); return (isFinite(n) && n > 0 && n < 100000) ? n : 0; }
+  // pure: reads the balance without getProgress()'s one-time ladder migration write
+  function coinsNow() { try { const g = load(GKEY, DEFAULT_PROGRESS); return Math.max(0, (g.totals && g.totals.coins) | 0); } catch (e) { return 0; } }
   function getCoins() { return getProgress().totals.coins || 0; }
-  function addCoins(n) { const g = getProgress(); g.totals.coins = (g.totals.coins || 0) + (n || 0); save(GKEY, g); return g.totals.coins; }
-  function spendCoins(n) { const g = getProgress(); if ((g.totals.coins || 0) < n) return false; g.totals.coins -= n; save(GKEY, g); return true; }
-  // --- owned cosmetics (shop) ---
-  function owns(kind, id) { const o = getProfile().owned || {}; return (o[kind] || []).indexOf(id) !== -1; }
+  function addCoins(n) { const v = _coinInt(n); if (!v) return coinsNow(); const g = getProgress(); g.totals.coins = (g.totals.coins | 0) + v; save(GKEY, g); return g.totals.coins; }
+  function spendCoins(n) { const v = _coinInt(n); if (!v) return false; const g = getProgress(); if ((g.totals.coins | 0) < v) return false; g.totals.coins = (g.totals.coins | 0) - v; save(GKEY, g); return true; }
+  // --- owned cosmetics: the Buddy Shop (SHOP1, 11 Oct 2026, D3) ---
+  // Exactly what every family could pick on 11 Oct 2026, when the old shop
+  // set `owned = true` for everything. A household set up before the shop
+  // keeps all of it (the OWN1 sweep, _keepBuddies, below the free-era sweeps);
+  // a family set up after it starts with the starters (fox, bunny, panda, no
+  // hat, the sky) and buys or wins the rest. A literal: new items never join.
+  const LEGACY_SET = {
+    characters: ["fox", "bunny", "dragon", "cat", "bee", "octopus", "dino", "panda"],
+    outfits: ["none", "crown", "tophat", "cap", "shades", "bow", "party"],
+    backdrops: ["sky", "jungle", "forest", "mountain", "space", "beach"] };
+  const SHOP_LISTS = { characters: CHARACTERS, outfits: OUTFITS, backdrops: BACKDROPS };
+  const SHOP_FIELD = { characters: "character", outfits: "outfit", backdrops: "backdrop" };
+  const UNDO_MS = 10000;
+  // strict: a catalog entry or null, never byId's fallback (so "leo" is no buddy here)
+  function _shopFind(kind, id) {
+    const l = Object.prototype.hasOwnProperty.call(SHOP_LISTS, kind) ? SHOP_LISTS[kind] : null; if (!l) return null;
+    for (let i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function _worn(kind) { const p = getProfile(); return kind === "characters" ? p.character : kind === "outfits" ? p.outfit : p.backdrop; }
+  // Owned without counting what is worn: a starter, the kept household's
+  // promise (fails open: a device that cannot read its stamp is "kept"), or
+  // the family's own list, which a backup carries to a new phone.
+  function _ownsBesidesWorn(kind, id) {
+    const it = _shopFind(kind, id); if (!it) return false;
+    if (it.source === "starter") return true;
+    if (buddiesKept() && LEGACY_SET[kind].indexOf(id) >= 0) return true;
+    const o = getProfile().owned || {}; return Array.isArray(o[kind]) && o[kind].indexOf(id) >= 0;
+  }
+  // …and what a child is wearing is theirs, however it came to be worn
+  function owns(kind, id) { return !!_shopFind(kind, id) && (_worn(kind) === id || _ownsBesidesWorn(kind, id)); }
   function addOwned(kind, id) { const p = getProfile(); const o = p.owned || { outfits: [], backdrops: [] }; o[kind] = o[kind] || []; if (o[kind].indexOf(id) === -1) o[kind].push(id); saveProfile({ owned: o }); }
+  // Pure: one item as the shop shows it. state "owned", "buy" (a shop item
+  // not owned yet) or "road" (a Trophy Road item not reached yet: its stop
+  // and trophies, from ROAD_STOPS). null for an unknown id.
+  function shopItem(kind, id) {
+    const it = _shopFind(kind, id); if (!it) return null;
+    let stop = null, at = null;
+    if (it.source === "road") ROAD_STOPS.forEach((s) => { if (stop === null && s.gift.some((g) => { const r = _roadItem(g); return r && r.kind === kind && r.id === id; })) { stop = s.n; at = s.at; } });
+    const art = kind === "characters" ? buddySprite(id, "portrait") : kind === "outfits" ? (it.art || null) : "/assets/crafted/customize-" + id + "-v2.webp";
+    const state = owns(kind, id) ? "owned" : it.source === "shop" ? "buy" : "road";
+    return { kind, id, name: it.name, cost: it.source === "shop" ? _coinInt(it.cost) : null, source: it.source || "", stop, at, art, state };
+  }
+  // Wear something the child owns. If what they wear now is theirs only
+  // because they are wearing it (an old pick, or one a backup brought), it is
+  // written into their own list first, so switching away never takes it.
+  function equip(kind, id) {
+    const field = SHOP_FIELD[kind]; if (!field || !owns(kind, id)) return false;
+    const cur = _worn(kind);
+    if (cur !== id && _shopFind(kind, cur) && !_ownsBesidesWorn(kind, cur)) addOwned(kind, cur);
+    const patch = {}; patch[field] = id; saveProfile(patch);
+    return true;
+  }
+  // Coins for a shop item: the price is the catalog's, never the page's. The
+  // coins go first (a crash under-gives, never gives twice), then the item,
+  // then it is worn. Never sold for money, never random.
+  function buyItem(kind, id) {
+    const it = shopItem(kind, id);
+    if (!it) return { ok: false, reason: "bad" };
+    if (it.state === "owned") return { ok: false, reason: "owned" };
+    if (it.state === "road") return { ok: false, reason: "road" };
+    const cost = _coinInt(it.cost); if (!cost) return { ok: false, reason: "bad" };
+    const have = coinsNow(); if (have < cost) return { ok: false, reason: "short", need: cost - have };
+    const prev = _worn(kind);
+    if (!spendCoins(cost)) return { ok: false, reason: "short", need: Math.max(1, cost - coinsNow()) };
+    addOwned(kind, id); equip(kind, id);
+    saveProfile({ lastBuy: { kind, id, cost, prev, at: Date.now() } });
+    try { track("shop item got", { kind, item: id, cost }); } catch (e) {}
+    return { ok: true, coins: coinsNow() };
+  }
+  // "Oops? Give it back", within 10 seconds of the last buy: the item leaves
+  // the child's list first, then the coins come back (never more than the
+  // catalog price), and what they wore before is put back on if they still
+  // wear the one bought. Once only.
+  function undoBuy() {
+    const p = getProfile(), lb = p.lastBuy, now = Date.now();
+    if (!lb || typeof lb !== "object" || !SHOP_FIELD[lb.kind] || !(now - lb.at >= 0 && now - lb.at <= UNDO_MS)) return { ok: false };
+    const it = _shopFind(lb.kind, lb.id), o = p.owned || {}, list = Array.isArray(o[lb.kind]) ? o[lb.kind] : [], i = list.indexOf(lb.id);
+    if (!it || it.source !== "shop" || i < 0) { saveProfile({ lastBuy: null }); return { ok: false }; }
+    list.splice(i, 1); o[lb.kind] = list;
+    const patch = { owned: o, lastBuy: null }, field = SHOP_FIELD[lb.kind];
+    // (an old pick like "leo" goes back on as it was: it reads as the fox)
+    if (p[field] === lb.id) patch[field] = (typeof lb.prev === "string" && lb.prev && lb.prev !== lb.id) ? lb.prev : SHOP_LISTS[lb.kind][0].id;
+    saveProfile(patch);
+    const back = Math.min(_coinInt(lb.cost), _coinInt(it.cost));
+    if (back) addCoins(back);
+    return { ok: true, coins: coinsNow() };
+  }
 
   // Word sessions retain their original counts. An adventure records completed
   // rounds separately: its isolation/syllable practice is not a list of words.
@@ -1987,7 +2168,13 @@
   // this device", and a backup code is something a family copies, emails to
   // itself or pastes into another phone. Left out here AND refused by
   // importData below, so neither half can be undone by the other.
-  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1"];
+  // THE PRACTICE BOARD'S FIVE KEYS never leave either (BOARD2, 11 Oct 2026):
+  // a child's board token belongs to this phone (a copy on a second phone
+  // would post days for a child twice over, and a pasted one is somebody
+  // else's entry), the pending request and the deletions still to send are
+  // this phone's errands, and the therapist answer stays here, as the sheet
+  // says. A new phone asks again and joins again.
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
   function exportData() {
     const out = {};
     try {
@@ -2031,12 +2218,18 @@
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
   //
-  // SETUP'S TWO ANSWERS AND ITS DRAFT are the last two (NO_EXPORT above): a
-  // backup made by this build never holds them, and one that does (hand-made,
-  // or from a build that slips) is not let in either.
+  // SETUP'S TWO ANSWERS AND ITS DRAFT, and the Practice Board's five keys, are
+  // on NO_EXPORT above too: a backup made by this build never holds them, and
+  // one that does (hand-made, or from a build that slips) is not let in either.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.websalesui", "sona.pilot.v1", "sona.trial.v1",
     "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1", "sona.freever.v1",
-    "sona.setupasks.v1", "sona.obdraft.v1"];
+    "sona.setupasks.v1", "sona.obdraft.v1",
+    // the kept-buddies stamp (OWN1) is true of this device, like freever; what
+    // a household owns travels inside each child's profile instead
+    "sona.buddyset.v1",
+    // the Practice Board's keys (BOARD2): never brought in, so a restore can
+    // never put a child on the board, or hand one child another's entry
+    "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -2051,6 +2244,20 @@
       // over a profile that was grandfathered HERE silently ended a promise
       // this device's own sweep made. Snapshot the household first.
       const wasGrandfathered = earlyAdopterAnyKid();
+      // THE KEPT BUDDIES COME WITH THE HOUSEHOLD (OWN1, 11 Oct 2026). The
+      // stamp never comes in (NO_IMPORT), but what it says does: a backup
+      // stamped "kept", or one with no stamp at all (made before the Buddy
+      // Shop, when every family could pick everything), brings the legacy set
+      // in every set-up child's profile, a profile saved without the list (a
+      // child set up after the sweep ran) included. The Terms promise a backup
+      // never takes away an item a child already has. A backup stamped "post"
+      // brings only the list it holds. Forging one only adds cosmetic items on
+      // the phone that pastes it, which the spec accepts (§11).
+      const keptBackup = data[BUDDYSET_KEY] !== "post";
+      // THE PRACTICE BOARD FOLLOWS THE CHILD, NOT THE SLOT (BOARD2). Board
+      // keys never come in (NO_IMPORT), but a restore can put a different
+      // child into a slot, or take one away; who sits where is noted first.
+      let boardBefore = []; try { boardBefore = _boardSlots(); } catch (e) {}
       let n = 0, skipped = 0, ticket = false;
       Object.keys(data).forEach((k) => {
         if (k.indexOf("sona.") !== 0) return;
@@ -2067,12 +2274,35 @@
               // …and the marks this device already held on this very key stay
               let here = null; try { here = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) {}
               if (here && typeof here === "object") ERA_MARKS.forEach((m) => { if (here[m]) p[m] = here[m]; });
+              if (keptBackup && (p.onboarded || p.childName)) p.owned = _legacyInto(p.owned);
               v = JSON.stringify(p);
             }
           } catch (e) {}
         }
         try { localStorage.setItem(k, v); n++; if (base === "sona.slpticket" && v) ticket = true; } catch (e) {}
       });
+      // A slot whose child changed (a new name) or that left the list loses
+      // its board entry here, and the entry is queued for deletion: a new
+      // child's grown-up is never told "removed after a long break", and
+      // nobody inherits another child's place or the grown-up's yes.
+      try { _boardAfterImport(boardBefore); } catch (e) {}
+      // HISTORY WITHOUT A TROPHY RECORD (final review, 12 Oct 2026). A backup
+      // made before this build, or on a phone that logged no rep since, brings
+      // the practice and play history trophies come from but no record of
+      // them. The record already here (a few reps in the iPhone app before a
+      // Safari backup was pasted) would be trusted for good and the restored
+      // weeks never counted: Level 2 locked, the road at its start. That
+      // slot's record goes, and is counted again from the history now on the
+      // phone, as at a first rep after this build.
+      try {
+        const brought = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === TROPHYKEY) brought[sfx] = true;
+          else if ((base === OUTKEY || base === GAMEREPKEY || base === GOALKEY) && !(sfx in brought)) brought[sfx] = false;
+        });
+        Object.keys(brought).forEach((sfx) => { if (!brought[sfx]) localStorage.removeItem(TROPHYKEY + sfx); });
+      } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
       // profile may no longer be in it. Access was the household's, so it
@@ -3159,7 +3389,7 @@
     // Home, point its sticker at one that does not exist, and take it out of
     // the little kids' adventure deck. Its page keeps that adventure's hand-off.
     bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-09", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-16", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
     // word the child says moves the game one step, so each opens straight to
@@ -3178,26 +3408,30 @@
     // games to have different dates ... everything that is currently in queue
     // to just say for next Friday ... split them and have like seven or eight
     // for next Friday and then seven or eight for the following Friday").
-    // Each parked game carries `comingOn`, one of exactly two days: nine say
-    // 9 Oct (Peekaboo above, Balloon Party, Race Car, Puppy Bath, Rocket
-    // Blast, Treasure Map, Build a Snowman, Space Trip, Grow a Flower) and
-    // the other nine 16 Oct. Soccer Goal and Dino Dig came back early (1 Oct
+    // Each parked game carries `comingOn`. Since 9 Oct 2026 (Travis: "push
+    // all the games that say coming oct 9th back a week ... space it out so
+    // its like 3 games per week") that is three games a Friday for six
+    // Fridays: 16 Oct Peekaboo, Balloon Party, Race Car; 23 Oct Puppy Bath,
+    // Rocket Blast, Treasure Map; 30 Oct Build a Snowman, Space Trip, Grow a
+    // Flower; 6 Nov Robot Builder, Choo-Choo Train, Pizza Chef; 13 Nov
+    // Birthday Cake, Castle Builder, Surprise Boxes; 20 Nov Monster Makeover,
+    // Fish Tank, Bedtime Stars. Soccer Goal and Dino Dig came back early (1 Oct
     // 2026), so they carry no day. It is a LABEL, never a switch: Home says
-    // "Coming Oct 9" until that day, then "Coming soon" again if the game
+    // "Coming Oct 16" until that day, then "Coming soon" again if the game
     // still isn't ready, and only taking comingSoon off opens a game. Move a
     // date by editing it.
-    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word you say blows the balloon bigger." },
-    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Water the seed with your words and watch it grow." },
-    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word lights the countdown. Then blast off!" },
-    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word you say builds the snowman." },
-    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word helps a friend climb aboard the train." },
-    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word washes a muddy spot away." },
-    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word lights a star in the night sky." },
-    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word adds to the birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word opens a present. Who is inside?" },
-    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word brings a new fish to the tank." },
-    racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word zooms your race car closer to the finish line." },
-    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word sails your boat to the next stop on the map." },
+    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word you say blows the balloon bigger." },
+    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-30", playDescription: "Water the seed with your words and watch it grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-23", playDescription: "Every word lights the countdown. Then blast off!" },
+    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-30", playDescription: "Every word you say builds the snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-06", playDescription: "Every word helps a friend climb aboard the train." },
+    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-23", playDescription: "Every word washes a muddy spot away." },
+    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-20", playDescription: "Every word lights a star in the night sky." },
+    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-13", playDescription: "Every word adds to the birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-13", playDescription: "Every word opens a present. Who is inside?" },
+    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-20", playDescription: "Every word brings a new fish to the tank." },
+    racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word zooms your race car closer to the finish line." },
+    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-23", playDescription: "Every word sails your boat to the next stop on the map." },
     // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
     // ball and the child swipes it past a goalie who slides along the goal
     // line (public/soccer.js).
@@ -3205,14 +3439,14 @@
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
-    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word adds a new part to your robot." },
-    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word builds another part of your castle." },
+    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-06", playDescription: "Every word adds a new part to your robot." },
+    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-13", playDescription: "Every word builds another part of your castle." },
     // REBUILT (Travis, 1 Oct 2026: "go to the next game"): the word earns a
     // brush and the child rubs the sand off a bone (public/dino.js).
     dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
-    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-09", playDescription: "Every word flies your rocket to the next planet." },
-    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word adds something to your pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-16", playDescription: "Every word gives the monster a silly new look." },
+    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-30", playDescription: "Every word flies your rocket to the next planet." },
+    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-06", playDescription: "Every word adds something to your pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-20", playDescription: "Every word gives the monster a silly new look." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
@@ -3677,6 +3911,17 @@
     block: '<rect x="8" y="19" width="48" height="27" rx="7" fill="#69db7c"/><rect x="8" y="19" width="48" height="9" rx="4.5" fill="#85e099"/><circle cx="18" cy="26" r="2.5" fill="#fff" opacity=".85"/>',
     keys: '<rect x="8" y="14" width="48" height="36" rx="6" fill="#fff"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/><circle cx="13" cy="20" r="2" fill="#fff" opacity=".9"/>',
     balloon: '<path d="M32 4C18 4 11 16 11 27c0 12 11 19 17 26h8c6-7 17-14 17-26C53 16 46 4 32 4Z" fill="#ff6b6b"/><path d="M32 4c-6 0-10 12-10 23 0 12 5 19 7 26h6c2-7 7-14 7-26C42 16 38 4 32 4Z" fill="#fff4dd"/><path d="M32 4c-2 0-4 12-4 23 0 12 2 19 3 26h2c1-7 3-14 3-26C36 16 34 4 32 4Z" fill="#ffd43b"/><rect x="25" y="53" width="14" height="9" rx="3" fill="#b5875a"/><ellipse cx="22" cy="16" rx="4" ry="7" fill="#fff" opacity=".3" transform="rotate(-16 22 16)"/>',
+    // The Trophy Road and the Practice Board's glyphs (11 Oct 2026): drawn
+    // beside a number at 12-24 px, so each is one bold shape in two tones
+    // with the kit's white glint, and no detail that turns to mud when small.
+    trophy: '<path d="M21 14H11a9 9 0 0 0 12 14M43 14h10a9 9 0 0 1-12 14" fill="none" stroke="#f0a800" stroke-width="5" stroke-linecap="round"/><path d="M18 8h28v14a14 14 0 0 1-28 0Z" fill="#ffd21c"/><rect x="28" y="34" width="8" height="12" fill="#f0a800"/><rect x="17" y="45" width="30" height="11" rx="4" fill="#f0a800"/><circle cx="25" cy="15" r="3" fill="#fff" opacity=".8"/>',
+    chest: '<path d="M8 30v-6a13 13 0 0 1 13-13h22a13 13 0 0 1 13 13v6Z" fill="#b8722b"/><rect x="8" y="29" width="48" height="26" rx="5" fill="#d9903f"/><rect x="8" y="27" width="48" height="6" fill="#ffd21c"/><rect x="26" y="24" width="12" height="15" rx="4" fill="#ffd21c"/><circle cx="32" cy="31" r="2.6" fill="#a97b00"/><circle cx="17" cy="19" r="2.5" fill="#fff" opacity=".75"/>',
+    sun: '<g fill="#ffb100"><rect x="29" y="2" width="6" height="12" rx="3"/><rect x="29" y="50" width="6" height="12" rx="3"/><rect x="2" y="29" width="12" height="6" rx="3"/><rect x="50" y="29" width="12" height="6" rx="3"/><rect x="29" y="2" width="6" height="12" rx="3" transform="rotate(45 32 32)"/><rect x="29" y="50" width="6" height="12" rx="3" transform="rotate(45 32 32)"/><rect x="2" y="29" width="12" height="6" rx="3" transform="rotate(45 32 32)"/><rect x="50" y="29" width="12" height="6" rx="3" transform="rotate(45 32 32)"/></g><circle cx="32" cy="32" r="15" fill="#ffd21c"/><circle cx="26" cy="26" r="3" fill="#fff" opacity=".8"/>',
+    // a medal carries its place as well as its colour, so first, second and
+    // third still read apart to a child who sees the colours alike
+    medalGold: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#ffd21c"/><circle cx="32" cy="41" r="13" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M29 36l4-3v16" fill="none" stroke="#a97b00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
+    medalSilver: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#dfe5ee"/><circle cx="32" cy="41" r="13" fill="none" stroke="#a9b4c4" stroke-width="3"/><path d="M27 37a5 5 0 0 1 10 0c0 4-10 8-10 12h10" fill="none" stroke="#6d7a8c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
+    medalBronze: '<path d="M18 3h11l7 23H25Z" fill="#4db3f2"/><path d="M46 3H35l-7 23h11Z" fill="#ff5c74"/><circle cx="32" cy="41" r="18" fill="#e7a670"/><circle cx="32" cy="41" r="13" fill="none" stroke="#bd7440" stroke-width="3"/><path d="M27 34h9l-5 6a4.5 4.5 0 1 1-4 7" fill="none" stroke="#8a4c22" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="34" r="2.6" fill="#fff" opacity=".8"/>',
   };
   function icon(name, px) { const d = ICONS[name]; return d ? '<svg viewBox="0 0 64 64" style="width:' + (px || 18) + 'px;height:' + (px || 18) + 'px;vertical-align:-3px">' + d + '</svg>' : ""; }
   // Hearts row: n filled of max; the lost ones are dashed outlines (design: New-life overlay)
@@ -3999,6 +4244,7 @@
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
       try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + reps; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      _trophyAdd();
       _goalCheck();
       // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
       try { sendProgress("auto"); } catch (e3) {}
@@ -4085,11 +4331,17 @@
       document.body.appendChild(b); setTimeout(() => b.remove(), 4000);
     } catch (e) {}
   }
+  // The stamp, the event and the banner happen once a day, as before; the
+  // early return moved (11 Oct 2026) so the Practice Board's hook can run
+  // after the stamp on a later rep (a board day needs BOARD_MIN_REPS too),
+  // and queued board deletions go out from practice and game pages. Home
+  // never calls this.
   function _goalCheck() {
+    try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
     const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
-    if (!d.done || stamps[t]) return;
-    stamps[t] = d.goal; save(GOALKEY, stamps);
-    track("rep goal met"); _goalBanner(d.n);
+    if (!d.done) return;
+    if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
+    try { _boardQueue(_slot()); } catch (e) {}     // BOARD2: a no-op unless this child is on the board
   }
   // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
   // 2026: "yeah count as reps"). Every place a game asks for the sound and
@@ -4097,15 +4349,16 @@
   // word, Feed Echo's picture hint) adds one here, and the week's count
   // above reads it with the practice page's tries. It is NOT practice data:
   // it never enters outcomes(), so no pass rate, clinician's note or shared
-  // progress sees it, and it mints no coins. Only a voiced try that passed
-  // the game's own check ever calls it, so silence still never counts.
+  // progress sees it; since 11 Oct 2026 it earns trophies, a play currency
+  // (TROPHY1). Only a voiced try that passed the game's own check ever calls
+  // it, so silence still never counts.
   const GAMEREPKEY = "sona.gamereps.v1";
   function gameRep(sound) {
     try {
       const s = String(sound || "").toUpperCase(); if (ALL_SOUNDS.indexOf(s) < 0) return;
       const t = today(), gr = load(GAMEREPKEY, {}), d = gr[t] || (gr[t] = {});
       // kept like the day ledger, unpruned: the best week reads all of it
-      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _goalCheck();
+      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr); _trophyAdd(); _goalCheck();
     } catch (e) {}
   }
   // sound narrows the count to one sound — Progress names the week's busiest
@@ -4134,7 +4387,755 @@
   }
   // Retained as a no-op for cached pages. Family comparisons and their beacon
   // are retired; counts remain local except consented pilot progress sharing.
+  // The opt-in Practice Board (BOARD2, below) is a separate thing: goal days
+  // only, under a nickname, after a grown-up's email confirmation.
   function repsBeacon() {}
+
+  // ── TROPHY1 (Travis, 9 Oct 2026: "a currency so they can buy stuff"; D1,
+  // refined 11 Oct 2026). Trophies follow the honest rep (a practice try
+  // through logAttempt, an accepted game ask or book word through gameRep),
+  // and a day at the goal is always 30 of them, whatever the goal: a grown-up
+  // raising the goal cannot earn more, and a speech therapist's low dose cannot
+  // earn less. At the default goal of 30 that is one trophy a rep. Never spent,
+  // never lost: the ledger is "paid up to today's derived count", so a double
+  // call, a reload or a goal change can never pay twice or take one back. A
+  // pass and a miss count the same (effort, not accuracy). It never enters
+  // outcomes(), sendProgress or any clinician view, and "Reset progress"
+  // leaves it. A child already on Sona starts with what their real reps since
+  // REPS_SINCE earned, counted once, at the first rep after this build.
+  const TROPHYKEY = "sona.trophy.v1", TROPHY_FILL = 30;
+  // The goal a day is measured against: the stamp it met (the goal at that
+  // moment); today's goal for today; 30 before goal stamps existed; and for a
+  // past day that never met its goal, never less than 30, so it is never
+  // over-paid.
+  function _goalOn(k, stamps) {
+    const s = stamps[k] | 0; if (s > 0) return s;
+    if (k < GOAL_SINCE) return TROPHY_FILL;
+    const g = Math.max(1, repGoal() | 0);
+    return k === today() ? g : Math.max(TROPHY_FILL, g);
+  }
+  function _dayTrophies(k, reps, stamps) { return Math.min(TROPHY_FILL, Math.floor(TROPHY_FILL * Math.max(0, reps | 0) / _goalOn(k, stamps))); }
+  function _trophyToday() { const t = today(); return _dayTrophies(t, dayReps(t), load(GOALKEY, {})); }
+  // every day BEFORE today (or only one month of them). Pure.
+  function _trophyHist(ym) {
+    const days = _repDays(null, false), stamps = load(GOALKEY, {}), t = today(); let n = 0;
+    Object.keys(days).forEach((k) => { if (k >= t || (ym && k.slice(0, 7) !== ym)) return; n += _dayTrophies(k, days[k], stamps); });
+    return n;
+  }
+  // Pure: Home, the road and the levels read this, and it writes nothing.
+  function trophyState() {
+    const t = today(), ym = t.slice(0, 7), s = load(TROPHYKEY, {});
+    if (!(s.v >= 1)) { const dn = _trophyToday(); return { total: _trophyHist() + dn, today: dn, month: _trophyHist(ym) + dn, ym }; }
+    const dn = s.d === t ? (s.dn | 0) : 0, mn = s.m === ym ? (s.mn | 0) : 0;
+    return { total: s.t | 0, today: dn, month: mn, ym };
+  }
+  function trophies() { return trophyState().total; }
+  // logAttempt and gameRep call this after the rep is saved, and saveProfile
+  // when a lowered goal fills today with reps already said.
+  function _trophyAdd() {
+    try {
+      const t = today(), ym = t.slice(0, 7); let s = load(TROPHYKEY, {});
+      if (!(s.v >= 1)) s = { v: 1, t: _trophyHist(), d: t, dn: 0, m: ym, mn: _trophyHist(ym) };
+      if (s.d !== t) { s.d = t; s.dn = 0; }
+      if (s.m !== ym) { if (s.m) { s.pm = s.m; s.pmn = s.mn | 0; } s.m = ym; s.mn = 0; }
+      const add = _trophyToday() - (s.dn | 0);
+      if (add > 0) { s.dn = (s.dn | 0) + add; s.t = (s.t | 0) + add; s.mn = (s.mn | 0) + add; }
+      save(TROPHYKEY, s);
+    } catch (e) {}
+  }
+
+  // ── CHEST1: the daily chest (Travis, 9 Oct 2026: "a currency so they can
+  // buy stuff"; D2, 11 Oct 2026). One chest a day, on a day the daily goal is
+  // met (the same stamp dayGoal() reads). Fixed contents, shown before it
+  // opens: 10 coins, and every fifth chest is a Big Chest of 25 coins and a
+  // sticker. Nothing random, no timer; a day without the goal shows nothing
+  // missed, and no chest piles up for later. Opened only on the Trophy Road
+  // page, after three taps; Home only reads chestState().
+  const CHESTKEY = "sona.chest.v1", CHEST_COINS = 10, CHEST_BIG_EVERY = 5, CHEST_BIG_COINS = 25;
+  // Pure. big/coins/sticker describe the next chest to open (today's, when it
+  // is still shut); openedBig says whether the one opened today was a Big
+  // Chest, so the road shows the chest the child really opened.
+  function chestState() {
+    const c = load(CHESTKEY, {}), opened = c.last === today(), big = ((c.n | 0) + 1) % CHEST_BIG_EVERY === 0;
+    return { ready: !opened && dayGoal().done, opened, big, coins: big ? CHEST_BIG_COINS : CHEST_COINS, sticker: big,
+      openedBig: opened && (c.n | 0) > 0 && (c.n | 0) % CHEST_BIG_EVERY === 0 };
+  }
+  function chestOpen() {
+    const st = chestState(); if (!st.ready) return null;
+    // the ledger first: a crash under-pays, never pays twice
+    const c = load(CHESTKEY, {}); c.n = (c.n | 0) + 1; c.last = today(); save(CHESTKEY, c);
+    const got = [{ coins: st.coins }]; addCoins(st.coins);
+    if (st.sticker) got.push(_grantSticker());
+    try { track("chest opened"); } catch (e) {}
+    return got;
+  }
+  // the next sticker in the book; a full book pays 20 coins instead
+  function _grantSticker() { const s = awardNextSticker(); if (s) return { sticker: s.id, name: s.name }; addCoins(20); return { coins: 20, full: true }; }
+
+  // ── ROAD1 / MONTH1: the Trophy Road (Travis, 9 Oct 2026: "motivated over
+  // weeks and months like Clash Royale"). Numbered stops across five lands, by
+  // lifetime trophies, each gift fixed and shown before it is reached: coins,
+  // stickers, "Level 2 opens in every game" (levels open by the trophy count
+  // itself, LEVELS1; the stop is the celebration), and the road's own
+  // buddies, hats and places. Nothing random, no timer, nothing lost: a
+  // reached stop waits until it is opened. An item a child already owns pays
+  // its coins (ROAD_ALT); an item listed on a stop AFTER a child opened it is
+  // still given, once (roadSettle). A new item joins its stop only once its
+  // painted art is on disk.
+  // "October path" (MONTH_STEPS) is a small path by the trophies earned this
+  // calendar month; it starts again each month, and every reached step of an
+  // ended month is handed out by roadSettle(), which only the road page calls
+  // (never Home). Kept per child. No event carries a stop or step number.
+  const ROADKEY = "sona.road.v1", MONTH_SINCE = "2026-10", ROAD_BONUS_EVERY = 150;
+  const ROAD_ALT = { characters: 100, outfits: 50, backdrops: 80 };
+  const ROAD_LANDS = [
+    { id: "meadow", name: "Sunny Meadow", from: 0, art: "customize-forest-v2" }, { id: "beach", name: "Beach Bay", from: 300, art: "customize-beach-v2" },
+    { id: "snow", name: "Snowy Peak", from: 750, art: "customize-snow-v2" }, { id: "sea", name: "Under the Sea", from: 1350, art: "customize-sea-v2" },
+    { id: "sky", name: "Starry Sky", from: 2100, art: "customize-space-v2" }, { id: "champ", name: "Champion Trail", from: 3000, art: "customize-mountain-v2" } ];
+  // The stop table Travis approved (11 Oct 2026), with the road's own
+  // buddies, hats and places (frog, penguin, lion, unicorn; sunhat, starclip,
+  // headphones; snow, sea), which joined their stops once their painted art
+  // was on disk. An earlier build of the road paid stops 6, 12, 15, 19 and
+  // 25 what their item is worth in coins (ROAD_ALT); a child who opened one
+  // then keeps those coins and is handed the item by roadSettle, once, with
+  // no second payment.
+  const ROAD_STOPS = [
+    { n: 1, at: 30, gift: [{ coins: 20 }] },
+    { n: 2, at: 80, gift: [{ sticker: 1 }] },
+    { n: 3, at: 150, gift: [{ level: 2 }, { coins: 20 }] },
+    { n: 4, at: 220, gift: [{ coins: 30 }] },
+    { n: 5, at: 300, big: true, gift: [{ coins: 40 }, { sticker: 1 }, { land: "beach" }] },
+    { n: 6, at: 380, gift: [{ hat: "sunhat" }] },
+    { n: 7, at: 460, gift: [{ coins: 40 }] },
+    { n: 8, at: 540, gift: [{ sticker: 1 }] },
+    { n: 9, at: 640, gift: [{ coins: 50 }] },
+    { n: 10, at: 750, big: true, gift: [{ level: 3 }, { buddy: "frog" }, { coins: 50 }, { land: "snow" }] },
+    { n: 11, at: 850, gift: [{ sticker: 1 }] },
+    { n: 12, at: 950, gift: [{ place: "snow" }] },
+    { n: 13, at: 1050, gift: [{ coins: 60 }] },
+    { n: 14, at: 1150, gift: [{ sticker: 1 }] },
+    { n: 15, at: 1250, gift: [{ hat: "starclip" }] },
+    { n: 16, at: 1350, big: true, gift: [{ buddy: "penguin" }, { coins: 60 }, { land: "sea" }] },
+    { n: 17, at: 1475, gift: [{ coins: 70 }] },
+    { n: 18, at: 1600, gift: [{ sticker: 1 }] },
+    { n: 19, at: 1725, gift: [{ place: "sea" }] },
+    { n: 20, at: 1850, gift: [{ coins: 80 }] },
+    { n: 21, at: 1975, gift: [{ sticker: 1 }] },
+    { n: 22, at: 2100, big: true, gift: [{ buddy: "lion" }, { coins: 80 }, { land: "sky" }] },
+    { n: 23, at: 2250, gift: [{ coins: 90 }] },
+    { n: 24, at: 2400, gift: [{ sticker: 1 }] },
+    { n: 25, at: 2550, gift: [{ hat: "headphones" }] },
+    { n: 26, at: 2700, gift: [{ coins: 100 }] },
+    { n: 27, at: 2850, gift: [{ sticker: 1 }] },
+    { n: 28, at: 3000, big: true, gift: [{ buddy: "unicorn" }, { coins: 100 }, { sticker: 1 }, { land: "champ" }] } ];
+  const MONTH_STEPS = [
+    { n: 1, at: 40, gift: [{ coins: 5 }] }, { n: 2, at: 100, gift: [{ sticker: 1 }] }, { n: 3, at: 180, gift: [{ coins: 10 }] },
+    { n: 4, at: 260, gift: [{ sticker: 1 }] }, { n: 5, at: 340, gift: [{ coins: 15 }] }, { n: 6, at: 420, gift: [{ sticker: 1 }] },
+    { n: 7, at: 500, gift: [{ coins: 20 }] }, { n: 8, at: 600, big: true, gift: [{ coins: 30 }, { sticker: 1 }] } ];
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const _ROAD_KINDS = { buddy: "characters", hat: "outfits", place: "backdrops" };
+  // A stop by number: the table up to 28, then the Champion Trail's bonus
+  // stops every 150 trophies, 30 coins and a sticker by turns.
+  function roadStop(n) {
+    n = parseInt(n, 10); if (!(n >= 1)) return null;
+    if (n <= ROAD_STOPS.length) return ROAD_STOPS[n - 1];
+    const k = n - ROAD_STOPS.length;
+    return { n, at: ROAD_STOPS[ROAD_STOPS.length - 1].at + k * ROAD_BONUS_EVERY, gift: k % 2 ? [{ coins: 30 }] : [{ sticker: 1 }] };
+  }
+  function _roadReached(t) {             // the highest stop a lifetime count reaches (0 before the first)
+    const last = ROAD_STOPS[ROAD_STOPS.length - 1];
+    if (t >= last.at) return ROAD_STOPS.length + Math.floor((t - last.at) / ROAD_BONUS_EVERY);
+    let n = 0; ROAD_STOPS.forEach((s) => { if (t >= s.at) n = s.n; }); return n;
+  }
+  function _roadRec() {
+    const r = load(ROADKEY, {}), o = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    return { got: o(r.got), items: o(r.items), m: typeof r.m === "string" ? r.m : "", mgot: o(r.mgot), rolled: Array.isArray(r.rolled) ? r.rolled : [] };
+  }
+  // an item gift on a stop: {kind, id, name}, only for a catalog entry (never byId's fallback)
+  function _roadItem(g) {
+    for (const k in _ROAD_KINDS) if (g && typeof g[k] === "string") {
+      const kind = _ROAD_KINDS[k], list = kind === "characters" ? CHARACTERS : kind === "outfits" ? OUTFITS : BACKDROPS;
+      for (let i = 0; i < list.length; i++) if (list[i].id === g[k]) return { kind, id: g[k], name: list[i].name };
+      return null;
+    }
+    return null;
+  }
+  function _ymNext(ym) { const y = +ym.slice(0, 4), m = +ym.slice(5, 7); return m === 12 ? (y + 1) + "-01" : y + "-" + String(m + 1).padStart(2, "0"); }
+  function _monthName(ym) { return MONTH_NAMES[(+String(ym).slice(5, 7) || 1) - 1] || ""; }
+  // Pure: every ended month not yet settled, with the reached steps it still
+  // owes ({m, steps}). The month last visited owes what was not opened then;
+  // a first visit starts at the later of MONTH_SINCE and the first month of
+  // the child's trophy history.
+  function _monthsOwed(r) {
+    const cur = today().slice(0, 7), out = [];
+    let from = r.m;
+    if (!from) { const days = Object.keys(_repDays(null, false)).sort(); from = days.length ? days[0].slice(0, 7) : cur; }
+    if (from < MONTH_SINCE) from = MONTH_SINCE;
+    if (!/^\d{4}-\d{2}$/.test(from) || from >= cur) return out;
+    const tr = load(TROPHYKEY, {});
+    for (let m = from, guard = 0; m < cur && guard < 240; m = _ymNext(m), guard++) {
+      const count = (tr.v >= 1 && tr.m === m) ? (tr.mn | 0) : (tr.v >= 1 && tr.pm === m) ? (tr.pmn | 0) : _trophyHist(m);
+      const done = m === r.m ? r.mgot : {};
+      const steps = MONTH_STEPS.filter((s) => count >= s.at && !done[s.n]);
+      out.push({ m, steps });
+    }
+    return out;
+  }
+  // Pure: the item gifts listed on stops already opened that were never handed over.
+  function _roadLate(r) {
+    const out = [];
+    Object.keys(r.got).forEach((k) => {
+      const s = roadStop(k); if (!s || !r.got[k]) return;
+      s.gift.forEach((g) => { const it = _roadItem(g); if (it && !r.items[s.n + ":" + it.id]) out.push({ n: s.n, item: it }); });
+    });
+    return out;
+  }
+  // Pure: everything the road page and Home's card show.
+  function roadState() {
+    const ts = trophyState(), t = ts.total, r = _roadRec(), cur = ts.ym, stop = _roadReached(t);
+    let land = ROAD_LANDS[0]; ROAD_LANDS.forEach((l) => { if (t >= l.from) land = l; });
+    let waiting = 0, lowest = null;
+    for (let n = 1; n <= stop; n++) if (!r.got[n]) { waiting++; if (lowest === null) lowest = n; }
+    // a phone clock set back before the month last visited: monthOpen can't
+    // open this month's steps (that would open a month twice), so none is
+    // shown reached or counted as waiting until the clock catches up
+    const mgot = r.m === cur ? r.mgot : {}, frozen = !!r.m && r.m > cur;
+    const steps = MONTH_STEPS.map((s) => ({ n: s.n, at: s.at, gift: s.gift, big: !!s.big, reached: !frozen && ts.month >= s.at, got: !!mgot[s.n] }));
+    steps.forEach((s) => { if (s.reached && !s.got) waiting++; });
+    _monthsOwed(r).forEach((o) => { waiting += o.steps.length; });
+    _roadLate(r).forEach((x) => { if (!owns(x.item.kind, x.item.id)) waiting++; });
+    const nx = roadStop(stop + 1);
+    return { trophies: t, coins: coinsNow(), land: { id: land.id, name: land.name, art: land.art }, stop, got: Object.assign({}, r.got),
+      next: { n: nx.n, at: nx.at, gift: nx.gift, big: !!nx.big }, waiting, lowestWaiting: lowest,
+      month: { ym: cur, name: _monthName(cur), count: ts.month, steps }, chest: chestState(), rolled: r.rolled.slice() };
+  }
+  // Hands over one gift and says what the child got. An item is recorded
+  // before this runs (the ledger first); one already owned pays its coins.
+  function _roadGive(g) {
+    if (g.coins) { const c = _coinInt(g.coins); if (c) addCoins(c); return { coins: c }; }
+    if (g.sticker) return _grantSticker();
+    if (g.level) return { level: g.level | 0 };
+    if (g.land) { const l = ROAD_LANDS.filter((x) => x.id === g.land)[0]; return { land: g.land, name: l ? l.name : "" }; }
+    const it = _roadItem(g); if (!it) return null;
+    if (owns(it.kind, it.id)) { const c = ROAD_ALT[it.kind] | 0; addCoins(c); return { alt: { kind: it.kind, id: it.id, name: it.name, coins: c } }; }
+    addOwned(it.kind, it.id); return { item: it };
+  }
+  function roadOpen(n) {
+    const s = roadStop(n); if (!s) return { ok: false, reason: "not-yet" };
+    const r = _roadRec();
+    if (r.got[s.n]) return { ok: false, reason: "opened" };
+    if (trophies() < s.at) return { ok: false, reason: "not-yet" };
+    r.got[s.n] = 1; s.gift.forEach((g) => { const it = _roadItem(g); if (it) r.items[s.n + ":" + it.id] = 1; });
+    save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("road gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  function monthOpen(step) {
+    const s = MONTH_STEPS.filter((x) => x.n === parseInt(step, 10))[0]; if (!s) return { ok: false, reason: "not-yet" };
+    const ts = trophyState(); let r = _roadRec();
+    if (r.m !== ts.ym) { roadSettle(); r = _roadRec(); }   // a page left open across the month's end
+    if (r.m !== ts.ym) return { ok: false, reason: "not-yet" };
+    if (r.mgot[s.n]) return { ok: false, reason: "opened" };
+    if (ts.month < s.at) return { ok: false, reason: "not-yet" };
+    r.mgot[s.n] = 1; save(ROADKEY, r);
+    const gifts = []; s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); });
+    try { track("month gift opened"); } catch (e) {}
+    return { ok: true, gifts };
+  }
+  // The road page's load, and only the road page's: every ended month's
+  // reached steps go into the wallet (listed in rolled for one notice), then
+  // any item listed on an opened stop after it was opened is given. null when
+  // nothing was handed out.
+  function roadSettle() {
+    try {
+      const cur = today().slice(0, 7); let r = _roadRec();
+      const owed = (r.m && r.m > cur) ? [] : _monthsOwed(r), rolled = [], late = [];
+      if (!r.m || r.m < cur) {
+        // the ledger first (a crash under-pays, never pays twice): the month
+        // moves on and the notice names each month that handed something out
+        r.m = cur; r.mgot = {};
+        owed.forEach((o) => { if (o.steps.length) r.rolled.push({ m: o.m, gifts: [].concat.apply([], o.steps.map((s) => s.gift)) }); });
+        r.rolled = r.rolled.slice(-12);
+        save(ROADKEY, r);
+        owed.forEach((o) => {
+          if (!o.steps.length) return;
+          const gifts = []; o.steps.forEach((s) => s.gift.forEach((g) => { const x = _roadGive(g); if (x) gifts.push(x); }));
+          rolled.push({ m: o.m, gifts });
+        });
+      }
+      r = _roadRec();
+      const owe = _roadLate(r);
+      if (owe.length) {
+        owe.forEach((x) => { r.items[x.n + ":" + x.item.id] = 1; });
+        save(ROADKEY, r);
+        owe.forEach((x) => { if (!owns(x.item.kind, x.item.id)) { addOwned(x.item.kind, x.item.id); late.push(x.item); } });
+      }
+      return (rolled.length || late.length) ? { rolled, late } : null;
+    } catch (e) { return null; }
+  }
+  // the road page's month notice was seen: it is not shown again
+  function roadRolledSeen() { const r = _roadRec(); if (!r.rolled.length) return; r.rolled = []; save(ROADKEY, r); }
+
+  // ── LEVELS1 (Travis, 9 Oct 2026: "levels inside games"). Every game opens
+  // exactly as before: nothing here is read by gameAccess, gated, premium or
+  // the catalog, and a level is never sold. Inside nine of them, Level 2 opens
+  // at 150 trophies and Level 3 at 750, for all of them at once. Harder levels
+  // change only finger play (speed, counts, new songs); never what a child
+  // says, how often, the hearts, or any help that makes every round end, and
+  // every help path reads Level 1's numbers (each page keeps its Level 1
+  // tables on their own lines and overrides after them). Feed Echo keeps one
+  // level until Rachel says, and a parked game has none. Kept per child
+  // (PER_KID). A tap plays the level last picked; Home asks once per game when
+  // a new level opens (playLevelAsk), and that tap and a pick are the only
+  // writes Home makes. A grown-up can hold a child at Level 1 (cap). A child's
+  // longest row at Level 2 and 3 is kept here; Level 1's stays with Beat Your
+  // Best, so a best is never measured against a level whose top it cannot
+  // reach. Nothing here is sent anywhere: the game page says "level played".
+  const PLAYLEVELKEY = "sona.playlevel.v1", PLAY_LEVEL_AT = [0, 150, 750];
+  // what the sheet and the road say under each level (kid copy, beneath the numeral)
+  const PLAY_LEVEL_LINES = {
+    slice:   ["The fruit stand", "Faster fruit!", "Fruit party!"],
+    tiles:   ["Twinkle, Mary, Row Your Boat", "Hot Cross Buns and more", "Are You Sleeping and more"],
+    stack:   ["A tall tower", "Taller and faster", "The tallest tower!"],
+    run:     ["Park, beach, forest", "A faster run", "The fastest run!"],
+    glide:   ["Easy flying", "Narrow gaps", "Sky champion!"],
+    bubbles: ["Bubbles bob", "More bubbles!", "Bonus bubbles!"],
+    hoops:   ["The hoop starts still", "The hoop slides from the start", "The hoop zooms!"],
+    soccer:  ["Bo waits at first", "Bo slides sooner", "Bo dives!"],
+    dino:    ["Big brush", "Smaller brush", "Deep dig!"] };
+  // a game with levels, by its own key (never a name off Object.prototype),
+  // and never one parked as Coming soon
+  function _lvKey(key) {
+    if (typeof key !== "string" || !Object.prototype.hasOwnProperty.call(PLAY_LEVEL_LINES, key)) return "";
+    return (GAME_ACTS[key] && GAME_ACTS[key].comingSoon) ? "" : key;
+  }
+  function _lvState() { const p = load(PLAYLEVELKEY, {}); return (p && typeof p === "object" && !Array.isArray(p)) ? p : {}; }
+  function _lvOf(map, key) { return (map && typeof map === "object" && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
+  // Pure: how many levels are open for this child, 1 to 3.
+  function playLevelsOpen() {
+    if ((_lvState().cap | 0) === 1) return 1;
+    const t = trophies(); let n = 1;
+    for (let i = 1; i < PLAY_LEVEL_AT.length; i++) if (t >= PLAY_LEVEL_AT[i]) n = i + 1;
+    return n;
+  }
+  // Pure: the level a game page plays. A pick above what is open (a restored
+  // backup can lower trophies) plays the highest open level, and is kept.
+  function playLevel(key) {
+    key = _lvKey(key); if (!key) return 1;
+    const pick = parseInt(_lvOf(_lvState().pick, key), 10) || 1;
+    return Math.max(1, Math.min(pick, playLevelsOpen()));
+  }
+  // Home's tap only: true once per game per newly opened level, and it records that.
+  function playLevelAsk(key) {
+    key = _lvKey(key); const open = playLevelsOpen();
+    if (!key || open < 2) return false;
+    const p = _lvState(); p.seen = (p.seen && typeof p.seen === "object") ? p.seen : {};
+    if ((_lvOf(p.seen, key) | 0) >= open) return false;
+    p.seen[key] = open; save(PLAYLEVELKEY, p); return true;
+  }
+  // a child's tap on the sheet or the road; it sends nothing
+  function setPlayLevel(key, n) {
+    key = _lvKey(key); n = parseInt(n, 10);
+    if (!key || !(n >= 1 && n <= playLevelsOpen())) return false;
+    const p = _lvState(); p.pick = (p.pick && typeof p.pick === "object") ? p.pick : {};
+    p.pick[key] = n; save(PLAYLEVELKEY, p); return true;
+  }
+  // Settings only: "Level 1 only" (1), or open as earned (anything else)
+  function setPlayLevelCap(n) { const p = _lvState(); if (n === 1 || n === "1") p.cap = 1; else delete p.cap; save(PLAYLEVELKEY, p); return true; }
+  // Pure: what the sheet and the road show for one game.
+  function playLevelInfo(key) {
+    const k = _lvKey(key), open = playLevelsOpen(), t = trophies();
+    return { key: k || String(key), pick: playLevel(k), cap: (_lvState().cap | 0) === 1,
+      levels: (k ? PLAY_LEVEL_LINES[k] : []).map((line, i) => ({ n: i + 1, line, open: i + 1 <= open, at: PLAY_LEVEL_AT[i], have: t })) };
+  }
+  // A child's longest row at Level 2 or 3, by Level 1's rules: whole numbers
+  // 1..99999, only ever up, answered before the write (a phone that cannot
+  // save still tells the child the truth about the round they just played).
+  function _lvRow(p, key, lv) {
+    const r = _lvOf(_lvOf(p.best, key), String(lv));
+    return (r && typeof r.n === "number" && r.n >= 1 && r.n <= 99999 && Math.floor(r.n) === r.n) ? r.n : 0;
+  }
+  function playBest(key, lv) {
+    try { key = _lvKey(key); lv = parseInt(lv, 10); return (key && (lv === 2 || lv === 3)) ? _lvRow(_lvState(), key, lv) : 0; } catch (e) { return 0; }
+  }
+  function playBestOffer(key, lv, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = _lvKey(key); lv = parseInt(lv, 10);
+      if (!key || !(lv === 2 || lv === 3)) return out;
+      const p = _lvState(); out.prev = out.best = _lvRow(p, key, lv);
+      if (!(typeof n === "number" && n >= 1 && n <= 99999 && Math.floor(n) === n) || n <= out.prev) return out;
+      out.best = n; out.isNew = true;
+      p.best = (p.best && typeof p.best === "object") ? p.best : {};
+      p.best[key] = (p.best[key] && typeof p.best[key] === "object") ? p.best[key] : {};
+      p.best[key][String(lv)] = { n: n, at: today() };
+      save(PLAYLEVELKEY, p);
+    } catch (e) {}
+    return out;
+  }
+
+  // ── BOARD2: the Practice Board, the phone's half (Travis, 9 Oct 2026: "a
+  // board of every kid in Sona … days practiced"; D8, 11 Oct 2026). BUILT
+  // DARK: BOARD_LIVE is false here and in lib/board.ts (boardapitest pins the
+  // two equal), and only a preview seam on localhost turns it on, for tests.
+  // Switching it on is Travis's go, after a lawyer has named the consent
+  // method; nothing in this block shows or sends anything while it is off,
+  // except a deletion still owed (below).
+  //   - A day on the board is a goal day (today's goal stamp) with at least
+  //     BOARD_MIN_REPS reps. The phone only says "this child met the goal so
+  //     many seconds ago"; the server works the day out by its own clock and
+  //     counts it once, a day late at most and never early (lib/board.ts).
+  //   - A grown-up turns it on for the household's children at once, by a
+  //     link emailed to them (the four number words stop a child who can't
+  //     read, not one who can). Nothing here says "on" until the server has
+  //     handed back a member for that child (boardClaim), and the address is
+  //     never kept.
+  //   - Off for a phone set up through a speech therapist or a school, one
+  //     shared by more than four children, a family who says a therapist or a
+  //     school sent them, and a child under 5 (boardAllowed): checked at join,
+  //     at every send and at every view, and a child who stops being allowed
+  //     leaves by themselves.
+  //   - Deleting always works: a deletion is queued on the phone FIRST, then
+  //     sent whether or not the board is live, from Settings, the road page,
+  //     the board page and (at most once a minute) every rep on a practice or
+  //     game page. Home never calls anything here.
+  //   - Never a name, an age, a sound, audio, fid or childId: the server gets
+  //     a buddy id per child, a time-zone offset and "how long ago".
+  // Every reply can arrive after a switch of child, so each async function
+  // takes its slot first and writes through saveFor, never save().
+  const BOARD_LIVE = false;   // pinned equal to lib/board.ts by boardapitest; flipping it is Travis's go (spec §16 step 12)
+  function boardLive() {
+    if (BOARD_LIVE) return true;
+    try { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && sessionStorage.getItem("sona.boardpreview.v1") === "1"; } catch (e) { return false; }
+  }
+  const BOARDKEY = "sona.board.v1", BOARDCACHEKEY = "sona.boardcache.v1", BOARDPENDKEY = "sona.boardpend.v1", BOARDLEAVEKEY = "sona.boardleave.v1", BOARDASKKEY = "sona.boardask.v1";
+  // a board day needs this many reps as well as the goal stamp (Rachel to confirm, R-B1)
+  const BOARD_MIN_REPS = 10, BOARD_PEND_MS = 48 * 3600 * 1000, BOARD_AGO_MAX = 172800, BOARD_LEAVE_GIVEUP = 30 * 864e5;
+  // the family's offset from UTC, in minutes, to the nearest quarter hour
+  function _tz() { return Math.round(-new Date().getTimezoneOffset() / 15) * 15; }
+  function _boardSlot(slot) { return (slot === undefined || slot === null) ? _slot() : String(slot); }
+  function _boardSlots() { return _kids().list.map((k) => { const s = k.slot || ""; return { slot: s, name: String(_loadFor(s, PKEY, {}).childName || "") }; }); }
+  function _boardBuddy(slot) { try { return characterById(_loadFor(slot, PKEY, {}).character).id; } catch (e) { return "fox"; } }
+  function _boardClear(slot, key) { try { localStorage.removeItem((slot && PER_KID.has(key)) ? key + "@" + slot : key); } catch (e) {} }
+  function _leaveList() { const l = load(BOARDLEAVEKEY, []); return Array.isArray(l) ? l.filter((x) => x && typeof x.t === "string" && x.t) : []; }
+  function _boardQueueLeave(token) {
+    if (typeof token !== "string" || !token) return;
+    const l = _leaveList(); if (l.some((x) => x.t === token)) return;
+    l.push({ t: token, at: Date.now() }); save(BOARDLEAVEKEY, l);
+  }
+  // steps 1 and 2 of leaving: the token is queued for deletion FIRST, then
+  // this phone's two keys go (slot "" too). Answers the entry that was there.
+  function _boardDrop(slot) {
+    let e = {};
+    try { e = _loadFor(slot, BOARDKEY, {}); if (e && typeof e.token === "string" && e.token) _boardQueueLeave(e.token); } catch (x) {}
+    _boardClear(slot, BOARDKEY); _boardClear(slot, BOARDCACHEKEY);
+    return e || {};
+  }
+  // A pending request was asked for these slots by position. A slot whose
+  // child is gone keeps its place as null, so a claim deletes that member
+  // instead of handing it to whoever sits in the slot next.
+  function _boardPendForget(slots) {
+    try {
+      const p = load(BOARDPENDKEY, null); if (!p || !Array.isArray(p.slots)) return;
+      let hit = false; p.slots = p.slots.map((s) => { if (s !== null && slots.indexOf(s) >= 0) { hit = true; return null; } return s; });
+      if (hit) save(BOARDPENDKEY, p);
+    } catch (e) {}
+  }
+  function _boardAfterImport(before) {
+    const now = _kids().list.map((k) => k.slot || ""), changed = [];
+    (before || []).forEach((b) => {
+      if (now.indexOf(b.slot) >= 0 && String(_loadFor(b.slot, PKEY, {}).childName || "") === b.name) return;
+      _boardDrop(b.slot); changed.push(b.slot);
+    });
+    if (changed.length) _boardPendForget(changed);
+  }
+  // a live pending request (48 hours), or null. Pure.
+  function _boardPend() {
+    const p = load(BOARDPENDKEY, null);
+    if (!p || typeof p.pend !== "string" || !p.pend || !Array.isArray(p.slots) || !(Date.now() - (Number(p.at) || 0) < BOARD_PEND_MS)) return null;
+    return p;
+  }
+  function _boardPendDrop(pend) { try { const p = load(BOARDPENDKEY, null); if (!pend || !p || p.pend === pend) _boardClear("", BOARDPENDKEY); } catch (e) {} }
+  // One POST to a board route. Never throws: an error, a timeout or no
+  // network is status 0, which every caller treats as "try again later".
+  function _boardPost(name, body) {
+    let ctl = null, to = 0;
+    try { ctl = new AbortController(); to = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, 10000); } catch (e) { ctl = null; }
+    const done = (x) => { clearTimeout(to); return x; };
+    try {
+      return fetch("/api/board/" + name, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "same-origin", signal: ctl ? ctl.signal : undefined })
+        .then((r) => r.text().then((t) => { let j = {}; try { j = JSON.parse(t); } catch (e) {} return { status: r.status, j: (j && typeof j === "object" && !Array.isArray(j)) ? j : {} }; }), () => ({ status: 0, j: {} }))
+        .then(done, () => done({ status: 0, j: {} }));
+    } catch (e) { return Promise.resolve(done({ status: 0, j: {} })); }
+  }
+
+  // Who may be on the board: { ok, why }. Read for the child the line is
+  // about (slot), never just the one playing. "off" only pauses: it never
+  // deletes anything here, and queued deletions still go out.
+  function _boardClinic(slot) {
+    try {
+      if (["sona.slp", "sona.slpok", "sona.slpunlock", "sona.slpticket"].some((k) => !!localStorage.getItem(k))) return true;
+      if (localStorage.getItem(BOARDASKKEY) === "clinic") return true;
+      if (_kids().list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return true;
+      const pi = _loadFor(slot, "sona.pilot.v1", {});
+      if (pi.consent || pi.code) return true;
+      return false;
+    } catch (e) { return true; }   // can't tell: off
+  }
+  function boardAllowed(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, why: "off" };
+    if (!_kids().list.some((k) => (k.slot || "") === slot)) return { ok: false, why: "none" };
+    if (_boardClinic(slot)) return { ok: false, why: "clinic" };
+    if (_kids().list.length > 4) return { ok: false, why: "many" };
+    const age = _loadFor(slot, PKEY, {}).childAge, a = String(age == null ? "" : age).trim();
+    if (!/^\d+$/.test(a) || parseInt(a, 10) < 5) return { ok: false, why: "young" };
+    return { ok: true, why: "" };
+  }
+  // Pure: what Settings, the road and the board page show for one child.
+  function boardState(slot) {
+    slot = _boardSlot(slot);
+    const e = _loadFor(slot, BOARDKEY, {}), p = _boardPend(), a = boardAllowed(slot), on = !!(e.on && typeof e.token === "string" && e.token);
+    return { on, nick: on && typeof e.nick === "string" ? e.nick : "", days: on ? Math.max(0, e.days | 0) : 0, joined: on ? String(e.joined || "") : "",
+      pending: !!p, code: p ? String(p.code || "") : "", asked: !!p && p.slots.indexOf(slot) >= 0, gone: !on && !!e.gone, why: a.ok ? "" : a.why, leaving: _leaveList().length };
+  }
+  // The Settings sheet's question, "Did a speech therapist or a school send
+  // you to Sona?": "clinic" or "no", kept on this phone only (a new phone
+  // asks again). Called with no answer it only reads.
+  function boardAsk(ans) {
+    try {
+      if (ans === "clinic" || ans === "no") localStorage.setItem(BOARDASKKEY, ans);
+      const v = localStorage.getItem(BOARDASKKEY); return (v === "clinic" || v === "no") ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  // "Email me the link": up to four children the grown-up ticked, in order.
+  // The phone sends their buddies, its time zone and the address, and keeps
+  // only what the server hands back (a pending value and a short code). The
+  // address is never stored here. "Send it again" is the same call: it adds
+  // the pending value when the same children are asked for again.
+  async function boardStart(email, slots) {
+    if (!boardLive()) return { ok: false, error: "off" };
+    const em = typeof email === "string" ? email.trim() : "";
+    if (!em || em.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return { ok: false, error: "email" };
+    if (!Array.isArray(slots) || slots.length < 1 || slots.length > 4) return { ok: false, error: "kids" };
+    const want = slots.map(String);
+    if (want.some((s, i) => want.indexOf(s) !== i) || want.some((s) => !boardAllowed(s).ok)) return { ok: false, error: "kids" };
+    const old = _boardPend(), body = { email: em, kids: want.map((s) => ({ buddy: _boardBuddy(s) })), tz: _tz() };
+    if (old && old.slots.length === want.length && old.slots.every((s, i) => s === want[i])) body.pend = old.pend;
+    const r = await _boardPost("start", body), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.pend === "string" && j.pend) {
+      const code = String(j.code || "").slice(0, 8);
+      // "confirmed": the grown-up already pressed the email's button, so the
+      // server sent nothing and kept the request's own 48 hours; Finish is
+      // all that is left (Settings runs it), and the clock is not reset
+      const kept = !!(j.confirmed && old && old.pend === j.pend);
+      save(BOARDPENDKEY, { pend: j.pend, at: kept ? old.at : Date.now(), slots: want, code });
+      return kept ? { ok: true, code, confirmed: true } : { ok: true, code };
+    }
+    if (r.status === 400 && j.error === "email") return { ok: false, error: "email" };
+    if (r.status === 429 || j.limit) return { ok: false, error: "limit" };
+    if (r.status === 503 && (j.paused || j.resting)) return { ok: false, error: "resting" };
+    if (r.status === 503 && j.off) return { ok: false, error: "off" };
+    return { ok: false, error: "busy" };
+  }
+  // "Cancel" while waiting: this phone forgets the request. The server's
+  // half holds nothing about a child and runs out by itself in 48 hours;
+  // no child is put on the board without this phone's Finish.
+  function boardCancel() { _boardPendDrop(); return true; }
+  // "Finish": once the grown-up has pressed the email's button, one member
+  // per ticked child, in order. Repeatable: a repeated answer changes nothing,
+  // and a member this phone cannot place (the child is gone, no longer
+  // allowed, or already on with another entry) is queued for deletion.
+  async function boardClaim() {
+    if (!boardLive()) return { ok: false, off: true };
+    if (!load(BOARDPENDKEY, null)) return { ok: false, none: true };
+    const p = _boardPend();
+    if (!p) { _boardPendDrop(); return { ok: false, expired: true }; }
+    const r = await _boardPost("claim", { pend: p.pend }), j = r.j;
+    if (r.status === 202 || (r.status === 200 && j.waiting)) return { ok: false, waiting: true };
+    if (r.status === 404 || r.status === 401 || j.expired) { _boardPendDrop(p.pend); return { ok: false, expired: true }; }
+    if (r.status === 503 && j.paused) return { ok: false, resting: true };
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    if (!(r.status === 200 && j.ok && Array.isArray(j.members))) return { ok: false, busy: true };
+    const now = load(BOARDPENDKEY, null), slots = (now && now.pend === p.pend && Array.isArray(now.slots)) ? now.slots : p.slots;
+    const here = _kids().list.map((k) => k.slot || ""), got = [];
+    let fresh = 0;
+    j.members.forEach((m, i) => {
+      if (!m || typeof m.token !== "string" || !m.token) return;
+      // taken off since by the email's remove link: nothing to turn on
+      if (typeof m.nick !== "string" || !m.nick) return;
+      const slot = i < slots.length ? slots[i] : null;
+      if (slot === null || here.indexOf(slot) < 0 || !boardAllowed(slot).ok) { _boardQueueLeave(m.token); return; }
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (e.on && e.token) { if (e.token !== m.token) _boardQueueLeave(m.token); got.push({ slot, nick: String(e.nick || "") }); return; }
+      saveFor(slot, BOARDKEY, { on: true, token: m.token, nick: m.nick.slice(0, 40), joined: _localDay(), q: [], qd: "", days: 0 });
+      _boardClear(slot, BOARDCACHEKEY);
+      fresh++; got.push({ slot, nick: m.nick.slice(0, 40) });
+    });
+    _boardPendDrop(p.pend);
+    // today counts for the child using Sona now; a brother or sister's today
+    // counts from their next rep
+    try { _boardQueue(_slot()); } catch (e) {}
+    try { await boardFlush(); } catch (e) {}
+    if (fresh) track("board turned on");
+    return { ok: true, members: got };
+  }
+  // A goal day for the child playing now: queued once a day, after the goal
+  // stamp and at least BOARD_MIN_REPS reps, then sent. Only from _goalCheck
+  // (every rep on a practice or game page) and boardClaim.
+  function _boardQueue(slot) {
+    if (slot !== _slot() || !boardLive()) return;
+    const e = _loadFor(slot, BOARDKEY, {}), t = today();
+    if (!e.on || !e.token || e.qd === t) return;
+    if (!dayGoal().done || dayReps() < BOARD_MIN_REPS) return;
+    e.qd = t; e.q = (Array.isArray(e.q) ? e.q : []).concat([{ at: Date.now() }]).slice(-3);
+    saveFor(slot, BOARDKEY, e);
+    try { const f = boardFlush(); if (f && f.catch) f.catch(() => {}); } catch (x) {}
+  }
+  // Every deletion still owed, sent whether or not the board is live. A
+  // deletion goes when the server says it is done (or there is nothing to
+  // delete); a rotated key (401) is retried for 30 days; a busy server or no
+  // network keeps it for next time. throttle: at most once a minute (the
+  // per-rep caller).
+  let _leaveAt = 0, _leaveRun = null;
+  function _boardSendLeaves(throttle) {
+    if (!_leaveList().length) return Promise.resolve();
+    if (_leaveRun) return throttle ? _leaveRun : _leaveRun.then(() => _boardSendLeaves(false));
+    if (throttle && Date.now() - _leaveAt < 60000 && Date.now() >= _leaveAt) return Promise.resolve();
+    _leaveAt = Date.now();
+    _leaveRun = (async () => {
+      const drop = [];
+      for (const x of _leaveList()) {
+        const r = await _boardPost("leave", { token: x.t });
+        if ((r.status === 200 && r.j.deleted) || r.status === 404) drop.push(x.t);
+        else if (r.status === 401 && Date.now() - (Number(x.at) || 0) > BOARD_LEAVE_GIVEUP) drop.push(x.t);
+      }
+      if (drop.length) save(BOARDLEAVEKEY, _leaveList().filter((x) => drop.indexOf(x.t) < 0));
+    })().catch(() => {}).then(() => { _leaveRun = null; });
+    return _leaveRun;
+  }
+  // Deletions first, live or not; then, only while the board is on, every
+  // child on this phone (not only the one playing): a child no longer allowed
+  // leaves, and each queued day goes out. Never from Home.
+  async function _boardFlushOnce() {
+    try { await _boardSendLeaves(false); } catch (e) {}
+    if (!boardLive()) return;
+    const slots = _kids().list.map((k) => k.slot || "");
+    for (const slot of slots) {
+      const e = _loadFor(slot, BOARDKEY, {});
+      if (!e.on || typeof e.token !== "string" || !e.token) continue;
+      if (!boardAllowed(slot).ok) { await boardLeave(slot); continue; }
+      const q = Array.isArray(e.q) ? e.q : [];
+      if (!q.length) continue;
+      const done = [], buddy = _boardBuddy(slot);
+      let days = null, gone = false;
+      for (const item of q) {
+        const at = Number(item && item.at) || 0;
+        let ago = Math.round((Date.now() - at) / 1000);
+        // older than two days (or a clock moved back): the server would refuse it, so it goes
+        if (!(ago >= -300 && ago <= BOARD_AGO_MAX)) { done.push(at); continue; }
+        ago = Math.max(0, ago);
+        const r = await _boardPost("day", { token: e.token, ago, tz: _tz(), buddy });
+        if (r.status === 200 && r.j.ok) { done.push(at); if (typeof r.j.days === "number") days = Math.max(0, r.j.days | 0); }
+        else if (r.status === 404 && r.j.gone) { gone = true; break; }
+        else if (r.status === 400) done.push(at);
+        // 401 (a rotated key, never "gone"), 429, 503, 5xx, offline: kept for the next send
+      }
+      // written to the child the work started for, onto what is there NOW
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) continue;   // turned off meanwhile
+      if (gone) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); continue; }
+      cur.q = (Array.isArray(cur.q) ? cur.q : []).filter((x) => done.indexOf(Number(x && x.at) || 0) < 0);
+      if (days !== null) cur.days = days;
+      saveFor(slot, BOARDKEY, cur);
+    }
+  }
+  let _flushRun = null, _flushMore = false;
+  function boardFlush() {
+    if (_flushRun) { _flushMore = true; return _flushRun; }
+    _flushRun = (async () => { do { _flushMore = false; await _boardFlushOnce(); } while (_flushMore); })().catch(() => {}).then(() => { _flushRun = null; });
+    return _flushRun;
+  }
+  // The board page's one read, for the child playing now (or slot). Other
+  // children's rows are the server's once-a-day snapshot; the child's own
+  // days are live. A failure shows the last board from earlier today.
+  function _boardRow(x) {
+    const b = x && typeof x.buddy === "string" ? characterById(x.buddy).id : "fox";
+    return { place: Math.max(1, x && x.place | 0), nick: String((x && x.nick) || "").slice(0, 40), buddy: b, days: Math.max(0, x && x.days | 0), me: !!(x && x.me) };
+  }
+  async function boardView(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { ok: false, off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { ok: false, notOn: true, gone: !!e.gone };
+    if (!boardAllowed(slot).ok) { await boardLeave(slot); return { ok: false, off: true }; }
+    const mine = { nick: String(e.nick || ""), buddy: _boardBuddy(slot), days: Math.max(0, e.days | 0), place: null };
+    const r = await _boardPost("view", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok) {
+      const me = j.me && typeof j.me === "object" ? j.me : {};
+      const view = { ok: true, month: String(j.month || "").slice(0, 7), quiet: !!j.quiet,
+        top: (Array.isArray(j.top) ? j.top : []).slice(0, 20).map(_boardRow),
+        more: (Array.isArray(j.more) ? j.more : []).slice(0, 10).map((x) => ({ place: Math.max(1, x && x.place | 0), n: Math.max(0, x && x.n | 0), days: Math.max(0, x && x.days | 0) })),
+        me: { nick: String(me.nick || mine.nick).slice(0, 40), buddy: typeof me.buddy === "string" ? characterById(me.buddy).id : mine.buddy, days: Math.max(0, me.days | 0), place: (me.place | 0) > 0 ? me.place | 0 : null } };
+      const cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token !== e.token) return { ok: false, off: true };
+      saveFor(slot, BOARDCACHEKEY, Object.assign({}, view, { at: Date.now() }));
+      cur.days = view.me.days; if (view.me.nick) cur.nick = view.me.nick; saveFor(slot, BOARDKEY, cur);
+      track("board viewed");
+      return view;
+    }
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { ok: false, gone: true };
+    }
+    // resting: the days still count, so the child's own card shows what this phone knows
+    if (r.status === 503 && j.paused) { track("board viewed"); return { ok: false, resting: true, me: mine }; }
+    if (r.status === 503 && j.off) return { ok: false, off: true };
+    const c = _loadFor(slot, BOARDCACHEKEY, null);
+    if (c && c.ok && typeof c.at === "number" && c.at <= Date.now() && Date.now() - c.at < 864e5 && _localDay(c.at) === today()) {
+      track("board viewed");
+      return Object.assign({}, c, { stale: true });
+    }
+    return { ok: false, busy: true, me: mine };
+  }
+  // "New nickname": another made-up one from the server's lists, at most one
+  // a day and three a month. Never typed.
+  async function boardNick(slot) {
+    slot = _boardSlot(slot);
+    if (!boardLive()) return { off: true };
+    const e = _loadFor(slot, BOARDKEY, {});
+    if (!e.on || !e.token) return { off: true };
+    const r = await _boardPost("nick", { token: e.token }), j = r.j;
+    if (r.status === 200 && j.ok && typeof j.nick === "string" && j.nick) {
+      const nick = j.nick.slice(0, 40), cur = _loadFor(slot, BOARDKEY, {});
+      if (cur.token === e.token) {
+        cur.nick = nick; saveFor(slot, BOARDKEY, cur);
+        const c = _loadFor(slot, BOARDCACHEKEY, null);
+        if (c && c.me) { c.me.nick = nick; (Array.isArray(c.top) ? c.top : []).forEach((x) => { if (x && x.me) x.nick = nick; }); saveFor(slot, BOARDCACHEKEY, c); }
+      }
+      return { nick };
+    }
+    if (r.status === 429 || j.limit) return { limit: true };
+    if (r.status === 404 && j.gone) {
+      if (_loadFor(slot, BOARDKEY, {}).token === e.token) { saveFor(slot, BOARDKEY, { on: false, gone: true }); _boardClear(slot, BOARDCACHEKEY); }
+      return { gone: true };
+    }
+    if (r.status === 503 && j.paused) return { resting: true };
+    return { busy: true };
+  }
+  // "Turn off" (and every other way a child leaves): (1) the deletion is
+  // queued first, (2) this phone's keys go, slot "" included, (3) it is sent
+  // now, live or not, (4) "board turned off". queued says it is still owed
+  // (no network): the next practice, game, road or Settings page sends it.
+  async function boardLeave(slot) {
+    slot = _boardSlot(slot);
+    const e = _boardDrop(slot), had = typeof e.token === "string" && !!e.token;
+    try { await _boardSendLeaves(false); } catch (x) {}
+    if (had) track("board turned off");
+    return { ok: true, nick: had ? String(e.nick || "") : "", queued: had && _leaveList().some((x) => x.t === e.token) };
+  }
 
   // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
   // best for kids you can do"). Each big-kid game counts ONE real thing the
@@ -5006,6 +6007,43 @@
     } catch (e) {}
   }
 
+  // OWN1 (11 Oct 2026, D3): a household already set up on this build's first
+  // load keeps every buddy, hat and place it could pick that day ("kept"); a
+  // device not set up yet is stamped "post" before it onboards and starts with
+  // the starter buddies. The stamp is true of this device and is on NO_IMPORT;
+  // what the family owns is written into each child's profile.owned, which a
+  // backup carries, so moving phones (or into the iPhone app) takes nothing away.
+  // It reads no other sweep's stamp. Like the free-era sweeps, it is one-shot
+  // and structural: never "clean it up", and never re-run it.
+  const BUDDYSET_KEY = "sona.buddyset.v1";
+  function _legacyInto(owned) {
+    const o = (owned && typeof owned === "object" && !Array.isArray(owned)) ? owned : {};
+    Object.keys(LEGACY_SET).forEach((kind) => {
+      const have = Array.isArray(o[kind]) ? o[kind] : [];
+      LEGACY_SET[kind].forEach((id) => { if (have.indexOf(id) < 0) have.push(id); });
+      o[kind] = have;
+    });
+    return o;
+  }
+  function _keepBuddies() {
+    try {
+      if (localStorage.getItem(BUDDYSET_KEY)) return;
+      let slots = [""];
+      try { const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null"); if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || ""); } catch (e) {}
+      let setUp = false;
+      slots.forEach(function (slot) {
+        try {
+          const key = slot ? PKEY + "@" + slot : PKEY, pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (!(pr && (pr.onboarded || pr.childName))) return;
+          setUp = true; pr.owned = _legacyInto(pr.owned); localStorage.setItem(key, JSON.stringify(pr));
+        } catch (e) {}
+      });
+      localStorage.setItem(BUDDYSET_KEY, setUp ? "kept" : "post");
+    } catch (e) {}
+  }
+  // missing = kept (fails open), so a device that cannot read its stamp takes nothing away
+  function buddiesKept() { try { return localStorage.getItem(BUDDYSET_KEY) !== "post"; } catch (e) { return true; } }
+
   const HUMAN_CLIPS = true;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -5600,57 +6638,62 @@
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
     const w = {
       state: "wait", title: "Sona Premium", tag: "", price: "", what: WHAT,
-      rows: [], note: "", noteFirst: false,
+      rows: [], note: "", noteFirst: false, noteLast: false,
+      name: "Sona Premium", sub: "", amount: "", check: "",
       button: "Checking the App Store…", act: "wait",
       header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
       none: null,
     };
     if (plan == null) return w;
-    if (plan.state === "owned") { w.state = "owned"; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
+    if (plan.state === "owned") { w.state = "owned"; w.name = ""; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
     const P = String(plan.price || ""), per = String(plan.per || "");
     const FREE = (plan.state === "free" && plan.free && plan.free.text) ? String(plan.free.text) : "";
     if (!P || !per || !(plan.state === "paid" || FREE)) {
       // nothing to sell, or a plan too broken to describe: no figure, one way on
       const reach = plan.state === "none" && (plan.why === "timeout" || plan.why === "error");
-      w.state = "none"; w.what = ""; w.button = "Try again"; w.act = "retry";
+      w.state = "none"; w.name = ""; w.what = ""; w.button = "Try again"; w.act = "retry";
       w.none = reach ? { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." }
                      : { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." };
       w.header = w.none.title;
       return w;
     }
     const PP = P + " a " + per;
+    // THE ROW (Travis, 6 Oct 2026, with a reference paywall: "too many words
+    // ... I don't want it to say Friday October 9th I just want it to say
+    // three days"): the plan's name, one short line under it, the store's
+    // price on the right, and one check line. No dated rows.
+    const SHORT = { month: "mo", year: "yr", week: "wk" };
+    w.name = per === "month" ? "Monthly" : per === "year" ? "Yearly" : "Sona Premium";
+    w.amount = P + "/" + (SHORT[per] || per);
+    w.sub = ""; w.check = "Subscription auto-renews"; w.noteLast = false;
     w.act = "buy";
     if (plan.state === "paid") {
       w.state = "paid"; w.title = "Get Sona Premium";
       w.price = PP + ", charged today.";
+      w.sub = "Charged today";
       w.note = "Charged to your Apple ID today, then every " + per + ". Renews unless canceled in " + PLAN_CANCEL + ".";
       w.button = "Subscribe — " + PP;
       w.header = "Sona Premium: " + PP + ", charged today.";
       return w;
     }
-    const RENEW = "Renews every " + per + " unless canceled in " + PLAN_CANCEL + ".";
-    let DAY = "";
-    try { const d = planBillDate(plan, o.now); if (d) DAY = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }); } catch (e) { DAY = ""; }
-    if (!DAY || /invalid/i.test(DAY)) DAY = "After your free " + (plan.free.unit === "day" ? "days" : "time");
+    const UNIT = plan.free.unit ? String(plan.free.unit) : "";
+    const N = parseInt(FREE, 10);
+    const TRIAL = (N > 0 && UNIT) ? N + "-" + UNIT + " free trial" : FREE + " free";
     w.state = "free";
-    w.tag = FREE.toUpperCase() + " FREE";
     w.price = FREE + " free, then " + PP + ".";          // Travis's line (5 Oct 2026), built from the store's two answers
-    w.button = "Start " + FREE + " free";
+    w.button = "Start practicing!";                      // Travis, 6 Oct 2026; the free days and the price are on the row and under the button
     if (plan.sure === true) {
       w.title = "Start Sona Premium with " + FREE + " free";
-      w.rows = [
-        { when: "Today", text: "Everything opens. Nothing to pay today." },
-        { when: DAY, text: PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
-      ];
+      w.sub = TRIAL;
+      w.check = "No payment today \u00b7 Subscription auto-renews";
+      w.note = w.price + " Cancel anytime.";
+      w.noteLast = true;                                   // small print, under the button
       w.header = "Sona Premium: " + FREE + " free, then " + PP + ".";
     } else {
       w.title = "Sona Premium: " + FREE + " free for new subscribers";
-      w.rows = [
-        { when: "Today", text: "Everything opens. New subscribers pay nothing today." },
-        { when: DAY, text: "For new subscribers, " + PP + " starts, unless you cancel at least 24 hours before. " + RENEW },
-      ];
-      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm.";
-      w.noteFirst = true;                                  // the note sits directly under the tile, above the rows
+      w.sub = TRIAL + " for new subscribers";
+      w.note = "Only new subscribers get " + FREE + " free. Otherwise Apple charges " + P + " today. Apple shows your exact terms before you confirm. Cancel anytime in " + PLAN_CANCEL + ".";
+      w.noteFirst = true;                                  // directly under the row, above the button
       w.header = "Sona Premium: " + FREE + " free for new subscribers, then " + PP + ".";
     }
     return w;
@@ -5903,7 +6946,9 @@
   // reason run before anything on this load can finish setup.
   try { _grandfatherFreeEra5(); } catch (e) {}
   try { _keepFreeVersion(); } catch (e) {}
+  // the kept buddies (OWN1), likewise one-shot and independent of every other stamp
+  try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

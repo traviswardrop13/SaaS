@@ -35,7 +35,7 @@ const srv = createServer((req, res) => {
   if (u.pathname === "/api/charter" && charterReply) { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(charterReply)); return; }
   if (u.pathname.startsWith("/api/")) { res.writeHead(404); res.end("{}"); return; }
   // next.config.js's rewrites: / is the parent page, /for-slps the clinician page
-  const p = ROOT + (u.pathname === "/" ? "/parents.html" : u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname);
+  const p = ROOT + (u.pathname === "/" ? "/parents.html" : u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname === "/try" ? "/try.html" : u.pathname);
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
   res.end(readFileSync(p));
@@ -512,6 +512,38 @@ for (const [when, count, first] of [["2026-10-01T09:00:00", 29, null]]   /* ever
     got.n === String(count) && got.openTiles === count && got.tags.length === 29 - count && (first ? got.tags.every((t) => t === first) : true), got);
   ok("…with no page errors", errors.length === 0, errors);
   await context.close();
+}
+
+// ── speaksona.com/try, the ad's bridge page (Travis, 9 Oct 2026) ──
+// A headline, a sub-headline, Echo between two game screens and one button to
+// the App Store. No email box and nothing posted; the tap tells the pixel the
+// fact (ViewContent), and an Android phone gets the web app.
+{
+  const cfg = readFileSync(ROOT + "/../next.config.js", "utf8");
+  ok("/try is rewritten to the bridge page", /source: "\/try", destination: "\/try\.html"/.test(cfg));
+  for (const [ua, want] of [[null, "https://apps.apple.com/us/app/sona-speech/id6785755867"], ["Mozilla/5.0 (Linux; Android 14) Mobile", origin + "/onboarding.html"]]) {
+    const context = await browser.newContext({ viewport: { width: 375, height: 667 }, ...(ua ? { userAgent: ua } : {}) });
+    await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
+    const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+    await page.addInitScript(() => { window.__ev = []; Object.defineProperty(window, "sonaTrack", { configurable: true, set() {}, get() { return (e, p) => window.__ev.push([e, p]); } }); });
+    const before = posts.length;
+    await page.goto(origin + "/try");
+    const got = await page.evaluate(() => ({ h1: document.querySelector("h1").textContent, inputs: document.querySelectorAll("input,form").length,
+      href: document.getElementById("go").href, btnBottom: document.getElementById("go").getBoundingClientRect().bottom,
+      rachel: /Built with Rachel, a pediatric speech-language pathologist in her clinical fellowship\./.test(document.body.textContent),
+      robots: document.querySelector('meta[name="robots"]').content, pixel: !!document.querySelector('script[src="/pixel.js"]') }));
+    const who = ua ? "Android" : "iPhone";
+    ok(who + ": /try has the headline, no email box and the button on the first screen", got.h1 === "Speech practice kids love." && got.inputs === 0 && got.btnBottom <= 667, got);
+    ok(who + ": its button goes to " + (ua ? "the web app" : "the App Store"), got.href === want, got.href);
+    ok(who + ": Rachel's line word for word, noindex, and the pixel", got.rachel && got.robots === "noindex" && got.pixel, got);
+    const nav = page.waitForURL((u) => !u.href.startsWith(origin + "/try"), { timeout: 3000 }).then(() => true, () => false);
+    if (!ua) await context.route("https://apps.apple.com/**", (r) => r.fulfill({ status: 200, body: "store" }));
+    const ev = await page.evaluate(() => { document.getElementById("go").click(); return window.__ev.slice(); });
+    ok(who + ": a tap tells the pixel ViewContent, then leaves", ev.length === 1 && ev[0][0] === "ViewContent" && (await nav), ev);
+    ok(who + ": nothing is posted from it", posts.length === before, posts.slice(before));
+    ok(who + ": no page errors", errors.length === 0, errors);
+    await context.close();
+  }
 }
 
 await browser.close(); srv.close();

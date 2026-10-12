@@ -274,15 +274,15 @@
       }
     }
     function finishGame(){
-      var earned=22; if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
       try{var GK=(window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1";var GS=JSON.parse(localStorage.getItem(GK)||"{}");GS[SOUND]=GS[SOUND]||{};GS[SOUND].story={done:true};GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10));localStorage.setItem(GK,JSON.stringify(GS));}catch(e){}
       $("winCount").textContent=GOAL;
-      // drawn coin, never 🪙 (D3); the chip names the level like a postcard
-      $("winUnlock").innerHTML='<svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-4px"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/></svg> +'+earned+'<small>coins</small>';
+      // no coins: a finished story pays none since 11 Oct 2026 (COIN3), so its
+      // coin pill is emptied and folded away; the chip names the level like a postcard
+      $("winUnlock").innerHTML=""; $("winUnlock").style.display="none";
       try{ $("winChip").textContent=String(L.name).toUpperCase()+" · LEVEL "+DIFF; $("win").style.background="linear-gradient(180deg,"+L.accent+"2e, #fff6e9 55%, #ffedd8)"; $("winDone").style.color=L.accent; }catch(e){}
       $("win").classList.add("show");
       if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
-      if(window.Sona){Sona.confetti&&Sona.confetti();Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete();Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin();}
+      if(window.Sona){Sona.confetti&&Sona.confetti();Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete();}
     }
     function startGame(){ $("win").classList.remove("show"); pi=0; busy=false; $("count").textContent="0"; $("goal").textContent=GOAL; renderPage(); setLeo("idle"); readPage(); }
     // Boot. The async wrapper is what makes every await below legal — losing it

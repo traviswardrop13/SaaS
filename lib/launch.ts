@@ -60,7 +60,7 @@ export function locked(now: number = Date.now()): boolean {
  * locked without anyone having to remember it.
  */
 export const OPEN_PAGES = [
-  "parents.html", "for-slps.html", "slp.html", "slp-login.html",
+  "parents.html", "try.html", "for-slps.html", "slp.html", "slp-login.html",
   "leads.html", "founders.html", "privacy.html", "launching.html",
 ];
 export function lockedPage(pathname: string): boolean {

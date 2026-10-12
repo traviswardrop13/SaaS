@@ -144,7 +144,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

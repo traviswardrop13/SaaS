@@ -1,0 +1,213 @@
+/* THE TROPHY ROAD (ROAD1, 11 Oct 2026). The road page in the crafted world:
+   cream cards, warm ink, painted chests and places. Every button that acts is
+   the teal pill from action.css (linked first by the page); a second choice is
+   the cream pill. Orange is only ever the practice sound's letters, so there
+   is none here, and no Duolingo green. Pictures lead and numbers are small:
+   most of the children who open this page can't read yet. No animation runs
+   under Reduce Motion. */
+:root{--ink:#45270f;--muted:#80664d;--card:#fffdf7;--line:#efe0c8;--shade:#e6d3b5;--gold:#f0b400;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+[hidden]{display:none!important;}
+html,body{min-height:100%;background:#fff6e9;background-image:radial-gradient(ellipse at 16% 8%,#ffefcf66,transparent 46%),radial-gradient(ellipse at 88% 60%,#f4e5c944,transparent 52%);}
+body{font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);}
+button,a{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;}
+button{border:0;background:none;cursor:pointer;}
+:is(button,a):focus-visible{outline:3px solid #14858d;outline-offset:3px;}
+.rd-wrap{max-width:560px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(34px + env(safe-area-inset-bottom));}
+.rd-ic{display:inline-flex;flex:none;}
+.rd-ic svg{display:block;width:20px;height:20px;vertical-align:0!important;}
+
+/* header: the way home, the name, and the two counts (pictures first) */
+.rd-head{display:flex;align-items:center;gap:8px;min-height:48px;}
+.rd-x{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;border-radius:50%;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb;color:#5e4430;font-size:19px;font-weight:900;text-decoration:none;}
+.rd-title{flex:1;min-width:0;font:800 23px/1.1 "Baloo 2",sans-serif;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rd-chips{display:flex;gap:6px;flex:none;}
+.rd-chip{display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:4px 10px 4px 7px;border-radius:15px;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb;font:800 17px/1 "Baloo 2",sans-serif;white-space:nowrap;}
+
+/* the month's notice: one line, never in the way */
+.rd-note{display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 8px 8px 14px;border-radius:18px;background:#fff8df;border:1px solid #f1dca6;font-weight:800;font-size:14px;line-height:1.35;}
+.rd-note>span{flex:1;}
+.rd-note button{flex:none;width:36px;height:36px;border-radius:50%;background:#f6e6bd;font-size:15px;font-weight:900;}
+
+/* hero: the land the child is in, their buddy, and the next gift filling up */
+.rd-hero{margin-top:14px;border-radius:26px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 0 var(--shade),0 10px 24px #62401d12;}
+.rd-band{position:relative;height:208px;background-color:#cfe8c0;background-size:cover;background-position:center 62%;background-repeat:no-repeat;}
+.rd-land{position:absolute;left:12px;top:12px;max-width:calc(100% - 24px);padding:5px 12px;border-radius:99px;background:#fffdf2ee;font:800 15px/1.2 "Baloo 2",sans-serif;box-shadow:0 2px 6px #3d2a1a24;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rd-buddy{position:absolute;left:2%;bottom:4px;width:44%;max-width:190px;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 6px 5px #3d2a1a40);pointer-events:none;}
+.rd-buddy.badge{left:6%;bottom:16px;width:30%;max-width:120px;border-radius:50%;border:4px solid #fffdf7;background:#fffdf7;object-fit:cover;}
+.rd-next{position:absolute;right:12px;bottom:14px;width:46%;max-width:196px;padding:10px 10px 9px;border-radius:22px;background:#fffdf7f4;box-shadow:0 4px 0 var(--shade),0 8px 18px #3d2a1a26;display:flex;flex-direction:column;align-items:center;gap:7px;}
+.rd-next .rd-gift{width:88px;height:80px;}
+.rd-bar{display:flex;gap:4px;width:100%;}
+.rd-bar i{flex:1;height:11px;border-radius:99px;background:#eadcc6;box-shadow:inset 0 1px 2px #9b79312a;}
+.rd-bar i.on{background:linear-gradient(#ffe17a,#f2b10a);box-shadow:inset 0 -1px 0 #c98f00;}
+.rd-at{display:inline-flex;align-items:center;gap:3px;font:800 14px/1 "Baloo 2",sans-serif;color:var(--muted);}
+.rd-at .rd-ic svg{width:15px;height:15px;}
+.rd-wait{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;}
+.rd-wait>span{font:800 18px/1.2 "Baloo 2",sans-serif;}
+.act-pill.rd-go{flex:none;min-height:48px;padding:10px 20px;font-size:18px;}
+
+/* a gift's picture: coins, a sticker, a level, a chest, an item */
+.rd-gift{position:relative;display:flex;align-items:center;justify-content:center;flex:none;}
+.ga{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
+.ga img{display:block;width:100%;height:100%;object-fit:contain;}
+.ga-coins{flex-direction:column;gap:2px;}
+.ga-pile{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:64%;}
+.ga-pile span{display:block;height:100%;aspect-ratio:1;flex:none;margin:0 -15%;filter:drop-shadow(0 2px 1px #8a5a0033);}
+.ga-pile span svg{display:block;width:100%!important;height:100%!important;vertical-align:0!important;overflow:visible;transform:scale(1.5);}
+.ga-pile span:nth-child(2){position:relative;top:-14%;}
+.ga-pile span:only-child{margin:0;}
+.ga-coins b{font:800 17px/1 "Baloo 2",sans-serif;}
+.ga-stk>span{display:flex;align-items:center;justify-content:center;height:86%;max-width:100%;aspect-ratio:1;border-radius:50%;background:#fff;border:3px dashed #e6cf98;box-shadow:0 3px 0 #ecdcc3;}
+.ga-stk svg{width:66%!important;height:66%!important;opacity:.9;vertical-align:0!important;}
+.ga-lv{flex-direction:column;}
+.ga-lvpics{display:flex;width:100%;height:46%;gap:2px;border-radius:9px;overflow:hidden;}
+.ga-lvpics i{flex:1;background:#efe6d5 center/cover no-repeat;}
+.ga-lv b{position:absolute;left:50%;bottom:-4%;transform:translateX(-50%);min-width:44%;padding:0 6px;border-radius:12px;background:#fffdf7;border:2px solid var(--act);font:800 26px/1.15 "Baloo 2",sans-serif;text-align:center;box-shadow:0 2px 0 var(--act-d);}
+.ga-place{border-radius:14px;overflow:hidden;background:#cfe8c0 center/cover no-repeat;}
+.ga-buddy{border-radius:50%;overflow:hidden;}
+
+/* today's chest */
+.rd-card{margin-top:16px;padding:14px;border-radius:24px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 0 var(--shade),0 8px 18px #62401d0f;}
+.rd-card h2{font:800 21px/1.15 "Baloo 2",sans-serif;letter-spacing:-.2px;}
+.rd-chest{display:flex;align-items:center;gap:12px;}
+.rd-chest-art{position:relative;flex:none;width:112px;height:112px;}
+.rd-chest-art img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 5px #5a3a1430);}
+.rd-chest-art .rd-chest-fb svg{width:100%;height:100%;}
+.rd-chest.is-shut .rd-chest-art img{filter:saturate(.75) drop-shadow(0 6px 5px #5a3a1424);}
+.rd-chest.is-ready .rd-chest-art{animation:rdWobble 1.9s ease-in-out infinite;}
+.rd-chest.is-done .rd-chest-art img{opacity:.85;}
+.rd-chest-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
+.rd-inside{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px 10px 4px 6px;border-radius:99px;background:#fff4dc;font:800 13px/1.25 Nunito,sans-serif;color:#6d4a22;}
+.rd-inside .rd-ic svg{width:18px;height:18px;}
+.rd-say{font-size:14px;font-weight:800;line-height:1.35;color:var(--muted);}
+.rd-meter{display:flex;align-items:center;gap:8px;width:100%;}
+.rd-meter .rd-ic svg{width:18px;height:18px;}
+.rd-meter-bar{flex:1;height:12px;border-radius:99px;background:#eadcc6;overflow:hidden;box-shadow:inset 0 1px 2px #9b79312a;}
+.rd-meter-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(var(--act-hi),var(--act));}
+.rd-meter b{flex:none;font:800 16px/1 "Baloo 2",sans-serif;}
+.act-pill.rd-open-it{min-height:48px;padding:10px 26px;font-size:19px;}
+
+/* the month's path: eight steps, two rows of four */
+.rd-month-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rd-month-head .rd-chip{min-height:32px;font-size:15px;box-shadow:0 2px 0 #e9d8bb;}
+.rd-month-head .rd-chip .rd-ic svg{width:16px;height:16px;}
+.rd-pips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;margin-top:12px;}
+.rd-pip{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:8px 2px 7px;border-radius:18px;border:2px solid #f0e2cc;background:#fffdf7;box-shadow:0 3px 0 #ecdcc3;text-align:center;}
+.rd-pip .rd-gift{width:46px;height:44px;}
+.rd-pip .ga-coins b{font-size:14px;}
+.rd-pat{display:inline-flex;align-items:center;gap:2px;font:800 12px/1 "Baloo 2",sans-serif;color:var(--muted);}
+.rd-pat .rd-ic svg{width:12px;height:12px;}
+.rd-pip .rd-also{justify-content:center;gap:2px;}
+.rd-pip .rd-mini{padding:2px 4px 2px 2px;font-size:11px;}
+.rd-pip .rd-mini .rd-ic svg{width:12px!important;height:12px!important;}
+.rd-next .rd-also{justify-content:center;}
+.rd-pip.ahead{background:#f6efe4;box-shadow:none;}
+.rd-pip.ahead .rd-gift,.rd-pip.ahead .rd-also{opacity:.5;filter:saturate(.45);}
+.rd-pip.open{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);cursor:pointer;animation:rdBounce 1.5s ease-in-out infinite;}
+.rd-pip.done .rd-gift{opacity:.6;}
+.rd-flag{display:inline-block;padding:3px 8px;border-radius:99px;background:linear-gradient(var(--act-hi),var(--act));color:#fff;text-shadow:0 1px 0 var(--act-d);font:800 12px/1.1 "Baloo 2",sans-serif;white-space:nowrap;}
+.rd-tick{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--act);color:#fff;font-size:13px;font-weight:900;line-height:1;}
+.rd-pip .rd-tick{position:absolute;top:-7px;right:-5px;}
+
+/* the road itself: lands, and a stop for every gift */
+.rd-road{margin-top:8px;}
+.rd-landhead{position:relative;display:flex;align-items:flex-end;height:84px;margin:18px 0 12px;padding:10px 12px;border-radius:22px;overflow:hidden;background-size:cover;background-position:center 60%;background-repeat:no-repeat;box-shadow:0 3px 0 var(--shade);}
+.rd-landhead h3{padding:4px 12px;border-radius:99px;background:#fffdf2ee;font:800 16px/1.2 "Baloo 2",sans-serif;box-shadow:0 2px 6px #3d2a1a24;}
+.rd-stops{position:relative;}
+.rd-stops::before{content:"";position:absolute;left:39px;top:6px;bottom:6px;border-left:4px dotted #e3cfb0;}
+.rd-stop{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:76px;margin:0 0 10px;padding:8px 10px 8px 9px;border-radius:22px;border:2px solid #f0e2cc;background:var(--card);box-shadow:0 3px 0 #ecdcc3;text-align:left;}
+.rd-node{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:58px;height:58px;border-radius:50%;background:#f3e7d3;border:3px solid #fffdf7;box-shadow:0 2px 0 #dfcbae;font:800 13px/1 "Baloo 2",sans-serif;color:#6b5238;}
+.rd-node .rd-ic svg{width:18px;height:18px;}
+.rd-stop.reached .rd-node{background:radial-gradient(circle at 40% 35%,#fff2b0,#ffd04a);color:var(--ink);}
+.rd-here{position:absolute;left:-12px;top:-14px;width:34px;height:34px;border-radius:50%;border:3px solid #fffdf7;box-shadow:0 2px 6px #3d2a1a40;overflow:hidden;background:#ffe5b1;}
+.rd-here>span{display:block!important;width:100%!important;height:100%!important;}
+.rd-sgift{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
+.rd-sgift .rd-gift{width:62px;height:58px;}
+.rd-also{display:flex;flex-wrap:wrap;gap:4px;min-width:0;}
+.rd-mini{display:inline-flex;align-items:center;gap:2px;padding:3px 7px 3px 4px;border-radius:99px;background:#fff4dc;font:800 13px/1 "Baloo 2",sans-serif;color:#6d4a22;white-space:nowrap;}
+.rd-mini .rd-ic svg{width:16px!important;height:16px!important;}
+.rd-state{flex:none;display:flex;align-items:center;}
+.rd-stop.open{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);cursor:pointer;}
+.rd-stop.open .rd-flag{font-size:15px;padding:6px 12px;}
+.rd-stop.open:active{transform:translateY(2px);box-shadow:0 1px 0 var(--act-d);}
+.rd-stop.ahead{background:#f8f2e8;box-shadow:none;}
+.rd-stop.ahead .rd-sgift{opacity:.55;filter:saturate(.5);}
+.rd-stop.done .rd-sgift{opacity:.75;}
+.rd-start{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:0 9px;}
+.rd-start .rd-node{background:#ffe5b1;overflow:hidden;padding:0;}
+.rd-start .rd-node>span{display:block!important;width:100%!important;height:100%!important;}
+
+/* game levels: change a game's level after the first pick */
+.rd-lvrow{display:flex;align-items:center;gap:10px;padding:10px 0 4px;}
+.rd-lvrow+.rd-lvrow{border-top:1px solid #f1e5d3;}
+.rd-lvart{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.rd-lvart i{display:block;width:100%;max-width:96px;aspect-ratio:1.7;border-radius:11px;background:#efe6d5 center/cover no-repeat;}
+.rd-lvart span{font:800 12px/1.2 Nunito,sans-serif;color:var(--muted);}
+.rd-lvset{display:flex;gap:8px;flex:none;}
+.rd-lvcol{display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;}
+.rd-lvbtn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:52px;height:52px;border-radius:50%;border:2px solid #f0e2cc;background:#fffdf7;box-shadow:0 3px 0 #ecdcc3;color:var(--ink);}
+.rd-lvbtn b{font:800 22px/1 "Baloo 2",sans-serif;}
+.rd-lvbtn .rd-pips3{display:flex;gap:2px;}
+.rd-lvbtn .rd-pips3 i{display:block;width:5px;height:5px;border-radius:50%;background:#e2d2b8;}
+.rd-lvbtn .rd-pips3 i.on{background:var(--ink);}
+.rd-lvbtn[aria-pressed="true"]{border-color:var(--act);background:#effaf8;box-shadow:0 3px 0 var(--act-d);}
+.rd-lvbtn .rd-tick{position:absolute;top:-6px;right:-6px;width:20px;height:20px;font-size:12px;}
+.rd-lvbtn[aria-disabled="true"]{background:#f3ebdf;box-shadow:none;color:#a28d74;cursor:default;}
+.rd-lvbtn .rd-lock{position:absolute;right:-5px;bottom:-4px;}
+.rd-lvbtn .rd-lock svg{width:18px;height:18px;}
+.rd-lvneed{display:inline-flex;align-items:center;gap:1px;font:800 11px/1 "Baloo 2",sans-serif;color:var(--muted);min-height:12px;}
+.rd-lvneed .rd-ic svg{width:11px;height:11px;}
+#levelsNote{min-height:18px;margin-top:6px;font-size:13px;font-weight:800;color:var(--muted);text-align:center;}
+
+/* links on: the shop, the sticker book (and the board, if one is on) */
+.rd-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;}
+.rd-links a{flex:1 1 130px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:8px 12px;text-decoration:none;font-size:16px;white-space:nowrap;}
+.rd-links .rd-ic svg{width:24px;height:24px;}
+.rd-links .crafted-buddy{flex:none;}
+
+/* the gift moment: a chest to tap three times, then each gift in turn */
+.rd-ovl{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:#302517a0;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}
+.rd-modal{position:relative;width:100%;max-width:340px;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;padding:20px 18px 18px;border-radius:30px;background:linear-gradient(145deg,#fffcf3,#fff6e5);border:1px solid #eee0c8;text-align:center;box-shadow:0 18px 55px #26190f55,inset 0 1px 0 #fff;}
+.rd-shut{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;background:#f0e3cd;color:var(--ink);font-size:17px;font-weight:900;}
+.rd-box{display:block;width:200px;height:200px;margin:4px auto 0;border-radius:24px;}
+.rd-box img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 6px #5a3a1433);pointer-events:none;}
+.rd-box.thump{animation:rdThump .3s ease;}
+.rd-box.tease{animation:rdWobble 1.6s ease-in-out infinite;}
+.rd-reveal{display:flex;align-items:center;justify-content:center;width:170px;height:150px;margin:6px auto 0;}
+.rd-reveal .ga-coins b{font-size:28px;}
+.rd-reveal .ga-lv b{font-size:40px;}
+.rd-reveal .ga-stk svg{width:72%!important;height:72%!important;opacity:1;}
+.rd-reveal.pop{animation:rdPop .45s ease;}
+.rd-line{min-height:2.5em;margin-top:10px;font:800 22px/1.2 "Baloo 2",sans-serif;}
+.rd-cheer{display:block;width:96px;height:96px;margin:4px auto -6px;object-fit:contain;pointer-events:none;}
+.rd-cheer.badge{width:70px;height:70px;border-radius:50%;border:3px solid #fff;}
+.rd-actions{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:12px;}
+.act-pill.rd-yay{min-width:150px;min-height:52px;padding:10px 26px;font-size:21px;}
+.rd-actions .cream-pill{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:8px 20px;text-decoration:none;font-size:16px;}
+
+@keyframes rdWobble{0%,100%{transform:rotate(0)}10%{transform:rotate(-5deg)}20%{transform:rotate(5deg)}30%{transform:rotate(-3deg)}40%{transform:rotate(0)}}
+@keyframes rdBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes rdThump{0%{transform:scale(1)}40%{transform:scale(.9) rotate(-3deg)}100%{transform:scale(1)}}
+@keyframes rdPop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+
+@media(max-width:360px){
+  .rd-wrap{padding-left:12px;padding-right:12px;}
+  .rd-title{font-size:19px;}
+  .rd-chip{min-height:34px;padding:3px 8px 3px 5px;font-size:15px;gap:3px;}
+  .rd-chip .rd-ic svg{width:17px;height:17px;}
+  .rd-band{height:188px;}
+  .rd-next .rd-gift{width:74px;height:68px;}
+  .rd-chest-art{width:92px;height:92px;}
+  .rd-pips{gap:10px 6px;}
+  .rd-stop{gap:8px;padding-right:8px;}
+  .rd-sgift .rd-gift{width:54px;height:52px;}
+  .rd-lvset{gap:6px;}
+  .rd-lvcol{width:48px;}
+  .rd-lvbtn{width:46px;height:46px;}
+  .rd-lvbtn b{font-size:20px;}
+  .rd-links a{font-size:15px;padding:8px 10px;gap:6px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .rd-chest.is-ready .rd-chest-art,.rd-pip.open,.rd-box.thump,.rd-box.tease,.rd-reveal.pop{animation:none!important;}
+  .rd-stop.open:active{transform:none;}
+}

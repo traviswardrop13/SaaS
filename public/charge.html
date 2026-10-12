@@ -253,6 +253,12 @@
     #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
     #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
     #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
+    /* LEVELS1: at Level 2 or 3 "Up next" names the level on a line of its own
+       ("Fruit Slice" over "Level 2"), so on a phone the level is never the
+       part an ellipsis cuts off. The words are the same: the dot between them
+       is still in the text, only not drawn. */
+    #launchBar .launch-name .launch-line{display:block;overflow:hidden;text-overflow:ellipsis;}
+    #launchBar .launch-name .launch-dot{display:none;}
     #quietOvl{background:rgba(74,44,20,.30);z-index:85;padding:20px;}
     #quietOvl .quiet-card{background:#fff7e9;max-height:calc(100dvh - 40px);overflow:auto;}
     .quiet-card img{width:160px;height:150px;object-fit:contain;}
@@ -2390,7 +2396,13 @@
       // Up next: the game's painted Home card, else its sticker (crafted-games.css)
       try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"),_card=(S.CRAFTED_CARDS||{})[GAME.replace(/^arcade-|\.html$/g,"")];
         _lb.innerHTML='<span id="launchArt" aria-hidden="true"></span><span class="launch-text"><span class="launch-up">Up next</span><span class="launch-name"></span></span><i class="launch-go" aria-hidden="true"></i>';
-        _lb.querySelector(".launch-name").textContent=GMETA.n;
+        // LEVELS1: the one place the level is named before the game (and its
+        // start card): "Fruit Slice · Level 2", only at Level 2 or 3
+        var _lv=1;try{_lv=S.playLevel?S.playLevel(GAME.replace(/^arcade-|\.html$/g,"")):1;}catch(e){_lv=1;}
+        _lb.querySelector(".launch-name").textContent=GMETA.n+(_lv>1?" \u00b7 Level "+_lv:"");
+        if(_lv>1){var _nm=_lb.querySelector(".launch-name"),_l1=document.createElement("span"),_l2=document.createElement("span"),_dot=document.createElement("span");
+          _l1.className=_l2.className="launch-line";_dot.className="launch-dot";_l1.textContent=GMETA.n;_dot.textContent=" \u00b7 ";_l1.appendChild(_dot);_l2.textContent="Level "+_lv;
+          _nm.textContent="";_nm.appendChild(_l1);_nm.appendChild(_l2);}
         if(_card)$("launchArt").style.backgroundImage='url("/assets/crafted/home-'+_card+'.webp")';
         else{var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]);}
         _lb.classList.add("show"); }catch(e){}
@@ -2426,7 +2438,7 @@
         if(!DEMO_REPLAY){
           S.dailyFinish(run.sum);
           if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
-          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);}
           if(S.episodeAdvance)S.episodeAdvance();
         }
         run.finishRecorded=true;

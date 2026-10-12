@@ -38,6 +38,7 @@ Physical iPhone verification of keyboard behavior, microphone recognition and sp
 - `sprint-glide-practice-v2.md` — sprite atlas, hedges, practice materials and reward renderer.
 - `hoops-v2.md` — court, ball, word art and live-shot checks.
 - `customize-v2.md` and `customize-v2-assets.json` — landscapes, buddy presentation and selection checks.
+- `buddies-v3.md` — each buddy's run, rest, cheer, peek and sit poses, the Trophy Road's chests, the three scenes without the fox (or Echo), their prompts, cuts, eye checks and placement numbers.
 - `implementation-history.md` — earlier batch notes and source-board filenames; historical statements there do not override this current handoff.
 
 Maintain the user’s ownership boundary: do not edit books while continuing this branch. Review the current repository instructions before merging or releasing.
