@@ -185,7 +185,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and a slower course, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
@@ -281,11 +281,10 @@
     var stretch=0, stretchStart=0, phase="run", tumbles=0, magnetUntil=0, finishY=null, finaleDone=false, echoT=-1e9, sideOff=0;
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }
-    function restoreHeart(){ if(!playing||phase!=="run"||outOfHearts)return; hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
     function loseHeart(now){
       if(!playing||phase!=="run"||slowTurn||slowMs>0||now-heartHitAt<1500)return false;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paintHearts();
-      if(!hearts){ outOfHearts=true; } else slowAskSoon();
+      if(!hearts){ outOfHearts=true; }
       return true;
     }
     // Each child keeps their own best in the visible count, never the hidden
@@ -372,11 +371,12 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
       // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!life&&!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       hurtT=performance.now(); playing=true;
       if(phase==="checkpoint") startStretch(stretch+1);
       draw(); // the gated rAF died on the card — restart it
@@ -584,7 +584,7 @@
       // player (falling = Mario-Kart tumble + rescue); running = a little bounce
       if(falling.on){
         var ft=(now-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; hurtT=now; if(outOfHearts)endRound();else flash("Back in the race!"); }
+        if(ft>=1){ falling.on=false; hurtT=now; if(outOfHearts)lifeOrEnd();else flash("Back in the race!"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
           ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,66*(1-ft*0.45))){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill(); } ctx.restore();
@@ -769,6 +769,7 @@
     // child's taps on the game have already woken.
     var sayVoice=window.SayIt?SayIt.voice({
       up:function(){ return reviveWait&&!slowTurn; },
+      ask:function(t){ return t.line(lifeCard?LIFE_LINE:SayIt.ASK).then(function(){ return t.take(); }); },
       wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
       note:listenNote,
       clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },

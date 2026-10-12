@@ -595,7 +595,7 @@ await scenario("slice: no microphone", async () => {
 
 // Fixed helper and reward lines are preloaded, not spoken by the syllable card.
 // Actual playback and mic overlap remain checked through __quiet.sounds.
-const PRELOADED_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a heart and Super Slice, say"]);
+const PRELOADED_LINES = new Set(["To keep playing, say", "Go!", "Super Slice! Say", "For a new life, say"]);
 // ── Fruit Slice: a card that asks a syllable (Travis, 1 Oct 2026: "start with
 // isolation then ree rah roh then rot") ──
 // The card after a wave now asks one syllable for a child on R, in ONE line

@@ -1484,6 +1484,34 @@ changes finger play, never what passes the speech check:
   play on his phone. Rachel should review the frequency and wording of asks,
   and the effect on children the phone hears poorly.
 
+**A new life only on a loss** (Travis, 8 Oct 2026: "lets only have the kiddo
+say the sound to get a new life if they die or lose. it kept popping up in
+piano tiles too much ... during the game they only say the sound to make the
+game easier or slower ... i still want them to say the sound beforehand to
+charge up"). This replaces two lines above and in "Echo asks, then listens":
+a heard sound power no longer gives a heart back, and a lost heart no longer
+brings Echo's next ask forward (that was what made him ask so often). In all
+five round games:
+- **Mid-round, Echo's ask earns the power only** (slow keys, Super Slice, the
+  slow help), on its own clock: about six seconds in, then every 20 seconds
+  of play, 40 after two quiet asks. He never mentions a heart mid-round.
+- **At the last heart the round stops on the say-it card:** "Say “rrrr” for a
+  new life!", three empty hearts, Echo's "For a new life, say", Rachel's
+  take, "Go!", then the mic. Heard: all three hearts are back and play goes
+  on from where it stopped (one rep, as any card; no confetti; it does not
+  use up a between-round card). "I'm done playing", or a phone with no
+  microphone: the kind end card, as before. Silence brings nothing back: the
+  card waits. A child can earn a new life as often as they lose.
+- **The charge-up is unchanged:** the "Say it 5 times" page still comes
+  before every game, and the cards between rounds are as they were.
+- One copy, `lifeOrEnd()` / `lifeTaken()` in `arcade-speech-help.js`. The
+  line is fetched once a heart is gone, not at page load. All three hearts
+  back (not one) and no limit on new lives are defaults Travis did not pick.
+  **Rachel's to rule on:** a child who keeps losing is asked for the bare
+  sound each time, and a child the phone hears poorly cannot get back in.
+`tilestest`, `slicetest`, `stacktest`, `runtest`, `glidetest` play the card;
+`arcadespeechhelptest` that a lost heart moves nothing and a power gives none.
+
 **The clinical success rule below still applies to speech-practice rounds:**
 step the target down rather than end on failed speech. An arcade round may
 end because of finger play; that is not a grade of the child's sound.
