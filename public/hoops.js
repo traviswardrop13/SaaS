@@ -18,9 +18,11 @@
    LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
    (setLevel; this file never reads storage). Level 1 is the game above. At
    Level 2 the hoop slides from the first basket, and at Level 3 it slides
-   wider and quicker. The help never changes with the level: one miss slows
-   it to half speed, two stop it and make it glow, and from the third any
-   swipe up goes in. Eight words, said two times each, at every level.
+   wider and quicker. The help never changes with the level: after one miss
+   the hoop moves as it would at Level 1, at half speed (so a harder level is
+   never harder once help has started), two stop it and make it glow, and
+   from the third any swipe up goes in. Eight words, said two times each, at
+   every level.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
@@ -58,16 +60,20 @@
   // holds still while the word is being said and while a basket is cheered.
   function hoopMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
   // At Level 2 it slides from the first basket, and at Level 3 wider and
-  // quicker; the help (a miss doubles the period, two stop it) is the same.
+  // quicker. The help reads Level 1's numbers: once this ball has missed, the
+  // hoop moves as it would at Level 1 (still for the first two baskets), and
+  // the miss doubles that period; two stop it. A new ball starts at the level.
+  function hoopLevel() { return misses >= 1 ? 1 : level; }
   function hoopAmp() {
-    if (level === 2) return baskets < 3 ? 0.6 : 0.9;
-    if (level === 3) return baskets < 3 ? 0.9 : 1.0;
+    var lv = hoopLevel();
+    if (lv === 2) return baskets < 3 ? 0.6 : 0.9;
+    if (lv === 3) return baskets < 3 ? 0.9 : 1.0;
     return baskets < 2 ? 0 : baskets < 5 ? 0.6 : 0.9;
   }
   function hoopTarget(t) {
     if (misses >= 2) return hoopX;
-    var amp = hoopAmp();
-    var period = (level === 2 ? (baskets < 3 ? 5.0 : 4.0) : level === 3 ? (baskets < 3 ? 4.4 : 3.6) : (baskets < 5 ? 5.6 : 4.3)) * (misses === 1 ? 2 : 1);
+    var lv = hoopLevel(), amp = hoopAmp();
+    var period = (lv === 2 ? (baskets < 3 ? 5.0 : 4.0) : lv === 3 ? (baskets < 3 ? 4.4 : 3.6) : (baskets < 5 ? 5.6 : 4.3)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(hoopPhase + (t / period) * Math.PI * 2);
   }
 

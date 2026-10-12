@@ -7,13 +7,27 @@ import { kvCmd, kvConfigured } from "@/lib/slpAuth";
  * ). Without this, those routes are unauthenticated and anyone on the
  * internet can loop them to run up the bill.
  *
- * Uses KV (INCR + EXPIRE) when configured; otherwise a per-instance in-memory
- * fallback (weaker on serverless, but still caps a single hammering client on a
- * warm instance). Limits are generous so a real practice session — which fires
+ * Uses KV (INCR + EXPIRE, in one script) when configured; otherwise a
+ * per-instance in-memory fallback (weaker on serverless, but still caps a
+ * single hammering client on a warm instance). Limits are generous so a real practice session — which fires
  * many tts/score calls a minute — never trips them; only scripted abuse does.
  */
 
 const mem = new Map<string, { n: number; reset: number }>();
+
+/**
+ * The count and its time limit in one atomic call. They were two calls, INCR
+ * then EXPIRE on the first hit, and kvCmd swallows a failed call: a lost
+ * EXPIRE (or a lost INCR reply) left the bucket with no time limit, so it held
+ * the address for good (privacy.html says "for up to an hour") and, once at its
+ * limit, refused that address on that route for good. The TTL check also
+ * mends any bucket already left without one. (Final review, 12 Oct 2026.)
+ */
+const RL_SCRIPT = `-- rl:incr
+local n = redis.call('INCR', KEYS[1])
+if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return n
+`;
 
 function clientIp(req: Request): string {
   // x-real-ip is set by Vercel's edge from the true socket peer and cannot be
@@ -74,8 +88,7 @@ export async function rateLimit(
   const bucket = `rl:${opts.key}:${who}`;
   try {
     if (kvConfigured()) {
-      const n = await kvCmd(["INCR", bucket]);
-      if (n === 1) await kvCmd(["EXPIRE", bucket, opts.windowSec]);
+      const n = await kvCmd(["EVAL", RL_SCRIPT, 1, bucket, opts.windowSec]);
       if (typeof n === "number" && n > opts.limit) return tooMany(opts.windowSec);
       return null;
     }

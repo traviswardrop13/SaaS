@@ -161,10 +161,15 @@ function listsM(A, from) {
   const nd = Number(A[from + nz]); return [zkeys, A.slice(from + nz + 1, from + nz + 1 + nd)];
 }
 const SCRIPTS = {
+  // lib/rateLimit.ts: the count and its time limit in one call (final review).
+  'rl:incr'(K, A) {
+    const n = M('INCR', K[0]); if (M('TTL', K[0]) < 0) M('EXPIRE', K[0], A[0]);
+    return n;
+  },
   'board:mail'(K, A) {
-    const g = M('INCR', K[0]); if (M('TTL', K[0]) < 0) M('EXPIRE', K[0], A[0]);
-    if (g > Number(A[2])) return [g, 0];
     const a = M('INCR', K[1]); if (M('TTL', K[1]) < 0) M('EXPIRE', K[1], A[1]);
+    if (a > Number(A[2])) return [0, a];
+    const g = M('INCR', K[0]); if (M('TTL', K[0]) < 0) M('EXPIRE', K[0], A[0]);
     return [g, a];
   },
   'board:start'(K, A) {
@@ -289,7 +294,7 @@ const SCRIPTS = {
   },
 };
 function evalModel(script, nk, rest) {
-  const m = /^-- (board:\w+)\n/.exec(script);
+  const m = /^-- ((?:board|rl):\w+)\n/.exec(script);
   if (!m || !SCRIPTS[m[1]]) throw new Error('model: no script for ' + JSON.stringify(script.slice(0, 40)));
   return SCRIPTS[m[1]](rest.slice(0, nk), rest.slice(nk));
 }
@@ -556,6 +561,20 @@ try {
     ok('the second email to an address goes, the third the same day is 429', r2.status === 200 && r3.status === 429 && r3.json.limit === true, [r2.status, r3.status]);
     at('2027-03-11T12:00:00Z');
     ok('…and the next day it may have two again', (await start(email, ['fox'])).status === 200);
+    // One inbox is one address: a "+tag", and Gmail's dots and googlemail.com,
+    // never buy a stranger's inbox more than two (final review).
+    const gBefore = emails.length;
+    const g1 = await start('kid.parent+one@gmail.com', ['fox']);
+    const g2 = await start('KidParent@googlemail.com', ['fox']);
+    const g3 = await start('k.i.d.parent+two@Gmail.com', ['fox']);
+    ok('a "+tag" and Gmail\'s dots are one inbox: the third the same day is 429', g1.status === 200 && g2.status === 200 && g3.status === 429 && g3.json.limit === true, [g1.status, g2.status, g3.status]);
+    ok('…and each email still goes to the address as typed', emails.length === gBefore + 2 && JSON.stringify(emails[gBefore].to) === JSON.stringify(['kid.parent+one@gmail.com']) && JSON.stringify(emails[gBefore + 1].to) === JSON.stringify(['KidParent@googlemail.com']));
+    const o1 = await start('a.b@family.example', ['fox']), o2 = await start('ab@family.example', ['fox']), o3 = await start('ab+x@family.example', ['fox']);
+    ok('…dots elsewhere are a different address; a "+tag" anywhere is the same one', o1.status === 200 && o2.status === 200 && o3.status === 200 && (await start('ab+y@family.example', ['fox'])).status === 429, [o1.status, o2.status, o3.status]);
+    const dayKey = P() + 'mail:' + new Date(NOW).toISOString().slice(0, 10);
+    const gCount = Number(await kv(['GET', dayKey]));
+    const refused = [await start('k.i.d.parent+three@gmail.com', ['fox']), await start('kidparent+four@gmail.com', ['fox'])];
+    ok('a request refused for its address never adds to everyone\'s 300', refused.every((x) => x.status === 429) && Number(await kv(['GET', dayKey])) === gCount && gCount > 0, [gCount, await kv(['GET', dayKey])]);
 
     // The global cap: 300 emails a UTC day in all.
     await kv(['SET', P() + 'mail:' + new Date(NOW).toISOString().slice(0, 10), '300', 'EX', '172800']);
@@ -602,6 +621,15 @@ try {
     const other = await start(nextEmail(), ['fox'], {}, { ip: '2001:db8:aa:bc::1' });
     ok('ten requests an hour from one network; addresses in one IPv6 /64 share a bucket', last.status === 200 && eleventh.status === 429 && eleventh.json.limit === true, [last.status, eleventh.status]);
     ok('…another /64 has its own', other.status === 200);
+    // The count and its time limit are one call: a bucket a lost EXPIRE once
+    // left with none (it held the address and refused it for good) is mended
+    // at its next request (lib/rateLimit.ts, final review).
+    let stuck = null;
+    for (const k of await keysLike('rl:board-start:')) if ((await kv(['GET', k])) === '11') stuck = k;
+    if (stuck) await kv(['SET', stuck, '3']);
+    const ttl0 = stuck ? await kv(['TTL', stuck]) : null;
+    const mend = await start(nextEmail(), ['fox'], {}, { ip: '2001:db8:aa:bb::99' });
+    ok('a rate-limit bucket left with no time limit gets one back at its next request, and keeps counting', !!stuck && ttl0 === -1 && mend.status === 200 && (await kv(['GET', stuck])) === '4' && Math.abs((await kv(['TTL', stuck])) - 3600) <= 2, [stuck, ttl0, mend.status, stuck && await kv(['GET', stuck]), stuck && await kv(['TTL', stuck])]);
     const rl = (await kv(['KEYS', '*'])).filter((k) => k.startsWith('rl:board'));
     ok('every board rate-limit key is hashed (":h:"), none holds an address', rl.length > 0 && rl.every((k) => /^rl:board-[a-z-]+:h:[0-9a-f]{16}$/.test(k)), rl.slice(0, 5));
 
@@ -1143,6 +1171,11 @@ try {
       ok('both states: ' + n + ' names the Practice Board only as something Sona may offer',
         found.length > 0 && found.every((s) => /if Sona offers|if it’s offered|may offer/i.test(s)), found);
     }
+    // Rachel has not reviewed the board line, so it never sits above her
+    // "Reviewed by" byline in "How scoring works" (final review).
+    const how = (page('progress.html').match(/id="howBody"[\s\S]*?Reviewed by Rachel/) || [''])[0];
+    ok('both states: progress.html keeps the board line out of "How scoring works", whose "Reviewed by Rachel" covers only what she reviewed',
+      how.length > 200 && !/Practice Board/.test(how), how.length);
     // The clinician's setup step is read by a speech therapist, none of whose
     // families can ever be on the board (a phone holding their link is
     // "clinic"), so it says that and never that "a family may choose" it.

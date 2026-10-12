@@ -241,13 +241,33 @@ export function places(scores: number[]): number[] {
 }
 
 /**
+ * The one inbox an address reaches, for counting only (the email still goes
+ * to the address as typed): a "+tag" is dropped, and for Gmail, which ignores
+ * dots and answers googlemail.com too, so are the dots. Without it
+ * victim+1@gmail.com, victim+2@gmail.com and v.ictim@gmail.com each had their
+ * own two a day, all landing in one stranger's inbox. (Final review, 12 Oct
+ * 2026.)
+ */
+function mailbox(email: string): string {
+  const e = email.trim().toLowerCase();
+  const at = e.lastIndexOf("@");
+  if (at < 1) return e;
+  let local = e.slice(0, at), domain = e.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replace(/\./g, "");
+  return local + "@" + domain;
+}
+
+/**
  * A one-day scrambled form of an address, to send it at most two links a
  * day: the UTC day is inside the HMAC, so today's value cannot be matched
  * to yesterday's, and the key holding it lives one day.
  */
 export function mailKey(email: string, nowMs: number): string {
   const secret = boardSecrets()[0] || "";
-  return crypto.createHmac("sha256", secret).update("mail:" + utcDay(nowMs) + ":" + email.toLowerCase()).digest("hex").slice(0, 32);
+  return crypto.createHmac("sha256", secret).update("mail:" + utcDay(nowMs) + ":" + mailbox(email)).digest("hex").slice(0, 32);
 }
 
 export function makeCode(): string {
@@ -301,13 +321,18 @@ export function leaveArgs(nowMs: number): (string | number)[] {
 // (BOARD_REDIS_SERVER=…/redis-server). Days and times are worked out by the
 // route and passed in: a script never reads a clock.
 
-/** -- board:mail — the global and the per-address email counters, each with its time limit. */
+/**
+ * -- board:mail — the per-address and the global email counters, each with
+ * its time limit. The address's first: one already at its two a day answers
+ * {0, a} and never adds to everyone's 300, so requests refused for that
+ * address cannot use up the day for every other family.
+ */
 export const SCRIPT_MAIL = `-- board:mail
-local g = redis.call('INCR', KEYS[1])
-if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
-if g > tonumber(ARGV[3]) then return {g, 0} end
 local a = redis.call('INCR', KEYS[2])
 if redis.call('TTL', KEYS[2]) < 0 then redis.call('EXPIRE', KEYS[2], ARGV[2]) end
+if a > tonumber(ARGV[3]) then return {0, a} end
+local g = redis.call('INCR', KEYS[1])
+if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
 return {g, a}
 `;
 

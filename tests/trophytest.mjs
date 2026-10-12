@@ -159,6 +159,30 @@ sec("2f a day at the goal is always 30, whatever the goal", () => {
   ok("lowering the goal fills the day sooner (15 at 50 of 100, then 30 at the next rep against 30), but never past 30", at50 === 15 && after === 30 && S.trophies() === 30, { at50, after, end: S.trophies() });
 });
 
+sec("2g a day at the goal is always 30, whatever the goal", () => {
+  // final review: a goal lowered in Settings that fills today pays the day
+  // then, not at a next rep that may never come that day
+  const p = boot(), { S } = p;
+  reps(S, 25);
+  const at25 = S.trophies();
+  S.saveProfile({ dailyGoal: 20 });
+  const stamped = JSON.parse(p.local["sona.goaldays.v1"] || "{}")["2026-10-20"];
+  const after = S.trophies();
+  p.clock.now += DAY;
+  const nextDay = S.trophies();
+  S.gameRep("R");
+  ok("lowering the goal to 20 at 25 reps stamps the day and pays it to 30 at once; with no more reps it stays 30, and the next day adds only its own", at25 === 25 && stamped === 20 && after === 30 && nextDay === 30 && S.trophies() === 31, { at25, stamped, after, nextDay, end: S.trophies() });
+  const q = boot();
+  q.S.saveProfile({ dailyGoal: 20 });
+  ok("…a goal lowered with no rep today writes no trophy ledger and pays nothing", !q.local["sona.trophy.v1"] && q.S.trophies() === 0);
+  const r = boot({ profile: { dailyGoal: 100 } });
+  reps(r.S, 50);
+  r.S.saveProfile({ dailyGoal: 70 });
+  ok("…a lowered goal not yet met pays only its share (50 of 70 is 21), never 30", r.S.trophies() === 21 && !JSON.parse(r.local["sona.goaldays.v1"] || "{}")["2026-10-20"], r.S.trophies());
+  r.S.saveProfile({ dailyGoal: 100 });
+  ok("…and raising it back takes nothing away", r.S.trophies() === 21);
+});
+
 // ── 3. history: a child already on Sona starts with what their real reps earned ──
 sec("3a history: a child already on Sona starts with what their real reps earned", () => {
   const p = boot({ profile: { dailyGoal: 50 } }), { S } = p;
@@ -248,6 +272,33 @@ sec("6c per child, and nothing resets them", () => {
   const b = boot();
   const r = b.S.importData(code);
   ok("…and restoring it on a new phone brings the trophies", r.ok && b.S.trophies() === 6 && b.local["sona.trophy.v1"] === a.local["sona.trophy.v1"], { r, t: b.S.trophies() });
+});
+
+sec("6d per child, and nothing resets them", () => {
+  // final review: a backup with history but no trophy record (made before this
+  // build, or on a phone with no rep since), pasted on a phone that already
+  // has a small record of its own (a first game in the iPhone app)
+  const days = {}; for (let d = 1; d <= 15; d++) days["2026-10-" + String(d).padStart(2, "0")] = { tries: 30, a: 1, p: 0 };
+  const a = boot(); a.local["sona.outcomes.v1"] = JSON.stringify({ R: { attempts: 450, passes: 0, days } });
+  ok("(the old phone counts 450 from its history, with no record)", a.S.trophies() === 450 && !a.local["sona.trophy.v1"], a.S.trophies());
+  const code = a.S.exportString();
+  ok("(its backup carries the history and no trophy record)", /sona\.outcomes\.v1/.test(code) && !/sona\.trophy\.v1/.test(code));
+  const b = boot(); reps(b.S, 10);
+  ok("(the new phone has a record of 10)", b.S.trophies() === 10 && ledger(b).t === 10);
+  const r = b.S.importData(code);
+  ok("restoring it counts the history now on the phone: the 450 restored and the 10 game reps said here today (the backup had none to replace them), not the 10 alone", r.ok && b.S.trophies() === 460 && !b.local["sona.trophy.v1"], { r, t: b.S.trophies() });
+  ok("…so Level 2 opens", b.S.playLevelsOpen() >= 2, b.S.playLevelsOpen());
+  reps(b.S, 1);
+  ok("…and the next rep rebuilds the record from there", b.S.trophies() === 461 && ledger(b).t === 461, ledger(b));
+  const c = boot(); reps(c.S, 10);
+  const plain = JSON.stringify({ data: { "sona.profile.v1": c.local["sona.profile.v1"] } });
+  c.S.importData(plain);
+  ok("…while a backup that brings no history leaves the record alone", ledger(c) && ledger(c).t === 10 && c.S.trophies() === 10, ledger(c));
+  const d = boot(); reps(d.S, 4);
+  const withRec = d.S.exportString();
+  const e = boot(); reps(e.S, 20);
+  e.S.importData(withRec);
+  ok("…and a backup that carries its own record restores that record", e.S.trophies() === 4 && e.local["sona.trophy.v1"] === d.local["sona.trophy.v1"], e.S.trophies());
 });
 
 // ── 7. reading never writes ──
@@ -358,8 +409,10 @@ sec("10a where it lives in sona.js, and what it is allowed to touch", () => {
   ok("it never reads a pass, a verdict or a best, and never pays coins, sends or logs", !/\bpass|passes|hearVerdict|addCoins|spendCoins|sendProgress|track\(|fetch\(|sendBeacon|logAttempt|outcomes\(\)|setItem|sona\.bests|gameBest/.test(code), (code.match(/[^\n]*(\bpass|hearVerdict|addCoins|sendProgress|track\(|fetch\(|setItem)[^\n]*/) || [""])[0]);
   const calls = (SRC.match(/_trophyAdd\(\);/g) || []).length;
   const la = (SRC.match(/function logAttempt\(a\) \{[\s\S]*?\n  \}/) || [""])[0], gr = (SRC.match(/function gameRep\(sound\) \{[\s\S]*?\n  \}/) || [""])[0];
-  ok("only the two rep writers pay: logAttempt (after the rep is saved, before the goal stamp) and gameRep",
-    calls === 2 && /save\(OUTKEY, o\);[\s\S]*_trophyAdd\(\);\n\s*_goalCheck\(\);/.test(la) && /save\(GAMEREPKEY, gr\); _trophyAdd\(\); _goalCheck\(\);/.test(gr), { calls });
+  const sp = (SRC.match(/function saveProfile\(patch\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("only the two rep writers pay: logAttempt (after the rep is saved, before the goal stamp) and gameRep; and saveProfile, only when a lowered goal meets reps already said",
+    calls === 3 && /save\(OUTKEY, o\);[\s\S]*_trophyAdd\(\);\n\s*_goalCheck\(\);/.test(la) && /save\(GAMEREPKEY, gr\); _trophyAdd\(\); _goalCheck\(\);/.test(gr) &&
+    /if \(dailyChange && repGoal\(\) < previousGoal\) \{ if \(dayReps\(\) > 0\) _trophyAdd\(\); _goalCheck\(\); \}/.test(sp), { calls });
   ok("logAttempt still returns before any of it when a try had no voice", /if \(!reps\) return;[\s\S]*_trophyAdd/.test(la));
   // besttest's rule: the bests store is named only in its block, PER_KID and the export line
   const bblock = (SRC.match(/\/\/ ── BESTS1:[\s\S]*?\n {2}function gameBestOffer\(key, n\) \{[\s\S]*?\n {2}\}\n/) || [""])[0];

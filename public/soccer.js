@@ -26,7 +26,8 @@
    Level 2 Bo stands to one side for the first ball only, then slides; at
    Level 3 he slides from the first ball, wider and quicker, and reaches a
    little further while nobody has missed yet. The help never changes with
-   the level: after a save he reaches less (0.6, then 0.45), slows, and
+   the level: after a save he moves as he would at Level 1 (to one side for
+   the first two goals), at half speed, and reaches less (0.6, then 0.45);
    after two misses he dozes off; from the third any swipe up goes in.
 
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
@@ -70,10 +71,13 @@
   function keeperMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
   function keeperTarget(t) {
     if (misses >= 2) return napSide * (GOAL_HALF - 0.85);
+    // the help reads Level 1's numbers: once this ball has been saved or gone
+    // wide, he moves as he would at Level 1, and the miss doubles that period
+    var lv = misses >= 1 ? 1 : level;
     // Level 2: off to one side for the first ball only; Level 3: never
-    if (goals < (level === 3 ? 0 : level === 2 ? 1 : 2)) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
-    var amp = level === 3 ? 1.6 : level === 2 ? (goals < 4 ? 1.25 : 1.6) : (goals < 5 ? 1.25 : 1.6);
-    var period = (level === 3 ? (goals < 4 ? 4.2 : 3.4) : level === 2 ? (goals < 4 ? 4.8 : 3.8) : (goals < 5 ? 5.2 : 4.0)) * (misses === 1 ? 2 : 1);
+    if (goals < (lv === 3 ? 0 : lv === 2 ? 1 : 2)) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
+    var amp = lv === 3 ? 1.6 : lv === 2 ? (goals < 4 ? 1.25 : 1.6) : (goals < 5 ? 1.25 : 1.6);
+    var period = (lv === 3 ? (goals < 4 ? 4.2 : 3.4) : lv === 2 ? (goals < 4 ? 4.8 : 3.8) : (goals < 5 ? 5.2 : 4.0)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(keeperPhase + (t / period) * Math.PI * 2);
   }
   function keeperAt(dt) { return keeperTarget(keeperClock + dt); }

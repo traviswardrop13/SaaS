@@ -248,7 +248,7 @@ that cannot regress out from under you.
 - **Privacy "nutrition label" (be accurate):** collect **email** (account); audio is **processed for scoring**; recordings **stay on the device**; no in-app third-party ad tracking
 - **URLs:** Privacy `speaksona.com/privacy`, Support `speaksona.com/support`
 - **Coins (Trophy Road, 11 Oct 2026):** Coins are earned only through daily chests and Trophy Road gifts and are never sold: no consumable in-app purchase, and no random rewards (every prize is shown before it opens).
-- **App Privacy, owed (not yet answered in App Store Connect):** the anonymous device id and the product-interaction events `/api/track` already relays (practice started and completed, the daily goal, the plan funnel), now including the chest, Trophy Road gift, month gift and game-level events. None carries a name, a sound said, a count of trophies or coins, or audio.
+- **App Privacy, owed (not yet answered in App Store Connect):** the anonymous device id and the product-interaction events `/api/track` already relays (practice started and completed, the daily goal, the plan funnel), now including the chest, Trophy Road gift, month gift, Buddy Shop ("shop item got") and game-level events. None carries a name, a count of trophies or coins held, or audio. The practice and daily-goal events do carry the sound being practised (for example "R"), as the privacy page says, and "shop item got" carries the item and its price in coins, never a balance.
 
 ## Apple Guideline 4.2 ("minimum functionality")
 A pure website-in-a-box can be rejected. Your app has native value (mic-based practice; push next), which helps it pass. If review pushes back, the fix is more native features → do phase 2.

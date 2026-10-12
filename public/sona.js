@@ -665,7 +665,11 @@
     const dailyChange = patch && Object.prototype.hasOwnProperty.call(patch, "dailyGoal");
     const previousGoal = dailyChange ? repGoal() : null;
     save(PKEY, Object.assign(getProfile(), patch || {}));
-    if (dailyChange && repGoal() < previousGoal) _goalCheck();
+    // …and pay it: today's reps already said earn against the lowered goal
+    // now (30 once it is met, like any goal day), not at a next rep that may
+    // never come that day (the ledger never goes back to an earlier day).
+    // Only the difference is paid, so nothing pays twice.
+    if (dailyChange && repGoal() < previousGoal) { if (dayReps() > 0) _trophyAdd(); _goalCheck(); }
   }
 
   function getProgress() {
@@ -2282,6 +2286,23 @@
       // child's grown-up is never told "removed after a long break", and
       // nobody inherits another child's place or the grown-up's yes.
       try { _boardAfterImport(boardBefore); } catch (e) {}
+      // HISTORY WITHOUT A TROPHY RECORD (final review, 12 Oct 2026). A backup
+      // made before this build, or on a phone that logged no rep since, brings
+      // the practice and play history trophies come from but no record of
+      // them. The record already here (a few reps in the iPhone app before a
+      // Safari backup was pasted) would be trusted for good and the restored
+      // weeks never counted: Level 2 locked, the road at its start. That
+      // slot's record goes, and is counted again from the history now on the
+      // phone, as at a first rep after this build.
+      try {
+        const brought = {};
+        Object.keys(data).forEach((k) => {
+          const at = k.indexOf("@"), base = at < 0 ? k : k.slice(0, at), sfx = at < 0 ? "" : k.slice(at);
+          if (base === TROPHYKEY) brought[sfx] = true;
+          else if ((base === OUTKEY || base === GAMEREPKEY || base === GOALKEY) && !(sfx in brought)) brought[sfx] = false;
+        });
+        Object.keys(brought).forEach((sfx) => { if (!brought[sfx]) localStorage.removeItem(TROPHYKEY + sfx); });
+      } catch (e) {}
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
       // The backup can also replace the child list, so the grandfathered
       // profile may no longer be in it. Access was the household's, so it
@@ -4409,7 +4430,8 @@
     return { total: s.t | 0, today: dn, month: mn, ym };
   }
   function trophies() { return trophyState().total; }
-  // Only logAttempt and gameRep call this, after the rep is saved.
+  // logAttempt and gameRep call this after the rep is saved, and saveProfile
+  // when a lowered goal fills today with reps already said.
   function _trophyAdd() {
     try {
       const t = today(), ym = t.slice(0, 7); let s = load(TROPHYKEY, {});
@@ -4679,8 +4701,8 @@
     run:     ["Park, beach, forest", "A faster run", "The fastest run!"],
     glide:   ["Easy flying", "Narrow gaps", "Sky champion!"],
     bubbles: ["Bubbles bob", "More bubbles!", "Bonus bubbles!"],
-    hoops:   ["The hoop holds still", "The hoop slides", "The hoop zooms!"],
-    soccer:  ["Bo waits", "Bo slides", "Bo dives!"],
+    hoops:   ["The hoop starts still", "The hoop slides from the start", "The hoop zooms!"],
+    soccer:  ["Bo waits at first", "Bo slides sooner", "Bo dives!"],
     dino:    ["Big brush", "Smaller brush", "Deep dig!"] };
   // a game with levels, by its own key (never a name off Object.prototype),
   // and never one parked as Coming soon

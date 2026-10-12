@@ -58,15 +58,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // The caps, before anything is sent: everyone's today, then this address's.
+  // The caps, before anything is sent: this address's, then everyone's today
+  // (an address over its own cap never counts toward everyone's).
   const day = utcDay(now);
-  const caps = await runScript(SCRIPT_MAIL, [P + "mail:" + day, P + "mailto:" + mailKey(email, now)], [DAY_TTL, MAILTO_TTL, MAIL_CAP]);
+  const caps = await runScript(SCRIPT_MAIL, [P + "mail:" + day, P + "mailto:" + mailKey(email, now)], [DAY_TTL, MAILTO_TTL, MAILTO_CAP]);
   if (!Array.isArray(caps) || caps.length !== 2) return boardJson(RETRY, 503);
+  if (Number(caps[1]) > MAILTO_CAP) return boardJson({ ok: false, limit: true }, 429);
   if (Number(caps[0]) > MAIL_CAP) {
     console.warn("[board] mail cap");
     return boardJson({ ok: false, resting: true }, 503);
   }
-  if (Number(caps[1]) > MAILTO_CAP) return boardJson({ ok: false, limit: true }, 429);
 
   const cid = makeId();
   let made = false;

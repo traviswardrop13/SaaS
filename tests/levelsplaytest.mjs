@@ -231,6 +231,27 @@ for (const level of [1, 2, 3]) await section("Soccer Goal at Level " + level, as
 ok("Soccer Goal: after one miss and after two, Bo reaches exactly as he does at Level 1, at every level",
   [1, 2, 3].every((l) => reaches[l] && reaches[l][1] === reaches[1][1] && reaches[l][2] === reaches[1][2]) && reaches[1][1] === 0.6 && reaches[1][2] === 0.45, reaches);
 
+// ── 4b. after one miss the hoop and Bo move exactly as at Level 1 (final
+// review): the one-miss slow-down is a help step, and every help path reads
+// Level 1's numbers. The engines' own motion functions, run from source. ──
+await section("Hoops and Soccer Goal: the motion after one miss is Level 1's", async () => {
+  const T = Array.from({ length: 60 }, (_, i) => i * 0.37);
+  const hsrc = (readFileSync(path.join(ROOT, "hoops.js"), "utf8").match(/function hoopLevel\(\)[\s\S]*?function hoopTarget\(t\) \{[\s\S]*?\n  \}/) || [""])[0];
+  const hoop = (level, misses, baskets) => new Function("level", "misses", "baskets", "hoopX", "hoopPhase", hsrc + "\nreturn hoopTarget;")(level, misses, baskets, 0.123, 0.7);
+  const ssrc = (readFileSync(path.join(ROOT, "soccer.js"), "utf8").match(/function keeperTarget\(t\) \{[\s\S]*?\n  \}/) || [""])[0];
+  const bo = (level, misses, goals) => new Function("level", "misses", "goals", "napSide", "keeperPhase", "GOAL_HALF", ssrc + "\nreturn keeperTarget;")(level, misses, goals, 1, 0.4, 2.3);
+  const same = (f, g) => T.every((t) => Math.abs(f(t) - g(t)) < 1e-9);
+  const diff = [];
+  for (const lv of [2, 3]) for (let n = 0; n < 8; n++) {
+    if (!same(hoop(lv, 1, n), hoop(1, 1, n))) diff.push("hoops L" + lv + " basket " + n);
+    if (!same(bo(lv, 1, n), bo(1, 1, n))) diff.push("soccer L" + lv + " goal " + n);
+  }
+  ok("Hoops and Soccer Goal: after one miss, at every basket or goal, the hoop and Bo move exactly as at Level 1, at Level 2 and 3", hsrc.length > 200 && ssrc.length > 200 && diff.length === 0, diff.length ? diff : { hsrc: hsrc.length, ssrc: ssrc.length });
+  ok("…while with no miss the harder levels still move more (Level 3's first ball slides, Level 1's holds still)",
+    !same(hoop(3, 0, 0), hoop(1, 0, 0)) && T.every((t) => hoop(1, 0, 0)(t) === 0) && !same(bo(3, 0, 0), bo(1, 0, 0)));
+  ok("…and two misses stop the hoop and send Bo to his nap at every level", [1, 2, 3].every((lv) => hoop(lv, 2, 4)(1.3) === 0.123 && bo(lv, 2, 4)(1.3) === bo(1, 2, 4)(1.3)));
+});
+
 // ── 5. Dino Dig: six seconds after the brush comes out, Level 1's numbers ──
 async function rubFor(page, box, x, y, ms) {
   await page.mouse.move(box.x + x, box.y + y); await page.mouse.down();

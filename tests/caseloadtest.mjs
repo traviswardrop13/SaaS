@@ -87,6 +87,13 @@ function kvExec(cmd) {
     }
     case "GETDEL": { const v = KV.K.has(key) ? KV.K.get(key) : null; KV.K.delete(key); return v; }
     case "INCR": { const n = Number(KV.K.get(key) || 0) + 1; KV.K.set(key, String(n)); return n; }
+    case "EVAL": {
+      // lib/rateLimit.ts: INCR and, when the bucket has none, its time limit, in one call.
+      if (!/^-- rl:incr\n/.test(c[1])) throw new Error("fake kv does not speak this script");
+      const k = c[3], n = Number(KV.K.get(k) || 0) + 1; KV.K.set(k, String(n));
+      if (!KV.TTL.has(k)) KV.TTL.set(k, Number(c[4]));
+      return n;
+    }
     case "EXPIRE": KV.TTL.set(key, Number(c[2])); return 1;
     case "DEL": return (KV.K.delete(key) ? 1 : 0) + (KV.H.delete(key) ? 1 : 0);
     case "MGET": return c.slice(1).map((k) => (KV.K.has(k) ? KV.K.get(k) : null));

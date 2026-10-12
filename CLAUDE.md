@@ -1918,7 +1918,7 @@ never measured against a level whose top it cannot reach.
 - **"Play again" on top, "Back home" under it.** Another go is earned the
   way every turn is, back through that game's say-it-five-times page
   (`charge.html?game=…`). The game-to-game "WOOHOO! Next →" is gone from
-  these two; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
+  all five round games; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
   still calls `Sona.firstGameEnd("slice")`, because asking spends the
   first-game mark.
 - **Piano Tiles: notes in a row.** Tiles tapped with none slipping past and
@@ -1960,8 +1960,11 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   goal**: a family goal of 100 earns no more, a speech therapist's 10 a day no
   less (at the default goal of 30, one trophy a rep). They are never spent and
   never lost; the ledger pays only the difference from what today already
-  paid, so nothing pays twice. "Reset progress" leaves them. A child already
-  on Sona started with what their reps since 21 Sep 2026 earned. Silence, a
+  paid, so nothing pays twice (a goal lowered in Settings that fills today
+  pays the day at once, from reps already said). "Reset progress" leaves
+  them. A child already on Sona started with what their reps since 21 Sep
+  2026 earned; a restore that brings history but no trophy record counts
+  them again from the history then on the phone. Silence, a
   tap, a page load, a best, a heart or an arcade score earns nothing.
 - **Coins come from two places only** (COIN3, CHEST1): the **daily chest**
   (`sona.chest.v1`: once, on a day the daily goal is met; 10 coins, every
@@ -1994,7 +1997,8 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   gifts are in your wallet!"), shown once. Nothing says "missed".
 - **Nothing random, no timers, every gift shown before it opens.** A chest
   takes three taps ("Tap, tap!", "One more tap!") and shows each gift in turn.
-  No countdown, no "ends in", no rarity word, no price on any kid page.
+  No countdown, no "ends in", no rarity word, and no money price (no $ or
+  other currency) on any kid page; coin costs appear only in the Buddy Shop.
 - **The road page** (`road.html`, `crafted-road.css`): the land and the
   child's buddy, the next gift filling up, "Open next" when gifts wait,
   today's chest, the month's path, the stops (from the lowest one waiting, so
@@ -2034,8 +2038,9 @@ a parked game has none.
   the say-it card, the hearts, the sound powers, `CHARGE_NEED`, `ROT_LEN`,
   `SOUND_NORM` or the speech ladder. **Every help path reads Level 1's
   numbers**: once a help starts (the two-miss help, "every ball ends in a
-  basket", Dino Dig's glow and crumble, Bubble Pop's touch-anywhere, the safe
-  landing), the game is no harder than Level 1. `levelstest` and
+  basket", where the hoop and Bo move as at Level 1 from the first miss, Dino
+  Dig's glow and crumble, Bubble Pop's touch-anywhere, the safe landing), the
+  game is no harder than Level 1. `levelstest` and
   `levelsplaytest` hold each help value equal at all three levels.
 - **Bests per level:** Level 1's stays Beat Your Best's; Level 2 and 3 keep
   their own, so a best is never measured against a level whose top it cannot
@@ -2182,7 +2187,9 @@ the tests first. Whether to switch it on is Travis's, after that.
   keeps a pending request (48 hours) and a hash of a confirm secret that only
   the email carries; it hands the address to Resend once and keeps only a
   one-day scrambled form (an HMAC with the day inside), at most two emails an
-  address a day and 300 a day in all. The email's confirm link needs a button
+  address a day (a "+tag", and Gmail's dots, are the same address; one past
+  its two never counts toward the rest) and 300 a day in all. The email's
+  confirm link needs a button
   press (a mail scanner's GET confirms nothing), the phone's own `pend` can
   never confirm, and the email's **remove link** deletes the entries from any
   device, even after the phone is lost. "Finish" (also tried when Settings
@@ -2245,9 +2252,11 @@ the tests first. Whether to switch it on is Travis's, after that.
   props; never a token, nickname, days or place.
 - **The words already true in both states:** the privacy page's "The Practice
   Board (only if a grown-up turns it on)" ("Sona may offer…"), Progress's
-  "How scoring works", the parents' "What's stored" answer and the clinician
-  setup step all speak of it as something Sona may offer, never as something
-  a family can turn on today (`boardapitest` holds them to that). The
+  line under the sharing buttons (kept out of "How scoring works", whose
+  "Reviewed by Rachel" covers only what she reviewed), the parents' "What's
+  stored" answer and the clinician setup step all speak of it as something
+  Sona may offer, never as something a family can turn on today
+  (`boardapitest` holds them to that). The
   clinician's step says only that it stays off on any phone holding their
   link: none of their families can be on it.
 - **How to turn it on** (its own PR, only on Travis's go, after a lawyer has
@@ -2334,8 +2343,9 @@ to stand in for it. What was buildable was built on 28 Sep:
   score (a golden fruit or tile scores 3 and the giant's cuts score 5): Fruit
   Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
   child's own best in that same thing (see "Beat Your Best"; the old "Best"
-  was the hidden score, which is why it was taken off). Block Stacker counts
-  blocks and Sound Sprint metres until their own bests land.
+  was the hidden score, which is why it was taken off). Block Stacker (blocks
+  in a row), Sound Sprint (metres) and Flappy Glide (gaps in a row) count
+  their own thing beside that child's best too.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
   `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
