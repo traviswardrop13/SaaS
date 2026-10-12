@@ -29,7 +29,9 @@ async function scenario(name, fn) {
   try { await fn(); } catch (error) { ok(name + ' completes without a harness/page exception', false, error.stack); }
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-// Home legitimately mints existing practice coins; it must not change completed work.
+// Home no longer mints coins (COIN3, 11 Oct 2026: coins come only from the daily
+// chest and Trophy Road gifts); coins may still only go up here, and nothing may
+// change completed work.
 function samePractice(a, b) {
   const strip = (value) => { const x = JSON.parse(JSON.stringify(value)); delete x.coins; delete x.progress.totals.coins; return x; };
   return same(strip(a), strip(b)) && b.coins >= a.coins;

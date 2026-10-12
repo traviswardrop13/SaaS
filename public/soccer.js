@@ -21,6 +21,15 @@
    falls back to the drawn one until it loads. The pitch, goal and net stay
    drawn: they move and carry the perspective.
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above. At
+   Level 2 Bo stands to one side for the first ball only, then slides; at
+   Level 3 he slides from the first ball, wider and quicker, and reaches a
+   little further while nobody has missed yet. The help never changes with
+   the level: after a save he moves as he would at Level 1 (to one side for
+   the first two goals), at half speed, and reaches less (0.6, then 0.45);
+   after two misses he dozes off; from the third any swipe up goes in.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -45,6 +54,8 @@
   var state = "idle", ball = null, goals = 0, count = 8, misses = 0, kicks = 0, lastKick = "";
   var keeperX = 0, keeperPhase = 0, keeperClock = 0, dive = null, net = { bulge: 0, x: 0, y: 1 }, fx = [];
   var hintAt = 0, doneAt = 0, cheerAt = -9, crowd = [], lastSwipe = null, napSide = 1;
+  var level = 1;                            // from the page (setLevel): 1, 2 or 3
+  var buddy = null;                         // from the page (setBuddy): { rest, cheer } picture paths
 
   function project(x, y, z) {
     var dx = x - CAM.x, dy = y - CAM.y, dz = z - CAM.z;
@@ -60,14 +71,20 @@
   function keeperMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
   function keeperTarget(t) {
     if (misses >= 2) return napSide * (GOAL_HALF - 0.85);
-    if (goals < 2) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
-    var amp = goals < 5 ? 1.25 : 1.6;
-    var period = (goals < 5 ? 5.2 : 4.0) * (misses === 1 ? 2 : 1);
+    // the help reads Level 1's numbers: once this ball has been saved or gone
+    // wide, he moves as he would at Level 1, and the miss doubles that period
+    var lv = misses >= 1 ? 1 : level;
+    // Level 2: off to one side for the first ball only; Level 3: never
+    if (goals < (lv === 3 ? 0 : lv === 2 ? 1 : 2)) return (goals === 0 ? -1 : 1) * 1.05 + 0.12 * Math.sin(t * 1.4);
+    var amp = lv === 3 ? 1.6 : lv === 2 ? (goals < 4 ? 1.25 : 1.6) : (goals < 5 ? 1.25 : 1.6);
+    var period = (lv === 3 ? (goals < 4 ? 4.2 : 3.4) : lv === 2 ? (goals < 4 ? 4.8 : 3.8) : (goals < 5 ? 5.2 : 4.0)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(keeperPhase + (t / period) * Math.PI * 2);
   }
   function keeperAt(dt) { return keeperTarget(keeperClock + dt); }
-  // how far either side of his middle the keeper's gloves reach
-  function reach() { return [0.78, 0.6, 0.45][Math.min(misses, 2)]; }
+  // how far either side of his middle the keeper's gloves reach (a little
+  // further at Level 3 while nobody has missed; the help after a miss is the
+  // same at every level)
+  function reach() { return [level === 3 ? 0.85 : 0.78, 0.6, 0.45][Math.min(misses, 2)]; }
 
   // ── sizing ──
   function resize() {
@@ -412,6 +429,14 @@
     ball.fx = Math.max(-2.2, Math.min(2.2, ball.x)); ball.fz = Math.max(SPOT.z + 1.5, Math.min(GOAL_Z - 1, ball.z)); ball.k = 0;
     publish();
   }
+  // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The child's buddy by the pitch cheers
+  // with Echo: the same hop, and its OWN cheer picture for 900 ms, then its
+  // own rest picture. Echo's own block, below, swaps Echo's pictures, so it never
+  // runs on the buddy. Without both pictures (setBuddy) only the hop runs.
+  function cheerBuddy(id) {
+    try { var b = document.getElementById(id); if (!b) return; b.classList.remove("hop"); void b.offsetWidth; b.classList.add("hop");
+      if (buddy) { b.src = buddy.cheer; clearTimeout(cheerBuddy.t); cheerBuddy.t = setTimeout(function () { if (buddy) b.src = buddy.rest; }, 900); } } catch (x) {}
+  }
   function scored() {
     state = "scored"; goals++; misses = 0; ball.t = 0; ball.vy = 0.5;
     net.bulge = 1; net.x = ball.x; net.y = Math.max(0.3, Math.min(GOAL_H - 0.2, ball.y));
@@ -425,6 +450,7 @@
     // Echo by the pitch cheers for the length of his hop, then rests again
     try { var e = document.getElementById("pitchEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop");
       e.src = "/assets/crafted/echo-cheer.webp"; clearTimeout(scored.t); scored.t = setTimeout(function () { e.src = "/assets/crafted/echo-welcome.webp"; }, 900); } } catch (x) {}
+    cheerBuddy("pitchBuddy");
     // the next word waits for the celebration, on the game's own clock, so a
     // pause in between holds it rather than skipping it
     doneAt = clock + 1.3;
@@ -507,7 +533,7 @@
   // ── what the engine calls ──
   function publish() {
     try { window.__soccer = { state: state, goals: goals, misses: misses, kicks: kicks, lastKick: lastKick, keeperX: +keeperX.toFixed(3), count: count, frozen: frozen, swipe: lastSwipe, napping: misses >= 2,
-      aimScale: cv ? +aimScale().toFixed(3) : 0, openSide: misses >= 2 ? +openSide().toFixed(3) : null,
+      aimScale: cv ? +aimScale().toFixed(3) : 0, openSide: misses >= 2 ? +openSide().toFixed(3) : null, level: level, reach: reach(),
       ball: ball && state === "flying" ? { x: +ball.x.toFixed(3), z: +ball.z.toFixed(3) } : null }; } catch (e) {}
   }
   var Soccer = {
@@ -548,6 +574,11 @@
       burst(p.x, p.y, 24); burst(W * 0.25, H * 0.45, 16); burst(W * 0.75, H * 0.45, 16);
       shout(count + " goals!", null, true, { x: W / 2, y: H * 0.56 });
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
+    // the buddy's own standing and cheering pictures, from the page (paths
+    // only; anything else, or null, leaves the buddy to hop without a swap)
+    setBuddy: function (p) { buddy = (p && typeof p.rest === "string" && typeof p.cheer === "string") ? { rest: p.rest, cheer: p.cheer } : null; },
     snapshot: function () { return window.__soccer; },
   };
   window.Soccer = Soccer;

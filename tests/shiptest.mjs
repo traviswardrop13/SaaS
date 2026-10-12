@@ -22,6 +22,12 @@ ok("…and still forces a check on every load, so a deploy is visible on the nex
 ok("the page list is read from disk, not hand-written", /readdirSync\(join\(__dirname, "public"\)\)/.test(code),
   "a hand-written list went stale the last time and left the home screen cacheable");
 ok("sona.js itself is covered", /source: "\/sona\.js"/.test(code));
+// The buddy helpers, the four play engines and the Trophy Road's sheet carry
+// methods pages call (a buddy to draw, a level to play): a stale edge copy
+// beside a fresh page is the case the header exists to prevent.
+for (const f of ["crafted-buddies.js", "hoops.js", "soccer.js", "dino.js", "bubbles.js", "crafted-road.css"])
+  ok("/" + f + " is covered too", new RegExp('source: "/' + f.replace(/\./g, "\\.") + '", headers: noStore').test(code),
+    "a page calls its new methods; an old cached copy would be missing them");
 // every page in public/ exists to be covered — the glob above is what covers them
 const pages = readdirSync(APP + "/public").filter((f) => f.endsWith(".html"));
 ok("there are pages for the glob to cover", pages.length > 20, String(pages.length));

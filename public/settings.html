@@ -107,6 +107,8 @@
        grey line under it carries the rest. If one is ever longer, the cut
        ends in "…" instead of mid-letter. */
     .family-settings #gameLevel{text-overflow:ellipsis;}
+    /* game levels (LEVELS1): under the buddy row, with the same short-choice rule */
+    .family-settings #playLevelCap{text-overflow:ellipsis;}
     /* sound: one slim line, and only while Sona itself is muted. A .card, so
        the cards on either side keep their gap whether it shows or not. */
     .family-settings .set-soundoff{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px 10px 16px;}
@@ -144,6 +146,26 @@
     .family-settings .set-danger{border-color:#efd2c7;}
     .family-settings .set-danger h2{color:#9b2f22;}
     .family-settings #reset{width:auto;margin-top:12px;min-height:46px;padding:11px 18px;font-size:15px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
+    /* the Practice Board (BOARD2): hidden unless the board is on, or a child
+       still has an entry here to remove */
+    .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden]{display:none;}
+    .family-settings #boardMoveNote{margin:6px 0 4px;padding:9px 12px;border-radius:12px;background:#fff3df;font-size:13px;font-weight:800;line-height:1.45;color:var(--ink);}
+    .family-settings .bd-line{margin-top:10px;font-size:14px;font-weight:700;line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
+    .family-settings .bd-line b{font-weight:800;}
+    .family-settings .bd-kid{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fffdf8;}
+    .family-settings .bd-kid .bd-line{margin-top:0;}
+    .family-settings .bd-sheet h3{margin-top:12px;font-size:17px;line-height:1.3;}
+    .family-settings .bd-sheet p{margin-top:8px;font-size:13.5px;line-height:1.5;}
+    .family-settings .bd-kids{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+    .family-settings .bd-kids label{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;font-weight:800;font-size:15px;overflow-wrap:anywhere;}
+    .family-settings .bd-kids label.off{color:var(--muted);background:#f7f1e8;}
+    .family-settings .bd-kids label span{min-width:0;}
+    .family-settings .bd-kids label small{display:block;font-size:12px;font-weight:700;color:var(--muted);}
+    .family-settings .bd-kids input{width:22px;height:22px;flex:none;margin:0;}
+    .family-settings .bd-email{margin-top:12px;}
+    .family-settings .bd-again{margin-top:12px;font-size:13px;font-weight:700;color:var(--muted);}
+    .family-settings #boardMsg{display:block;margin-top:10px;}
+    .family-settings #boardMsg:empty{display:none;}
     @media(max-width:350px){
       .family-settings .set-head h2{font-size:19px;}
       .family-settings .set-row{padding:11px 12px;gap:10px;}
@@ -301,9 +323,43 @@
       <div class="set-head"><h2 id="buddyTitle">Buddy &amp; world</h2></div>
       <a class="set-row" href="/customize.html?from=settings">
         <span class="set-row-art"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span>
-        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, an outfit, and a backdrop.</span></span>
+        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, a hat and a place. Coins open new ones.</span></span>
         <span class="set-chev" aria-hidden="true">›</span>
       </a>
+      <!-- THE BUDDY SHOP (SHOP1, 11 Oct 2026): what a child earns, in one
+           line. Trophies follow reps and are never spent; coins come only
+           from the daily chest and the Trophy Road, and nothing is sold. -->
+      <p class="muted set-lead" id="economyNote">Trophies come from reps: a day at the daily goal is 30 trophies. Coins come from the daily chest and the Trophy Road. Nothing here is ever sold.</p>
+      <!-- GAME LEVELS (LEVELS1, 11 Oct 2026). Inside nine games, Level 2 opens
+           at 150 trophies and Level 3 at 750 (a day at the daily goal is 30);
+           a child picks a level from Home. A grown-up can keep this child on
+           Level 1. Parent copy says "game level", apart from Progress's
+           "Practice levels". The two choices are short, so they fit a closed
+           picker on a 320 px phone (roadtest measures them). -->
+      <div id="playLevelBox">
+        <label class="field" for="playLevelCap">Game levels</label>
+        <select id="playLevelCap" aria-describedby="playLevelNote">
+          <option value="">Open as earned</option>
+          <option value="1">Level 1 only</option>
+        </select>
+        <p class="muted set-lead" id="playLevelNote"></p>
+      </div>
+    </section>
+
+    <!-- THE PRACTICE BOARD (BOARD2, 11 Oct 2026; Travis, 9 Oct 2026: "a
+         board of every kid in Sona … days practiced"). BUILT DARK: hidden
+         here, and the script shows it only while the board is on
+         (Sona.boardLive: false until Travis's go), or while a child still has
+         a board entry on this phone or a deletion is still owed, so a family
+         can always take a child off ("Remove {Name} from the Practice
+         Board"). Turning it on takes a grown-up's email link, for the
+         children they tick, after "Did a speech therapist or a school send
+         you to Sona?" (asked once per phone). A child's name is only ever
+         read here on the phone, never sent. -->
+    <section class="card" id="boardCard" aria-labelledby="boardTitle" hidden>
+      <div class="set-head"><h2 id="boardTitle">Practice Board</h2></div>
+      <div id="boardBody"></div>
+      <p class="muted set-msg" id="boardMsg" role="status" aria-live="polite"></p>
     </section>
 
     <!-- No Parent code (Travis, 30 Sep 2026). The grown-ups check on Home is
@@ -387,6 +443,9 @@
       <summary>Moving to a new phone?</summary>
       <section class="card" id="backupCard" aria-labelledby="backupTitle">
         <div class="set-head"><h2 id="backupTitle">Backup &amp; restore</h2></div>
+        <!-- a child's Practice Board entry belongs to this phone and never
+             goes in a backup (BOARD2): shown only while a child is on it -->
+        <p class="set-lead" id="boardMoveNote" hidden>Turn off the Practice Board on this phone first: the board entry stays with this phone.</p>
         <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code or file somewhere safe. It does not expire. Saved voice clips never go in a backup: they stay on this phone.</p>
         <div class="set-actions">
           <button class="btn ghost" id="backupCopy">Copy backup code</button>
@@ -696,6 +755,20 @@
       document.getElementById("goalWeekLine").textContent = w.goalDone + " of " + w.goal + " days at the goal this week" + (w.weekStreak ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row" : "");
       document.getElementById("goalHelp").textContent = pick.disabled ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only." : "A day counts when the daily goal is met. Practice, games and books all count.";
     }
+    // Game levels: for the child this page was painted for, and saved only
+    // while that child is still the active one (the rule every picker here
+    // keeps). Hidden if sona.js has no levels (an older cached copy).
+    (function () {
+      var el = document.getElementById("playLevelCap"), box = document.getElementById("playLevelBox");
+      if (!el || !Sona.setPlayLevelCap || !Sona.playLevelInfo) { if (box) box.hidden = true; return; }
+      var nm = (p.childName || "").trim();
+      document.getElementById("playLevelNote").textContent = "Harder levels change only how fast or busy a game is, never what " + (nm || "your child") + " says.";
+      el.value = Sona.playLevelInfo("slice").cap ? "1" : "";
+      el.onchange = function () {
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        Sona.setPlayLevelCap(this.value === "1" ? 1 : 0); showSaved(this);
+      };
+    })();
     document.getElementById("dailyGoalPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({dailyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
     document.getElementById("goalDaysPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({weeklyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
     paintGoals();
@@ -706,10 +779,229 @@
     document.getElementById("reset").onclick = function () {
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       var nm = (childEl.value || "").trim();
-      if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " progress on this device? This cannot be undone.")) return;
+      // Reset rewrites the practice record only (sona.progress.v1: the
+      // practice steps, practice days and the coins kept there). Trophies,
+      // what a child owns, stickers, the road and game levels are their own
+      // keys and stay, so the dialog says exactly that.
+      if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " practice steps and coins on this device? Trophies, buddies and stickers stay. This cannot be undone.")) return;
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       Sona.resetProgress(); alert("Progress reset.");
     };
+
+    // ── THE PRACTICE BOARD (BOARD2, 11 Oct 2026; built dark) ──────────────
+    // One card for the household. Hidden while the board is off, unless a
+    // child still has an entry on this phone (then only "Remove {Name} from
+    // the Practice Board") or a deletion is still owed. Every word a grown-up
+    // reads about what is shared is here; a child's name is read on this
+    // phone and written with textContent, never sent. Deletions owed go out
+    // first, on every load, whether or not the board is on.
+    (function () {
+      var card = document.getElementById("boardCard"), body = document.getElementById("boardBody"),
+          msg = document.getElementById("boardMsg"), moveNote = document.getElementById("boardMoveNote");
+      if (!card || !body || !Sona.boardState || !Sona.boardLive || !Sona.kids) return;
+      var view = "", confirmSlot = null, expired = false, typed = "", busy = false;
+      // what the grown-up has ticked and typed, carried through a repaint (the
+      // card repaints when the page comes back to the front and when the
+      // load's flush answers, which used to wipe the sheet mid-way)
+      var kept = { email: null, again: null, slots: null, focus: "", sel: null };
+      var NOT_ALLOWED = "The Practice Board is only for a family's own phone. It's off on phones set up through a speech therapist or a school, or shared by more than four children.";
+      var YOUNG = "The Practice Board is for ages 5 and up.";
+      var RESTING = "The Practice Board is resting right now. Nothing new was shared, and days still count.";
+      var GONE = "The board entry was removed after a long break. You can turn it on again.";
+      var BUSY = "Couldn't reach Sona. Try again in a minute.";
+      function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+      function btn(text, cls, fn) { var b = el("button", "btn" + (cls ? " " + cls : ""), text); b.type = "button"; b.onclick = fn; return b; }
+      function actions() { var a = el("div", "set-actions"); for (var i = 0; i < arguments.length; i++) a.appendChild(arguments[i]); return a; }
+      function nameOf(k) { return ((k && k.name) || "").trim() || "Your child"; }
+      function say(t) { msg.textContent = t || ""; }
+      // a line with a nickname in bold, built from text nodes only
+      function line(parts) { var p = el("p", "bd-line"); parts.forEach(function (x) { p.appendChild(x && x.b != null ? el("b", "", x.b) : document.createTextNode(x)); }); return p; }
+      function days(n) { return n + (n === 1 ? " day" : " days"); }
+      function rows() { return Sona.kids().map(function (k) { return { k: k, s: Sona.boardState(k.slot) }; }); }
+      function leave(k, nick) {
+        if (busy) return; busy = true;
+        Sona.boardLeave(k.slot).then(function (r) {
+          busy = false; confirmSlot = null; paint();
+          var nm = (r && r.nick) || nick || "";
+          say(r && r.queued ? "Turned off. We'll finish deleting " + (nm || "the board entry") + " when this phone is back online." : "Turned off. " + (nm || "The board entry") + " is deleted from the board.");
+        }, function () { busy = false; paint(); });
+      }
+      function newNick(k) {
+        if (busy || !Sona.boardNick) return; busy = true; say("");
+        Sona.boardNick(k.slot).then(function (r) {
+          busy = false; paint();
+          if (r && r.nick) say(nameOf(k) + " is now " + r.nick + " on the board.");
+          else if (r && r.limit) say("One new nickname a day, and three a month. Try again tomorrow.");
+          else if (r && r.resting) say(RESTING);
+          else if (!(r && r.gone)) say(BUSY);
+        }, function () { busy = false; say(BUSY); });
+      }
+      function finish(quiet) {
+        if (busy || !Sona.boardClaim) return; busy = true;
+        if (!quiet) say("");
+        Sona.boardClaim().then(function (r) {
+          busy = false;
+          if (r && r.ok) { expired = false; view = ""; paint(); say(""); return; }
+          if (r && r.expired) { expired = true; view = ""; paint(); return; }
+          paint();
+          if (quiet) return;
+          if (r && r.waiting) say("Not confirmed yet. Tap the button in the email, then Finish.");
+          else if (r && r.resting) say(RESTING);
+          else if (r && r.busy) say(BUSY);
+        }, function () { busy = false; paint(); });
+      }
+      function start(email, slots, again) {
+        if (busy) return; busy = true; say("");
+        Sona.boardStart(email, slots).then(function (r) {
+          busy = false;
+          if (r && r.ok) {
+            typed = email; expired = false; view = ""; paint();
+            // already confirmed in the email: nothing was sent again, so finish
+            if (r.confirmed) { finish(false); return; }
+            if (again) say("Sent again. Check your email for code " + r.code + ".");
+            return;
+          }
+          var e = r && r.error;
+          if (e === "limit") say("We just sent that address a link. Check the inbox, or try again tomorrow.");
+          else if (e === "email") say("Check the email address and try again.");
+          else if (e === "resting") say(RESTING);
+          else if (e === "kids") { view = ""; paint(); say("Pick a child who can be on the board."); }
+          else if (e === "off") { view = ""; paint(); }
+          else say(BUSY);
+        }, function () { busy = false; say(BUSY); });
+      }
+      function emailBox(id) {
+        var lab = el("label", "field bd-email", "Grown-up's email"); lab.setAttribute("for", id);
+        var inp = el("input"); inp.id = id; inp.type = "email"; inp.setAttribute("inputmode", "email"); inp.setAttribute("autocomplete", "email");
+        var was = id === "boardEmail" ? kept.email : id === "boardEmailAgain" ? kept.again : null;
+        inp.value = was != null ? was : (typed || (Sona.parentEmail ? Sona.parentEmail() : "") || "");
+        return { label: lab, input: inp };
+      }
+      function paintAsk() {
+        body.appendChild(el("p", "bd-line", "Did a speech therapist or a school send you to Sona?"));
+        body.appendChild(actions(
+          btn("Yes", "ghost", function () { Sona.boardAsk("clinic"); view = ""; paint(); try { if (Sona.boardFlush) Sona.boardFlush().then(paint, paint); } catch (e) {} }),
+          btn("No", "ghost", function () { Sona.boardAsk("no"); view = "sheet"; paint(); })));
+        body.appendChild(el("p", "muted set-lead", "The board stays off for families who came through a speech therapist or a school. Your answer stays on this phone."));
+      }
+      function paintSheet(list) {
+        var s = el("div", "bd-sheet");
+        s.innerHTML = "<h3>Put your children on the Practice Board?</h3>" +
+          "<p>The Practice Board shows the Sona kids who practiced on the most days this month. Anyone who turns it on can see it.</p>" +
+          "<p><b>What other families see:</b> a made-up nickname Sona picks (like Brave Fox 42), your child's buddy picture, and how many days they practiced this month, updated once a day. Never a name, age, photo, voice, sounds or anything a child says. No chat, no messages, no friends.</p>" +
+          "<p><b>How a day counts:</b> a day counts when your child meets the daily goal (practice, games and books all count). Sona's server counts each day once, by its own clock: a day can be added up to a day late, never early. It can't hear practice: no recording ever leaves this phone.</p>" +
+          "<p><b>What Sona's server keeps:</b> for each child, a random board number, the nickname, the buddy picture, your time zone, the date it was turned on, and which days counted this month. Speech therapists never see the board.</p>" +
+          "<p><b>To turn it on, we email a grown-up a link.</b> We use the address only to send that email, and keep only a scrambled form of it for one day, to stop repeat emails. The email also has a link to take your children off the board at any time.</p>" +
+          "<p>If a child is on the board on another phone or in Safari, turn it off there too.</p>";
+        var kidsBox = el("div", "bd-kids"); kidsBox.setAttribute("role", "group"); kidsBox.setAttribute("aria-label", "Children");
+        list.forEach(function (x) {
+          var lab = el("label"), box = el("input"), txt = el("span", "", nameOf(x.k)), why = "";
+          box.type = "checkbox"; box.value = x.k.slot || ""; box.setAttribute("data-slot", x.k.slot || "");
+          if (x.s.on) why = "on the board";
+          else if (x.s.why === "young") why = "for ages 5 and up";
+          else if (x.s.why) why = "off on this phone";
+          if (why) { box.disabled = true; box.checked = !!x.s.on; lab.className = "off"; txt.appendChild(el("small", "", why)); }
+          else if (kept.slots && kept.slots.indexOf(x.k.slot || "") >= 0) box.checked = true;
+          lab.appendChild(box); lab.appendChild(txt); kidsBox.appendChild(lab);
+        });
+        s.appendChild(kidsBox);
+        var eb = emailBox("boardEmail"); s.appendChild(eb.label); s.appendChild(eb.input);
+        s.appendChild(actions(
+          btn("Email me the link", "", function () {
+            var slots = [].map.call(kidsBox.querySelectorAll("input:checked:not(:disabled)"), function (b) { return b.getAttribute("data-slot"); });
+            if (!slots.length) { say("Tick a child first."); return; }
+            var em = (eb.input.value || "").trim();
+            if (!em) { say("Type the grown-up's email first."); eb.input.focus(); return; }
+            start(em, slots, false);
+          }),
+          btn("Not now", "ghost", function () { view = ""; paint(); say(""); })));
+        body.appendChild(s);
+      }
+      function paintWaiting(hh, list) {
+        body.appendChild(line(["Check your email for code ", { b: hh.code }, " and tap the link, then come back here."]));
+        body.appendChild(actions(btn("Finish", "", function () { finish(false); }), btn("Cancel", "ghost", function () { if (Sona.boardCancel) Sona.boardCancel(); view = ""; paint(); say(""); })));
+        var again = el("div", "bd-again");
+        again.appendChild(el("p", "", "Didn't get it? Send it again"));
+        var eb = emailBox("boardEmailAgain"); again.appendChild(eb.label); again.appendChild(eb.input);
+        again.appendChild(actions(btn("Send it again", "ghost", function () {
+          var em = (eb.input.value || "").trim(); if (!em) { eb.input.focus(); return; }
+          var slots = list.filter(function (x) { return x.s.asked; }).map(function (x) { return x.k.slot; });
+          if (!slots.length) { if (Sona.boardCancel) Sona.boardCancel(); view = ""; paint(); return; }
+          start(em, slots, true);
+        })));
+        body.appendChild(again);
+      }
+      // Every repaint keeps what is half-done on the sheet (the ticks, the
+      // typed address, the caret), then forgets it: a later screen starts fresh.
+      function paint() {
+        var e1 = document.getElementById("boardEmail"), e2 = document.getElementById("boardEmailAgain"), act = document.activeElement;
+        kept = { email: e1 ? e1.value : null, again: e2 ? e2.value : null, slots: null, focus: "", sel: null };
+        if (e1) kept.slots = [].map.call(body.querySelectorAll(".bd-kids input:checked:not(:disabled)"), function (b) { return b.getAttribute("data-slot"); });
+        if (act && (act === e1 || act === e2)) { kept.focus = act.id; try { kept.sel = [act.selectionStart, act.selectionEnd]; } catch (e) { kept.sel = null; } }
+        try { paintNow(); } finally {
+          var f = kept.focus ? document.getElementById(kept.focus) : null;
+          if (f) { try { f.focus(); if (kept.sel) f.setSelectionRange(kept.sel[0], kept.sel[1]); } catch (e) {} }
+          kept = { email: null, again: null, slots: null, focus: "", sel: null };
+        }
+      }
+      function paintNow() {
+        var live = false; try { live = !!Sona.boardLive(); } catch (e) {}
+        var list = rows(), anyOn = list.some(function (x) { return x.s.on; }), owed = list.length ? list[0].s.leaving : 0;
+        if (moveNote) moveNote.hidden = !anyOn;
+        card.hidden = !(live || anyOn || owed > 0);
+        body.textContent = "";
+        if (card.hidden) return;
+        if (!live) {
+          // switched off after it was on: every entry still on this phone can be taken off
+          list.forEach(function (x) {
+            if (!x.s.on) return;
+            var k = x.k, row = el("div", "bd-kid");
+            row.appendChild(actions(btn("Remove " + nameOf(k) + " from the Practice Board", "ghost", function () { leave(k, x.s.nick); })));
+            body.appendChild(row);
+          });
+          if (!anyOn && owed) body.appendChild(el("p", "muted set-lead", "Finishing deleting from the Practice Board. That happens the next time this phone is online."));
+          return;
+        }
+        // the children already on, each with their own two buttons
+        list.forEach(function (x) {
+          var k = x.k, s = x.s;
+          if (s.on) {
+            var row = el("div", "bd-kid"); row.setAttribute("data-slot", k.slot);
+            if (confirmSlot === k.slot) {
+              row.appendChild(line(["Turn off the board for " + nameOf(k) + "? ", { b: s.nick }, " is deleted now."]));
+              row.appendChild(actions(btn("Turn off", "", function () { leave(k, s.nick); }), btn("Keep it on", "ghost", function () { confirmSlot = null; paint(); })));
+            } else {
+              row.appendChild(line([nameOf(k) + " is on the board as ", { b: s.nick }, " · " + days(s.days) + " this month."]));
+              row.appendChild(actions(btn("New nickname", "ghost", function () { newNick(k); }), btn("Turn off", "ghost", function () { confirmSlot = k.slot; say(""); paint(); })));
+            }
+            body.appendChild(row);
+          } else if (s.gone) {
+            body.appendChild(line([{ b: nameOf(k) }, " · " + GONE]));
+          }
+        });
+        var hh = Sona.boardState(), canJoin = list.filter(function (x) { return !x.s.on && !x.s.why; });
+        if (hh.pending) { paintWaiting(hh, list); return; }
+        if (view === "ask") { paintAsk(); return; }
+        if (view === "sheet" && canJoin.length) { paintSheet(list); return; }
+        if (expired) body.appendChild(el("p", "bd-line", "That link ran out. Send a new one?"));
+        if (!canJoin.length) {
+          if (!anyOn) body.appendChild(el("p", "bd-line", list.some(function (x) { return x.s.why === "clinic" || x.s.why === "many"; }) ? NOT_ALLOWED : YOUNG));
+          return;
+        }
+        if (!anyOn && !expired) body.appendChild(el("p", "muted set-lead", "A monthly board of how many days Sona kids practiced. Off unless you turn it on."));
+        body.appendChild(actions(btn(expired ? "Send a new one" : "Learn more", "ghost", function () {
+          say(""); view = (Sona.boardAsk && Sona.boardAsk()) ? "sheet" : "ask"; paint();
+        })));
+      }
+      paint();
+      // deletions owed first (live or not), then every child's queued days
+      try { var f = Sona.boardFlush && Sona.boardFlush(); if (f && f.then) f.then(paint, paint); } catch (e) {}
+      // back from the email: try Finish by itself while a request is waiting
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState !== "visible") return;
+        try { if (Sona.boardLive() && Sona.boardState().pending) finish(true); else paint(); } catch (e) {}
+      });
+    })();
 
     // Backup & restore — the data-loss safety net, behind "Moving to a new
     // phone?" at the foot of the page.

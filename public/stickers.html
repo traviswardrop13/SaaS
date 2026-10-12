@@ -51,12 +51,11 @@
 <body class="crafted-family family-stickers">
   <div class="wrap">
     <header>
-      <button id="back" title="Back">‹</button>
+      <button id="back" title="Back" aria-label="Back to the Trophy Road">‹</button>
       <div><h1>Sticker Book</h1><div class="count" id="count"></div></div>
     </header>
-    <div class="bar"><span id="barFill" style="width:0%"></span></div>
     <div class="grid" id="grid"></div>
-    <p class="empty" id="empty" style="display:none;">No stickers yet. Finish an adventure to collect your first one!</p>
+    <p class="empty" id="empty" style="display:none;">Open gifts on the Trophy Road to fill your book!</p>
     <div class="cta"><a class="btn" href="/today.html">← Back home</a></div>
   </div>
   <div id="toast"></div>
@@ -65,12 +64,13 @@
   <script src="/crafted-rewards.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
-    $("back").onclick=function(){ try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){} location.href="/map.html"; };
+    $("back").onclick=function(){ try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){} location.href="/road.html"; };
     var all=(window.Sona&&Sona.STICKERS)?Sona.STICKERS:[];
     var earned=(window.Sona&&Sona.stickersEarned)?Sona.stickersEarned():{};
     var got=all.filter(function(s){return earned[s.id];}).length;
-    $("count").textContent=got+" of "+all.length+" collected";
-    $("barFill").style.width=(all.length?Math.round(got/all.length*100):0)+"%";
+    // a collection shows no count, the same rule as Dino Dig's (Trophy Road,
+    // 11 Oct 2026): "3 of 24" reads as a grade, and the book is the picture
+    $("count").textContent="Your stickers";
     // highlight a sticker just won (arcade passes ?new=<id>)
     var justNew=new URLSearchParams(location.search).get("new")||"";
     var grid=$("grid");
@@ -89,7 +89,8 @@
       // locked stickers show their real art as a dark silhouette (CSS) — a tease, no padlocks
       d.innerHTML='<div class="e">'+SonaRewardArt(s.id)+'</div><div class="n">'+(has?s.name:"?")+'</div>'+(isNext?'<span class="tag">Next!</span>':"");
       // quest, not padlock: locked taps name the true unlock condition
-      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — finish an adventure to collect it!":"Finish an adventure to collect a new sticker!"); }; }
+      // (stickers come from Trophy Road gifts and Big Chests since 11 Oct 2026)
+      if(!has){ d.onclick=function(){ toast(isNext?"This one's next!":"Open gifts on the Trophy Road to collect it!"); }; }
       grid.appendChild(d);
     });
     if(!got){ $("empty").style.display="block"; }

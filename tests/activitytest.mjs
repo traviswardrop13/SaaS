@@ -104,7 +104,7 @@ async function visibleGroups(pg) {
 }
 async function state(pg) {
   return pg.evaluate(() => {
-    const keys = Object.keys(localStorage).filter((key) => /^sona\.(?:profile|progress|tickets|charge|rotation|today|reps|coins|sub|trial|demo|slp|caseplan|founding|founder|pilot|rung|plan)/.test(key)).sort();
+    const keys = Object.keys(localStorage).filter((key) => /^sona\.(?:profile|progress|tickets|charge|rotation|today|reps|coins|sub|trial|demo|slp|caseplan|founding|founder|pilot|rung|plan|trophy|road|chest|playlevel|board|buddyset)/.test(key)).sort();
     return {
       local: keys.map((key) => [key, localStorage.getItem(key)]),
       paidUi: sessionStorage.getItem("sona.paidui"),

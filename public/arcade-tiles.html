@@ -154,6 +154,14 @@
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the round as it always was: its songs stay on their own lines below
+    // and a level only replaces them after. Harder levels bring new songs, a
+    // little quicker; never a new say-it card, heart or helper, and after a
+    // lost heart the rest of that song keeps Level 1's beat and fall. An older
+    // cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("tiles"):1; if(LV!==2&&LV!==3) LV=1;
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -188,6 +196,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Piano Tiles needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"tiles",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -292,8 +302,8 @@
     // stays 20 until they pass it). The row carries on across the songs, so
     // the top is every note of all four (ROW_TOP).
     // It counts the finger and only the finger. The score (a golden tile is
-    // 3) is still kept for the coin purse and the old five-game run, but it
-    // is no longer shown: a hidden number beside a count of notes is what
+    // 3) is still kept for the old five-game run (no coins since COIN3), but
+    // it is no longer shown: a hidden number beside a count of notes is what
     // the old "Best" got wrong. Nothing here is practice data.
     // This child's best lives in Sona.gameBest/gameBestOffer (one record per
     // child, sona.js BESTS1). The old "sona.best.tiles" was one number for
@@ -303,6 +313,10 @@
     var rowBest=0, startBest=0, keptRow=0, saidNewBest=false, bestBannerAt=-1e9;
     var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
     try{ if(CAN_BEST) startBest=S.gameBest("tiles")|0; }catch(e){ startBest=0; }
+    // Level 2 and 3 keep their own best: each level's songs have their own
+    // number of notes (ROW_TOP), so one best across them would be measured
+    // against a top it could never reach
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("tiles",LV)|0; }catch(e){} }
     function rowSaid(n){ return n===1?"1 note":n+" notes in a row"; }
     function paintRow(){ $("score").textContent=rowBest; $("rowPill").setAttribute("aria-label","Notes in a row: "+rowBest); }
     // The store only ever goes up, so handing it the round's row early costs
@@ -310,6 +324,7 @@
     // when the phone is locked and on the way out. A round the phone kills
     // half way through still keeps what the child did.
     function keepBest(){
+      if(LV>1){ if(rowBest>keptRow){ keptRow=rowBest; try{ S.playBestOffer("tiles",LV,rowBest); }catch(e){} } return; }
       if(!CAN_BEST||rowBest<=keptRow) return;
       keptRow=rowBest;
       try{ S.gameBestOffer("tiles",rowBest); }catch(e){}
@@ -328,10 +343,14 @@
       return false;
     }
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, HEART_GAP_MS=1500, outOfHearts=false, paceK=1;
+    // helpL1: at Level 2 or 3, a lost heart puts the rest of that song on
+    // Level 1's beat and fall for that song (SONGS_L1), until the next song
+    var helpL1=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); e.hidden=!!SONGS[song].finale; }
     function loseHeart(now){
       if(!playing||phase!=="song"||SONGS[song].finale||slowTurn||slowMs>0||now-heartHitAt<HEART_GAP_MS)return;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paceK=Math.max(1,paceK-.12); paintHearts();
+      if(LV>1) helpL1=true;
       // Give tiles already flying a safe landing: one fumble cannot empty three hearts.
       for(var j=0;j<tiles.length;j++)if(!tiles[j].hit&&!tiles[j].gone)tiles[j].protected=true;
       if(!hearts)outOfHearts=true;
@@ -359,6 +378,23 @@
       {name:"Row, Row, Row Your Boat", notes:"CCCDE EDEFG", beat:660, fall:2.1},
       {name:"Ode to Joy", notes:"EEFGGFED CCDEEDD", beat:620, fall:2.2, finale:true}
     ];
+    // Level 2 and 3 (LEVELS1): four more songs a child may know, each a
+    // little quicker, the last one the finale whose tiles all wait. Every
+    // note is in the one octave the keys play (C to B), and every tune is an
+    // old public-domain one. The first three tiles of a round still wait.
+    var SONGS_L1=SONGS;
+    if(LV===2) SONGS=[
+      {name:"Hot Cross Buns", notes:"EDC EDC CCCCDDDD EDC", beat:700, fall:2.3},
+      {name:"Old MacDonald", notes:"CCCGAAG EEDDC", beat:660, fall:2.2},
+      {name:"London Bridge", notes:"GAGFEFG DEF EFG", beat:640, fall:2.1},
+      {name:"Au Clair de la Lune", notes:"CCCDED CEDDC", beat:600, fall:2.1, finale:true}
+    ];
+    else if(LV===3) SONGS=[
+      {name:"Are You Sleeping", notes:"CDEC CDEC EFG EFG", beat:640, fall:2.1},
+      {name:"This Old Man", notes:"GEG GEG AGFEDEF", beat:620, fall:2.0},
+      {name:"Lightly Row", notes:"GEE FDD CDEFGGG", beat:600, fall:1.95},
+      {name:"Itsy Bitsy Spider", notes:"CFFFGAA AGFGAF", beat:580, fall:2.0, finale:true}
+    ];
     var song=0, songIx=0, songMs=0, nextAt=900, phase="song", missRun=0, waitLeft=3, finaleDone=false;
     var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], echoT=-1e9;
     var HITY=function(){ return H-140; };   // the top of the keys
@@ -366,7 +402,10 @@
     // every note of the four songs: the longest a row can be
     var ROW_TOP=0; (function(){ for(var i=0;i<SONGS.length;i++) ROW_TOP+=songNotes(i).length; })();
     // pixels a second, so a tile takes the song's fall time on every screen
-    function speedPx(){ return (HITY()+90)/(SONGS[song].fall)*slowFactor()*paceK; }
+    function speedPx(){ return (HITY()+90)/(SONGS[song].fall)*slowFactor()*paceK*helpFall(); }
+    // 1, or after a lost heart at Level 2 or 3, how much slower Level 1's
+    // song in this place fell: the tile then takes Level 1's fall time
+    function helpFall(){ return helpL1?SONGS[song].fall/SONGS_L1[song].fall:1; }
     // ── wide, chunky notes (Travis, 5 Oct 2026: "the keynotes are a little
     // bit too skinny", beside his old App Store picture whose four lanes each
     // carry a fat rounded tile) ──
@@ -396,7 +435,7 @@
       if(waitLeft>0) waitLeft--;
     }
     function startSong(i){
-      slowMs=0; $("slowStatus").textContent=slowIdle(); song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; hud(); paintHearts();
+      slowMs=0; $("slowStatus").textContent=slowIdle(); song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; helpL1=false; hud(); paintHearts();
       banner(SONGS[i].finale?"Grand finale!":"Song "+(i+1), SONGS[i].name);
     }
     function endSong(){
@@ -567,7 +606,7 @@
       if(playing&&phase==="song"){
         var notes=songNotes(song), waiting=tiles.some(function(t){ return t.wait&&!t.hit&&!t.gone; });
         if(!waiting) songMs+=dt*slowFactor();
-        if(songIx<notes.length&&songMs>=nextAt&&!waiting){ spawn(); nextAt=songMs+SONGS[song].beat/paceK; }
+        if(songIx<notes.length&&songMs>=nextAt&&!waiting){ spawn(); nextAt=songMs+(helpL1?SONGS_L1[song].beat:SONGS[song].beat)/paceK; }
         if(songIx>=notes.length&&!tiles.some(function(t){ return !t.hit&&!t.gone; })) endSong();
       }
       ctx.clearRect(0,0,W,H);
@@ -851,8 +890,6 @@
       S.finishGameTurn("tiles",isDaily?score:null);
       playing=false; reviveWait=false; phase="done";
       keepBest();
-      var coins=Math.min(10,(score/5)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // The old five-game run (charge.html?daily=1): Home no longer opens

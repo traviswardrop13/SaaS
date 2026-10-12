@@ -1,6 +1,26 @@
 /* Block Stacker: the original wooden-toy board, scoped to this game. */
 body[data-crafted="stack"]{background:#252963;}
 body[data-crafted="stack"] #app{background-image:url('/assets/crafted/stack-workshop-v2.webp');background-size:100% 100%;background-position:center;}
+/* PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). A fox child keeps the workshop
+   above, the fox painted on the bench. For any other buddy the page adds
+   .buddy-scene: the workshop without the fox (stack-workshop-v3.webp, the same
+   picture outside the fox's box, stretched the same way), and the buddy's sit
+   picture where the fox sat, under the canvas. Its square frame is 42% of
+   #app's width, from 4% left of the edge, its drawing's seat (the frame's
+   bottom 6%) on the picture's row 1228 of 1536, where the fox's paws ended:
+   the frame's bottom at 20.05% of the height less 6% of its own height
+   (design/crafted-world/buddies-v3.md). The 4% beyond the edge is cut off by
+   object-fit, so the element itself stays on screen. */
+body[data-crafted="stack"].buddy-scene #app{background-image:url('/assets/crafted/stack-workshop-v3.webp');}
+body[data-crafted="stack"] #stackBuddy{display:none;}
+body[data-crafted="stack"].buddy-scene #stackBuddy[src]{display:block;}
+body[data-crafted="stack"] #stackBuddy{
+ position:absolute;left:0;width:38%;height:calc(min(100vw,560px)*0.42);
+ bottom:calc(20.05% - min(100vw,560px)*0.0252);
+ object-fit:cover;object-position:right bottom;pointer-events:none;
+}
+/* no sit or standing picture: the round badge, sitting on the bench */
+body[data-crafted="stack"] #stackBuddy.badge{left:4%;width:22%;height:auto;bottom:20.05%;object-fit:contain;border-radius:50%;}
 body[data-crafted="stack"] #tapHint{display:none!important;}
 body[data-crafted="stack"] #flash{top:calc(104px + env(safe-area-inset-top));font-size:clamp(22px,6vw,30px);color:#ffefb9;text-shadow:0 2px 0 #543343,0 4px 10px #20194480;}
 body[data-crafted="stack"] #banner{top:calc(92px + env(safe-area-inset-top));}
