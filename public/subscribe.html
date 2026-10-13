@@ -745,8 +745,10 @@
 
     // Which door the grown-up came through (30 Sep 2026): the end of a first
     // practice run (?first=1), a tap on a locked game (?from=<game>), a locked
-    // book or "See Premium" (?from=library), or Settings (neither). ?from= is
-    // checked against the catalog — it arrived in a URL.
+    // book or "See Premium" (?from=library), Home opening it once by itself
+    // for a family locked out who never saw it (?from=home, 13 Oct 2026:
+    // Sona.homeOfferDue), or Settings (neither). ?from= is checked against
+    // the catalog — it arrived in a URL. None of them grants anything.
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
     // ?setup=1: setup's ready screen, for a family who starts with the trial
     // (Sona.trialFirst). The grown-up is still holding the phone: the price
@@ -756,9 +758,9 @@
     var OFFER_SETUP = /[?&]setup=1(&|$)/.test(location.search);
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
-      OFFER_FROM = _f === "library" ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
+      OFFER_FROM = (_f === "library" || _f === "home") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
     } catch (e) {}
-    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM ? "from-game" : "settings";
+    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM ? "from-game" : "settings";
 
     // APPLE'S CARD, ITS WHOLE STATE (5 Oct 2026). Up here because three
     // blocks read it: the native rail that paints the card, fitOffer(), and
@@ -777,6 +779,20 @@
     //            them replaces it, never a tap (see ask())
     //   poll, pendingKind, stop   the watch for an Ask to Buy approval
     var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", stop: null };
+    // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
+    // only once the offer frame is up AND the store gave a definite answer:
+    // a priced card, "nothing to sell", or Premium already there (and always
+    // on the web, whose card is priced on the page). A frame the store never
+    // priced ("We couldn't reach the App Store.") marks only this visit, so
+    // X cannot loop back into it, and the next launch tries again.
+    function offerSettle() {
+      try {
+        if (!Sona.offerSeen || !document.body.classList.contains("offer")) return;
+        var p = APPLE.plan, inApp = !!(Sona.isNativeApp && Sona.isNativeApp());
+        var sure = !inApp || APPLE.counted || !!APPLE.done || (!!p && (p.state === "owned" || (p.state === "none" && p.why !== "timeout" && p.why !== "error")));
+        Sona.offerSeen(sure);
+      } catch (e) {}
+    }
     // NOTHING MOVES UNDER A FINGER: for `ms` after the card changes shape, or
     // after a tap on the button or Restore, the button, "Not now" and the
     // Restore row take no tap (body.price-settling). The price arriving puts
@@ -1075,7 +1091,7 @@
           elMsg.textContent = done ? say(APPLE.done) : APPLE.msg;
           // after a sale there is nothing left to decline, restore or read
           g("declineRow").hidden = done; g("iapLegal").hidden = done;
-          if (done) return;
+          if (done) { offerSettle(); return; }
           // the header line (Settings › Your plan; hidden in the offer)
           var line = g("planLine");
           line.textContent = "";
@@ -1090,6 +1106,7 @@
             try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native", source: OFFER_SOURCE, plan: APPLE.plan.kind }); } catch (e) {}
             try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
           }
+          offerSettle();
           if (APPLE.plan && !OLD) {
             if (w.state === "free") tell(APPLE.plan.sure ? "free-sure" : "free-unsure");
             else if (w.state === "paid") tell("paid");
@@ -1434,7 +1451,7 @@
         // app, a card that showed a price. Leaving "We couldn't reach the App
         // Store" is not turning a price down.
         // keepalive, because this navigates immediately afterwards
-        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : "from-game" }); } catch (x) {} }
+        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : "from-game" }); } catch (x) {} }
       });
     })();
 
@@ -1621,6 +1638,10 @@
         var card = document.getElementById(native ? "iapCard" : "pickCard");
         if (!card || card.style.display === "none") return;
         document.body.classList.add("offer");
+        // the offer is on screen: Home never opens it by itself again on
+        // this phone (Sona.homeOfferDue), whichever door this was, once the
+        // store has given a definite answer (offerSettle)
+        offerSettle();
         // from setup the header steps aside too (the rule is in the styles;
         // the header's markup is the one every grown-ups page shares)
         if (OFFER_SETUP) document.body.classList.add("from-setup");
@@ -1641,7 +1662,7 @@
         // what Premium opens TODAY: released games outside the free tier
         // (without the free version, that is every released game)
         var open = Object.keys(acts).filter(function (k) { return (acts[k].tier !== "free" || !FREE_VER) && !acts[k].comingSoon; });
-        var game = OFFER_FROM && OFFER_FROM !== "library" ? acts[OFFER_FROM] : null;
+        var game = OFFER_FROM && OFFER_FROM !== "library" && OFFER_FROM !== "home" ? acts[OFFER_FROM] : null;
 
         // the games themselves, in Home's art: the tapped one large, or the
         // Premium ones fanned like a hand of cards, with Echo in front

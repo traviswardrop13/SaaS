@@ -262,6 +262,20 @@
       if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
       var profile=S.getProfile();
       if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
+      // THE OFFER, ONCE (Travis, 13 Oct 2026: "yeah, let's show the offer
+      // again"). A family locked out who never saw the free days on this phone
+      // (set up on a build that could not buy, now on one that can) gets the
+      // plan screen once, the same one a grey-game tap opens; its X comes back
+      // here. Home is never painted on that load, so nothing moves under a
+      // finger. The store is asked first (at most 2.5 s): a payer who
+      // reinstalled is found and Home reloads with every game open. Never on
+      // the grown-ups bounce, a ?locked= note or a preview. Sona.homeOfferDue
+      // only reads; subscribe.html spends the one showing.
+      var q=location.search;
+      if(S.homeOfferDue&&S.setupWall&&!/[?&](gate|locked|libraryPreview)=/.test(q)&&!(S.libraryPreview&&S.libraryPreview())&&S.homeOfferDue()){
+        S.setupWall(2500).then(function(owes){location.replace(owes?"/subscribe.html?from=home":location.pathname+location.search+location.hash);});
+        return;
+      }
       app.hidden=false;
       // Preview access is tab-local; real family entitlements stay untouched.
       var preview=S.libraryPreview?S.libraryPreview():false;

@@ -265,6 +265,40 @@ changing one. What follows from the rule:
   clinician pages promise them the free version. (The Apple card's "3 days
   free" tag and button were typed until 5 Oct 2026; since then every line on
   it is painted from the monthly product's own answer.)
+- **THE OFFER, ONCE, FROM HOME** (Travis, 13 Oct 2026: "yeah, let's show
+  the offer again"). Some families' Home locked with no offer ever on screen:
+  set up on the App Store's 1.0.4 (no purchase plugin, so setup skipped the
+  price and opened the free games) after the 3 Oct build stamped them "post",
+  then updated to a build that can buy, which took the free version away.
+  Now, the next time Home opens for a family who owes the price
+  (`trialFirst()`: a phone that can sell, no free version, no Premium, no
+  trial), is set up, is not a clinician's own setup, and has never been shown
+  the offer on this phone, Home is not painted: the store is asked once (2.5 s
+  at most, `Sona.setupWall`, so a payer who reinstalled is found and gets
+  Home), then the plan screen opens as the offer (`?from=home`, "Unlock every
+  game for <Name>", no grown-ups check, as a grey-game tap), and its X comes
+  back to Home. **Once per phone, whatever they do:** `subscribe.html`
+  spends `sona.offerseen.v1` once the offer frame is up, from ANY door
+  (setup, a grey game, a first run, Home), AND the store gave a definite
+  answer (a priced card, which also spends `sona.planmoment.v1`; nothing to
+  sell; Premium already there). **An error card is not the showing:** a frame
+  the store never priced ("We couldn't reach the App Store.") marks only that
+  visit (`sona.offerseen.tab`, sessionStorage, so X never loops) and counts a
+  try (`try:N`); the next launch tries again, three tries at most, so a
+  broken store never opens an error card on every launch.
+  `Sona.homeOfferDue()` only reads. While the store is asked, Home shows only
+  its background (2.5 s at most, on that one load). The mark is on `NO_EXPORT` and
+  `NO_IMPORT` (true of this phone); `planmoment` still travels, so a backup can
+  take the offer away, never add one. Never on `?gate=`, `?locked=` or a
+  preview. Who it catches: the 1.0.4 households above; a household set up on
+  1.0.5 before 13 Oct whose setup price never showed a figure; a "post"
+  household whose Apple Premium lapsed; a browser household only if
+  `WEB_SALES` turns on. **Travis's to know:** it is the first time Home opens
+  the plan screen by itself, so whoever holds the phone (maybe the child) sees
+  it, as a grey-game tap already does. Test seeds: a set-up `_phone.mjs` seed
+  carries the mark unless `homeOffer: true`; a suite seeding a "post"
+  household by hand on a phone that can sell sets it too. `homeoffertest`
+  plays it.
 `tests/trialfirsttest.mjs` plays the rule on every kind of phone, setup's last
 tap, both screens, "Not now", the first game after the free days start, a
 store that sells no free days or never answers, and the smallest phones.
@@ -467,8 +501,11 @@ practice page first) from 5, a clinician's own setup still ends on Home.
 home they see the other games they can play and that there are premium ones
 ... the flow was not good"): "Play again" on top, "Back home" under it.
 `Sona.firstGameStart()` marks the game for this tab and `firstGameEnd(key)`
-spends the mark once and always answers Home. The offer is made in exactly two
-places, both behind the grown-ups gate: **once**, automatically, at the end of
+spends the mark once and always answers Home. For a family who keeps the free
+version, the offer is made in exactly two
+places (a family who starts with the trial also meets it at setup's end, on a
+grey-game tap, and once from Home: see "TRIAL FIRST" and "THE OFFER, ONCE,
+FROM HOME"), both behind the grown-ups gate: **once**, automatically, at the end of
 the first completed practice run ("Show a grown-up →" to
 `/subscribe.html?first=1` while `planEligible()` says so), and **whenever** a
 grown-up answers a child's tap on a locked game or book ("Ask a grown-up" →
