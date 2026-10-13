@@ -39,6 +39,7 @@ import { createServer } from "http";
 import { existsSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { nativeMic, fakeWorkletPatch } from "./_nativemic.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://127.0.0.1:8231";
@@ -76,7 +77,15 @@ await new Promise((resolve) => server.listen(8231, "127.0.0.1", resolve));
 const browser = await chromium.launch(launchOpts());
 let assertions = 0, failures = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
-async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
+// Sona's own mic in the iPhone app (12 Oct 2026) is its own part: the
+// scenarios named for it run in tests/micquietgamesowntest.mjs
+// (MICQUIET_MIC=own), the rest here; together they outgrow run-all's five
+// minutes a suite. MICQUIET_MIC=both runs every scenario in one go.
+const OWN_PART = "in the app on Sona's own mic: ", MIC_PART = process.env.MICQUIET_MIC || "web";
+async function scenario(name, fn) {
+  if (MIC_PART !== "both" && name.startsWith(OWN_PART) !== (MIC_PART === "own")) return;
+  try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); }
+}
 
 // ── the fake device: one clock, a mic that logs when it is live, and every
 // sound the page makes (oscillators, buffers, browser speech) logged as an
@@ -232,6 +241,12 @@ async function fresh(file, cfg = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
   await context.addInitScript(fakeDevice, cfg);
+  // cfg.nm: Sona's own microphone in the app, logged in this suite's own mic
+  // log; the stand-in AudioContext gets the least of a worklet it needs
+  if (cfg.nm) {
+    await context.addInitScript(nativeMic, Object.assign({ mode: "new", micLog: "__quiet", world: false, audit: false }, cfg.nm));
+    await context.addInitScript(fakeWorkletPatch, { field: "src", wrap: "source" });
+  }
   const page = await context.newPage(); page.setDefaultTimeout(5000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + "/" + file);
@@ -296,12 +311,16 @@ for (const [key, file] of ARCADE) {
     !/boostChip|fireBoost|paintChip|STAR MODE|FRENZY|GOLDEN KEYS|SLOW-MO|SUPER FLOAT|boost\.on/.test(code), "a power-up that listens for the whole game keeps an iPhone in call audio");
   ok(key + ": the keep-playing card still asks for the sound, family-checked", /to keep playing!/.test(code) && /famOK/.test(code) && /Sona\.frameShape/.test(code));
 
-  await scenario(key + " keep-playing card", async () => {
-    const { context, page, errors } = await fresh(file + "?from=charge", { token: file });
+  // SONA'S OWN MIC (12 Oct 2026): the same card again inside the iPhone app,
+  // where the page hears the phone's own microphone (tests/_nativemic.mjs)
+  // instead of capturing with getUserMedia, under the same audit.
+  for (const own of [false, true]) await scenario((own ? "in the app on Sona's own mic: " : "") + key + " keep-playing card", async () => {
+    const K = own ? key + " (in the app, Sona's own mic)" : key;
+    const { context, page, errors } = await fresh(file + "?from=charge", own ? { token: file, native: true, nm: {} } : { token: file });
     try {
       await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
       await page.waitForTimeout(600);
-      ok(key + ": the game asks for no microphone while it plays", (await page.evaluate(() => __quiet.requests)) === 0 && !(await page.locator("#boostChip").count()));
+      ok(K + ": the game asks for no microphone while it plays", (await page.evaluate(() => __quiet.requests)) === 0 && !(await page.locator("#boostChip").count()));
       // crash() is the card's old name, kept so these suites can open it:
       // since the rounds (27 Sep 2026) the card shows only between stages, and
       // a miss never opens it (the miss scenarios below pin that half)
@@ -321,24 +340,24 @@ for (const [key, file] of ARCADE) {
           snd: snd && snd.textContent === SAYTXT, sound: snd && getComputedStyle(snd).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rev: REV,
           dots: dots.querySelectorAll(".wdot").length, onlyDots: dots.children.length > 0 && [...dots.children].every((c) => c.classList.contains("wdot")) };
       });
-      ok(key + ": the say-it card asks for the sound (“to keep playing!” by its old name) with only the sound in orange, and says no Whoops!", !card.whoops && /to keep playing!$/.test(card.title) && card.snd && isOrange(card.sound) && !isOrange(card.ink), card);
-      ok(key + ": under the ask, the round's three stage dots, not hearts", card.rev === 3 && card.dots === 3 && card.onlyDots, card);
+      ok(K + ": the say-it card asks for the sound (“to keep playing!” by its old name) with only the sound in orange, and says no Whoops!", !card.whoops && /to keep playing!$/.test(card.title) && card.snd && isOrange(card.sound) && !isOrange(card.ink), card);
+      ok(K + ": under the ask, the round's three stage dots, not hearts", card.rev === 3 && card.dots === 3 && card.onlyDots, card);
       await page.waitForTimeout(150);
-      ok(key + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
+      ok(K + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
       await page.waitForFunction(() => __quiet.live() === 1);
       // 24 Sep 2026: this pin used to expect "I'm listening…" the instant the
       // mic opened. The first card on a page now measures the room first
       // (FLOOR_MS, while the card still says "Get ready…") and says it is
       // listening only once there is a floor to listen against.
-      ok(key + ": the first card measures the room before it says it is listening", /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
+      ok(K + ": the first card measures the room before it says it is listening", /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
       await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
-      ok(key + ": then it says it is listening, with the mic open", (await live(page)) === 1);
+      ok(K + ": then it says it is listening, with the mic open", (await live(page)) === 1);
       // a game sound asked for while the card listens is dropped, not played
       // over the open mic — and nothing is revived by the game itself
       await page.evaluate(() => sfx("complete"));
       await page.waitForTimeout(900);
       const still = await page.evaluate(() => ({ rev: REV, card: document.getElementById("revOvl").classList.contains("show"), live: __quiet.live() }));
-      ok(key + ": nothing plays over the listening card, and silence revives nothing", still.card && still.rev === 3 && still.live === 1, still);
+      ok(K + ": nothing plays over the listening card, and silence revives nothing", still.card && still.rev === 3 && still.live === 1, still);
       const before = (await log(page)).sfx.length;
       await voice(page, 450);
       await page.waitForFunction(() => REV === 2);
@@ -346,8 +365,8 @@ for (const [key, file] of ARCADE) {
       let l = await log(page);
       const chime = l.sfx.slice(before).find((c) => c.name === "complete");
       const closed = l.mics[0].end;
-      ok(key + ": the child's sound revives, and the mic is closed before the revive chime", !!chime && chime.live === 0 && (await live(page)) === 0, { chime, closed });
-      ok(key + ": the revive chime waits for the phone to switch back", !!chime && chime.at - closed >= 0.15, { chime, closed });
+      ok(K + ": the child's sound revives, and the mic is closed before the revive chime", !!chime && chime.live === 0 && (await live(page)) === 0, { chime, closed });
+      ok(K + ": the revive chime waits for the phone to switch back", !!chime && chime.at - closed >= 0.15, { chime, closed });
       // the second card: "I'm done playing" closes the mic before the round's chime
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
@@ -368,9 +387,9 @@ for (const [key, file] of ARCADE) {
           title: $("endTitle").textContent.trim(), echo: !!document.querySelector("#endOvl .echoWin img"),
           next: vis($("endCharge")) ? $("endCharge").textContent.trim() : null, home: vis($("endHome")) ? $("endHome").textContent.trim() : null };
       }).catch((e) => ({ error: String(e) }));
-      ok(key + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
+      ok(K + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
       const again = PLAYS_AGAIN.includes(key);
-      ok(key + ": \u2026and offers " + (again ? "Play again" : "Next") + " and Back home", (again ? end.next === "Play again" : /Next/.test(end.next || "")) && end.home === "Back home", end);
+      ok(K + ": \u2026and offers " + (again ? "Play again" : "Next") + " and Back home", (again ? end.next === "Play again" : /Next/.test(end.next || "")) && end.home === "Back home", end);
       // Echo hops under the round's count line, and his box has to hold the
       // whole hop: at 120px he stood proud of it and hid "notes" at the top of
       // every hop (1 Oct 2026). Measured at rest, plus the hop's own reach.
@@ -381,13 +400,14 @@ for (const [key, file] of ARCADE) {
         const a = deg * Math.PI / 180, reach = px + r.height / 2 * (Math.cos(a) + Math.sin(a) - 1), line = above.getBoundingClientRect();
         return { above: above.id, text: above.textContent, shown: line.height > 0, reach, clear: r.top - reach - line.bottom };
       }, [+hop[1], +hop[2]]).catch((e) => ({ error: String(e) }));
-      ok(key + ": at the top of his hop, Echo stays clear of the count line above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, gap);
+      ok(K + ": at the top of his hop, Echo stays clear of the count line above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, gap);
       await page.waitForTimeout(500);
       l = await log(page);
-      ok(key + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
-      noOverlap(key, l);
-      ok(key + ": the game's own sounds never counted as the child", (await page.evaluate(() => REV)) === 2);
-      clean(key, errors);
+      ok(K + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
+      noOverlap(K, l);
+      ok(K + ": the game's own sounds never counted as the child", (await page.evaluate(() => REV)) === 2);
+      if (own) ok(K + ": every mic was Sona's own (the phone's micOpen, never getUserMedia), and each one closed", await page.evaluate(() => __nm.gum === 0 && __nm.opened === 2 && __nm.closed === 2 && !__nm.live()), await page.evaluate(() => ({ gum: __nm.gum, opened: __nm.opened, closed: __nm.closed })));
+      clean(K, errors);
     } finally { await context.close(); }
   });
 }
@@ -534,62 +554,81 @@ for (const [key, file] of ARCADE) {
   // that request settled it was stale and went straight back. Nothing asked
   // again: the card sat on "Get ready…" and only "I'm done playing" got the
   // child out. Both ways a stale request can settle are pinned.
-  await scenario(key + " lock during the card's mic request", async () => {
-    const { context, page, errors } = await fresh(file + "?from=charge", { token: file });
+  // On Sona's own mic (12 Oct 2026) the phone takes 600 ms to answer each
+  // open, and the open it cuts short is the one a call or the background
+  // ended (temp: NotReadableError, the pages' "try again"). Its log shows a
+  // mic from the phone's answer, a moment before the page holds the stream,
+  // so "listening again" there is the next open, held.
+  for (const own of [false, true]) await scenario((own ? "in the app on Sona's own mic: " : "") + key + " lock during the card's mic request", async () => {
+    const K = own ? key + " (in the app, Sona's own mic)" : key;
+    const { context, page, errors } = await fresh(file + "?from=charge", own ? { token: file, native: true, nm: { openDelay: 600 } } : { token: file });
+    // a request still out: no answer yet, nothing given up
+    const asking = (n) => page.waitForFunction((n) => { const m = __quiet.mics[__quiet.mics.length - 1]; return __quiet.requests === n && !!m && m.start == null && m.end == null; }, n);
     try {
       await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
       await page.evaluate(() => { __quiet.gumPlan.push({ delay: 600 }); if (playing) crash(); });
-      await page.waitForFunction(() => __quiet.requests === 1 && __quiet.inflight === 1);
+      if (own) await asking(1); else await page.waitForFunction(() => __quiet.requests === 1 && __quiet.inflight === 1);
       await page.evaluate(() => __quiet.background());
       await page.waitForTimeout(100);
       await page.evaluate(() => __quiet.foreground());   // back before the phone has answered
-      const back = await until(page, () => __quiet.live() === 1, 2500);
-      ok(key + ": locked while the card was asking for the mic, the card asks again once the late answer is sent back, and listens", back && (await page.evaluate(() => __quiet.requests)) === 2,
+      // (the card says its line again first; Sona's own mic adds its prime)
+      const back = await until(page, own ? () => __quiet.requests === 2 && __quiet.live() === 1 && !!rv.st : () => __quiet.live() === 1, own ? 3500 : 2500);
+      ok(K + ": locked while the card was asking for the mic, the card asks again once the late answer is sent back, and listens", back && (await page.evaluate(() => __quiet.requests)) === 2,
         await page.evaluate(() => ({ requests: __quiet.requests, live: __quiet.live(), note: document.getElementById("revListen").textContent })));
       // the same when the OS cuts the pending request short instead
       await page.evaluate(() => __quiet.background());
-      await page.evaluate(() => { __quiet.gumPlan.push({ delay: 600, fail: true }); __quiet.foreground(); });
-      await page.waitForFunction(() => __quiet.requests === 3 && __quiet.inflight === 1);
+      if (own) await page.evaluate(() => { __nm.ctl.set({ openFail: ["temp"] }); __quiet.foreground(); });
+      else await page.evaluate(() => { __quiet.gumPlan.push({ delay: 600, fail: true }); __quiet.foreground(); });
+      if (own) await asking(3); else await page.waitForFunction(() => __quiet.requests === 3 && __quiet.inflight === 1);
       await page.evaluate(() => __quiet.background());
       await page.waitForTimeout(100);
       await page.evaluate(() => __quiet.foreground());
-      const back2 = await until(page, () => __quiet.live() === 1, 2500);
-      ok(key + ": when that late request fails instead of answering, the card still asks again and listens", back2 && (await page.evaluate(() => __quiet.requests)) === 4 && (await page.locator("#revOvl.show").count()) === 1,
+      const back2 = await until(page, own ? () => __quiet.requests === 4 && __quiet.live() === 1 && !!rv.st : () => __quiet.live() === 1, own ? 3500 : 2500);
+      ok(K + ": when that late request fails instead of answering, the card still asks again and listens", back2 && (await page.evaluate(() => __quiet.requests)) === 4 && (await page.locator("#revOvl.show").count()) === 1,
         await page.evaluate(() => ({ requests: __quiet.requests, live: __quiet.live() })));
       await until(page, () => /listening/i.test(document.getElementById("revListen").textContent), 1500);
       await voice(page, 450);
-      ok(key + ": and that card hears the child", await until(page, () => REV === 2, 1500));
+      ok(K + ": and that card hears the child", await until(page, () => REV === 2, 1500));
       await page.waitForTimeout(400);
-      noOverlap(key + " lock", await log(page));
-      clean(key + " lock", errors);
+      if (own) ok(K + ": every mic was Sona's own, never getUserMedia (a temporary end is not a fault)", await page.evaluate(() => __nm.gum === 0 && !Sona.micStats().broken), await page.evaluate(() => ({ gum: __nm.gum, stats: Sona.micStats() })));
+      noOverlap(K + " lock", await log(page));
+      clean(K + " lock", errors);
     } finally { await context.close(); }
   });
 }
 
-await scenario("run: backgrounding the card", async () => {
-  const { context, page, errors } = await fresh("arcade-run.html?from=charge", { token: "arcade-run.html" });
+// (on Sona's own mic the phone's close is answered a moment after stop():
+// the mic is released once that answer lands)
+for (const own of [false, true]) await scenario((own ? "in the app on Sona's own mic: " : "") + "run: backgrounding the card", async () => {
+  const K = own ? "run (in the app, Sona's own mic)" : "run";
+  const { context, page, errors } = await fresh("arcade-run.html?from=charge", own ? { token: "arcade-run.html", native: true, nm: {} } : { token: "arcade-run.html" });
   try {
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
     await page.evaluate(() => { if (playing) crash(); });
     await page.waitForFunction(() => __quiet.live() === 1);
     await page.evaluate(() => __quiet.background());
-    ok("run: locking the phone on the card releases the mic", (await live(page)) === 0);
+    ok(K + ": locking the phone on the card releases the mic", own ? await until(page, () => __quiet.live() === 0 && !__nm.live(), 500) : (await live(page)) === 0);
     await page.evaluate(() => __quiet.foreground());
     await page.waitForFunction(() => __quiet.live() === 1);
-    ok("run: coming back to the card listens again", (await page.evaluate(() => __quiet.requests)) === 2);
-    noOverlap("run background", await log(page));
-    clean("run background", errors);
+    ok(K + ": coming back to the card listens again", (await page.evaluate(() => __quiet.requests)) === 2);
+    if (own) ok(K + ": on Sona's own mic both times, never getUserMedia", await page.evaluate(() => __nm.gum === 0 && __nm.opened === 2));
+    noOverlap(K + " background", await log(page));
+    clean(K + " background", errors);
   } finally { await context.close(); }
 });
 
-await scenario("slice: no microphone", async () => {
-  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", { token: "arcade-slice.html", micMode: "deny" });
+// On Sona's own mic a refusal is the phone's: NotAllowedError, never the web mic.
+for (const own of [false, true]) await scenario((own ? "in the app on Sona's own mic: " : "") + "slice: no microphone", async () => {
+  const K = own ? "slice (in the app, Sona's own mic)" : "slice";
+  const { context, page, errors } = await fresh("arcade-slice.html?from=charge", own ? { token: "arcade-slice.html", native: true, nm: { perm: "denied" } } : { token: "arcade-slice.html", micMode: "deny" });
   try {
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
     await page.evaluate(() => { if (playing) crash(); });
     await page.locator("#endOvl.show").waitFor();
-    ok("slice: a card that can't hear anyone ends the round kindly, not in a dead end", !(await page.locator("#revOvl.show").count()) && (await live(page)) === 0);
-    clean("slice no mic", errors);
+    ok(K + ": a card that can't hear anyone ends the round kindly, not in a dead end", !(await page.locator("#revOvl.show").count()) && (await live(page)) === 0);
+    // (refused before any open: the phone's permission answers "denied")
+    if (own) ok(K + ": the refusal is the phone's, and the web mic is never asked", await page.evaluate(() => __nm.gum === 0 && __nm.perms.length >= 1 && __nm.opens.length === 0), await page.evaluate(() => ({ gum: __nm.gum, perms: __nm.perms, opens: __nm.opens })));
+    clean(K + " no mic", errors);
   } finally { await context.close(); }
 });
 

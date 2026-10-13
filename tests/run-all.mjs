@@ -39,6 +39,7 @@ const SUITES = [
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
   "repguardtest.mjs", // non-speech evidence cannot create practice
+  "repguardowntest.mjs", // the same non-speech and loud rooms on Sona's own mic in the iPhone app: never a try
   "speechevidencetest.mjs", // SPEECHEV1: that rule in room noise, at 30fps, for held/quiet sounds and early answers
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
   "calltest.mjs",  // Coach Call script variants + weekly cap (dev-gated)
@@ -77,6 +78,8 @@ const SUITES = [
   "micquietpracticetest.mjs", // the practice screen never plays a sound into a live mic (no iPhone call mode)
   "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
+  "micquietgamesowntest.mjs", // the same quiet rules on Sona's own mic in the iPhone app: the card, a lock mid-ask, the background, a refusal
+  "nativemictest.mjs", // NATIVEMIC1: in the iPhone app the mic is Sona's own (no phone-call audio): same child, same answer, every exit closes it, nothing plays into it, no audio leaves
   "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win; the child's own best is fruit in a row (Beat Your Best)
   "superslicetest.mjs", // SUPERSLICE1: say the sound once, quick or held, mid-wave for ten seconds of Super Slice; its fruit are extras and its drops are free; a rep on the week's count, never practice data
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon

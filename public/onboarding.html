@@ -564,7 +564,7 @@
       var generation=++micGeneration;micBusy=true;updateNext();
       var status=document.getElementById("micStatus");status.textContent="Your phone may ask for permission.";
       var request;
-      try{request=navigator.mediaDevices.getUserMedia({audio:true,video:false});}catch(e){request=Promise.reject(e);}
+      try{request=(Sona.micNative&&Sona.micNative())?Sona.micProbe({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false});}catch(e){request=Promise.reject(e);}
       Promise.resolve(request).then(function(stream){
         // Setup checks permission; it never records or keeps an open stream.
         stopSetupTracks(stream);

@@ -40,6 +40,7 @@ import { createServer } from "http";
 import { existsSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { nativeMic, fakeWorkletPatch } from "./_nativemic.mjs";
 
 // its own port: 8259 was taken by a stray dev server while this was written
 const PORT = 8273, BASE = "http://127.0.0.1:" + PORT;
@@ -202,6 +203,12 @@ async function fresh(cfg = {}) {
     try { await route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); } catch {}
   });
   await context.addInitScript(fakeDevice, cfg);
+  // cfg.nm: Sona's own microphone in the iPhone app, logged in this suite's
+  // own mic log; the stand-in AudioContext gets the least of a worklet
+  if (cfg.nm) {
+    await context.addInitScript(nativeMic, Object.assign({ mode: "new", micLog: "__quiet", world: false, audit: false }, cfg.nm));
+    await context.addInitScript(fakeWorkletPatch, { field: "src", wrap: "source" });
+  }
   const page = await context.newPage(); page.setDefaultTimeout(8000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + "/library.html");
@@ -533,6 +540,40 @@ await scenario("busy", async () => {
   const tried = await until(page, () => window.__book && window.__book.page === 1 && __quiet.requests === 2 && window.__book.mode === "next", 6000);
   ok("…and the next page tries the mic again", tried, await page.evaluate(() => ({ b: window.__book, requests: __quiet.requests })));
   clean("busy", errors);
+  await context.close();
+});
+
+// …and on Sona's own mic in the iPhone app (12 Oct 2026): a refusal is the
+// phone's, and meets the same help with the book reading on (never the web
+// mic); the phone's "not now" is one web-mic try for that word, and the next
+// page is Sona's own mic again.
+await scenario("denied, on Sona's own mic", async () => {
+  const { context, page, errors } = await fresh({ micok: true, nm: { perm: "denied" } });
+  await openBook(page, "Rory and the Rainbow");
+  const shownDenied = await until(page, () => !!document.getElementById("sonaMicDenied"), 6000);
+  ok("on Sona's own mic, a refused mic shows the same \"Echo can't hear you yet\" help", shownDenied);
+  await click(page, "sonaMicBack");
+  await page.waitForTimeout(150);
+  await click(page, "bkNext");
+  await page.waitForTimeout(1800);
+  const p2 = await page.evaluate(() => ({ page: window.__book.page, mode: window.__book.mode, perms: __nm.perms.length, opens: __nm.opens.length, gum: __nm.gum }));
+  ok("…the book reads on, the next page doesn't ask again, and the web mic is never asked", p2.page === 1 && p2.mode === "next" && p2.perms === 1 && p2.opens === 0 && p2.gum === 0, p2);
+  clean("denied, on Sona's own mic", errors);
+  await context.close();
+});
+await scenario("busy, on Sona's own mic", async () => {
+  const { context, page, errors } = await fresh({ micok: true, nm: { openFail: "busy" } });
+  await openBook(page, "Rory and the Rainbow");
+  const first = await waitLive(page, 6000);
+  const a = await page.evaluate(() => ({ gum: __nm.gum, opens: __nm.opens.length, busy: Sona.micStats().busy, native: Sona.micNative() }));
+  ok("on Sona's own mic, the phone's \"not now\" is one web-mic try: the word still listens", first && a.gum === 1 && a.opens === 1 && a.busy === 1 && a.native, a);
+  await page.waitForTimeout(80);
+  await voice(page, 260);
+  const turned = await until(page, () => window.__book.page === 1, 5000);
+  const again = turned && await waitLive(page, 6000);
+  const b = await page.evaluate(() => ({ gum: __nm.gum, opens: __nm.opens.length, own: __nm.opened }));
+  ok("…the child's word turns the page, and the next page listens on Sona's own mic again", again && b.gum === 1 && b.opens === 2 && b.own === 1, b);
+  clean("busy, on Sona's own mic", errors);
   await context.close();
 });
 

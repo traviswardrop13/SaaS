@@ -2174,7 +2174,11 @@
   // else's entry), the pending request and the deletions still to send are
   // this phone's errands, and the therapist answer stays here, as the sheet
   // says. A new phone asks again and joins again.
-  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
+  // THE NATIVE MIC'S MEASUREMENT SETTING never leaves either (Oct 2026):
+  // "sona.nativemic" is set by hand on Travis's test phone, and it changes
+  // whose mic listens and how loud it hears; on another family's phone it
+  // would change what counts as heard. It is refused by importData too.
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic"];
   function exportData() {
     const out = {};
     try {
@@ -2229,7 +2233,10 @@
     "sona.buddyset.v1",
     // the Practice Board's keys (BOARD2): never brought in, so a restore can
     // never put a child on the board, or hand one child another's entry
-    "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1"];
+    "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1",
+    // the native mic's measurement setting (NATIVE MIC): true of one test
+    // phone only, and it changes what counts as heard, so it never moves to another
+    "sona.nativemic"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -5657,13 +5664,936 @@
     const P = speechPlugin(); if (!P) return Promise.resolve(false);
     return speechAvailable().then((okay) => {
       if (!okay) return false;
-      return P.start(opts || {}).then(() => true).catch(() => false);
+      // On Sona's own mic Apple listens on the page's stream (g) or not at
+      // all: the plugin never opens the mic the old way behind a page that
+      // owns it (call-quality AirPods). A page on the web mic names none.
+      // Asked of the handle, not of micNative(): a fault elsewhere (a worklet
+      // that failed to load) turns micNative() off while this stream carries
+      // on natively, and a start naming no stream would close it. An ended
+      // handle names its stream only while the page is still on Sona's mic,
+      // so Apple refuses it (nostream) rather than opening the old way.
+      const h = _nm.last, mine = h && !h.web && (h.state !== "ended" || micNative());
+      const o = mine ? Object.assign({}, opts || {}, { g: h.g }) : (opts || {});
+      return P.start(o).then(() => true).catch(() => false);
     });
   }
   function speechStop() {
     const P = speechPlugin(); if (!P) return Promise.resolve(null);
     return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
   }
+
+  // ── SONA'S OWN MICROPHONE IN THE IPHONE APP (NATIVE MIC, Oct 2026) ────────
+  // Travis: in the app, every listen made the phone act as if it were on a
+  // call (volume buttons move call volume, AirPods drop to call quality, a
+  // parent's music ducks). The cause is WebKit, not a setting: while a page
+  // captures with getUserMedia, WebKit's own audio session is PlayAndRecord
+  // with VideoChat mode and Apple's voice processing, and the app cannot
+  // change it. So inside the app the mic is opened by Sona's native code
+  // (SonaSpeechPlugin.swift: AVAudioEngine, .playAndRecord, mode .default, no
+  // hands-free Bluetooth, no voice processing) and its samples are handed to
+  // this page as events. Pages never see the difference: micOpen() answers a
+  // stream-like handle with one track (stop, readyState, muted, getSettings),
+  // micSource() answers an AudioNode fed by those samples, micRecorder() a
+  // recorder for the keepsake clip. Every analyser, bar and timing on every
+  // listening page is untouched.
+  //
+  // NEVER LESS ABLE THAN BEFORE. Any app build without the new native code
+  // (every build in the App Store on 12 Oct 2026) declares no micOpen, so
+  // Capacitor puts none on the plugin and micNative() is false: each page runs
+  // the same getUserMedia line it always ran. A native failure that is not a
+  // refusal falls back to that same getUserMedia, for the rest of the page.
+  // NATIVE_MIC_ON = false is the off switch: a web deploy, no App Store review.
+  //
+  // NO AUDIO LEAVES THE PHONE. The samples move from Sona's native code into
+  // this page on the same phone and nowhere else: nothing in this block
+  // fetches, posts or opens a socket (mictest pins it), and the one clip a
+  // day goes only to the IndexedDB saveRecording above.
+  //
+  // SILENCE IS NEVER A TRY. Nothing here makes a sample. A late or missing
+  // chunk is exact zeros, which every listening page already reads as no
+  // sound; the mic's own warm-up zeros are never passed on.
+  const NATIVE_MIC_ON = true;
+  // The boost on the page's copy of the mic. 1.0 = none. Changing it changes
+  // which tries count as heard: Rachel's call, after Travis's phone numbers.
+  const NATIVE_MIC_GAIN = 1.0;
+  // Every knob the native mic takes is sent from here, so tuning it is a web
+  // deploy. maxMs: the phone closes a stream nobody has re-confirmed in 5
+  // minutes (a live page re-opens it at once). duck: turn other apps down
+  // while listening. speaker: .defaultToSpeaker (the same bottom mic WebKit's
+  // call mode used). ioMs 0: leave the phone's own buffer alone. frames: a
+  // hint for the tap; iOS often hands over ~100 ms whatever is asked.
+  // primeMs..: the page-side queue (see nmFifo). openMs: an open with the
+  // permission already given that has not answered by then falls back.
+  // firstMs: no real sound by then falls back. watchMs: a live stream that
+  // goes quiet this long is re-opened. probeMs: how long a new feed has to
+  // show it carries sound before the page uses the web mic instead.
+  const NATIVE_MIC = { maxMs: 300000, duck: false, speaker: true, ioMs: 0, frames: 1024,
+    primeMs: 120, primeMaxMs: 300, stepMs: 40, openMs: 4000, firstMs: 1500, watchMs: 2500,
+    probeMs: 900, resumeMs: [250, 1000, 2000, 4000], pauseMaxMs: 60000, clipMaxMs: 25000, quietMaxMs: 300 };
+  const _nmWeak = () => (typeof WeakMap === "function" ? new WeakMap() : null);
+  const _nm = { subscribed: false, subscribing: null, broken: false, why: "", busy: 0, live: [], byG: {}, lastG: 0,
+    pending: 0, stash: [], staleClosed: {}, of: _nmWeak(), mods: _nmWeak(), last: null, closing: 0, quiet: [],
+    closeMaxMs: 0, opens: [], seq: 0, epoch: 0, leave: [] };
+
+  // "sona.nativemic": "off" (this phone uses the web mic), or JSON knobs, set
+  // only by hand in Safari's Web Inspector for Travis's measurements. It is on
+  // NO_EXPORT and NO_IMPORT: a measurement setting never rides a backup onto
+  // another family's phone, where it would change what counts as heard.
+  function _nmTune() {
+    let raw = null; try { raw = localStorage.getItem("sona.nativemic"); } catch (e) {}
+    if (!raw) return {};
+    if (raw === "off") return { off: true };
+    try { const o = JSON.parse(raw); return (o && typeof o === "object") ? o : {}; } catch (e) { return {}; }
+  }
+  function _nmNum(v, lo, hi, dflt) { const x = Number(v); return (v != null && isFinite(x)) ? Math.min(hi, Math.max(lo, x)) : dflt; }
+  function micGain() { return _nmNum(_nmTune().gain, 0.25, 8, NATIVE_MIC_GAIN); }
+
+  // True only inside an app build whose plugin declares the mic methods.
+  // Old builds, a page in a browser, and every test stand-in for "the app"
+  // (Capacitor = {}, Plugins: {}, a Sona.isNativeApp override) answer false.
+  function micNative() {
+    if (!NATIVE_MIC_ON || _nm.broken) return false;
+    if (_nmTune().off) return false;
+    const P = speechPlugin();
+    return !!(P && typeof P.micOpen === "function" && typeof P.micClose === "function"
+      && typeof P.micPermission === "function" && typeof P.addListener === "function");
+  }
+  function _nmErr(name, message) {
+    try { return new DOMException(message || name, name); } catch (e) { const er = new Error(message || name); er.name = name; return er; }
+  }
+  function _nmFail(kind, code) { const e = new Error(code || kind); e.kind = kind; e.code = code || kind; return e; }
+  // what a rejection means: "denied" (a refusal), "busy" (the phone said not
+  // now), "temp" (the open ended for a reason that is not a fault),
+  // "nolistener" (the page lost its subscription), anything else a fault
+  function _nmKind(e) {
+    const c = e && (e.kind || e.code);
+    return (c === "denied" || c === "busy" || c === "temp" || c === "nolistener") ? c : "fail";
+  }
+  // a plugin call as a promise, even if the bridge throws while making it
+  function _nmP(fn) { try { return Promise.resolve(fn()); } catch (e) { return Promise.reject(e); } }
+  function _nmTimed(p, ms) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const t = ms > 0 ? setTimeout(() => { if (!done) { done = true; reject(_nmFail("fail", "timeout")); } }, ms) : 0;
+      Promise.resolve(p).then((v) => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+        (e) => { if (!done) { done = true; clearTimeout(t); reject(e); } });
+    });
+  }
+  function _nmEmitter(o) {
+    const L = {};
+    o.addEventListener = function (t, fn) { if (typeof fn === "function") (L[t] = L[t] || []).push(fn); };
+    o.removeEventListener = function (t, fn) { const a = L[t]; if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } };
+    o.dispatchEvent = function (ev) {
+      const on = o["on" + ev.type];
+      try { if (typeof on === "function") on.call(o, ev); } catch (e) {}
+      (L[ev.type] || []).slice().forEach((fn) => { try { fn.call(o, ev); } catch (e) {} });
+      return true;
+    };
+    return o;
+  }
+  function _nmFire(o, type, extra) { o.dispatchEvent(Object.assign({ type: type, target: o, currentTarget: o }, extra || {})); }
+  // One chunk: base64 of n little-endian Float32 samples (an iPhone and this
+  // page are both little-endian), mono.
+  function _nmDecode(b64, n) {
+    if (typeof b64 !== "string" || !b64) return null;
+    let bin; try { bin = atob(b64); } catch (e) { return null; }
+    const len = bin.length - (bin.length % 4), u8 = new Uint8Array(len);
+    for (let i = 0; i < len; i++) u8[i] = bin.charCodeAt(i);
+    const f = new Float32Array(u8.buffer);
+    return (n > 0 && n < f.length) ? f.subarray(0, n) : f;
+  }
+
+  // ── the queue between the phone's chunks and the page's audio clock ──
+  // Chunks arrive on the page's main thread in bursts (iOS often hands over
+  // ~100 ms at a time); the audio clock wants 128 samples every 2.7 ms. This
+  // queue sits between them. It starts holding real audio (the feeder is
+  // made from the newest prime of what the mic has heard), plays out what it
+  // holds, and on running dry writes exact zeros for the missing part only,
+  // counts a gap, aims a step deeper (stepMs, up to maxPrimeMs) and resumes
+  // only once it holds that aim again. Resuming at one step (the first cut)
+  // left a busy phone's queue one step deep for good: with ~21 ms chunks a
+  // little late it ran dry every few hundred ms, and a game card whose room
+  // reading needs 450 ms without a gap never said "I'm listening…" (13 Oct
+  // 2026, CI). After a burst (chunks held behind a long task, then delivered
+  // together) it drops the oldest audio back to its aim, so the page never
+  // stays late for good. A chunk at another rate is resampled on arrival
+  // (4-point Hermite: under 0.6 dB down at 12 kHz, where linear lost ~1.8).
+  // Exact zeros stay exact zeros, so the pages' starved-frame checks still
+  // see a gap as a gap. Its source is copied, as text, into the worklet
+  // below: keep it ES5 and free of anything outside itself.
+  function nmFifo(o, outRate) {
+    var smp = function (m) { return Math.round(m * outRate / 1000); };
+    var ms = function (n) { return Math.round(n * 1000 / outRate); };
+    var f = { q: [], qi: 0, depth: 0, target: smp(o.primeMs || 120), step: Math.max(1, smp(o.stepMs || 40)),
+      most: smp(o.maxPrimeMs || 300), primed: false, gaps: 0, maxDepth: 0, avg: 0, ended: false, rs: null, rsRate: 0 };
+    function resampler(inRate) {
+      var step = inRate / outRate, p = 3, h0 = null, h1 = 0, h2 = 0;
+      return function (x) {
+        if (h0 === null) { h0 = h1 = h2 = x[0]; }
+        var n = x.length, N = n + 3, out = new Float32Array(Math.ceil((N - p) / step) + 2), k = 0;
+        var y = function (i) { return i === 0 ? h0 : i === 1 ? h1 : i === 2 ? h2 : x[i - 3]; };
+        for (;;) {
+          var i = Math.floor(p);
+          if (i + 2 > N - 1) break;
+          var t = p - i, xm1 = y(i - 1), x0 = y(i), x1 = y(i + 1), x2 = y(i + 2);
+          var c1 = 0.5 * (x1 - xm1), c2 = xm1 - 2.5 * x0 + 2 * x1 - 0.5 * x2, c3 = 0.5 * (x2 - xm1) + 1.5 * (x0 - x1);
+          out[k++] = ((c3 * t + c2) * t + c1) * t + x0;
+          p += step;
+        }
+        p -= n; h0 = y(N - 3); h1 = y(N - 2); h2 = y(N - 1);
+        return out.subarray(0, k);
+      };
+    }
+    f.drop = function (k) {
+      while (k > 0 && f.q.length) {
+        var c = f.q[0], left = c.length - f.qi;
+        if (left <= k) { f.q.shift(); f.qi = 0; f.depth -= left; k -= left; }
+        else { f.qi += k; f.depth -= k; k = 0; }
+      }
+    };
+    f.push = function (x, r) {
+      if (!x || !x.length || f.ended) return;
+      if (r && r !== outRate) { if (!f.rs || f.rsRate !== r) { f.rs = resampler(r); f.rsRate = r; } x = f.rs(x); }
+      else { f.rs = null; f.rsRate = 0; }
+      if (!x.length) return;
+      f.q.push(x); f.depth += x.length;
+      if (f.primed && f.depth > f.target + 2 * f.step) f.drop(f.depth - f.target);
+      if (f.depth > f.maxDepth) f.maxDepth = f.depth;
+    };
+    f.ready = function () { f.primed = f.depth > 0; };
+    f.read = function (out) {
+      var n = out.length, w = 0, z;
+      if (!f.primed) {
+        if (f.depth >= f.target) f.primed = true;
+        else { for (z = 0; z < n; z++) out[z] = 0; return; }
+      }
+      while (w < n && f.q.length) {
+        var c = f.q[0], take = Math.min(n - w, c.length - f.qi);
+        out.set(c.subarray(f.qi, f.qi + take), w);
+        w += take; f.qi += take; f.depth -= take;
+        if (f.qi >= c.length) { f.q.shift(); f.qi = 0; }
+      }
+      if (w < n) {
+        for (z = w; z < n; z++) out[z] = 0;
+        f.gaps++; f.primed = false; f.target = Math.min(f.most, f.target + f.step);
+      }
+      f.avg = f.avg ? f.avg * 0.99 + f.depth * 0.01 : f.depth;
+    };
+    f.stats = function () { return { gaps: f.gaps, queueMs: ms(f.avg), queueMaxMs: ms(f.maxDepth), targetMs: ms(f.target) }; };
+    return f;
+  }
+  // The worklet: the queue above, run on the audio thread. It has no input
+  // and is never connected to the speaker; the page's own analysers pull it.
+  function _nmWorkletSource() {
+    return "var nmFifo = " + nmFifo.toString() + ";\n" +
+      "class SonaMicFeed extends AudioWorkletProcessor {\n" +
+      "  constructor(options) {\n" +
+      "    super();\n" +
+      "    var o = (options && options.processorOptions) || {}, self = this;\n" +
+      "    this.f = nmFifo(o, sampleRate); this.t = 0; this.g = 0;\n" +
+      "    (o.prime || []).forEach(function (c) { self.f.push(c.pcm, c.r); });\n" +
+      "    this.f.ready();\n" +
+      "    this.port.onmessage = function (e) { var m = e.data || {}; if (m.end) self.f.ended = true; else if (m.pcm) self.f.push(m.pcm, m.r); };\n" +
+      "  }\n" +
+      "  process(inputs, outputs) {\n" +
+      "    if (this.f.ended) return false;\n" +
+      "    var ch = outputs[0] && outputs[0][0];\n" +
+      "    if (ch) this.f.read(ch);\n" +
+      "    if (this.f.gaps !== this.g || currentTime - this.t >= 0.5) { this.g = this.f.gaps; this.t = currentTime; this.port.postMessage(this.f.stats()); }\n" +
+      "    return true;\n" +
+      "  }\n" +
+      "}\n" +
+      "registerProcessor(\"sona-mic-feed\", SonaMicFeed);\n";
+  }
+  // once per audio context: the module, from a blob URL (no file to keep in step)
+  function _nmModule(ctx) {
+    let m = _nm.mods && _nm.mods.get(ctx);
+    if (m) return m;
+    m = { ok: false, p: null };
+    let url = null;
+    try { url = URL.createObjectURL(new Blob([_nmWorkletSource()], { type: "application/javascript" })); } catch (e) {}
+    // a synchronous throw from addModule is a failed load, not a page error
+    try { m.p = url ? Promise.resolve(ctx.audioWorklet.addModule(url)) : Promise.reject(_nmFail("fail", "blob")); } catch (e) { m.p = Promise.reject(e); }
+    m.p.then(() => { m.ok = true; }, () => {}).then(() => { try { if (url) URL.revokeObjectURL(url); } catch (e) {} });
+    if (_nm.mods) _nm.mods.set(ctx, m);
+    return m;
+  }
+
+  // ── one feed per (stream, audio context) ──
+  // Every micSource() on that context gets its own GainNode from it, so a
+  // page's src.disconnect() drops only its own (charge.html makes one for its
+  // room reading and one per listening window on the same stream).
+  function _nmFeeder(ctx, h) {
+    const f = { ctx, outs: [], node: null, sp: null, fifo: null, web: null, probe: null, probeT: 0, probing: false,
+      ear: null, earBuf: null, earTried: false, ended: false, gaps: 0, queueMs: 0, queueMaxMs: 0 };
+    const opts = () => ({ primeMs: h._primeMs(), stepMs: NATIVE_MIC.stepMs, maxPrimeMs: NATIVE_MIC.primeMaxMs });
+    function wire(node) {
+      f.outs.forEach((o) => { try { node.connect(o); } catch (e) {} });
+      if (f.probe) { try { node.connect(f.probe); } catch (e) {} }
+      if (f.ear) { try { node.connect(f.ear); } catch (e) {} }
+    }
+    function makeWorklet() {
+      const o = opts(); o.prime = h._recent(o.primeMs);
+      const node = new global.AudioWorkletNode(ctx, "sona-mic-feed", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: o });
+      node.port.onmessage = (e) => {
+        const s = e.data || {};
+        if (typeof s.gaps === "number") f.gaps = s.gaps;
+        if (typeof s.queueMs === "number") f.queueMs = s.queueMs;
+        if (typeof s.queueMaxMs === "number" && s.queueMaxMs > f.queueMaxMs) f.queueMaxMs = s.queueMaxMs;
+      };
+      try { node.__sonaMic = true; } catch (e) {}
+      return node;
+    }
+    // the stopgap while a context's first worklet module loads (the first
+    // listen on a page), so a brand-new listen never starts on exact zeros
+    // (the games' room floor only ever goes down)
+    function makeSP() {
+      const o = opts(), fifo = nmFifo(o, ctx.sampleRate);
+      h._recent(o.primeMs).forEach((c) => fifo.push(c.pcm, c.r));
+      fifo.ready();
+      const sp = ctx.createScriptProcessor(512, 1, 1);
+      sp.onaudioprocess = (e) => {
+        const ch = e.outputBuffer.getChannelData(0);
+        if (f.ended || f.fifo !== fifo) { ch.fill(0); return; }
+        fifo.read(ch);
+        const s = fifo.stats(); f.gaps = s.gaps; f.queueMs = s.queueMs; if (s.queueMaxMs > f.queueMaxMs) f.queueMaxMs = s.queueMaxMs;
+      };
+      try { sp.__sonaMic = true; } catch (e) {}
+      f.fifo = fifo;
+      return sp;
+    }
+    function dropSP() { if (f.sp) { try { f.sp.disconnect(); } catch (e) {} f.sp.onaudioprocess = null; f.sp = null; f.fifo = null; } }
+    function dropNode() { if (f.node) { try { f.node.port.postMessage({ end: true }); } catch (e) {} try { f.node.disconnect(); } catch (e) {} f.node = null; } }
+    f.push = function (pcm, r) {
+      if (f.ended || f.web) return;
+      if (f.node) { const c = pcm.slice(); try { f.node.port.postMessage({ pcm: c, r: r }, [c.buffer]); } catch (e) {} }
+      else if (f.fifo) f.fifo.push(pcm, r);
+    };
+    f.add = function (out) {
+      f.outs.push(out);
+      const n = f.web || f.node || f.sp;
+      if (n) { try { n.connect(out); } catch (e) {} }
+      f.earStart();
+      f.probeStart();
+    };
+    // THE FEED'S OWN EAR (micDeaf). Between the phone's samples (a pause, a
+    // re-open, a chunk later than the queue is deep) the feed plays exact
+    // zeros. A page's room floor only ever goes down, so a few frames of them
+    // would set it to nothing for the rest of the page, and its bar would
+    // drop to the minimum: a TV that never answered a card would answer it.
+    // This analyser hears what the page's own analysers hear, at the same
+    // moment, and says when the last frame held a gap: a run of exact zeros
+    // (GAP_RUN, as practice's starved() reads it), which real audio, even a
+    // mic's faintest hiss, never is. Made with the page's first source, so
+    // it is full by the page's first frame.
+    const GAP_RUN = 96;
+    f.earStart = function () {
+      if (f.earTried || f.web || typeof ctx.createAnalyser !== "function") return;
+      f.earTried = true;
+      try {
+        const ear = ctx.createAnalyser();
+        if (typeof ear.getFloatTimeDomainData !== "function") return;   // old WebKit: the handle's state alone
+        ear.fftSize = 512; try { ear.__sonaMic = true; } catch (e) {}
+        f.ear = ear; f.earBuf = new Float32Array(ear.fftSize);
+        const n = f.node || f.sp; if (n) n.connect(ear);
+      } catch (e) { f.ear = null; }
+    };
+    f.deaf = function () {
+      if (f.ended) return true;
+      if (f.web || !f.ear) return false;
+      try {
+        f.ear.getFloatTimeDomainData(f.earBuf);
+        for (let i = 0, run = 0; i < f.earBuf.length; i++) { if (f.earBuf[i] !== 0) run = 0; else if (++run >= GAP_RUN) return true; }
+      } catch (e) {}
+      return false;
+    };
+    // The web mic took over (h._toWeb): the same out gains, a real source.
+    f.toWeb = function (ws) {
+      if (f.ended || f.web) return;
+      try { f.web = f.ctx.createMediaStreamSource(ws); } catch (e) { f.web = null; return; }
+      f.outs.forEach((o) => { try { f.web.connect(o); } catch (e) {} });
+      dropNode(); dropSP();
+      if (f.ear) { try { f.ear.disconnect(); } catch (e) {} f.ear = null; }
+      try { if (f.ctx.state !== "running" && f.ctx.resume) Promise.resolve(f.ctx.resume()).catch(() => {}); } catch (e) {}
+    };
+    f.end = function () {
+      if (f.ended) return;
+      f.ended = true; clearTimeout(f.probeT);
+      dropNode(); dropSP();
+      if (f.web) { try { f.web.disconnect(); } catch (e) {} f.web = null; }
+      if (f.probe) { try { f.probe.disconnect(); } catch (e) {} f.probe = null; }
+      if (f.ear) { try { f.ear.disconnect(); } catch (e) {} f.ear = null; }
+      f.outs = [];
+    };
+    // Nothing checks a graph by itself: if the feed carries nothing while the
+    // phone's chunks arrive (a worklet that loads but stays silent on some
+    // WebKit, a node nobody pulls, a context that never starts without a
+    // capture), three reads in a row say so and the web mic takes over.
+    f.probeStart = function () {
+      if (f.probing || f.web || typeof ctx.createAnalyser !== "function") return;
+      f.probing = true;
+      let bad = 0;
+      try { f.probe = ctx.createAnalyser(); f.probe.fftSize = 2048; try { f.probe.__sonaMic = true; } catch (e) {} const n = f.node || f.sp; if (n) n.connect(f.probe); } catch (e) { f.probe = null; }
+      const check = () => {
+        if (f.ended || f.web || !f.probe) return;
+        if (h.state !== "live" || document.hidden || !h.firstAt || performance.now() - h.lastAt > 500) { f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3); return; }
+        let silent = true;
+        if (ctx.state === "running" && (f.node || f.sp)) {
+          try {
+            if (typeof f.probe.getFloatTimeDomainData !== "function") silent = false;
+            else { const b = new Float32Array(f.probe.fftSize); f.probe.getFloatTimeDomainData(b); for (let i = 0; i < b.length; i++) if (b[i] !== 0) { silent = false; break; } }
+          } catch (e) { silent = false; }
+        }
+        if (!silent) { try { f.probe.disconnect(); } catch (e) {} f.probe = null; return; }
+        if (++bad >= 3) { h._toWeb(ctx.state === "running" ? "graph" : "context " + ctx.state); return; }
+        f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3);
+      };
+      f.probeT = setTimeout(check, NATIVE_MIC.probeMs / 3);
+    };
+    if (h.web) { f.toWeb(h.web); return f; }
+    const hasWorklet = !!(ctx.audioWorklet && typeof ctx.audioWorklet.addModule === "function" && typeof global.AudioWorkletNode === "function");
+    const hasSP = typeof ctx.createScriptProcessor === "function";
+    if (!hasWorklet && !hasSP) { _nm.broken = true; _nm.why = "no feed"; throw _nmErr("NotSupportedError", "this audio engine cannot take Sona's microphone"); }
+    if (!hasWorklet) { f.sp = makeSP(); return f; }
+    const mod = _nmModule(ctx);
+    if (mod.ok) { f.node = makeWorklet(); return f; }
+    if (hasSP) f.sp = makeSP();
+    mod.p.then(() => {
+      if (f.ended || f.web) return;
+      let node; try { node = makeWorklet(); } catch (e) { _nm.broken = true; _nm.why = "worklet node"; return; }
+      f.node = node; wire(node); dropSP();
+    }, () => { _nm.broken = true; _nm.why = "worklet"; });   // this listen keeps the stopgap; the next open uses the web mic
+    return f;
+  }
+
+  // ── the handle a page holds: a MediaStream to every line that reads one ──
+  function _nmHandle(P, ans, constraints) {
+    _nm.seq++;
+    const track = _nmEmitter({ kind: "audio", id: "sona-mic-" + _nm.seq, label: "Sona microphone", enabled: true, muted: false,
+      readyState: "live", contentHint: "", onended: null, onmute: null, onunmute: null });
+    const stream = _nmEmitter({ id: "sona-stream-" + _nm.seq, active: true, sonaNative: true, onaddtrack: null, onremovetrack: null });
+    const h = { P, constraints, stream, track, g: ans.g, rate: +ans.sampleRate > 0 ? +ans.sampleRate : 48000, route: ans.route || {},
+      v: ans.v || 0, state: "opening", nativeLive: true, web: null, webAsking: false, feeders: [], recorders: [], hist: [], histMs: 0,
+      lastQ: 0, firstAt: 0, lastAt: 0, openedAt: performance.now(), readyMs: null, leadZeroMs: 0, chunkMs: 0, chunks: 0,
+      restarts: 0, pauses: 0, tries: 0, pausedAt: 0, resuming: false, unmute: false, resumeT: 0, watchT: 0, closeAckMs: null, why: "",
+      _ready: null, _fail: null };
+    stream.getTracks = () => [track];
+    stream.getAudioTracks = () => [track];
+    stream.getVideoTracks = () => [];
+    stream.getTrackById = (id) => (id === track.id ? track : null);
+    stream.addTrack = () => {}; stream.removeTrack = () => {};
+    stream.clone = () => stream;
+    // stop() is synchronous, as a real track's is: by the time it returns no
+    // sample reaches this page's analysers or its clip, so a page stamps its
+    // mic-closed moment exactly where it always did. The phone's own close
+    // follows over the bridge (micQuiet() waits for it; the box shows it).
+    track.stop = () => h._end("stopped", false);
+    track.getConstraints = () => ({});
+    track.getCapabilities = () => ({});
+    track.applyConstraints = () => Promise.resolve();
+    track.clone = () => track;
+    track.getSettings = () => {
+      if (h.web) {
+        let s = {}; try { const wt = h.web.getAudioTracks()[0]; s = Object.assign({}, wt && wt.getSettings ? wt.getSettings() : {}); } catch (e) {}
+        s.sonaNative = false; s.sonaWhy = h.why; return s;
+      }
+      const st = h._stats();
+      // autoGainControl is left unset: iOS says nothing about what mode
+      // .default does to the level, and the box shows "?" rather than guess
+      return { deviceId: "sona-native", groupId: "", channelCount: 1, sampleRate: h.rate, sampleSize: 32,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: undefined,
+        sonaNative: true, sonaMode: "default", sonaInput: h.route.input || "", sonaOutput: h.route.output || "", sonaGain: micGain(),
+        sonaChunkMs: Math.round(h.chunkMs), sonaQueueMs: st.queueMs, sonaGaps: st.gaps, sonaRestarts: h.restarts,
+        sonaLeadZeroMs: Math.round(h.leadZeroMs), sonaCloseMs: _nm.closeMaxMs || null };
+    };
+    h._primeMs = () => {
+      const p = _nmNum(_nmTune().primeMs, 20, NATIVE_MIC.primeMaxMs, NATIVE_MIC.primeMs);
+      return Math.min(NATIVE_MIC.primeMaxMs, Math.max(p, 1.5 * h.chunkMs + NATIVE_MIC.stepMs));
+    };
+    h._stats = () => {
+      let gaps = 0, q = 0, qm = 0;
+      h.feeders.forEach((f) => { gaps += f.gaps; if (f.queueMs > q) q = f.queueMs; if (f.queueMaxMs > qm) qm = f.queueMaxMs; });
+      return { gaps, queueMs: q, queueMaxMs: qm };
+    };
+    // the newest `ms` of what the mic heard, to start a new feed full
+    h._keep = (pcm, r) => {
+      h.hist.push({ pcm, r }); h.histMs += pcm.length * 1000 / r;
+      const keepMs = NATIVE_MIC.primeMaxMs + NATIVE_MIC.stepMs + h.chunkMs;
+      while (h.hist.length > 1 && h.histMs - h.hist[0].pcm.length * 1000 / h.hist[0].r >= keepMs) { h.histMs -= h.hist[0].pcm.length * 1000 / h.hist[0].r; h.hist.shift(); }
+    };
+    h._recent = (ms) => {
+      const out = []; let got = 0;
+      for (let k = h.hist.length - 1; k >= 0 && got < ms; k--) {
+        const c = h.hist[k], cms = c.pcm.length * 1000 / c.r;
+        if (got + cms <= ms) { out.unshift({ pcm: c.pcm.slice(), r: c.r }); got += cms; }
+        else { const keep = Math.max(1, Math.round((ms - got) * c.r / 1000)); out.unshift({ pcm: c.pcm.slice(c.pcm.length - keep), r: c.r }); got = ms; }
+      }
+      return out;
+    };
+    h._chunk = (m) => {
+      if (h.state === "ended" || h.state === "paused" || h.web) return;
+      const q = typeof m.q === "number" ? m.q : 0;
+      if (q && q <= h.lastQ) return;        // twice: a page that subscribed again can be told once per listener
+      if (q) h.lastQ = q;
+      let pcm = _nmDecode(m.d, m.n);
+      if (!pcm || !pcm.length) return;
+      const r = +m.r > 0 ? +m.r : h.rate, now = performance.now(), ms = pcm.length * 1000 / r;
+      h.rate = r; h.lastAt = now; h.chunks++; if (ms > h.chunkMs) h.chunkMs = ms;
+      if (h.unmute) { h.unmute = false; track.muted = false; _nmFire(track, "unmute"); }   // back after a pause
+      if (!h.firstAt) {
+        // the mic's warm-up: exact zeros before its first sound are not passed on
+        let i = 0; while (i < pcm.length && pcm[i] === 0) i++;
+        if (i === pcm.length) { h.leadZeroMs += ms; h._watch(); return; }
+        h.leadZeroMs += i * 1000 / r; h.firstAt = now; pcm = pcm.subarray(i);
+      }
+      h._keep(pcm, r);
+      for (let k = 0; k < h.feeders.length; k++) h.feeders[k].push(pcm, r);
+      for (let k = 0; k < h.recorders.length; k++) h.recorders[k]._push(pcm, r);
+      if (h._ready && h.histMs >= h._primeMs()) h._ready();
+      h._watch();
+    };
+    h._takeStash = () => {
+      const mine = _nm.stash.filter((c) => c.g === h.g);
+      _nm.stash = _nm.pending > 0 ? _nm.stash.filter((c) => c.g !== h.g && c.g > _nm.lastG) : [];
+      mine.forEach(h._chunk);
+    };
+    h._route = (m) => {
+      h.restarts++;
+      if (m && m.route) h.route = m.route;
+      if (m && +m.sampleRate > 0) h.rate = +m.sampleRate;
+    };
+    // the phone ended this open (micend)
+    h._native = (reason) => {
+      h.nativeLive = false; delete _nm.byG[h.g];
+      if (h.state === "opening") { if (h._fail) h._fail(reason); return; }
+      // a lost microphone on a page that still holds it is a pause, as
+      // WebKit's own capture pauses for a call and picks up after it: the
+      // round games never look at an ended track, and a card would otherwise
+      // say "I'm listening…" to nobody for the rest of the visit
+      if (reason === "interrupted" || reason === "route" || reason === "stalled" || reason === "reset" || reason === "timeout") h._pause(reason);
+      else h._end(reason, true);
+    };
+    h._pause = (reason) => {
+      if (h.state !== "live") return;
+      h.state = "paused"; h.pausedAt = performance.now(); h.pauses++; h.why = reason; h.tries = 0; h.relisted = false;
+      clearTimeout(h.watchT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }
+      // a re-open that went quiet before its first chunk is still muted
+      h.unmute = false; if (!track.muted) { track.muted = true; _nmFire(track, "mute"); }
+      // the 5-minute cap re-opens at once; an interruption waits for iOS's
+      // "you may record again" (micready) or tries every few seconds
+      h._later(reason === "timeout" ? 0 : reason === "interrupted" ? 4000 : NATIVE_MIC.resumeMs[0]);
+    };
+    h._later = (ms) => { clearTimeout(h.resumeT); h.resumeT = setTimeout(h._resume, ms); };
+    h._resume = () => {
+      // the web mic taking this handle over (h._toWeb) leaves it "paused"
+      // until getUserMedia answers: a micready or a return to the page in
+      // that moment must not open Sona's mic beside it
+      if (h.state !== "paused" || h.resuming || h.webAsking || h.web) return;
+      if (performance.now() - h.pausedAt > NATIVE_MIC.pauseMaxMs) { h._end("lost", true); return; }
+      if (document.hidden) { h._later(1000); return; }
+      h.resuming = true; h.tries++;
+      _nmAsk(h.P).then((ans) => {
+        h.resuming = false;
+        // the page let go, or the web mic took over, while the phone was asked
+        if (h.state !== "paused" || h.webAsking || h.web) { _nmStale(ans.g); return; }
+        h.g = ans.g; h.lastQ = 0; h.nativeLive = true; h.restarts++;
+        if (ans.route) h.route = ans.route;
+        if (+ans.sampleRate > 0) h.rate = +ans.sampleRate;
+        // unmuted by the first chunk (h._chunk), not here: until one lands
+        // the feed is still re-priming on exact zeros, and a page that reads
+        // the track hears a mic that is not hearing yet
+        _nm.byG[h.g] = h; h.state = "live"; h.unmute = true; h._takeStash();
+        h._watch();
+      }, (e) => {
+        h.resuming = false;
+        if (h.state !== "paused" || h.webAsking || h.web) return;
+        const k = _nmKind(e);
+        if (k === "denied") { h._end("denied", true); return; }
+        if (k === "fail") { h._toWeb("reopen " + ((e && e.code) || "failed")); return; }
+        if (k === "nolistener") {
+          // subscribing again is the cure, not waiting: at once, once a pause
+          _nm.subscribed = false;
+          if (!h.relisted) { h.relisted = true; h._later(0); return; }
+        }
+        h._later(NATIVE_MIC.resumeMs[Math.min(h.tries, NATIVE_MIC.resumeMs.length - 1)]);
+      });
+    };
+    // No chunk for watchMs on a visible page: the phone stopped without a
+    // word that reached us (a navigation that never happened takes the
+    // page's listeners). Yield once first: a timer can run ahead of chunks
+    // queued behind the same long task.
+    h._watch = () => {
+      clearTimeout(h.watchT);
+      if (h.state !== "live" || h.web) return;
+      h.watchT = setTimeout(() => {
+        if (h.state !== "live" || h.web) return;
+        if (document.hidden) { h._watch(); return; }
+        const seen = h.lastAt;
+        setTimeout(() => {
+          if (h.state !== "live" || h.web) return;
+          if (h.lastAt !== seen || document.hidden) { h._watch(); return; }
+          // not a reason to subscribe again: Capacitor keeps every listener
+          // it was given, so a second set has each chunk sent once per set.
+          // If the listeners really went, the phone answers the re-open
+          // "nolistener" and that subscribes again (h._resume).
+          h._pause("silent");
+        }, 80);
+      }, NATIVE_MIC.watchMs);
+    };
+    // The web mic takes this handle over, for the rest of this page: the page
+    // keeps its stream, its nodes and its recorder, and hears the child the
+    // way it always did (the phone-call mode included).
+    h._toWeb = (why) => {
+      if (h.state === "ended" || h.web || h.webAsking) return;
+      _nm.broken = true; _nm.why = why; if (_nm.last === h) _nm.last = null;
+      h.why = why; h.webAsking = true; h.unmute = false; clearTimeout(h.watchT); clearTimeout(h.resumeT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }   // never both mics at once
+      let ask; try { ask = navigator.mediaDevices.getUserMedia(h.constraints || { audio: true }); } catch (e) { ask = Promise.reject(e); }
+      Promise.resolve(ask).then((ws) => {
+        h.webAsking = false;
+        if (h.state === "ended") { try { ws.getTracks().forEach((t) => t.stop()); } catch (e) {} return; }
+        h.web = ws; h.state = "live";
+        h.feeders.forEach((f) => f.toWeb(ws));
+        if (track.muted) { track.muted = false; _nmFire(track, "unmute"); }
+        try {
+          const wt = ws.getAudioTracks()[0];
+          if (wt) {
+            wt.addEventListener("ended", () => h._end("ended", true));
+            wt.addEventListener("mute", () => { track.muted = true; _nmFire(track, "mute"); });
+            wt.addEventListener("unmute", () => { track.muted = false; _nmFire(track, "unmute"); });
+          }
+        } catch (e) {}
+      }, () => { h.webAsking = false; h._end("lost", true); });
+    };
+    h._end = (reason, fire) => {
+      if (h.state === "ended") return;
+      const opening = h.state === "opening";
+      h.state = "ended"; if (!h.why) h.why = reason;
+      track.readyState = "ended"; stream.active = false;
+      clearTimeout(h.watchT); clearTimeout(h.resumeT);
+      if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }
+      if (h.web) { try { h.web.getTracks().forEach((t) => t.stop()); } catch (e) {} }
+      if (!opening) _nmOpened(h);
+      h.feeders.splice(0).forEach((f) => f.end());
+      h.recorders.slice().forEach((rc) => rc._end());
+      _nm.live = _nm.live.filter((x) => x !== h);
+      // a real track's stop() fires no "ended"; the phone ending it does
+      if (fire) { if (reason === "interrupted") track.muted = true; _nmFire(track, "ended"); }
+      // an open ended before it was handed over (pagehide) settles at once:
+      // left to its clocks it would read as a fault on a page restored from
+      // the back-forward cache, and put that page on the web mic for good
+      if (opening && h._fail) h._fail(reason);
+    };
+    h.source = (ctx) => {
+      if (h.state === "ended") throw _nmErr("InvalidStateError", "the microphone has stopped");
+      if (!ctx || typeof ctx.createGain !== "function") throw _nmErr("NotSupportedError", "no audio context");
+      let f = null;
+      for (let k = 0; k < h.feeders.length; k++) if (h.feeders[k].ctx === ctx) f = h.feeders[k];
+      if (!f) { f = _nmFeeder(ctx, h); h.feeders.push(f); }
+      const out = ctx.createGain();
+      // left untouched at 1: some test audits read every gain they see as a sound
+      const gain = micGain(); if (gain !== 1) out.gain.value = gain;
+      try { out.__sonaMic = true; out.mediaStream = stream; } catch (e) {}
+      f.add(out);
+      return out;
+    };
+    if (_nm.of) _nm.of.set(stream, h);
+    return h;
+  }
+
+  // ── the bridge: events from the phone ──
+  function _nmStale(g) {
+    if (typeof g !== "number" || _nm.staleClosed[g]) return;
+    _nm.staleClosed[g] = 1;
+    const P = speechPlugin();
+    if (P) _nmP(() => P.micClose({ g: g })).catch(() => {});
+  }
+  function _nmChunk(m) {
+    if (!m || typeof m.g !== "number") return;
+    const h = _nm.byG[m.g];
+    if (h) { h._chunk(m); return; }
+    // an open still waiting for its answer: its first chunks can beat it here
+    if (_nm.pending > 0 && m.g > _nm.lastG) { if (_nm.stash.length < 12) _nm.stash.push(m); return; }
+    _nmStale(m.g);   // an open nobody holds: closed, once
+  }
+  function _nmEnded(m) { const h = m && _nm.byG[m.g]; if (h) h._native(String(m.reason || "closed")); }
+  function _nmRouted(m) { const h = m && _nm.byG[m.g]; if (h) h._route(m); }
+  function _nmReady() { _nm.live.forEach((h) => { if (h.state === "paused") h._resume(); }); }
+  // Subscribe once a page: first close whatever the last page left (and any
+  // Apple check it was running), so nothing is delivered while the listeners
+  // are being added (Capacitor adds them on another thread than it delivers).
+  function _nmSubscribe(P) {
+    if (_nm.subscribed) return Promise.resolve();
+    if (_nm.subscribing) return _nm.subscribing;
+    // Debug builds log every bridge event in full, and copy each log back to
+    // the phone. At ten audio chunks a second that is the phone's busiest
+    // work while Travis measures it. This flag only changes that logging.
+    try { if (global.Capacitor) global.Capacitor.isLoggingEnabled = false; } catch (e) {}
+    const p = _nmTimed(_nmP(() => P.micClose({ all: true })), NATIVE_MIC.openMs).catch(() => null).then(() => {
+      P.addListener("micpcm", _nmChunk);
+      P.addListener("micend", _nmEnded);
+      P.addListener("microute", _nmRouted);
+      P.addListener("micready", _nmReady);
+      _nm.subscribed = true;
+    });
+    _nm.subscribing = p;
+    const clear = () => { if (_nm.subscribing === p) _nm.subscribing = null; };
+    p.then(clear, clear);
+    return p;
+  }
+  // One native open: answers the phone's {g, sampleRate, route, v}.
+  // An ask the page leaves in the middle of (pagehide) ends at once as
+  // "temp", not a fault: if the page comes back from the back-forward cache,
+  // the phone's answer went to another document and would never arrive, and
+  // the clock running out would put this page on the web mic for good. An
+  // answer that does still come is closed (_nmStale).
+  function _nmAsk(P) {
+    const ep = _nm.epoch;
+    return new Promise((resolve, reject) => {
+      let out = false;
+      const leave = () => { if (!out) { out = true; reject(_nmFail("temp", "pagehide")); } };
+      const off = () => { _nm.leave = _nm.leave.filter((x) => x !== leave); };
+      _nm.leave.push(leave);
+      _nmAskOnce(P, ep).then((ans) => {
+        off();
+        if (out || _nm.epoch !== ep) { _nmStale(ans.g); leave(); return; }
+        out = true; resolve(ans);
+      }, (e) => {
+        off();
+        if (out) return;
+        out = true; reject(_nm.epoch !== ep && _nmKind(e) !== "denied" ? _nmFail("temp", "pagehide") : e);
+      });
+    });
+  }
+  function _nmAskOnce(P, ep) {
+    return _nmSubscribe(P).then(() => _nmTimed(_nmP(() => P.micPermission({})), NATIVE_MIC.openMs)).then((perm) => {
+      const state = perm && perm.state;
+      if (state === "denied") throw _nmFail("denied");
+      if (_nm.epoch !== ep) throw _nmFail("temp", "pagehide");   // the page left while asked: open nothing
+      const t = _nmTune();
+      const opts = {
+        maxMs: Math.round(_nmNum(t.maxMs, 1000, 600000, NATIVE_MIC.maxMs)),
+        duck: t.duck != null ? !!t.duck : NATIVE_MIC.duck,
+        speaker: t.speaker != null ? !!t.speaker : NATIVE_MIC.speaker,
+        ioMs: Math.round(_nmNum(t.ioMs, 0, 100, NATIVE_MIC.ioMs)),
+        frames: Math.round(_nmNum(t.frames, 256, 8192, NATIVE_MIC.frames)),
+      };
+      _nm.pending++;
+      return new Promise((resolve, reject) => {
+        let settled = false, clock = 0;
+        // the page leaving also settles this open, so nothing stays pending
+        const gone = () => { if (finish()) reject(_nmFail("temp", "pagehide")); };
+        const finish = () => {
+          if (settled) return false;
+          settled = true; _nm.pending = Math.max(0, _nm.pending - 1); clearTimeout(clock);
+          _nm.leave = _nm.leave.filter((x) => x !== gone);
+          return true;
+        };
+        _nm.leave.push(gone);
+        // a grown-up reading iOS's own dialog has no clock; an open that should be quick does
+        if (state === "granted") clock = setTimeout(() => { if (finish()) reject(_nmFail("fail", "timeout")); }, NATIVE_MIC.openMs);
+        _nmP(() => P.micOpen(opts)).then((ans) => {
+          const g = ans && typeof ans.g === "number" ? ans.g : null;
+          if (g != null && g > _nm.lastG) _nm.lastG = g;
+          if (!finish()) { _nmStale(g); return; }   // answered after the page gave up: closed at once
+          if (g == null) { reject(_nmFail("fail", "no stream")); return; }
+          resolve(ans);
+        }, (e) => { if (finish()) reject(e); });
+      });
+    });
+  }
+  function _nmOpened(h) {
+    _nm.opens.push(_nmStatOf(h));
+    while (_nm.opens.length > 10) _nm.opens.shift();
+  }
+  function _nmStatOf(h) {
+    const st = h._stats();
+    return { g: h.g, state: h.state, web: !!h.web, why: h.why, openMs: h.readyMs, leadZeroMs: Math.round(h.leadZeroMs),
+      chunkMs: Math.round(h.chunkMs), primeMs: Math.round(h._primeMs()), gaps: st.gaps, queueMs: st.queueMs, queueMaxMs: st.queueMaxMs,
+      restarts: h.restarts, pauses: h.pauses, closeMs: h.closeAckMs };
+  }
+  // Bind an answered open to a new handle; resolve once the feed can start
+  // full (primeMs of real sound after the first non-zero sample).
+  function _nmBind(P, ans, constraints) {
+    const h = _nmHandle(P, ans, constraints);
+    _nm.byG[h.g] = h; _nm.live.push(h);
+    return new Promise((resolve, reject) => {
+      let done = false;
+      const first = setTimeout(() => { if (!h.firstAt) fail("silent"); }, NATIVE_MIC.firstMs);
+      const most = setTimeout(() => { if (h.firstAt) ok(); }, NATIVE_MIC.firstMs + NATIVE_MIC.primeMaxMs);
+      function ok() {
+        if (done) return; done = true; clearTimeout(first); clearTimeout(most); h._ready = h._fail = null;
+        h.state = "live"; h.readyMs = Math.round(performance.now() - h.openedAt); _nm.last = h; h._watch();
+        resolve(h.stream);
+      }
+      function fail(reason) {
+        if (done) return; done = true; clearTimeout(first); clearTimeout(most); h._ready = h._fail = null;
+        h._end(reason, false);
+        // ended by a call, the background, another open or the page leaving: not a fault
+        const temp = reason === "interrupted" || reason === "background" || reason === "replaced" || reason === "closed"
+          || reason === "pagehide" || reason === "stopped";
+        reject(_nmFail(temp ? "temp" : "fail", reason));
+      }
+      h._ready = ok; h._fail = fail;
+      h._takeStash();
+    });
+  }
+  function _nmClose(h) {
+    const P = h.P, t0 = performance.now();
+    _nm.closing++;
+    _nmTimed(_nmP(() => P.micClose({ g: h.g })), 1000).catch(() => null).then(() => {
+      const ms = Math.round(performance.now() - t0);
+      h.closeAckMs = ms; if (ms > _nm.closeMaxMs) _nm.closeMaxMs = ms;
+      _nm.opens.forEach((x) => { if (x.g === h.g && x.closeMs == null) x.closeMs = ms; });
+      _nm.closing = Math.max(0, _nm.closing - 1);
+      if (!_nm.closing) _nm.quiet.splice(0).forEach((fn) => fn());
+    });
+  }
+
+  // ── what pages call ──
+  // micOpen(constraints): the stream. Refused: NotAllowedError, never the
+  // web mic. "Not now" from the phone: the web mic, this once. A call or the
+  // background ending it while it opens: NotReadableError, the temporary
+  // path every page already has. Anything else: the web mic for the page.
+  function micOpen(constraints) {
+    const P = speechPlugin();
+    if (!P || !micNative()) { _nm.last = null; return navigator.mediaDevices.getUserMedia(constraints); }
+    return _nmP(() => _nmOpenNative(P, constraints, false));
+  }
+  function _nmOpenNative(P, constraints, retried) {
+    return _nmAsk(P).then((ans) => _nmBind(P, ans, constraints)).catch((e) => {
+      const k = _nmKind(e);
+      if (k === "denied") throw _nmErr("NotAllowedError", "microphone not allowed");
+      if (k === "nolistener" && !retried) { _nm.subscribed = false; return _nmOpenNative(P, constraints, true); }
+      if (k === "temp") throw _nmErr("NotReadableError", "the microphone was interrupted");
+      _nm.last = null;
+      if (k === "busy") { _nm.busy++; return navigator.mediaDevices.getUserMedia(constraints); }
+      _nm.broken = true; _nm.why = String((e && (e.code || e.message)) || k);
+      return navigator.mediaDevices.getUserMedia(constraints);
+    });
+  }
+  // micProbe(constraints): the permission alone, for the pages that only ask
+  // (setup, the primers). No mic opens, no orange dot. A refusal is
+  // NotAllowedError; anything unclear asks the way it always did.
+  function micProbe(constraints) {
+    const P = speechPlugin();
+    const web = () => navigator.mediaDevices.getUserMedia(constraints);
+    if (!P || !micNative()) return web();
+    return _nmP(() => P.micPermission({ request: true })).then((r) => {
+      const st = r && r.state;
+      if (st === "granted") return _nmDeadStream();
+      if (st === "denied") throw _nmErr("NotAllowedError", "microphone not allowed");
+      return web();
+    }, () => web());
+  }
+  function _nmDeadStream() {
+    const t = _nmEmitter({ kind: "audio", id: "sona-mic-probe", label: "Sona microphone", enabled: true, muted: false, readyState: "ended", onended: null });
+    t.stop = () => {}; t.getSettings = () => ({ sonaNative: true }); t.getConstraints = () => ({}); t.getCapabilities = () => ({}); t.clone = () => t;
+    return _nmEmitter({ id: "sona-probe", active: false, sonaNative: true, getTracks: () => [t], getAudioTracks: () => [t],
+      getVideoTracks: () => [], getTrackById: (id) => (id === t.id ? t : null) });
+  }
+  // micSource(ctx, stream): an AudioNode in ctx carrying the mic. A real
+  // MediaStream gets exactly the line every page had.
+  function micSource(ctx, stream) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h) return ctx.createMediaStreamSource(stream);
+    return h.source(ctx);
+  }
+  // micDeaf(stream[, ctx]): true while Sona's own mic is not hearing: paused
+  // (a call, a stall, a re-open), or the frame a page just read held a gap
+  // between the phone's samples (the feed's ear, above). The pages whose
+  // room floor only goes down skip those frames exactly as they skip the
+  // frames of their own sounds. False for a real MediaStream, the web mic
+  // included: those pages read it exactly as they always did.
+  function micDeaf(stream, ctx) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h || h.web) return false;
+    if (h.state !== "live" || !h.firstAt) return true;
+    for (let k = 0; k < h.feeders.length; k++) { const f = h.feeders[k]; if ((!ctx || f.ctx === ctx) && f.deaf()) return true; }
+    return false;
+  }
+  // micRecorder(stream): the keepsake clip's recorder. For Sona's own mic,
+  // one 16-bit mono WAV (48 kHz halved to 24 kHz, at most 25 s), raw samples
+  // without the boost, handed over the way MediaRecorder does: data, then
+  // stop, a task after stop(); and it stops itself if the mic ends.
+  function micRecorder(stream) {
+    const h = stream && _nm.of && _nm.of.get(stream);
+    if (!h) return new MediaRecorder(stream);
+    if (h.web) return new MediaRecorder(h.web);
+    const rc = _nmEmitter({ state: "inactive", mimeType: "audio/wav", stream: stream, ondataavailable: null, onstop: null, onstart: null, onerror: null });
+    let parts = [], rate = 0, got = 0;
+    rc._push = (pcm, r) => {
+      if (rc.state !== "recording") return;
+      if (rate && r !== rate) return;          // one rate a clip: a change mid-clip keeps what it has
+      rate = r;
+      const room = Math.round(NATIVE_MIC.clipMaxMs * r / 1000) - got;
+      if (room <= 0) return;
+      const part = pcm.length > room ? pcm.subarray(0, room) : pcm;
+      parts.push(part); got += part.length;
+    };
+    rc.start = () => {
+      if (rc.state !== "inactive") throw _nmErr("InvalidStateError", "already recording");
+      if (h.state === "ended") throw _nmErr("InvalidStateError", "the microphone has stopped");
+      parts = []; rate = 0; got = 0; rc.state = "recording"; h.recorders.push(rc);
+      setTimeout(() => _nmFire(rc, "start"), 0);
+    };
+    rc._end = () => {
+      if (rc.state === "inactive") return;
+      rc.state = "inactive"; h.recorders = h.recorders.filter((x) => x !== rc);
+      const blob = _nmWav(parts, rate); parts = [];
+      setTimeout(() => { _nmFire(rc, "dataavailable", { data: blob }); _nmFire(rc, "stop"); }, 0);
+    };
+    rc.stop = () => rc._end();
+    rc.requestData = () => {}; rc.pause = () => {}; rc.resume = () => {};
+    return rc;
+  }
+  // The clip as Echo's own voice files are kept: 24 kHz mono 16-bit, written
+  // by pcmWave (top of this file). 48 kHz halves by averaging pairs; any
+  // other rate goes through the queue's own resampler.
+  function _nmWav(parts, rate) {
+    let n = 0; parts.forEach((p) => { n += p.length; });
+    if (!n || !rate) return new Blob([], { type: "audio/wav" });   // nothing heard: an empty blob, which the page drops
+    let x;
+    if (rate === 48000) {
+      const all = new Float32Array(n); let o = 0; parts.forEach((p) => { all.set(p, o); o += p.length; });
+      x = new Float32Array(n >> 1);
+      for (let i = 0; i < x.length; i++) x[i] = (all[2 * i] + all[2 * i + 1]) / 2;
+    } else {
+      const f = nmFifo({ primeMs: 1, stepMs: 1, maxPrimeMs: 1 }, 24000);   // never primed, so it never drops
+      parts.forEach((p) => f.push(p, rate));
+      x = new Float32Array(f.depth); let o = 0; f.q.forEach((c) => { x.set(c, o); o += c.length; });
+    }
+    const pcm = new Int16Array(x.length);
+    for (let i = 0; i < x.length; i++) pcm[i] = Math.round(Math.max(-1, Math.min(1, x[i])) * 32767);
+    return pcmWave(new Uint8Array(pcm.buffer));
+  }
+  // Resolves once every close sent to the phone has been answered (at most
+  // quietMaxMs). Pages stamp their quiet tail at stop(); if Travis's phone
+  // shows closes over 50 ms, each page's settle helper waits on this too.
+  function micQuiet() {
+    if (!_nm.closing) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(false), NATIVE_MIC.quietMaxMs);
+      _nm.quiet.push(() => { clearTimeout(t); resolve(true); });
+    });
+  }
+  // For the phone checklist (Safari's console: Sona.micStats()) and the tests.
+  function micStats() {
+    return { on: NATIVE_MIC_ON, native: micNative(), broken: _nm.broken, why: _nm.why, busy: _nm.busy, closeMaxMs: _nm.closeMaxMs,
+      live: _nm.live.map(_nmStatOf), opens: _nm.opens.slice() };
+  }
+  try {
+    global.addEventListener("pagehide", () => {
+      _nm.epoch++;
+      _nm.leave.splice(0).forEach((fn) => fn());
+      _nm.live.slice().forEach((h) => h._end("pagehide", false));
+    });
+    // back from the back-forward cache: Capacitor dropped the listeners when the page left
+    global.addEventListener("pageshow", (e) => { if (e && e.persisted) _nm.subscribed = false; });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) _nmReady(); });
+  } catch (e) {}
+  // ── END OF SONA'S OWN MICROPHONE ──
 
   // HEAR2 (28 Sep 2026): Travis, "I just don't want kids saying taco and
   // getting a correct score. We want them to be in the ballpark." The first
@@ -6950,5 +7880,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);
