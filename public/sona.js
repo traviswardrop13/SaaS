@@ -6171,7 +6171,7 @@
     };
     h._pause = (reason) => {
       if (h.state !== "live") return;
-      h.state = "paused"; h.pausedAt = performance.now(); h.pauses++; h.why = reason; h.tries = 0;
+      h.state = "paused"; h.pausedAt = performance.now(); h.pauses++; h.why = reason; h.tries = 0; h.relisted = false;
       clearTimeout(h.watchT);
       if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }
       // a re-open that went quiet before its first chunk is still muted
@@ -6207,7 +6207,11 @@
         const k = _nmKind(e);
         if (k === "denied") { h._end("denied", true); return; }
         if (k === "fail") { h._toWeb("reopen " + ((e && e.code) || "failed")); return; }
-        if (k === "nolistener") _nm.subscribed = false;
+        if (k === "nolistener") {
+          // subscribing again is the cure, not waiting: at once, once a pause
+          _nm.subscribed = false;
+          if (!h.relisted) { h.relisted = true; h._later(0); return; }
+        }
         h._later(NATIVE_MIC.resumeMs[Math.min(h.tries, NATIVE_MIC.resumeMs.length - 1)]);
       });
     };
@@ -6225,7 +6229,10 @@
         setTimeout(() => {
           if (h.state !== "live" || h.web) return;
           if (h.lastAt !== seen || document.hidden) { h._watch(); return; }
-          _nm.subscribed = false;
+          // not a reason to subscribe again: Capacitor keeps every listener
+          // it was given, so a second set has each chunk sent once per set.
+          // If the listeners really went, the phone answers the re-open
+          // "nolistener" and that subscribes again (h._resume).
           h._pause("silent");
         }, 80);
       }, NATIVE_MIC.watchMs);

@@ -760,6 +760,18 @@ scenario("failure: the page lost its listeners", async (t) => {
     // the page's 2.5 s watch, a yield, a quarter-second, then the open
     t.ok("lost listeners mid-listen: the page notices, subscribes again and picks the same stream up in about 3 s", r.back > 2400 && r.back <= 3500 && r.muted && r.same && r.subs === 3, r);
     t.ok("…and hears the sound again", Math.abs(r.rms - 0.1414) < 0.015, r);
+    // the phone going quiet with the listeners still there: the page re-opens
+    // and keeps the one set it has (Capacitor keeps every set it is given,
+    // and sends each chunk once per set)
+    const q = await page.evaluate(async () => {
+      const tr = __last.getTracks()[0], g1 = Sona.micStats().live[0].g; __nm.ctl.stall(4000); const t0 = performance.now();
+      const back = await new Promise((res) => (function f() {
+        const s = Sona.micStats().live[0];
+        if (s && s.g !== g1 && s.state === "live" && !tr.muted) res(performance.now() - t0); else if (performance.now() - t0 > 6000) res(-1); else setTimeout(f, 20);
+      })());
+      return { back, subs: __nm.listeners.filter((n) => n === "micpcm").length };
+    });
+    t.ok("a silent phone, listeners intact: the page re-opens without subscribing again", q.back > 2400 && q.back <= 3500 && q.subs === 3, q);
     clean(t, "nolistener", errors);
   } finally { await context.close(); }
 });

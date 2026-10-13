@@ -188,9 +188,13 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("audio session: \(error.localizedDescription)")
                 return
             }
-            if engineFromStream { replaceEngine(); engineFromStream = false }
-            let format = audioEngine.inputNode.outputFormat(forBus: 0)
-            guard format.sampleRate > 0 else {
+            // A fresh engine every listen, its format read after the session
+            // is set: sessionOff() now flips the category after each listen,
+            // and a reused engine can still report the old route's rate
+            // (AirPods in between), a tap at a stale format being a crash
+            // Swift cannot catch. Refused instead, the page judges by sound.
+            replaceEngine(); engineFromStream = false
+            guard let format = checkedInputFormat() else {
                 call.reject("no input")
                 return
             }

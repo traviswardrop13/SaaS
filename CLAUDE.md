@@ -2569,6 +2569,30 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Tiles' notes and Bubble Pop's pops are media in their own pages. **Still Web
   Audio in the app:** the sounds Hoops, Soccer Goal, Dino Dig and Fruit Slice
   make themselves (the swish, the kick, the roar, the splat).
+- **Sona's own microphone in the app: no phone-call audio** (Travis, 12 Oct
+  2026: the volume buttons moving "call volume" and sounds playing with the
+  phone on silent, "yeah start building it now"). While a web page captures,
+  WebKit switches the whole app to call audio (PlayAndRecord + VideoChat +
+  voice processing), and no page setting can stop it. So in an app build
+  whose SonaSpeech plugin has `micOpen`, the native side owns the mic
+  (AVAudioEngine, `.playAndRecord` + mode `.default`, no hands-free
+  Bluetooth) and streams PCM to the page; the NATIVE MIC block in `sona.js`
+  (`Sona.micOpen`, `micProbe`, `micSource`, `micRecorder`, `micDeaf`,
+  `micStats`) feeds it through an AudioWorklet into the very analysers every
+  listening page already reads. Every page keeps its literal getUserMedia as
+  the fallback: browsers, every App Store build before this plugin, a refused
+  worklet, and `NATIVE_MIC_ON = false` (the website kill switch; one phone:
+  `localStorage "sona.nativemic" = "off"`) all listen exactly as before.
+  **Every bar is unchanged**, but the sound reaching it is not: no automatic
+  gain, no noise suppression. A one-number boost (`NATIVE_MIC_GAIN`, ×1.0)
+  exists for the phone test, and changing it is Rachel's call, as is
+  `micDeaf`: frames from a paused or starved native mic never set a room
+  floor. Game sounds made in Web Audio now follow the silent switch like any
+  app's. The plugin ships through `scripts/install-ios-speech.py`, so it
+  needs a new App Store build; SPEECH_PLUGIN.md holds the phone checklist
+  and the numbers to send back. `nativemictest` (with `tests/_nativemic.mjs`,
+  a fake phone) plays the app path, `micquietgamesowntest` and
+  `repguardowntest` the quiet rules on it, and `heartest` pins the Swift.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
 

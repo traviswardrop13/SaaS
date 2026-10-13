@@ -192,8 +192,11 @@ In Safari → Develop → the iPhone → Sona → Console:
    `localStorage.setItem("sona.nativemic",'{"gain":1.5}')`, reload; the box
    shows "boost ×1.5". Measure only: nothing ships until Rachel decides.
 5. Buffer trial: `localStorage.setItem("sona.nativemic",'{"ioMs":10}')`,
-   reload. Note whether "chunk" drops below 100 ms and whether gaps change.
-   `removeItem` afterwards.
+   reload. Note whether "chunk" drops below 100 ms and whether gaps change
+   (about 100 ms is expected: Apple's tap hands over 100–400 ms buffers).
+   `removeItem` afterwards, then swipe Sona closed and reopen it before
+   step 6: the buffer request stays on the phone's audio session until the
+   app restarts, so later numbers would be the trial's.
 6. Each listening place hears a try: practice; the say-it card in Fruit Slice,
    Piano Tiles, Block Stack, Sound Sprint and Balloon Glide; Fruit Slice's
    sound power; Feed Echo; Hoops, Soccer and Dino. After a card in Fruit
