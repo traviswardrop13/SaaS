@@ -15,6 +15,10 @@ import { kvCmd } from "@/lib/slpAuth";
  * - the first two: sent by /api/lead the moment a grown-up gives their email.
  *   Once per address, ever (`nurture:0:<email>`, set NX before sending, so a
  *   double tap or a retry cannot send two; its value is the sign-up time).
+ *   An email given INSIDE the app (IN_APP_SOURCES: setup's email step, or a
+ *   purchase's plan post) skips the first, "Here's Sona", whose whole point
+ *   is the App Store link they have no use for, and starts at the 5-minute
+ *   email (Travis, 13 Oct 2026, with setup's email box moved before the price).
  * - the rest: the next one's time sits in the sorted set `nurture:due` and
  *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
@@ -31,6 +35,18 @@ import { kvCmd } from "@/lib/slpAuth";
 export const APP_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const DUE_KEY = "nurture:due";
+
+/**
+ * Leads posted from inside the app: they already have it, so no download
+ * email. `app-setup` is setup's email step (also the Android web app, whose
+ * parents have Sona too); `app-trial` / `app-paid` are a purchase's plan post
+ * (sona.js _tellPlan), which can be the first time the server hears the
+ * address if the setup post never arrived.
+ */
+export const IN_APP_SOURCES = ["app-setup", "app-trial", "app-paid"] as const;
+export const inAppSource = (s: unknown): boolean => typeof s === "string" && (IN_APP_SOURCES as readonly string[]).includes(s);
+/** CONTENT[0] is "Here's Sona" (the App Store link); CONTENT[1], "The 5-minute trick", is also day 0. */
+export const IN_APP_START = 1;
 
 type Kv = (cmd: (string | number)[]) => Promise<unknown>;
 type Fetch = typeof fetch;
@@ -209,8 +225,12 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
 
 export const nextKey = (email: string) => "nurture:next:" + email;
 
-/** /api/lead: a new grown-up's email. Welcome now, schedule the next. Never throws. */
-export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now()): Promise<boolean> {
+/**
+ * /api/lead: a new grown-up's email. Welcome now, schedule the next. Never
+ * throws. `inApp`: the address came from inside the app, so the series starts
+ * at IN_APP_START (no App Store email); everything after it is unchanged.
+ */
+export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(), opts: { inApp?: boolean } = {}): Promise<boolean> {
   const email = rawEmail.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !configured()) return false;
   try {
@@ -218,10 +238,10 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
     if (first !== "OK") return false;
     // every day-0 email goes now, in order (Travis, 7 Oct 2026: "two emails
     // right away"); the first one out decides what /api/lead reports
-    let step = 0, first0: SendResult = "failed", r: SendResult = "failed";
+    let step = opts.inApp ? IN_APP_START : 0, firstSent: SendResult | null = null, r: SendResult = "failed";
     while (CONTENT[step] && CONTENT[step].day === 0) {
       r = await sendStep(email, step, kv, f);
-      if (step === 0) first0 = r;
+      if (firstSent === null) firstSent = r;
       step++;
       if (r === "unsub") break;
     }
@@ -229,7 +249,7 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
       await kv(["SET", nextKey(email), step, "EX", 31536000]);
       await kv(["ZADD", DUE_KEY, now + CONTENT[step].day * DAY_MS, email]);
     }
-    return first0 === "sent";
+    return firstSent === "sent";
   } catch {
     return false;
   }

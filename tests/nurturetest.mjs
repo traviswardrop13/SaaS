@@ -77,8 +77,37 @@ const n0 = sent.length;
 mid.u = true; const mid2 = { ...mid, cmd: async (c) => (c[0] === "SISMEMBER" ? 1 : mid.cmd(c)) };
 await N.runDue(mid2.cmd, fakeFetch, T + 2 * N.DAY_MS);
 ok("unsubscribing mid-way stops every email after it", sent.length === n0 && mid.z.size === 0);
-delete process.env.EMAIL_POSTAL;
-ok("no mailing address configured → nothing sends at all", !(await N.enroll("new@example.com", store().cmd, fakeFetch, T)) && sent.length === n0);
+
+// AN EMAIL GIVEN INSIDE THE APP (Travis, 13 Oct 2026: setup's email box moved
+// before the price). They already have the app, so the App Store email
+// ("Here's Sona") is skipped and the series starts at the 5-minute email,
+// still on day 0; days 2, 3 and 5 are unchanged, and the copy is untouched.
+ok("the first email is the App Store one: \"Here's Sona\", whose button is the App Store link",
+  N.CONTENT[0].subject === "Here\u2019s Sona" && /App Store/.test(N.CONTENT[0].button) && /iPhone or iPad/.test(N.CONTENT[0].paras.join(" ")) && N.render(0, "u", "p").html.includes(N.APP_URL));
+ok("…and an in-app lead starts at \"The 5-minute trick\", also day 0", N.IN_APP_START === 1 && N.CONTENT[N.IN_APP_START].subject === "The 5-minute trick" && N.CONTENT[N.IN_APP_START].day === 0);
+ok("in-app sources: setup's email step and a purchase's plan post, nothing else",
+  ["app-setup", "app-trial", "app-paid"].every((x) => N.inAppSource(x)) &&
+  ["onboarding", "join", "speech-check", "app-launch", "remindPledge", "landing", "", undefined, null, 1, ["app-setup"]].every((x) => !N.inAppSource(x)));
+{
+  const app = store(), mark = sent.length;
+  ok("an in-app enroll sends one email now and says so", await N.enroll("App@Example.com", app.cmd, fakeFetch, T, { inApp: true }) && sent.length === mark + 1);
+  ok("…the 5-minute email, never the App Store one", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "app@example.com" && !sent.slice(mark).some((m) => m.subject === N.CONTENT[0].subject));
+  ok("…and the next one waits for day 2, as for everyone", app.kv.get(N.nextKey("app@example.com")) === "2" && app.z.get("app@example.com") === T + 2 * N.DAY_MS, [app.kv.get(N.nextKey("app@example.com")), app.z.get("app@example.com")]);
+  for (let d = 1; d <= 10; d++) await N.runDue(app.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
+  ok("…then days 2, 3 and 5 in order: four emails in all, nothing left queued",
+    JSON.stringify(sent.slice(mark).map((m) => m.subject)) === JSON.stringify(N.CONTENT.slice(1).map((c) => c.subject)) && app.z.size === 0, sent.slice(mark).map((m) => m.subject));
+  const n1 = sent.length;
+  ok("a later sign-up on the website with the same address sends nothing", !(await N.enroll("app@example.com", app.cmd, fakeFetch, T + 9e6)) && sent.length === n1);
+  const web = store();
+  await N.enroll("web@example.com", web.cmd, fakeFetch, T);
+  const n2 = sent.length;
+  ok("…and a website sign-up first, then the app, sends nothing the second time", !(await N.enroll("web@example.com", web.cmd, fakeFetch, T + 1000, { inApp: true })) && sent.length === n2);
+  const gone = store(["gone2@example.com"]);
+  ok("an unsubscribed address still gets nothing from the app", !(await N.enroll("gone2@example.com", gone.cmd, fakeFetch, T, { inApp: true })) && sent.length === n2 && gone.z.size === 0);
+}
+
+const n9 = sent.length; delete process.env.EMAIL_POSTAL;
+ok("no mailing address configured → nothing sends at all", !(await N.enroll("new@example.com", store().cmd, fakeFetch, T)) && sent.length === n9 && !(await N.enroll("new2@example.com", store().cmd, fakeFetch, T, { inApp: true })) && sent.length === n9);
 
 // the words: Rachel's credential, the practice register, no price figure
 const all = JSON.stringify(N.CONTENT) + readFileSync(path.join(REPO, "lib/nurture.ts"), "utf8").match(/render[\s\S]*?\n}\n/)[0];
@@ -90,7 +119,54 @@ ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 
 // the wiring
 const lead = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
-ok("/api/lead enrolls every new email once the app is out", /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email\)/.test(lead));
+ok("/api/lead enrolls every new email once the app is out, an in-app one without the App Store email",
+  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource \} from "@\/lib\/nurture"/.test(lead));
+// …and played: /api/lead itself, against the in-memory store and a fake
+// Resend, with only its neighbours (the store's door, the rate limit, Kit and
+// the launch switch) stubbed. The source the app posts is what picks the
+// first email, as the route really reads it off the body.
+{
+  process.env.EMAIL_POSTAL = "851 NE 1st Ave, Unit 4103, Miami, FL 33132";
+  const db = store(), base = db.cmd;
+  db.cmd = async (c) => (c[0] === "LPUSH" || c[0] === "LTRIM" ? 1 : base(c));
+  const stubs = {
+    "@/lib/slpAuth": { kvCmd: (c) => db.cmd(c), kvConfigured: () => true, leadSig: () => "not-a-signature" },
+    "@/lib/rateLimit": { rateLimit: async () => null },
+    "@/lib/kit": { kitConfigured: () => false, kitPlanTag: () => "", kitSubscribe: async () => null, kitTagFor: () => "" },
+    "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
+    "@/lib/nurture": N,
+  };
+  const rmod = { exports: {} };
+  const rjs = ts.transpileModule(lead, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+  const rreq = (x) => stubs[x] || (x === "next/server" ? require(path.join(REPO, "node_modules/next/server")) : require(x));
+  new Function("require", "module", "exports", rjs)(rreq, rmod, rmod.exports);
+  const { NextRequest } = require(path.join(REPO, "node_modules/next/server"));
+  const post = async (body) => {
+    const real = globalThis.fetch, mark = sent.length;
+    globalThis.fetch = fakeFetch;
+    try {
+      const r = await rmod.exports.POST(new NextRequest("https://speaksona.com/api/lead", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+      return { status: r.status, json: await r.json(), subjects: sent.slice(mark).map((m) => m.subject) };
+    } finally { globalThis.fetch = real; }
+  };
+  const fromApp = await post({ email: "setup@example.com", source: "app-setup", role: "parent", summary: "New parent" });
+  ok("the route: setup's post (source app-setup) is welcomed with \"The 5-minute trick\" alone, never the App Store email",
+    fromApp.status === 200 && fromApp.json.welcomed === true && JSON.stringify(fromApp.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromApp);
+  const fromBuy = await post({ email: "buyer@example.com", source: "app-trial", role: "parent", plan: "trial" });
+  ok("…a purchase's plan post that is the first the server hears of the address, the same", JSON.stringify(fromBuy.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromBuy);
+  const fromSite = await post({ email: "site@example.com", source: "parents", role: "parent" });
+  ok("…and the website's sign-up still gets \"Here's Sona\" first, then the 5-minute email",
+    JSON.stringify(fromSite.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), fromSite);
+  const noSource = await post({ email: "check@example.com" });
+  ok("…as does a post with no source (the Speech Check's default)", JSON.stringify(noSource.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), noSource);
+  delete process.env.EMAIL_POSTAL;
+}
+// the sources the app really posts are the ones the series knows
+const ob = readFileSync(path.join(REPO, "public/onboarding.html"), "utf8"), sona = readFileSync(path.join(REPO, "public/sona.js"), "utf8");
+const setupSrc = (ob.match(/function postParentLead[\s\S]*?source:"([^"]+)"/) || [])[1];
+ok("setup's parent email post is an in-app source", !!setupSrc && N.inAppSource(setupSrc), setupSrc);
+const tell = sona.slice(sona.indexOf("function _tellPlan"), sona.indexOf("function buyPlan"));
+ok("…and so are both of a purchase's plan posts", /source: what === "trial" \? "app-trial" : "app-paid"/.test(tell) && N.inAppSource("app-trial") && N.inAppSource("app-paid"));
 const cron = JSON.parse(readFileSync(path.join(REPO, "vercel.json"), "utf8")).crons;
 ok("a daily cron sends what is due", cron.some((c) => c.path === "/api/cron/nurture" && /^\d+ \d+ \* \* \*$/.test(c.schedule)));
 

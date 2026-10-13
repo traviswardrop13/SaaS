@@ -6,8 +6,10 @@
 // joins them on one fake phone that has BOTH an App Store and a microphone
 // (tests/_phone.mjs), because the hand-over between the two pages is the part
 // neither can see:
-//   - setup asks its four things, shows "<Name>'s practice is ready", and only
-//     then the price, while the grown-up still holds the phone;
+//   - setup asks its four things, then the optional email (13 Oct 2026: before
+//     the price, so the address is on the phone when a purchase tells the
+//     list), shows "<Name>'s practice is ready", and only then the price,
+//     while the grown-up still holds the phone;
 //   - the price is ONE plan with the store's own words, and no reminder is
 //     promised (Sona sends none yet);
 //   - a purchase comes BACK to setup for the microphone and "Hand the phone
@@ -30,8 +32,8 @@ const tap = async (page, sel) => { await calm(page); try { await page.locator(se
 const step = (page, key) => page.locator('[data-step="' + key + '"].on').waitFor();
 const text = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, " ").trim() : null; }, sel);
 
-// a parent's setup, as far as the ready screen
-async function toReady(page, name) {
+// a parent's setup, as far as the ready screen (an address on the email step, or Skip)
+async function toReady(page, name, email = "") {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
@@ -41,13 +43,17 @@ async function toReady(page, name) {
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
   await step(page, "goal"); await tap(page, '#obGoal .ask-pick[data-val="5"]');
+  await step(page, "updates");
+  if (email) { await page.locator("#updEmail").fill(email); await tap(page, "#nextBtn"); } else await tap(page, "#updSkip");
   await step(page, "ready");
 }
+const leads = (requests) => requests.filter((r) => r.method === "POST" && new URL(r.url).pathname === "/api/lead").map((r) => JSON.parse(r.body || "{}"));
 
 await scenario("a family that can buy", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant" });
   try {
-    await toReady(page, "Mia");
+    await toReady(page, "Mia", "mia.mom@example.com");
+    ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
     ok("setup ends on the ready screen: the child's name, and Rachel's line word for word",
       (await text(page, "#readyTitle")) === "Mia's practice is ready" &&
       (await text(page, "#readyRachel")) === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
@@ -55,6 +61,11 @@ await scenario("a family that can buy", async () => {
     ok("…and nothing has asked the phone for the microphone yet", (await page.evaluate(() => window.__phone.mic.requests.length)) === 0);
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
+    {
+      const first = leads(requests), at = requests.findIndex((r) => r.method === "POST" && new URL(r.url).pathname === "/api/lead"), price = requests.findIndex((r) => new URL(r.url).pathname === "/subscribe.html");
+      ok("the email step's address reaches the list once, from inside the app, before the price is asked for",
+        first.length === 1 && first[0].email === "mia.mom@example.com" && first[0].source === "app-setup" && first[0].role === "parent" && at > -1 && price > at, { first, at, price });
+    }
     await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
     const card = await text(page, "#iapCard"), button = await text(page, "#iapBuy");
     ok("Continue goes to the price, while the grown-up still holds the phone: one plan, the store's own words",
@@ -76,6 +87,13 @@ await scenario("a family that can buy", async () => {
     await step(page, "achieve");
     ok("the microphone is asked for after the price, then \"Hand the phone to Mia!\"",
       /Hand the phone to\s*Mia!/.test(await text(page, '[data-step="achieve"]')) && (await page.evaluate(() => window.__phone.mic.requests.length)) >= 1, await text(page, '[data-step="achieve"]'));
+    ok("…which asks for no email a second time: no box, no ×",
+      (await page.locator('[data-step="achieve"] input, #achEmail, #skipEmail').count()) === 0);
+    {
+      const all = leads(requests), plan = all.filter((l) => l.plan);
+      ok("the purchase tells the list with the same address: the plan tag now works for a new family",
+        all.length === 2 && plan.length === 1 && plan[0].plan === "trial" && plan[0].source === "app-trial" && plan[0].email === "mia.mom@example.com" && plan[0].role === "parent", all);
+    }
     await tap(page, "#nextBtn");                                         // Let's play!
     await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
     ok("\"Let's play!\" opens the first game (Fruit Slice's practice page for a six-year-old), open because Premium is on",
@@ -89,9 +107,9 @@ await scenario("a family that can buy", async () => {
 });
 
 await scenario("Not now", async () => {
-  const { context, page, errors } = await open(browser, base, { app: "buy", mic: "grant" });
+  const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant" });
   try {
-    await toReady(page, "Ben");
+    await toReady(page, "Ben", "ben.dad@example.com");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
     await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
@@ -100,6 +118,10 @@ await scenario("Not now", async () => {
     const st = await page.evaluate(() => ({ mic: window.__phone.mic.requests.length, marker: sessionStorage.getItem("sona.setupafter.v1"), bought: localStorage.getItem("__bought"), premium: !!Sona.premium(), slice: Sona.gameAccess("slice").allowed }));
     ok("\"Not now\" goes Home with nothing bought, no microphone ask, no hand-off waiting, and the games locked",
       st.mic === 0 && !st.marker && !st.bought && !st.premium && st.slice === false, st);
+    const sent = leads(requests);
+    ok("…and the email given before the price still reached the list, once, with nothing about the child",
+      sent.length === 1 && sent[0].email === "ben.dad@example.com" && sent[0].source === "app-setup" && !sent[0].plan &&
+      !requests.some((r) => /\bBen\b/.test(decodeURIComponent(r.url) + " " + (r.body || ""))), sent);
     ok("Not now: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
 });
