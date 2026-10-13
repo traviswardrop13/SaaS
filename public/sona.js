@@ -6518,8 +6518,8 @@
     return err;
   }
   // KIT HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
-  // it"). A parent who gave the app their email (setup's weekly-summary box)
-  // is on Sona's email list already. Apple never tells Sona who bought, so
+  // it"). A parent who gave the app their email (setup's email step, before
+  // the price since 13 Oct 2026) is on Sona's email list already. Apple never tells Sona who bought, so
   // once a purchase here has gone through, the list is told which kind it
   // was through /api/lead, the one door every grown-up's email uses: "trial"
   // when Apple started the free days, "paid" when it charged at once. Kit's
