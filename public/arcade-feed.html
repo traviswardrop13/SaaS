@@ -662,6 +662,8 @@
     function finish(){
       feedMicStop(); $("startOvl").classList.remove("show");
       var daily=S.simpleAdventure&&S.simpleAdventure("feed",true);
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(S.questEnd)S.questEnd("feed");}catch(e){}
       // These discoveries are free play. Loudness alone never advances practice.
       $("endTitle").textContent="Yum! You fed Echo!";
       $("endSub").textContent="Five tasty discoveries. Concert time!";

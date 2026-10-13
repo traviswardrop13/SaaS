@@ -197,6 +197,15 @@
       <span class="road-copy"><span class="road-bar" id="roadBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="road-small" id="roadSmall" aria-hidden="true"></span></span>
       <span class="road-dot" id="roadDot" hidden></span><span class="road-go" aria-hidden="true">›</span>
     </a>
+    <!-- THE DAILY ADVENTURE (QUEST1, 13 Oct 2026): one quest a day, a line
+         from Echo and one round of one game (Sona.questToday). Home only
+         reads it; the game's end card finishes the day. Once it is done the
+         card shows tomorrow's game, dark: never playable early. Silent. -->
+    <button id="questCard" type="button" hidden>
+      <span class="quest-pic" id="questPic" aria-hidden="true"></span>
+      <span class="quest-copy"><span class="quest-day" id="questDay"></span><span class="quest-line" id="questLine"></span></span>
+      <span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
+    </button>
     <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
@@ -445,6 +454,29 @@
         host.appendChild(section);
       });
       if(comingShelves.length){var soon=node("section","coming-all");soon.id="comingGroups";var head=node("div","shelf-heading");head.appendChild(node("h2","","Coming soon"));head.appendChild(node("span","shelf-tag","New ones on the way"));soon.appendChild(head);comingShelves.forEach(function(w){soon.appendChild(w);});host.appendChild(soon);}
+      // QUEST1: the daily adventure card. It only reads Sona.questToday(), and
+      // its tap is the game card's own tap (access, the price, levels).
+      var questGames={};library.groups.forEach(function(group){group.games.forEach(function(game){questGames[game.key]=game;});});
+      function paintQuest(){
+        var card=document.getElementById("questCard");if(!card)return;
+        var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
+        var game=q&&questGames[q.game];
+        if(!q||!game){card.hidden=true;return;}
+        var shown=q.state==="done"&&q.next?questGames[q.next.game]||game:game;
+        var pic=document.getElementById("questPic");pic.textContent="";
+        if(craftedCards[shown.key]){var im=node("img");im.src="/assets/crafted/home-"+craftedCards[shown.key]+".webp";im.alt="";im.decoding="async";pic.appendChild(im);}
+        else{var st=S.gameSticker(shown.key);S.paintSticker(pic,st[0],st[1]);}
+        var done=q.state==="done";
+        card.classList.toggle("done",done);
+        document.getElementById("questDay").textContent=done?"Day "+q.day+" done!":"Today's adventure · Day "+q.day+" of "+q.total;
+        document.getElementById("questLine").textContent=done?"Come back tomorrow for Day "+(q.next?q.next.day:q.day+1)+"!":q.line;
+        document.getElementById("questGo").hidden=done;
+        card.setAttribute("aria-label",done?"Today's adventure is done. Come back tomorrow.":"Today's adventure, day "+q.day+" of "+q.total+": "+q.line+" Play "+game.name+".");
+        card.setAttribute("aria-disabled",done?"true":"false");
+        card.onclick=function(){if(done)return;launch(game);};
+        card.hidden=false;
+      }
+      try{paintQuest();}catch(e){var qc=document.getElementById("questCard");if(qc)qc.hidden=true;}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
@@ -465,6 +497,7 @@
       document.addEventListener("visibilitychange",function(){if(!document.hidden){
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
+        try{paintQuest();}catch(e){}
       }});
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted picture (1 Oct 2026); the old sticker only if it can't load

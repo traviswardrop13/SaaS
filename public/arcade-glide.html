@@ -668,6 +668,8 @@
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("glide",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(window.Sona&&Sona.questEnd)Sona.questEnd("glide");}catch(e){}
       if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;

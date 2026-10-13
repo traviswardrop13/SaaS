@@ -609,6 +609,8 @@
   }
   function showEnd() {
     if (paused) return;
+    // QUEST1: the daily adventure counts a finished round of today's game
+    try { if (S && S.questEnd) S.questEnd(G.key); } catch (e) {}
     try { $("endTitle").textContent = G.done.title; $("endSub").textContent = G.done.sub; } catch (e) {}
     $("endOvl").classList.add("show"); setPhase("end");
   }
