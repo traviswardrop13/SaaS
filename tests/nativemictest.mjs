@@ -464,11 +464,37 @@ scenario("the queue (Sona.micFifo)", async (t) => {
       const all = new Float32Array(f.depth); f.read(all);
       const zs = Math.round(4410 * 48000 / 44100), mid = all.subarray(Math.round(4410 * 48000 / 44100) + 4, Math.round(4410 * 48000 / 44100) + zs - 4);
       out.zeros = { checked: mid.length, nonzero: Array.from(mid).filter((x) => x !== 0).length, total: all.length };
+      // after a gap it resumes only once it holds its new, deeper aim (here
+      // 10 + 5 = 15 samples), not one step (the first cut resumed at 5)
+      f = Sona.micFifo({ primeMs: 10, stepMs: 5, maxPrimeMs: 30 }, 1000);
+      f.push(new Float32Array(12).fill(0.5), 1000); f.ready();
+      f.read(new Float32Array(8)); f.read(new Float32Array(8));
+      f.push(new Float32Array(10).fill(0.5), 1000);
+      const held = new Float32Array(8); f.read(held);
+      f.push(new Float32Array(6).fill(0.5), 1000);
+      const back = new Float32Array(8); f.read(back);
+      out.aim = { held: Array.from(held).every((x) => x === 0), back: Array.from(back).every((x) => x === 0.5), gaps: f.gaps, targetMs: f.stats().targetMs };
+      // a busy machine, on a fixed timeline: 21 ms chunks up to 40 ms late,
+      // and the audio clock stalling 100 ms in every 300, then catching up
+      // (CI, 13 Oct 2026: the queue sat one step deep and ran dry 68 times
+      // in 13 s). It may run dry while it learns; then it holds.
+      f = Sona.micFifo({ primeMs: 120, stepMs: 40, maxPrimeMs: 300 }, 48000);
+      f.push(new Float32Array(5760).fill(0.01), 48000); f.ready();
+      seed = 11;
+      let nextProd = 0, last = 0, blocks = 0, g0 = 0; const due = [], gapsAt = [], dt = 128 / 48;
+      for (let tt = 0; tt < 13000; tt += 0.5) {
+        while (nextProd <= tt) { const at = Math.max(last, nextProd + rnd() * 40); last = at; due.push(at); nextProd += 1024 / 48; }
+        while (due.length && due[0] <= tt) { due.shift(); f.push(new Float32Array(1024).fill(0.01), 48000); }
+        if (tt % 300 >= 100) while (blocks * dt <= tt) { f.read(new Float32Array(128)); blocks++; if (f.gaps !== g0) { gapsAt.push(Math.round(tt)); g0 = f.gaps; } }
+      }
+      out.busy = { gaps: f.gaps, after3s: gapsAt.filter((x) => x > 3000).length, queueMs: f.stats().queueMs, targetMs: f.stats().targetMs };
       return out;
     });
     t.ok("the queue: running dry writes zeros only for the missing part, and counts one gap", JSON.stringify(r.first) === JSON.stringify(Array(8).fill(0.5)) && JSON.stringify(r.second) === JSON.stringify([0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]) && r.gaps === 1, r);
     t.ok("the queue: it never adds a sample: everything out was put in, in order (bursts are trimmed, never invented)", r.never.out > 0 && r.never.out <= r.never.pushed && r.never.order, r.never);
     t.ok("the queue: exact zeros stay exact zeros through the resampler, so a gap still reads as a gap", r.zeros.checked > 4000 && r.zeros.nonzero === 0, r.zeros);
+    t.ok("the queue: after a gap it waits until it holds its deeper aim again, so a slow phone's cushion grows", r.aim.held && r.aim.back && r.aim.gaps === 1 && r.aim.targetMs === 15, r.aim);
+    t.ok("the queue: small chunks a little late on a busy machine: a gap or two while it learns, none after 3 s, and it keeps a real cushion", r.busy.gaps <= 3 && r.busy.after3s === 0 && r.busy.queueMs >= 60, r.busy);
     clean(t, "the queue", errors);
   } finally { await context.close(); }
 });

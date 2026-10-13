@@ -5809,8 +5809,12 @@
   // queue sits between them. It starts holding real audio (the feeder is
   // made from the newest prime of what the mic has heard), plays out what it
   // holds, and on running dry writes exact zeros for the missing part only,
-  // counts a gap, resumes once stepMs is back and aims a step deeper from
-  // then on. After a burst (chunks held behind a long task, then delivered
+  // counts a gap, aims a step deeper (stepMs, up to maxPrimeMs) and resumes
+  // only once it holds that aim again. Resuming at one step (the first cut)
+  // left a busy phone's queue one step deep for good: with ~21 ms chunks a
+  // little late it ran dry every few hundred ms, and a game card whose room
+  // reading needs 450 ms without a gap never said "I'm listening…" (13 Oct
+  // 2026, CI). After a burst (chunks held behind a long task, then delivered
   // together) it drops the oldest audio back to its aim, so the page never
   // stays late for good. A chunk at another rate is resampled on arrival
   // (4-point Hermite: under 0.6 dB down at 12 kHz, where linear lost ~1.8).
@@ -5860,7 +5864,7 @@
     f.read = function (out) {
       var n = out.length, w = 0, z;
       if (!f.primed) {
-        if (f.depth >= (f.gaps ? f.step : f.target)) f.primed = true;
+        if (f.depth >= f.target) f.primed = true;
         else { for (z = 0; z < n; z++) out[z] = 0; return; }
       }
       while (w < n && f.q.length) {
