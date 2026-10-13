@@ -5140,6 +5140,56 @@
     return { ok: true, nick: had ? String(e.nick || "") : "", queued: had && _leaveList().some((x) => x.t === e.token) };
   }
 
+  // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
+  // best for kids you can do"). Each big-kid game counts ONE real thing the
+  // child's FINGER did (fruit sliced in a row, notes in a row) and remembers
+  // this child's own best: the win card adds one line and Home's picture
+  // carries a small "Best 17". The rules it keeps, all of them on purpose:
+  //   - It counts the finger, never the voice. Nothing here grades speech, so
+  //     it is not practice data: outcomes(), sendProgress(), Progress and the
+  //     clinician's note never read it (besttest pins that), and it mints no
+  //     coins. It stays on the phone; like other play data it rides in a
+  //     backup, which is a grown-up moving their own family's phone.
+  //   - One record per CHILD (PER_KID), so no child ever sees another's best.
+  //   - It only ever goes up. A lower round changes nothing; there is no way
+  //     to lose a best by playing.
+  //   - Whole numbers of real things only. A game's hidden number (a golden
+  //     fruit is worth 3) was once shown as "Best" beside a count of fruit and
+  //     did not match it; a caller passes the count the child can see.
+  // gameBest(key) is the child's best (a whole number from 1) or 0 for a game
+  // never played, and Home shows no tag for 0. gameBestOffer(key, n) stores n
+  // when it beats the best and answers { best, prev, isNew }: prev is the
+  // best before this round (0 = their first ever, which just sets it), isNew
+  // is true when n went in, and best is never below a valid n, so a win card
+  // can always say "Your best: {best}". An n that is not a whole number from
+  // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
+  // older sona.js must still play the game.
+  const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
+  function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
+  function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
+  function _bestOf(all, key) {
+    const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
+    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
+  }
+  function gameBest(key) {
+    try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
+  }
+  function gameBestOffer(key, n) {
+    const out = { best: 0, prev: 0, isNew: false };
+    try {
+      key = gameKey(key); if (!key) return out;
+      const all = _bests();
+      out.prev = out.best = _bestOf(all, key);
+      if (!_bestN(n) || n <= out.prev) return out;
+      // answered before the write: a phone that cannot save (storage full or
+      // off) still tells the child the truth about the round they just played
+      out.best = n; out.isNew = true;
+      all[key] = { n: n, at: today() };
+      save(BESTKEY, all);
+    } catch (e) {}
+    return out;
+  }
+
   // ── QUEST1: the daily adventure (Travis, 12-13 Oct 2026: "a new quest or
   // like daily activity that they complete every day. That is only showing up
   // for that day ... a 14-day rotation", then "go build the daily adventure").
@@ -5262,56 +5312,6 @@
       b.style.cssText = "position:fixed;z-index:1200;top:calc(env(safe-area-inset-top,0px) + " + low + "px);left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 18px;border-radius:20px;background:#fff8e9;color:#4a2c14;box-shadow:0 4px 20px #4a2c1426;font:800 17px/1.35 'Nunito',sans-serif;text-align:center;pointer-events:none";
       document.body.appendChild(b); setTimeout(() => b.remove(), 5000);
     } catch (e) {}
-  }
-
-  // ── BESTS1: "Beat Your Best" (Travis, 1-2 Oct 2026: "whatever you think is
-  // best for kids you can do"). Each big-kid game counts ONE real thing the
-  // child's FINGER did (fruit sliced in a row, notes in a row) and remembers
-  // this child's own best: the win card adds one line and Home's picture
-  // carries a small "Best 17". The rules it keeps, all of them on purpose:
-  //   - It counts the finger, never the voice. Nothing here grades speech, so
-  //     it is not practice data: outcomes(), sendProgress(), Progress and the
-  //     clinician's note never read it (besttest pins that), and it mints no
-  //     coins. It stays on the phone; like other play data it rides in a
-  //     backup, which is a grown-up moving their own family's phone.
-  //   - One record per CHILD (PER_KID), so no child ever sees another's best.
-  //   - It only ever goes up. A lower round changes nothing; there is no way
-  //     to lose a best by playing.
-  //   - Whole numbers of real things only. A game's hidden number (a golden
-  //     fruit is worth 3) was once shown as "Best" beside a count of fruit and
-  //     did not match it; a caller passes the count the child can see.
-  // gameBest(key) is the child's best (a whole number from 1) or 0 for a game
-  // never played, and Home shows no tag for 0. gameBestOffer(key, n) stores n
-  // when it beats the best and answers { best, prev, isNew }: prev is the
-  // best before this round (0 = their first ever, which just sets it), isNew
-  // is true when n went in, and best is never below a valid n, so a win card
-  // can always say "Your best: {best}". An n that is not a whole number from
-  // 1 is ignored (best = prev). Pages feature-detect both: a phone holding an
-  // older sona.js must still play the game.
-  const BESTKEY = "sona.bests.v1", BEST_MAX = 99999;
-  function _bestN(n) { return typeof n === "number" && n >= 1 && n <= BEST_MAX && Math.floor(n) === n; }
-  function _bests() { const all = load(BESTKEY, {}); return Array.isArray(all) ? {} : all; }
-  function _bestOf(all, key) {
-    const rec = Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
-    return (rec && typeof rec === "object" && _bestN(rec.n)) ? rec.n : 0;
-  }
-  function gameBest(key) {
-    try { key = gameKey(key); return key ? _bestOf(_bests(), key) : 0; } catch (e) { return 0; }
-  }
-  function gameBestOffer(key, n) {
-    const out = { best: 0, prev: 0, isNew: false };
-    try {
-      key = gameKey(key); if (!key) return out;
-      const all = _bests();
-      out.prev = out.best = _bestOf(all, key);
-      if (!_bestN(n) || n <= out.prev) return out;
-      // answered before the write: a phone that cannot save (storage full or
-      // off) still tells the child the truth about the round they just played
-      out.best = n; out.isNew = true;
-      all[key] = { n: n, at: today() };
-      save(BESTKEY, all);
-    } catch (e) {}
-    return out;
   }
 
   // ── Native audio capture (iOS) ──────────────────────────────────────────────

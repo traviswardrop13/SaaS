@@ -183,7 +183,7 @@ await section("ages and access", async () => {
   const engine = readFileSync(ROOT + "/sayplay.js", "utf8");
   ok("the Say & Play engine (Hoops, Soccer Goal, Dino Dig, Bubble Pop) does too, with its own key", /function showEnd\(\)[\s\S]{0,200}questEnd\(G\.key\)/.test(engine));
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  const block = (sona.match(/QUEST1: the daily adventure[\s\S]*?\/\/ ── BESTS1/) || [""])[0];
+  const block = (sona.match(/QUEST1: the daily adventure[\s\S]*?\/\/ ── Native audio capture/) || [""])[0];
   ok("the adventure mints no coins and asks for nothing new", block.length > 0 && !/addCoins|mintCoins|logAttempt|bumpReps|gameRep\(|recordRung/.test(block.replace(/\/\/.*$/gm, "")));
   ok("its sticker is the next one, never random", /awardNextSticker\(\)/.test(block) && !/awardRandomSticker|Math\.random/.test(block.replace(/\/\/.*$/gm, "")));
   ok("its lines say nothing about HOW to talk (cueing is Rachel's)", !/louder|slowly|strong|stretch|say it/i.test(JSON.stringify((block.match(/const QUEST_DAYS = \{[\s\S]*?\n  \};/) || [""])[0])));
