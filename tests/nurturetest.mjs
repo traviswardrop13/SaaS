@@ -121,6 +121,46 @@ ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 const lead = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
 ok("/api/lead enrolls every new email once the app is out, an in-app one without the App Store email",
   /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource \} from "@\/lib\/nurture"/.test(lead));
+// …and played: /api/lead itself, against the in-memory store and a fake
+// Resend, with only its neighbours (the store's door, the rate limit, Kit and
+// the launch switch) stubbed. The source the app posts is what picks the
+// first email, as the route really reads it off the body.
+{
+  process.env.EMAIL_POSTAL = "851 NE 1st Ave, Unit 4103, Miami, FL 33132";
+  const db = store(), base = db.cmd;
+  db.cmd = async (c) => (c[0] === "LPUSH" || c[0] === "LTRIM" ? 1 : base(c));
+  const stubs = {
+    "@/lib/slpAuth": { kvCmd: (c) => db.cmd(c), kvConfigured: () => true, leadSig: () => "not-a-signature" },
+    "@/lib/rateLimit": { rateLimit: async () => null },
+    "@/lib/kit": { kitConfigured: () => false, kitPlanTag: () => "", kitSubscribe: async () => null, kitTagFor: () => "" },
+    "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
+    "@/lib/nurture": N,
+  };
+  const rmod = { exports: {} };
+  const rjs = ts.transpileModule(lead, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+  const rreq = (x) => stubs[x] || (x === "next/server" ? require(path.join(REPO, "node_modules/next/server")) : require(x));
+  new Function("require", "module", "exports", rjs)(rreq, rmod, rmod.exports);
+  const { NextRequest } = require(path.join(REPO, "node_modules/next/server"));
+  const post = async (body) => {
+    const real = globalThis.fetch, mark = sent.length;
+    globalThis.fetch = fakeFetch;
+    try {
+      const r = await rmod.exports.POST(new NextRequest("https://speaksona.com/api/lead", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+      return { status: r.status, json: await r.json(), subjects: sent.slice(mark).map((m) => m.subject) };
+    } finally { globalThis.fetch = real; }
+  };
+  const fromApp = await post({ email: "setup@example.com", source: "app-setup", role: "parent", summary: "New parent" });
+  ok("the route: setup's post (source app-setup) is welcomed with \"The 5-minute trick\" alone, never the App Store email",
+    fromApp.status === 200 && fromApp.json.welcomed === true && JSON.stringify(fromApp.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromApp);
+  const fromBuy = await post({ email: "buyer@example.com", source: "app-trial", role: "parent", plan: "trial" });
+  ok("…a purchase's plan post that is the first the server hears of the address, the same", JSON.stringify(fromBuy.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromBuy);
+  const fromSite = await post({ email: "site@example.com", source: "parents", role: "parent" });
+  ok("…and the website's sign-up still gets \"Here's Sona\" first, then the 5-minute email",
+    JSON.stringify(fromSite.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), fromSite);
+  const noSource = await post({ email: "check@example.com" });
+  ok("…as does a post with no source (the Speech Check's default)", JSON.stringify(noSource.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), noSource);
+  delete process.env.EMAIL_POSTAL;
+}
 // the sources the app really posts are the ones the series knows
 const ob = readFileSync(path.join(REPO, "public/onboarding.html"), "utf8"), sona = readFileSync(path.join(REPO, "public/sona.js"), "utf8");
 const setupSrc = (ob.match(/function postParentLead[\s\S]*?source:"([^"]+)"/) || [])[1];

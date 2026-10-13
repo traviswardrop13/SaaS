@@ -813,10 +813,13 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
    await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'3');await page.locator('[data-step="updates"].on').waitFor();await settled(page);
    let fit=await page.evaluate(updFit);
    ok('the email step fits at '+at+': no scrolling, the card at least 12 px clear of Continue, Skip at least 44 tall',fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom+12<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight&&fit.skip>=44&&fit.sideways<=0&&fit.obSideways<=0,fit);
-   if(device.viewport.width===393){
-    await page.locator('#updEmail').focus();await page.setViewportSize({width:393,height:430});await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));await page.waitForTimeout(500);
+   // the keyboard up, at each size: an iPhone keyboard (no toolbar) is about
+   // 253 px tall on a 320-wide phone, 260 on a 375 and 422 on a 393 with its
+   // home bar, and the web view shrinks by that much
+   {const kb={320:253,375:260,393:422}[device.viewport.width],up={width:device.viewport.width,height:device.viewport.height-kb};
+    await page.locator('#updEmail').focus();await page.setViewportSize(up);await page.evaluate(k=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:k}),kb);await page.waitForTimeout(500);
     fit=await page.evaluate(updFit);
-    ok('with the keyboard up (393×430) the box and Travis\'s line stay above Continue',fit.inputTop>=0&&fit.inputBottom<=fit.buttonTop&&fit.consentBottom<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight,fit);
+    ok('with the keyboard up ('+up.width+'×'+up.height+') the box and Travis\'s line stay above Continue',fit.inputTop>=0&&fit.inputBottom<=fit.buttonTop&&fit.consentBottom<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight,fit);
     await page.evaluate(()=>{__setup.keyboardListeners.keyboardWillHide();document.activeElement.blur();});await page.setViewportSize(device.viewport);
    }
    clean('email step fit '+at,errors);
@@ -829,6 +832,10 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
   ok('…no weekly summary is promised (nothing sends one), and the child\'s name is not on the screen',!/weekly summary|weekly update/i.test(shown.text)&&!/Milo/.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
+  // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
+  await page.locator('#updEmail').fill('done@example.com');await page.locator('#updEmail').press('Enter');
+  const done=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,focus:document.activeElement.id,hint:document.getElementById('updEmail').getAttribute('enterkeyhint')}));
+  ok('Done in the email box closes the keyboard and stays on the step: nothing is sent',done.screen==='updates'&&done.focus!=='updEmail'&&done.hint==='done'&&leadPosts(requests).length===0,done);
   await page.locator('#updEmail').fill('not-an-email');await next(page);
   const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,email:draft.email}));
   ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&bad.email===''&&leadPosts(requests).length===0,bad);

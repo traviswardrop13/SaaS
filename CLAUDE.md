@@ -949,7 +949,7 @@ upgrade.
 **GoHighLevel was deleted on 24 Sep 2026; Kit replaced it.** Every grown-up's
 email goes through one door, `/api/lead`: the SLP sign-up (via the auth
 route's `tellCrm`), the app's setup (a clinician's account email, a parent's
-weekly-summary email), the parent's optional box on `join.html` and the Speech
+optional email from setup's email step, before the price), the parent's optional box on `join.html` and the Speech
 Check. An address a clinician types for a parent never reaches it. That route:
 - **keeps every lead first** in the store (`leads:all`, capped), whether or not
   a list takes it — it once forwarded and forgot, and 26 "leads" were unfindable;
