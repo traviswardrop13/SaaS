@@ -122,6 +122,21 @@ async function page(mic) {
   ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
 }
 
+// ── 1b. …nor any way out of Sona's own microphone (12 Oct 2026) ──
+// In the iPhone app the phone's own code opens the mic and hands this page
+// its samples (sona.js, between the two markers below). Those samples reach
+// the page's analysers and the one local keepsake clip, and nothing else: the
+// block has no way to send anything, so the consent copy stays true by
+// construction there too.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const a = sona.indexOf("SONA'S OWN MICROPHONE IN THE IPHONE APP"), b = sona.indexOf("END OF SONA'S OWN MICROPHONE");
+  const block = a > 0 && b > a ? noComments(sona.slice(a, b)) : "";
+  const sends = ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "FormData", ".send("].filter((w) => block.includes(w));
+  ok("Sona's own microphone (sona.js) has no fetch, XMLHttpRequest, sendBeacon, WebSocket, FormData or .send",
+    block.length > 20000 && sends.length === 0, a < 0 || b < a ? "the block's markers are missing" : sends.join(", "));
+}
+
 // ── 1b. every OTHER page that describes the mic tells the same truth ──
 // The primer was corrected while privacy.html and the support FAQ went on
 // describing voice clips "sent securely to our speech-scoring provider" —

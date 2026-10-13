@@ -256,6 +256,51 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     /aria-label="Hear it again"/.test(charge) && /aria-label="Hear it slowly"/.test(charge));
 }
 
+// ── 4b. SONA'S OWN MICROPHONE: the Swift side of the contract (12 Oct 2026) ──
+// In the app the page no longer captures with getUserMedia (WebKit's capture
+// is a video call: call volume, call-quality AirPods). The plugin opens the
+// mic itself and hands the page its samples; nativemictest holds the page
+// side against a fake of this file. These pin the file to that fake, and to
+// the rules it exists for: plain media mode, never hands-free Bluetooth, one
+// tap, nothing written or sent. Read with its comments stripped, so a note
+// explaining a rule can never satisfy the pin for it.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const swift = readFileSync(ROOT + "/../plugins/sona-speech/ios/Sources/SonaSpeechPlugin/SonaSpeechPlugin.swift", "utf8");
+  const code = swift.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  const count = (re) => (code.match(re) || []).length;
+  for (const m of ["micOpen", "micClose", "micPermission"]) {
+    ok("the plugin declares " + m + " (an undeclared method never reaches the page), and sona.js calls it",
+      code.includes('CAPPluginMethod(name: "' + m + '"') && sona.includes("P." + m + "("));
+  }
+  for (const e of ["micpcm", "micend", "microute", "micready"]) {
+    ok("the plugin sends \"" + e + "\" and sona.js listens for it", code.includes('notifyListeners("' + e + '"') && sona.includes('addListener("' + e + '"'));
+  }
+  ok("a chunk is { g, q, r, n, d } (open, sequence, rate, frames, base64 Float32), and sona.js decodes exactly that",
+    /notifyListeners\("micpcm", data: \["g": gen, "q": seq, "r": rate, "n": frames, "d": b64\]\)/.test(code) && /_nmDecode\(m\.d, m\.n\)/.test(sona));
+  ok("the stream is .playAndRecord in mode .default: never a voice-chat or video-chat mode",
+    /setCategory\(\.playAndRecord, mode: \.default, options: options\)/.test(code) && !/\.voiceChat|\.videoChat/.test(code));
+  ok("measurement mode and hands-free Bluetooth appear once each, only on the old path (no stream named)",
+    count(/\.measurement/g) === 1 && count(/\.allowBluetooth(?!A2DP)/g) === 1 && /if onStream == nil \{[\s\S]{0,400}mode: \.measurement/.test(code)
+    && /if onStream == nil \{[\s\S]{0,500}\.allowBluetooth\]/.test(code));
+  ok("one tap on the input: a second installTap on bus 0 is a fatal assertion", count(/installTap\(onBus: 0/g) === 1);
+  ok("Apple's check named a stream that has closed is refused (nostream), never opening the mic the old way; sona.js names it",
+    /if let g = onStream, !\(micLive && g == micGen\) \{[\s\S]{0,120}"nostream"/.test(code) && /\{ g: h\.g \}/.test(sona));
+  ok("a finished check leaves a live stream its session, and its engine",
+    /private func settle\(\) \{[\s\S]{0,300}if !micLive \{ sessionOff\(\) \}/.test(code) && /private func haltAudio\(\) \{[\s\S]{0,200}if micLive \{ return \}/.test(code));
+  ok("a page that stopped listening (navigation, a dead web view) closes the mic within one chunk",
+    /guard hasListeners\("micpcm"\) else \{ closeMic\("nolistener"\)/.test(code));
+  ok("an open nobody re-confirms is capped (micCap, at most 10 minutes)", /micCap = Timer\.scheduledTimer/.test(code) && /600000/.test(code));
+  ok("NO AUDIO LEAVES THE PHONE: no URLSession, URLRequest, NWConnection, WebSocket, FileManager or .write( in the plugin",
+    !/URLSession|URLRequest|NWConnection|WebSocket|FileManager|\.write\(/.test(code));
+  ok("every stream and every restart gets a fresh engine, and a format the hardware disagrees with is refused",
+    /private func openMic\([\s\S]*?replaceEngine\(\)[\s\S]*?private func busyError/.test(code) && /private func restartMic\(\) \{[\s\S]*?replaceEngine\(\)/.test(code) && /format\.sampleRate == hw\.sampleRate/.test(code));
+  ok("a finished request is fed nothing more", /private func recognitionEnded\(\)[\s\S]{0,120}detachTap\(\)/.test(code));
+  ok("no retainUntilConsumed (a call kept forever)", !/retainUntilConsumed/.test(code));
+  ok("iOS's \"not now\" is busy (one web-mic try), anything else a fault (the web mic for the page)",
+    /setActive\(true\)[\s\S]{0,140}"busy"/.test(code) && /busyError\(error\) \? "busy" : "engine"/.test(code));
+}
+
 // ── 5. switching it on: scripts/install-ios-speech.py ──
 // The plugin sat in the repo from August and never reached the app: nothing
 // compiled it, nothing registered it, and Info.plist had no speech text (iOS
