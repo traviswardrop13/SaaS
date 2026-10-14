@@ -854,6 +854,12 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   ok('a valid address goes on to ready, kept in the draft (a phone call does not lose it), and nothing is sent yet',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='first@example.com'&&JSON.parse(localStorage.getItem('sona.obdraft.v1')).email==='first@example.com')&&leadPosts(requests).length===0);
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
   ok('Back shows the address it holds',await page.locator('#updEmail').inputValue()==='first@example.com');
+  // typed, then Back to the question before it: coming forward shows what was typed
+  await page.locator('#updEmail').fill('not-yet');await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="goal"].on').waitFor();
+  await calm(page);await next(page);await page.locator('[data-step="updates"].on').waitFor();
+  ok('an address typed and left by Back is still in the box when the parent comes forward again, and nothing is sent',await page.locator('#updEmail').inputValue()==='not-yet'&&leadPosts(requests).length===0);
+  await next(page);
+  ok('…and Continue still checks it: a wrong-looking one stays on the step with its line',await screen(page)==='updates'&&await page.evaluate(()=>document.getElementById('updMsg').textContent==='That email doesn\'t look right.'));
   await page.locator('#updEmail').fill('second@example.com');await next(page);await page.locator('[data-step="ready"].on').waitFor();
   await next(page);await page.locator('[data-step="mic"].on').waitFor();
   const leads=leadPosts(requests);

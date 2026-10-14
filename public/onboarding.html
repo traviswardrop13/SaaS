@@ -935,6 +935,9 @@
     }
     function back(){
       if(idx<=0||micBusy||finished||saved||leaving) return;
+      // Back from the email step keeps what was typed, so coming forward again
+      // shows it; it is only ever checked by Continue and thrown away by Skip
+      if(ORDER[idx]==="updates") draft.email=(updEl.value||"").trim();
       Sona.sfx.tap(); idx--;
       settle(); render();
     }
