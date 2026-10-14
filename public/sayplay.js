@@ -269,14 +269,14 @@
     var wait = Math.max(quietLeft(), settleLeft());
     if (wait > 0) { clearTimeout(micT); micT = setTimeout(micOpen, wait); return; }
     var gen = ++micGen; micAsking = true;
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (stream) {
+    ((S && S.micNative && S.micNative()) ? S.micOpen({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (stream) {
       micAsking = false;
       if (gen !== micGen || !listenable()) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} micClosedAt = performance.now(); if (listenable()) micOpen(); return; }
       micStream = stream;
       try { localStorage.setItem("sona.micok", "1"); } catch (e) {}
       var an, td, fd, binHz;
       try {
-        var ctx = getCtx(); micSrc = ctx.createMediaStreamSource(stream); an = ctx.createAnalyser(); an.fftSize = 512; micSrc.connect(an);
+        var ctx = getCtx(); micSrc = (S && S.micSource) ? S.micSource(ctx, stream) : ctx.createMediaStreamSource(stream); an = ctx.createAnalyser(); an.fftSize = 512; micSrc.connect(an);
         td = new Uint8Array(an.fftSize); fd = new Uint8Array(an.frequencyBinCount); binHz = ctx.sampleRate / an.fftSize;
       } catch (e) { micStop(); nudge(); return; }
       // lastSaid: when the saying before this one was heard, in THIS opening
@@ -288,8 +288,10 @@
         if (gen !== micGen) return;
         var now = performance.now();
         // belt and braces: nothing plays while the mic is open, and if
-        // anything did, its frames are dropped, never judged
-        if (speaking || ttsPlaying || now < quietUntil) { heard = []; micRaf = requestAnimationFrame(tick); return; }
+        // anything did, its frames are dropped, never judged. So is a frame
+        // Sona's own mic did not hear (S.micDeaf: paused, or a gap between
+        // the phone's samples): its zeros would sink the room's level
+        if (speaking || ttsPlaying || now < quietUntil || (S && S.micDeaf && S.micDeaf(stream))) { heard = []; micRaf = requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum = 0; for (var i = 0; i < td.length; i++) { var d = (td[i] - 128) / 128; sum += d * d; }
         var shape = null; if (S && S.frameShape) { an.getByteFrequencyData(fd); shape = S.frameShape(fd, binHz); }
@@ -386,7 +388,7 @@
           if (paused || document.hidden) return;
           $("primer").classList.remove("show");
           micAsking = true;
-          navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (stream) {
+          ((S && S.micNative && S.micNative()) ? S.micProbe({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (stream) {
             micAsking = false;
             try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
             micClosedAt = performance.now();

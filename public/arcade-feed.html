@@ -199,6 +199,9 @@
     var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
     if(!feedAllowed&&S)S.gameBounce("feed");
     if(feedAllowed){
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if(!document.hidden){ try{ Sona.track("game opened",{game:"feed"}); }catch(e){} }
     function $(id){ return document.getElementById(id); }
     // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy watches
     // beside Echo (its rest pose, else its badge). On each right feed it hops
@@ -454,14 +457,14 @@
       var wait=quietLeft();
       if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
       var gen=++micGen; micAsking=true; hideMicBtn();
-      navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
         micAsking=false;
         if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); if(listenable())feedMicOpen(); return; }
         micStream=stream;
         try{ localStorage.setItem("sona.micok","1"); }catch(e){}
         // a mic that can't be wired to a listener closes at once: left open,
         // it would hear nothing and silence every chime until the turn ended
-        try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
+        try{ var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
         catch(e){ feedMicStop(); nudge(); return; }
         echoPose("listen"); $("bSub").textContent="Your turn! Say “"+target.w+"”";
         // silence never unlocks a picture: the window closes and the mic waits for a tap
@@ -470,8 +473,10 @@
         (function tick(){
           if(gen!==micGen)return;
           // belt and braces: nothing plays while this mic is open, and if
-          // anything did, its frames would never be judged or join a burst
-          if(speaking||ttsPlaying||quietLeft()>0){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
+          // anything did, its frames would never be judged or join a burst.
+          // Nor a frame Sona's own mic did not hear (S.micDeaf: paused, or
+          // a gap between the phone's samples): zeros are not the room
+          if(speaking||ttsPlaying||quietLeft()>0||(S&&S.micDeaf&&S.micDeaf(stream))){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var now=performance.now();
@@ -714,7 +719,7 @@
         $("primerYes").onclick=function(){
           if(document.hidden)return;
           $("primer").classList.remove("show"); micAsking=true;
-          navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+          ((S&&S.micNative&&S.micNative())?S.micProbe({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
             micAsking=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
             micClosedAt=performance.now(); try{ localStorage.setItem("sona.micok","1"); }catch(e){}
             done();

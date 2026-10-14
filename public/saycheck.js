@@ -247,7 +247,7 @@
       var w = Math.max(quietUntil - now(), settleLeft(), chimeEnd - now());
       if (asking || speaking || holds > 0 || chimesDue > 0 || w > 0) { openT = setTimeout(open, Math.max(w, 60)); return; }
       asking = true;
-      navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (st) {
+      ((S && S.micNative && S.micNative()) ? S.micOpen({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (st) {
         asking = false;
         if (my !== gen || document.hidden) {
           try { st.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
@@ -259,7 +259,7 @@
         try { localStorage.setItem("sona.micok", "1"); } catch (e) {}
         var c, an, td, fd, binHz;
         try {
-          c = getCtx(); src = c.createMediaStreamSource(st); an = c.createAnalyser(); an.fftSize = 512; src.connect(an);
+          c = getCtx(); src = (S && S.micSource) ? S.micSource(c, st) : c.createMediaStreamSource(st); an = c.createAnalyser(); an.fftSize = 512; src.connect(an);
           td = new Uint8Array(an.fftSize); fd = new Uint8Array(an.frequencyBinCount); binHz = c.sampleRate / an.fftSize;
         } catch (e) { micStop(); cb("failed"); return; }
         var heard = [], live = false, failed = false, lastLoud = 0;
@@ -268,8 +268,10 @@
           if (my !== gen) return;
           var t = now();
           // belt and braces: nothing plays while the mic is open, and if
-          // anything did, its frames are dropped, never judged
-          if (speaking || holds > 0 || t < quietUntil) { heard = []; raf = requestAnimationFrame(tick); return; }
+          // anything did, its frames are dropped, never judged. So is a frame
+          // Sona's own mic did not hear (S.micDeaf: paused, or a gap between
+          // the phone's samples): its zeros would sink the room's level
+          if (speaking || holds > 0 || t < quietUntil || (S && S.micDeaf && S.micDeaf(st))) { heard = []; raf = requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum = 0; for (var i = 0; i < td.length; i++) { var d = (td[i] - 128) / 128; sum += d * d; }
           var shape = null; if (S && S.frameShape) { an.getByteFrequencyData(fd); shape = S.frameShape(fd, binHz); }
@@ -324,7 +326,7 @@
   function permit(cb) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { cb("nomic"); return; }
     micStop(); asking = true;
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (st) {
+    ((S && S.micNative && S.micNative()) ? S.micProbe({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (st) {
       asking = false;
       try { st.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
       micClosedAt = now();

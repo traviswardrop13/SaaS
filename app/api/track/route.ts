@@ -39,6 +39,8 @@ const EVENTS = new Set([
   // load at Level 2 or 3, never by Home. It carries the game and the level
   // (2 or 3) and nothing else: no trophy count, no name, no age.
   "level played",
+  "game opened",          // a game page opened for play (game key only): the
+                          // games that skip the practice page are seen here
   // The Trophy Road (11 Oct 2026, CHEST1 / ROAD1 / MONTH1): sent by sona.js
   // when a child opens the day's chest, a road gift or a month gift, never by
   // Home. They carry nothing: no stop or step number (a stop is a lifetime
