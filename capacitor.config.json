@@ -9,7 +9,8 @@
   },
   "ios": {
     "contentInset": "never",
-    "backgroundColor": "#fff6e9"
+    "backgroundColor": "#fff6e9",
+    "loggingBehavior": "none"
   },
   "plugins": {
     "Keyboard": {

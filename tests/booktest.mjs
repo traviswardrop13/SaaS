@@ -40,6 +40,7 @@ import { createServer } from "http";
 import { existsSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { nativeMic, fakeWorkletPatch } from "./_nativemic.mjs";
 
 // its own port: 8259 was taken by a stray dev server while this was written
 const PORT = 8273, BASE = "http://127.0.0.1:" + PORT;
@@ -202,6 +203,12 @@ async function fresh(cfg = {}) {
     try { await route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); } catch {}
   });
   await context.addInitScript(fakeDevice, cfg);
+  // cfg.nm: Sona's own microphone in the iPhone app, logged in this suite's
+  // own mic log; the stand-in AudioContext gets the least of a worklet
+  if (cfg.nm) {
+    await context.addInitScript(nativeMic, Object.assign({ mode: "new", micLog: "__quiet", world: false, audit: false }, cfg.nm));
+    await context.addInitScript(fakeWorkletPatch, { field: "src", wrap: "source" });
+  }
   const page = await context.newPage(); page.setDefaultTimeout(8000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(BASE + "/library.html");
@@ -306,9 +313,14 @@ await scenario("heard", async () => {
   ok("The End: Echo cheers on the card", end && endEcho.src === "/assets/crafted/echo-cheer.webp" && endEcho.loaded, endEcho);
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
   ok("a book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Rory and the Rainbow/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…two accepted words add exactly 2 play reps", (await page.evaluate(() => Sona.dayReps())) === 2);
+  // TROPHY1 (11 Oct 2026): an accepted book word is a play rep, so it earns
+  // trophies at the seeded goal (the default 30: one trophy a rep); still never
+  // practice data (the key scan above and the line below).
+  const trophies = await page.evaluate(() => Sona.trophyState ? Sona.trophyState() : null);
+  ok("…and the two accepted words earn exactly 2 trophies at the default goal of 30", !!trophies && trophies.today === 2 && trophies.total === 2, trophies);
   ok("…and never logs an attempt, practice rep or coin", !/"(attempts|reps|coins)"/.test(JSON.stringify(moved)));
   clean("heard", errors);
   await context.close();
@@ -531,6 +543,40 @@ await scenario("busy", async () => {
   await context.close();
 });
 
+// …and on Sona's own mic in the iPhone app (12 Oct 2026): a refusal is the
+// phone's, and meets the same help with the book reading on (never the web
+// mic); the phone's "not now" is one web-mic try for that word, and the next
+// page is Sona's own mic again.
+await scenario("denied, on Sona's own mic", async () => {
+  const { context, page, errors } = await fresh({ micok: true, nm: { perm: "denied" } });
+  await openBook(page, "Rory and the Rainbow");
+  const shownDenied = await until(page, () => !!document.getElementById("sonaMicDenied"), 6000);
+  ok("on Sona's own mic, a refused mic shows the same \"Echo can't hear you yet\" help", shownDenied);
+  await click(page, "sonaMicBack");
+  await page.waitForTimeout(150);
+  await click(page, "bkNext");
+  await page.waitForTimeout(1800);
+  const p2 = await page.evaluate(() => ({ page: window.__book.page, mode: window.__book.mode, perms: __nm.perms.length, opens: __nm.opens.length, gum: __nm.gum }));
+  ok("…the book reads on, the next page doesn't ask again, and the web mic is never asked", p2.page === 1 && p2.mode === "next" && p2.perms === 1 && p2.opens === 0 && p2.gum === 0, p2);
+  clean("denied, on Sona's own mic", errors);
+  await context.close();
+});
+await scenario("busy, on Sona's own mic", async () => {
+  const { context, page, errors } = await fresh({ micok: true, nm: { openFail: "busy" } });
+  await openBook(page, "Rory and the Rainbow");
+  const first = await waitLive(page, 6000);
+  const a = await page.evaluate(() => ({ gum: __nm.gum, opens: __nm.opens.length, busy: Sona.micStats().busy, native: Sona.micNative() }));
+  ok("on Sona's own mic, the phone's \"not now\" is one web-mic try: the word still listens", first && a.gum === 1 && a.opens === 1 && a.busy === 1 && a.native, a);
+  await page.waitForTimeout(80);
+  await voice(page, 260);
+  const turned = await until(page, () => window.__book.page === 1, 5000);
+  const again = turned && await waitLive(page, 6000);
+  const b = await page.evaluate(() => ({ gum: __nm.gum, opens: __nm.opens.length, own: __nm.opened }));
+  ok("…the child's word turns the page, and the next page listens on Sona's own mic again", again && b.gum === 1 && b.opens === 2 && b.own === 1, b);
+  clean("busy, on Sona's own mic", errors);
+  await context.close();
+});
+
 // a page turned while Echo's reading is still on its way: the line it cut off
 // lets go of the mic at once, instead of when its fetch finally runs out
 await scenario("stale line", async () => {
@@ -660,7 +706,7 @@ await scenario("six-page book", async () => {
   ok("…and the sixth ends on The End, with a chime for each page heard", end && l.sfx.filter((x) => x.name === "correct").length === 6 && l.mics.length === 6, { end, sfx: l.sfx.map((x) => x.name), mics: l.mics.length });
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
-  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1");
+  const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== readKey && k !== "sona.gamereps.v1" && k !== "sona.goaldays.v1" && k !== "sona.trophy.v1");
   ok("…a six-page book read to The End by voice changes no practice key (only the read-star)", end && moved.length === 0 && /Reba the Robot/.test(after[readKey] || ""), moved.map((k) => k + "=" + String(after[k]).slice(0, 60)));
   ok("…six accepted words add exactly 6 play reps", (await page.evaluate(() => Sona.dayReps())) === 6);
   noOverlap("six-page book", l);

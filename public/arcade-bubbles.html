@@ -184,6 +184,14 @@
     // number. This is the littles' game, built to be said once; whether a
     // three-year-old should say it twice is Rachel's call, so it stays at one
     // until she says.
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). The
+    // engine takes it from here and never reads storage; an engine or sona.js
+    // the phone saved before levels has none, and plays Level 1. The start
+    // card names the level once; nothing else in the game does.
+    var LV = (window.Sona && Sona.playLevel) ? Sona.playLevel("bubbles") : 1; if (LV !== 2 && LV !== 3) LV = 1;
+    if (window.Bubbles && Bubbles.setLevel) Bubbles.setLevel(LV);
+    if (LV > 1) { try { document.getElementById("startTitle").textContent = "Bubble Pop \u00b7 Level " + LV; } catch (e) {} }
     SayPlay.start({
       key: "bubbles", title: "Bubble Pop", sayTimes: 1,
       steps: [[], [], [], [], []], finale: [],
@@ -192,6 +200,12 @@
       sounds: { blow: sound("blow"), pop: sound("pop"), gold: sound("gold"), drop: sound("drop"), big: sound("big") },
       soundMs: { blow: 520, pop: 120, gold: 440, drop: 200, big: 740 },
     });
+    // once per load, and only at Level 2 or 3 in a game this family can open
+    // (a bounced page is hidden): the game and the level, nothing else
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if (!document.body.hidden) { try { Sona.track("game opened", { game: "bubbles" }); } catch (e) {} }
+    if (LV > 1 && !document.body.hidden) { try { Sona.track("level played", { game: "bubbles", level: LV }); } catch (e) {} }
     // THE OLD FIVE-ROUND ADVENTURE for little kids (charge.html?daily=1) still
     // deals Bubble Pop. A finished round is banked here, and the end card's
     // button goes back to the adventure, as Feed Echo's does. The engine knows

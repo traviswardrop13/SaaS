@@ -56,6 +56,17 @@
     @keyframes popIn{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
     #echo.munch{animation:munch .5s ease;}
     @keyframes munch{0%{transform:scale(var(--sc,1))}35%{transform:scale(calc(var(--sc,1)*1.12)) rotate(-3deg)}70%{transform:scale(calc(var(--sc,1)*.96))}100%{transform:scale(var(--sc,1))}}
+    /* PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's buddy stands on the
+       grass beside Echo, anchored to the middle of #echoSpot (which is only as
+       wide as the plate), so it sits left of Echo on every phone and clear of
+       the pictures below. Like Echo it stands behind the plate, its feet at
+       the plate's rim, so the plate's wells (the feeds counted) are never
+       covered; crafted-games.css sets its place beside the crafted Echo,
+       whose size it follows. Echo is still the one fed; the buddy only hops. */
+    #feedBuddy{position:absolute;left:auto;right:calc(50% + 62px);bottom:44px;width:46%;max-width:72px;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(120,70,10,.18));}
+    #feedBuddy:not([src]){display:none;}
+    #feedBuddy.badge{border-radius:50%;}
+    #feedBuddy.munch{animation:munch .5s ease;}
     #heard{position:absolute;top:2px;right:6px;background:#ffd21c;color:#5c4500;font-family:"Baloo 2";font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:99px;opacity:0;transform:scale(.6);transition:all .25s ease;pointer-events:none;box-shadow:0 3px 0 rgba(160,110,0,.35);}
     #heard.show{opacity:1;transform:scale(1);}
     /* cards */
@@ -110,7 +121,7 @@
     .ghost:active{transform:translateY(3px);box-shadow:0 2px 0 var(--cream-line);}
     #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;color:var(--ink);font-weight:800;font-size:13.5px;padding:11px 18px;border-radius:99px;box-shadow:0 8px 24px -8px rgba(120,70,10,.4);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
     #toast.show{opacity:1;}
-    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,.cardBtn.right,.cardBtn.wrong,#micBtn{animation:none;} }
+    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,#feedBuddy.munch,.cardBtn.right,.cardBtn.wrong,#micBtn{animation:none;} }
     @media (max-height:700px){ #echo{width:118px;height:118px;} .cardBtn .e{font-size:44px;} #stage{min-height:150px;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
@@ -130,6 +141,7 @@
       <button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
       <div id="echoSpot">
         <div id="mound"></div>
+        <img id="feedBuddy" alt="" aria-hidden="true" />
         <img id="echo" src="/assets/crafted/echo-welcome.webp" alt="Echo"
              onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
@@ -179,6 +191,7 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script src="/crafted-words.js"></script>
   <script>
     // Catalog access is checked before this game's resources start.
@@ -186,7 +199,21 @@
     var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
     if(!feedAllowed&&S)S.gameBounce("feed");
     if(feedAllowed){
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if(!document.hidden){ try{ Sona.track("game opened",{game:"feed"}); }catch(e){} }
     function $(id){ return document.getElementById(id); }
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy watches
+    // beside Echo (its rest pose, else its badge). On each right feed it hops
+    // and shows its own cheer picture for 900 ms; Echo's pictures are his own.
+    var FEED_BUDDY=null, buddyCheerT=0;
+    (function(){ var B=window.SonaCraftedBuddies, el=$("feedBuddy"); if(!el||!B||!B.stand) return;
+      FEED_BUDDY=B.stand(el,S.buddyId?S.buddyId():"fox",function(){ FEED_BUDDY=null; }); })();
+    function buddyMunch(){
+      var b=$("feedBuddy"); if(!b||!b.getAttribute("src")) return;
+      b.classList.remove("munch"); void b.offsetWidth; b.classList.add("munch");
+      if(FEED_BUDDY){ b.src=FEED_BUDDY.cheer; clearTimeout(buddyCheerT); buddyCheerT=setTimeout(function(){ if(FEED_BUDDY) b.src=FEED_BUDDY.rest; },900); }
+    }
     // A game sound never plays while the listening mic is open or being
     // asked for (24 Sep 2026): on an iPhone a page holding the mic runs as a
     // phone call, so a chime there is processed like a call and the volume
@@ -430,14 +457,14 @@
       var wait=quietLeft();
       if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
       var gen=++micGen; micAsking=true; hideMicBtn();
-      navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
         micAsking=false;
         if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); if(listenable())feedMicOpen(); return; }
         micStream=stream;
         try{ localStorage.setItem("sona.micok","1"); }catch(e){}
         // a mic that can't be wired to a listener closes at once: left open,
         // it would hear nothing and silence every chime until the turn ended
-        try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
+        try{ var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
         catch(e){ feedMicStop(); nudge(); return; }
         echoPose("listen"); $("bSub").textContent="Your turn! Say “"+target.w+"”";
         // silence never unlocks a picture: the window closes and the mic waits for a tap
@@ -446,8 +473,10 @@
         (function tick(){
           if(gen!==micGen)return;
           // belt and braces: nothing plays while this mic is open, and if
-          // anything did, its frames would never be judged or join a burst
-          if(speaking||ttsPlaying||quietLeft()>0){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
+          // anything did, its frames would never be judged or join a burst.
+          // Nor a frame Sona's own mic did not hear (S.micDeaf: paused, or
+          // a gap between the phone's samples): zeros are not the room
+          if(speaking||ttsPlaying||quietLeft()>0||(S&&S.micDeaf&&S.micDeaf(stream))){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var now=performance.now();
@@ -576,6 +605,7 @@
       var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
       btn.classList.add("right"); sfx("correct");
       var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
+      buddyMunch();
       paintScale();
       landOnPlate(w);
       $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Nice one!","So tasty!","Great!"][fed%4];
@@ -687,7 +717,7 @@
         $("primerYes").onclick=function(){
           if(document.hidden)return;
           $("primer").classList.remove("show"); micAsking=true;
-          navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+          ((S&&S.micNative&&S.micNative())?S.micProbe({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
             micAsking=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
             micClosedAt=performance.now(); try{ localStorage.setItem("sona.micok","1"); }catch(e){}
             done();

@@ -45,7 +45,8 @@ async function submit(body, opts = {}) {
     const payload = JSON.parse(init.body || "null"); calls.push({ url: String(url), payload });
     if (String(url) === KV) {
       const op = payload[0];
-      if (op === "INCR") return Response.json({ result: opts.rateLimited ? 31 : 1 });
+      // lib/rateLimit.ts counts in one script, its marker line "-- rl:incr".
+      if (op === "EVAL" && /^-- rl:incr\n/.test(payload[1])) return Response.json({ result: opts.rateLimited ? 31 : 1 });
       if (op === "GET") return Response.json({ result: opts.accountMissing ? null : JSON.stringify({ name: "Morgan SLP", code: "morgan-ab" }) });
       if (op === "EVAL" || op === "RPUSH") {
         if (opts.storeThrows) throw new Error("KV unavailable");

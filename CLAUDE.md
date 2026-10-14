@@ -661,7 +661,13 @@ and silently disables the paywall inside that test. This has bitten once per
 era across `iaptest`, `progtest`, `loadtest` and `hwtest`. The trial-first
 stamp works the other way round: an onboarded seed without `sona.freever.v1`
 is judged "kept" and has the free version, as every suite before it assumed;
-a test about trial first seeds "post".
+a test about trial first seeds "post". The kept-buddies stamp (11 Oct 2026, OWN1)
+works the same way: an onboarded seed without `sona.buddyset.v1` is judged
+"kept" (its profile gains every legacy buddy, hat and place on first load);
+a suite about a new family's Buddy Shop seeds "post". A suite that loads a
+page before it seeds must set the stamp itself: that first load stamps
+"post". A suite that holds a page's first load to writing nothing seeds
+"kept", as it seeds `sona.freever.v1`: the sweep writes on that first load.
 
 **Tests do not pin the switch's value.** They pin that the two copies agree,
 and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
@@ -879,7 +885,12 @@ officer, an engineer — whose rulings are now rules:
 - **No caseload-wide average.** An unweighted mean of percentages across
   children is meaningless; the one number is "N of M children practiced this
   week". No leaderboard, no ranking, no comparison across families — a
-  district officer ends the app's use on that alone.
+  district officer ends the app's use on that alone. This binds the
+  clinician side. The family Practice Board exists by Travis's decision (9
+  Oct 2026), built switched off until his go (`BOARD_LIVE`, BOARD1/BOARD2).
+  It is opt-in by a grown-up's email, off on clinician-linked and many-child
+  phones and for families who say a therapist or school sent them, and never
+  in `slp.html`, `sendProgress` or any clinician route.
 - **Invites hold initials, never a name.** The SLP may add a child before the
   family joins, but the placeholder is a label ("MK"), an optional age and a
   target; the family types the name when they join, so nobody at a school or
@@ -976,7 +987,11 @@ redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
 Fruit Slice from 5; see "The ask happens after the product proves itself"),
 and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
-profiles, earned coins, homework and entitlement sync remain available.
+profiles, earned coins (now visible on the Trophy Road, and spent in the Buddy Shop), homework and
+entitlement sync remain available. Home gains one Trophy Road card under
+"Pick a game!" (read-only), a level badge on a card's picture, and a level
+sheet that opens only from a tap (see "Trophies, coins and the Trophy Road"
+and "Levels inside games").
 
 **The fuller books** (Travis, 26 Sep 2026: "do one for each letter"): one
 twelve-page story per sound, first on each sound's shelf in `library.html`.
@@ -1471,6 +1486,34 @@ changes finger play, never what passes the speech check:
   play on his phone. Rachel should review the frequency and wording of asks,
   and the effect on children the phone hears poorly.
 
+**A new life only on a loss** (Travis, 8 Oct 2026: "lets only have the kiddo
+say the sound to get a new life if they die or lose. it kept popping up in
+piano tiles too much ... during the game they only say the sound to make the
+game easier or slower ... i still want them to say the sound beforehand to
+charge up"). This replaces two lines above and in "Echo asks, then listens":
+a heard sound power no longer gives a heart back, and a lost heart no longer
+brings Echo's next ask forward (that was what made him ask so often). In all
+five round games:
+- **Mid-round, Echo's ask earns the power only** (slow keys, Super Slice, the
+  slow help), on its own clock: about six seconds in, then every 20 seconds
+  of play, 40 after two quiet asks. He never mentions a heart mid-round.
+- **At the last heart the round stops on the say-it card:** "Say “rrrr” for a
+  new life!", three empty hearts, Echo's "For a new life, say", Rachel's
+  take, "Go!", then the mic. Heard: all three hearts are back and play goes
+  on from where it stopped (one rep, as any card; no confetti; it does not
+  use up a between-round card). "I'm done playing", or a phone with no
+  microphone: the kind end card, as before. Silence brings nothing back: the
+  card waits. A child can earn a new life as often as they lose.
+- **The charge-up is unchanged:** the "Say it 5 times" page still comes
+  before every game, and the cards between rounds are as they were.
+- One copy, `lifeOrEnd()` / `lifeTaken()` in `arcade-speech-help.js`. The
+  line is fetched once a heart is gone, not at page load. All three hearts
+  back (not one) and no limit on new lives are defaults Travis did not pick.
+  **Rachel's to rule on:** a child who keeps losing is asked for the bare
+  sound each time, and a child the phone hears poorly cannot get back in.
+`tilestest`, `slicetest`, `stacktest`, `runtest`, `glidetest` play the card;
+`arcadespeechhelptest` that a lost heart moves nothing and a power gives none.
+
 **The clinical success rule below still applies to speech-practice rounds:**
 step the target down rather than end on failed speech. An arcade round may
 end because of finger play; that is not a grade of the child's sound.
@@ -1798,8 +1841,10 @@ between rounds, Echo's sound powers, each saying of a Hoops, Soccer Goal or
 Dino Dig word (two a word), a Bubble Pop word (said once), Feed Echo's heard
 word and each accepted book key word (one a page).
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
-enter `outcomes()`, so no pass rate, clinician's note, shared progress or
-coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
+enter `outcomes()`, so no pass rate, clinician's note or shared progress
+sees them: the hard rule "voice boosts never logged as SLP data" holds. Since
+11 Oct 2026 they earn trophies and goal days (TROPHY1), a play currency that
+never enters `outcomes()`.
 Only a voiced try that passed the game's own check counts, once per ask;
 silence never does. **Progress keeps practice apart:** its "tries" and
 everything it hands a clinician (the summary, the card, "Free-play games are
@@ -1915,10 +1960,12 @@ Say & Play game. What it keeps:
 "whatever you think is best for kids you can do"). A game counts ONE real
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
-Home's picture of the game carries a small "Best 17". **Step one is built:**
-the shared store, Home's tag, Piano Tiles (notes in a row) and Fruit Slice
-(fruit in a row). Block Stacker, Sound Sprint, Flappy Glide, Rise Up, Hoops and
-Soccer Goal follow after Travis has played these two; Dino Dig gets no number.
+Home's picture of the game carries a small "Best 17". All five round games
+keep one (Fruit Slice and Piano Tiles a row, Block Stacker, Sound Sprint and
+Flappy Glide their own counts); Hoops and Soccer Goal have none yet, and Dino
+Dig gets no number. Level 1's best is `sona.bests.v1`; a game's Level 2 and 3
+bests live in `sona.playlevel.v1` (see "Levels inside games"), so a best is
+never measured against a level whose top it cannot reach.
 - **What binds every game that gets one.** Every ending remains kind; a
   completed finale celebrates a win, and zero hearts ends the round without
   claiming completion. The number on screen never goes
@@ -1966,7 +2013,7 @@ Soccer Goal follow after Travis has played these two; Dino Dig gets no number.
 - **"Play again" on top, "Back home" under it.** Another go is earned the
   way every turn is, back through that game's say-it-five-times page
   (`charge.html?game=…`). The game-to-game "WOOHOO! Next →" is gone from
-  these two; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
+  all five round games; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
   still calls `Sona.firstGameEnd("slice")`, because asking spends the
   first-game mark.
 - **Piano Tiles: notes in a row.** Tiles tapped with none slipping past and
@@ -1991,8 +2038,6 @@ Soccer Goal follow after Travis has played these two; Dino Dig gets no number.
 - **The old five-game run's card** (`?daily=1`; Home never opens it, a saved
   run or a typed address still can) banks the round and moves on as before;
   it says "Great round!" and "On to the next game…", never "+N points!".
-  Block Stacker, Sound Sprint and Flappy Glide still say "points" there and
-  still write the old shared keys until their turn.
 - **Rachel's to rule on:** children will say the bare sound more often in a
   round, alone and quickly, because it is the best helper; whether that
   wants a limit. And a child the phone hears poorly earns less help, so
@@ -2000,6 +2045,343 @@ Soccer Goal follow after Travis has played these two; Dino Dig gets no number.
 `tests/besttest.mjs` pins the store, the leaks and Home's tag; `tilestest`
 and `slicetest` play each game's row and every line; `superslicetest` plays
 the extras through the real earned turn.
+
+**Trophies, coins and the Trophy Road (Travis, 9–11 Oct 2026: "a currency so
+they can buy stuff like characters"; "motivated over weeks and months like
+Clash Royale").** A child's practice now fills a road of gifts they can see.
+- **Trophies follow the honest rep** (TROPHY1, `sona.trophy.v1`, per child):
+  a practice try (a miss the same as a pass), an accepted game ask or an
+  accepted book word. **A day at the goal is always 30 trophies, whatever the
+  goal**: a family goal of 100 earns no more, a speech therapist's 10 a day no
+  less (at the default goal of 30, one trophy a rep). They are never spent and
+  never lost; the ledger pays only the difference from what today already
+  paid, so nothing pays twice (a goal lowered in Settings that fills today
+  pays the day at once, from reps already said). "Reset progress" leaves
+  them. A child already on Sona started with what their reps since 21 Sep
+  2026 earned; a restore that brings history but no trophy record counts
+  them again from the history then on the phone. Silence, a
+  tap, a page load, a best, a heart or an arcade score earns nothing.
+- **Coins come from two places only** (COIN3, CHEST1): the **daily chest**
+  (`sona.chest.v1`: once, on a day the daily goal is met; 10 coins, every
+  fifth a Big Chest of 25 and a sticker; a skipped day piles up nothing) and
+  **gifts on the road and the month's path**. The arcade end cards, the daily
+  run, Coach Call, the story and the reps mint no longer pay coins; balances
+  from before are kept (and now show). **Coins are never sold**: no coin
+  product, ever, in `IAP_PRODUCTS`. The wallet refuses junk amounts.
+- **The road** (ROAD1, `sona.road.v1`): numbered stops by lifetime trophies
+  across five lands (Sunny Meadow, Beach Bay, Snowy Peak, Under the Sea,
+  Starry Sky, then the Champion Trail's bonus stops every 150). The table is
+  `ROAD_STOPS` in `sona.js`; stop 3 (150) and stop 10 (750) celebrate Level 2
+  and Level 3, which the trophy count itself opens. An item a child already
+  owns pays coins instead (`ROAD_ALT`: a buddy 100, a hat 50, a place 80).
+  **The road's own items** (four buddies, Hops the frog at 750, Pebble the
+  penguin at 1,350, Sunny the lion at 2,100, Luna the unicorn at 3,000; three
+  hats, the Sun hat, the Star clip and Headphones; two places, Snow and Under
+  the sea) are on their stops since their painted art landed (11 Oct 2026),
+  and only there: never for coins. A road item joins a stop only with its art
+  on disk. Before it landed, stops 6, 12, 15, 19 and 25 paid their item's
+  worth in coins; **an item listed on a stop after a child opened it is still
+  given, once** (`roadSettle`), and the coins already paid stay, with no
+  coins a second time.
+- **"October path"** (MONTH1): eight steps by this calendar month's trophies,
+  named for the month, coins kept small and four stickers. **Only the road
+  page settles a month** (`roadSettle()` on its load and when it comes back
+  to the front, never Home): every
+  ended month since `MONTH_SINCE` ("2026-10") hands its reached, unopened
+  steps to the wallet once, and the page says so in one line ("Your October
+  gifts are in your wallet!"), shown once. Nothing says "missed".
+- **Nothing random, no timers, every gift shown before it opens.** A chest
+  takes three taps ("Tap, tap!", "One more tap!") and shows each gift in turn.
+  No countdown, no "ends in", no rarity word, and no money price (no $ or
+  other currency) on any kid page; coin costs appear only in the Buddy Shop.
+- **The road page** (`road.html`, `crafted-road.css`): the land and the
+  child's buddy, the next gift filling up, "Open next" when gifts wait,
+  today's chest, the month's path, the stops (from the lowest one waiting, so
+  a child whose history passed twenty stops sees them all), "Game levels",
+  and links to the Buddy Shop and the sticker book (which now shows no count:
+  "Your stickers"). Silent but the tap and reward chimes. Its events ("chest
+  opened", "road gift opened", "month gift opened") are sent by `sona.js` and
+  carry nothing: no stop or step number (a stop is a lifetime trophy count),
+  no coins.
+- **Home's one card** (`#roadCard`, under "Pick a game!"): the next gift's
+  picture (or the waiting one, or the chest when it is ready) and a five-part
+  bar; the counts are small and the words are in its label; a teal dot when
+  something is ready. It only reads `Sona.roadState()`; a tap goes to the road.
+- **Test seeds may set `sona.trophy.v1` directly** (`{v:1, t, d, dn, m, mn}`)
+  rather than replay weeks of reps. `trophytest` pins the economy (no browser);
+  `roadtest` plays Home's card, the road page and the sticker book.
+- **For Rachel:** a try counts toward the goal, and so earns trophies, even
+  when Apple's listener heard a clearly different word ("taco"); whether it
+  should is hers. **For Travis and Rachel:** a little one who only plays Feed
+  Echo and Bubble Pop needs six rounds to open the chest at the default goal.
+
+**Levels inside games (LEVELS1, Travis, 9 Oct 2026: "kids see games and
+levels but have to unlock them"; he chose levels inside games, not locked
+games).** Every game opens exactly as before (access, Premium, the trial and
+Coming soon are untouched); inside nine of them Level 2 opens at **150
+trophies** (five goal days) and Level 3 at **750**, for every game at once,
+per child (`sona.playlevel.v1`). Feed Echo keeps one level until Rachel says;
+a parked game has none.
+- **One tap still plays.** The first tap on a game after a new level opens
+  shows "Pick a level" for that game, once (`playLevelAsk`); every tap after
+  plays the level last picked. The road page's "Game levels" changes it. A
+  card playing Level 2 or 3 carries a small numeral and pips. A grown-up's
+  "Level 1 only" (Settings, Buddy & world) turns it all off.
+- **Level 1 is today's game, byte for byte:** each page keeps its Level 1
+  tables and best lines on their own lines and overrides after them.
+- **Finger play only.** A level never changes what a child says or how often,
+  the say-it card, the hearts, the sound powers, `CHARGE_NEED`, `ROT_LEN`,
+  `SOUND_NORM` or the speech ladder. **Every help path reads Level 1's
+  numbers**: once a help starts (the two-miss help, "every ball ends in a
+  basket", where the hoop and Bo move as at Level 1 from the first miss, Dino
+  Dig's glow and crumble, Bubble Pop's touch-anywhere, the safe landing), the
+  game is no harder than Level 1. `levelstest` and
+  `levelsplaytest` hold each help value equal at all three levels.
+- **Bests per level:** Level 1's stays Beat Your Best's; Level 2 and 3 keep
+  their own, so a best is never measured against a level whose top it cannot
+  reach.
+- **Never sold, never on a grey card:** Premium opens every game, not the
+  levels inside them (the Terms say so). "level played" is sent by the game
+  page, once a load at Level 2 or 3, never by Home.
+
+**The Buddy Shop and the kept buddies (SHOP1, OWN1, 11 Oct 2026)** (Travis,
+9 Oct 2026: "a currency so they can buy stuff like characters"). The buddy
+screen (`customize.html`, still reached from Home's buddy and Settings ›
+Buddy & world) is the Buddy Shop: buddies, hats and places.
+- **Who keeps what.** `_keepBuddies()`, a one-shot sweep in
+  `_keepFreeVersion`'s shape, runs right after it on load: a device already
+  set up on its first load of this build is stamped `sona.buddyset.v1`
+  "kept" **and every set-up child's `profile.owned` gets the whole legacy
+  set** (`LEGACY_SET`: the eight buddies, seven hats and six places every
+  family could pick on 11 Oct 2026); a device not set up yet is stamped
+  "post" and a new family starts with the starters (Pip the fox, Miso the
+  bunny, Bao the panda, no hat, the sky). The stamp is on `NO_IMPORT` (true of
+  the device); the list rides in the profile, so a backup carries it to a new
+  phone or into the iPhone app, which stamps "post" on its own first load.
+  `importData` also writes the legacy set into every set-up child's profile
+  when the backup says "kept" or carries no stamp at all (made before the
+  shop): the Terms promise a backup never takes away an item a child already
+  has. A backup stamped "post" brings only its own list. `addKid` writes
+  the legacy set into a new child's profile on a kept device, as it copies
+  `earlyAdopter`. It reads no other sweep's stamp. **Preserve it
+  like the free-era sweeps: never clean it up, never re-run it.**
+- **Ownership** is `Sona.owns(kind, id)`: a starter, what the child is
+  wearing, the kept household's promise, or the child's own list. Every
+  catalog entry carries `source` ("starter", "shop" or "road") and `cost`;
+  the prices are the catalog's (buddies 100–150, hats 40–150, places 80–250,
+  `sona.js`), never a page's. New items join only with their painted art; a
+  kept household can buy only what came after the sweep (today the Flower
+  crown, 150, and Candy land, 250). Every hat is painted (`OUTFITS[i].art`,
+  `hat-<id>.webp`), each with its own place on the preview's badge
+  (`#heroOutfit.painted` in `crafted-customize.css`); the page's drawn hats
+  stay only for a phone holding an older `sona.js`.
+- **Getting one.** A tap on anything not owned tries it on the preview;
+  only "Get it", held for a second (a keyboard or switch press confirms at
+  once), spends the coins (`Sona.buyItem`: the coins first, then the item,
+  then it is worn), with "Oops? Give it back" for ten seconds
+  (`Sona.undoBuy`, never more than the catalog price). A child without enough
+  coins sees "Open chests to earn coins!"; a Trophy Road item shows its
+  trophies and "Find it on the Trophy Road!". No dialogs, no voice, no price
+  sign and no "buy" in a child's words; no confetti under Reduce Motion.
+  `sona.js` sends "shop item got" (the kind, the item and its coin price,
+  never a balance). Settings' Buddy & world card says where trophies and
+  coins come from, and "Reset progress" says it keeps trophies, buddies and
+  stickers (it resets the practice steps and the coins).
+- **Setup's hidden buddy step** offers only the buddies the family has (the
+  starters on a new phone).
+`trophytest` pins the sweep, the prices, buying and giving back (no
+browser); `shoptest` plays the shop for a kept and a new family.
+
+**Play as your buddy (BUDDY2, 11 Oct 2026)** (Travis, 9 Oct 2026: "a
+currency so they can buy stuff like characters, and they actually BE the
+character in the game"). The buddy a child picked is in eight of the ten
+games, in painted poses, and every placement keeps that game's rules.
+- **One list of pictures:** `BUDDY_ART` in `sona.js` (block BUDDY2, beside
+  `CHARACTERS`), read through `Sona.buddySprite(id, pose)` and
+  `Sona.buddyId()` ("leo" or anything unknown is the fox). The poses: **run**
+  (seen from behind, Sound Sprint; the fox's is the crop of
+  `fox-runner.webp` at 390, 205, 480, 840, every other buddy's a file already
+  cut to that 480x840 frame), **rest** and **cheer** (standing, like Echo's
+  welcome and cheer, swapped the way his are), **peek** (over Fruit Slice's
+  counter) and **sit** (on Block Stacker's bench). How each was drawn, cut and
+  checked, and the placement numbers, are in
+  `design/crafted-world/buddies-v3.md`. A buddy, or a pose, ships only with
+  its painted art (no stand-ins).
+- **The fallback order:** the pose, then its fallback pose (cheer and sit
+  fall back to rest), then the round badge clipped to a circle, then the flat
+  sticker (with `xmlns` added), then a plain dot. `crafted-buddies.js` holds
+  the page helpers: `image`, `drawCircle`, `svgSrc`, and `stand` for a buddy
+  beside Echo (it fetches and holds the cheer picture as the page opens; a
+  cheer that won't load leaves the buddy standing, never its badge). A
+  picture that won't load falls to the next: a runner to the badge (on the
+  start card too), a peek to the badge on the same ledge, a badge for the
+  rocket's porthole to the old rocket. Every caller checks a helper exists
+  first, so a phone holding an older file still plays.
+- **Where it is:** Sound Sprint runs as the buddy's runner (and the start
+  card's lane shows it); Flappy Glide carries its badge in the basket,
+  clipped round, the fox's too; Fruit Slice: it peeks over the counter where
+  the fox did; Block Stacker: it sits on the bench where the fox sat and rides
+  in the finale rocket, its badge clipped into the porthole; Hoops, Soccer
+  Goal and Dino Dig: it stands opposite Echo and hops with him; Feed Echo: it
+  watches beside Echo, behind the plate, and hops on each right feed (Echo is
+  still the one fed). Every buddy picture is decoration: `alt=""`,
+  `aria-hidden`, no finger, never on a playable part.
+- **A fox child keeps today's Fruit Slice and Block Stacker pictures.** The
+  fox is painted into `fruit-stand.webp` and `stack-workshop-v2.webp`, and
+  Echo into `stack-rocket-v2.webp`: for the fox nothing changes, not a picture
+  and not a rule that applies. Any other buddy gets the same scene without the
+  fox (`fruit-stand-v2.webp`, `stack-workshop-v3.webp`, `stack-rocket-v3.webp`
+  with an empty porthole: identical outside the fox's box, so the ledge and
+  the fruit wells hold) through `body.buddy-scene`; a scene that will not load
+  puts the old one back.
+- **The engines' Echo cheer block never runs on the buddy.** `hoops.js`,
+  `soccer.js` and `dino.js` swap Echo's own pictures on a basket, goal or
+  bone; the buddy has its own `cheerBuddy`, with the pictures the page hands
+  over through `setBuddy({rest, cheer})` (paths only; the engines still read
+  no storage).
+- **Bubble Pop and Piano Tiles are unchanged:** Echo floats up in Bubble
+  Pop's giant bubble, and nothing may sit on the piano's lanes. Hats in games,
+  places as game skies and buddies in the parked games are later.
+`tests/buddyplaytest.mjs` plays every placement for a fox and a dragon child,
+the fallbacks, the cheer swap, and the fit at 320 and 390 px.
+
+**The Practice Board (BOARD1, BOARD2; Travis, 9 Oct 2026: "a board of every
+kid in Sona … days practiced"). DARK UNTIL TRAVIS'S GO.** Built in full on 11
+Oct 2026 and switched off: the server is `lib/board.ts` and nine routes under
+`app/api/board/`, the phone's half is block BOARD2 in `sona.js`, the Settings
+card and `board.html`. **`BOARD_LIVE = false` in `public/sona.js` and in
+`lib/board.ts`**, pinned equal by `boardapitest`. While it is off a family
+sees nothing new and the phone sends nothing but a deletion still owed: the
+Settings card is hidden (except "Remove {Name} from the Practice Board" while
+an entry is still on the phone), the road's board link is hidden, `board.html`
+says "The Practice Board is off.", and every route but `leave`, `remove` and
+`admin` answers 503 (`{off:true}`; the email's confirm link, a page saying
+it is off right now). It was built before a lawyer looked (the
+lead's call; the spec asked for one first): the lawyer's answer on the consent
+method still comes before the go, and a stronger method than the email (a
+card check, say) changes the request shapes, the keys, the privacy text and
+the tests first. Whether to switch it on is Travis's, after that.
+- **What it is.** One monthly board of the Sona kids whose grown-up turned it
+  on, counting **goal days**: a day with the daily goal's stamp
+  (`sona.goaldays.v1`) and at least `BOARD_MIN_REPS` (10) reps, so practice,
+  games and books all count, as Settings already tells parents (the 10 is
+  Rachel's to confirm). The top ten places and the child's own entry; ties
+  share a place, and a tie too long to list is one line ("+38 more kids with
+  11 days"). Other children's counts are a snapshot taken once a UTC day, so
+  nobody can watch when another child practiced; the child's own count is
+  live. A sun a day on the child's own card, medals for 1-3; never totals,
+  arrows, "behind", streaks or red. **Nicknames are the server's**
+  ("Brave Fox 42": 32 adjectives, 32 animals, 86 numbers; `NICK_BLOCK` for
+  any pair a reviewer rejects). A child never types anything, and a nickname
+  is never shown beside a real name.
+- **Turning it on: one email for the household, with a code.** Settings ›
+  Practice Board › Learn more (Settings is behind the grown-ups check) asks
+  once per phone "Did a speech therapist or a school send you to Sona?" (the
+  answer stays on the phone, `sona.boardask.v1`; "Yes" keeps the board off),
+  then a sheet with a box per child who may join and an email box. The server
+  keeps a pending request (48 hours) and a hash of a confirm secret that only
+  the email carries; it hands the address to Resend once and keeps only a
+  one-day scrambled form (an HMAC with the day inside), at most two emails an
+  address a day (a "+tag", and Gmail's dots, are the same address; one past
+  its two never counts toward the rest) and 300 a day in all. The email's
+  confirm link needs a button
+  press (a mail scanner's GET confirms nothing), the phone's own `pend` can
+  never confirm, and the email's **remove link** deletes the entries from any
+  device, even after the phone is lost. "Finish" (also tried when Settings
+  comes back to the front) claims the members: one atomic script, safe to
+  repeat. Nothing on the phone says "on" before the server has answered.
+  **It does not prove a parent:** a child who can read, on an iPad with the
+  grown-up's Mail open, could tap the button. It raises the bar above the four
+  number words; that is all.
+- **Who can't** (`boardAllowed(slot)`, read for the child the line is about):
+  "off"; "clinic" (a clinician's link on the phone, `sona.slp`, `sona.slpok`,
+  `sona.slpunlock` or `sona.slpticket`; an SLP profile; this child sharing
+  progress; or "Yes" to the therapist question); "many" (more than four
+  children on the phone); "young" (not a whole age of 5 or more: ages 3 and 4
+  never see it, Rachel's to confirm). Checked at join, at every send and at
+  every view; a child who stops being allowed leaves by themselves.
+- **The server counts, never the phone.** The phone says only "this child met
+  the goal so many seconds ago" (`{token, ago, tz, buddy}`); the server works
+  out the day by its own clock, in the time zone the family joined from, and
+  counts it once (a `SET NX` inside the day script). **The server can't prove
+  a child spoke (no audio ever leaves the phone); it can promise each day
+  once, a day late at most, never early.** Only today and yesterday, nothing
+  before joining, and never more days this month than have passed since
+  joining (the ceiling). The time zone moves at most 2 hours from where the
+  family joined, at most once in 20 hours, and only on a counted day. A phone
+  clock change, a pasted backup or backdating adds nothing; someone scripting
+  the routes could mark one day per real day, which at most ties a child who
+  met the goal every day; a forged backup can make one real rep finish
+  today's goal day on that phone.
+- **Keys.** On the phone: `sona.board.v1` and `sona.boardcache.v1` per child
+  (`PER_KID`); `sona.boardpend.v1`, `sona.boardleave.v1` (deletions still to
+  send) and `sona.boardask.v1` for the phone. All five are on `NO_EXPORT` and
+  `NO_IMPORT`: a backup never carries a board entry (the Move box says to turn
+  it off on the old phone first). On the server, the prefix is `board:` in
+  production and `board-pv:` everywhere else (`boardEnv()` fails closed to
+  production), so a preview sharing production's Upstash never touches the
+  real board: `pend:` 48 hours; `mem:`, `nick:` and `rid:` (the remove link's
+  record) 100 days from joining, started again only by a counted day;
+  `m:<month>` until 8 days after the month ends; snapshots and per-day
+  counters 2 days; ticks 3 days; the scrambled address 1 day; the daily join
+  count 15 days (no one in it). The board's rate-limit buckets hold an HMAC
+  of the address, never the address, for an hour at most. Every write is one Lua
+  script that first checks its key still exists and sets its own time limit;
+  a KV error answers 503 `{retry}`, never "already done", and the phone keeps
+  what it owes. Nothing stores a name, age, sound, audio, fid, childId,
+  clinician code, address or raw IP, and no key starts with `reps:`.
+- **Deleting always works, live, paused or off:** "Turn off" in Settings,
+  removing the child, a restore that changes which child sits in a slot,
+  becoming ineligible, the email's remove link, and founder removal
+  (`/api/board/admin`, behind `FOUNDER_KEY`, for an email to
+  privacy@speaksona.com). The phone queues a deletion first, then sends it
+  from Settings, the road page, the board page and (at most once a minute)
+  every rep on a practice or game page; never from Home, which calls nothing
+  of the board. `BOARD_PAUSE=1` stops only `start`, `claim`, `view` and
+  `nick`: days still count and deletions still happen. "Reset progress" does
+  not touch the board.
+- **Never the clinician side.** `slp.html`, `app/api/slp/**`, `sendProgress`,
+  `/api/homework`, `/api/pilot` and `reps:<week>` gain nothing, and
+  `/api/reps` stays 410 (the dashboard rule above: no leaderboard there).
+  Events: "board turned on", "board turned off", "board viewed", with no
+  props; never a token, nickname, days or place.
+- **The words already true in both states:** the privacy page's "The Practice
+  Board (only if a grown-up turns it on)" ("Sona may offer…"), Progress's
+  line under the sharing buttons (kept out of "How scoring works", whose
+  "Reviewed by Rachel" covers only what she reviewed), the parents' "What's
+  stored" answer and the clinician setup step all speak of it as something
+  Sona may offer, never as something a family can turn on today
+  (`boardapitest` holds them to that). The
+  clinician's step says only that it stays off on any phone holding their
+  link: none of their families can be on it.
+- **How to turn it on** (its own PR, only on Travis's go, after a lawyer has
+  named the consent method):
+  1. flip `BOARD_LIVE` to `true` in **both** `public/sona.js` and
+     `lib/board.ts` (`boardapitest` fails if they differ);
+  2. set `BOARD_SECRET` in Vercel (a long random value; without it every
+     route answers 503). To rotate it later, move the old value to
+     `BOARD_SECRET_PREV`, so no phone's token stops working;
+  3. add the Terms' "Practice Board" section and the for-slps "What's stored"
+     board line ("…You never see the board and it never appears in your
+     dashboard…"), both written in the spec (§14.4, §14.5);
+  4. NATIVE.md and App Store Connect: App Privacy *Identifiers → User ID*
+     (the random board number) and *Usage Data → Product Interaction* (goal
+     days, board on only), purpose App Functionality, not tracking ("linked to
+     the user" is Travis's call; the careful answer is yes); re-answer the
+     age-rating questions (no user-generated content, no chat: the server
+     makes the nicknames); the review note "Off by default; a grown-up
+     confirms by email; server-assigned nicknames; no free text";
+  5. check that Resend's open and click tracking are off for the sending
+     domain (the email promises no tracking pixel; a Resend setting, not
+     code), and note "Resend open and click tracking" in NATIVE.md;
+  6. run `boardapitest` (its go-live pin then requires the privacy, Terms,
+     for-slps and NATIVE.md copy), `boardtest` and the full battery.
+  To try it before then: on localhost, `sessionStorage` `sona.boardpreview.v1`
+  = "1" turns the phone's half on, and `BOARD_FORCE_LIVE=1` turns a local or
+  preview server's on (never production's, and only under `board-pv:`).
+`boardapitest` plays every route against an in-memory Upstash (or a real
+Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
+Settings card and `board.html`.
 
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
 shelf promotion and no direct-link, paid or earned bypass; its engine
@@ -2056,8 +2438,9 @@ to stand in for it. What was buildable was built on 28 Sep:
   score (a golden fruit or tile scores 3 and the giant's cuts score 5): Fruit
   Slice counts fruit in a row and Piano Tiles notes in a row, each beside the
   child's own best in that same thing (see "Beat Your Best"; the old "Best"
-  was the hidden score, which is why it was taken off). Block Stacker counts
-  blocks and Sound Sprint metres until their own bests land.
+  was the hidden score, which is why it was taken off). Block Stacker (blocks
+  in a row), Sound Sprint (metres) and Flappy Glide (gaps in a row) count
+  their own thing beside that child's best too.
 - **Say & Play and Feed Echo** show the word with only the sound's letters
   orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
   `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
@@ -2253,6 +2636,30 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Tiles' notes and Bubble Pop's pops are media in their own pages. **Still Web
   Audio in the app:** the sounds Hoops, Soccer Goal, Dino Dig and Fruit Slice
   make themselves (the swish, the kick, the roar, the splat).
+- **Sona's own microphone in the app: no phone-call audio** (Travis, 12 Oct
+  2026: the volume buttons moving "call volume" and sounds playing with the
+  phone on silent, "yeah start building it now"). While a web page captures,
+  WebKit switches the whole app to call audio (PlayAndRecord + VideoChat +
+  voice processing), and no page setting can stop it. So in an app build
+  whose SonaSpeech plugin has `micOpen`, the native side owns the mic
+  (AVAudioEngine, `.playAndRecord` + mode `.default`, no hands-free
+  Bluetooth) and streams PCM to the page; the NATIVE MIC block in `sona.js`
+  (`Sona.micOpen`, `micProbe`, `micSource`, `micRecorder`, `micDeaf`,
+  `micStats`) feeds it through an AudioWorklet into the very analysers every
+  listening page already reads. Every page keeps its literal getUserMedia as
+  the fallback: browsers, every App Store build before this plugin, a refused
+  worklet, and `NATIVE_MIC_ON = false` (the website kill switch; one phone:
+  `localStorage "sona.nativemic" = "off"`) all listen exactly as before.
+  **Every bar is unchanged**, but the sound reaching it is not: no automatic
+  gain, no noise suppression. A one-number boost (`NATIVE_MIC_GAIN`, ×1.0)
+  exists for the phone test, and changing it is Rachel's call, as is
+  `micDeaf`: frames from a paused or starved native mic never set a room
+  floor. Game sounds made in Web Audio now follow the silent switch like any
+  app's. The plugin ships through `scripts/install-ios-speech.py`, so it
+  needs a new App Store build; SPEECH_PLUGIN.md holds the phone checklist
+  and the numbers to send back. `nativemictest` (with `tests/_nativemic.mjs`,
+  a fake phone) plays the app path, `micquietgamesowntest` and
+  `repguardowntest` the quiet rules on it, and `heartest` pins the Swift.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
 
@@ -2280,7 +2687,9 @@ days (before 5 Oct 2026) preserving existing weeks. An unfinished week does not
 break the prior completed-week streak. `momWeek().days/done` remain actual
 practice days for the clinical summary; `.metDays/.goalDone` serve the goal.
 Game and book reps remain outside outcomes, clinician summaries, shared
-progress, practice coins and homework reports. Settings explicitly explains
+progress and homework reports. They earn trophies (TROPHY1), and a goal day
+they complete can count on the Practice Board if a grown-up turned it on
+(BOARD2; the board ships switched off). Settings explicitly explains
 the homework report's practice-only count. No child name enters goal analytics.
 `dailygoaltest`, `repweektest`, `momweek` and `booktest` pin the boundaries.
 

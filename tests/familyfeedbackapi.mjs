@@ -54,7 +54,8 @@ async function submit(body, opts = {}) {
     calls.push({ url: String(url), payload, raw: String(init.body || "") });
     if (String(url) === KV) {
       const op = payload[0];
-      if (op === "INCR") return Response.json({ result: opts.rateLimited ? 11 : 1 });
+      // lib/rateLimit.ts counts in one script, its marker line "-- rl:incr".
+      if (op === "EVAL" && /^-- rl:incr\n/.test(payload[1])) return Response.json({ result: opts.rateLimited ? 11 : 1 });
       if (op === "EVAL") {
         if (opts.storeThrows) throw new Error("KV unavailable");
         records.push(JSON.parse(payload[4]));
@@ -104,7 +105,7 @@ try {
   ok("…whatever a bot puts in it", r.status === 200 && r.calls.length === 0);
   r = await submit(GOOD, { rateLimited: true, slack: true });
   ok("the eleventh message in an hour from one address is refused, and nothing kept or sent", r.status === 429 && r.records.length === 0 && r.calls.every((c) => c.url === KV), r.status);
-  ok("…counted in its own bucket", r.calls.some((c) => c.payload?.[0] === "INCR" && /^rl:familyfeedback:/.test(c.payload[1])));
+  ok("…counted in its own bucket", r.calls.some((c) => c.payload?.[0] === "EVAL" && /^-- rl:incr\n/.test(c.payload[1]) && /^rl:familyfeedback:/.test(c.payload[3])));
 
   // ── what may be said ──
   for (const [label, body] of [

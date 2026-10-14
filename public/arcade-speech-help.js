@@ -32,20 +32,42 @@
    ends while he is asking ends the turn first (the card never meets a live
    turn). */
     var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid={};
-    var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000, soon:1500};
+    var SLOW_ASK={first:10000, every:20000, quiet:40000, listen:8000};
     var slowAskPlay=0, slowAskAt=SLOW_HELP.first||SLOW_ASK.first, slowMissed=0, slowNoMic=false, slowAskLast=0, slowVoice=null;
     function slowFactor(){ return slowMs>0?0.55:1; }
     function slowIdle(){ return SLOW_HELP.idle||("Say "+(SAYTXT||"rrrr")+" when Echo asks"); }
     function slowLineText(){ return (SLOW_HELP.line&&SLOW_HELP.line())||SLOW_HELP.say||("To "+SLOW_HELP.action+", say"); }
-    function slowAskSoon(){
-      if(!CAN_LISTEN||slowNoMic||slowTurn||slowMs>0||slowMissed>=2) return;
-      slowAskAt=Math.min(slowAskAt,slowAskPlay+SLOW_ASK.soon);
+    // A NEW LIFE ONLY ON A LOSS (Travis, 8 Oct 2026: "lets only have the kiddo
+    // say the sound to get a new life if they die or lose. it kept popping up
+    // in piano tiles too much ... during the game they only say the sound to
+    // make the game easier or slower"). Until then a heard sound power also
+    // gave a heart back, and a lost heart brought Echo's next ask forward, so
+    // he asked again and again. Now the two are apart:
+    //   - mid-round, Echo's ask earns the power and nothing else, on its own
+    //     clock; losing a heart never moves it;
+    //   - at the LAST heart the round stops on the say-it card: "Say “rrrr”
+    //     for a new life!". Heard: every heart is back and play goes on from
+    //     where it stopped (one rep, as any card). "I'm done playing", or a
+    //     phone with no microphone: the kind end card, as before. Silence
+    //     never brings a life back: the card just waits.
+    // The page calls lifeOrEnd() where it used to end the round, and
+    // lifeTaken() in its doRevive().
+    var LIFE_LINE="For a new life, say", lifeCard=false, lifeWarm=false;
+    function lifeOrEnd(){
+      if(window.__ended||!playing) return;
+      lifeCard=true;
+      if(SLOW_HELP.lifeCard) SLOW_HELP.lifeCard(); else sayCard("Say \u201C"+(SAYTXT||"rrrr")+"\u201D for a new life!","none");
+      // no microphone, or no card left: sayCard has ended the round itself
+      if(!reviveWait){ lifeCard=false; return; }
+      try{ if(S.heartRow) $("revHearts").innerHTML=S.heartRow(0,SLOW_HELP.hearts||3,22); }catch(e){}
     }
-    // Warm both reasons before play, so the first ask explains the reward.
+    // the card heard the sound: true when it was the new-life card (the page
+    // then fills the hearts). It does not spend one of the between-round cards.
+    function lifeTaken(){ if(!lifeCard) return false; lifeCard=false; REV++; return true; }
+    // Warm the lines before play, so the first ask explains the reward.
     document.addEventListener("DOMContentLoaded",function(){
       if(!window.SayIt||!SayIt.line||!window.S||!S.getProfile||!S.getProfile().voiceOn) return;
       SayIt.line(SLOW_HELP.say||("To "+SLOW_HELP.action+", say"));
-      if(SLOW_HELP.heartSay) SayIt.line(SLOW_HELP.heartSay);
       (SLOW_HELP.lines||[]).forEach(function(text){ SayIt.line(text); });
     });
     // The page's mic is wanted by the say-it card (reviveWait) or by a sound
@@ -163,6 +185,8 @@
       var now=performance.now(), dt=slowAskLast?Math.min(now-slowAskLast,1000):0; slowAskLast=now;
       try{
         if(slowTurn&&!slowTurn.finishing&&(phase!==SLOW_HELP.phase||window.__ended)){ slowTurn.cancelled=true; finishSlowKeys(false); return; }
+        // the new-life line is fetched once a heart is gone, not at page load
+        if(!lifeWarm&&typeof hearts==="number"&&hearts<(SLOW_HELP.hearts||3)&&window.SayIt&&SayIt.line&&S.getProfile().voiceOn){ lifeWarm=true; SayIt.line(LIFE_LINE); }
         if(!slowAskReady()) return;
         slowAskPlay+=dt;
         if(slowAskPlay>=slowAskAt) beginSlowKeys();

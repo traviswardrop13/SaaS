@@ -88,12 +88,14 @@
     #tipBuddy .crafted-buddy{width:100%!important;height:100%!important;}
     /* the fox is the race's own runner, seen from behind: the same crop the canvas draws */
     #tipBuddy.fox{width:27px;height:47px;bottom:5px;background:url('/assets/crafted/fox-runner.webp') 50.4% 49.5%/261.25% auto no-repeat;}
+    /* every other buddy runs as its own runner, already cut to the fox's frame (BUDDY2) */
+    #tipBuddy.runner{width:27px;height:47px;bottom:5px;background:center bottom/contain no-repeat;}
     /* Echo names each picture as he says it */
     .tip.on .tipPic{transform:translateY(-4px);box-shadow:0 7px 0 #cbb694,0 0 0 3px #19b6bb;}
     #startAct{display:flex;align-items:center;justify-content:center;width:100%;min-height:62px;}
     #startGo{margin-top:0;}
     #startGo svg{width:17px;height:17px;vertical-align:-2px;margin-right:5px;fill:#fff;}
-    @media (max-width:350px){ .tipPic .arrow{width:14px;height:14px;bottom:15px;} #tipBuddy{width:27px;height:27px;} #tipBuddy.fox{width:24px;height:42px;} }
+    @media (max-width:350px){ .tipPic .arrow{width:14px;height:14px;bottom:15px;} #tipBuddy{width:27px;height:27px;} #tipBuddy.fox,#tipBuddy.runner{width:24px;height:42px;} }
     @media (prefers-reduced-motion: reduce){ .tipPic{transition:none;} .tip.on .tipPic{transform:none;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
@@ -183,13 +185,23 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and a slower course, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on&&!raceHeld;},first:6000};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script>
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the race as it always was. Harder levels run the same park, beach
+    // and forest a little faster, with rows of rocks a little closer; never a
+    // new card, heart or rule, and after a tumble the road is never faster
+    // than Level 1's would be, nor the rocks closer while they are thinned.
+    // An older cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("run"):1; if(LV!==2&&LV!==3) LV=1;
+    // each stretch's pace, and how fast the road may get, at this level
+    var SPEEDS=[[1,1.15,1.30],[1.10,1.25,1.40],[1.20,1.35,1.50]][LV-1], SPEED_CAP=[1.75,1.85,1.95][LV-1];
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -224,6 +236,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Sound Sprint needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"run",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -262,14 +276,15 @@
       {name:"the beach",len:190,grass:"#f6dfa4",edge:"#67c6ef",side:"palm"},
       {name:"the forest",len:220,grass:"#5cb35a",edge:"#3f8f47",side:"pine"}
     ];
+    // every metre of the race (570): the same three stretches at every level
+    var RUN_TOP=0; (function(){ for(var i=0;i<STRETCHES.length;i++) RUN_TOP+=STRETCHES[i].len; })();
     var stretch=0, stretchStart=0, phase="run", tumbles=0, magnetUntil=0, finishY=null, finaleDone=false, echoT=-1e9, sideOff=0;
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }
-    function restoreHeart(){ if(!playing||phase!=="run"||outOfHearts)return; hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
     function loseHeart(now){
       if(!playing||phase!=="run"||slowTurn||slowMs>0||now-heartHitAt<1500)return false;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paintHearts();
-      if(!hearts){ outOfHearts=true; } else slowAskSoon();
+      if(!hearts){ outOfHearts=true; }
       return true;
     }
     // Each child keeps their own best in the visible count, never the hidden
@@ -277,9 +292,12 @@
     var rowN=0, rowBest=0, startBest=0, keptRow=0, saidNewBest=false;
     var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
     try{if(CAN_BEST)startBest=S.gameBest("run")|0;}catch(e){}
+    // Level 2 and 3 keep their own best
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("run",LV)|0; }catch(e){} }
     function rowSaid(n){return n+" m";}
     function keepBest(){
       var n=dist;
+      if(LV>1){ if(n>keptRow){ keptRow=n; try{ S.playBestOffer("run",LV,n); }catch(e){} } return; }
       if(!CAN_BEST||n<=keptRow)return;
       keptRow=n;try{S.gameBestOffer("run",n);}catch(e){}
     }
@@ -294,14 +312,20 @@
       if(!CAN_BEST)return [did,""];
       if(startBest<=0)return [did,"Your best: "+n+"!"];
       if(n>startBest)return [did,"A new best!"];
-      if(n>=570)return [did,"That is every metre!"];
+      if(n>=RUN_TOP)return [did,"That is every metre!"];
       if(n===startBest)return [did,"The same as your best!"];
       return [did,"Your best: "+startBest+"."+(startBest-n<=50?" "+(startBest-n)+" away!":"")];
     }
     paintHearts();
     var cleanSince=0, obstacleHelpUntil=0;
+    // the space before the next row: Level 1's, or a little less at Level 2
+    // and 3, and always Level 1's while the rocks are thinned after a tumble
+    function rowGap(){
+      if(LV===1||dist<obstacleHelpUntil) return 170+Math.random()*130;
+      return LV===2?160+Math.random()*125:150+Math.random()*120;
+    }
     function startStretch(i){
-      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*[1,1.15,1.30][i]; cleanSince=dist; things=[]; spawnGap=140; hud();
+      stretch=i; stretchStart=dist; phase="run"; tumbles=0; speed=speed0*SPEEDS[i]; cleanSince=dist; things=[]; spawnGap=140; hud();
       banner("Stretch "+(i+1),"Run through "+STRETCHES[i].name+"!");
     }
     function endStretch(){
@@ -347,11 +371,12 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
       // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!life&&!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       hurtT=performance.now(); playing=true;
       if(phase==="checkpoint") startStretch(stretch+1);
       draw(); // the gated rAF died on the card — restart it
@@ -392,18 +417,40 @@
       ctx.fillStyle="#ffd15b";ctx.beginPath();ctx.arc(x,y,size*.3,0,Math.PI*2);ctx.fill();
     }
 
-    // the runner = the kid's own buddy character (mascot-neutral)
-    var RUNNER="🦊";
-    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
-    var CRAFTFOX=null;
-    if(((S.getProfile()||{}).character||"fox")==="fox"){var fox=new Image();fox.onload=function(){CRAFTFOX=fox;};fox.src="/assets/crafted/fox-runner.webp";}
-    var CRAFTBUDDY=null,buddyPortrait=new Image();
-    buddyPortrait.onload=function(){CRAFTBUDDY=buddyPortrait;};
-    buddyPortrait.src=SonaCraftedBuddies.source((S.getProfile()||{}).character||"fox")||"";
-    function drawBuddy(x,y,sz){ if(CRAFTFOX){ctx.drawImage(CRAFTFOX,390,205,480,840,x-sz/2,y-sz*.7,sz,sz*1.4);return true;} if(CRAFTBUDDY){ctx.drawImage(CRAFTBUDDY,x-sz/2,y-sz/2,sz,sz);return true;} if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
-
-    try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the runner is the child's own
+    // buddy, seen from behind (Sona.buddySprite(id,"run")): the fox is
+    // fox-runner.webp's crop as it always was, every other buddy its own runner
+    // already cut to the same 480x840 frame, drawn in the same box. Without a
+    // runner: the round badge clipped to a circle, then the flat sticker, then
+    // the dot at the two draw calls below. An older cached sona.js (no
+    // buddySprite) still runs the fox as before.
+    var BID=S.buddyId?S.buddyId():(((S.getProfile&&S.getProfile())||{}).character||"fox");
+    var RUN=S.buddySprite?S.buddySprite(BID,"run"):(BID==="fox"?{src:"/assets/crafted/fox-runner.webp",crop:[390,205,480,840]}:null);
+    var RUNIMG=null, RUNBAD=false;
+    if(RUN&&RUN.src){ (function(){ var im=new Image(); im.onload=function(){ if(im.naturalWidth)RUNIMG=im; }; im.onerror=function(){ RUNBAD=true; tipFace(true); }; im.src=RUN.src; })(); }
+    // The start card's lane picture, as the race draws the runner: the fox
+    // keeps its CSS crop; another buddy shows its own runner, or (no runner,
+    // or one that won't load) its badge.
+    function tipFace(lost){
+      var el=$("tipBuddy"); if(!el||BID==="fox"||(lost&&el.className!=="runner")) return;
+      if(!lost&&!RUNBAD&&RUN&&RUN.src&&!RUN.crop){ el.className="runner"; el.style.backgroundImage="url('"+RUN.src+"')"; return; }
+      el.style.backgroundImage="";
+      var face=window.SonaCraftedBuddies?SonaCraftedBuddies.markup(BID,36):"";
+      if(face){ el.className=""; el.innerHTML=face; }
+    }
+    var CB=window.SonaCraftedBuddies||null, BUDDYPIC=null, BUDDYSVG=null;
+    if(CB&&CB.image) BUDDYPIC=CB.image(BID,"portrait");
+    else if(CB&&CB.source){ BUDDYPIC=new Image(); BUDDYPIC.src=CB.source(BID)||""; }
+    if(CB&&CB.svgSrc){ (function(){ var sv=CB.svgSrc(BID); if(sv){ BUDDYSVG=new Image(); BUDDYSVG.src=sv; } })(); }
+    function drawBuddy(x,y,sz){
+      if(RUNIMG){ var c=RUN.crop||[0,0,RUNIMG.naturalWidth,RUNIMG.naturalHeight]; ctx.drawImage(RUNIMG,c[0],c[1],c[2],c[3],x-sz/2,y-sz*.7,sz,sz*1.4); return true; }
+      if(BUDDYPIC&&BUDDYPIC.complete&&BUDDYPIC.naturalWidth){
+        if(window.SonaCraftedBuddies&&SonaCraftedBuddies.drawCircle){ if(SonaCraftedBuddies.drawCircle(ctx,BUDDYPIC,x,y,sz)) return true; }
+        else { ctx.drawImage(BUDDYPIC,x-sz/2,y-sz/2,sz,sz); return true; }
+      }
+      if(BUDDYSVG&&BUDDYSVG.complete&&BUDDYSVG.naturalWidth){ ctx.drawImage(BUDDYSVG,x-sz/2,y-sz/2,sz,sz); return true; }
+      return false;
+    }
 
     function laneCX(l){ var road=W*ROADF, lw=road/LANES; return (W-road)/2+lw*l+lw/2; }
     function laneAtX(x){ var road=W*ROADF, lw=road/LANES, rx=(W-road)/2; return Math.max(0,Math.min(LANES-1,Math.floor((x-rx)/lw))); }
@@ -442,7 +489,7 @@
         if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
         distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
         dist+=metres; bestReached(); $("score").textContent=dist+"m"; hud();
-        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*1.75,speed*(1.05+Math.min(.02,startBest/570*.02)));cleanSince=dist;}
+        if(!slowTurn&&slowMs<=0&&dist-cleanSince>=40){speed=Math.min(speed0*SPEED_CAP,speed*(1.05+Math.min(.02,startBest/570*.02)));cleanSince=dist;}
         if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
       },100);
       // a touch faster through a stretch, unless the child keeps tumbling
@@ -456,7 +503,9 @@
       if(!playing||phase!=="run"||falling.on)return;
       falling={on:true,t0:performance.now()};
       tumbles++;
-      if(loseHeart(performance.now())){speed=Math.max(speed0*[1,1.15,1.30][stretch]*.85,speed/1.1025);cleanSince=dist;obstacleHelpUntil=dist+60;}
+      // the tumble help reads Level 1's numbers, written out (never SPEEDS):
+      // at Level 2 or 3 the road first comes back to Level 1's pace here
+      if(loseHeart(performance.now())){if(LV>1)speed=Math.min(speed,speed0*[1,1.15,1.30][stretch]);speed=Math.max(speed0*[1,1.15,1.30][stretch]*.85,speed/1.1025);cleanSince=dist;obstacleHelpUntil=dist+60;}
       flash("WHOOOA!"); sfx("drop");
     }
 
@@ -505,7 +554,7 @@
       ctx.fillStyle="rgba(255,255,255,.85)";
       for(var l=1;l<LANES;l++){ for(var y=-56;y<H;y+=56){ ctx.fillRect(rx+lw*l-3,y+dashOff,6,30); } }
       // spawn pacing tied to speed
-      if(playing&&!document.hidden&&phase==="run"){ spawnGap-=step; if(spawnGap<=0){ spawnRow(); spawnGap=170+Math.random()*130; } }
+      if(playing&&!document.hidden&&phase==="run"){ spawnGap-=step; if(spawnGap<=0){ spawnRow(); spawnGap=rowGap(); } }
       // things — opaque paint first: canvases modulate color-emoji glyphs by
       // the fill's alpha, and the lane dashes just left a translucent white
       ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="44px sans-serif";
@@ -535,7 +584,7 @@
       // player (falling = Mario-Kart tumble + rescue); running = a little bounce
       if(falling.on){
         var ft=(now-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; hurtT=now; if(outOfHearts)endRound();else flash("Back in the race!"); }
+        if(ft>=1){ falling.on=false; hurtT=now; if(outOfHearts)lifeOrEnd();else flash("Back in the race!"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
           ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,66*(1-ft*0.45))){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill(); } ctx.restore();
@@ -666,8 +715,7 @@
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&raceHeld&&!sc.saying&&sc.line&&sc.ready&&!sc.bytes&&startVoiceOn()) loadStartLine(); });
     if(raceHeld){
       // the lane picture shows the child's own runner, as the race draws it
-      (function(){ var id=(S.getProfile()||{}).character||"fox", el=$("tipBuddy"), face=id!=="fox"&&window.SonaCraftedBuddies?SonaCraftedBuddies.markup(id,36):"";
-        if(face){ el.className=""; el.innerHTML=face; } })();
+      tipFace(false);
       if(startVoiceOn()) loadStartLine();
       $("startOvl").classList.add("show");
     } else beginRace();
@@ -721,6 +769,7 @@
     // child's taps on the game have already woken.
     var sayVoice=window.SayIt?SayIt.voice({
       up:function(){ return reviveWait&&!slowTurn; },
+      ask:function(t){ return t.line(lifeCard?LIFE_LINE:SayIt.ASK).then(function(){ return t.take(); }); },
       wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
       note:listenNote,
       clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
@@ -751,7 +800,7 @@
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true}):navigator.mediaDevices.getUserMedia({audio:true})).then(function(st){
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
@@ -801,7 +850,7 @@
       try{
         if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
         if(rv.ctx.state==="suspended") rv.ctx.resume();
-        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        rv.src=(S&&S.micSource)?S.micSource(rv.ctx,st):rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
       }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
@@ -813,8 +862,11 @@
         var now=performance.now();
         // belt and braces: nothing plays while this mic is open, but if a
         // sound ever did, its frames would be dropped: never judged, never
-        // part of the floor, never joined to a burst after it
-        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        // part of the floor, never joined to a burst after it. The same for
+        // a frame Sona's own mic did not hear (S.micDeaf: paused, or a gap
+        // between the phone's samples): its zeros are not the room, and
+        // the floor only goes down
+        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
         var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
@@ -861,8 +913,7 @@
       S.finishGameTurn("run",isDaily?score():null);
       playing=false; reviveWait=false; phase="done"; clearInterval(distIv); clearInterval(rampIv);
       keepBest(); var isBest=dist>startBest; BEST=Math.max(startBest,dist);
-      var pts=score(), cshare=Math.min(10,(coins/2)|0);
-      try{ if(cshare&&S&&S.addCoins)S.addCoins(cshare); }catch(e){}
+      var pts=score();
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         if(pts===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm

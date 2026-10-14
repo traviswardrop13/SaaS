@@ -141,15 +141,16 @@ try {
         const installed=await page.evaluate(()=>typeof hearts!=='undefined'&&typeof loseHeart==='function');
         ok(game+': a real heart and speech recovery system is installed',installed);if(!installed)return;
         await seed(page,game);
-        const loss=await page.evaluate(()=>{loseHeart(performance.now());return{hearts,at:slowAskAt,play:slowAskPlay};});
-        ok(game+': a lost heart brings Echo back within 1.5 seconds of play',loss.hearts===2&&loss.at-loss.play<=1500,loss);
+        const loss=await page.evaluate(()=>{const at0=slowAskAt;loseHeart(performance.now());return{hearts,at:slowAskAt,at0};});
+        ok(game+': a lost heart does not bring Echo\'s next ask forward (8 Oct 2026)',loss.hearts===2&&loss.at===loss.at0,loss);
+        await ask(page);
         await ready(page);await voiced(page);await page.waitForFunction(()=>!slowTurn);
         ok(game+': taco gives neither a heart nor a power',await page.evaluate(()=>hearts===2&&slowMs===0));
         await page.evaluate(()=>{__slowTest.text='rrrr';});await ask(page);await ready(page);await voiced(page);
         await page.waitForFunction(()=>!slowTurn&&slowMs>0);
-        ok(game+': the accepted sound restores one heart AND the power',await page.evaluate(()=>hearts===3&&slowMs>0));
+        ok(game+': the accepted sound earns the power and gives no heart back',await page.evaluate(()=>hearts===2&&slowMs>0));
         const reason=await page.evaluate(()=>slowLineText());
-        ok(game+': the early reason and the heart reason were warmed before the mic',tts.some(t=>/heart/.test(t))&&tts.some(t=>t!==reason),tts);
+        ok(game+': Echo never offers a heart mid-round: no line about one was fetched or said',!tts.some(t=>/heart/i.test(t))&&!/heart/i.test(reason),tts);
         await clean(game+' heart recovery',page,errors);
       }finally{await context.close();}
     });

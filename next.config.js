@@ -46,6 +46,18 @@ const nextConfig = {
       { source: "/action.css", headers: noStore },
       { source: "/mouthcue.js", headers: noStore },
       { source: "/sona.css", headers: noStore },
+      // Pages call these by name (11 Oct 2026): the buddy helpers draw a
+      // child's buddy in the games, the four play engines take a level from
+      // the page (Hoops, Soccer and Dino a buddy too; Bubble Pop keeps Echo
+      // alone), and the Trophy Road's sheet styles its page. A
+      // cached old copy next to a fresh page is a missing method; every page
+      // checks before it calls, so it still plays, just without the new part.
+      { source: "/crafted-buddies.js", headers: noStore },
+      { source: "/hoops.js", headers: noStore },
+      { source: "/soccer.js", headers: noStore },
+      { source: "/dino.js", headers: noStore },
+      { source: "/bubbles.js", headers: noStore },
+      { source: "/crafted-road.css", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },
       { source: "/apple-touch-icon.png", headers: noStore },
       { source: "/icon-192.png", headers: noStore },

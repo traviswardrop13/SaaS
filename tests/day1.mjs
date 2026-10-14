@@ -203,12 +203,12 @@ for (const age of ["3", "4", "5", "8"]) {
 // Browsing is not practice: neither idle time nor reload can award progress.
 {
   const {ctx, pg} = await home("7");
-  const snapshot = () => pg.evaluate(() => ({ goal:Sona.goalState(), coins:Sona.getCoins(), run:sessionStorage.getItem("sona.run.v1"), ticket:sessionStorage.getItem("sona.play.token") }));
+  const snapshot = () => pg.evaluate(() => ({ goal:Sona.goalState(), coins:Sona.getCoins(), trophies:Sona.trophies ? Sona.trophies() : 0, road:localStorage.getItem("sona.road.v1"), run:sessionStorage.getItem("sona.run.v1"), ticket:sessionStorage.getItem("sona.play.token") }));
   const before = await snapshot();
   await pg.waitForTimeout(1200);
   await pg.reload();
   await pg.waitForTimeout(500);
-  ok("idle Home and reload do not invent reps, coins, a run or an earned ticket", JSON.stringify(await snapshot()) === JSON.stringify(before), JSON.stringify({before, after:await snapshot()}));
+  ok("idle Home and reload do not invent reps, coins, trophies, road claims, a run or an earned ticket", JSON.stringify(await snapshot()) === JSON.stringify(before), JSON.stringify({before, after:await snapshot()}));
   await ctx.close();
 }
 
@@ -265,44 +265,49 @@ for (const age of ["3", "4", "5", "8"]) {
   await ctx.close();
 }
 
-// ── 7. COIN1: coins are minted from reps, never double-paid ──
+// ── 7. COIN3: practice earns trophies; coins come only from chests and the Trophy Road ──
+// (11 Oct 2026, D2.) Reps used to mint a coin per five and the daily chapter
+// five more, and Home banked them on every load. That mint is retired: a rep
+// earns trophies at the rep itself (TROPHY1), coins come only from the daily
+// chest and Trophy Road gifts, and mintCoins()/mintStoryBonus() only read.
 {
   const { ctx, pg } = await home("7");
   const c = await pg.evaluate(() => {
-    const start = Sona.getCoins();
-    Sona.bumpReps(12); Sona.mintCoins();
+    const start = Sona.getCoins(), t0 = Sona.trophies ? Sona.trophies() : -1;
+    Sona.bumpReps(12); const minted = Sona.mintCoins();
     const after12 = Sona.getCoins();
-    Sona.mintCoins(); Sona.mintCoins();          // a double-fire must not pay twice
+    Sona.mintCoins(); Sona.mintCoins();
     const afterRepeat = Sona.getCoins();
-    Sona.markStoryRead();                        // story bonus, once
+    Sona.markStoryRead();                        // the daily chapter's old bonus
     const afterStory = Sona.getCoins();
     Sona.markStoryRead();
-    return { start, after12, afterRepeat, afterStory, afterTwice: Sona.getCoins() };
+    const afterTwice = Sona.getCoins();
+    Sona.logAttempt({ sound: "R", word: "rabbit", pass: false, game: "practice" });   // a voiced try that missed
+    return { start, minted, after12, afterRepeat, afterStory, afterTwice, afterTry: Sona.getCoins(), t0, t1: Sona.trophies ? Sona.trophies() : -1 };
   });
-  ok("reps mint coins", c.after12 === c.start + 2, JSON.stringify(c));
-  ok("minting twice pays once", c.afterRepeat === c.after12, JSON.stringify(c));
-  ok("finishing the story pays a bonus", c.afterStory === c.after12 + 5, JSON.stringify(c));
-  ok("…and only the first time that day", c.afterTwice === c.afterStory, JSON.stringify(c));
+  ok("reps mint no coins: mintCoins() only reads the balance", c.after12 === c.start && c.minted === c.start && c.afterRepeat === c.start, JSON.stringify(c));
+  ok("finishing the story pays no coins, the first time or again", c.afterStory === c.start && c.afterTwice === c.start, JSON.stringify(c));
+  ok("a voiced practice try earns one trophy at the default goal (a miss counts the same), and no coin", c.t0 === 0 && c.t1 === 1 && c.afterTry === c.start, JSON.stringify(c));
   await ctx.close();
 }
 
-// Returning Home pays coins already earned through practice. This integration
-// must survive removing the old star-jar UI; calling mintCoins directly above
-// cannot detect a missing Home payout or a reload that double-pays it.
+// Returning Home pays nothing (COIN3). Home used to bank the coins twelve reps
+// minted; it now only reads, so a return or a reload moves no coin and no trophy.
 {
   const {ctx, pg} = await home("7");
   const earned = await pg.evaluate(() => {
     const coins = Sona.getCoins();
     Sona.bumpReps(12);
-    return {coins, beforeReturn:Sona.getCoins(), reps:Sona.repsToday()};
+    Sona.logAttempt({ sound: "R", reps: 3 });
+    return {coins, trophies:Sona.trophies(), reps:Sona.repsToday()};
   });
-  ok("honest practice leaves its coins owed until Home handles the return", earned.reps === 12 && earned.beforeReturn === earned.coins, JSON.stringify(earned));
+  ok("honest practice earns its trophies at the rep, not on a return Home", earned.reps === 12 && earned.trophies === 3, JSON.stringify(earned));
   await pg.reload();
-  const first = await pg.evaluate(() => ({coins:Sona.getCoins(),reps:Sona.repsToday()}));
-  ok("returning to the library grants the two coins earned by twelve reps", first.coins === earned.coins + 2 && first.reps === earned.reps, JSON.stringify({earned,first}));
+  const first = await pg.evaluate(() => ({coins:Sona.getCoins(),trophies:Sona.trophies(),reps:Sona.repsToday()}));
+  ok("returning to the library grants no coins and no trophies", first.coins === earned.coins && first.trophies === earned.trophies && first.reps === earned.reps, JSON.stringify({earned,first}));
   await pg.reload();
-  const again = await pg.evaluate(() => ({coins:Sona.getCoins(),reps:Sona.repsToday()}));
-  ok("reloading the library cannot pay those earned coins twice", JSON.stringify(again) === JSON.stringify(first), JSON.stringify({first,again}));
+  const again = await pg.evaluate(() => ({coins:Sona.getCoins(),trophies:Sona.trophies(),reps:Sona.repsToday()}));
+  ok("reloading the library changes nothing either", JSON.stringify(again) === JSON.stringify(first), JSON.stringify({first,again}));
   await ctx.close();
 }
 

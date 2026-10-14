@@ -187,6 +187,9 @@ function device(cfg) {
       localStorage.setItem("sona.progress.v1", JSON.stringify(cfg.progress));
       localStorage.setItem("sona.rateask.v1", JSON.stringify({ next: Date.now() + 90 * 86400000 }));
       Object.keys(cfg.seed || {}).forEach((k) => localStorage.setItem(k, cfg.seed[k]));
+      // today's goal already reached, so the once-a-day "You did it!" note
+      // does not land on a game shot when the shot's own reps cross it
+      if (cfg.goalMet) { const d = new Date(), p2 = (n) => String(n).padStart(2, "0"); localStorage.setItem("sona.goaldays.v1", JSON.stringify({ [d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate())]: 1 })); }
     }
   }
   Object.keys(cfg.session || {}).forEach((k) => sessionStorage.setItem(k, cfg.session[k]));
@@ -275,7 +278,7 @@ const cutIn = (page, f) => page.evaluate(async (f) => {
   window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 7, bubbles: true }));
 }, f);
 SCENES.slice = async (devName) => {
-  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" } });
+  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
   const { page } = s;
   await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
   await settle(page);
@@ -319,20 +322,46 @@ SCENES.slice = async (devName) => {
     await page.waitForTimeout(400);
   }
   await until(page, () => fruits.filter((q) => !q.sliced).length >= 4, 6000);
-  // A short real swipe through an isolated fruit below Echo, after the
-  // "SUPER SLICE!" banner fades, keeps the action readable.
-  let best = null; const t0 = Date.now();
-  while (Date.now() - t0 < (devName === "iphone" ? 24000 : 11000)) {
-    const f = await pick(110, true);
-    const calm = await page.evaluate(() => Number(getComputedStyle(document.getElementById("banner")).opacity) < 0.05);
-    if (f && f.n >= 2 && f.n <= 4 && f.gap >= 120 && f.lowerClear && calm) { best = f; break; }
-    if (f && f.n <= 4 && f.gap >= 90 && f.lowerClear && calm && Date.now() - t0 > 5000) { best = f; break; }
-    await page.waitForTimeout(30);
-  }
-  if (!best) throw new Error("No readable Fruit Slice capture moment");
-  await cutIn(page, Object.assign(best, { freeze: true }));
+  // The moment: Super Slice still on, its banner gone, three or four whole
+  // fruit in the open sky and none sitting on another. No cut in the frame:
+  // a blade caught mid-swipe reads as a smear across the fruit at this size
+  // (Travis, 11 Oct 2026: "the weird stuff in between the strawberry").
+  const ok = await until(page, () => {
+    if (!(slowMs > 1200) || Number(getComputedStyle(document.getElementById("banner")).opacity) > 0.05) return false;
+    const up = fruits.filter((q) => !q.sliced && q.y < standTop() - 60 && q.y > H * 0.22);
+    return up.length >= 3 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > a.r + b.r + 14));
+  }, 9000) || await until(page, () => {
+    const up = fruits.filter((q) => !q.sliced && q.y < standTop() - 60 && q.y > H * 0.22);
+    return slowMs > 0 && up.length >= 2 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > a.r + b.r + 6));
+  }, 6000);
+  if (!ok) throw new Error("No readable Fruit Slice capture moment: " + await page.evaluate(() => "slowMs " + Math.round(slowMs) + ", fruit " + fruits.filter((q) => !q.sliced).map((q) => Math.round(q.y) + "/" + Math.round(q.r)).join(" ") + ", H " + H + ", stand " + Math.round(standTop())));
+  await page.evaluate(() => { __dev.frozen = true; });
   s.note = await page.evaluate(() => "row " + rowN + ", " + fruits.filter((q) => !q.sliced).length + " fruit up, Super Slice " + (slowMs > 0 ? "on" : "OFF") + (document.getElementById("slowControl").hidden ? ", Echo's button HIDDEN" : ""));
   await shot(page, devName, "slice");
+  return s;
+};
+
+// 1b. Fruit Slice on its last heart, with Echo asking for the sound that
+// brings one back ("For a heart and Super Slice, say"). The two hearts are
+// taken off directly (a staged moment, like the example week on Progress);
+// the ask is the real one, opened by a tap on Echo.
+SCENES.hearts = async (devName) => {
+  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
+  const { page } = s;
+  await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
+  await settle(page);
+  await until(page, () => fruits.filter((q) => !q.sliced).length >= 2, 8000);
+  await page.evaluate(() => { hearts = 1; paintHearts(); });
+  await page.evaluate(() => document.getElementById("slowKeys").click());
+  await until(page, () => /heart|Say /i.test(document.getElementById("slowStatus").textContent) && document.getElementById("slowControl").classList.contains("asking"), 12000);
+  // two or more fruit in the air, none sitting on another
+  await until(page, () => {
+    const up = fruits.filter((q) => !q.sliced && q.y < H * 0.7 && q.y > H * 0.25);
+    return up.length >= 2 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > 150));
+  }, 8000);
+  await page.evaluate(() => { __dev.frozen = true; });
+  s.note = await page.evaluate(() => "hearts " + hearts + ", status: " + document.getElementById("slowStatus").textContent);
+  await shot(page, devName, "hearts");
   return s;
 };
 
@@ -352,7 +381,7 @@ SCENES.charge = async (devName) => {
 
 // 3. Piano Tiles in play: tiles coming down, one key just played.
 SCENES.tiles = async (devName) => {
-  const s = await open(devName, "/arcade-tiles.html?from=charge", { session: { "sona.play.token": "arcade-tiles.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" } });
+  const s = await open(devName, "/arcade-tiles.html?from=charge", { session: { "sona.play.token": "arcade-tiles.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
   const { page } = s;
   await until(page, () => window.gameEntryAllowed === true && typeof startSong === "function", 15000);
   await settle(page);
@@ -364,12 +393,28 @@ SCENES.tiles = async (devName) => {
     return t.note;
   });
   let got = 0; const t0 = Date.now();
-  while (got < 9 && Date.now() - t0 < 30000) { if (await tapKeys()) got++; await page.waitForTimeout(40); }
-  // the moment: a few tiles on the way down, the last one just played
-  await until(page, () => tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 3, 8000);
+  while (got < 3 && Date.now() - t0 < 30000) { if (await tapKeys()) got++; await page.waitForTimeout(40); }
+  // Slow keys, earned the real way: a tap on Echo, his ask, the child's sound
+  // heard through the mic. The shot shows the song still going, slowed.
+  for (let tries = 0; tries < 3 && !(await page.evaluate(() => slowMs > 0)); tries++) {
+    const mics = await page.evaluate(() => __dev.mics);
+    await page.evaluate(() => document.getElementById("slowKeys").click());
+    if (!(await until(page, (m) => __dev.mics > m, 12000, mics))) continue;
+    await page.waitForTimeout(350);
+    await page.evaluate(() => { __dev.voice = true; });
+    await until(page, () => slowMs > 0, 3000);
+    await page.evaluate(() => { __dev.voice = false; });
+    await page.waitForTimeout(400);
+  }
+  for (let i = 0; i < 4; i++) { if (!(await tapKeys())) await page.waitForTimeout(250); await page.waitForTimeout(40); }
+  // the moment: a few tiles on the way down, the last one just played, the
+  // song still going with slow keys on
+  await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 3, 8000) ||
+    await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 2, 4000);
   for (let i = 0; i < 40; i++) { if (await tapKeys()) break; await page.waitForTimeout(40); }
   await page.waitForTimeout(90);
   await page.evaluate(() => { __dev.frozen = true; });
+  s.note = await page.evaluate(() => "slow keys " + (slowMs > 0 ? "on" : "OFF") + ", phase " + phase);
   await shot(page, devName, "tiles");
   return s;
 };
@@ -465,20 +510,22 @@ SCENES.progress = async (devName) => {
 SCENES.rachel = async (devName) => {
   const s = await open(devName, "/onboarding.html", { fresh: true });
   const { page } = s;
-  const next = () => page.locator("#nextBtn").click();
+  // Since 5 Oct 2026 (setup option B) Rachel sits on "<Name>'s practice is
+  // ready", under About Sona; walk setup to it whatever questions come first
   await until(page, () => document.body.dataset.setupScreen === "welcome", 15000);
-  await next();
-  await page.locator('[data-step="who"].on').waitFor();
-  await page.locator('.who-pick[data-role="parent"]').click();
-  await page.locator('[data-step="name"].on').waitFor();
-  await page.locator("#obName").fill("Mia");
-  await page.locator('#obAge [data-age="8"]').click();
-  await next();
-  const r = page.locator('#obSounds [data-sound="R"]');
-  if ((await r.getAttribute("aria-pressed")) !== "true") await r.click();
-  await next();
-  await page.locator('[data-step="rachel"].on').waitFor();
-  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".rachel-photo") && document.querySelector(".rachel-photo").decode().catch(() => {})]));
+  for (let i = 0; i < 12; i++) {
+    const scr = await page.evaluate(() => document.body.dataset.setupScreen);
+    if (scr === "ready") break;
+    if (scr === "name") { await page.locator("#obName").fill("Mia"); const a = page.locator('#obAge [data-age="8"]'); if (await a.count()) await a.click(); }
+    if (scr === "sounds") { const r = page.locator('#obSounds [data-sound="R"]'); if ((await r.getAttribute("aria-pressed")) !== "true") await r.click(); }
+    await page.waitForTimeout(650);
+    // a one-tap question has no Continue: tap its first answer
+    if (await page.locator("#nextBtn").isVisible()) await page.locator("#nextBtn").click();
+    else await page.locator(".step.on button:visible").first().click();
+    await page.waitForTimeout(650);
+  }
+  await page.locator('[data-step="ready"].on').waitFor();
+  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".ready-rachel-photo") && document.querySelector(".ready-rachel-photo").decode().catch(() => {})]));
   await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => a.finish()));
   await page.waitForTimeout(500);
   await shot(page, devName, "rachel");

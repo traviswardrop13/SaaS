@@ -27,6 +27,18 @@
    tools/art/game-sprites.json; each falls back to a drawn one until it loads. The word pictures are the painted
    ones Feed Echo uses; they are HTML, laid over the canvas.
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above.
+   Level 2 blows eight bubbles for every word; Level 3 does too, and after
+   each word's picture lands in the basket (not the last word's: that one
+   is the giant bubble) Echo blows a bonus puff of three plain bubbles, and
+   the word's step counts once those are popped. Never more than eight on
+   the sky, the same sizes, and they still bob in place; the glow and the
+   touch-anywhere help come at the same times for a bonus puff as for a
+   word's, and a touch-anywhere help already on for the word stays on
+   through its bonus puff. The word, saying it once, and the five words
+   never change.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -37,6 +49,9 @@
   var ZONE = { x0: 0, y0: 10, x1: 440, y1: 372 };          // where bubbles live
   var RING = { x: 150, y: 388, r: 15 }, GRIP = { x: 108, y: 440 };  // the wand: its ring, and Echo's wing
   var PER_WORD = [6, 7, 7, 8, 8];                          // bubbles a word blows, the gold one included
+  var PER_WORD_UP = [8, 8, 8, 8, 8];                       // …at Level 2 and 3
+  var level = 1, bonus = false;                            // the level the page set; a Level 3 bonus puff is out
+  var lateOn = false;                                      // the late help came on for this word (it stays on: popBubble)
 
   // state: idle (no bubbles: a word turn) | ready (bubbles out) | placed (all
   // popped, the picture in the basket: the cheer, then the next word) | giant
@@ -270,7 +285,10 @@
   }
 
   // ── the bubbles ──
-  function blow(n) {
+  // opts.noGold: a Level 3 bonus puff, plain bubbles only, each with room
+  // for its whole bob inside the sky (pad 18: the widest bob is 17)
+  function blow(n, opts) {
+    var noGold = !!(opts && opts.noGold);
     left = [];
     // the gold one near the middle, the others wherever there is room
     var spots = [], tries = 0, i;
@@ -278,9 +296,9 @@
     // big enough for a three-year-old's finger: about 60 to 70 px across on a
     // phone, and the gold one bigger
     var goldR = 50, gx = 190 + ((words * 53) % 90), gy = 170 + ((words * 37) % 60);
-    spots.push({ x: gx, y: gy, r: goldR, gold: true });
-    for (i = 1; i < n && tries < 600; tries++) {
-      var r = 37 + ((i * 7 + tries * 3 + words * 5) % 7), pad = r + 16;
+    if (!noGold) spots.push({ x: gx, y: gy, r: goldR, gold: true });
+    for (i = noGold ? 0 : 1; i < n && tries < 600; tries++) {
+      var r = 37 + ((i * 7 + tries * 3 + words * 5) % 7), pad = r + (noGold ? 18 : 16);
       var x = ZONE.x0 + pad + ((tries * 97 + i * 131 + words * 61) % 1000) / 1000 * (ZONE.x1 - ZONE.x0 - pad * 2);
       var y = ZONE.y0 + pad + ((tries * 61 + i * 173 + words * 29) % 1000) / 1000 * (ZONE.y1 - ZONE.y0 - pad * 2);
       if (tries > 400 || fits(x, y, r)) { spots.push({ x: x, y: y, r: r, gold: false }); i++; }
@@ -301,7 +319,7 @@
     // for this word: the child who needs it most was waiting the whole fourteen
     // seconds again for every bubble. A beat, not zero: a dragged finger
     // touches on every move, and would empty the sky in one stroke.
-    if (clock >= anyAt) anyAt = clock + 1.5; else { helpAt = clock + HELP_S; anyAt = clock + ANY_S; }
+    if (clock >= anyAt) { anyAt = clock + 1.5; lateOn = true; } else { helpAt = clock + HELP_S; anyAt = clock + ANY_S; }
     if (b.gold) {
       // the picture falls out and flies to the basket
       sound("gold"); sparks(p.x, p.y, 10);
@@ -341,6 +359,16 @@
         state = "giant"; giant = { born: clock, r: 104, x: BW / 2, y: BH + 104, up: false };
         echo("none"); sound("blow");
         try { api.hint("Pop the big bubble!"); } catch (e2) {}
+      } else if (level === 3 && !bonus) {
+        // Level 3: a bonus puff of three, and the step waits for them too.
+        // Its help starts over exactly as a word's puff does (onWord), unless
+        // the late help already came on for this word: the puff is still this
+        // word's, and once that help is on it stays on for the word, as at
+        // Level 1 (a child who waited for it is never made to wait again).
+        bonus = true; blow(3, { noGold: true });
+        if (!lateOn) { helpAt = clock + HELP_S + 1; anyAt = clock + ANY_S + 1; }
+        echo("wave"); sound("blow");
+        try { api.hint("Pop the bubbles!"); } catch (e3) {}
       } else {
         state = "placed"; echo("cheer", true);
         // the next word waits for the cheer, on the game's own clock, so a
@@ -385,9 +413,11 @@
     try {
       window.__bubbles = { state: state, words: words, count: count, popped: total, left: left.length, frozen: frozen,
         basket: (function () { var n = 0, ws = wells(); for (var i = 0; i < ws.length; i++) if (ws[i].classList.contains("full")) n++; return n; })(),
-        bubbles: left.map(function (b) { var p = where(b); return { x: +(p.x * s).toFixed(1), y: +(p.y * s).toFixed(1), r: +(p.r * s).toFixed(1), gold: b.gold, out: clock >= b.born && p.k >= 0.55 }; }),
+        // home: where a bubble rests and how far it bobs, in board units (zone is the sky it lives in)
+        bubbles: left.map(function (b) { var p = where(b); return { x: +(p.x * s).toFixed(1), y: +(p.y * s).toFixed(1), r: +(p.r * s).toFixed(1), gold: b.gold, out: clock >= b.born && p.k >= 0.55, home: [b.hx, b.hy, b.ax, b.ay, b.r] }; }),
+        zone: [ZONE.x0, ZONE.y0, ZONE.x1, ZONE.y1],
         giant: giant ? { x: +(giant.x * s).toFixed(1), y: +(giant.y * s).toFixed(1), r: +(giant.r * s).toFixed(1), up: !!giant.up } : null,
-        help: state === "ready" && clock >= helpAt, any: state === "ready" && clock >= anyAt, pose: pose };
+        help: state === "ready" && clock >= helpAt, any: state === "ready" && clock >= anyAt, pose: pose, level: level, bonus: bonus };
     } catch (e) {}
   }
   var Bubbles = {
@@ -415,7 +445,9 @@
     // the engine heard the word: Echo blows the bubbles
     onWord: function () {
       if (words >= count) return;
-      blow(PER_WORD[Math.min(words, PER_WORD.length - 1)]);
+      var per = level > 1 ? PER_WORD_UP : PER_WORD;
+      bonus = false; lateOn = false;
+      blow(per[Math.min(words, per.length - 1)]);
       var gold = null; for (var i = 0; i < left.length; i++) if (left[i].gold) gold = left[i];
       prize = { b: gold, fly: null, landed: false, x: RING.x, y: RING.y, k: 0.2 };
       try { var p = el("prize"); p.innerHTML = picHTML(64); p.hidden = false; placePrize(); } catch (e) {}
@@ -432,7 +464,7 @@
       publish();
     },
     reset: function () {
-      words = 0; total = 0; left = []; fx = []; prize = null; giant = null; state = "idle"; doneAt = 0;
+      words = 0; total = 0; left = []; fx = []; prize = null; giant = null; state = "idle"; doneAt = 0; bonus = false; lateOn = false;
       try { var ws = wells(); for (var i = 0; i < ws.length; i++) { ws[i].innerHTML = ""; ws[i].classList.remove("full"); } var p = el("prize"); if (p) { p.hidden = true; p.innerHTML = ""; } } catch (e) {}
       echo("wave"); publish();
     },
@@ -442,6 +474,8 @@
       if (typeof Bubbles.onFinale === "function") try { Bubbles.onFinale(); } catch (e) {}
       publish();
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
     snapshot: function () { publish(); return window.__bubbles; },
   };
   window.Bubbles = Bubbles;

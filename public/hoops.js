@@ -15,6 +15,15 @@
    miss until the next flick cannot miss — the last thing a child does is make
    the shot (Rachel's rule: end every round on a success).
 
+   LEVELS (LEVELS1, 11 Oct 2026). The page hands over the child's level
+   (setLevel; this file never reads storage). Level 1 is the game above. At
+   Level 2 the hoop slides from the first basket, and at Level 3 it slides
+   wider and quicker. The help never changes with the level: after one miss
+   the hoop moves as it would at Level 1, at half speed (so a harder level is
+   never harder once help has started), two stop it and make it glow, and
+   from the third any swipe up goes in. Eight words, said two times each, at
+   every level.
+
    Nothing here is practice data: no attempt, rep, coin or sticker is written. */
 (function () {
   "use strict";
@@ -37,6 +46,8 @@
   var state = "idle", ball = null, baskets = 0, count = 8, misses = 0, shots = 0, lastShot = "";
   var hoopX = 0, hoopPhase = 0, net = { stretch: 0, sway: 0, swayV: 0 }, fx = [];
   var hintAt = 0, doneAt = 0, cheerAt = -9, crowd = [], lastFlick = null, hoopClock = 0;
+  var level = 1;                            // from the page (setLevel): 1, 2 or 3
+  var buddy = null;                         // from the page (setBuddy): { rest, cheer } picture paths
 
   function project(x, y, z) {
     var dx = x - CAM.x, dy = y - CAM.y, dz = z - CAM.z;
@@ -48,10 +59,21 @@
   // wider later on. After a miss it slows; after two it eases to a stop. It
   // holds still while the word is being said and while a basket is cheered.
   function hoopMoving() { return misses < 2 && (state === "drop" || state === "ready" || state === "flying" || state === "back"); }
+  // At Level 2 it slides from the first basket, and at Level 3 wider and
+  // quicker. The help reads Level 1's numbers: once this ball has missed, the
+  // hoop moves as it would at Level 1 (still for the first two baskets), and
+  // the miss doubles that period; two stop it. A new ball starts at the level.
+  function hoopLevel() { return misses >= 1 ? 1 : level; }
+  function hoopAmp() {
+    var lv = hoopLevel();
+    if (lv === 2) return baskets < 3 ? 0.6 : 0.9;
+    if (lv === 3) return baskets < 3 ? 0.9 : 1.0;
+    return baskets < 2 ? 0 : baskets < 5 ? 0.6 : 0.9;
+  }
   function hoopTarget(t) {
     if (misses >= 2) return hoopX;
-    var amp = baskets < 2 ? 0 : baskets < 5 ? 0.6 : 0.9;
-    var period = (baskets < 5 ? 5.6 : 4.3) * (misses === 1 ? 2 : 1);
+    var lv = hoopLevel(), amp = hoopAmp();
+    var period = (lv === 2 ? (baskets < 3 ? 5.0 : 4.0) : lv === 3 ? (baskets < 3 ? 4.4 : 3.6) : (baskets < 5 ? 5.6 : 4.3)) * (misses === 1 ? 2 : 1);
     return amp * Math.sin(hoopPhase + (t / period) * Math.PI * 2);
   }
 
@@ -428,6 +450,14 @@
   }
   function sound(name) { if (api && api.sfx) try { api.sfx(name); } catch (e) {} }
 
+  // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026). The child's buddy on the court cheers
+  // with Echo: the same hop, and its OWN cheer picture for 900 ms, then its
+  // own rest picture. Echo's own block, below, swaps Echo's pictures, so it never
+  // runs on the buddy. Without both pictures (setBuddy) only the hop runs.
+  function cheerBuddy(id) {
+    try { var b = document.getElementById(id); if (!b) return; b.classList.remove("hop"); void b.offsetWidth; b.classList.add("hop");
+      if (buddy) { b.src = buddy.cheer; clearTimeout(cheerBuddy.t); cheerBuddy.t = setTimeout(function () { if (buddy) b.src = buddy.rest; }, 900); } } catch (x) {}
+  }
   function scored() {
     state = "scored"; baskets++; misses = 0; net.stretch = 1; net.swayV = ball.vx * 3;
     var p = project(hoopX, RIM_Y - 0.15, HOOP_Z);
@@ -440,6 +470,7 @@
     // Echo on the court cheers for the length of his hop, then rests again
     try { var e = document.getElementById("courtEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop");
       e.src = "/assets/crafted/echo-cheer.webp"; clearTimeout(scored.t); scored.t = setTimeout(function () { e.src = "/assets/crafted/echo-welcome.webp"; }, 900); } } catch (x) {}
+    cheerBuddy("courtBuddy");
     // the next word waits for the celebration, on the game's own clock, so a
     // pause in between holds it rather than skipping it
     doneAt = clock + 1.15;
@@ -511,7 +542,7 @@
 
   // ── what the engine calls ──
   function publish() {
-    try { window.__hoops = { state: state, baskets: baskets, misses: misses, shots: shots, lastShot: lastShot, hoopX: +hoopX.toFixed(3), count: count, frozen: frozen, flick: lastFlick,
+    try { window.__hoops = { state: state, baskets: baskets, misses: misses, shots: shots, lastShot: lastShot, hoopX: +hoopX.toFixed(3), count: count, frozen: frozen, flick: lastFlick, level: level, amp: hoopAmp(),
       ball: ball && state === "flying" ? { y: +ball.y.toFixed(3), z: +ball.z.toFixed(3) } : null }; } catch (e) {}
   }
   var Hoops = {
@@ -548,6 +579,11 @@
       burst(p.x, p.y, 24); burst(W * 0.25, H * 0.45, 16); burst(W * 0.75, H * 0.45, 16);
       shout(count + " baskets!", null, true, { x: W / 2, y: H * 0.56 });
     },
+    // the level, from the page (2 or 3; anything else is Level 1)
+    setLevel: function (n) { level = (n === 2 || n === 3) ? n : 1; },
+    // the buddy's own standing and cheering pictures, from the page (paths
+    // only; anything else, or null, leaves the buddy to hop without a swap)
+    setBuddy: function (p) { buddy = (p && typeof p.rest === "string" && typeof p.cheer === "string") ? { rest: p.rest, cheer: p.cheer } : null; },
     snapshot: function () { return window.__hoops; },
   };
   window.Hoops = Hoops;

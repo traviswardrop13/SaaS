@@ -35,11 +35,37 @@ const EVENTS = new Set([
                           // offer is supposed to follow, so without it the
                           // funnel cannot tell a family who saw the product
                           // from one who bounced before it started
+  // Levels inside games (11 Oct 2026, LEVELS1): sent by a game page once per
+  // load at Level 2 or 3, never by Home. It carries the game and the level
+  // (2 or 3) and nothing else: no trophy count, no name, no age.
+  "level played",
+  "game opened",          // a game page opened for play (game key only): the
+                          // games that skip the practice page are seen here
+  // The Trophy Road (11 Oct 2026, CHEST1 / ROAD1 / MONTH1): sent by sona.js
+  // when a child opens the day's chest, a road gift or a month gift, never by
+  // Home. They carry nothing: no stop or step number (a stop is a lifetime
+  // trophy count), no coins, no name.
+  "chest opened",
+  "road gift opened",
+  "month gift opened",
+  // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a
+  // buddy, hat or place with coins. It carries the kind, the catalog id and
+  // its price in coins (coins are never sold): no balance, no name.
+  "shop item got",
+  // The Practice Board (11 Oct 2026, BOARD2; built dark until Travis's go):
+  // sent by sona.js when a grown-up's link puts children on the board, when
+  // one leaves it, and when the board page shows it. They carry nothing: no
+  // token, nickname, days or place.
+  "board turned on",
+  "board turned off",
+  "board viewed",
 ]);
-// `plan` and `surface` join the list for the events above. Still no name, no
-// age, no email, no word a child said — an unlisted key is dropped silently,
-// which is the whole point of an allow-list.
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source"]);
+// `plan` and `surface` join the list for the events above, and `level` (2 or
+// 3) for "level played". Still no name, no age, no email, no word a child
+// said — an unlisted key is dropped silently, which is the whole point of an
+// allow-list. `kind`, `item` and `cost` are the Buddy Shop's ("characters",
+// "dragon", 150): a catalog entry and its coin price, never a balance.
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source", "level", "kind", "item", "cost"]);
 
 export async function POST(req: NextRequest) {
   try {

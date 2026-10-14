@@ -76,6 +76,26 @@ device checklist in `SPEECH_PLUGIN.md` before archiving. The judging rules
 live in `public/sona.js` and go live with the website; only the plugin needs
 the new build.
 
+## Sona's own microphone (12 Oct 2026)
+
+**What a family notices today.** The moment Echo listens, the iPhone app acts
+as if it were on a phone call: the volume buttons move call volume, and
+AirPods drop to phone-call quality. WebKit does that whenever a web page uses
+the mic, and the app cannot change it. In the next build, the SonaSpeech
+plugin opens the mic itself in ordinary recording mode and hands the sound to
+the page; every "did that count" bar is unchanged, and no audio leaves the
+phone.
+
+It needs a **new iPhone build**. Builds already in the App Store do not have
+it, so the website can go live first and those phones keep today's mic. The
+Mac steps (one line in `ios/App/App/capacitor.config.json`, the speech
+script again, and deleting `configureAudioForAutoplay` if it is there), the
+phone checklist, the gate before submitting and the off switch
+(`NATIVE_MIC_ON` in `public/sona.js`, a website deploy) are in
+`SPEECH_PLUGIN.md`, "Sona's own microphone". No Info.plist change:
+`NSMicrophoneUsageDescription` is already required (below), and the mic is
+never used in the background.
+
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
 - **Node 22+** (required by the pinned Capacitor 8 CLI)
@@ -179,7 +199,7 @@ In `Info.plist` add:
 - **NSMicrophoneUsageDescription** = "Sona uses the microphone so your child can practice saying their sounds."
 - **NSSpeechRecognitionUsageDescription** — `scripts/install-ios-speech.py` adds it. iOS closes the app if the speech permission is asked without it.
 
-## Echo's real voice on auto-spoken lines (Xcode, 5 minutes)
+## Echo's real voice on auto-spoken lines (nothing to add in Xcode)
 
 **Symptom:** lines the app speaks *by itself* on opening a screen — charge.html's
 "Ready? Say rrrr… Go!" — come out in the flat robot voice, while the same line
@@ -192,43 +212,27 @@ to `speechSynthesis`.
 
 The web fix already shipped — an auto-spoken line now WAITS for the first tap
 and then speaks in Echo's voice, instead of robot-voicing immediately. That
-alone fixes it everywhere. The change below removes the wait in the iOS app, so
-the line plays the moment the screen opens.
+alone fixes it everywhere.
 
-**This cannot be done in `capacitor.config.json`** — Capacitor does not expose
-`mediaTypesRequiringUserActionForPlayback`. It is a few lines in the Xcode
-project. In your Capacitor iOS app, edit `ios/App/App/AppDelegate.swift` (or a
-`CAPBridgeViewController` subclass if you have one):
+**Nothing to add in Xcode for the wait.** The setting that removes it in the
+app is the web view's `mediaTypesRequiringUserActionForPlayback = []`, with
+`allowsInlineMediaPlayback = true`. It is not in `capacitor.config.json`, but
+Capacitor's own bridge already sets both (`CAPBridgeViewController.swift`,
+Capacitor 8.4.1), so every build has it.
 
-```swift
-import Capacitor
-import AVFoundation
+**Do not add the `configureAudioForAutoplay()` this section once suggested; if
+it is in `ios/App/App/AppDelegate.swift`, delete it and the line that calls
+it** (12 Oct 2026). It put the whole app's audio session into `.playAndRecord`
+with `.measurement` and `.allowBluetooth` at launch: measurement mode (no
+automatic gain on the mic) and hands-free Bluetooth, which drops AirPods to
+phone-call sound quality. That is what Sona's own microphone exists to remove
+(its section is above). The SonaSpeech plugin sets the session itself, only
+while a listen is open, and gives it back as plain media afterwards.
 
-// Let the web layer start audio without a tap, and keep it audible with the
-// ringer switch off — Sona's whole point is a child hearing the model sound.
-extension AppDelegate {
-  func configureAudioForAutoplay() {
-    try? AVAudioSession.sharedInstance().setCategory(
-      .playAndRecord,                 // .playAndRecord: practice needs the mic too
-      mode: .measurement,             // matches the clean-capture mode the scorer wants
-      options: [.defaultToSpeaker, .allowBluetooth]
-    )
-    try? AVAudioSession.sharedInstance().setActive(true)
-  }
-}
-```
-
-and, where the bridge view controller is created, before it loads:
-
-```swift
-webView.configuration.allowsInlineMediaPlayback = true
-webView.configuration.mediaTypesRequiringUserActionForPlayback = []   // [] = none
-```
-
-**Verify it worked:** open a practice round *without touching the screen*. If
-"Ready? Say rrrr… Go!" is Echo, it took. If it is still the robot, the web
-fallback is doing its job and the WKWebView setting did not apply — check that
-you edited the controller that actually loads the bridge.
+**Check it on the phone:** open a practice round *without touching the screen*.
+If "Ready? Say rrrr… Go!" is Echo, the setting applies. If it is still the
+robot, the web fallback is doing its job and the page waits for a tap; tell
+Claude, because the fix is not in AppDelegate.
 
 **Caveat worth knowing:** `mediaTypesRequiringUserActionForPlayback` is
 documented for media *elements*. Web Audio (which is what Sona uses) usually
@@ -247,6 +251,8 @@ that cannot regress out from under you.
 - **Screenshots:** required sizes (capture from a device/simulator)
 - **Privacy "nutrition label" (be accurate):** collect **email** (account); audio is **processed for scoring**; recordings **stay on the device**; no in-app third-party ad tracking
 - **URLs:** Privacy `speaksona.com/privacy`, Support `speaksona.com/support`
+- **Coins (Trophy Road, 11 Oct 2026):** Coins are earned only through daily chests and Trophy Road gifts and are never sold: no consumable in-app purchase, and no random rewards (every prize is shown before it opens).
+- **App Privacy, owed (not yet answered in App Store Connect):** the anonymous device id and the product-interaction events `/api/track` already relays (practice started and completed, the daily goal, the plan funnel), now including the chest, Trophy Road gift, month gift, Buddy Shop ("shop item got") and game-level events. None carries a name, a count of trophies or coins held, or audio. The practice and daily-goal events do carry the sound being practised (for example "R"), as the privacy page says, and "shop item got" carries the item and its price in coins, never a balance.
 
 ## Apple Guideline 4.2 ("minimum functionality")
 A pure website-in-a-box can be rejected. Your app has native value (mic-based practice; push next), which helps it pass. If review pushes back, the fix is more native features → do phase 2.

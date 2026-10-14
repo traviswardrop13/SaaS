@@ -255,6 +255,12 @@
     #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
     #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
     #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
+    /* LEVELS1: at Level 2 or 3 "Up next" names the level on a line of its own
+       ("Fruit Slice" over "Level 2"), so on a phone the level is never the
+       part an ellipsis cuts off. The words are the same: the dot between them
+       is still in the text, only not drawn. */
+    #launchBar .launch-name .launch-line{display:block;overflow:hidden;text-overflow:ellipsis;}
+    #launchBar .launch-name .launch-dot{display:none;}
     #quietOvl{background:rgba(74,44,20,.30);z-index:85;padding:20px;}
     #quietOvl .quiet-card{background:#fff7e9;max-height:calc(100dvh - 40px);overflow:auto;}
     .quiet-card img{width:160px;height:150px;object-fit:contain;}
@@ -504,7 +510,7 @@
         var land=function(){if(landed)return;landed=true;micOpening=Math.max(0,micOpening-1);if(!micOpening)micLanded.splice(0).forEach(function(done){done();});};
         micOpening++;
         try{
-          var stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+          var stream=(S&&S.micNative&&S.micNative())?await S.micOpen({audio:true,video:false}):await navigator.mediaDevices.getUserMedia({audio:true,video:false});
           if(epoch!==practiceEpoch || practicePaused || practiceClosed || document.hidden){
             stream.getTracks().forEach(function(t){t.stop();});
             micClosedAt=performance.now(); land();
@@ -693,7 +699,10 @@
     // for ECHO_TAIL_MS (a speaker's and a Bluetooth headset's delay). The
     // same order means Echo's own voice can never become a try, land in the
     // parent's listen-back clip, or reach the native recognizer.
-    // Echo cancellation stays on: what the pass/fail check hears is unchanged.
+    // Echo cancellation: in a browser it stays on, as it always was. In the
+    // iPhone app the mic is Sona's own (sona.js, NATIVE MIC): no echo
+    // cancelling, and nothing of Sona's plays while it is open, so there is
+    // nothing to cancel.
     // NO exceptions, not even the chime that used to mark each counted try
     // (24 Sep 2026): it rang inside the open window, and the guard that kept
     // the detector deaf to it also swallowed a quick next try ("k… k… k…"
@@ -1615,6 +1624,7 @@
         "counts above "+(thr?micDb(thr):"(reading the room)")+" · room "+(roomRms?micDb(roomRms):"not read yet")];
       if(m.last)L.push("last sound: loudest "+micDb(m.last.peak)+", middle "+micDb(m.last.mid)+", "+(m.last.ms/1000).toFixed(2)+" s, "+(m.last.counted?"counted"+(m.last.route?" ("+m.last.route+")":""):"not counted"));
       L.push(m.frames.length+" fps · "+(ctx?ctx.sampleRate:"?")+" Hz · echo cancel "+yn(set.echoCancellation)+" · noise "+yn(set.noiseSuppression)+" · auto gain "+yn(set.autoGainControl));
+      L.push(set.sonaNative?"mic: Sona's own · "+(set.sonaMode||"default")+" mode · in "+(set.sonaInput||"?")+" · out "+(set.sonaOutput||"?")+" · boost ×"+Number(set.sonaGain||1).toFixed(1)+" · chunk "+(set.sonaChunkMs||"?")+" ms · queue "+(set.sonaQueueMs||0)+" ms · gaps "+(set.sonaGaps||0)+" · restarts "+(set.sonaRestarts||0)+" · close "+(set.sonaCloseMs!=null?set.sonaCloseMs+" ms":"?"):"mic: "+((S&&S.isNativeApp&&S.isNativeApp())?"the web page's (phone-call mode)"+(set.sonaWhy?" · "+set.sonaWhy:""):"the browser's"));
       m.box.textContent=L.join("\n");
     }
     function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
@@ -1689,7 +1699,7 @@
       function stop(){finish(false);}
       try{
         var ctx=getCtx(); if(!ctx){done();return;}
-        src=ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
         ev=evidenceAnalyser(ctx,src); td=new Uint8Array(an.fftSize); probe.attach(ev,ctx.sampleRate);
       }catch(e){finish(false);return;}
       roomProbe=stop;
@@ -1809,7 +1819,7 @@
             });
           };
           try{
-            var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
+            var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,micStream):ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
             seg.src=src; an.fftSize=512;src.connect(an);
             var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
             var ev=evidenceAnalyser(ctx,src);
@@ -1834,7 +1844,7 @@
             // Independent recorder files cannot be concatenated into one clip.
             // Interrupted attempts retain reps/evidence but skip the keepsake.
             if(!attemptInterrupted && window.MediaRecorder && micStream){try{
-              var recorder=new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
+              var recorder=(S&&S.micRecorder)?S.micRecorder(micStream):new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
               recorder.ondataavailable=function(e){
                 if(engineAttempt===attempt && attempt.segment===seg && !attemptInterrupted && !attempt.cancelled && (!seg.closed || seg.reason==="done") && e.data && e.data.size)chunks.push(e.data);
               };
@@ -2398,7 +2408,13 @@
       // Up next: the game's painted Home card, else its sticker (crafted-games.css)
       try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"),_card=(S.CRAFTED_CARDS||{})[GAME.replace(/^arcade-|\.html$/g,"")];
         _lb.innerHTML='<span id="launchArt" aria-hidden="true"></span><span class="launch-text"><span class="launch-up">Up next</span><span class="launch-name"></span></span><i class="launch-go" aria-hidden="true"></i>';
-        _lb.querySelector(".launch-name").textContent=GMETA.n;
+        // LEVELS1: the one place the level is named before the game (and its
+        // start card): "Fruit Slice · Level 2", only at Level 2 or 3
+        var _lv=1;try{_lv=S.playLevel?S.playLevel(GAME.replace(/^arcade-|\.html$/g,"")):1;}catch(e){_lv=1;}
+        _lb.querySelector(".launch-name").textContent=GMETA.n+(_lv>1?" \u00b7 Level "+_lv:"");
+        if(_lv>1){var _nm=_lb.querySelector(".launch-name"),_l1=document.createElement("span"),_l2=document.createElement("span"),_dot=document.createElement("span");
+          _l1.className=_l2.className="launch-line";_dot.className="launch-dot";_l1.textContent=GMETA.n;_dot.textContent=" \u00b7 ";_l1.appendChild(_dot);_l2.textContent="Level "+_lv;
+          _nm.textContent="";_nm.appendChild(_l1);_nm.appendChild(_l2);}
         if(_card)$("launchArt").style.backgroundImage='url("/assets/crafted/home-'+_card+'.webp")';
         else{var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]);}
         _lb.classList.add("show"); }catch(e){}
@@ -2434,7 +2450,7 @@
         if(!DEMO_REPLAY){
           S.dailyFinish(run.sum);
           if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
-          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);}
           if(S.episodeAdvance)S.episodeAdvance();
         }
         run.finishRecorded=true;
