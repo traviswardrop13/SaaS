@@ -141,7 +141,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slower blocks, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>
+  <script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000};</script>
   <script src="/arcade-speech-help.js"></script>
   <script src="/arcade-sayit.js"></script>
   <script src="/rise.js"></script>
@@ -217,7 +217,7 @@
     var playing=!!tok, phase="climb", stage=0, climbMs=0, spawnMs=0, spawnEvery=STRETCHES[0].every, pacePlay=0, easy=false, stretchHits=0, offNext=0, patternLog=[];
     var pushed=0, bumps=0;
     var REV=3, reviveWait=false;   // say-the-sound cards: one between each stretch
-    var finaleDone=false, finale=null, endPending=false;
+    var finaleDone=false, finale=null, lifePending=false;
     var swayT=0, swayNow=0, offTurn=0, lastPattern="", hintPlay=0, dragged=false, lastTapAt=-1e9;
     var countEl=$("countPill").querySelector("b");
     var CALM=false;
@@ -225,7 +225,6 @@
 
     var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, graceUntil=0, outOfHearts=false;
     function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,W&&W<360?14:16); e.setAttribute("aria-label",hearts+" hearts left"); }
-    function restoreHeart(){ if(!playing||phase!=="climb"||outOfHearts)return; hearts=Math.min(HEART_MAX,hearts+1); paintHearts(); }
     // A heart is never lost while Echo asks or listens, while the power is
     // on, in a rest, at the top, on a hidden page, in the 1.5 s after the
     // page comes back, or within 1.5 s of the last one (so blocks arriving
@@ -233,10 +232,28 @@
     function loseHeart(now){
       if(!playing||phase!=="climb"||slowTurn||slowMs>0||document.hidden||now<graceUntil||now-heartHitAt<1500)return false;
       heartHitAt=now; hearts=Math.max(0,hearts-1); paintHearts();
-      if(!hearts){ outOfHearts=true; } else slowAskSoon();
+      if(!hearts){ outOfHearts=true; }
       return true;
     }
-    // Rise Up keeps no best yet (CLAUDE.md, "Beat Your Best": the other games follow once Travis has played Piano Tiles' and Fruit Slice's). When it does, the count is blocks pushed.
+    // Each child keeps their own best of blocks pushed in a climb (Beat Your
+    // Best, sona.bests.v1): it counts the finger, never the voice, and the
+    // count on screen never goes down. A phone holding an older sona.js has
+    // no store, and the climb plays the same without it.
+    var startBest=0, kept=0, saidNewBest=false, AWAY_NEAR=10;
+    var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
+    try{ if(CAN_BEST) startBest=S.gameBest("rise")|0; }catch(e){}
+    function blocksSaid(n){ return n===1?"1 block":n+" blocks"; }
+    function keepBest(){ if(!CAN_BEST||pushed<=kept) return; kept=pushed; try{ S.gameBestOffer("rise",pushed); }catch(e){} }
+    function bestReached(){ if(startBest>0&&!saidNewBest&&pushed>startBest){ saidNewBest=true; keepBest(); banner("New best!",blocksSaid(pushed)+" pushed"); } }
+    function bestLine(){
+      var n=pushed; if(n<1) return [];
+      var did="You pushed "+blocksSaid(n)+" out of the way!";
+      if(!CAN_BEST) return [did,""];
+      if(startBest<=0) return [did,"Your best: "+n+"!"];
+      if(n>startBest) return [did,"A new best!"];
+      if(n===startBest) return [did,"The same as your best!"];
+      return [did,"Your best: "+startBest+"."+(startBest-n<=AWAY_NEAR?" "+(startBest-n)+" away!":"")];
+    }
 
     // The ramp moves on whole seconds of play: a child can't feel a step of
     // 0.2%, and the first second of a round is exactly the starting speed.
@@ -245,7 +262,7 @@
 
     // ── what the board tells the round ──
     function riseCount(p){
-      pushed++; countEl.textContent=pushed;
+      pushed++; countEl.textContent=pushed; bestReached();
       $("countPill").setAttribute("aria-label",pushed+(pushed===1?" block pushed":" blocks pushed"));
       var now=performance.now();
       if(pushed%10===0){ sfx("coin"); flash(pushed+" blocks!"); }
@@ -262,7 +279,7 @@
       flash("Bump!"); sfx("drop");
       pacePlay=Math.max(0,pacePlay-30000); offNext=Math.max(offNext,1); spawnMs=Math.min(spawnMs,0)-0.3*spawnEvery;
       stretchHits++; if(stretchHits>=2&&!easy){ easy=true; spawnEvery*=1.25; }
-      if(outOfHearts) endPending=true;
+      if(outOfHearts) lifePending=true;
       return true;
     }
     function risePuff(f,drift){ if(!drift) sfx("star"); }
@@ -316,7 +333,7 @@
       banner(STRETCH_SAID[i][0],STRETCH_SAID[i][1]); hud();
     }
     function endStretch(){
-      Rise.fadeAll(600);
+      Rise.fadeAll(600); keepBest();
       if(stage===STRETCHES.length-1){ startFinale(); return; }
       phase="rest"; hud();
       banner("Higher!",stage===0?"Up to the clouds!":"Up to the stars!"); sfx("complete");
@@ -385,11 +402,12 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
       // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
       try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
+      sfx("complete"); try{ if(!life&&!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
       if(phase==="rest") startStretch(stage+1);
       // one draw loop runs for the whole visit: nothing to restart here
@@ -495,7 +513,9 @@
       Rise.horizon=stage===0?groundAt(skyPan):1e9;
       Rise.frame(dt,pace,fallNow(),phase,now,playing);
       if(climbing) hud();
-      if(endPending){ endPending=false; endRound(); }
+      // out of hearts: the say-it card for a new life (lifeOrEnd), after this
+      // frame, never inside the board's loop
+      if(lifePending){ lifePending=false; lifeOrEnd(); }
       if(playing&&phase==="climb"&&climbMs>=L.len) endStretch();
       // the round is over (or never had a ticket): this frame was the last,
       // so the end card does not keep the phone redrawing the sky behind it
@@ -559,6 +579,7 @@
     // child's taps on the game have already woken.
     var sayVoice=window.SayIt?SayIt.voice({
       up:function(){ return reviveWait&&!slowTurn; },
+      ask:function(t){ return t.line(lifeCard?LIFE_LINE:SayIt.ASK).then(function(){ return t.take(); }); },
       wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
       note:listenNote,
       clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
@@ -589,7 +610,7 @@
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true}):navigator.mediaDevices.getUserMedia({audio:true})).then(function(st){
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
@@ -639,7 +660,7 @@
       try{
         if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
         if(rv.ctx.state==="suspended") rv.ctx.resume();
-        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        rv.src=(S&&S.micSource)?S.micSource(rv.ctx,st):rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
       }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
@@ -651,8 +672,11 @@
         var now=performance.now();
         // belt and braces: nothing plays while this mic is open, but if a
         // sound ever did, its frames would be dropped: never judged, never
-        // part of the floor, never joined to a burst after it
-        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        // part of the floor, never joined to a burst after it. The same for
+        // a frame Sona's own mic did not hear (S.micDeaf: paused, or a gap
+        // between the phone's samples): its zeros are not the room, and
+        // the floor only goes down
+        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
         var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
@@ -687,7 +711,7 @@
     // the card asks again, out loud, then listens. Coming back to play gives
     // 1.5 s of grace before a block can cost a heart; going away lets go of
     // every finger, so none is left dragging.
-    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    function speechBackground(){keepBest();if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
     if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
     document.addEventListener("visibilitychange",function(){
       if(document.hidden){ releaseFingers(); return; }
@@ -701,9 +725,7 @@
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("rise",null);
-      playing=false; reviveWait=false; phase="done"; releaseFingers();
-      var coins=Math.min(10,(pushed/3)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
+      playing=false; reviveWait=false; phase="done"; releaseFingers(); keepBest();
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(pushed===0&&!finaleDone&&!outOfHearts){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
@@ -717,8 +739,9 @@
       }
       // the top is a win; out of hearts (or "I'm done playing") never claims it
       $("endTitle").textContent=finaleDone?"You rose all the way to the stars!":"What a climb!";
-      var es=$("endSub"), line=pushed>0?"You pushed "+pushed+(pushed===1?" block":" blocks")+" out of the way!":(finaleDone?"Your balloon made it all the way up!":"");
-      if(line){ es.textContent=line; es.style.display=""; es.className="later"; setTimeout(function(){es.classList.add("in");},1000); }
+      var es=$("endSub"), line=pushed>0?bestLine():(finaleDone?["Your balloon made it all the way up!"]:[]), i, sp; es.textContent="";
+      for(i=0;i<line.length;i++){ if(!line[i])continue; if(es.firstChild)es.appendChild(document.createTextNode(" ")); sp=document.createElement("span"); sp.textContent=line[i]; es.appendChild(sp); }
+      if(es.firstChild){ es.style.display=""; es.className="later"+(line.length>1?" best":""); setTimeout(function(){es.classList.add("in");},1000); }
       else{ es.className=""; es.style.display="none"; }
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
@@ -727,7 +750,7 @@
     $("endHome").onclick=function(){ S.finishGameTurn("rise"); location.href="/today.html#play"; };
     $("close").onclick=function(){
       if(window.__speechLeaving)return;window.__speechLeaving=true;
-      function leave(){closeReviveMic();playing=false;S.finishGameTurn("rise");location.href="/today.html#play";}
+      function leave(){keepBest();closeReviveMic();playing=false;S.finishGameTurn("rise");location.href="/today.html#play";}
       if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
     };
     }

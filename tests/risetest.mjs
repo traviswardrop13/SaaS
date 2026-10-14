@@ -33,7 +33,7 @@ async function scenario(name, fn) { if (process.env.ARCADE_LIVES_ONLY && name !=
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 // what a child must never read: the end card counts a real thing
 const BANNED = /\b(score|points?|high score|you missed|game over)\b/i;
-const BANNED_SEEN = /\b(score|points?|high score|best|you missed|game over|charge)\b/i;
+const BANNED_SEEN = /\b(score|points?|high score|you missed|game over|charge)\b/i;
 
 // ── the code: a climb, not a practice ──
 const PAGE = readFileSync(ROOT + "/arcade-rise.html", "utf8"), code = strip(PAGE);
@@ -43,8 +43,8 @@ await scenario("source pins", async () => {
   ok("three stretches: the garden 28 s, the clouds 32 s, the stars 36 s, each a little faster and (from the clouds) with a breeze",
     code.includes('var STRETCHES=[{name:"Garden",len:28000,every:2600,speed:1,sway:0},{name:"Clouds",len:32000,every:2400,speed:1.1,sway:0.16},{name:"Stars",len:36000,every:2200,speed:1.2,sway:0.22}];'));
   ok("only the rest between stretches asks for the sound", /sayCard\("Say \\u201C"\+SAYTXT\+"\\u201D to rise higher!","none"\)/.test(code));
-  ok("the sound power is the shared helper's: first ask after six seconds, eight seconds of help (no ms set), a heart back",
-    PAGE.includes('<script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000,onHeard:function(){restoreHeart();},heartSay:"For a heart and slower blocks, say",line:function(){return hearts<HEART_MAX?SLOW_HELP.heartSay:"";}};</script>')
+  ok("the sound power is the shared helper's: first ask after six seconds, eight seconds of help (no ms set), and no heart back (a new life only on a loss)",
+    PAGE.includes('<script>window.SLOW_HELP={phase:"climb",action:"slow the falling blocks",earned:"Slow blocks!",first:6000};</script>')
     && !/SLOW_HELP=\{[^}]*\bms:/.test(code) && /src="\/arcade-speech-help\.js"/.test(code) && /src="\/arcade-sayit\.js"/.test(code) && /src="\/rise\.js"/.test(code));
   ok("nothing in the climb is practice data", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|repsBeacon/.test(code + board));
   // the one place the page asks for the mic: the say-it card (and Echo's turn through it)
@@ -53,7 +53,9 @@ await scenario("source pins", async () => {
   if (at >= 0) { let depth = 0, i = code.indexOf("{", at); for (let j = i; j < code.length; j++) { if (code[j] === "{") depth++; else if (code[j] === "}") { depth--; if (!depth) { body = code.slice(at, j + 1); break; } } } }
   ok("the page asks for the mic in one place only: inside openReviveMic()", (code.match(/getUserMedia\(/g) || []).length === 1 && (body.match(/getUserMedia\(/g) || []).length === 1);
   ok("the board never asks for the mic", !/getUserMedia/.test(board));
-  ok("Rise Up keeps no best yet (Beat Your Best waits for Travis)", !/gameBest|gameBestOffer|sona\.best/.test(code + board) && /Rise Up keeps no best yet/.test(PAGE));
+  ok("Rise Up keeps each child's best of blocks pushed through the shared store, and the board never touches it", /S\.gameBest\("rise"\)/.test(code) && /S\.gameBestOffer\("rise",pushed\)/.test(code) && !/gameBest|sona\.best/.test(board));
+  ok("out of hearts, the climb stops on the new-life card (lifeOrEnd), and a heard one fills all three hearts (lifeTaken)", /if\(lifePending\)\{ lifePending=false; lifeOrEnd\(\); \}/.test(code) && /var life=lifeTaken\(\); if\(life\)\{ hearts=HEART_MAX; outOfHearts=false; paintHearts\(\); \}/.test(code) && /lifeCard\?LIFE_LINE:SayIt\.ASK/.test(code));
+  ok("no coins from the climb: coins come from the chest and the Trophy Road only", !/addCoins/.test(code + board));
   ok("the board touches no storage, sound or network, never clears the canvas, and is ES5",
     !/localStorage|sessionStorage|AudioContext|new Audio|fetch\(|clearRect/.test(board) && !/=>|`/.test(board));
   ok("neither file speaks for itself: no voice service, no robot voice, no old demo clip",
@@ -337,7 +339,7 @@ await scenario("hearts, pace and best", async () => {
     await page.evaluate(() => { SLOW_ASK.soon = 1500; pacePlay = 40000; heartHitAt = -1e9; graceUntil = 0; offNext = 0; window.__h = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); });
     await page.waitForFunction(() => __h.hit, null, { timeout: 3000 });
     const loss = await page.evaluate(() => { const out = { hearts, bumps, pace: pacePlay, off: offNext, at: slowAskAt - slowAskPlay, label: document.getElementById("gameHearts").getAttribute("aria-label") }; SLOW_ASK.soon = slowAskAt = 1e12; return out; });
-    ok("a block on the balloon costs one heart: it eases the pace, the next group misses, and Echo is brought forward", loss.hearts === 2 && loss.bumps === 1 && loss.pace < 40000 - 29000 && loss.off >= 1 && loss.at <= 1500 && loss.label === "2 hearts left", loss);
+    ok("a block on the balloon costs one heart: it eases the pace and the next group misses; Echo's next ask is not brought forward", loss.hearts === 2 && loss.bumps === 1 && loss.pace < 40000 - 29000 && loss.off >= 1 && loss.at > 1500 && loss.label === "2 hearts left", loss);
     await page.evaluate(() => { window.__h2 = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); });
     await page.waitForFunction(() => __h2.hit, null, { timeout: 3000 });
     ok("a second block within 1.5 s cannot take another heart", await page.evaluate(() => hearts === 2 && bumps === 2));
@@ -357,7 +359,18 @@ await scenario("hearts, pace and best", async () => {
     ok("no heart is lost while the power is on, while Echo asks or listens, on a hidden page, in the grace after coming back, in a rest or at the top",
       !guards.power && !guards.asking && !guards.hidden && guards.backGrace && !guards.grace && !guards.rest && !guards.top && guards.hearts === 2, guards);
     ok("…and with none of those, the same call does cost one (so the guards are what refused)", guards.control === true && guards.after === 1, guards);
-    ok("an accepted sound restores a heart, capped at three", await page.evaluate(() => { SLOW_HELP.onHeard(); const one = hearts; SLOW_HELP.onHeard(); return one === 3 && hearts === 3; }));
+    ok("a heard sound power gives no heart back any more: only the power", await page.evaluate(() => !SLOW_HELP.onHeard && typeof restoreHeart === "undefined"));
+    // the last heart: the climb stops on the say-it card for a new life; heard,
+    // all three hearts come back and the climb goes on where it stopped
+    await calm(page);
+    const life0 = await page.evaluate(() => { hearts = 1; heartHitAt = -1e9; graceUntil = 0; slowMs = 0; paintHearts(); window.__lv = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); return { rev: REV, stage, confetti: __f.confetti || 0 }; });
+    await page.locator("#revOvl.show").waitFor({ timeout: 4000 });
+    const lifeCardSeen = await page.evaluate(() => ({ title: document.getElementById("revTitle").textContent, empty: document.getElementById("revHearts").querySelectorAll("svg").length, playing, life: lifeCard, ended: !!window.__ended }));
+    ok("out of hearts, the climb stops on the new-life card, never the end card", /for a new life!/.test(lifeCardSeen.title) && lifeCardSeen.empty === 3 && !lifeCardSeen.playing && lifeCardSeen.life && !lifeCardSeen.ended, lifeCardSeen);
+    await page.waitForFunction(() => __f.live >= 1, null, { timeout: 12000 }).catch(() => {});
+    await heard(page);
+    const life1 = await page.evaluate(() => ({ hearts, playing, phase, stage, rev: REV, out: outOfHearts, confetti: __f.confetti || 0, card: document.getElementById("revOvl").classList.contains("show") }));
+    ok("…heard: all three hearts are back and the climb goes on in the same stretch, with no confetti and no between-round card spent", life1.hearts === 3 && life1.playing && life1.phase === "climb" && life1.stage === life0.stage && life1.rev === life0.rev && !life1.out && life1.confetti === life0.confetti && !life1.card, { life0, life1 });
     // two lost hearts in one stretch: the rest of it is easier
     await calm(page);
     const ease = await page.evaluate(async () => {
@@ -370,19 +383,33 @@ await scenario("hearts, pace and best", async () => {
     });
     ok("two lost hearts in a stretch make the rest of it easier: slower blocks, further apart", !ease.easyAfterOne && ease.easy && near(ease.every, ease.base * 1.25, 0.01) && ease.hearts === 1 && ease.speed < 1, ease);
     ok("the pace rises with play but never past 1.4 times the start", await page.evaluate(() => { const was = [pacePlay, stage, easy]; pacePlay = 1e9; stage = 2; easy = false; const m = speedMul(); pacePlay = was[0]; stage = was[1]; easy = was[2]; return m <= 1.4 && m >= 1.39; }));
-    // out of hearts: the kind card, which never claims the top
+    // out of hearts, and "I'm done playing" on the new-life card: the kind
+    // card, which never claims the top
     await page.evaluate(() => { Rise.clear(); pushed = 3; hearts = 1; paintHearts(); heartHitAt = -1e9; graceUntil = 0; Rise.add("cube", Rise.balloon.x, Rise.balloon.y); });
+    await page.locator("#revOvl.show").waitFor();
+    await page.locator("#revDone").click();
     await page.locator("#endOvl.show").waitFor();
     const end = await page.evaluate(() => {
       const $ = (id) => document.getElementById(id), vis = (e) => getComputedStyle(e).display !== "none", c = $("endCharge").getBoundingClientRect(), h = $("endHome").getBoundingClientRect();
       return { hearts, playing, reviveWait, ended: !!window.__ended, finaleDone, out: outOfHearts, title: $("endTitle").textContent, sub: $("endSub").textContent,
         again: vis($("endCharge")) && $("endCharge").textContent, home: vis($("endHome")) && $("endHome").textContent, order: c.bottom <= h.top, confetti: __f.confetti || 0 };
     });
-    ok("zero hearts ends kindly: \"What a climb!\", the blocks pushed, Play again on top and Back home under it, no confetti, never the top",
-      end.hearts === 0 && end.out && !end.playing && !end.reviveWait && end.ended && !end.finaleDone && end.title === "What a climb!" && end.sub === "You pushed 3 blocks out of the way!"
+    ok("zero hearts, then \"I'm done playing\", ends kindly: \"What a climb!\", the blocks pushed and the child's first best, Play again on top and Back home under it, no confetti, never the top",
+      end.hearts === 0 && end.out && !end.playing && !end.reviveWait && end.ended && !end.finaleDone && end.title === "What a climb!" && end.sub === "You pushed 3 blocks out of the way! Your best: 3!"
       && end.again === "Play again" && end.home === "Back home" && end.order && end.confetti === 0, end);
     ok("a finished round spends the turn", await page.evaluate(() => sessionStorage.getItem("sona.play.active") === null && sessionStorage.getItem("sona.play.token") === null));
-    ok("no best is kept: the child's other bests are untouched and nothing is written for Rise Up", await page.evaluate(() => localStorage.getItem("sona.bests.v1") === JSON.stringify({ glide: { n: 4, at: "2026-10-01" } }) && localStorage.getItem("sona.best.rise") === null && !Object.keys(localStorage).some((k) => /best/.test(k) && /rise/.test(k))));
+    ok("the child's best of blocks pushed is kept beside their other bests, in the one store", await page.evaluate(() => { const b = JSON.parse(localStorage.getItem("sona.bests.v1") || "{}"); return b.glide && b.glide.n === 4 && b.rise && b.rise.n === 3 && localStorage.getItem("sona.best.rise") === null; }));
+    const lines = await page.evaluate(() => {
+      const was = [startBest, pushed, saidNewBest], r = {}, at = (b, n) => { startBest = b; pushed = n; return bestLine().join(" "); };
+      r.first = at(0, 14); r.beat = at(14, 17); r.close = at(17, 14); r.far = at(38, 5); r.same = at(14, 14); r.one = at(0, 1);
+      startBest = 2; pushed = 2; saidNewBest = false; riseCount({}); r.pop = document.getElementById("bnBig").textContent; r.small = document.getElementById("bnSmall").textContent;
+      startBest = was[0]; pushed = was[1]; saidNewBest = was[2]; return r;
+    });
+    ok("the best line reads like the other games': first, beaten, close, far, level, one block",
+      lines.first === "You pushed 14 blocks out of the way! Your best: 14!" && lines.beat === "You pushed 17 blocks out of the way! A new best!"
+      && lines.close === "You pushed 14 blocks out of the way! Your best: 17. 3 away!" && lines.far === "You pushed 5 blocks out of the way! Your best: 38."
+      && lines.same === "You pushed 14 blocks out of the way! The same as your best!" && lines.one === "You pushed 1 block out of the way! Your best: 1!", lines);
+    ok("passing the best the child came in with pops \"New best!\" once", lines.pop === "New best!" && lines.small === "3 blocks pushed", lines);
     await page.locator("#endCharge").click(); await page.waitForURL(/charge\.html/);
     ok("Play again earns another turn in this same game", new URL(page.url()).searchParams.get("game") === "arcade-rise.html");
     ok("hearts and pace: no runtime errors", errors.length === 0, errors);
@@ -441,7 +468,7 @@ await scenario("a whole climb", async () => {
     await page.evaluate(() => { finale.t = 9990; });
     await page.locator("#endOvl.show").waitFor({ timeout: 12000 });
     const end = await page.evaluate(() => ({ title: document.getElementById("endTitle").textContent, sub: document.getElementById("endSub").textContent, pushed, mics: __f.mics, rev: REV, confetti: __f.confetti || 0, left: Rise.puffsLeft() }));
-    ok("the clouds drift off by themselves, the balloon reaches the star, and the climb is won", end.title === "You rose all the way to the stars!" && end.left === 0 && end.sub === "You pushed " + end.pushed + (end.pushed === 1 ? " block" : " blocks") + " out of the way!" && end.pushed >= 1, end);
+    ok("the clouds drift off by themselves, the balloon reaches the star, and the climb is won", end.title === "You rose all the way to the stars!" && end.left === 0 && end.sub.indexOf("You pushed " + end.pushed + (end.pushed === 1 ? " block" : " blocks") + " out of the way!") === 0 && end.pushed >= 1, end);
     ok("two cards, two mics, and confetti for the win", end.mics === 2 && end.rev === 1 && end.confetti >= 1, end);
     ok("the earned turn is spent once the climb ends", await page.evaluate(() => sessionStorage.getItem("sona.play.active") === null && sessionStorage.getItem("sona.play.token") === null));
     const sfx = await page.evaluate(() => __f.sfx);
@@ -531,7 +558,9 @@ await scenario("pictures fail", async () => {
 // (review, 9 Oct 2026: a shield left where it started kept the balloon safe
 // through the garden and the clouds, so a child who never touched the screen
 // climbed to the top and was thanked for 70 pushes.) Whole rounds on a fake
-// clock; each card is answered, nothing else.
+// clock; each card between stretches is answered, nothing else. A round
+// that runs out of hearts stops on the new-life card (8 Oct 2026); there a
+// child who never steers taps "I'm done playing".
 async function untouched(park) {
   const { context, page, errors } = await open({ clock: true });
   try {
@@ -543,18 +572,19 @@ async function untouched(park) {
     }, park);
     for (let t = 0; t < 260000; t += 250) {
       await page.clock.runFor(250);
-      const s = await page.evaluate(() => ({ card: document.getElementById("revOvl").classList.contains("show"), live: __f.live, ended: !!window.__ended }));
+      const s = await page.evaluate(() => ({ card: document.getElementById("revOvl").classList.contains("show"), live: __f.live, ended: !!window.__ended, life: !!lifeCard }));
       if (s.ended) break;
+      if (s.card && s.life) { await page.evaluate(() => { window.__lifeCards = (window.__lifeCards || 0) + 1; document.getElementById("revDone").click(); }); continue; }
       if (s.card && s.live >= 1) await heard(page);
     }
-    const end = await page.evaluate(() => ({ ended: !!window.__ended, top: finaleDone, hearts, pushed, lost: __lost, stage, title: document.getElementById("endTitle").textContent,
+    const end = await page.evaluate(() => ({ ended: !!window.__ended, top: finaleDone, hearts, pushed, lost: __lost, stage, life: window.__lifeCards || 0, title: document.getElementById("endTitle").textContent,
       sub: getComputedStyle(document.getElementById("endSub")).display !== "none" ? document.getElementById("endSub").textContent : "" }));
     return { end, errors };
   } finally { await context.close(); }
 }
 await scenario("nobody steering", async () => {
   const idle = await untouched(false);
-  ok("a round nobody touches never reaches the top: it runs out of hearts and ends kindly", idle.end.ended && !idle.end.top && idle.end.hearts === 0 && idle.end.title === "What a climb!", idle.end);
+  ok("a round nobody touches never reaches the top: it runs out of hearts, offers a new life, and \"I'm done playing\" ends it kindly", idle.end.ended && !idle.end.top && idle.end.hearts === 0 && idle.end.life === 1 && idle.end.title === "What a climb!", idle.end);
   ok("…and it is thanked for no pushes: nothing counted, no count line", idle.end.pushed === 0 && idle.end.sub === "", idle.end);
   const parked = await untouched(true);
   ok("a shield parked over the balloon pushes nothing", parked.end.pushed === 0, parked.end);
@@ -654,7 +684,7 @@ await scenario("words on screen", async () => {
     await page.locator("#endOvl.show").waitFor(); await page.waitForTimeout(1100);
     const end = await words(page);
     const bad = [play, card, end].map((t) => (t.match(BANNED_SEEN) || [null])[0]);
-    ok("during play, on the card and on the end card, no word says score, points, best, you missed, game over or charge", bad.every((b) => b === null) && /5 blocks out of the way/.test(end), { bad, end });
+    ok("during play, on the card and on the end card, no word says score, points, you missed, game over or charge", bad.every((b) => b === null) && /5 blocks out of the way/.test(end), { bad, end });
     ok("words on screen: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }
   // nothing pushed, and done playing: the gentle zero tier
@@ -684,7 +714,7 @@ await scenario("no practice data", async () => {
     await page.waitForTimeout(400);
     const after = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((k) => before[k] !== after[k]);
-    ok("a heard card changes only the week's game reps", changed.length === 1 && changed[0] === "sona.gamereps.v1", changed);
+    ok("a heard card changes only the week's game reps (and the trophies they earn)", changed.includes("sona.gamereps.v1") && changed.every((k) => k === "sona.gamereps.v1" || k === "sona.trophy.v1"), changed);
     ok("…and calls no practice write", (await page.evaluate(() => __f.practice.length)) === 0);
     ok("no practice data: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); }
