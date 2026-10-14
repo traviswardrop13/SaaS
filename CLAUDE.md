@@ -1904,7 +1904,7 @@ It is entered through its practice page (`/charge.html?game=arcade-rise.html`,
 which fills Flappy Glide's balloon), is Premium, and is the ninth card on the
 big kids' shelf (a full-width row on a phone). It is **not** in the old
 five-game run (`adventure: false`, which `adventureGames()` skips) and not a
-Say & Play game. What it keeps:
+Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 - **The finger only moves the shield, by as much as it moves**, from wherever
   it lands on the screen (an iPad's margins too); the shield never jumps to
   the finger, stays above the balloon so it can never cover it, and can never
@@ -2135,13 +2135,15 @@ one card under "Pick a game!" (`#questCard`): "Day 3 of 14", one line from
 Echo's world ("The wind blew Echo's tower down. Help him build it back up!"),
 the game's own painted Home picture and a teal play button. A tap is that
 game card's own tap (`launch`: access, the price, "Pick a level").
-- **One list per age group** (`QUEST_DAYS` in `sona.js`): ages 5-8 the eight
-  big-kid games, never the same game two days running; ages 3-4 Feed Echo
+- **One list per age group** (`QUEST_DAYS` in `sona.js`): ages 5-8 the nine
+  big-kid games (Rise Up on day 11 since 14 Oct 2026), never the same game
+  two days running; ages 3-4 Feed Echo
   and Bubble Pop in turn (`playStyle()`). After day 14 it starts at day 1.
 - **A round of today's game finishes the day**, won or lost, from the game's
-  end card (`Sona.questEnd(key)`, in the five round games' `endRound`, Feed
-  Echo's end and `sayplay.js`'s `showEnd`). Another game finishes nothing,
-  and a day finishes once. The game is played exactly as it always is: the
+  end card (`Sona.questEnd(key)`, in the six round games' `endRound`, Feed
+  Echo's end and `sayplay.js`'s `showEnd`; `questtest` fails if a game on the
+  list has no way to finish its day). Another game finishes nothing, and a
+  day finishes once. The game is played exactly as it always is: the
   adventure only picks the game and says why.
 - **The gift is a sticker, the next one** (`awardNextSticker`; two on days 7
   and 14), never coins (COIN3), with a quiet note for five seconds, no voice.

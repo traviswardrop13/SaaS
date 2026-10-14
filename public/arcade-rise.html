@@ -724,6 +724,8 @@
       if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(window.Sona&&Sona.questEnd)Sona.questEnd("rise");}catch(e){}
       S.finishGameTurn("rise",null);
       playing=false; reviveWait=false; phase="done"; releaseFingers(); keepBest();
       sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}

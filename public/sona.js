@@ -5236,7 +5236,7 @@
       { game: "soccer", line: "Can you kick the ball past Bo the bear?" },
       { game: "slice", line: "The fruit trees are full again. Slice a big feast!" },
       { game: "tiles", line: "Echo made up a new song. Play it with him!" },
-      { game: "run", line: "The forest race starts now. Ready, set, run!" },
+      { game: "rise", line: "Toy blocks are falling! Keep the balloon safe all the way up to the stars." },
       { game: "stack", line: "Build a tower so tall it touches the clouds!" },
       { game: "glide", line: "Fly the balloon home over the hills!" },
       { game: "hoops", line: "The big final game! Shoot hoops with Echo." },
@@ -5264,6 +5264,7 @@
     stack: "Help Echo build a tall tower!", run: "Race with Echo!",
     glide: "Fly the balloon with Echo!", hoops: "Shoot hoops with Echo!",
     soccer: "Kick the ball past Bo the bear!", dino: "Dig for dinosaur bones!",
+    rise: "Keep the balloon safe from the falling blocks!",
     feed: "Echo is hungry! Help him eat.", bubbles: "Pop Echo's bubbles!",
   };
   function _questSt() {
