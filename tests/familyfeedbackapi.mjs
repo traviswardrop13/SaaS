@@ -28,11 +28,12 @@ function loadTs(file) {
 const { POST } = loadTs(path.join(ROOT, "app/api/family/feedback/route.ts"));
 const { GET: FOUNDER_GET } = loadTs(path.join(ROOT, "app/api/founders/feedback/route.ts"));
 const originalFetch = globalThis.fetch;
-const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SLACK_FEEDBACK_WEBHOOK_URL", "FEEDBACK_WEBHOOK_URL", "LEAD_WEBHOOK_URL", "PILOT_WEBHOOK_URL", "KIT_API_KEY", "FOUNDER_KEY"];
+const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "SLACK_FEEDBACK_WEBHOOK_URL", "FEEDBACK_WEBHOOK_URL", "LEAD_WEBHOOK_URL", "PILOT_WEBHOOK_URL", "KIT_API_KEY", "FOUNDER_KEY", "RESEND_API_KEY", "RESEND_FROM", "FEEDBACK_EMAIL_TO"];
 const originalEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
 let checks = 0, fails = 0, ip = 0;
 function ok(label, condition, detail) { checks++; if (!condition) fails++; console.log((condition ? "PASS " : "FAIL ") + label + (condition || detail === undefined ? "" : " → " + JSON.stringify(detail))); }
 const KV = "https://kv.test.invalid", SLACK = "https://slack.test.invalid", FEEDBACK = "https://feedback.test.invalid";
+const RESEND = "https://api.resend.com/emails";
 const LEAD = "https://lead.test.invalid", PILOT = "https://pilot.test.invalid";
 const SITE = "https://sona.test.invalid";
 const GOOD = { kind: "feedback", chips: ["More games"], text: "", recommend: "", email: "", app: "web", website: "" };
@@ -43,6 +44,8 @@ async function submit(body, opts = {}) {
   if (opts.kv !== false) { process.env.KV_REST_API_URL = KV; process.env.KV_REST_API_TOKEN = "fake-kv-token"; }
   if (opts.slack) process.env.SLACK_FEEDBACK_WEBHOOK_URL = SLACK;
   if (opts.webhook) process.env.FEEDBACK_WEBHOOK_URL = FEEDBACK;
+  if (opts.resend) process.env.RESEND_API_KEY = "resend-key-for-tests";
+  if (opts.emailTo !== undefined) process.env.FEEDBACK_EMAIL_TO = opts.emailTo;
   // Set on every run: a lead or pilot destination that exists must still
   // never receive a parent's message.
   process.env.LEAD_WEBHOOK_URL = LEAD;
@@ -65,6 +68,7 @@ async function submit(body, opts = {}) {
     }
     if (opts.webhookThrows) throw new Error("inbox offline");
     if (String(url) === SLACK) return new Response("slack", { status: opts.slackFails ? 503 : 200 });
+    if (String(url) === RESEND) return new Response("{}", { status: opts.resendFails ? 500 : 200 });
     if (String(url) === FEEDBACK) return new Response("feedback", { status: opts.webhookFails ? 500 : 202 });
     return new Response("unapproved destination", { status: 200 });
   };
@@ -81,7 +85,7 @@ async function submit(body, opts = {}) {
   }
 }
 const outbound = (r) => r.calls.filter((c) => c.url !== KV);
-const onlyApproved = (r) => r.calls.every((c) => [KV, SLACK, FEEDBACK].includes(c.url));
+const onlyApproved = (r) => r.calls.every((c) => [KV, SLACK, FEEDBACK, RESEND].includes(c.url));
 
 try {
   // ── who may post ──
@@ -196,6 +200,28 @@ try {
   ok("a confirmed store still counts as received when every notification fails", r.status === 200 && r.json.stored && !r.json.delivered);
   r = await submit(GOOD, { kv: false, slack: true, slackFails: true });
   ok("Slack failing with no store and no fallback is a 503", r.status === 503);
+  // ── the email ping (Travis, 14 Oct 2026: "ping me. Send it to Rachel at speaksona.com") ──
+  r = await submit({ ...GOOD, chips: ["Something's broken"], text: "<img src=x onerror=alert(1)> the mic stops", email: "mom@example.test", recommend: "Maybe", app: "ios" }, { resend: true });
+  const mail = r.calls.find((c) => c.url === RESEND)?.payload;
+  ok("with a Resend key, each message is emailed to rachel@speaksona.com", r.status === 200 && r.json.delivered && JSON.stringify(mail?.to) === '["rachel@speaksona.com"]', mail);
+  ok("…a reply goes straight to the parent who wrote", mail?.reply_to === "mom@example.test", mail?.reply_to);
+  ok("…the subject is a fixed phrase, never their words", mail?.subject === "New parent feedback in Sona");
+  ok("…and what they typed is escaped text, never markup", !/<img/.test(mail?.html || "") && /&lt;img src=x/.test(mail?.html || "") && /<img src=x/.test(mail?.text || ""), mail?.html);
+  ok("…with the topics, the answer and where it came from", /Topics: Something's broken/.test(mail?.text || "") && /Would recommend: Maybe/.test(mail?.text || "") && /iPhone app/.test(mail?.text || ""), mail?.text);
+  r = await submit(GOOD, { resend: true });
+  const noReply = r.calls.find((c) => c.url === RESEND)?.payload;
+  ok("no email given: no reply_to, and the email says so", noReply && !("reply_to" in noReply) && /Reply to: no email given/.test(noReply.text), noReply);
+  r = await submit(GOOD, { resend: true, emailTo: "team@speaksona.com" });
+  ok("FEEDBACK_EMAIL_TO changes where it goes", JSON.stringify(r.calls.find((c) => c.url === RESEND)?.payload?.to) === '["team@speaksona.com"]');
+  r = await submit(GOOD, { kv: false, resend: true });
+  ok("the email alone is delivery when the store is down", r.status === 200 && r.json.delivered && !r.json.stored, r.json);
+  r = await submit(GOOD, { kv: false, resend: true, resendFails: true });
+  ok("no store and a failed email is a 503, so the page keeps the draft", r.status === 503, r.status);
+  r = await submit(GOOD, {});
+  ok("no Resend key: no email is attempted", !r.calls.some((c) => c.url === RESEND));
+  r = await submit({ ...GOOD, email: "mom@example.test" }, { resend: true });
+  ok("the reply address never reaches a lead, pilot or Kit destination with the email on", onlyApproved(r), r.calls.map((c) => c.url));
+
   r = await submit({ ...GOOD, text: "\\".repeat(2000) });
   ok("a maximum-length message that JSON-escapes to double is kept whole", r.status === 200 && r.records[0]?.text.length === 2000);
 
