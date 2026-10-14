@@ -10,6 +10,9 @@
 //     hardware), with steady room noise from before the silent calibration, at
 //     30fps (WebKit's Low Power Mode rate), held and quiet productions, and a
 //     child answering during calibration. Only cases robust to timing jitter.
+//  3. SONA'S OWN MIC (13 Oct 2026) — the room-noise cases of part 2 again,
+//     inside the iPhone app, where the page hears the phone's own mic
+//     (tests/_nativemic.mjs) with no noise suppression and no auto gain.
 // These are one adult's recordings and synthetic noise; they cannot stand in
 // for children's voices, a phone microphone or a real room. repguardtest.mjs
 // stays the acceptance bar and is not changed by this file.
@@ -19,6 +22,7 @@ import path from 'node:path';
 import { chromium, ROOT, launchOpts } from './_env.mjs';
 import { run, stream, fixture, gain, clip, rms, room, loadEvidence, pageRoom } from './_speechreplay.mjs';
 import { voice, cat, silence } from './_childsynth.mjs';
+import { nativeMic } from './_nativemic.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT; // point at another build to compare
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
@@ -56,13 +60,18 @@ function device(config){
       const src=ctx.createBufferSource();src.buffer=b;src.loop=true;src.connect(destination);src.start();
     }
     if(config.room){ // steady pink room noise, running before the calibration starts
-      const n=ctx.sampleRate*8,b=ctx.createBuffer(1,n,ctx.sampleRate),x=b.getChannelData(0),r=rng(99);let b0=0,b1=0,b2=0,s=0;
-      for(let i=0;i<n;i++){const w=r();b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;s+=x[i]*x[i];}
-      const k=Math.pow(10,config.room/20)/Math.sqrt(s/n);for(let i=0;i<n;i++)x[i]*=k;
+      const b=ctx.createBuffer(1,ctx.sampleRate*8,ctx.sampleRate);b.getChannelData(0).set(h.roomPcm(ctx.sampleRate));
       const src=ctx.createBufferSource();src.buffer=b;src.loop=true;src.connect(destination);src.start();
     }
     return destination.stream;
   }});
+  h.roomPcm=rate=>{const n=rate*8,x=new Float32Array(n),r=rng(99);let b0=0,b1=0,b2=0,s=0;
+    for(let i=0;i<n;i++){const w=r();b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;s+=x[i]*x[i];}
+    const k=Math.pow(10,config.room/20)/Math.sqrt(s/n);for(let i=0;i<n;i++)x[i]*=k;
+    return x;};
+  // config.nm: the same room, into the phone's own mic instead (the fake
+  // phone runs after this script, so it is handed over from a third one)
+  h.nativeRoom=()=>{if(config.room&&window.__nm)__nm.ctl.room(h.roomPcm(48000),48000);};
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
@@ -75,7 +84,9 @@ function device(config){
   // o.at (start that many ms after the listening segment opened), o.times and
   // o.every (say it `times` times, one onset every `every` seconds)
   h.play=async(kind,o={})=>{
-    const ctx=h.ctx,rate=ctx.sampleRate;let buffer;
+    // on Sona's own mic there is no synthetic stream: the signal is made in
+    // a context of its own and fed into the phone (__nm.ctl.feed)
+    const own=!!(config.nm&&window.__nm),ctx=own?(h.feedCtx||(h.feedCtx=new AC({sampleRate:48000}))):h.ctx,rate=ctx.sampleRate;let buffer;
     if(kind.endsWith('.mp3'))buffer=await ctx.decodeAudioData(await(await fetch('/coach/say/'+kind)).arrayBuffer());
     else{
       const duration=1.8;buffer=ctx.createBuffer(1,Math.ceil(rate*duration),rate);const x=buffer.getChannelData(0);
@@ -99,6 +110,8 @@ function device(config){
       const seg=window.engineAttempt&&window.engineAttempt.segment,wait=(seg?seg.startedAt:performance.now())+o.at-performance.now();
       if(wait>0)await new Promise(r=>setTimeout(r,wait));
     }
+    // the phone's queue holds ~150ms: wait that out too, so the tail is heard
+    if(own){__nm.ctl.feed(out.getChannelData(0).slice(),rate);await new Promise(r=>setTimeout(r,Math.ceil(out.length/rate*1000)+300));return;}
     const node=ctx.createBufferSource();node.buffer=out;node.connect(h.destination);
     await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve();};const timer=setTimeout(finish,Math.ceil(out.length/rate*1000)+500);node.onended=finish;node.start();});
     node.disconnect();
@@ -120,6 +133,12 @@ async function fresh(config={}){
   // before. micquietpracticetest and chargepacingtest cover the joined line.
   await context.route(/\/coach\/say-echo\//,route=>route.fulfill({status:404,body:''}));
   await context.addInitScript(device,{sound:'R',...config});
+  // config.nm: inside the iPhone app on Sona's own mic. The fake phone keeps
+  // this suite's own fakes (no world, no audit) and counts any getUserMedia.
+  if(config.nm){
+    await context.addInitScript(nativeMic,{mode:'new',world:false,audit:false,...config.nm});
+    await context.addInitScript(()=>{const h=window.__ev;if(h&&h.nativeRoom)h.nativeRoom();});
+  }
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(origin+'/charge.html?daily=1&sound='+(config.sound||'R'));
   await page.waitForFunction(()=>window.engineOn&&window.engineAttempt?.segment&&!window.engineAttempt.segment.closed);
@@ -134,18 +153,25 @@ async function close(context,page){await page.evaluate(()=>{try{window.engineCon
 // A spoken sound under a second counts once it has been quiet ~130ms.
 const settle=page=>page.waitForTimeout(300);
 
+// on Sona's own mic: the stream the page listens on is the phone's, never getUserMedia
+async function ownMic(page,label){const p=await page.evaluate(()=>({gum:__nm.gum,opened:__nm.opened,own:!!(micStream&&micStream.sonaNative)}));
+  ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia)',p.gum===0&&p.opened>=1&&p.own,p);}
 async function speech(label,config,file,o={}){
   await scenario(label,async()=>{
     const{page,context,errors}=await fresh(config);
     try{await page.evaluate(([f,o])=>__ev.play(f,o),[file,o]);await settle(page);
-      const n=await tries(page);ok(label+': counted as a try',n>0,{tries:n});ok(label+': no script error',errors.length===0,errors);
+      const n=await tries(page);ok(label+': counted as a try',n>0,{tries:n});
+      if(config.nm)await ownMic(page,label);
+      ok(label+': no script error',errors.length===0,errors);
     }finally{await close(context,page);}
   });
 }
 async function noise(label,config,kind){
   await scenario(label,async()=>{
     const{page,context,errors}=await fresh(config);
-    try{const before=await snapshot(page);await page.evaluate(k=>__ev.play(k),kind);await settle(page);await finish(page);
+    try{const before=await snapshot(page);await page.evaluate(k=>__ev.play(k),kind);await settle(page);
+      if(config.nm)await ownMic(page,label);
+      await finish(page);
       const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),effects:__ev.effects}));
       ok(label+': no try and no saved practice',state.reps===0&&JSON.stringify(before)===JSON.stringify(after),{state,before,after});
       ok(label+': the quiet retry is shown',state.quiet,state);ok(label+': no script error',errors.length===0,errors);
@@ -398,6 +424,11 @@ try{
   for(const s of ['M','N','V'])await speech(`${s} at half volume over room noise (pink, -40dBFS)`,{...ROOM,sound:s},s+'-demo.mp3',{max:3,gain:.5});
   for(const s of ['G','R'])await speech(`${s} over room noise (pink, -40dBFS)`,{...ROOM,sound:s},s+'-demo.mp3',{max:3});
   for(const k of ['tone','hum','white noise','breath'])await noise(`${k} over room noise`,ROOM,k);
+  // 3. The same room, on Sona's own mic in the app.
+  const OWN={...ROOM,nm:{}};
+  for(const s of ['M','N','V'])await speech(`${s} at half volume over room noise (pink, -40dBFS), on Sona's own mic`,{...OWN,sound:s},s+'-demo.mp3',{max:3,gain:.5});
+  for(const s of ['G','R'])await speech(`${s} over room noise (pink, -40dBFS), on Sona's own mic`,{...OWN,sound:s},s+'-demo.mp3',{max:3});
+  for(const k of ['tone','hum','white noise','breath'])await noise(`${k} over room noise, on Sona's own mic`,OWN,k);
   await noise('beeps (short, single note)',{},'beeps');
   // Held sounds: one said sound under a second counts once it ends, however
   // steady; a quiet one counts too.
