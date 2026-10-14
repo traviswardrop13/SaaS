@@ -1493,7 +1493,7 @@ game easier or slower ... i still want them to say the sound beforehand to
 charge up"). This replaces two lines above and in "Echo asks, then listens":
 a heard sound power no longer gives a heart back, and a lost heart no longer
 brings Echo's next ask forward (that was what made him ask so often). In all
-five round games:
+six round games (Rise Up since 14 Oct 2026):
 - **Mid-round, Echo's ask earns the power only** (slow keys, Super Slice, the
   slow help), on its own clock: about six seconds in, then every 20 seconds
   of play, 40 after two quiet asks. He never mentions a heart mid-round.
@@ -1511,8 +1511,9 @@ five round games:
   back (not one) and no limit on new lives are defaults Travis did not pick.
   **Rachel's to rule on:** a child who keeps losing is asked for the bare
   sound each time, and a child the phone hears poorly cannot get back in.
-`tilestest`, `slicetest`, `stacktest`, `runtest`, `glidetest` play the card;
-`arcadespeechhelptest` that a lost heart moves nothing and a power gives none.
+`tilestest`, `slicetest`, `stacktest`, `runtest`, `glidetest`, `risetest` play
+the card; `arcadespeechhelptest` that a lost heart moves nothing and a power
+gives none.
 
 **The clinical success rule below still applies to speech-practice rounds:**
 step the target down rather than end on failed speech. An arcade round may
@@ -1684,7 +1685,7 @@ five tries is). The 24 Sep 2026 calm rule took "Go!" out for sounding jumpy;
 it is back as Travis's try, and whether it stays is his ear and Rachel's
 call (a turn cue): taking it out is one line in each place. What counts as
 the child is unchanged by any of this. `sayitcardtest` plays the card in all
-five games, `voicetest3`, `chargepacingtest`, `sayplaytest`, `feedtest`,
+six games, `voicetest3`, `chargepacingtest`, `sayplaytest`, `feedtest`,
 `micquietgamestest` and `iphonepolishtest` the "Go!".
 
 **Hearing a child from further away: paused, numbers first** (Travis, 2 Oct
@@ -1916,8 +1917,10 @@ Say & Play game. What it keeps:
   starts beside the balloon, not over it, so left alone it shelters nothing;
   a push is the shield moving INTO a block, and a block that only lands on a
   still shield slides off it, uncounted and with no grace. A round nobody
-  touches runs out of hearts in the garden or the clouds and ends on "What a
-  climb!" with no count line.
+  touches runs out of hearts in the garden or the clouds; on the new-life
+  card "I'm done playing" ends it on "What a climb!" with no count line. (A
+  child who never steers but says the sound for every new life can still
+  reach the top, as in every round game: the new lives have no limit.)
 - **The round:** three stretches of play (Garden 28 s, Clouds 32 s, Stars
   36 s), the say-it card between them ("Say “rrrr” to rise higher!"), then the
   top: five clouds to push away, which drift off by themselves after ten
@@ -1926,9 +1929,12 @@ Say & Play game. What it keeps:
 - **Hearts are the shared rules:** a block on the balloon costs one, and it
   wobbles, never pops; none is lost while Echo asks or listens, while the
   power is on, in a rest, at the top, on a hidden page or within 1.5 seconds
-  of the last. Zero hearts ends on the kind card, which never claims the top.
-  The first two groups of a round always miss, and so does the next after a
-  lost heart.
+  of the last, nor for 1.5 seconds after the screen turns (a turned iPad
+  moves the balloon to the new board's height). The last heart stops the
+  climb on the new-life card ("A new life only on a loss"): heard, all three
+  hearts are back and the stretch goes on; "I'm done playing" ends on the
+  kind card, which never claims the top. The first two groups of a round
+  always miss, and so does the next after a lost heart.
 - **The pace:** a block takes 3.4 seconds to cross the open sky at the start,
   and gets faster by stretch and by play, to at most 1.4 times that; a lost
   heart eases it, two in a stretch make the rest of it easier. From the clouds
@@ -1939,30 +1945,38 @@ Say & Play game. What it keeps:
   while a child who follows the balloon can keep all three.
 - **The sound power is the other round games'** (`arcade-speech-help.js`):
   Echo asks after about six seconds of play, then every twenty, "To slow the
-  falling blocks, say" (or "For a heart and slower blocks, say"), Rachel's
-  take, "Go!". One heard sound: eight seconds at 55% (the shield never slows),
-  one heart back, one rep. Never practice data.
+  falling blocks, say", Rachel's take, "Go!". One heard sound: eight seconds
+  at 55% (the shield never slows) and one rep, never a heart. Never practice
+  data. In the iPhone app it listens through Sona's own microphone, as the
+  other round games do.
 - **The end card counts blocks pushed** ("You pushed 23 blocks out of the
   way!"): a block counts the first time the moving shield pushes it, or a
   block a push set moving knocks it, never one that only met a still shield.
-  **No best yet:** Rise Up keeps none until Travis has played Fruit Slice's
-  and Piano Tiles' (see "Beat Your Best"); its count would be blocks pushed.
+  "Whoosh!" is three different blocks counted within 0.8 s of one push. It
+  pays no coins (coins come from the chest and the road only). **Each
+  child's best is blocks pushed** (Beat Your Best: "Your best: 23!", "A new
+  best!", "3 away!" within 10, "New best!" once in play, Home's "Best" tag).
+- **One level, and no buddy, for now.** Levels inside games and play as
+  your buddy came after Rise Up was built: it plays Level 1 only (it is not
+  in `PLAY_LEVEL_LINES`) until Travis has played it, and the balloon has no
+  basket for a buddy to ride in. Both are his to ask for.
 - **Its pictures are painted** (`tools/art/game-sprites.json`, cut by
   `tools/art/cut-rise.py`): three skies, the balloon, the shield, four blocks
   and Home's card; each has a drawn stand-in if it fails to load. Its sounds
   are Sona's chimes only, so in the app they play as media.
 - **Travis plays it before it ships**; the speeds, the breeze, the finale and
   the words are his to change, and a spoken how-to (Sound Sprint has one) is
-  his call. `tests/risetest.mjs` plays a whole climb, and on a fake clock a
-  round nobody touches and one with the shield parked over the balloon.
+  his call. `tests/risetest.mjs` plays a whole climb, the new-life card, the
+  best, a turned screen, and on a fake clock a round nobody touches and one
+  with the shield parked over the balloon.
 
 **Beat Your Best: each child's own best in a game** (Travis, 1-2 Oct 2026:
 "whatever you think is best for kids you can do"). A game counts ONE real
 thing the child's finger did and remembers that child's best. The win card
 still says they won, then adds one line; the top button is "Play again"; and
-Home's picture of the game carries a small "Best 17". All five round games
+Home's picture of the game carries a small "Best 17". All six round games
 keep one (Fruit Slice and Piano Tiles a row, Block Stacker, Sound Sprint and
-Flappy Glide their own counts); Hoops and Soccer Goal have none yet, and Dino
+Flappy Glide their own counts, Rise Up blocks pushed); Hoops and Soccer Goal have none yet, and Dino
 Dig gets no number. Level 1's best is `sona.bests.v1`; a game's Level 2 and 3
 bests live in `sona.playlevel.v1` (see "Levels inside games"), so a best is
 never measured against a level whose top it cannot reach.
@@ -2013,7 +2027,7 @@ never measured against a level whose top it cannot reach.
 - **"Play again" on top, "Back home" under it.** Another go is earned the
   way every turn is, back through that game's say-it-five-times page
   (`charge.html?game=…`). The game-to-game "WOOHOO! Next →" is gone from
-  all five round games; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
+  all six round games; `micquietgamestest` lists them in `PLAYS_AGAIN`. Fruit Slice
   still calls `Sona.firstGameEnd("slice")`, because asking spends the
   first-game mark.
 - **Piano Tiles: notes in a row.** Tiles tapped with none slipping past and
