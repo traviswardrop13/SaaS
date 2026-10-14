@@ -192,6 +192,9 @@
       cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
       Rise.resize(W,H,$("top").getBoundingClientRect().bottom-r.top);
       MAXP=(H-Rise.HUDB)>=700?8:6;
+      // a turned iPad moves the balloon to the new board's height, maybe onto
+      // a falling block: the same 1.5 s of grace as coming back to the front
+      if(playing) graceUntil=performance.now()+1500;
       paintHearts();
     }
 
@@ -494,6 +497,9 @@
       if(climbing) hud();
       if(endPending){ endPending=false; endRound(); }
       if(playing&&phase==="climb"&&climbMs>=L.len) endStretch();
+      // the round is over (or never had a ticket): this frame was the last,
+      // so the end card does not keep the phone redrawing the sky behind it
+      if(window.__ended||!tok){ loopOn=false; return; }
       requestAnimationFrame(draw);
     }
     function startLoop(){ if(loopOn)return; loopOn=true; lastT=performance.now(); requestAnimationFrame(draw); }

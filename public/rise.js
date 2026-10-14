@@ -154,7 +154,9 @@
     var b = R.shieldBox();
     if (!placed) R.placeShield();
     else { shield.tx = clamp(shield.tx, b.x0, b.x1); shield.ty = clamp(shield.ty, b.y0, b.y1); shield.x = clamp(shield.x, b.x0, b.x1); shield.y = clamp(shield.y, b.y0, b.y1); }
-    for (var i = 0; i < puffs.length; i++) puffs[i].r = 0.11 * U;
+    // a turned iPad: the top's clouds keep their place in the new shield area,
+    // never left below a board that got shorter
+    for (var i = 0; i < puffs.length; i++) { var f = puffs[i]; f.r = 0.11 * U; if (f.gone) continue; f.x = PUFF_X[f.k] * W; f.ty = b.y0 + PUFF_Y[f.k] * (b.y1 - b.y0); }
     initBits();
   };
   // Anywhere across, always above the balloon: its centre stays at or above
@@ -268,13 +270,17 @@
   // A block counts the first time the shield pushes it, or a block a push
   // set moving (in the last CARRY_MS) knocks it: never one that has already
   // touched the balloon, and never one that only met a still shield.
-  // Three or more counted within 0.8 s of one push is a chain.
+  // Three or more DIFFERENT blocks counted within 0.8 s of one push is a
+  // chain. Only a block counted for the first time adds to it: pushAll and
+  // collide call this on every sub-step a block is touched, and a fast swipe
+  // catches the same block again frame after frame, so counting calls made
+  // one quick push "Whoosh!" (review, 9 Oct 2026).
   function credit(p, now, byShield) {
-    if (byShield) { if (now - chain.t > 800) { chain.t = now; chain.n = 0; chain.fired = false; } chain.n++; }
-    else if (now - chain.t <= 800) chain.n++;
-    if (chain.n >= 3 && !chain.fired && now - chain.t <= 800) { chain.fired = true; burst(p.x, p.y, 14, ["#fff6c2", "#ffd84d", "#ffffff"]); if (cb.onChain) cb.onChain(p); }
     if (p.hit || p.counted) return;
     p.counted = true;
+    if (byShield && now - chain.t > 800) { chain.t = now; chain.n = 0; chain.fired = false; }
+    if (now - chain.t <= 800) chain.n++;
+    if (chain.n >= 3 && !chain.fired) { chain.fired = true; burst(p.x, p.y, 14, ["#fff6c2", "#ffd84d", "#ffffff"]); if (cb.onChain) cb.onChain(p); }
     if (cb.onCount) cb.onCount(p);
   }
 
@@ -350,12 +356,13 @@
   }
 
   // ── the top: five clouds to push away, then the big star ──
+  var PUFF_X = [0.22, 0.5, 0.78, 0.36, 0.64], PUFF_Y = [0.25, 0, 0.25, 0.8, 0.8];
   R.startPuffs = function () {
     puffs.length = 0;
-    var b = R.shieldBox(), X = [0.22, 0.5, 0.78, 0.36, 0.64], Y = [0.25, 0, 0.25, 0.8, 0.8];
+    var b = R.shieldBox();
     for (var i = 0; i < 5; i++) {
-      var ty = b.y0 + Y[i] * (b.y1 - b.y0);
-      puffs.push({ x: X[i] * W, y: -0.2 * R.U - i * 14, r: 0.11 * R.U, gone: false, y0: -0.2 * R.U - i * 14, ty: ty, t: 0, vx: 0, vy: 0, fade: 0, k: i });
+      var ty = b.y0 + PUFF_Y[i] * (b.y1 - b.y0);
+      puffs.push({ x: PUFF_X[i] * W, y: -0.2 * R.U - i * 14, r: 0.11 * R.U, gone: false, y0: -0.2 * R.U - i * 14, ty: ty, t: 0, vx: 0, vy: 0, fade: 0, k: i });
     }
   };
   function popPuff(f, nx, ny, drift) {

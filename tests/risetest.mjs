@@ -272,6 +272,26 @@ await scenario("pushing and the count", async () => {
     const one = await page.evaluate(() => ({ loose: __p.loose, counted: __p.counted, grace: __p.touchAt > -1e8, pushed, shown: document.getElementById("score").textContent, label: document.getElementById("countPill").getAttribute("aria-label"), sfx: __f.sfx.map((c) => c.name) }));
     ok("a block the moving shield runs into is pushed: loose, counted once, the shield's grace, the pill says 1", one.loose && one.counted && one.grace && one.pushed === start.pushed + 1 && one.shown === String(one.pushed) && one.label === "1 block pushed", one);
     ok("…with a small tap", one.sfx.includes("tap"), one.sfx);
+    // "Whoosh!" is three DIFFERENT blocks in one push: a fast swipe that keeps
+    // catching the same block is still one block (review, 9 Oct 2026)
+    await calm(page); await centre(page); await frames(page);
+    const fast = await page.evaluate(() => { const s = Rise.shield; window.__one = Rise.add("cube", s.x - 2.2 * s.r, s.y); return { pushed, stars: __f.sfx.filter((c) => c.name === "star").length }; });
+    await page.mouse.move(330, 760); await page.mouse.down(); await page.mouse.move(40, 760, { steps: 3 }); await frames(page, 6); await page.mouse.up();
+    await page.waitForFunction(() => __one.counted, null, { timeout: 4000 }).catch(() => {});
+    const fastAfter = await page.evaluate(() => ({ counted: __one.counted, pushed, stars: __f.sfx.filter((c) => c.name === "star").length, flash: document.body.textContent.indexOf("Whoosh") >= 0 }));
+    ok("one block pushed by a fast swipe counts once and is no chain: no Whoosh, no star chime", fastAfter.counted && fastAfter.pushed === fast.pushed + 1 && fastAfter.stars === fast.stars, { fast, fastAfter });
+    // a turned iPad: the balloon moves to the new board's height, so the page
+    // gives the same 1.5 s of grace as coming back to the front; the top's
+    // clouds keep their places inside the new shield area
+    const turned = await page.evaluate(() => {
+      graceUntil = 0; fit(); const grace = graceUntil > performance.now() + 1000;
+      Rise.startPuffs(); Rise.resize(844, 390, Rise.HUDB);
+      const b = Rise.shieldBox(), inBox = Rise.puffs.every((f) => f.x > 0 && f.x < 844 && f.ty >= b.y0 - 0.5 && f.ty <= b.y1 + 0.5);
+      Rise.puffs.length = 0; fit(); graceUntil = 0;
+      return { grace, inBox };
+    });
+    ok("turning the screen mid-climb gives 1.5 s of grace", turned.grace, turned);
+    ok("…and the top's clouds stay inside the turned board", turned.inBox, turned);
     // a block nobody touches falls past the balloon and is gone, uncounted
     await calm(page);
     const before = await page.evaluate(() => { window.__q = Rise.add("cube", W * 0.1, Rise.balloon.y - 40); return pushed; });
@@ -314,7 +334,7 @@ await scenario("hearts, pace and best", async () => {
       s0.hearts === 3 && s0.play < 1000 && s0.speed === 1 && s0.first === 6000 && s0.off + s0.log.length === 2 && s0.log.every((id) => id === "gate" || id === "side"), s0);
     ok("three hearts fit the smallest phone's top bar", await page.evaluate(() => { const top = document.getElementById("top").getBoundingClientRect(), hs = document.getElementById("gameHearts").getBoundingClientRect(); return hs.left >= top.left && hs.right <= top.right && hs.bottom <= top.bottom && document.getElementById("gameHearts").querySelectorAll("svg").length === 3; }));
     await calm(page);
-    await page.evaluate(() => { SLOW_ASK.soon = 1500; pacePlay = 40000; heartHitAt = -1e9; offNext = 0; window.__h = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); });
+    await page.evaluate(() => { SLOW_ASK.soon = 1500; pacePlay = 40000; heartHitAt = -1e9; graceUntil = 0; offNext = 0; window.__h = Rise.add("cube", Rise.balloon.x, Rise.balloon.y); });
     await page.waitForFunction(() => __h.hit, null, { timeout: 3000 });
     const loss = await page.evaluate(() => { const out = { hearts, bumps, pace: pacePlay, off: offNext, at: slowAskAt - slowAskPlay, label: document.getElementById("gameHearts").getAttribute("aria-label") }; SLOW_ASK.soon = slowAskAt = 1e12; return out; });
     ok("a block on the balloon costs one heart: it eases the pace, the next group misses, and Echo is brought forward", loss.hearts === 2 && loss.bumps === 1 && loss.pace < 40000 - 29000 && loss.off >= 1 && loss.at <= 1500 && loss.label === "2 hearts left", loss);
@@ -428,6 +448,10 @@ await scenario("a whole climb", async () => {
     ok("no sound ever played while the card's mic was open", sfx.length > 0 && sfx.every((c) => !c.live), sfx.filter((c) => c.live));
     ok("a whole climb writes no practice data", (await page.evaluate(() => __f.practice.length)) === 0);
     ok("a whole climb: no runtime errors", errors.length === 0, errors);
+    // the end card: the sky stops redrawing behind it
+    await frames(page, 4);
+    const after = await page.evaluate(() => new Promise((r) => { let n = 0; const c = CanvasRenderingContext2D.prototype.clearRect; CanvasRenderingContext2D.prototype.clearRect = function () { if (this.canvas && this.canvas.id === "cv") n++; return c.apply(this, arguments); }; setTimeout(() => { CanvasRenderingContext2D.prototype.clearRect = c; r({ n, loopOn }); }, 400); }));
+    ok("once the climb ends the draw loop stops: nothing redraws behind the end card", after.n === 0 && after.loopOn === false, after);
   } finally { await context.close(); }
 });
 
