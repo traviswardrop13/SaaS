@@ -46,6 +46,7 @@ const EVENTS = new Set([
   // Home. They carry nothing: no stop or step number (a stop is a lifetime
   // trophy count), no coins, no name.
   "chest opened",
+  "adventure day done",   // QUEST1: today's daily-adventure quest finished (game key only)
   "road gift opened",
   "month gift opened",
   // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a
