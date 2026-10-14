@@ -39,7 +39,8 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 //
 // ONE STEPPER moves setup on, whatever screen it is on: the parent's answer
 // on "who", an answer on each one-tap question (Continue is not painted
-// there), "Not now" on the microphone, Continue everywhere else. It never
+// there), Skip on the optional email step, "Not now" on the microphone,
+// Continue everywhere else. It never
 // presses the hand-off's button and never clicks on a page that is not setup:
 // this file is top-level code, so one stray click that leaves for a game
 // loses every check after it.
@@ -47,6 +48,7 @@ const STEP = `(() => { const st = (document.querySelector(".step.on") || {}).dat
   if (!st || st === "achieve") return;                    // never press the hand-off's button, never click on another page
   if (st === "therapy") document.querySelector('#obTherapy [data-val="t_no"]').click();
   else if (st === "goal") document.querySelector('#obGoal [data-val="3"]').click();
+  else if (st === "updates") document.getElementById("updSkip").click();
   else if (st === "mic") document.getElementById("micNotNow").click();
   else document.getElementById("nextBtn").click(); })()`;
 const onStep = (pg) => pg.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step || "");
@@ -128,8 +130,8 @@ for (const [who, seed] of [["a fresh family", () => {}],
   }, STEP);
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
-  ok("…a walk that reaches the microphone, by way of both one-tap questions and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,therapy,sounds,goal,ready,mic", JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, the optional email step and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,therapy,sounds,goal,updates,ready,mic", JSON.stringify(hosts));
   await ob2.close();
 }
 
@@ -144,7 +146,9 @@ await clickNext(); // an answer → sounds
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → "How does practice go at home now?"
 ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "goal", await onStep(page));
-await clickNext(); // an answer → ready
+await clickNext(); // an answer → the optional email step
+ok("…then the optional email step, before the ready screen (and before any price)", (await onStep(page)) === "updates", await onStep(page));
+await clickNext(); // Skip → ready
 // "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the parent
 // picked, and under "About Sona" says who built it: Rachel's line, word for
 // word, where her own screen used to stand right before the microphone. It is
@@ -161,7 +165,7 @@ const meet = await page.evaluate(() => {
            card: st ? getComputedStyle(st).backgroundColor : "", body: getComputedStyle(document.body).backgroundColor,
            build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true };
 });
-ok("the screen after the home question is \"Milo's practice is ready\", it asks nothing, and carries Rachel's line",
+ok("the screen after the email step is \"Milo's practice is ready\", it asks nothing, and carries Rachel's line",
   meet.step === "ready" && meet.title === "Milo's practice is ready" && meet.asks === 0 && meet.segHidden && meet.rachel === RACHEL_LINE, JSON.stringify(meet));
 ok("…on cream, with no build beat on the parent path, and nothing saved until its Continue",
   meet.card === "rgb(255, 252, 246)" && meet.body === "rgb(255, 246, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
@@ -271,7 +275,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   // sounds → home → ready, whose Continue saves the profile and tears it up
   await hop(); await hop(); await hop();   // hello, name, why (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → the home question
-  await hop();                                           // an answer → ready
+  await hop();                                           // an answer → the email step
+  await hop();                                           // Skip → ready
   const onReady = await pg.evaluate(() => ({
     step: (document.querySelector(".step.on") || {}).dataset?.step,
     draft: JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"),
@@ -326,7 +331,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   }));
   ok("…and can continue without choosing a target (to the home question, then the ready screen)",
     !landed.onSounds && landed.onHome, JSON.stringify(landed));
-  await hop(); // an answer → ready
+  await hop(); // an answer → the email step
+  await hop(); // Skip → ready
   const ready = await pg.evaluate(() => ({
     step: (document.querySelector(".step.on") || {}).dataset?.step,
     says: document.querySelector('[data-step="ready"]').innerText,
@@ -368,34 +374,34 @@ const pickState = await page.evaluate(() => {
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
 await clickNext(); // sounds → "How does practice go at home now?"
-await clickNext(); // an answer → ready
+await clickNext(); // an answer → the email step
+// THE EMAIL ASK IS ITS OWN STEP, BEFORE THE PRICE (Travis, 13 Oct 2026: "also
+// move the email box before the price"). A parent has no email anywhere else:
+// on the SLP channel the clinician owns the family relationship and Sona's
+// roster deliberately carries no parent contact. It sat on the hand-off,
+// after the price, so a parent who closed the price was never asked. Now it
+// comes right before the ready screen, and it is never a gate: optional,
+// one tap to Skip, and the pin above ("on a phone that cannot buy, the last
+// setup step is the microphone, not a price or an email") still holds.
+const stepAsk = await page.evaluate(() => {
+  const st = document.querySelector('[data-step="updates"]');
+  return {
+    on: !!(st && st.classList.contains("on")),
+    optional: /optional/i.test((st || {}).textContent || ""),
+    consent: /We.ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
+    cta: document.getElementById("nextBtn").textContent,
+    skip: !!document.getElementById("updSkip"),
+    required: !!document.querySelector("#updEmail[required]"),
+  };
+});
+ok("the email step offers Rachel's tips, with Travis's consent line on it", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
+ok("…says it is optional, has a Skip, and never blocks the way on",
+  stepAsk.optional && !stepAsk.required && stepAsk.skip && /Continue/.test(stepAsk.cta), JSON.stringify(stepAsk));
+await clickNext(); // Skip, with the box blank → ready
 await clickNext(); // ready → mic (the profile is saved)
 await clickNext(); // mic → the hand-off
 await page.waitForTimeout(400);
-// THE WEEKLY-SUMMARY ASK LIVES ON THE FINALE, NOT IN THE STEPS. A parent has
-// no email anywhere else: on the SLP channel the clinician owns the family
-// relationship and Sona's roster deliberately carries no parent contact, so
-// without this there is no route to a parent that does not go through their
-// clinician. It is on the finale rather than as a step of its own because
-// setup once ENDED at a price screen before the child had said a word. That
-// shape is back ON PURPOSE where Sona can sell (Travis, 3–5 Oct 2026: the
-// price follows the ready screen, and the microphone and this hand-off follow
-// the price); the pin above ("on a phone that cannot buy, the last setup step
-// is the microphone, not a price or an email") holds what is left of it: no
-// price for a family Sona cannot sell to, and never an email as a gate.
-const finaleAsk = await page.evaluate(() => {
-  const box = document.getElementById("achEmail");
-  return {
-    shown: !!(box && getComputedStyle(box).display !== "none"),
-    named: (document.getElementById("achEmName") || {}).textContent || "",
-    optional: /optional/i.test((box || {}).textContent || ""),
-    cta: document.getElementById("nextBtn").textContent,
-    required: !!document.querySelector("#achEmailInput[required]"),
-  };
-});
-ok("the finale offers the weekly summary, named for the child", finaleAsk.shown && /Zoe/.test(finaleAsk.named), JSON.stringify(finaleAsk));
-ok("…says it is optional, and never blocks the way into the app",
-  finaleAsk.optional && !finaleAsk.required && /play|practice/i.test(finaleAsk.cta), JSON.stringify(finaleAsk));
+ok("…and the hand-off asks for no email", await page.evaluate(() => !document.querySelector('[data-step="achieve"] input') && !document.getElementById("achEmail")));
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
@@ -420,7 +426,8 @@ const playSkip = await page.evaluate(() => ({
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
 ok("explore goes on (the home question, then the ready screen) without selected targets", !playSkip.onSounds && playSkip.onHome && !playSkip.build, JSON.stringify(playSkip));
-await clickNext(); // an answer → ready
+await clickNext(); // an answer → the email step
+await clickNext(); // Skip → ready
 // where the build beat said "play list, not sound plan", the ready screen now
 // says what the parent picked, in the same register
 const playReady = await page.evaluate(() => ({

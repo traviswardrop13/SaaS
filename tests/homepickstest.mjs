@@ -23,6 +23,9 @@ async function fixture({ age = 8, sounds = ["R"], premium = true, free = false, 
     localStorage.setItem("sona.homepick.seed", "1");
     ["sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
     localStorage.setItem("sona.freever.v1", free ? "kept" : "post");
+    // the offer from Home already shown here (13 Oct 2026): without it the
+    // trial-first seed is the stuck household and Home opens the plan screen
+    localStorage.setItem("sona.offerseen.v1", "1");
     localStorage.setItem("sona.fid.v1", "home-picks-fixture");
     localStorage.setItem("sona.pulse.v1", JSON.stringify({ cool: Date.now() + 365 * 86400000 }));
     sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "1");

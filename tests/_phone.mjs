@@ -70,6 +70,10 @@
 //              load only (strings as they are, anything else as JSON): a
 //              phone copied from another context, a pilot and its ticket, a
 //              marker for another child, a subscription from the website
+//   homeOffer  true: leave the "offer from Home already shown" mark
+//              (sona.offerseen.v1) unset on a set-up seed, so Home opens
+//              the plan screen once (homeoffertest). Every other set-up
+//              seed carries it, as every seed carries the era stamps
 //   safeArea   { top, bottom }: px swapped in for env(safe-area-inset-*) in
 //              every served .html and .css (desktop Chromium reports zero)
 //
@@ -341,6 +345,10 @@ export function phone(cfg) {
   if (live.stamp) once("sona.freever.v1", live.stamp);
   const many = Number(live.kids) > 1 ? Number(live.kids) : 0;
   if (live.setUp || many) once("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: live.age || "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false }));
+  // the offer from Home already shown on this phone (13 Oct 2026), as the
+  // era stamps are: a set-up seed without it is the stuck household and
+  // Home opens the plan screen. homeoffertest asks for that with homeOffer.
+  if ((live.setUp || many) && !live.homeOffer) once("sona.offerseen.v1", "1");
   if (live.slp) once("sona.slpok", "1");
   if (live.webSells) sessionStorage.setItem("sona.websalesui", "1");
   // …and the ones written once per context: a test that clears one (a marker

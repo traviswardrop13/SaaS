@@ -68,6 +68,7 @@ const SUITES = [
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "trialfirsttest.mjs", // trial first: the price before the first game, nothing free where Sona can sell
+  "homeoffertest.mjs", // HOMEOFFER1: a family locked out who never saw the free days on this phone gets the plan screen once from Home; never again, never for anyone who keeps the free version or already saw it
   "planwordstest.mjs", // PLANWORDS1: the store answer (monthly only, eligibility, late answers) and every sentence the iPhone price card may show
   "pricescreentest.mjs", // PRICE1: the one-plan iPhone price card in every store state: no typed figure, no reminder words, never a dead end
   "setupbuytest.mjs", // SETUPBUY1: a new family end to end: setup, the price, a purchase, then the microphone, the hand-off and the first game

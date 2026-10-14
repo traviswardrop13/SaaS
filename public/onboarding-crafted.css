@@ -78,11 +78,6 @@ body[data-setup-screen="achieve"] #handoffTitle { font-size: 28px; line-height: 
 body[data-setup-screen="achieve"] .world-scene { flex: 1; min-height: 80px; max-height: 190px; margin: 0; align-items: center; }
 body[data-setup-screen="achieve"] .world-scene:before { display: none; }
 body[data-setup-screen="achieve"] .world-scene img { width: 180px; height: 180px; max-height: 100%; }
-.setup-email { margin-top: 18px; background: #fffcf6; border: 1px solid #e4d7c3; border-radius: 24px; padding: 20px; text-align: left; box-shadow: 0 5px 0 #eadbc350; }
-.setup-email > div:first-child { font-size: 21px !important; line-height: 1.2; color: #48280f; }
-.setup-email .setup-label { font-size: 12px; margin: 14px 0 0; }
-.setup-email input { width: 100%; }
-#skipEmail { background: #fffcf6; color: #806348; border: 1px solid #e4d7c3; box-shadow: 0 3px 0 #eadbc350; }
 #obBuild img { width: 140px; height: 140px; }
 #obBuildT { color: #48280f; }
 #obBuildAnswers span { background: #fffcf6; border-color: #e4d7c3; border-radius: 15px; }
@@ -108,8 +103,6 @@ body.keyboard-open .world-scene { display: none; }
   .obfoot .btn { font-size: 19px; padding: 14px 16px; }
   body[data-setup-screen="achieve"] .world-scene { min-height: 65px; max-height: 95px; }
   body[data-setup-screen="achieve"] #handoffTitle { font-size: 23px; }
-  .setup-email { padding: 16px; margin-top: 10px; }
-  .setup-email > div:first-child { font-size: 19px !important; }
 }
 
 /* Recovery belongs to setup too; these overrides are loaded only on this page. */
@@ -146,6 +139,22 @@ body[data-setup-screen="sounds"] .ob #leo { width: 48px !important; height: 54px
   .ob .sound-help { margin-top: 4px; }
 }
 
+/* THE EMAIL STEP (13 Oct 2026: "also move the email box before the price").
+   One box, Travis's consent line under it, Skip under that, and the footer's
+   Continue. With the keyboard up the help line steps aside, and on a very
+   short window the heading too, so the box and Continue stay above it. */
+.ob .step[data-step="updates"] .setup-label { margin-top: 16px; }
+.ob .step[data-step="updates"] input { width: 100%; }
+.ob .upd-help { font-size: 13px; margin: 0; }
+.ob .upd-consent { font-size: 12.5px; line-height: 1.45; margin: 8px 0 0; }
+.ob #updMsg { color: #a3401a; font-weight: 800; font-size: 13px; margin: 6px 0 0; }
+.ob #updMsg:empty { display: none; }
+body.keyboard-open .ob .step[data-step="updates"] .upd-help { display: none; }
+body.keyboard-open .ob .step[data-step="updates"] .setup-label { margin-top: 8px; }
+@media (max-height: 700px) {
+  .ob .step[data-step="updates"] .setup-label { margin-top: 12px; }
+}
+
 /* Keep the age choices reachable while the grown-up types a name. */
 body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
 body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
@@ -177,8 +186,6 @@ body[data-setup-screen="goal"]:not(.ob-answered) #nextBtn { display: none; }
    a double tap cannot answer a question the parent has not read, ask the
    phone for the microphone, or play on past the hand-off. */
 body.ob-settling .ob .step, body.ob-settling .obfoot { pointer-events: none; }
-/* The hand-off's × floats outside both, and does what "Let's play!" does. */
-body.ob-settling #skipEmail { pointer-events: none; }
 
 /* Typing a name must never raise the "Turn your screen back!" cover: an iPad
    on its side with the keyboard up is "landscape, under 500 tall" to sona.js. */
@@ -189,6 +196,9 @@ body.keyboard-open #sonaPortraitGuard { display: none !important; }
   body.keyboard-open .ob .seg { display: none; }
   body.keyboard-open .ob .step[data-step="name"] .qh { display: none; }
   body.keyboard-open .ob .step[data-step="name"] .setup-label:first-of-type { margin-top: 0; }
+  body.keyboard-open .ob .step[data-step="updates"] .qh { display: none; }
+  body.keyboard-open .ob .step[data-step="updates"] .setup-label { margin-top: 0; }
+  body.keyboard-open[data-setup-screen="updates"] .ob .mascot { display: none; }
 }
 
 /* "<NAME>'S PRACTICE IS READY" (5 Oct 2026). What the parent picked, as plain

@@ -3,7 +3,8 @@
 //
 // SETUP, OPTION B (Travis, 4–5 Oct 2026: "number B would be good … you can do
 // a full reset"): hello → name → "Is <Name> in speech therapy?" → sounds →
-// "How many days a week will you practice?" → "<Name>'s practice is ready" → (the
+// "How many days a week will you practice?" → the optional email (its own step,
+// before the price since 13 Oct 2026) → "<Name>'s practice is ready" → (the
 // price, only where Sona can sell) → microphone → hand-off → first game. The
 // profile is saved by the ready screen's Continue. This suite's own harness is
 // a phone that cannot buy, so it never sees a price; the last scenarios borrow
@@ -87,12 +88,16 @@ async function choose(page,sound='R'){
   await calm(page);const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
+// The optional email step (13 Oct 2026: before the price): Skip, or an
+// address typed and Continue.
+async function updates(page,email=null){await page.locator('[data-step="updates"].on').waitFor();await calm(page);if(email){await page.locator('#updEmail').fill(email);await next(page);}else await page.locator('#updSkip').click();}
 // From the sound picker (with a sound chosen) or the home question, on to
-// "<Name>'s practice is ready"…
-async function toReady(page,goal='skip'){for(let i=0;i<3;i++){const s=await screen(page);if(s==='ready')break;if(s==='goal')await answerGoal(page,goal);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
+// "<Name>'s practice is ready" (through the email step, when it is asked)…
+async function toReady(page,goal='skip',email=null){for(let i=0;i<4;i++){const s=await screen(page);if(s==='ready')break;if(s==='goal')await answerGoal(page,goal);else if(s==='updates')await updates(page,email);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
 // …and past it: its Continue saves the profile and, on a phone that cannot
 // buy, opens the microphone step in the page.
-async function pastReady(page,goal='skip'){if(['mic','achieve'].includes(await screen(page)))return;await toReady(page,goal);await next(page);await page.locator('[data-step="mic"].on').waitFor();}
+async function pastReady(page,goal='skip',email=null){if(['mic','achieve'].includes(await screen(page)))return;await toReady(page,goal,email);await next(page);await page.locator('[data-step="mic"].on').waitFor();}
+const leadPosts=requests=>requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead').map(r=>JSON.parse(r.body));
 async function notNow(page){await pastReady(page);await calm(page);await page.locator('#micNotNow').click();}
 async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
 // Fit is read once the fonts are in and the step's entry animation is over.
@@ -131,7 +136,10 @@ await scenario('sound selection and private paced handoff',async()=>{
   await page.locator('#obSounds [data-sound="R"]').click();ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
   ok('after the sounds comes the second one-tap question, the last of the four groups',await page.locator('[data-step="goal"].on').count()===1&&(await progress(page)).lit===4);
-  await answerGoal(page);await page.locator('[data-step="ready"].on').waitFor();
+  await answerGoal(page);
+  {const at=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,seg:document.getElementById('seg').hidden,groups:document.querySelectorAll('#seg i').length,input:document.activeElement.id}));
+  ok('after the four questions, the optional email step: no progress segment of its own, and the box is not focused',at.screen==='updates'&&at.seg&&at.groups===4&&at.input!=='updEmail',at);}
+  await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   // THE READY SCREEN replaced the 2-second "Building…" beat for parents. It
   // repeats back what the parent picked and nothing else (both questions were
   // skipped here, so no sentence about Sona is shown).
@@ -166,13 +174,12 @@ await scenario('sound selection and private paced handoff',async()=>{
   if(new URL(page.url()).pathname==='/onboarding.html'){
    const fits=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),h=document.getElementById('handoffTitle').getBoundingClientRect();return b.bottom<=innerHeight&&h.top>=0&&document.documentElement.scrollWidth<=innerWidth;});ok('handoff heading and button fit a small phone',fits);
    ok('young-child setup prepares the Simple play suggestion on Home',result.recommended==='simple',result.recommended);
-   await page.locator('#achEmailInput').fill('parent@example.com');await page.locator('#achEmailInput').press('Enter');
-   ok('Done in the optional email leaves the family in control of the handoff',new URL(page.url()).pathname==='/onboarding.html'&&await page.evaluate(()=>document.activeElement.id!=='achEmailInput'&&!Sona.getProfile().email));
+   ok('the hand-off asks for nothing: no email box and no ×',await page.evaluate(()=>!document.getElementById('achEmail')&&!document.getElementById('achEmailInput')&&!document.getElementById('skipEmail')&&!document.querySelector('[data-step="achieve"] input')));
    await next(page);await page.waitForURL(url=>['/today.html','/charge.html','/arcade-feed.html'].includes(url.pathname));const u=new URL(page.url());
    // Travis, 27 Sep 2026: setup goes straight to the first game, Feed Echo for ages 3-4
    ok('handoff opens the first game for the child\'s age: Feed Echo at 4',u.pathname==='/arcade-feed.html'&&!u.search&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='feed'));
    ok('setup creates no run and starts no practice of its own',!requests.some(r=>new URL(r.url).pathname==='/charge.html')&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
-   ok('the play button still saves an explicitly entered optional email',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).email==='parent@example.com'));
+   ok('a skipped email step saves no address and posts nothing',await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email)&&leadPosts(requests).length===0,leadPosts(requests));
    ok('…and the tab\'s "after the price" marker is gone once the game opens',await page.evaluate(()=>sessionStorage.getItem('sona.setupafter.v1')===null));
   }
   ok('a phone that cannot buy is never sent to the price',priced(requests).length===0,priced(requests));
@@ -219,7 +226,7 @@ await scenario('a hello first, then the child\'s name: setup is for parents',asy
   ok('…then the ready screen, with what they picked, no sentence from an answer, and who built Sona',ready.on&&ready.title==='Milo\'s practice is ready'&&JSON.stringify(ready.chips)==='["Ages 5–6","Sounds: R · S"]'&&ready.lines.length===0&&ready.rachel===RACHEL,ready);
   await notNow(page);await atHandoff(page);
   ok('…finishing as an SLP with no clinician request',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().onboarded)&&!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
-  ok('…with no weekly-summary email box, and nothing kept as a family\'s answers',await page.evaluate(()=>getComputedStyle(document.getElementById('achEmail')).display==='none'&&localStorage.getItem('sona.setupasks.v1')===null));
+  ok('…with no email box on the hand-off, and nothing kept as a family\'s answers',await page.evaluate(()=>!document.getElementById('achEmail')&&!document.querySelector('[data-step="achieve"] input')&&localStorage.getItem('sona.setupasks.v1')===null));
   await next(page);await page.waitForURL(url=>url.pathname!=='/onboarding.html');
   ok('…and it ends on Home: never a game, never a price',new URL(page.url()).pathname==='/today.html'&&priced(requests).length===0&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')===null),page.url());
   clean('native SLP answer',errors);
@@ -236,7 +243,7 @@ await scenario('the two one-tap questions',async()=>{
   const shown=key=>page.evaluate(key=>{const st=document.querySelector('[data-step="'+key+'"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,group=st.querySelector('.ask');return {screen:document.body.dataset.setupScreen,title:st.querySelector('h1').textContent.trim(),help:st.querySelector('.ask-help').textContent.trim(),answers:[...st.querySelectorAll('.ask-pick')].map(b=>[b.dataset.val,b.textContent.trim()]),buttons:[...st.querySelectorAll('.ask-pick')].every(b=>b.tagName==='BUTTON'&&b.type==='button'),pressed:[...st.querySelectorAll('.ask-pick')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.val),skip:st.querySelector('.ask-skip').textContent.trim(),next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),text:st.innerText,group:group.getAttribute('role')==='group'&&group.getAttribute('aria-labelledby')===st.querySelector('h1').id,focus:document.activeElement===st.querySelector('h1'),bubble:document.getElementById('bubble').textContent};},key);
   const untouched=()=>page.evaluate(()=>JSON.stringify([draft.mode,draft.pathReason,draft.focusSounds,goalVal,Sona.getProfile().onboarded,localStorage.getItem('sona.setupasks.v1')]));
   await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
-  for(const q of [{key:'therapy',title:'Is Milo in speech therapy?',list:THERAPY,pick:'t_no',after:'sounds',bubble:'I\'m glad you\'re here!',help:/stays on this device/,says:'it says the answer stays on this device'},{key:'goal',title:'How many days a week will you practice?',list:GOAL,pick:'5',after:'ready',bubble:'Whatever you pick, I’ll keep the week on track!',help:/change it in Settings/,says:'it says the pick can be changed in Settings'}]){
+  for(const q of [{key:'therapy',title:'Is Milo in speech therapy?',list:THERAPY,pick:'t_no',after:'sounds',bubble:'I\'m glad you\'re here!',help:/stays on this device/,says:'it says the answer stays on this device'},{key:'goal',title:'How many days a week will you practice?',list:GOAL,pick:'5',after:'updates',bubble:'Whatever you pick, I’ll keep the week on track!',help:/change it in Settings/,says:'it says the pick can be changed in Settings'}]){
    const s=await shown(q.key);
    ok(q.key+': the heading is exactly "'+q.title+'"',s.screen===q.key&&s.title===q.title,s);
    ok(q.key+': its answers, in order, word for word, each a real button',JSON.stringify(s.answers)===JSON.stringify(q.list.map(a=>[a[0],a[1]]))&&s.buttons&&s.pressed.length===0,s.answers);
@@ -262,6 +269,7 @@ await scenario('the two one-tap questions',async()=>{
    await answer(page,q.key,q.pick);
    if(q.key==='therapy'){await choose(page,'S');await next(page);}
   }
+  await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   // both answered: the ready screen shows one sentence about Sona for each
   let ready=await readyShown(page);
   ok('the ready screen then shows the therapy answer\'s one sentence about Sona, never one about the child, and the days picked',JSON.stringify(ready.lines)===JSON.stringify([THERAPY[1][2]])&&ready.chips.indexOf(GOAL[1][2])>-1&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),ready.lines);
@@ -275,7 +283,7 @@ await scenario('the two one-tap questions',async()=>{
   await next(page);await page.locator('[data-step="sounds"].on').waitFor();await next(page);
   again=await shown('goal');
   ok('…and so does the second',again.screen==='goal'&&JSON.stringify(again.pressed)==='["5"]'&&again.next&&await page.evaluate(()=>draft.therapy==='t_no'),again);
-  await next(page);await page.locator('[data-step="ready"].on').waitFor();
+  await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   // every answer has its own sentence, word for word (each is a claim about
   // what practice with Sona is)
   const table=await page.evaluate(([th,goal])=>{const lines=()=>[...document.querySelectorAll('#readyLines li')].map(l=>l.textContent),chips=()=>[...document.querySelectorAll('#readyChips li')].map(l=>l.textContent);const out={lines:[],chips:[]};th.forEach(id=>{draft.therapy=id;draft.goal='';paintReady();out.lines.push(lines());});goal.forEach(v=>{draft.therapy='';draft.goal=v;paintReady();out.chips.push(chips().slice(-1)[0]);});draft.therapy='';draft.goal='';paintReady();out.none=[lines(),getComputedStyle(document.getElementById('readyLines')).display,chips().some(c=>/days a week|Every day/.test(c))];draft.therapy='t_no';draft.goal='5';paintReady();return out;},[THERAPY.map(a=>a[0]),GOAL.map(a=>a[0])]);
@@ -300,10 +308,13 @@ await scenario('the two answers stay on this phone',async()=>{
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
   const head=await page.evaluate(()=>{const tag=document.querySelector('script[src="/pixel.js"]');return {attr:tag&&tag.getAttribute('data-autoconfig'),first:window.fbq&&fbq.queue&&fbq.queue.length?Array.from(fbq.queue[0]):null};});
   ok('setup\'s pixel tag switches off Meta\'s own button-reading, before anything else is sent to it',head.attr==='off'&&JSON.stringify(head.first)==='["set","autoConfig",false,"28886011914332605"]',head);
-  await enter(page,{name:'Zephyrine',age:'6',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5');
+  await enter(page,{name:'Zephyrine',age:'6',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5','parent@example.com');
   {const rs=await readyShown(page);ok('the walk answered both questions',JSON.stringify(rs.lines)===JSON.stringify([THERAPY[0][2]])&&rs.chips.indexOf(GOAL[1][2])>-1,rs);}
-  await next(page);await page.locator('[data-step="mic"].on').waitFor();await notNow(page);await atHandoff(page);
-  await page.locator('#achEmailInput').fill('parent@example.com');
+  const beforeReady=leadPosts(requests).length;
+  await next(page);await page.locator('[data-step="mic"].on').waitFor();
+  const afterReady=leadPosts(requests).length;
+  ok('the email typed on its step is posted once, when the parent leaves the ready screen, and not before',beforeReady===0&&afterReady===1,[beforeReady,afterReady]);
+  await notNow(page);await atHandoff(page);
   const names=await page.evaluate(()=>[...document.querySelectorAll('button')].filter(b=>/Zephyrine/.test(b.textContent+' '+b.id+' '+b.className+' '+(b.value||''))).length);
   const kept=await page.evaluate(()=>({asks:localStorage.getItem('sona.setupasks.v1'),read:Sona.setupAsks(),profile:localStorage.getItem('sona.profile.v1'),backup:Sona.exportString(),draft:localStorage.getItem('sona.obdraft.v1'),fbq:JSON.stringify(Array.from(fbq.queue).map(a=>Array.from(a))),posthog:Array.from(window.posthog).filter(c=>Array.isArray(c)).map(c=>Array.from(c)),title:document.title}));
   await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
@@ -314,11 +325,12 @@ await scenario('the two answers stay on this phone',async()=>{
   ok('no request to any host, in its address or its body, carries an answer, an answer\'s id, the child\'s name or the age group',leaks.length===0,leaks);
   ok('…nor does anything queued for Meta or for PostHog',!SECRET.test(kept.fbq)&&!SECRET.test(JSON.stringify(kept.posthog)),[kept.fbq,kept.posthog]);
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
-  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","therapy","sounds","goal","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
+  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","therapy","sounds","goal","updates","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
   ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
   ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
-  const lead=requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead').map(r=>JSON.parse(r.body));
-  ok('the one lead (the weekly-summary email) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
+  const lead=leadPosts(requests);
+  ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
+  ok('…and the address is on the profile, where a purchase\'s plan post finds it',/"email":"parent@example\.com"/.test(kept.profile)&&/"weeklyEmail":true/.test(kept.profile),kept.profile);
   ok('no button on the hand-off holds the child\'s name, and the title is still "Sona — Welcome"',names===0&&kept.title==='Sona — Welcome',[names,kept.title]);
   clean('answers stay on the phone',errors);
  }finally{await context.close();}
@@ -342,8 +354,9 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
   ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b/i.test(honest)&&(honest.match(/diagnos/gi)||[]).length===1,honest);
-  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the home question, with its answer held',await page.locator('[data-step="goal"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obGoal [aria-pressed="true"]').getAttribute('data-val')==='7');
-  await next(page);await page.locator('[data-step="ready"].on').waitFor();
+  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the email step',await page.locator('[data-step="updates"].on').count()===1);
+  await calm(page);await page.locator('#backBtn').click();ok('…and Back again to the home question, with its answer held',await page.locator('[data-step="goal"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obGoal [aria-pressed="true"]').getAttribute('data-val')==='7');
+  await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   await next(page);
   ok('Continue goes on to the microphone: the hand-off card is not showing and no microphone grant is recorded',await page.locator('[data-step="mic"].on').count()===1&&await page.locator('[data-step="achieve"].on').count()===0&&await page.evaluate(()=>localStorage.getItem('sona.micok')!=='1'));
   await calm(page);await page.locator('#micNotNow').click();await atHandoff(page);
@@ -380,12 +393,27 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   ok('a family already asked is not asked twice',await page.evaluate(()=>ORDER.join()==='welcome,name,sounds,ready,mic'));
   clean('asked once',errors);
  }finally{await context.close();}}
+ // THE EMAIL STEP IS ASKED ONCE, and only while the household has no parent
+ // email: a family whose phone already holds one (Sona.parentEmail) is not
+ // asked for it again, though it still meets the two questions.
+ {const {context,page,errors}=await fresh();try{
+  await page.evaluate(()=>{localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}],hi:2}));localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Milo',email:'mom@example.com',onboarded:true,voiceOn:false,soundOn:false}));});await page.reload();
+  ok('a second child is never asked for the email',await page.evaluate(()=>Sona.parentEmail()==='mom@example.com'&&ORDER.indexOf('updates')<0));
+  await page.evaluate(()=>localStorage.setItem('sona.kids.v1',JSON.stringify({active:'',list:[{slot:'',name:'Milo'}]})));await page.reload();
+  ok('a household that already has a parent email meets the two questions but not the email step',await page.evaluate(()=>ORDER.join()==='welcome,name,therapy,sounds,goal,ready,mic'));
+  clean('email asked once',errors);
+ }finally{await context.close();}}
+ {const {context,page,errors}=await fresh();try{
+  await who(page,'slp');
+  ok('the browser clinician never sees the email step: their own account email is a step of its own',await page.evaluate(()=>ORDER===ORDER_SLP&&ORDER.indexOf('updates')<0&&ORDER.indexOf('email')>-1));
+  clean('clinician: no email step',errors);
+ }finally{await context.close();}}
  // No age picked, two sounds, and the "explore" path: the chips say only what was given.
  {const {context,page,errors}=await fresh();try{
   await toName(page);await page.locator('#obName').fill('Ava');await next(page);await answerTherapy(page);await choose(page,'S');await toReady(page);
   let ready=await readyShown(page);
   ok('with no age picked there is no age chip, and two sounds read "Sounds: R · S"',JSON.stringify(ready.chips)==='["Sounds: R · S"]',ready.chips);
-  await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
+  await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
   ready=await readyShown(page);
   ok('a family who explores every sound reads "Every sound, easiest first", never a list Sona chose',ready.title==='Ava\'s practice is ready'&&JSON.stringify(ready.chips)==='["Every sound, easiest first"]',ready.chips);
   clean('ready chips',errors);
@@ -478,7 +506,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The two one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='goal'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='goal'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -496,7 +524,7 @@ await scenario('clinician setup survives a reload',async()=>{
   ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
   ok('…and an old draft that names no child still restores for a first child',await native.page.evaluate(()=>document.getElementById('obName').value==='Milo'));
   const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
-  ok('…it walks the family path: '+'welcome,name,therapy,sounds,goal,ready,mic',seen.join()==='welcome,name,therapy,sounds,goal,ready,mic',seen);
+  ok('…it walks the family path: '+'welcome,name,therapy,sounds,goal,updates,ready,mic',seen.join()==='welcome,name,therapy,sounds,goal,updates,ready,mic',seen);
   clean('native clinician draft',native.errors);
  }finally{await native.context.close();}
  // …and a clinician who answers "SLP or SLPA" in the app walks the shorter one
@@ -574,17 +602,18 @@ await scenario('a double tap on the microphone step stops on the hand-off',async
   clean('double tap on the microphone button',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh({viewport:{width:375,height:667}});try{
-  await enter(page,{age:'8'});await choose(page,'S');await pastReady(page);await page.waitForTimeout(600);
-  const skip=await centre(page,'#micNotNow');
-  await page.mouse.click(skip.x,skip.y);
-  // the second tap is aimed at the email box itself, wherever the hand-off put it
-  const box=await page.evaluate(()=>{const r=document.getElementById('achEmailInput').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,painted:r.height>0};});
-  await page.waitForTimeout(120);await page.mouse.click(box.x,box.y);await page.waitForTimeout(200);
-  const st=await page.evaluate(()=>({path:location.pathname,handoff:document.querySelectorAll('[data-step="achieve"].on').length,focus:document.activeElement?document.activeElement.id:'',title:document.getElementById('handoffTitle').getBoundingClientRect().height>0,asks:__setup.requests.length}));
-  ok('"Not now", then a tap that lands on the email box: the hand-off shows with its title, and the email box is not focused (no keyboard comes up over it)',box.painted&&st.path==='/onboarding.html'&&st.handoff===1&&st.focus!=='achEmailInput'&&st.title&&st.asks===0,[box,st]);
+  // THE EMAIL STEP comes up right under the finger that answered the days a
+  // week. Where its box sits: go and look, then come Back to the question.
+  await enter(page,{age:'8'});await choose(page,'S');await next(page);await answerGoal(page,'3');await page.locator('[data-step="updates"].on').waitFor();await settled(page);
+  const box=await page.evaluate(()=>{const r=document.getElementById('updEmail').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,painted:r.height>0};});
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="goal"].on').waitFor();await page.waitForTimeout(600);
+  const pick=await centre(page,'#obGoal .ask-pick[data-val="3"]');
+  await page.mouse.click(pick.x,pick.y);await page.waitForTimeout(120);await page.mouse.click(box.x,box.y);await page.waitForTimeout(200);
+  const st=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,focus:document.activeElement?document.activeElement.id:'',title:document.getElementById('updTitle').getBoundingClientRect().height>0}));
+  ok('a days-a-week answer, then a tap that lands on the email box: the email step shows with its title, and the box is not focused (no keyboard comes up over it)',box.painted&&st.screen==='updates'&&st.focus!=='updEmail'&&st.title,[box,st]);
   await page.waitForTimeout(500);await page.mouse.click(box.x,box.y);
-  ok('…and the same tap, on the same spot, once the hand-off has settled does open the email box',await page.evaluate(()=>document.activeElement.id==='achEmailInput'));
-  clean('double tap on Not now',errors);
+  ok('…and the same tap, on the same spot, once the step has settled does open the email box',await page.evaluate(()=>document.activeElement.id==='updEmail'));
+  clean('double tap onto the email step',errors);
  }finally{await context.close();}}
 });
 // A PRESS THAT IS NOT A TOUCH GETS THE SAME HALF SECOND. The pause is CSS
@@ -603,17 +632,17 @@ await scenario('a key pressed twice gets the same pause as a double tap',async()
   await page.waitForTimeout(500);
   // one settled press asks the phone (allowed at once here, so the hand-off
   // follows in the same breath); 150 ms later the same button, now "Let's
-  // play!", is pressed again, and so is the × beside the email box. If a
+  // play!", is pressed again. If a
   // press ever does leave the page, the page's answer never comes: that is
   // caught here and read as a failure below, once the page it left for is in
   // (a tab closed in the middle of leaving can hold this file up for minutes).
   const within=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(new Error('no answer')),ms))]);
-  const pressed=await within(page.evaluate(async()=>{const b=document.getElementById('nextBtn');b.click();await new Promise(r=>setTimeout(r,150));const at={asks:__setup.requests.length,handoff:document.querySelectorAll('[data-step="achieve"].on').length,settling:document.body.classList.contains('ob-settling'),cta:b.textContent.trim(),taps:[document.querySelector('.obfoot'),document.querySelector('[data-step="achieve"]'),document.getElementById('skipEmail')].map(el=>getComputedStyle(el).pointerEvents).join()};b.click();document.getElementById('skipEmail').click();return at;}),3000).catch(()=>({left:true}));
+  const pressed=await within(page.evaluate(async()=>{const b=document.getElementById('nextBtn');b.click();await new Promise(r=>setTimeout(r,150));const at={asks:__setup.requests.length,handoff:document.querySelectorAll('[data-step="achieve"].on').length,settling:document.body.classList.contains('ob-settling'),cta:b.textContent.trim(),taps:[document.querySelector('.obfoot'),document.querySelector('[data-step="achieve"]')].map(el=>getComputedStyle(el).pointerEvents).join()};b.click();return at;}),3000).catch(()=>({left:true}));
   await page.waitForTimeout(400);
   const left=await page.evaluate(()=>({path:location.pathname,firstgame:sessionStorage.getItem('sona.firstgame.v1'),disabled:!!(document.getElementById('nextBtn')||{}).disabled}));
   ok('once the screen has settled the same press does ask, and the hand-off follows',pressed.asks===1&&pressed.handoff===1&&pressed.cta==='Let\'s play!',pressed);
-  ok('a press on "Let\'s play!" (or on the ×) in the hand-off\'s first half second opens nothing and marks no first game',pressed.settling===true&&left.path==='/onboarding.html'&&left.firstgame===null&&!left.disabled,[pressed,left]);
-  ok('…and for that half second the footer, the hand-off card and the × take no tap either',pressed.taps==='none,none,none',pressed.taps);
+  ok('a press on "Let\'s play!" in the hand-off\'s first half second opens nothing and marks no first game',pressed.settling===true&&left.path==='/onboarding.html'&&left.firstgame===null&&!left.disabled,[pressed,left]);
+  ok('…and for that half second the footer and the hand-off card take no tap either',pressed.taps==='none,none',pressed.taps);
   if(left.path==='/onboarding.html'){
    await page.locator('#nextBtn').click();await page.waitForURL(url=>url.pathname==='/charge.html');
    ok('…and a tap once it has settled opens the first game',new URL(page.url()).search==='?game=arcade-slice.html',page.url());
@@ -645,7 +674,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   await page.waitForTimeout(700);
   ok('the pause lifts by itself after about half a second',await page.evaluate(()=>!document.body.classList.contains('ob-settling')));
   await page.mouse.click(skip.x,skip.y);
-  ok('…and then the same tap on Skip is taken',await page.evaluate(()=>document.body.dataset.setupScreen==='ready'));
+  ok('…and then the same tap on Skip is taken (on to the email step)',await page.evaluate(()=>document.body.dataset.setupScreen==='updates'&&draft.goal===''));
   clean('double tap on a question',errors);
  }finally{await context.close();}}
 });
@@ -759,24 +788,85 @@ await scenario('typing a name never raises the rotate cover, and the age choices
   clean('keyboard and the rotate cover',errors);
  }finally{await context.close();}
 });
-await scenario('phone fit and optional email close',async()=>{
+await scenario('phone fit, and the hand-off asks for nothing',async()=>{
  const {context,page,errors,requests}=await fresh({native:true,keyboardPlatform:'ios'});try{
   await page.setViewportSize({width:393,height:852});
   await page.waitForTimeout(300);
   ok('welcome fits the phone without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1&&document.documentElement.scrollHeight<=innerHeight;}));
   await page.screenshot({path:path.join(tmpdir(),'sona-welcome-polish.png')});
   await enter(page);await page.waitForTimeout(600);await page.screenshot({path:path.join(tmpdir(),'sona-sounds-polish.png')});await next(page);await notNow(page);await atHandoff(page);
-  ok('email handoff fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
-  ok('email copy is short and does not promise extra tips',!/Rachel|occasional tips/.test(await page.locator('[data-step="achieve"]').innerText()));
-  await page.screenshot({path:path.join(tmpdir(),'sona-email-polish.png')});
-  await page.setViewportSize({width:393,height:430});
-  await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));
-  await page.locator('#achEmailInput').fill('skip@example.com');
-  ok('email X stays visible when the keyboard reduces the screen',await page.locator('#skipEmail').evaluate(el=>{var r=el.getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight&&r.width>=44&&r.height>=44;}));
-  await page.locator('#skipEmail').click();await page.waitForURL('**/arcade-feed.html');
-  ok('X skips email and still completes setup',!requests.some(r=>new URL(r.url).pathname==='/api/lead'&&r.method==='POST')&&await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email));
-  clean('phone fit and skip',errors);
+  ok('the hand-off fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
+  ok('…and has no email box, no × and no Rachel line',!/Rachel|occasional tips|email/i.test(await page.locator('[data-step="achieve"]').innerText())&&await page.locator('#skipEmail,#achEmailInput,[data-step="achieve"] input').count()===0);
+  await page.screenshot({path:path.join(tmpdir(),'sona-handoff-polish.png')});
+  await next(page);await page.waitForURL('**/arcade-feed.html');
+  ok('…and its one button still opens the first game, with nothing posted',leadPosts(requests).length===0);
+  clean('phone fit and hand-off',errors);
  }finally{await context.close();}
+});
+// THE EMAIL STEP (Travis, 13 Oct 2026: "also move the email box before the
+// price"): its own one-tap-skippable step, Travis's consent line on screen
+// before anything is sent, a wrong-looking address held back with one line.
+const updFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="updates"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),i=document.getElementById('updEmail').getBoundingClientRect(),k=document.querySelector('.upd-consent').getBoundingClientRect(),s=document.getElementById('updSkip').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,inputTop:i.top,inputBottom:i.bottom,consentBottom:k.bottom,skip:s.height,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:ob.scrollWidth-ob.clientWidth,innerHeight};};
+await scenario('the email step: before the price, optional, and fits',async()=>{
+ for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}}]){
+  const {context,page,errors}=await fresh({...device,native:true,keyboardPlatform:'ios'}),at=device.viewport.width+'×'+device.viewport.height;try{
+   await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'3');await page.locator('[data-step="updates"].on').waitFor();await settled(page);
+   let fit=await page.evaluate(updFit);
+   ok('the email step fits at '+at+': no scrolling, the card at least 12 px clear of Continue, Skip at least 44 tall',fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom+12<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight&&fit.skip>=44&&fit.sideways<=0&&fit.obSideways<=0,fit);
+   // the keyboard up, at each size: an iPhone keyboard (no toolbar) is about
+   // 253 px tall on a 320-wide phone, 260 on a 375 and 422 on a 393 with its
+   // home bar, and the web view shrinks by that much
+   {const kb={320:253,375:260,393:422}[device.viewport.width],up={width:device.viewport.width,height:device.viewport.height-kb};
+    await page.locator('#updEmail').focus();await page.setViewportSize(up);await page.evaluate(k=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:k}),kb);await page.waitForTimeout(500);
+    fit=await page.evaluate(updFit);
+    ok('with the keyboard up ('+up.width+'×'+up.height+') the box and Travis\'s line stay above Continue',fit.inputTop>=0&&fit.inputBottom<=fit.buttonTop&&fit.consentBottom<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight,fit);
+    await page.evaluate(()=>{__setup.keyboardListeners.keyboardWillHide();document.activeElement.blur();});await page.setViewportSize(device.viewport);
+   }
+   clean('email step fit '+at,errors);
+  }finally{await context.close();}
+ }
+ const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
+  await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'5');await page.locator('[data-step="updates"].on').waitFor();
+  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
+  ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Get practice tips by email?'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want tips for home?',shown);
+  ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
+  ok('…no weekly summary is promised (nothing sends one), and the child\'s name is not on the screen',!/weekly summary|weekly update/i.test(shown.text)&&!/Milo/.test(shown.text),shown.text);
+  ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
+  // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
+  await page.locator('#updEmail').fill('done@example.com');await page.locator('#updEmail').press('Enter');
+  const done=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,focus:document.activeElement.id,hint:document.getElementById('updEmail').getAttribute('enterkeyhint')}));
+  ok('Done in the email box closes the keyboard and stays on the step: nothing is sent',done.screen==='updates'&&done.focus!=='updEmail'&&done.hint==='done'&&leadPosts(requests).length===0,done);
+  await page.locator('#updEmail').fill('not-an-email');await next(page);
+  const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,email:draft.email}));
+  ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&bad.email===''&&leadPosts(requests).length===0,bad);
+  await page.locator('#updEmail').fill('');await next(page);
+  ok('an empty box and Continue go on, as a Skip',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='')&&leadPosts(requests).length===0);
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
+  ok('Back comes to it with the line cleared',await page.evaluate(()=>document.getElementById('updMsg').textContent===''));
+  await page.locator('#updEmail').fill('typed@example.com');await calm(page);await page.locator('#updSkip').click();
+  ok('Skip throws the typed address away and goes on: nothing is kept or sent',await screen(page)==='ready'&&await page.evaluate(()=>draft.email===''&&document.getElementById('updEmail').value==='')&&leadPosts(requests).length===0);
+  await next(page);await page.locator('[data-step="mic"].on').waitFor();
+  ok('…and leaving ready after a Skip posts no lead and saves no address',leadPosts(requests).length===0&&await page.evaluate(()=>!Sona.getProfile().email&&!Sona.getProfile().weeklyEmail));
+  clean('email step behaviour',errors);
+ }finally{await context.close();}
+ {const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
+  await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'5');await updates(page,'first@example.com');
+  ok('a valid address goes on to ready, kept in the draft (a phone call does not lose it), and nothing is sent yet',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='first@example.com'&&JSON.parse(localStorage.getItem('sona.obdraft.v1')).email==='first@example.com')&&leadPosts(requests).length===0);
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
+  ok('Back shows the address it holds',await page.locator('#updEmail').inputValue()==='first@example.com');
+  // typed, then Back to the question before it: coming forward shows what was typed
+  await page.locator('#updEmail').fill('not-yet');await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="goal"].on').waitFor();
+  await calm(page);await next(page);await page.locator('[data-step="updates"].on').waitFor();
+  ok('an address typed and left by Back is still in the box when the parent comes forward again, and nothing is sent',await page.locator('#updEmail').inputValue()==='not-yet'&&leadPosts(requests).length===0);
+  await next(page);
+  ok('…and Continue still checks it: a wrong-looking one stays on the step with its line',await screen(page)==='updates'&&await page.evaluate(()=>document.getElementById('updMsg').textContent==='That email doesn\'t look right.'));
+  await page.locator('#updEmail').fill('second@example.com');await next(page);await page.locator('[data-step="ready"].on').waitFor();
+  await next(page);await page.locator('[data-step="mic"].on').waitFor();
+  const leads=leadPosts(requests);
+  ok('a Back and a retype still make ONE post, of the last address, when ready is left',leads.length===1&&leads[0].email==='second@example.com'&&leads[0].source==='app-setup',leads);
+  ok('…and that address is the household\'s parent email from then on',await page.evaluate(()=>Sona.parentEmail()==='second@example.com'));
+  clean('email step: one post',errors);
+ }finally{await context.close();}}
 });
 // The iPhone keyboard plugin (autoBackdropColor: "dom") paints the area
 // behind the keyboard's rounded corners from the BODY's background colour; a
@@ -815,16 +905,18 @@ async function phone(cfg={},viewport={width:393,height:852},hold=null){
   return o;
 }
 // hello → Parent → name + age 7 → an answer → R → an answer → ready
-async function buyerAtReady(page,name='Mia'){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5');}
+async function buyerAtReady(page,name='Mia',email=null){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5',email);}
 const tab=page=>page.evaluate(()=>({marker:sessionStorage.getItem('sona.setupafter.v1'),gate:sessionStorage.getItem('sona.gate.v1'),firstgame:sessionStorage.getItem('sona.firstgame.v1'),asks:localStorage.getItem('sona.setupasks.v1'),draft:localStorage.getItem('sona.obdraft.v1'),profile:JSON.parse(localStorage.getItem('sona.profile.v1')||'{}'),mic:Number(localStorage.getItem('__micAsks')||0),bought:__phone.bought.length,asked:__phone.askedAll.length,syncs:__phone.syncs}));
 await scenario('where Sona can sell, ready\'s Continue leaves for the price and a buyer comes back to the microphone',async()=>{
  const {context,page,errors,requests}=await phone();try{
-  await buyerAtReady(page);
+  await buyerAtReady(page,'Mia','mom@example.com');
   await page.waitForFunction(()=>__phone.infos>=1).catch(()=>{});
   ok('the family owes the price, and the store is already being asked whether this Apple ID has Premium',await page.evaluate(()=>Sona.trialFirst()===true&&__phone.infos>=1));
   await next(page);await page.waitForURL(url=>url.pathname==='/subscribe.html');
   const at=await tab(page),marker=JSON.parse(at.marker||'null');
   ok('Continue on ready goes to exactly /subscribe.html?setup=1',page.url()===base+'/subscribe.html?setup=1',page.url());
+  {const order=requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead'||new URL(r.url).pathname==='/subscribe.html').map(r=>new URL(r.url).pathname),lead=leadPosts(requests);
+  ok('…the email step\'s address was posted once, before the price was asked for, and it is on the profile for the purchase\'s plan post',lead.length===1&&lead[0].email==='mom@example.com'&&lead[0].source==='app-setup'&&order[0]==='/api/lead'&&order.indexOf('/subscribe.html')>0&&await page.evaluate(()=>Sona.parentEmail()==='mom@example.com'),[order,lead]);}
   ok('…with the profile saved, the therapy answer kept, the days picked as the week\'s goal, and the draft gone',at.profile.onboarded===true&&at.profile.childName==='Mia'&&JSON.stringify(at.profile.focusSounds)==='["R"]'&&at.asks==='{"v":2,"therapy":"t_yes"}'&&at.draft===null&&!('therapy' in at.profile)&&at.profile.weeklyGoal===5,at);
   ok('…the grown-ups stamp and the "after the price" marker written for this child, in this tab',Number(at.gate)>0&&!!marker&&marker.kid===''&&typeof marker.at==='number'&&await page.evaluate(()=>Sona.setupAfter()===true),at);
   ok('…no first game marked yet, the phone not asked for the microphone, and nothing bought or even priced by setup',at.firstgame===null&&at.mic===0&&at.bought===0&&at.asked===0,at);
@@ -837,17 +929,18 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.goto(base+'/onboarding.html');await page.locator('[data-step="mic"].on').waitFor();
   const back=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,html:document.documentElement.className,backBtn:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,hello:document.querySelector('[data-step="welcome"]').classList.contains('on'),visible:getComputedStyle(document.querySelector('.ob')).visibility,cta:document.getElementById('nextBtn').textContent.trim(),name:document.getElementById('micName').textContent,role:draft.role,steps:__phone.events.filter(e=>e.name==='setup step').map(e=>e.props.step).join()}));
   ok('with a valid marker and nothing owed, setup opens on the microphone: no hello, no Back, no progress bar, nothing left hidden',back.screen==='mic'&&!back.hello&&back.backBtn==='none'&&back.seg&&back.visible==='visible'&&!/ob-resume|ob-leaving/.test(back.html)&&back.cta==='Turn on Echo\'s ears'&&back.name==='Mia',back);
-  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,therapy,sounds,goal,ready,mic',back.steps);
+  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,therapy,sounds,goal,updates,ready,mic',back.steps);
   await page.reload();await page.locator('[data-step="mic"].on').waitFor();
   ok('a reload on the microphone comes back to the microphone',await screen(page)==='mic');
   await next(page);await page.waitForFunction(()=>__phone.mic.requests.length===1);
   await page.evaluate(()=>__phone.mic.requests[0].grant());await atHandoff(page);
-  const heard=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__phone.mic.order,title:document.getElementById('handoffTitle').innerText.trim(),email:getComputedStyle(document.getElementById('achEmail')).display}));
-  ok('"Turn on Echo\'s ears" asks the phone once, stops both tracks before the speech ask, and opens the hand-off',heard.mic==='1'&&heard.order.filter(x=>x==='microphone').length===1&&heard.order.filter(x=>x==='stop').length===2&&heard.order.indexOf('speech permission')>heard.order.lastIndexOf('stop')&&heard.title==='Hand the phone to Mia!'&&heard.email!=='none',heard);
+  const heard=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__phone.mic.order,title:document.getElementById('handoffTitle').innerText.trim(),email:document.querySelectorAll('[data-step="achieve"] input,#achEmail,#skipEmail').length}));
+  ok('"Turn on Echo\'s ears" asks the phone once, stops both tracks before the speech ask, and opens the hand-off',heard.mic==='1'&&heard.order.filter(x=>x==='microphone').length===1&&heard.order.filter(x=>x==='stop').length===2&&heard.order.indexOf('speech permission')>heard.order.lastIndexOf('stop')&&heard.title==='Hand the phone to Mia!'&&heard.email===0,heard);
   await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
   const end=await page.evaluate(()=>({firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length}));
   ok('"Let\'s play!" opens the first game, marks it only now, and clears the marker',new URL(page.url()).search==='?game=arcade-slice.html'&&end.firstgame==='slice'&&end.marker===null&&end.done===1,[page.url(),end]);
   ok('the only price page setup ever asked for is /subscribe.html?setup=1',priced(requests).every(u=>u===base+'/subscribe.html?setup=1')&&priced(requests).length===2,priced(requests));
+  ok('…and back from the price the hand-off asked for no email: still the one lead',leadPosts(requests).length===1,leadPosts(requests));
   clean('buy path',errors);
  }finally{await context.close();}
 });

@@ -729,12 +729,17 @@ if (A) {
     /your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit/.test(read("public/for-slps.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
-  // the grown-up's email and nothing from the child on the same screen.
-  const fin = ob.slice(ob.indexOf('var em=(document.getElementById("achEmailInput")'), ob.indexOf("SonaAnalytics.track(\"onboarding completed\")"));
-  ok("a parent's weekly-summary email is sent to the list, tagged parent",
-    /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /keepalive:true/.test(fin));
+  // the grown-up's email and nothing from the child. Since 13 Oct 2026 it is
+  // given on setup's email step, before the price, and posted by one small
+  // function that is handed the address and nothing else.
+  const fin = ob.slice(ob.indexOf("function postParentLead("), ob.indexOf("function saveSetup("));
+  ok("a parent's email from setup's email step is sent to the list, tagged parent, from inside the app",
+    fin.length > 0 && /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /source:"app-setup"/.test(fin) && /keepalive:true/.test(fin) && /^function postParentLead\(email\)\{/.test(fin));
   ok("…and never with the child's name or age",
-    fin.length > 0 && !/childName|draft\.age|achEmName|nameEl|child:/.test(fin.slice(fin.indexOf('fetch("/api/lead"'))));
+    fin.length > 0 && !/childName|draft\.|achEmName|nameEl|child:/.test(fin));
+  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.indexOf('<div class="step" data-step="ready">'));
+  ok("the email step says the email joins the list before it is given, in Travis's words",
+    updStep.length > 0 && /We(&rsquo;|’|')ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(updStep), updStep.slice(0, 300));
 
   // The consent line, everywhere an email can join the list (Travis's wording)
   // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
@@ -744,7 +749,8 @@ if (A) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
-  ok("family email explains the optional weekly update and unsubscribe", /Get a weekly practice update. Optional./.test(ob) && /Unsubscribe anytime/.test(ob));
+  ok("family email step says it is optional and how to unsubscribe, and promises no weekly summary nothing sends",
+    /Get practice tips by email\?/.test(updStep) && /Optional\./.test(updStep) && /Unsubscribe anytime/.test(updStep) && !/weekly (summary|practice update)/i.test(updStep));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));

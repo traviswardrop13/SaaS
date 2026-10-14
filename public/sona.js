@@ -2181,7 +2181,9 @@
   // "sona.nativemic" is set by hand on Travis's test phone, and it changes
   // whose mic listens and how loud it hears; on another family's phone it
   // would change what counts as heard. It is refused by importData too.
-  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic"];
+  const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
+    // what this phone showed (the offer from Home, 13 Oct 2026), like freever
+    "sona.offerseen.v1"];
   function exportData() {
     const out = {};
     try {
@@ -2239,7 +2241,10 @@
     "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1",
     // the native mic's measurement setting (NATIVE MIC): true of one test
     // phone only, and it changes what counts as heard, so it never moves to another
-    "sona.nativemic"];
+    "sona.nativemic",
+    // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
+    // never brings the mark, so it can never take that one showing away
+    "sona.offerseen.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -5558,6 +5563,65 @@
       return true;
     } catch (e) { return false; }
   }
+  // THE OFFER, ONCE, FROM HOME (Travis, 13 Oct 2026: "yeah, let's show the
+  // offer again"). Some families' Home locked without them ever seeing the
+  // free days: set up on the App Store's 1.0.4, which could not buy, so setup
+  // skipped the price and opened the free games; stamped "post" by the
+  // trial-first build, so the update to a build that can buy took the free
+  // version away and every game greyed out with no offer on screen. The next
+  // time such a family opens Home on a phone that can sell, the plan screen
+  // opens once as the offer (/subscribe.html?from=home), the same screen a
+  // grey-game tap opens, and its X leaves to Home exactly as that one does.
+  //
+  // Two keys, because one is not enough. PLANSEEN is spent only once a
+  // PRICED card is painted (planShown), so a store that never answers would
+  // leave it unspent and Home would open the offer again on every visit.
+  // OFFERSEEN is spent by subscribe.html the moment the offer frame is up,
+  // from any door (setup, a grey game, a first run, Home): what this phone
+  // showed, never what the family bought. It is on NO_EXPORT and NO_IMPORT
+  // like the free-version stamp; PLANSEEN still travels, so a pasted backup
+  // can take the offer away but never add one.
+  //
+  // homeOfferDue() only reads: it writes nothing, sends nothing, grants
+  // nothing and reads no address. trialFirst() is the whole "who owes the
+  // price" rule (a phone that can sell, no free version, no Premium, no
+  // trial, Sona not free); a clinician's own setup and a phone not yet set up
+  // are never asked (the second is setup's job).
+  //
+  // AN ERROR CARD IS NOT THE ONE SHOWING. The offer frame goes up before the
+  // store answers, so a store that is slow or unreachable would spend the
+  // family's one showing on "We couldn't reach the App Store." with no price
+  // on it. So subscribe.html calls offerSeen(true) only on a definite answer
+  // (a priced card, which also spends PLANSEEN; "nothing to sell"; Premium
+  // already there) and offerSeen(false) for a frame the store never priced:
+  // that marks this visit (OFFERTAB, sessionStorage, so X back to Home cannot
+  // loop) and counts the try ("try:N"). The next launch of the app tries
+  // again, at most OFFER_TRIES times in all, so a store that is broken for
+  // good never opens an error card on every launch.
+  const OFFERSEEN = "sona.offerseen.v1", OFFERTAB = "sona.offerseen.tab", OFFER_TRIES = 3;
+  function _offerTries(v) { const m = /^try:(\d+)$/.exec(v || ""); return m ? +m[1] : -1; }
+  function _offerSpent(v) { if (!v) return false; const n = _offerTries(v); return n < 0 || n >= OFFER_TRIES; }
+  function homeOfferDue() {
+    try {
+      if (!trialFirst()) return false;
+      const list = _kids().list;
+      if (!list.some((k) => { const p = _loadFor(k.slot || "", PKEY, {}); return !!(p.onboarded || p.childName); })) return false;
+      if (list.some((k) => _loadFor(k.slot || "", PKEY, {}).role === "slp")) return false;
+      if (localStorage.getItem(PLANSEEN)) return false;    // a priced card was already painted here
+      if (_offerSpent(localStorage.getItem(OFFERSEEN))) return false;   // the offer was already shown here
+      try { if (sessionStorage.getItem(OFFERTAB)) return false; } catch (e) {}   // tried this visit, the store never priced it
+      return true;
+    } catch (e) { return false; }
+  }
+  function offerSeen(final) {
+    try {
+      const v = localStorage.getItem(OFFERSEEN);
+      if (_offerSpent(v)) return;
+      if (final) { localStorage.setItem(OFFERSEEN, String(Date.now())); return; }
+      try { if (sessionStorage.getItem(OFFERTAB)) return; sessionStorage.setItem(OFFERTAB, "1"); } catch (e) {}
+      localStorage.setItem(OFFERSEEN, "try:" + (Math.max(0, _offerTries(v)) + 1));
+    } catch (e) {}
+  }
   // Kept so an older cached page cannot crash on a missing export. It is the
   // OLD, wrong shape — decide-and-consume — so it only answers eligibility and
   // never spends the one-shot; nothing in this repo calls it.
@@ -7575,8 +7639,8 @@
     return err;
   }
   // KIT HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
-  // it"). A parent who gave the app their email (setup's weekly-summary box)
-  // is on Sona's email list already. Apple never tells Sona who bought, so
+  // it"). A parent who gave the app their email (setup's email step, before
+  // the price since 13 Oct 2026) is on Sona's email list already. Apple never tells Sona who bought, so
   // once a purchase here has gone through, the list is told which kind it
   // was through /api/lead, the one door every grown-up's email uses: "trial"
   // when Apple started the free days, "paid" when it charged at once. Kit's
@@ -8007,5 +8071,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

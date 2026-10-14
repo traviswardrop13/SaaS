@@ -4,12 +4,13 @@ import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { kitConfigured, kitPlanTag, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
-import { enroll } from "@/lib/nurture";
+import { enroll, inAppSource } from "@/lib/nurture";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
  * tellCrm), the app's setup (a clinician's account email, a parent's
- * weekly-summary email) and the Speech Check.
+ * optional email step, before the price since 13 Oct 2026), a purchase's
+ * plan post (sona.js _tellPlan) and the Speech Check.
  *
  * Every lead is saved in the store first-class (the ledger below), then sent to:
  *   - KIT_API_KEY (+ optional KIT_FORM_ID): the email list, via lib/kit —
@@ -284,9 +285,11 @@ export async function POST(req: NextRequest) {
   // THE WELCOME SERIES (lib/nurture.ts, 6 Oct 2026): now that the app is out,
   // every grown-up who gives an email gets Rachel's welcome right away and the
   // 5-minute email the next day — once per address, with a real unsubscribe.
+  // An email given inside the app (IN_APP_SOURCES in lib/nurture.ts) skips
+  // the App Store email and starts at the 5-minute one: they have the app.
   if (APP_READY && kvConfigured()) {
     try {
-      welcomed = (await enroll(email)) || welcomed;
+      welcomed = (await enroll(email, kvCmd, fetch, Date.now(), { inApp: inAppSource(lead.source) })) || welcomed;
     } catch {
       // never fail the visitor on the welcome
     }

@@ -8,7 +8,7 @@
 // answer Sona.storePlan got from the store (planwordstest holds those two).
 // This suite plays the card itself, as the app that can sell, against the
 // shared fake phone (tests/_phone.mjs):
-//   - in every store state, from every door (setup, a grey game, a grey book,
+//   - in every store state, from every door (setup, a grey game, a grey book, Home,
 //     a first run, Settings), the card says planWords's words and nothing
 //     else: free days only when the store gives them and Apple does not say
 //     this buyer has used them, "charged today" otherwise, and NO figure when
@@ -141,6 +141,9 @@ const DOORS = [
   ["a first run (?first=1)", "/subscribe.html?first=1", Object.assign({ local: RECAP }, KEPT)],
   ["Settings › Your plan", "/subscribe.html", POST],
   ["Settings › Your plan, a family with the free version", "/subscribe.html", KEPT],
+  // Home opening the offer once by itself (13 Oct 2026); last, so the
+  // indexes above keep their doors
+  ["Home, once (?from=home)", "/subscribe.html?from=home", POST],
 ];
 const SETUP = DOORS[0];
 const at = (door, extra) => [Object.assign({}, door[2], extra || {}), door[1]];
@@ -525,7 +528,9 @@ try {
     ok("the same in Settings › Your plan: \"Your plan: Active ✓\", how to cancel, and no card", /^Your plan: Active ✓ — thank you for backing Sona\.$/.test(s.line) && s.cancel && !s.shown && s.path === "/subscribe.html", [s.line, s.cancel, s.shown]);
 
     // a reinstall: the customer record says no, and only the one purchase sync finds them
-    for (const door of [DOORS[1], SETUP, DOORS[4]]) {
+    // …and from Home's one showing (13 Oct 2026), whose store answered
+    // after Home's own 2.5 s look: the offer itself finds them and goes Home
+    for (const door of [DOORS[1], SETUP, DOORS[4], DOORS[DOORS.length - 1]]) {
       await load(...at(door, { sync: "finds" }));
       if (door === DOORS[4]) await page.waitForFunction(() => /Active/.test(document.getElementById("planLine").textContent)); else await until("done");
       s = await snap();
