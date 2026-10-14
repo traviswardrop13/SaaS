@@ -2048,6 +2048,38 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   should is hers. **For Travis and Rachel:** a little one who only plays Feed
   Echo and Bubble Pop needs six rounds to open the chest at the default goal.
 
+**The daily adventure (QUEST1, 13 Oct 2026)** (Travis: "go build the daily
+adventure", a 14-day run of one game a day with a little story). Home shows
+one card under "Pick a game!" (`#questCard`): "Day 3 of 14", one line from
+Echo's world ("The wind blew Echo's tower down. Help him build it back up!"),
+the game's own painted Home picture and a teal play button. A tap is that
+game card's own tap (`launch`: access, the price, "Pick a level").
+- **One list per age group** (`QUEST_DAYS` in `sona.js`): ages 5-8 the eight
+  big-kid games, never the same game two days running; ages 3-4 Feed Echo
+  and Bubble Pop in turn (`playStyle()`). After day 14 it starts at day 1.
+- **A round of today's game finishes the day**, won or lost, from the game's
+  end card (`Sona.questEnd(key)`, in the five round games' `endRound`, Feed
+  Echo's end and `sayplay.js`'s `showEnd`). Another game finishes nothing,
+  and a day finishes once. The game is played exactly as it always is: the
+  adventure only picks the game and says why.
+- **The gift is a sticker, the next one** (`awardNextSticker`; two on days 7
+  and 14), never coins (COIN3), with a quiet note for five seconds, no voice.
+- **A missed day loses nothing**: the adventure waits on its day, moves on
+  once a quest is done and never twice in a calendar day. A done day shows
+  "Come back tomorrow for Day N+1!" with tomorrow's picture dark, never
+  playable early. No timer, no countdown, nothing random.
+- **A family without Premium is never sent to a locked game**: a day whose
+  game this phone cannot open borrows the next open game in the list, with
+  that game's own line (`QUEST_LINE`).
+- **Home only reads** (`questToday()`), as roadtest and trophytest require.
+  Per child (`sona.quest.v1`, `PER_KID`). The event "adventure day done"
+  carries the game key only.
+- **Defaults Travis did not pick:** stickers rather than coins, waiting on a
+  missed day, restarting after 14, a lost round counting, and the games'
+  Home pictures rather than new art. **For Rachel:** the 28 lines say
+  nothing about how to talk; whether a story should ever name a sound is hers.
+`tests/questtest.mjs` plays it.
+
 **Levels inside games (LEVELS1, Travis, 9 Oct 2026: "kids see games and
 levels but have to unlock them"; he chose levels inside games, not locked
 games).** Every game opens exactly as before (access, Premium, the trial and
