@@ -61,6 +61,11 @@ await page.addInitScript(() => {
   if (!localStorage.getItem("sona.profile.v1")) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Zoe", childAge: "4", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.micok", "1");   // the grown-up said yes in setup
+    // Today's daily adventure (QUEST1) is already done, so the sticker check
+    // below is about the game itself: the adventure's own sticker is
+    // questtest's to play.
+    const d = new Date(), day = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    localStorage.setItem("sona.quest.v1", JSON.stringify({ i: 1, last: 0, done: day }));
   }
 });
 await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(600);
@@ -197,7 +202,8 @@ t = await page.evaluate(() => ({
 ok("growth persisted (5 feeds banked)", t.fedStore === 5, "fed=" + t.fedStore);
 // A WORD SAID IN A GAME IS PLAY, NOT PRACTICE. Each heard word is one rep on
 // the week's count (Sona.gameRep), but the rotation, the day's ring and the
-// stickers belong to the practice page alone.
+// stickers belong to the practice page alone (the daily adventure's sticker
+// is a gift for the day, not the game's: see QUEST1).
 ok("a heard round does NOT advance the rotation or ring", t.rot === 0 && t.ring === 0, "rot=" + t.rot + " ring=" + t.ring);
 ok("…and earns no sticker", t.stickers === 0, String(t.stickers));
 ok("…but every word Echo heard is a rep on the week's count", t.heard >= 5 && (t.reps == null || t.reps >= 5), JSON.stringify({ heard: t.heard, reps: t.reps }));
