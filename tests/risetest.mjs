@@ -286,7 +286,7 @@ await scenario("pushing and the count", async () => {
     // gives the same 1.5 s of grace as coming back to the front; the top's
     // clouds keep their places inside the new shield area
     const turned = await page.evaluate(() => {
-      graceUntil = 0; fit(); const grace = graceUntil > performance.now() + 1000;
+      graceUntil = 0; window.dispatchEvent(new Event("resize")); const grace = graceUntil > performance.now() + 1000;
       Rise.startPuffs(); Rise.resize(844, 390, Rise.HUDB);
       const b = Rise.shieldBox(), inBox = Rise.puffs.every((f) => f.x > 0 && f.x < 844 && f.ty >= b.y0 - 0.5 && f.ty <= b.y1 + 0.5);
       Rise.puffs.length = 0; fit(); graceUntil = 0;
