@@ -180,6 +180,9 @@
     SayPlay.start(GAME);
     // once per load, and only at Level 2 or 3 in a game this family can open
     // (a bounced page is hidden): the game and the level, nothing else
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if (!document.body.hidden) { try { Sona.track("game opened", { game: "dino" }); } catch (e) {} }
     if (LV > 1 && !document.body.hidden) { try { Sona.track("level played", { game: "dino", level: LV }); } catch (e) {} }
   </script>
 </body>
