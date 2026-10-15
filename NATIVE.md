@@ -234,7 +234,11 @@ what the robot fallback voice plays on. WebKit's own sounds (Echo's voice, the
 chimes) follow the switch through the page instead: on Sona's own mic every
 page sets `navigator.audioSession.type` to `"transient-solo"` (`sona.js`, THE
 SILENT SWITCH). The page half is a web deploy; the `.ambient` half needs a
-new App Store build.
+new App Store build. To take the page half out, set `AUDIO_SESSION_TYPE` to
+`"auto"` and deploy. Never revert it, or roll the website back past it, while
+a build with `micOpen` is in families' hands: WebKit would refuse its own
+mic, the off switch's included, until the app is closed and opened again
+(`SPEECH_PLUGIN.md`, "Taking it out").
 
 **Check it on the phone:** open a practice round *without touching the screen*.
 If "Ready? Say rrrr… Go!" is Echo, the setting applies. If it is still the

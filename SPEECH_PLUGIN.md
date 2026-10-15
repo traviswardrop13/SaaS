@@ -110,7 +110,9 @@ the build. "gaps" should stay near 0 once a listen has started.
 `public/sona.js` and deploy the website. The new build then listens through
 the web page exactly as today, and Apple's check opens the mic its old way.
 No App Store review. One phone alone: in Safari's Web Inspector console,
-`localStorage.setItem("sona.nativemic","off")`, then reload.
+`localStorage.setItem("sona.nativemic","off")`, then reload. Turn things off
+with these switches, never by reverting the code or rolling the website back:
+see "Taking it out" under the silent switch, below.
 
 **A call for Rachel, not engineering.** Today the phone call mode also turns
 quiet voices up and steady room noise down. Sona's own mic does neither, so
@@ -139,6 +141,18 @@ iPhone games. It comes in two halves that ship separately:
   which ignores the switch). The robot fallback voice plays there. A build
   with Sona's own mic but the old `sessionOff()` plays the robot voice even on
   silent.
+- **Taking it out: set `AUDIO_SESSION_TYPE` to `"auto"`** in
+  `public/sona.js` and deploy the website. Every page then writes `"auto"` as
+  it loads, which also clears the setting a family's open app still holds,
+  and Sona plays through the switch as before. **Never revert the block, and
+  never roll speaksona.com back to a deployment from before it (Vercel's
+  Instant Rollback included), while an app build with `micOpen` is in
+  families' hands.** WebKit keeps `"transient-solo"` for as long as the app
+  stays open, across page loads, and code without the block never gives it
+  back. WebKit then refuses its own mic: every fallback, and every listen
+  once `NATIVE_MIC_ON` is `false`, so the off switch above gives no mic at
+  all. It lasts until the family closes the app fully and opens it again.
+  The off switch works only on code that has this block.
 
 **For Rachel:** on a silenced phone a child hears no Echo and no sound to copy
 until a grown-up flips the switch, and nothing on screen says why.

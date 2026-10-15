@@ -2709,9 +2709,19 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   without the plugin are never touched. The plugin's `sessionOff()` now
   leaves the app's session `.ambient` (it was `.playback`), so the robot
   fallback voice follows the switch too, but only from the next App Store
-  build; the page half is a web deploy. **For Rachel:** a child on a
-  silenced phone hears no Echo and no sound to copy until a grown-up flips
-  the switch, and nothing on screen says why.
+  build; the page half is a web deploy. **To take it out, set
+  `AUDIO_SESSION_TYPE` to `"auto"`**: every page then writes `"auto"` as it
+  loads, which also clears the setting a family's open app still holds.
+  **Never revert this block, and never roll speaksona.com back to a
+  deployment from before it (Vercel's Instant Rollback included), while an
+  app build with `micOpen` is in families' hands.** WebKit keeps
+  `"transient-solo"` for as long as the app stays open, and code without the
+  block never gives it back, so WebKit refuses its own mic (every fallback,
+  and every listen once `NATIVE_MIC_ON` is `false`) until the family closes
+  the app fully and opens it again. The off switch works only on code that
+  has this block (`nativemictest` plays it, and `"auto"`). **For Rachel:** a
+  child on a silenced phone hears no Echo and no sound to copy until a
+  grown-up flips the switch, and nothing on screen says why.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
 

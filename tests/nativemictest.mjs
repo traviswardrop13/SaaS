@@ -62,6 +62,9 @@ const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const SONA = readFileSync(ROOT + "/sona.js", "utf8");
 // the off switch, flipped in the copy this server hands out
 const SONA_OFF = SONA.replace("const NATIVE_MIC_ON = true;", "const NATIVE_MIC_ON = false;");
+// the silent switch taken out the documented way (never a revert or a
+// rollback: code without the block never gives a held override back)
+const SONA_AS_AUTO = SONA.replace('const AUDIO_SESSION_TYPE = "transient-solo";', 'const AUDIO_SESSION_TYPE = "auto";');
 const BLANK = (t) => '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + t + '</title></head><body><script src="/sona.js"></script></body></html>';
 // a page that does not load sona.js: it inherits whatever the process holds
 const NOSONA = '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>no sona</title></head><body></body></html>';
@@ -1224,7 +1227,9 @@ scenario("the silent switch: an override an earlier page left held", async (t) =
     t.ok("page 1, Sona's own mic: \"transient-solo\"", JSON.stringify(one.sets) === '["transient-solo"]' && one.held === "transient-solo", one);
     // a page without sona.js inherits it: its getter says "auto" while the
     // process still holds the override, and WebKit refuses its mic (so the
-    // "auto" written below is what opens the web mic, not the fake's leniency)
+    // "auto" written below is what opens the web mic, not the fake's leniency).
+    // A sona.js from before THE SILENT SWITCH is this page too: why it is
+    // never reverted, nor the website rolled back past it
     await page.goto(base + "/__nosona.html");
     const bare = await page.evaluate(async () => {
       const st = await navigator.mediaDevices.getUserMedia({ audio: true }).catch((e) => e);
@@ -1254,6 +1259,23 @@ scenario("the silent switch: an override an earlier page left held", async (t) =
     });
     const asKill = await SESSION(page);
     t.ok("NATIVE_MIC_ON = false, deployed after a page set it: the page writes \"auto\" as it loads, and the web mic opens", JSON.stringify(again.sets) === '["transient-solo"]' && kill.on === false && asKill.heldAtLoad === "transient-solo" && JSON.stringify(asKill.sets) === '["auto"]' && kill.real && asKill.refused === 0, { again, kill, asKill });
+    // AUDIO_SESSION_TYPE = "auto" deployed while a family's app was open: the
+    // documented way to take the silent switch out. Sona's own mic still
+    // listens, and WebKit's mic (a fault, a page's own line) is not refused.
+    await context.unroute("**/sona.js");
+    await page.goto(base + "/__blank.html");
+    const before = await SESSION(page);
+    await context.route("**/sona.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: SONA_AS_AUTO }));
+    await page.goto(base + "/__two.html");
+    const out = await page.evaluate(async () => {
+      const own = await Sona.micOpen({ audio: true }).catch((e) => e);
+      const o = { own: !!(own && own.sonaNative), err: own && own.name }; if (own && own.getTracks) own.getTracks().forEach((x) => x.stop());
+      const web = await navigator.mediaDevices.getUserMedia({ audio: true }).catch((e) => e);
+      o.real = web instanceof MediaStream; o.webErr = web && web.name; if (o.real) web.getTracks().forEach((x) => x.stop());
+      return o;
+    });
+    const asOut = await SESSION(page);
+    t.ok("AUDIO_SESSION_TYPE = \"auto\", deployed after a page set it: the page writes \"auto\" as it loads, Sona's own mic still listens, and WebKit's mic opens", SONA_AS_AUTO !== SONA && JSON.stringify(before.sets) === '["transient-solo"]' && asOut.heldAtLoad === "transient-solo" && JSON.stringify(asOut.sets) === '["auto"]' && asOut.session === "auto" && out.own && out.real && JSON.stringify(asOut.gum) === '["auto"]' && asOut.refused === 0, { before, out, asOut });
     clean(t, "silent switch held", errors);
   } finally { await context.close(); }
 });

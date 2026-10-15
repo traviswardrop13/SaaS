@@ -5995,6 +5995,13 @@
   // kill switch or "sona.nativemic" turned Sona's mic off, would otherwise
   // refuse this page's web mic). A browser and a build without micOpen are
   // never touched: nothing there ever sets it.
+  //
+  // TO TAKE IT OUT, set AUDIO_SESSION_TYPE to "auto": every load then writes
+  // "auto", which also clears an override an open app still holds. Never
+  // revert this block, or roll the website back past it, while an app build
+  // with micOpen is in families' hands: code without it never writes "auto",
+  // so WebKit refuses its own mic (every fallback, and every listen once
+  // NATIVE_MIC_ON is false) until the app is closed and opened again.
   const AUDIO_SESSION_TYPE = "transient-solo";
   // type: what this page last wrote (null: untouched) · auto: this page gave
   // the session back for a web capture, for good · why: what asked it to
