@@ -502,12 +502,12 @@ await scenario("catalog in the app", async () => {
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
       GAMES.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
-    // dated parked games (30 Sep, 1 Oct 2026): playable games first, then the
-    // parked ones, soonest day first (9 Oct, then 16 Oct)
+    // playable games first, then the parked ones, none of them with a day
+    // since 15 Oct 2026 (Travis: "put coming soon")
     const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
     const firstParked = days.findIndex((d) => d.parked);
-    ok("the Simple play shelf lists its playable games, then the parked ones soonest day first",
-      firstParked > 0 && days.slice(firstParked).every((d, i, a) => d.parked && d.on && (i === 0 || a[i - 1].on <= d.on)), days);
+    ok("the Simple play shelf lists its playable games, then the parked ones, with no day on any",
+      firstParked > 0 && days.slice(firstParked).every((d) => d.parked && !d.on), days);
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
     ok("Home shows a card for every game", KEYS.every((k) => cat.cards.includes(k)));

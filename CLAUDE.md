@@ -1372,24 +1372,20 @@ playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
-**Three games a Friday for the unfinished games** (Travis, 30 Sep 2026:
-"games that aren't finished ... label them ... coming October 8th or
-whatever"; 1 Oct 2026, two Fridays of nine; then 9 Oct 2026: "push all the
-games that say coming oct 9th back a week ... space it out so its like 3 games
-per week"). Every parked game carries `comingOn`, three games a Friday for six
-Fridays: **16 Oct** Peekaboo, Balloon Party, Race Car; **23 Oct** Puppy Bath,
-Rocket Blast, Treasure Map; **30 Oct** Build a Snowman, Space Trip, Grow a
-Flower; **6 Nov** Robot Builder, Choo-Choo Train, Pizza Chef; **13 Nov**
-Birthday Cake, Castle Builder, Surprise Boxes; **20 Nov** Monster Makeover,
-Fish Tank, Bedtime Stars. Bubble Pop, Soccer Goal and Dino Dig came back
-early, so they are open and carry no day. Home says "Coming Oct 16" (etc.)
-until that day on the family's calendar, then "Coming soon" again if the game
-still isn't ready; each shelf's parked games sit soonest first, in catalog
-order within a day. **The date is a label, never a switch:** `gameAccess`
+**Every unfinished game says "Coming soon", with no day** (Travis, 15 Oct
+2026: "put coming soon", the day before the first three were due). From 30
+Sep to 15 Oct each parked game carried a day (`comingOn`; from 9 Oct three
+games a Friday, 16 Oct to 20 Nov), and Home said "Coming Oct 16" until that
+day. Now no parked game carries one: every card says "Coming soon", and each
+shelf's parked games sit in catalog order. Bubble Pop, Soccer Goal and Dino
+Dig came back early and are open. The day support stays, as the bookshelf
+keeps `opens`: `comingOn: "2026-11-06"` on one game's line shows "Coming Nov
+6" until that day on the family's calendar, then "Coming soon" again, and
+sorts it first on its row. **A day is a label, never a switch:** `gameAccess`
 never reads it, and only taking `comingSoon` off (after Travis has played the
-rebuilt game) opens one. Keeping those dates means finishing three games a
-week; move a date by editing it. `activitytest` pins the six Fridays, the
-three-a-week lists, the labels and the order.
+rebuilt game) opens one. Putting days back is Travis's call. `activitytest`
+pins that no parked game carries a day, the labels, the order, and that the
+support still works.
 
 **Hoops is the first one back, rebuilt to be played** (Travis, 26 Sep 2026:
 "yes build hoops", to the plan: the hoop slides slowly side to side; say the
