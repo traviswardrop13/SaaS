@@ -211,6 +211,27 @@ changing one. What follows from the rule:
     `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
   - **Nothing moves under a finger:** for about half a second after a setup
     step changes, and after the price card changes shape, taps are ignored.
+  - **The name step holds still** (Travis, 15 Oct 2026: "the onboard feels
+    jumpy especially on the page where i put the name and age"). In the
+    iPhone app the keyboard shrinks the whole page about half a second after
+    it starts to rise, and setup's screen-height rules laid the name card out
+    again on the way up and down: Echo came and went, the heading shrank or
+    vanished, the box and the age choices jumped by up to 190 px, Continue
+    sat under the keyboard and then jumped 300 px, and an age tap closed the
+    keyboard and did all of it under the finger. Now the step has one layout
+    that already fits above the keyboard, sized by the phone and never by
+    the keyboard (`html.ob-short` / `ob-tiny`, from the window's height with
+    no keyboard, `obPhone` in `onboarding.html`). The cost: no Echo and no
+    "So Echo knows who to cheer for." on this one screen (the line is still
+    the box's spoken description; Travis's to bring back), and on a 4-inch
+    phone no progress bar there and the box's label read, not drawn. An age
+    tap keeps the keyboard up; Continue steps aside while the keyboard rises
+    and fades in above it; leaving the step with the keyboard up draws the
+    next screen once, at full height (`whenRoomy`); a tap on the box during
+    the tap lock stays on the box; every step slides in as one piece. Only a
+    window under 400 px with the keyboard up (an iPad on its side) still
+    changes. The email step still re-lays out for the keyboard as before.
+    `setupsteadytest` measures every frame at 390×844, 375×667 and 320×568.
 - **The price is ONE screen** (the two ReciMe-style screens before it are
   gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
   today.") and **the billing day** (the store's price starts "unless you
