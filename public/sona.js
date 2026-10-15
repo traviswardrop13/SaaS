@@ -36,6 +36,14 @@
   // keeps Web Audio, where a tap unlocks it and an <audio> started later would
   // be refused. Returns { done, stop }: done settles "ended", "failed" (never
   // started: the caller falls back to the browser voice) or "stopped".
+  // THE SILENT SWITCH (15 Oct 2026, Travis: "Everything off"): left to
+  // itself WebKit plays a media element as Playback, which ignores the switch.
+  // In an app build with Sona's own mic the page sets the audio session to
+  // "transient-solo" instead, so on a silenced phone this voice, the chimes
+  // and every other sound are silent: a child hears no Echo and no sound to
+  // copy until a grown-up flips the switch. An App Store build without that
+  // mic plays through the switch as before (THE SILENT SWITCH, in the native
+  // mic block, says why and where).
   function voiceAsMedia() { return isNativeApp(); }
   function mediaPCM(bytes, opts) {
     opts = opts || {};
@@ -3179,7 +3187,9 @@
   // on. A muted Sona plays none. A browser keeps Web Audio. An element the
   // phone refuses sends that chime, and every one after it, to Web Audio
   // rather than to silence. When a chime may play is still each page's own
-  // rule (never over a mic); nothing here changes when, only how.
+  // rule (never over a mic); nothing here changes when, only how. On Sona's
+  // own mic (15 Oct 2026, "Everything off") the chimes, media or Web Audio,
+  // follow the ring/silent switch: THE SILENT SWITCH in the native mic block.
   const CHIME_RATE = 24000, CHIME_MEDIA = 3.6;   // the rate is what pcmWave's header says
   let _chimeBroken = false, _chimeGen = 0;
   const _chimePlayers = {};
@@ -5949,6 +5959,92 @@
     return !!(P && typeof P.micOpen === "function" && typeof P.micClose === "function"
       && typeof P.micPermission === "function" && typeof P.addListener === "function");
   }
+
+  // ── THE SILENT SWITCH ON SONA'S OWN MIC (15 Oct 2026) ──
+  // Travis, asked "When the iPhone is on silent, what should Sona do?", picked
+  // "Everything off": nothing plays on a silenced phone, Echo included, like
+  // most iPhone games. In the app Echo's voice, the chimes, Piano Tiles' notes,
+  // Bubble Pop's pops and Rachel's take are <audio> elements (mediaPCM and the
+  // pages' own), and while an audible one plays WebKit puts the app's audio in
+  // Playback, which ignores the switch (on Sona's own mic the Web Audio
+  // sounds the games make themselves already followed it).
+  // navigator.audioSession (WKWebView, iOS 16.4 and later) overrides WebKit's
+  // choice for media elements and Web Audio alike. "transient-solo"
+  // (SoloAmbient) follows the switch and still pauses other apps' music, as
+  // Playback does today. Not "ambient": it mixes, so a parent's Spotify would
+  // keep playing into the open mic.
+  //
+  // NOT EVERY SOUND IS WEBKIT'S: the browser's robot voice (speechSynthesis,
+  // the fallback when Echo's line will not load) plays on the app's own
+  // session, which SonaSpeechPlugin.swift's sessionOff() leaves after each
+  // listen. It follows the switch only from the App Store build whose
+  // sessionOff() leaves .ambient (15 Oct 2026); in an earlier build with
+  // Sona's own mic it still plays on a silenced phone. This page change ships
+  // with a web deploy; that one needs a new App Store build.
+  //
+  // THE PRICE OF IT: while the type is anything but "auto" (or
+  // "play-and-record"), WebKit refuses getUserMedia (InvalidStateError). So it
+  // is set only where WebKit never captures, on Sona's own mic, and given back
+  // ("auto") before every capture WebKit makes, for the rest of that page:
+  // every fallback in this block goes through _webMic, and _asGuard catches a
+  // page's own getUserMedia line (its fallback, or a parked page that never
+  // asks micNative()). And WebKit holds the override for the whole web
+  // process, across same-site page loads, while each new page's getter starts
+  // at "auto": so every page load in a build that could have set it writes its
+  // own type, "auto" included (an earlier page's override, held after the
+  // kill switch or "sona.nativemic" turned Sona's mic off, would otherwise
+  // refuse this page's web mic). A browser and a build without micOpen are
+  // never touched: nothing there ever sets it.
+  const AUDIO_SESSION_TYPE = "transient-solo";
+  // type: what this page last wrote (null: untouched) · auto: this page gave
+  // the session back for a web capture, for good · why: what asked it to
+  const _as = { type: null, auto: false, why: "" };
+  function _asApi() {
+    try { const s = global.navigator && global.navigator.audioSession; return (s && typeof s === "object" && "type" in s) ? s : null; } catch (e) { return null; }
+  }
+  function _asWrite(type) {
+    const s = _asApi(); if (!s) return false;
+    try { s.type = type; _as.type = type; return true; } catch (e) { return false; }
+  }
+  // Every page load, and a page back from the back-forward cache (the page in
+  // between may have changed the process's override).
+  function _asApply() {
+    if (!isNativeApp() || !_asApi()) return;
+    const P = speechPlugin();
+    if (!P || typeof P.micOpen !== "function") return;   // a build that never sets it
+    if (!_as.auto && micNative()) { if (_asWrite(AUDIO_SESSION_TYPE)) _asGuard(); }
+    else _asWrite("auto");
+  }
+  // Give the session back before WebKit captures: from here to the end of
+  // this page. Writes only on a page that set it (a page that wrote "auto" at
+  // load already has it back).
+  function _asAuto(why) {
+    if (_as.auto || !_as.type || _as.type === "auto") return;
+    _as.auto = true; _as.why = String(why || "web mic");
+    _asWrite("auto");
+  }
+  // WebKit's own mic, with the session given back first.
+  function _webMic(constraints, why) {
+    _asAuto(why);
+    return navigator.mediaDevices.getUserMedia(constraints);
+  }
+  // Any getUserMedia this page makes gives the session back first, in the
+  // same turn, so WebKit's check sees "auto": a page's own fallback line runs
+  // after micNative() has said no, and the parked pages (story, check, coach
+  // call, Peekaboo) never ask it.
+  function _asGuard() {
+    try {
+      const md = global.navigator.mediaDevices;
+      if (!md || typeof md.getUserMedia !== "function" || md.getUserMedia.__sonaSession) return;
+      const real = md.getUserMedia;
+      const guard = function () { _asAuto("getUserMedia"); return real.apply(this || md, arguments); };
+      guard.__sonaSession = true;
+      md.getUserMedia = guard;
+    } catch (e) {}
+  }
+  _asApply();
+  try { global.addEventListener("pageshow", (e) => { if (e && e.persisted) _asApply(); }); } catch (e) {}
+
   function _nmErr(name, message) {
     try { return new DOMException(message || name, name); } catch (e) { const er = new Error(message || name); er.name = name; return er; }
   }
@@ -6440,7 +6536,7 @@
       _nm.broken = true; _nm.why = why; if (_nm.last === h) _nm.last = null;
       h.why = why; h.webAsking = true; h.unmute = false; clearTimeout(h.watchT); clearTimeout(h.resumeT);
       if (h.nativeLive) { h.nativeLive = false; delete _nm.byG[h.g]; _nmClose(h); }   // never both mics at once
-      let ask; try { ask = navigator.mediaDevices.getUserMedia(h.constraints || { audio: true }); } catch (e) { ask = Promise.reject(e); }
+      let ask; try { ask = _webMic(h.constraints || { audio: true }, why); } catch (e) { ask = Promise.reject(e); }
       Promise.resolve(ask).then((ws) => {
         h.webAsking = false;
         if (h.state === "ended") { try { ws.getTracks().forEach((t) => t.stop()); } catch (e) {} return; }
@@ -6649,7 +6745,7 @@
   // path every page already has. Anything else: the web mic for the page.
   function micOpen(constraints) {
     const P = speechPlugin();
-    if (!P || !micNative()) { _nm.last = null; return navigator.mediaDevices.getUserMedia(constraints); }
+    if (!P || !micNative()) { _nm.last = null; return _webMic(constraints, "web mic"); }
     return _nmP(() => _nmOpenNative(P, constraints, false));
   }
   function _nmOpenNative(P, constraints, retried) {
@@ -6659,9 +6755,9 @@
       if (k === "nolistener" && !retried) { _nm.subscribed = false; return _nmOpenNative(P, constraints, true); }
       if (k === "temp") throw _nmErr("NotReadableError", "the microphone was interrupted");
       _nm.last = null;
-      if (k === "busy") { _nm.busy++; return navigator.mediaDevices.getUserMedia(constraints); }
+      if (k === "busy") { _nm.busy++; return _webMic(constraints, "busy"); }
       _nm.broken = true; _nm.why = String((e && (e.code || e.message)) || k);
-      return navigator.mediaDevices.getUserMedia(constraints);
+      return _webMic(constraints, _nm.why);
     });
   }
   // micProbe(constraints): the permission alone, for the pages that only ask
@@ -6669,7 +6765,7 @@
   // NotAllowedError; anything unclear asks the way it always did.
   function micProbe(constraints) {
     const P = speechPlugin();
-    const web = () => navigator.mediaDevices.getUserMedia(constraints);
+    const web = () => _webMic(constraints, "permission");
     if (!P || !micNative()) return web();
     return _nmP(() => P.micPermission({ request: true })).then((r) => {
       const st = r && r.state;
@@ -6771,8 +6867,11 @@
   }
   // For the phone checklist (Safari's console: Sona.micStats()) and the tests.
   function micStats() {
+    // session: the audio-session type this page wrote (null: untouched;
+    // "transient-solo": sounds follow the silent switch; "auto": given back
+    // for WebKit's own mic, sessionWhy says what asked)
     return { on: NATIVE_MIC_ON, native: micNative(), broken: _nm.broken, why: _nm.why, busy: _nm.busy, closeMaxMs: _nm.closeMaxMs,
-      live: _nm.live.map(_nmStatOf), opens: _nm.opens.slice() };
+      live: _nm.live.map(_nmStatOf), opens: _nm.opens.slice(), session: _as.type, sessionWhy: _as.why || null };
   }
   try {
     global.addEventListener("pagehide", () => {

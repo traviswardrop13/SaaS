@@ -227,7 +227,14 @@ with `.measurement` and `.allowBluetooth` at launch: measurement mode (no
 automatic gain on the mic) and hands-free Bluetooth, which drops AirPods to
 phone-call sound quality. That is what Sona's own microphone exists to remove
 (its section is above). The SonaSpeech plugin sets the session itself, only
-while a listen is open, and gives it back as plain media afterwards.
+while a listen is open, and afterwards leaves it as `.ambient`: plain media
+that follows the ring/silent switch (15 Oct 2026, Travis: "Everything off" on
+silent; it was `.playback`, which ignores the switch, until then). That is
+what the robot fallback voice plays on. WebKit's own sounds (Echo's voice, the
+chimes) follow the switch through the page instead: on Sona's own mic every
+page sets `navigator.audioSession.type` to `"transient-solo"` (`sona.js`, THE
+SILENT SWITCH). The page half is a web deploy; the `.ambient` half needs a
+new App Store build.
 
 **Check it on the phone:** open a practice round *without touching the screen*.
 If "Ready? Say rrrr… Go!" is Echo, the setting applies. If it is still the

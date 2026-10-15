@@ -2654,6 +2654,10 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
   Play games and Bubble Pop all do; a new page that speaks does too. The
   browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
+  A media element plays through the ring/silent switch, so **on Sona's own mic
+  the page turns that off** (15 Oct 2026, "Everything off": see "Sona's own
+  microphone in the app" below): Echo's media voice is silent on a silenced
+  phone. An App Store build without the plugin plays through it as before.
 - **So do Sona's chimes** (2 Oct 2026): the "heard you" chime rings the moment
   the mic closes, exactly when Web Audio is a quiet phone call. `Sona.sfx`
   decides, once, for every page: in the app each chime is written down from
@@ -2683,12 +2687,31 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   gain, no noise suppression. A one-number boost (`NATIVE_MIC_GAIN`, ×1.0)
   exists for the phone test, and changing it is Rachel's call, as is
   `micDeaf`: frames from a paused or starved native mic never set a room
-  floor. Game sounds made in Web Audio now follow the silent switch like any
-  app's. The plugin ships through `scripts/install-ios-speech.py`, so it
+  floor. The plugin ships through `scripts/install-ios-speech.py`, so it
   needs a new App Store build; SPEECH_PLUGIN.md holds the phone checklist
   and the numbers to send back. `nativemictest` (with `tests/_nativemic.mjs`,
   a fake phone) plays the app path, `micquietgamesowntest` and
   `repguardowntest` the quiet rules on it, and `heartest` pins the Swift.
+  **On silent, nothing plays** (Travis, 15 Oct 2026, asked "When the iPhone
+  is on silent, what should Sona do?", picked "Everything off": "nothing
+  plays, Echo included, like most iPhone games"). On Sona's own mic every
+  page sets
+  `navigator.audioSession.type` to `"transient-solo"` as it loads
+  (`AUDIO_SESSION_TYPE` in `sona.js`, THE SILENT SWITCH): Echo's voice,
+  Rachel's sound, "Go!", the chimes, the notes, the pops and the games' own
+  sounds all follow the switch, and a parent's music still pauses when Echo
+  talks. Never `"ambient"`: it mixes, so Spotify would play into the open
+  mic. WebKit refuses its own mic while the type is set, so every way to it
+  (the phone's "not now", a fault, the off switch, a page's own getUserMedia
+  line, a parked page) sets `"auto"` first, for the rest of that page, and a
+  page on the off switch writes `"auto"` as it loads (WebKit holds an earlier
+  page's setting across page loads). A browser and an App Store build
+  without the plugin are never touched. The plugin's `sessionOff()` now
+  leaves the app's session `.ambient` (it was `.playback`), so the robot
+  fallback voice follows the switch too, but only from the next App Store
+  build; the page half is a web deploy. **For Rachel:** a child on a
+  silenced phone hears no Echo and no sound to copy until a grown-up flips
+  the switch, and nothing on screen says why.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
 

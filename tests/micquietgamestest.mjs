@@ -244,7 +244,9 @@ async function fresh(file, cfg = {}) {
   // cfg.nm: Sona's own microphone in the app, logged in this suite's own mic
   // log; the stand-in AudioContext gets the least of a worklet it needs
   if (cfg.nm) {
-    await context.addInitScript(nativeMic, Object.assign({ mode: "new", micLog: "__quiet", world: false, audit: false }, cfg.nm));
+    // audioSession: an iPhone's navigator.audioSession, which refuses
+    // getUserMedia while the page holds "transient-solo" (the silent switch)
+    await context.addInitScript(nativeMic, Object.assign({ mode: "new", micLog: "__quiet", world: false, audit: false, audioSession: true }, cfg.nm));
     await context.addInitScript(fakeWorkletPatch, { field: "src", wrap: "source" });
   }
   const page = await context.newPage(); page.setDefaultTimeout(5000);
@@ -407,6 +409,8 @@ for (const [key, file] of ARCADE) {
       noOverlap(K, l);
       ok(K + ": the game's own sounds never counted as the child", (await page.evaluate(() => REV)) === 2);
       if (own) ok(K + ": every mic was Sona's own (the phone's micOpen, never getUserMedia), and each one closed", await page.evaluate(() => __nm.gum === 0 && __nm.opened === 2 && __nm.closed === 2 && !__nm.live()), await page.evaluate(() => ({ gum: __nm.gum, opened: __nm.opened, closed: __nm.closed })));
+      // the silent switch: the round ran under "transient-solo", never given back
+      if (own) ok(K + ": the whole round under \"transient-solo\" (every sound follows the silent switch), never given back", await page.evaluate(() => __nm.as.held() === "transient-solo" && __nm.as.sets.length === 1 && __nm.as.refused === 0), await page.evaluate(() => ({ sets: __nm.as.sets, refused: __nm.as.refused })));
       clean(K, errors);
     } finally { await context.close(); }
   });

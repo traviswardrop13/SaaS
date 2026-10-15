@@ -41,7 +41,16 @@
 //     no way to send anything (a source pin);
 //   - "sona.nativemic" (Travis's measurement setting) never rides a backup;
 //   - each of the 24 listening call sites asks the helper first and keeps its
-//     old line as the fallback.
+//     old line as the fallback;
+//   - THE SILENT SWITCH (15 Oct 2026, Travis: "Everything off"): on Sona's own
+//     mic the page sets navigator.audioSession.type to "transient-solo" on
+//     every load, so every sound follows the switch; before every capture
+//     WebKit makes (every fallback, a page's own line, a parked page) it is
+//     "auto" again, or WebKit refuses the mic; a browser and an App Store
+//     build are never touched, and the off switches write only "auto" (an
+//     earlier page's override is held by the web process). The fake phone's
+//     navigator.audioSession refuses getUserMedia exactly as WebKit does, and
+//     is on for every scenario here.
 // Nothing here is practice data: the cards, the games and the books never
 // were, and practice's reps here stay on a throwaway test phone.
 import { readFileSync } from "fs";
@@ -54,7 +63,9 @@ const SONA = readFileSync(ROOT + "/sona.js", "utf8");
 // the off switch, flipped in the copy this server hands out
 const SONA_OFF = SONA.replace("const NATIVE_MIC_ON = true;", "const NATIVE_MIC_ON = false;");
 const BLANK = (t) => '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + t + '</title></head><body><script src="/sona.js"></script></body></html>';
-const { base, close } = await serve({ root: ROOT, pages: { "/__two.html": BLANK("two") } });
+// a page that does not load sona.js: it inherits whatever the process holds
+const NOSONA = '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>no sona</title></head><body></body></html>';
+const { base, close } = await serve({ root: ROOT, pages: { "/__two.html": BLANK("two"), "/__nosona.html": NOSONA } });
 const browser = await chromium.launch(launchOpts(["--autoplay-policy=no-user-gesture-required"]));
 
 // ── reporting: scenarios run a few at a time, each prints as one block ──
@@ -130,7 +141,8 @@ function kid(cfg) {
 // One phone: the family (kid), then the fake microphone (nativeMic; null: none).
 //   o.micOff: serve sona.js with NATIVE_MIC_ON = false · o.tts: bytes of PCM
 //   for every voice line (false: the voice service is down) · o.stubGames:
-//   the earned game opens as a blank page
+//   the earned game opens as a blank page. The phone has navigator.audioSession
+//   (an iPhone on iOS 16.4 or later) unless o.nm.audioSession is false.
 async function open(path, o = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   const requests = [];
@@ -146,7 +158,7 @@ async function open(path, o = {}) {
     return route.continue();
   });
   await context.addInitScript(kid, o.kid || {});
-  if (o.nm !== null) await context.addInitScript(nativeMic, o.nm || {});
+  if (o.nm !== null) await context.addInitScript(nativeMic, Object.assign({ audioSession: true }, o.nm || {}));
   const page = await context.newPage(); page.setDefaultTimeout(9000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   if (path) await page.goto(base + path);
@@ -219,9 +231,14 @@ for (const [name, o] of WEB_CASES) scenario("detection: " + name, async (t) => {
       const probe = await Sona.micProbe({ audio: true });
       out.probeReal = probe instanceof MediaStream; out.gum2 = __nm.gum; out.perms2 = __nm.perms.length;
       probe.getTracks().forEach((x) => x.stop());
+      out.as = { sets: __nm.as.sets.map((x) => x.v), type: navigator.audioSession.type, held: __nm.as.held(), refused: __nm.as.refused, session: Sona.micStats().session };
       return out;
     });
     t.ok(name + ": micNative() is false", r.native === false, r);
+    // the off switches run on a build that has micOpen: an earlier page there
+    // may have left its override held, so the page writes "auto", and only that
+    if (o.micOff || (o.kid && o.kid.nativemic === "off")) t.ok(name + ": the audio session is written \"auto\" once, at load, and never anything else (an earlier page's override is held by the web process)", JSON.stringify(r.as.sets) === '["auto"]' && r.as.held === "auto" && r.as.refused === 0 && r.as.session === "auto", r.as);
+    else t.ok(name + ": navigator.audioSession is never touched (nothing here ever sets it)", r.as.sets.length === 0 && r.as.type === "auto" && r.as.refused === 0 && r.as.session === null, r.as);
     t.ok(name + ": the page's own getUserMedia runs, once, and answers a real MediaStream; the phone's micOpen is never called", r.real && !r.sonaNative && r.gum === 1 && r.opens === 0, r);
     t.ok(name + ": a permission ask (micProbe) is the page's own getUserMedia too, and never the phone's micPermission", r.probeReal && r.gum2 === 2 && r.perms2 === 0, r);
     if (o.micOff) t.ok(name + ": micStats() says the switch is off", r.on === false, r);
@@ -233,11 +250,16 @@ scenario("detection: the new build", async (t) => {
   try {
     const r = await page.evaluate(async () => {
       const native = Sona.micNative(), logBefore = Capacitor.isLoggingEnabled;
+      const atLoad = { sets: __nm.as.sets.map((x) => x.v), type: navigator.audioSession.type, held: __nm.as.held(), session: Sona.micStats().session };
       const st = await Sona.micOpen({ audio: true });
       const out = { native, logBefore, logAfter: Capacitor.isLoggingEnabled, real: st instanceof MediaStream, sonaNative: !!st.sonaNative, gum: __nm.gum, opens: __nm.opens.length, args: __nm.opens[0] && __nm.opens[0].args, first: __nm.closeCalls[0] };
       st.getTracks()[0].stop();
+      await Sona.micQuiet();
+      out.as = { atLoad, sets: __nm.as.sets.map((x) => x.v), held: __nm.as.held(), refused: __nm.as.refused, session: Sona.micStats().session };
       return out;
     });
+    t.ok("the new build: the page sets navigator.audioSession.type to \"transient-solo\" as it loads, so every sound follows the silent switch", JSON.stringify(r.as.atLoad.sets) === '["transient-solo"]' && r.as.atLoad.type === "transient-solo" && r.as.atLoad.held === "transient-solo" && r.as.atLoad.session === "transient-solo", r.as);
+    t.ok("the new build: …and it stays set through a listen on Sona's own mic (WebKit never captures)", JSON.stringify(r.as.sets) === '["transient-solo"]' && r.as.held === "transient-solo" && r.as.refused === 0 && r.as.session === "transient-solo", r.as);
     t.ok("the new build: micNative() is true and micOpen opens Sona's own mic: getUserMedia is never called", r.native && r.sonaNative && !r.real && r.gum === 0 && r.opens === 1, r);
     t.ok("the new build: every knob the phone takes comes from the website (maxMs, duck, speaker, ioMs, frames)", r.args && r.args.maxMs === 300000 && r.args.duck === false && r.args.speaker === true && r.args.ioMs === 0 && r.args.frames === 1024, r.args);
     t.ok("the new build: before its first open the page closes whatever the last page left (micClose({ all: true }))", !!r.first && r.first.all === true, r.first);
@@ -1097,6 +1119,176 @@ scenario("source pins", async (t) => {
   t.ok("no page calls a mic helper anywhere but those sites (micOpen, micProbe, micSource, micRecorder and micDeaf, counted per file)", extra.length === 0, extra);
   t.ok("ES5 where it was: saycheck.js still has no arrows, let or const", !/=>|\blet\s|\bconst\s/.test(strip(R("saycheck.js"))));
   t.ok("the parked pages stay on the web mic, untouched", ["story.html", "check.html", "coach-call.html", "simple-play.js"].every((f) => !/S\.micOpen|Sona\.micOpen|micSource/.test(R(f))));
+  // the silent switch: one type, and WebKit's mic asked for in one place in the block
+  const gums = (block.match(/navigator\.mediaDevices\.getUserMedia\(/g) || []).length;
+  t.ok("the silent switch: the type is \"transient-solo\" (never \"ambient\", which would mix a parent's music into the open mic), and the native block asks WebKit's mic in one place only (_webMic)",
+    /const AUDIO_SESSION_TYPE = "transient-solo";/.test(SONA) && !/type = "ambient"|AUDIO_SESSION_TYPE = "ambient"/.test(SONA) && gums === 1 && /function _webMic\(constraints, why\) \{\s*_asAuto\(why\);\s*return navigator\.mediaDevices\.getUserMedia\(constraints\);/.test(block), { gums });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// 7b. THE SILENT SWITCH (15 Oct 2026, Travis: "Everything off")
+// ════════════════════════════════════════════════════════════════════════
+// On Sona's own mic every sound follows the side switch: the page sets
+// navigator.audioSession.type to "transient-solo" as it loads. WebKit refuses
+// getUserMedia while it is set (and the fake phone here refuses exactly as
+// WebKit does), so every way to WebKit's own mic gives it back ("auto")
+// first, for the rest of that page. A path that forgot would not open here.
+const SESSION = (page) => page.evaluate(() => ({ sets: __nm.as.sets.map((x) => x.v), held: __nm.as.held(), heldAtLoad: __nm.as.heldAtLoad, gum: __nm.as.gum.slice(),
+  refused: __nm.as.refused, type: navigator.audioSession ? navigator.audioSession.type : null, session: window.Sona ? Sona.micStats().session : undefined, why: window.Sona ? Sona.micStats().sessionWhy : undefined }));
+// [label, the phone, what gave it back (sessionWhy), "open" | "probe", the second listen: "own" | "web"]
+const WEB_PATHS = [
+  ["the phone says not now (busy): one web-mic try", { openFail: "busy" }, "busy", "open", "own"],
+  ["a fault (no microphone): the web mic for the page", { openFail: "nomic" }, "nomic", "open", "web"],
+  ["a fault (the engine would not start)", { openFail: "engine" }, "engine", "open", "web"],
+  ["a fault (no sound within 1.5 s)", { warmZeros: 2500 }, "silent", "open", "web"],
+  ["an old build behind a bridge that answers every method", { mode: "proxy" }, "UNIMPLEMENTED", "open", "web"],
+  ["micProbe when the phone's answer is unclear", { perm: "unknown" }, "permission", "probe", "web"],
+];
+for (const [label, nm, why, kind, second] of WEB_PATHS) scenario("the silent switch: " + label, async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: Object.assign({ mode: "new" }, nm) });
+  try {
+    const r = await page.evaluate(async (kind) => {
+      const before = navigator.audioSession.type;
+      const take = () => (kind === "probe" ? Sona.micProbe({ audio: true }) : Sona.micOpen({ audio: true })).then((st) => {
+        const o = { real: st instanceof MediaStream, own: !!st.sonaNative }; st.getTracks().forEach((x) => x.stop()); return o;
+      }, (e) => ({ err: e.name }));
+      const a = await take(), b = await take();
+      return { before, a, b };
+    }, kind);
+    const as = await SESSION(page);
+    t.ok(label + ": the page loaded under \"transient-solo\"", r.before === "transient-solo", r);
+    t.ok(label + ": WebKit's mic opens (a real MediaStream), never refused", r.a.real === true && as.refused === 0, { r, as });
+    t.ok(label + ": the session was \"auto\" before every getUserMedia", as.gum.length >= 1 && as.gum.every((x) => x === "auto"), as);
+    t.ok(label + ": given back once, for the rest of the page, and why is kept (" + why + ")", JSON.stringify(as.sets) === '["transient-solo","auto"]' && as.type === "auto" && as.session === "auto" && as.why === why, as);
+    if (second === "own") t.ok(label + ": …and the next listen is Sona's own mic again, still under \"auto\"", r.b.own === true && as.gum.length === 1, { r, as });
+    else t.ok(label + ": …and the next listen is WebKit's mic again, not refused", r.b.real === true && as.gum.length === 2 && as.refused === 0, { r, as });
+    clean(t, "silent switch " + label, errors);
+  } finally { await context.close(); }
+});
+scenario("the silent switch: a re-open that fails mid-listen hands the stream to WebKit's mic", async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: { mode: "new", openFail: [null, "nomic"] } });
+  try {
+    const r = await page.evaluate(async () => {
+      const st = await Sona.micOpen({ audio: true }), ctx = new AudioContext(); await ctx.resume();
+      Sona.micSource(ctx, st).connect(ctx.createAnalyser());
+      await new Promise((r) => setTimeout(r, 300));
+      __nm.ctl.interrupt();
+      await new Promise((r) => setTimeout(r, 100));
+      __nm.ctl.interruptEnd();                                   // re-open: "nomic", so the web mic takes the handle over
+      const t0 = performance.now(); while (!(__nm.gum >= 1 && st.getTracks()[0].getSettings().sonaNative === false) && performance.now() - t0 < 3000) await new Promise((r) => setTimeout(r, 10));
+      const out = { own: st.getTracks()[0].getSettings().sonaNative, ready: st.getTracks()[0].readyState, muted: st.getTracks()[0].muted };
+      st.getTracks()[0].stop();
+      return out;
+    });
+    const as = await SESSION(page);
+    t.ok("a failed re-open: the page's stream carries on through WebKit's mic, opened under \"auto\" and never refused", r.own === false && r.ready === "live" && !r.muted && JSON.stringify(as.gum) === '["auto"]' && as.refused === 0, { r, as });
+    t.ok("a failed re-open: given back once, why \"reopen nomic\"", JSON.stringify(as.sets) === '["transient-solo","auto"]' && as.why === "reopen nomic", as);
+    clean(t, "silent switch re-open", errors);
+  } finally { await context.close(); }
+});
+scenario("the silent switch: a page's own getUserMedia line", async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: { mode: "new" } });
+  try {
+    // the parked pages (story, check, coach call, Peekaboo) ask WebKit's mic
+    // directly and never micNative(): the session is given back in the same turn
+    const a = await page.evaluate(async () => {
+      const before = navigator.audioSession.type;
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true }).catch((e) => e);
+      const o = { before, real: st instanceof MediaStream, err: st && st.name }; if (o.real) st.getTracks().forEach((x) => x.stop());
+      return o;
+    });
+    const asA = await SESSION(page);
+    t.ok("a page that calls getUserMedia itself (a parked page): it opens, under \"auto\"", a.before === "transient-solo" && a.real && JSON.stringify(asA.gum) === '["auto"]' && asA.refused === 0, { a, asA });
+    t.ok("…given back once, why \"getUserMedia\"", JSON.stringify(asA.sets) === '["transient-solo","auto"]' && asA.why === "getUserMedia", asA);
+    // the next page sets it again; then "sona.nativemic" is turned off with
+    // the page open, and a listening page's own fallback line runs
+    await page.goto(base + "/__two.html");
+    const b = await page.evaluate(async () => {
+      const before = navigator.audioSession.type;
+      localStorage.setItem("sona.nativemic", "off");
+      const S = window.Sona;
+      const st = await ((S && S.micNative && S.micNative()) ? S.micOpen({ audio: true }) : navigator.mediaDevices.getUserMedia({ audio: true })).catch((e) => e);
+      const o = { before, real: st instanceof MediaStream, err: st && st.name }; if (o.real) st.getTracks().forEach((x) => x.stop());
+      return o;
+    });
+    const asB = await SESSION(page);
+    t.ok("the next page sets \"transient-solo\" again on its own load", b.before === "transient-solo" && asB.sets[0] === "transient-solo", { b, asB });
+    t.ok("the off switch turned on mid-page: the page's own fallback line opens WebKit's mic under \"auto\"", b.real && JSON.stringify(asB.gum) === '["auto"]' && asB.refused === 0 && JSON.stringify(asB.sets) === '["transient-solo","auto"]', { b, asB });
+    clean(t, "silent switch page line", errors);
+  } finally { await context.close(); }
+});
+scenario("the silent switch: an override an earlier page left held", async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: { mode: "new" } });
+  try {
+    const one = await SESSION(page);
+    t.ok("page 1, Sona's own mic: \"transient-solo\"", JSON.stringify(one.sets) === '["transient-solo"]' && one.held === "transient-solo", one);
+    // a page without sona.js inherits it: its getter says "auto" while the
+    // process still holds the override, and WebKit refuses its mic (so the
+    // "auto" written below is what opens the web mic, not the fake's leniency)
+    await page.goto(base + "/__nosona.html");
+    const bare = await page.evaluate(async () => {
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true }).catch((e) => e);
+      return { type: navigator.audioSession.type, heldAtLoad: __nm.as.heldAtLoad, real: st instanceof MediaStream, err: st && st.name };
+    });
+    t.ok("a page that sets nothing inherits the held override: its getter says \"auto\", and WebKit refuses its mic (InvalidStateError)", bare.type === "auto" && bare.heldAtLoad === "transient-solo" && !bare.real && bare.err === "InvalidStateError", bare);
+    // "sona.nativemic" off on this phone: the next page writes "auto" at load
+    await page.evaluate(() => localStorage.setItem("sona.nativemic", "off"));
+    await page.goto(base + "/__two.html");
+    const off = await page.evaluate(async () => {
+      const st = await Sona.micOpen({ audio: true }).catch((e) => e);
+      const o = { real: st instanceof MediaStream, err: st && st.name }; if (o.real) st.getTracks().forEach((x) => x.stop());
+      return o;
+    });
+    const asOff = await SESSION(page);
+    t.ok("\"sona.nativemic\" off, after a page that set it: the page writes \"auto\" as it loads, and the web mic opens", asOff.heldAtLoad === "transient-solo" && JSON.stringify(asOff.sets) === '["auto"]' && off.real && JSON.stringify(asOff.gum) === '["auto"]' && asOff.refused === 0, { off, asOff });
+    // NATIVE_MIC_ON = false deployed while a family's app was open
+    await page.evaluate(() => localStorage.removeItem("sona.nativemic"));
+    await page.goto(base + "/__blank.html");
+    const again = await SESSION(page);
+    await context.route("**/sona.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: SONA_OFF }));
+    await page.goto(base + "/__two.html");
+    const kill = await page.evaluate(async () => {
+      const st = await Sona.micOpen({ audio: true }).catch((e) => e);
+      const o = { on: Sona.micStats().on, real: st instanceof MediaStream, err: st && st.name }; if (o.real) st.getTracks().forEach((x) => x.stop());
+      return o;
+    });
+    const asKill = await SESSION(page);
+    t.ok("NATIVE_MIC_ON = false, deployed after a page set it: the page writes \"auto\" as it loads, and the web mic opens", JSON.stringify(again.sets) === '["transient-solo"]' && kill.on === false && asKill.heldAtLoad === "transient-solo" && JSON.stringify(asKill.sets) === '["auto"]' && kill.real && asKill.refused === 0, { again, kill, asKill });
+    clean(t, "silent switch held", errors);
+  } finally { await context.close(); }
+});
+scenario("the silent switch: back from the back-forward cache", async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: { mode: "new" } });
+  try {
+    const r = await page.evaluate(async () => {
+      // the page in between gave the process's session back (its own web mic)
+      __nm.as.hold("auto");
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+      const a = { held: __nm.as.held(), sets: __nm.as.sets.map((x) => x.v) };
+      // this page then goes to WebKit's mic, and the page in between sets it
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((x) => x.stop());
+      __nm.as.hold("transient-solo");
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+      const b = { held: __nm.as.held(), sets: __nm.as.sets.map((x) => x.v) };
+      return { a, b };
+    });
+    t.ok("back from the cache on Sona's own mic: \"transient-solo\" is written again", r.a.held === "transient-solo" && JSON.stringify(r.a.sets) === '["transient-solo","transient-solo"]', r.a);
+    t.ok("back from the cache after this page went to WebKit's mic: \"auto\" again, so its mic is never refused", r.b.held === "auto" && JSON.stringify(r.b.sets) === '["transient-solo","transient-solo","auto","auto"]', r.b);
+    clean(t, "silent switch bfcache", errors);
+  } finally { await context.close(); }
+});
+scenario("the silent switch: an iPhone without navigator.audioSession (before iOS 16.4)", async (t) => {
+  const { context, page, errors } = await open("/__blank.html", { nm: { mode: "new", audioSession: false, openFail: [null, "nomic"] } });
+  try {
+    const r = await page.evaluate(async () => {
+      const has = "audioSession" in navigator;
+      const a = await Sona.micOpen({ audio: true }); const oa = { own: !!a.sonaNative }; a.getTracks().forEach((x) => x.stop());
+      const b = await Sona.micOpen({ audio: true }); const ob = { real: b instanceof MediaStream }; b.getTracks().forEach((x) => x.stop());
+      return { has, oa, ob, session: Sona.micStats().session };
+    });
+    t.ok("no navigator.audioSession: Sona's own mic still opens, a fault still reaches the web mic, and nothing is written", !r.has && r.oa.own && r.ob.real && r.session === null, r);
+    clean(t, "silent switch no API", errors);
+  } finally { await context.close(); }
 });
 
 // ════════════════════════════════════════════════════════════════════════
@@ -1129,6 +1321,9 @@ async function practiceRound(t, label, nm, extra = {}) {
     t.ok(label + ": \"Your turn\" shows and the mic listens", turn && st.turns.length > 0, st.turns);
     t.ok(label + ": a quiet room for a second and more is no try (silence is never a rep)", silent === 0, silent);
     t.ok(label + ": five of Rachel's R count five tries", st.reps === 5, st);
+    const as = await page.evaluate(() => ({ sets: __nm.as.sets.map((x) => x.v), held: __nm.as.held(), refused: __nm.as.refused }));
+    if (nm.mode === "new") t.ok(label + ": practice runs under \"transient-solo\" from load to the end: every sound follows the silent switch", JSON.stringify(as.sets) === '["transient-solo"]' && as.held === "transient-solo" && as.refused === 0, as);
+    else t.ok(label + ": an App Store build never touches the audio session, and its web mic is never refused", as.sets.length === 0 && as.held === "auto" && as.refused === 0, as);
     if (nm.mode === "new") {
       t.ok(label + ": the page never called getUserMedia: every mic was Sona's own", p.gum === 0 && p.opened >= 2, p);
       t.ok(label + ": \"Your turn\" only once the phone's samples flow into a live stream", st.turns.length > 0 && st.turns.every((x) => x.live && x.chunks > 0), st.turns);
@@ -1269,10 +1464,15 @@ async function cardRound(t, g, label, nm) {
     t.ok(label + ": the mic is asked for only after \"Go!\" and its tail", !!go && go.end !== Infinity && mic.asked - go.end >= 230 && mic.asked - go.end <= 700, { asked: mic && mic.asked, goEnd: go && go.end });
     t.ok(label + ": a quiet room answers nothing", before.rev === 3 && quiet === 3, { before, quiet });
     t.ok(label + ": Rachel's R right after \"I'm listening…\" answers the card", answered, await page.evaluate(() => ({ REV, floor: rv.floor })));
+    const as = await page.evaluate(() => ({ sets: __nm.as.sets.map((x) => x.v), held: __nm.as.held(), refused: __nm.as.refused }));
     if (nm.mode === "new") {
       t.ok(label + ": Sona's own mic, never getUserMedia", p.gum === 0 && p.opened === 1, p);
+      t.ok(label + ": the whole card (Echo, \"Go!\", the listen, the chime) under \"transient-solo\": every sound follows the silent switch", JSON.stringify(as.sets) === '["transient-solo"]' && as.held === "transient-solo" && as.refused === 0, as);
       network(t, label, requests, t0 - 3000, Date.now());
-    } else t.ok(label + ": the page's own getUserMedia", p.gum === 1 && p.opens === 0, p);
+    } else {
+      t.ok(label + ": the page's own getUserMedia", p.gum === 1 && p.opens === 0, p);
+      t.ok(label + ": an App Store build never touches the audio session, and its web mic is never refused", as.sets.length === 0 && as.held === "auto" && as.refused === 0, as);
+    }
     closedOk(t, label, s);
     audit(t, label, l);
     t.ok(label + ": the card writes no practice data", (await page.evaluate(() => __t.practice.length)) === 0);
@@ -1617,7 +1817,7 @@ scenario("Feed Echo's grown-up card: the permission alone", async (t) => {
 for (const [label, nm] of [["allowed", { perm: "prompt", onAsk: "grant" }], ["refused", { perm: "prompt", onAsk: "deny" }]]) scenario("setup's mic step: " + label, async (t) => {
   const { context, page, errors } = await phoneOpen(browser, base, { app: "nobuy", setUp: true, marker: true, mic: "grant" });
   try {
-    await context.addInitScript(nativeMic, Object.assign({ mode: "new", world: false }, nm));
+    await context.addInitScript(nativeMic, Object.assign({ mode: "new", world: false, audioSession: true }, nm));
     await page.goto(base + "/onboarding.html");
     await page.locator('[data-step="mic"].on').waitFor();
     await calm(page); await page.locator("#nextBtn").click();
