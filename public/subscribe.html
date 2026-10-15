@@ -435,7 +435,9 @@
          asks for money is worse than no recap — and none of them claims the
          child improved, because one session cannot show that and the detector
          could not prove it if it did. -->
-    <div class="card" id="recapCard" style="display:none;">
+    <!-- ph-no-capture: the recap names the child and what they practiced,
+         and the offer never shows it, so a recording never holds it (REPLAY1) -->
+    <div class="card ph-no-capture" id="recapCard" style="display:none;">
       <h2 id="recapTitle">Here's what just happened</h2>
       <ul id="recapList" style="margin:10px 0 0;padding-left:20px;font-weight:800;font-size:14.5px;line-height:1.7;color:var(--ink);"></ul>
       <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5;">A practice snapshot, not an assessment.</p>
@@ -1715,6 +1717,10 @@
         }
         if (line) { var pill = document.getElementById("offerPill"); pill.textContent = line; pill.hidden = false; }
         fitOffer();
+        // REPLAY1 (15 Oct 2026): PostHog may record the offer, once it is
+        // painted, with the child's name replaced and no box's contents
+        // (analytics.js, REPLAY). Settings › Your plan never calls this.
+        try { if (window.SonaAnalytics && SonaAnalytics.replay) SonaAnalytics.replay(true); } catch (e) {}
       } catch (e) {}
     })();
 

@@ -213,8 +213,11 @@
          picks one sentence about Sona on the ready screen, and it is kept in
          one household key that no backup, event or request carries, which is
          why the screen can say "stays on this device". The wording is
-         Rachel's to change. -->
-    <div class="step" data-step="therapy">
+         Rachel's to change. ph-no-capture (REPLAY1, 15 Oct 2026): PostHog's
+         recording is off while this screen shows (replayAt), and this block
+         is an empty shape in every later picture of the page, so a pressed
+         answer left in it after Back never travels. -->
+    <div class="step ph-no-capture" data-step="therapy">
       <h1 class="qh" id="therapyTitle" tabindex="-1">Is your child in speech therapy?</h1>
       <p class="muted ask-help">One tap. Your answer stays on this device.</p>
       <div class="ask" id="obTherapy" role="group" aria-labelledby="therapyTitle">
@@ -313,7 +316,9 @@
       <p class="muted ready-note">You can change sounds anytime in Settings.</p>
       <section class="ready-about" aria-labelledby="readyAboutHead">
         <h2 class="ready-kicker" id="readyAboutHead">About Sona</h2>
-        <ul class="ready-lines" id="readyLines" hidden></ul>
+        <!-- ph-no-capture: these lines repeat the speech therapy answer,
+             so a recording never holds them, even hidden (REPLAY1) -->
+        <ul class="ready-lines ph-no-capture" id="readyLines" hidden></ul>
         <div class="ready-rachel">
           <img class="ready-rachel-photo" src="/assets/rachel-wardrop-profile.jpg" width="112" height="112" alt="Rachel Wardrop" />
           <p class="ready-rachel-line" id="readyRachel">Built with Rachel, <span class="nobr">MS, CF-SLP</span>, a pediatric <span class="nobr">speech-language</span> pathologist in her clinical fellowship.</p>
@@ -862,8 +867,26 @@
       return wallP;
     }
 
+    // REPLAY1 (15 Oct 2026): PostHog may record a parent's setup
+    // (analytics.js, REPLAY), with every name and address replaced and every
+    // box an empty shape. It goes off BEFORE the speech therapy question or
+    // the ready screen (which repeats the answer, and whose size alone would
+    // tell it) is painted, and on again only once a screen without them is
+    // up, so a tap on Yes or Not right now is never recorded. Never for a
+    // clinician's own setup, and never again once the hand-off is reached.
+    var NO_REPLAY={therapy:1,ready:1,slp:1,email:1},replayDone=false;
+    function replayAt(key,painted){
+      try{
+        if(!window.SonaAnalytics||!SonaAnalytics.replay)return;
+        var ok=!replayDone&&draft.role!=="slp"&&ORDER===ORDER_PARENT&&!NO_REPLAY[key];
+        if(!ok&&!painted)SonaAnalytics.replay(false);
+        else if(ok&&painted)SonaAnalytics.replay(true);
+      }catch(e){}
+    }
+
     function render(){
       var key=ORDER[idx];
+      replayAt(key,false);
       if(document.activeElement&&document.activeElement.tagName==="INPUT")document.activeElement.blur();
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); });
       document.getElementById("obExploreOption").hidden=ORDER!==ORDER_PARENT;
@@ -901,6 +924,7 @@
       }
       if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
       updateNext();saveDraft();stepSeen(key);
+      replayAt(key,true);
     }
 
     function next(){
@@ -1118,6 +1142,8 @@
     // Echo's ears", on a phone that answers the microphone ask at once, landed
     // on "Let's play!" and opened the game past the hand-off.
     function showHandoff(){
+        // the child is about to hold the phone: the recording ends first (REPLAY1)
+        replayDone=true;try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
         settle();stepSeen("handoff");nextBtn.removeAttribute("aria-busy");
         var ach=steps.achieve,nm=(nameEl.value||draft.childName||"").trim()||"your child";
         document.getElementById("achName").textContent=nm;

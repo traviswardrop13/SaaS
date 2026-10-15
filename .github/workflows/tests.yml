@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       # The suites drive the real pages in headless Chromium; playwright is
       # their only dependency and is installed standalone (app deps untouched).
-      - run: npm install --no-save playwright
+      # posthog-js (15 Oct 2026, REPLAY1): replaytest plays the real session
+      # recorder, pinned to the version PostHog's CDN served that day.
+      - run: npm install --no-save playwright posthog-js@1.438.12
       - run: npx playwright install --with-deps chromium
       - run: node tests/run-all.mjs

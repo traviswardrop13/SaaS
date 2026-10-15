@@ -200,6 +200,9 @@ changing one. What follows from the rule:
     Meta's pixel reports the words on tapped buttons by itself, so the setup
     page's pixel tag carries `data-autoconfig="off"` (that page only; whether
     the landing pages should too is Travis's call). Asked once per family.
+    PostHog's session recording (REPLAY1, below) is off while this question
+    and the ready screen are on screen, and both carry `ph-no-capture`
+    (the therapy step, `#readyLines`), so no recording holds the answer.
   - **The ready screen** repeats only what the parent said (name, age group
     if given, the sounds, or "Every sound, easiest first", and the days a
     week picked) with "Sona
@@ -1107,6 +1110,52 @@ from Rachel.
   email (`/api/cron/weekly`, to the retired `trials` list) is separate and
   untouched.
 `reporttest` plays the phone and the server.
+
+**SESSION RECORDING (REPLAY1, 15 Oct 2026)** (Travis, of PostHog's replay
+page: "how do i start recording", then yes to recording only the grown-up
+screens with names and typing blanked out). PostHog session replay runs on
+four screens of **speaksona.com itself** (a preview build or a test server
+never records): the home page and /try (in a browser; in the app they
+redirect home), **parent setup** up to the hand-off (never a clinician's own
+setup, `?slp=`), and **the plan screen while it shows the offer** (never
+Settings › Your plan). It needs "Record user sessions" on in PostHog too.
+- **Off unless switched on.** `analytics.js` inits with
+  `disable_session_recording: true` everywhere; only
+  `SonaAnalytics.replay(true)` on one of those pages turns it on. Setup's
+  `replayAt(key, painted)` turns it off BEFORE the therapy question, the
+  ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
+  once a screen without them is up, so a tap on Yes / Not right now is never
+  recorded (the ready card's size alone would tell the answer). The plan
+  screen calls `replay(true)` once the offer is painted.
+- **Scrubbed on the phone, before anything is sent.** Every child's name and
+  grown-up email the phone knows (profiles, the kids list, setup's draft,
+  the boxes being typed in; nothing is forgotten while the page is open)
+  becomes "[child]" / "[email]" in every recorded text (`maskTextFn` with
+  `maskTextSelector: "*"`), in the attributes people read (`maskAttributeFn`),
+  and, as the last net, in every string of every event (`before_send`, with
+  `compress_events: false` so it can read them; a scrub that fails drops the
+  event). A name of three letters or more goes wherever it appears; one or
+  two letters only as a whole word. Every box (`input, textarea, select,
+  [contenteditable]`) is blocked: an empty shape, no value, no keystrokes.
+  `ph-no-capture` marks setup's therapy step, the ready screen's lines and
+  the plan screen's practice recap.
+- **Nothing else rides along:** no console, network, canvas, heatmaps, dead
+  clicks, exceptions, surveys or web vitals (each forced off in the client
+  config, which PostHog's project settings cannot loosen); the page address
+  keeps only `setup`/`first`/`from`.
+- **The hard rule still holds:** a child's name never reaches PostHog.
+  `replaytest` runs the real recorder (posthog-js 1.438.12 from
+  node_modules; CI's tests job installs it) against a fake PostHog whose
+  project settings are as loose as they go, and fails on a name, an address,
+  anything typed, a pointer on the therapy, ready or hand-off screens, or a
+  recording anywhere else. **For Travis:** the privacy page and the parents'
+  "What's stored" answer say so; App Store Connect's App Privacy answers owe
+  a line (NATIVE.md); PostHog's own Logs product can capture console output
+  if switched on in its settings, which no client setting can stop (no page
+  here logs anything): keep it off. Which screens are recorded is his call;
+  what a recording may show of a child (today: the age group, sounds and days
+  picked in setup, and the sound and count on the plan screen's line) is
+  Rachel's to know.
 
 Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
 `IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email

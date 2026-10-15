@@ -238,10 +238,19 @@
     Our server passes those counts on to PostHog under the same random identifier: for example, that
     a practice session was completed, that a chest or a Trophy Road gift was opened, or that a game
     level was played.
-    Limited, privacy-respecting analytics (PostHog, configured with session recording and
-    autocapture disabled) run on adult-facing pages of our website and of the app — such as
-    marketing, parent setup, and settings — to understand general usage under the same anonymous
-    identifier. <strong>The Sona iOS app contains no advertising trackers, and no third-party
+    Limited, privacy-respecting analytics (PostHog, with autocapture turned off) run on adult-facing
+    pages of our website and of the app — such as marketing, parent setup, and settings — to
+    understand general usage under the same anonymous identifier.
+    On four of those screens only — speaksona.com&rsquo;s home page, speaksona.com/try, parent setup
+    up to the moment the phone is handed to the child, and the plan screen when it shows the
+    offer — PostHog may also make a session recording: a replay of how the page looked and where
+    it was tapped or scrolled, so we can see where those screens are confusing. Before a recording
+    leaves the phone, every child&rsquo;s name and grown-up&rsquo;s email address Sona knows is
+    replaced with a placeholder, and every box you type in is recorded as an empty shape, with
+    nothing you typed. The setup question about speech therapy, and the screen after it that
+    repeats your answer, are not recorded at all. A session recording never includes a
+    child&rsquo;s practice, games or books, Settings, sound or voice.
+    <strong>The Sona iOS app contains no advertising trackers, and no third-party
     analytics ever run on a child's practice screen.</strong></p>
 
     <h2>Children's privacy (COPPA)</h2>
