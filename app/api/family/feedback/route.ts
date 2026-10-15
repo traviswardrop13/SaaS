@@ -34,10 +34,14 @@ import { rateLimit } from "@/lib/rateLimit";
  *
  * KV keeps the latest 1000 messages under `family-feedback`, for a year after
  * the last one. /leads.html shows them (app/api/founders/feedback).
- * Notification: SLACK_FEEDBACK_WEBHOOK_URL only. There is deliberately no
- * FEEDBACK_WEBHOOK_URL fallback: the privacy policy names Upstash and Slack
- * as where these messages go, and a generic hook would be a third place a
- * parent's reply email lands that the policy doesn't name.
+ * Notifications: SLACK_FEEDBACK_WEBHOOK_URL, and an email through Resend to
+ * the team's inbox (Travis, 14 Oct 2026: "ping me. Send it to Rachel at
+ * speaksona.com"): FEEDBACK_EMAIL_TO, rachel@speaksona.com when unset. Its
+ * Reply-To is the parent's own address when they gave one, so answering is
+ * one tap. There is deliberately no FEEDBACK_WEBHOOK_URL fallback: the
+ * privacy policy names Upstash, Slack and Resend as where these messages go,
+ * and a generic hook would be another place a parent's reply email lands
+ * that the policy doesn't name.
  */
 export const runtime = "nodejs";
 
@@ -167,7 +171,43 @@ export async function POST(req: NextRequest) {
       slackSent = response.ok;
     } catch { /* the stored inbox may still have it */ }
   }
-  const delivered = slackSent;
+  // The email: everything as escaped text, so a stranger's "<a href>" or
+  // "<img>" shows as the characters they typed. The subject is a fixed
+  // phrase, never their words.
+  let emailSent = false;
+  const resendKey = process.env.RESEND_API_KEY;
+  const to = (process.env.FEEDBACK_EMAIL_TO || "rachel@speaksona.com").trim();
+  if (resendKey && EMAIL.test(to)) {
+    const sender = rec.from === "slp" ? "Clinician" : "Parent";
+    const lines = [
+      `${sender} feedback from the ${rec.app === "ios" ? "iPhone app" : "web app"}`,
+      `Reply to: ${rec.replyEmail || "no email given"}`,
+      `Topics: ${rec.chips.join(", ") || "none picked"}`,
+      `Would recommend: ${rec.recommend || "not answered"}`,
+      "",
+      rec.text || "No message: topics only.",
+      "",
+      `Sent at ${rec.at}. Every message is also on speaksona.com/leads.html.`,
+    ];
+    const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || "Sona <login@speaksona.com>",
+          to: [to],
+          ...(rec.replyEmail ? { reply_to: rec.replyEmail } : {}),
+          subject: `New ${sender.toLowerCase()} feedback in Sona`,
+          text: lines.join("\n"),
+          html: `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;white-space:pre-wrap;">${esc(lines.join("\n"))}</div>`,
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+      emailSent = response.ok;
+    } catch { /* the stored inbox may still have it */ }
+  }
+  const delivered = slackSent || emailSent;
 
   if (!stored && !delivered) {
     return fail("We couldn't receive your message. Please try again shortly.", 503);
