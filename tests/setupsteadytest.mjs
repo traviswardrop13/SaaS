@@ -19,10 +19,15 @@
 // walk runs with motion on and again under Reduce Motion.
 //
 // The walk is played again (motion on) with the taller keyboards an iPhone SE
-// can have (268 and 291: QuickType, another language, emoji) and on a Face ID
-// iPhone in Display Zoom (320x693, 300 and 336): a rule meant for an iPad on
-// its side used to hide the progress bar and the label there as the keyboard
-// rose, and the box jumped 67 px.
+// can have (268, and 280, the tallest its own size fits above with the footer)
+// and on a Face ID iPhone in Display Zoom (320x693, 300 and 336): a rule meant
+// for an iPad on its side used to hide the progress bar and the label there
+// as the keyboard rose, and the box jumped 67 px. And with keyboards too tall
+// for the SE's own size (291 and 320: a third-party keyboard's number row):
+// there the age choices sat under the footer (from 281) and under Continue
+// (from 297), and a tap on "5–6" opened the next question with no age. The
+// SE takes the 4-inch size as that keyboard starts to rise, before the page
+// shrinks, and keeps it: after that one change nothing moves.
 //
 // After it, the review's edges (15 Oct 2026): a double tap or a tap during the
 // tap lock never drops the box's focus; on the website an age tap lets go of
@@ -41,12 +46,16 @@ const PORT=9620,base='http://127.0.0.1:'+PORT,TOL=3,SHOTS=process.env.STEADY_SHO
 // kb: the keyboard's height on that phone (no toolbar: setup hides it).
 // taller: a taller keyboard on the same phone, played with motion on only (the
 // Reduce Motion pass is about each screen's first frame, not the keyboard).
+// tooTall: a keyboard the phone's own size does not fit above (onboarding.html,
+// ROOM): the step takes the 4-inch size as it starts to rise.
 const DEVICES=[
   {name:'390x844',w:390,h:844,kb:336,top:47,bottom:34},
   {name:'375x667',w:375,h:667,kb:260,top:20,bottom:0},
   {name:'320x568',w:320,h:568,kb:253,top:20,bottom:0},
   {name:'375x667 kb268',w:375,h:667,kb:268,top:20,bottom:0,taller:true},
-  {name:'375x667 kb291',w:375,h:667,kb:291,top:20,bottom:0,taller:true},
+  {name:'375x667 kb280',w:375,h:667,kb:280,top:20,bottom:0,taller:true},
+  {name:'375x667 kb291',w:375,h:667,kb:291,top:20,bottom:0,taller:true,tooTall:true},
+  {name:'375x667 kb320',w:375,h:667,kb:320,top:20,bottom:0,taller:true,tooTall:true},
   {name:'320x693 kb300',w:320,h:693,kb:300,top:44,bottom:34,taller:true},
   {name:'320x693 kb336',w:320,h:693,kb:336,top:44,bottom:34,taller:true},
 ];
@@ -183,7 +192,14 @@ for(const reduced of [false,true])for(const D of DEVICES){
   await kbShow(page,D,shot?async()=>{await band(page,D,true);await shot('2-keyboard-risen');await band(page,D,false);}:null);
   await page.waitForTimeout(600);
   if(shot)await shot('3-keyboard-up');
-  const arrive=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name');
+  let arrive=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name');
+  // A keyboard too tall for the phone's own size: the step is the SE's size
+  // until the keyboard starts to rise (in the app that is ~20 ms after the box
+  // takes focus, as the step fades in) and the 4-inch size from that frame on.
+  // Everything after is held to the 4-inch size, as any phone's is to its own.
+  if(D.tooTall){const pre=arrive.filter(f=>f.kb==='down'),post=arrive.filter(f=>f.kb!=='down'),cls=await sizeClasses(page);
+   ok('a keyboard too tall for the SE\'s own size gives the step the 4-inch size as it starts to rise, before the page shrinks'+at,pre.every(f=>f.r.seg&&f.r.label)&&post.length>0&&post.every(f=>!f.r.seg&&!f.r.label)&&JSON.stringify(cls)==='["ob-short","ob-tiny"]',{pre:pre.map(f=>[!!f.r.seg,!!f.r.label]),post:[...new Set(post.map(f=>!!f.r.seg+'/'+!!f.r.label))],cls});
+   arrive=post;}
   const dA=drift(arrive);
   {const c=firstLast(arrive,'card');ok('the name card\'s first frame is drawn at its own size, not the hello\'s'+at,!!c.same,c);}
   ok('the name box is focused on arrival, as before (the keyboard comes up with the step)'+at,arrive.length>0&&arrive[arrive.length-1].active==='obName',arrive.length&&arrive[arrive.length-1].active);
@@ -196,8 +212,14 @@ for(const reduced of [false,true])for(const D of DEVICES){
    const fonts=[...new Set(arrive.map(f=>f.btnFont))],xs=arrive.filter(f=>f.r.btn).map(f=>f.r.btn.x),ws=arrive.filter(f=>f.r.btn).map(f=>f.r.btn.w);
    ok('…and keeps its width, place across and lettering'+at,fonts.length===1&&Math.max(...xs)-Math.min(...xs)<=TOL&&Math.max(...ws)-Math.min(...ws)<=TOL,{fonts,xs:[Math.min(...xs),Math.max(...xs)],ws:[Math.min(...ws),Math.max(...ws)]});
    // what fits above the keyboard: everything the step asks, above Continue, with no scrolling needed
-   const fit=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),q=document.querySelector('[data-step="name"] .qh').getBoundingClientRect(),n=document.getElementById('obName').getBoundingClientRect(),a=[...document.querySelectorAll('#obAge .sound')].map(x=>x.getBoundingClientRect());return {btnTop:b.top,headTop:q.height?q.top:null,fieldTop:n.top,fieldBottom:n.bottom,agesBottom:Math.max(...a.map(r=>r.bottom)),ob:document.querySelector('.ob').scrollTop,sideways:document.documentElement.scrollWidth-innerWidth};});
+   const fit=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),q=document.querySelector('[data-step="name"] .qh').getBoundingClientRect(),n=document.getElementById('obName').getBoundingClientRect(),a=[...document.querySelectorAll('#obAge .sound')].map(x=>x.getBoundingClientRect());return {btnTop:b.top,footTop:document.querySelector('.obfoot').getBoundingClientRect().top,headTop:q.height?q.top:null,fieldTop:n.top,fieldBottom:n.bottom,agesBottom:Math.max(...a.map(r=>r.bottom)),ob:document.querySelector('.ob').scrollTop,sideways:document.documentElement.scrollWidth-innerWidth};});
    ok('with the keyboard up, the box and all three age choices sit above Continue, nothing scrolled'+at,fit.fieldTop>=D.top&&(fit.headTop===null||fit.headTop>=D.top)&&fit.agesBottom<=fit.btnTop&&fit.ob===0&&fit.sideways<=0,fit);
+   // The footer's whole box takes taps, its fade above Continue too, so an
+   // age choice reaching into it is dead there (at a 291 keyboard on the SE's
+   // own size, the bottom 11 px of each). Not held on the 4-inch phone, whose
+   // smallest size leaves its ages 3.5 px into the fade with its 253 keyboard
+   // (a tap there does nothing; there is no smaller size to give it).
+   if(!(D.w===320&&D.h===568))ok('…and clear the footer (its fade takes taps), so a tap anywhere on an age choice picks it'+at,fit.agesBottom<=fit.footTop+0.5,fit);
   }
   const home=arrive[arrive.length-1].r;   // where the step stands: every later moment is held to it
   // 2. typing a name
@@ -307,6 +329,33 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
   ok('on the website an age tap picks the age and lets go of the name box (the keyboard goes down, Continue in sight)',before==='obName'&&!st.app&&st.active!=='obName'&&st.age==='6'&&st.pressed==='true',{before,...st});
   ok('no runtime errors (website age tap)',errors.length===0,errors);
  }catch(e){ok('the walk completes (website age tap)',false,e.message);}finally{await context.close();}}
+
+// A PHONE ON THE WEBSITE, OR A LAPTOP WINDOW, WHOSE WIDTH CHANGES WHILE A
+// NAME IS TYPED. A browser's bars make its window 80-180 px shorter than the
+// screen, so the screen's height is never the window's there. Taken at the
+// turn (as the app does for an iPad), an iPhone SE in Safari (553 tall) got a
+// 667-tall phone's size while the box was focused, then jumped back 67 px as
+// the box let go, and Continue waited 0.36 s for a resize that never came; a
+// laptop window narrowed while typing took its screen's 1080 and Continue
+// waited 0.4 s. Outside the app a width change waits for the keyboard to go
+// down, like any other.
+for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,325],mobile:true},{name:'a laptop window',w:1280,h:700,sw:1920,sh:1080,turn:[1000,700],mobile:false}]){
+ const D={name:W.w+'x'+W.h,w:W.w,h:W.h,kb:0,top:0,bottom:0},{context,page,errors}=await openPhone(D,W.mobile?{web:true}:{laptop:true,path:'/onboarding.html?slp=1'});try{
+  const cdp=await page.context().newCDPSession(page);
+  const win=(w,h)=>cdp.send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:W.mobile?2:1,mobile:W.mobile,screenWidth:W.sw,screenHeight:W.sh,screenOrientation:(W.mobile?w>W.sw:W.sw>W.sh)?{type:'landscapePrimary',angle:90}:{type:'portraitPrimary',angle:0}});
+  await win(W.w,W.h);await page.waitForTimeout(300);
+  const st=()=>page.evaluate(()=>({phone:obPhone.h(),small:obPhone.small(),cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),field:Math.round(document.getElementById('obName').getBoundingClientRect().top),active:document.activeElement&&document.activeElement.id}));
+  if(W.mobile)await page.tap('#nextBtn');else await page.click('#nextBtn');
+  await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
+  await page.focus('#obName');await page.keyboard.type('Milo');
+  const before=await st();
+  await win(...W.turn);await page.waitForTimeout(500);await win(W.w,W.h);await page.waitForTimeout(500);
+  const after=await st();
+  ok(W.name+', its width changed while a name is typed, keeps the size it had: the screen\'s height is not the window\'s outside the app',before.active==='obName'&&after.active==='obName'&&after.phone===W.h&&!after.small&&JSON.stringify(after.cls)===JSON.stringify(before.cls)&&after.field===before.field,{before,after});
+  const ms=await page.evaluate(()=>new Promise(done=>{const t0=performance.now();document.getElementById('nextBtn').click();(function w(){const s=document.body.dataset.setupScreen;if(s&&s!=='name')done(Math.round(performance.now()-t0));else if(performance.now()-t0>2000)done(-1);else requestAnimationFrame(w);})();}));
+  ok('…and Continue then opens the next screen at once ('+ms+' ms), with no wait for a keyboard that is not there',ms>=0&&ms<=150,ms);
+  ok('no runtime errors ('+W.name+')',errors.length===0,errors);
+ }catch(e){ok('the walk completes ('+W.name+')',false,e.message);}finally{await context.close();}}
 
 // AN IPAD TURNED WITH THE KEYBOARD UP. The keyboard is not the iPad: the
 // height it leaves is never taken as the iPad's, so the step stays its full

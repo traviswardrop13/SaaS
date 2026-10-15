@@ -299,8 +299,9 @@ html.ob-tiny body[data-setup-screen="name"] .ob label[for="obName"] { position: 
    layout, side margins too: the keyboard's height is never the window's
    (onboarding.html), so there this rule alone keeps the heading on one line
    and the age choices above Continue. Never on a phone 700 px tall or less
-   (html.ob-short), whose own layout already fits above its keyboard (no
-   taller phone's keyboard leaves it 400 px). Keyed on the keyboard's
+   (html.ob-short): its own size fits above Apple's keyboard, and a taller
+   keyboard gives it ob-tiny from that keyboard's first rise, for good
+   (onboarding.html, ROOM). Keyed on the keyboard's
    leftovers alone, this rule used to fire on an iPhone SE whose keyboard ran
    past 267 px (QuickType, another language, emoji) and on a phone in Display
    Zoom, hiding the progress bar and the label and moving the box 67 px as

@@ -415,7 +415,8 @@
     // taken only while no box is focused, the keyboard is down and no box was
     // just let go of; one that comes while a parent types (the keyboard's, or
     // a phone turned with the keyboard up) waits until the keyboard is down
-    // (a turned one takes its screen's height meanwhile: turned(), below).
+    // (in the app a turned one takes its screen's height meanwhile: turned(),
+    // below).
     // Taking the turned phone's height with the keyboard still up read the
     // keyboard as the phone, and the step changed size twice. The two classes
     // are for touch screens only (a coarse pointer): a short laptop window,
@@ -423,14 +424,25 @@
     // onboarding-crafted.css sizes the name step from them
     // (tests/setupsteadytest.mjs).
     var obPhone=(function(){
-      var root=document.documentElement,h=window.innerHeight,w=window.innerWidth,kbAt=0,pend=false,waitT=0;
+      var root=document.documentElement,h=window.innerHeight,w=window.innerWidth,kbAt=0,kbMax=0,pend=false,waitT=0;
       function touch(){try{return window.matchMedia("(pointer:coarse)").matches;}catch(e){return false;}}
       // A window 340 wide or less and up to 700 tall is a Face ID iPhone in
       // Display Zoom (320x693): its notch and its taller keyboard leave it
       // less room above the keyboard than a 667-tall iPhone SE, so it takes
       // the 4-inch phone's size (15 Oct 2026: with a 300 to 336 px keyboard
       // the SE's size left the age choices 1 to 37 px under Continue).
-      function paint(){var t=touch();root.classList.toggle("ob-short",t&&h<=700);root.classList.toggle("ob-tiny",t&&(h<=600||h<=700&&window.innerWidth<=340));}
+      // A KEYBOARD TALLER THAN THE PHONE'S OWN SIZE ALLOWS (15 Oct 2026). The
+      // iPhone SE's size ends the age choices 300 px down, and the footer
+      // under them is 86 px tall with the keyboard up (its fade takes taps
+      // too), so it needs a window of ROOM: a keyboard of 280 px at most
+      // (Apple's is 260). A taller one (a third-party keyboard's number row)
+      // put the ages under the footer (a tap on their lower part did nothing)
+      // and then under Continue (a tap on "5–6" went on with no age).
+      // The tallest keyboard the app has reported (keyboardWillShow, before
+      // the page shrinks) counts as the phone's: one that leaves less than
+      // ROOM gives the phone the 4-inch size from its first rise, for good.
+      var ROOM=387;
+      function paint(){var t=touch();root.classList.toggle("ob-short",t&&h<=700);root.classList.toggle("ob-tiny",t&&h<=700&&(h<=600||window.innerWidth<=340||h-kbMax<ROOM));}
       function typing(){var a=document.activeElement;return Date.now()-kbAt<800||!!(a&&a.tagName==="INPUT")||document.body.classList.contains("keyboard-open");}
       function take(){clearTimeout(waitT);if(!pend||typing())return;pend=false;h=window.innerHeight;paint();}
       // asked again once the box has let go or the keyboard has gone down (and after the last resize)
@@ -442,18 +454,22 @@
       // keyboard", so Continue stayed away 0.9 s and the next screen was drawn
       // twice. The full height the new way is the screen's, which no keyboard
       // shrinks: its short side on its side, its long side upright. The
-      // window's own height is still taken once the keyboard is down.
+      // window's own height is still taken once the keyboard is down. In the
+      // app only, where the page fills the screen: a browser's bars make its
+      // window 80-180 px shorter than the screen, so there the name step took
+      // a size too big, then jumped back as the box let go, and a turn waits
+      // for the keyboard to go down, as before.
       function turned(){var s=window.screen,a=Math.min(s.width,s.height),b=Math.max(s.width,s.height),o=s.orientation&&s.orientation.type;
         return (o?o.indexOf("landscape")===0:typeof window.orientation==="number"?window.orientation%180!==0:window.innerWidth>a)?a:b;}
       window.addEventListener("resize",function(){
         var turn=window.innerWidth!==w,full;w=window.innerWidth;pend=true;
         if(!typing()){take();return;}
-        if(turn){full=turned();if(full>=window.innerHeight){h=full;paint();}}
+        if(turn&&nativeKeyboard){full=turned();if(full>=window.innerHeight){h=full;paint();}}
         soon();
       });
       document.addEventListener("focusout",function(e){if(e.target&&e.target.tagName==="INPUT"){kbAt=Date.now();soon();}},true);
       paint();
-      return {h:function(){return h;},kb:function(){kbAt=Date.now();soon();},small:function(){return window.innerHeight<h-40;}};
+      return {h:function(){return h;},kb:function(k){kbAt=Date.now();if(k>=80&&k>kbMax){kbMax=k;paint();}soon();},small:function(){return window.innerHeight<h-40;}};
     })();
     // true in the iPhone app with the keyboard plugin, the one place Continue
     // is raised above the keyboard (the age choices read it)
@@ -478,7 +494,7 @@
       function reveal(){var a=document.activeElement,f=document.querySelector(".obfoot");if(a&&a.tagName==="INPUT"&&f&&a.getBoundingClientRect().bottom>f.getBoundingClientRect().top)a.scrollIntoView({block:"nearest",behavior:"auto"});}
       safely(function(){return keyboard.setAccessoryBarVisible({isVisible:false});});
       safely(function(){return keyboard.addListener("keyboardWillShow",function(info){
-        obPhone.kb();
+        obPhone.kb(info&&info.keyboardHeight);
         // AN IPAD'S HARDWARE KEYBOARD IS NOT A KEYBOARD TO THE LAYOUT (15 Oct
         // 2026). The plugin reports its shortcut bar as a height under 80 (0,
         // mostly) and never shrinks the page, so nothing may make room for it:

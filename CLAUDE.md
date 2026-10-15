@@ -222,9 +222,11 @@ changing one. What follows from the rule:
     that already fits above the keyboard, sized by the phone and never by
     the keyboard (`html.ob-short` / `ob-tiny`, `obPhone` in
     `onboarding.html`: the window's height, taken only with no box focused
-    and the keyboard down; a phone or iPad turned while the keyboard is up
-    takes its screen's height the new way at once, and the window's own
-    once the keyboard is down; on a touch screen only, so a short laptop
+    and the keyboard down; in the app an iPad turned while the keyboard is
+    up takes its screen's height the new way at once, and the window's own
+    once the keyboard is down, while on the website a turn waits for the
+    keyboard to go down (a browser's bars make its window 80-180 px shorter
+    than the screen); on a touch screen only, so a short laptop
     window, a clinician's setup in a browser, keeps the progress bar and the
     label, and its margins and Continue follow the window's height like the
     screens around it). The cost: no Echo and no "So Echo knows who to cheer
@@ -250,16 +252,25 @@ changing one. What follows from the rule:
     tap takes the focus off the box (a double tap on "Let's go!" or Back, a
     tap on an age or the box's label); every step slides in as one piece,
     and under Reduce Motion each screen's first frame is its own (sona.css's
-    0.01 ms transitions painted it in the last screen's layout). Only a
-    window taller than 700 px that the keyboard leaves 400 px or less (an
-    iPad on its side) still changes, to the `ob-tiny` layout; never a phone
-    700 px tall or less, whose own layout already fits above its keyboard
-    (an iPhone SE with a keyboard over 267 px, and a phone in Display Zoom,
-    used to lose the bar and the label as the keyboard rose, the box
-    jumping 67 px). The email step still re-lays out for the keyboard as
-    before. `setupsteadytest` measures every frame at 390×844, 375×667 and
-    320×568, with motion on and under Reduce Motion, again with the SE's
-    taller keyboards (268, 291) and at 320×693 (300, 336), and plays each of
+    0.01 ms transitions painted it in the last screen's layout). Only two
+    things still change its size. A window taller than 700 px that the
+    keyboard leaves 400 px or less (an iPad on its side) takes the `ob-tiny`
+    layout while the keyboard is up. And a phone whose keyboard is too tall
+    for its own size (on an iPhone SE, over 280 px, the footer counted: a
+    third-party keyboard with a number row; Apple's is 260) takes `ob-tiny`
+    as that keyboard first starts to rise, and keeps it (`ROOM` in
+    `obPhone`): with motion on that is while the step fades in, under
+    Reduce Motion its first two frames show the bigger size. Without it
+    the age choices sat under the footer, and a tap on "5–6" pressed
+    Continue with no age picked. A phone never changes size for a keyboard
+    its own size fits above (an iPhone SE with a 268 px keyboard, and a
+    phone in Display Zoom, used to lose the bar and the label as the
+    keyboard rose, the box jumping 67 px). The email step still re-lays out
+    for the keyboard as before. `setupsteadytest` measures every frame at
+    390×844, 375×667 and 320×568, with motion on and under Reduce Motion,
+    again with the SE's taller keyboards (268, 280), keyboards too tall for
+    it (291, 320) and at 320×693 (300, 336), turns a phone on the website
+    and narrows a laptop window while a name is typed, and plays each of
     these edges.
 - **The price is ONE screen** (the two ReciMe-style screens before it are
   gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
