@@ -331,7 +331,8 @@ await scenario('the two answers stay on this phone',async()=>{
   const lead=leadPosts(requests);
   ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly report opt-in)',lead);
   ok('…and the address is on the profile, where a purchase\'s plan post finds it',/"email":"parent@example\.com"/.test(kept.profile)&&/"weeklyEmail":true/.test(kept.profile),kept.profile);
-  ok('…with the weekly progress report asked for (REPORT1 sends only for weeklyReport), and setup itself posts no report',/"weeklyReport":true/.test(kept.profile)&&!requests.some((r)=>/\/api\/report/.test(r.url||'')),kept.profile);
+  const reports=requests.filter((r)=>r.method==='POST'&&new URL(r.url).pathname==='/api/report').map((r)=>JSON.parse(r.body));
+  ok('…with the weekly progress report asked for (REPORT1 sends only for weeklyReport): setup posts it once, so the confirm email comes now, with no name in it',/"weeklyReport":true/.test(kept.profile)&&reports.length===1&&reports[0].email==='parent@example.com'&&!/Zephyrine|childName|childAge/.test(JSON.stringify(reports[0])),reports);
   ok('no button on the hand-off holds the child\'s name, and the title is still "Sona — Welcome"',names===0&&kept.title==='Sona — Welcome',[names,kept.title]);
   clean('answers stay on the phone',errors);
  }finally{await context.close();}

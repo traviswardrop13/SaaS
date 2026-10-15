@@ -4359,11 +4359,16 @@
   // never calls this.
   function _goalCheck() {
     try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
-    try { _reportTouch(); } catch (e) {}           // REPORT1: the weekly report's numbers, at most every 30 minutes; a no-op unless asked for
-    const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
-    if (!d.done) return;
-    if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
-    try { _boardQueue(_slot()); } catch (e) {}     // BOARD2: a no-op unless this child is on the board
+    try {
+      const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
+      if (!d.done) return;
+      if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
+      try { _boardQueue(_slot()); } catch (e) {}   // BOARD2: a no-op unless this child is on the board
+    } finally {
+      // REPORT1: the weekly report's numbers, after today's goal stamp so they
+      // count it; at most every 30 minutes, and a no-op unless asked for
+      try { _reportTouch(); } catch (e) {}
+    }
   }
   // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
   // 2026: "yeah count as reps"). Every place a game asks for the sound and
@@ -7685,18 +7690,23 @@
   // for it on setup's email step (profile.weeklyReport, on the profile that
   // holds the address) sends anything: the address, this phone's random device
   // id, and for each child set up here a few numbers for this week and last
-  // (days with a rep, days at the daily goal, the plan's days a week, reps,
-  // practice tries among them, the sounds they were in). Never a name, an age,
-  // a word, a pass rate or a voice: the email says "Child 1". lib/report.ts
-  // keeps them three weeks and sends Monday's email.
-  // It is sent from _goalCheck (a rep, on a practice or game page), at most
-  // every 30 minutes, and once more when that page goes to the background, so
-  // Sunday evening's practice is in Monday's email. Home never sends (it
-  // writes nothing). An address that unsubscribed is answered "off" and this
-  // phone stops. sona.report.v1 (the device id, the last send, "off") is this
-  // phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is a
-  // second device, and the email shows a child counted the same way on both once.
-  const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000;
+  // (a random id for the child, days with a rep, days at the daily goal, the
+  // plan's days a week, reps, practice tries among them, the sounds they were
+  // in). Never a name, an age, a word, a pass rate or a voice: the email says
+  // "Child 1". lib/report.ts keeps nothing until the address confirms this
+  // phone from the link it is emailed, then keeps three weeks and sends
+  // Monday's email.
+  // It is sent once as setup ends (so the confirm email comes while the parent
+  // is still holding the phone), then from _goalCheck (a rep, on a practice or
+  // game page) at most every 30 minutes, and once more when that page goes to
+  // the background, so Sunday evening's practice is in Monday's email. A post
+  // that fails is tried again five minutes later. Home never sends (it writes
+  // nothing). A confirmed phone of an address that unsubscribed is answered
+  // "off" and stops. sona.report.v1 (the device id, the last send, "off") is
+  // this phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is
+  // a second device. The child's id (profile.reportId) does travel, so after a
+  // move the email still shows that child once.
+  const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000, REPORT_RETRY_MS = 5 * 60 * 1000;
   function _reportState() { try { const v = JSON.parse(localStorage.getItem(REPORTKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
   function _reportSave(v) { try { localStorage.setItem(REPORTKEY, JSON.stringify(v)); } catch (e) {} }
   function _randomHex(bytes) {
@@ -7705,13 +7715,14 @@
     return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
   }
   // The address the report goes to: on the profile of the child whose setup
-  // asked for it, or "" when nobody here did.
+  // asked for it, or "" when nobody here did. Printable ASCII and at most 120
+  // characters, as the server (and its unsubscribe link) take them.
   function reportEmail() {
     let got = "";
     try {
       _kids().list.some((k) => {
-        const p = _loadFor(k.slot, PKEY, {}), e = typeof p.email === "string" ? p.email.trim() : "";
-        if (p.weeklyReport === true && e.length <= 254 && /^\S+@\S+\.\S+$/.test(e)) got = e.toLowerCase();
+        const p = _loadFor(k.slot, PKEY, {}), e = typeof p.email === "string" ? p.email.trim().toLowerCase() : "";
+        if (p.weeklyReport === true && e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e)) got = e;
         return !!got;
       });
     } catch (e) {}
@@ -7722,6 +7733,9 @@
   function _reportKid(slot, mon) {
     const p = _loadFor(slot, PKEY, {}), all = _repDays(null, false, slot), prac = _repDays(null, true, slot);
     const stamps = _loadFor(slot, GOALKEY, {}), pd = _loadFor(slot, GKEY, DEFAULT_PROGRESS).practiceDays || {}, t = today();
+    // the child's random id, made once and kept on the profile (so a backup carries it)
+    let id = typeof p.reportId === "string" && /^[a-f0-9]{16}$/.test(p.reportId) ? p.reportId : "";
+    if (!id) { id = _randomHex(8); p.reportId = id; saveFor(slot, PKEY, p); }
     const parts = mon.split("-"), wd = [];
     for (let i = 0; i < 7; i++) wd.push(_localDay(new Date(+parts[0], +parts[1] - 1, +parts[2] + i).getTime()));
     let d = 0, g = 0, r = 0, pr = 0;
@@ -7732,13 +7746,14 @@
     });
     const s = r > 0 ? ALL_SOUNDS.filter((S) => { const by = _repDays(S, false, slot); return wd.some((k) => (by[k] || 0) > 0); }) : [];
     const n = parseInt(p.weeklyGoal, 10);
-    return { d: d, g: g, gw: (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4, r: r, p: pr, s: s };
+    return { i: id, d: d, g: g, gw: (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4, r: r, p: pr, s: s };
   }
-  let _reportBusy = false, _reportDirty = false, _reportHooked = false;
+  let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
   function reportSync(force) {
     const email = reportEmail();
-    if (!email || _reportBusy) return Promise.resolve(false);
-    const st = _reportState(), now = Date.now();
+    if (!email) return Promise.resolve(false);
+    if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
+    const st = _reportState(), now = Date.now(), prev = st.at;
     if (st.off === email) return Promise.resolve(false);
     if (!force && st.at > 0 && st.at <= now && now - st.at < REPORT_EVERY_MS) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
@@ -7746,15 +7761,24 @@
     let list = [];
     try { list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; }).slice(0, 8); } catch (e) {}
     const weeks = [-1, 0].map((o) => { const wk = _mondayKey(o); return { wk: wk, kids: list.map((k) => _reportKid(k.slot, wk)) }; });
-    _reportBusy = true; _reportDirty = false;
+    _reportBusy = true; _reportDirty = false; _reportAgain = false;
     let sent;
     try {
       sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
         body: JSON.stringify({ email: email, dev: st.dev, weeks: weeks }) })
         .then((r) => r.json())
-        .then((j) => { if (j && j.off) { const s2 = _reportState(); s2.off = email; _reportSave(s2); } return !!(j && j.ok && !j.off); });
+        .then((j) => { if (j && j.off) { const s2 = _reportState(); s2.off = email; _reportSave(s2); } return !!(j && j.ok); });
     } catch (e) { sent = Promise.resolve(false); }
-    return sent.catch(() => false).then((v) => { _reportBusy = false; return v; });
+    return sent.catch(() => false).then((ok) => {
+      _reportBusy = false;
+      if (!ok) {
+        // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
+        _reportDirty = true;
+        const s3 = _reportState(); s3.at = Math.max(prev > 0 && prev <= now ? prev : 0, now - REPORT_EVERY_MS + REPORT_RETRY_MS); _reportSave(s3);
+      } else if (_reportAgain && _reportDirty) reportSync(true);
+      _reportAgain = false;
+      return ok;
+    });
   }
   function _reportTouch() {
     if (!reportEmail()) return;

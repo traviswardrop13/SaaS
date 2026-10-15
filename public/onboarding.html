@@ -1045,7 +1045,12 @@
           )}).catch(function(){});
         }
         // a parent's address from this walk's email step: once, here, before the price
-        else if(draft.email&&ORDER.indexOf("updates")>-1) postParentLead(draft.email);
+        else if(draft.email&&ORDER.indexOf("updates")>-1){
+          postParentLead(draft.email);
+          // …and the weekly report's first post (no reps yet): the server emails
+          // the address its confirm link now, while the parent holds the phone
+          try{if(Sona.reportSync)Sona.reportSync(true);}catch(e){}
+        }
       }catch(e){}
       // SLP finish: create the clinician's ACCOUNT and email them a one-tap
       // sign-in link. The share credential (code + family key) is auto-minted

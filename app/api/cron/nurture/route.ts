@@ -4,7 +4,7 @@ import { runReports } from "@/lib/report";
 
 /**
  * Daily: sends the welcome series' day-after email to everyone it is due for
- * (lib/nurture.ts), and on Monday (Tuesday catches up) last week's progress
+ * (lib/nurture.ts), and on Monday (Tuesday and Wednesday catch up) last week's progress
  * report to every household that asked for it (lib/report.ts). Same auth as
  * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
  * A manual run with ?report=1 sends the report on any day (still once an
@@ -14,6 +14,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
+  const started = Date.now();
   const auth = req.headers.get("authorization") || "";
   const keyIn = req.headers.get("x-founder-key") || req.nextUrl.searchParams.get("key") || "";
   const cronSecret = process.env.CRON_SECRET || "";
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Not set in Vercel: " + missing.join(", ") }, { status: 500 });
   }
   const r = await runDue();
-  const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1" });
+  // stop sending well before maxDuration, so no address is left claimed and unsent
+  const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
   return NextResponse.json({ ok: true, ...r, report });
 }
