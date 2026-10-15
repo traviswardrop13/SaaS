@@ -15,7 +15,14 @@
 // choices and Continue are. Nothing about the step's content changes while
 // the keyboard comes and goes, a name is typed or an age is picked, so none
 // of them may move more than TOL px, appear or disappear. Leaving the step
-// with the keyboard up must draw the next screen once, at its own size.
+// with the keyboard up must draw the next screen once, at its own size. The
+// walk runs with motion on and again under Reduce Motion.
+//
+// After it, the review's edges (15 Oct 2026): a double tap or a tap during the
+// tap lock never drops the box's focus; on the website an age tap lets go of
+// the box (only the app lifts Continue above the keyboard); an iPad turned
+// with the keyboard up is not sized by the keyboard; a short laptop window
+// keeps the full-size step; an iPad's hardware keyboard moves nothing.
 // STEADY_SHOTS=<path prefix> also saves a screenshot of each moment.
 import {createServer} from 'http';
 import {readFileSync,existsSync,statSync} from 'fs';
@@ -46,7 +53,7 @@ function phoneInit(cfg){
   once('sona.freeera.v1','post');['sona.freeera2.v1','sona.freeera3.v1','sona.freeera4.v1','sona.freeera5.v1'].forEach(k=>once(k,'done'));
   once('sona.freever.v1','post');once('sona.buddyset.v1','post');
   const S=window.__steady={kb:{},frames:[],on:false,kbState:'down',kbh:cfg.kb};
-  window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
+  if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
     tCard:'[data-step="therapy"]',tHead:'#therapyTitle',tYes:'#obTherapy [data-val="t_yes"]',btn:'#nextBtn'};
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
@@ -72,12 +79,14 @@ function phoneInit(cfg){
   S.take=()=>{const f=S.frames;S.frames=[];return f;};
 }
 
-// Motion on, as a phone is by default. (Under Reduce Motion sona.css gives
-// every property a 0.01 ms transition, so the frame after any change still
-// paints the old value, on every screen of the app: a separate matter.)
-async function openPhone(D){
-  const context=await browser.newContext({viewport:{width:D.w,height:D.h},isMobile:true,hasTouch:true,deviceScaleFactor:2,reducedMotion:'no-preference',timezoneId:'America/Boise'});
-  await context.addInitScript(phoneInit,{kb:D.kb});
+// Motion on, as a phone is by default, or Reduce Motion (opt.reduced: sona.css
+// then gives every property a 0.01 ms transition, and setup takes none).
+// opt.web: the website, no app shell (an Android phone in Chrome);
+// opt.laptop: a desktop browser, mouse and no touch.
+const ANDROID='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+async function openPhone(D,opt={}){
+  const context=await browser.newContext({viewport:{width:D.w,height:D.h},isMobile:!opt.laptop,hasTouch:!opt.laptop,deviceScaleFactor:opt.laptop?1:2,reducedMotion:opt.reduced?'reduce':'no-preference',timezoneId:'America/Boise',...(opt.web&&!opt.laptop?{userAgent:ANDROID}:{})});
+  await context.addInitScript(phoneInit,{kb:D.kb,web:!!(opt.web||opt.laptop)});
   await context.route('**/*',route=>{
     const url=new URL(route.request().url());if(!url.href.startsWith(base+'/'))return route.abort();
     // Desktop Chromium has no safe areas: put the phone's own in, so the notch and the home bar take their real room
@@ -86,7 +95,7 @@ async function openPhone(D){
   });
   const page=await context.newPage();page.setDefaultTimeout(4000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base+'/onboarding.html');await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
+  await page.goto(base+(opt.path||'/onboarding.html'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   return {context,page,errors};
 }
 // the plugin, in order: willShow now; didShow after the slide; the web view shrinks 0.2 s later
@@ -118,21 +127,27 @@ const KEYS=['heading','label','field','ageLabel','age4','age6','age8','card'];
 function drift(frames,keys=KEYS,ref=null){
   const out={};
   for(const k of keys){
-    let first=ref?ref[k]:undefined,maxY=0,maxX=0,maxW=0,flips=0,seen=false;
+    let first=ref?ref[k]:undefined,maxY=0,maxX=0,maxW=0,maxH=0,flips=0,seen=false;
     for(const f of frames){const r=f.r[k];if(first===undefined){first=r;seen=true;continue;}
       if(!!r!==!!first){flips++;continue;}
-      if(r){maxY=Math.max(maxY,Math.abs(r.y-first.y));maxX=Math.max(maxX,Math.abs(r.x-first.x));maxW=Math.max(maxW,Math.abs(r.w-first.w));}}
-    out[k]={y:+maxY.toFixed(1),x:+maxX.toFixed(1),w:+maxW.toFixed(1),flips,shown:!!first};
+      if(r){maxY=Math.max(maxY,Math.abs(r.y-first.y));maxX=Math.max(maxX,Math.abs(r.x-first.x));maxW=Math.max(maxW,Math.abs(r.w-first.w));maxH=Math.max(maxH,Math.abs(r.h-first.h));}}
+    out[k]={y:+maxY.toFixed(1),x:+maxX.toFixed(1),w:+maxW.toFixed(1),h:+maxH.toFixed(1),flips,shown:!!first};
   }
   return out;
 }
-const still=d=>Object.values(d).every(v=>v.flips===0&&v.y<=TOL&&v.x<=TOL&&v.w<=TOL);
-const worst=d=>Object.entries(d).filter(([,v])=>v.flips||v.y>TOL||v.x>TOL||v.w>TOL).map(([k,v])=>k+(v.flips?' appears/vanishes '+v.flips+'x':'')+(v.y>TOL?' moves '+v.y+'px':'')+(v.x>TOL?' sideways '+v.x+'px':'')+(v.w>TOL?' resizes '+v.w+'px':'')).join('; ')||'none';
+const still=d=>Object.values(d).every(v=>v.flips===0&&v.y<=TOL&&v.x<=TOL&&v.w<=TOL&&v.h<=TOL);
+const worst=d=>Object.entries(d).filter(([,v])=>v.flips||v.y>TOL||v.x>TOL||v.w>TOL||v.h>TOL).map(([k,v])=>k+(v.flips?' appears/vanishes '+v.flips+'x':'')+(v.y>TOL?' moves '+v.y+'px':'')+(v.x>TOL?' sideways '+v.x+'px':'')+(v.w>TOL?' resizes '+v.w+'px':'')+(v.h>TOL?' grows/shrinks '+v.h+'px':'')).join('; ')||'none';
+// the first frame a screen is drawn in, against the last: the same size and place
+const firstLast=(frames,k)=>{const fs=frames.filter(f=>f.r[k]);if(fs.length<2)return {n:fs.length};const a=fs[0].r[k],b=fs[fs.length-1].r[k];return {first:a,last:b,same:Math.abs(a.y-b.y)<=TOL&&Math.abs(a.h-b.h)<=TOL&&Math.abs(a.w-b.w)<=TOL};};
+const SIZES={'390x844':[],'375x667':['ob-short'],'320x568':['ob-short','ob-tiny']};
+const sizeClasses=page=>page.evaluate(()=>['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)));
 
-for(const D of DEVICES){
- const {context,page,errors}=await openPhone(D);const at=' at '+D.name;
- const shot=SHOTS?async n=>{await page.screenshot({path:SHOTS+'-'+D.name+'-'+n+'.png'});}:null;
+for(const reduced of [false,true])for(const D of DEVICES){
+ const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
+ const shot=SHOTS?async n=>{await page.screenshot({path:SHOTS+'-'+D.name+(reduced?'-reduce':'')+'-'+n+'.png'});}:null;
  try{
+  // the phone's own height picks the step's size (a touch screen: the classes are for phones and tablets)
+  {const cls=await sizeClasses(page);ok('the phone\'s height picks the name step\'s size ('+(cls.join(' ')||'full')+')'+at,JSON.stringify(cls)===JSON.stringify(SIZES[D.name]),cls);}
   // 1. the hello's Continue: the name step opens, focuses the box (the keyboard rises with it)
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');
@@ -143,6 +158,7 @@ for(const D of DEVICES){
   if(shot)await shot('3-keyboard-up');
   const arrive=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name');
   const dA=drift(arrive);
+  {const c=firstLast(arrive,'card');ok('the name card\'s first frame is drawn at its own size, not the hello\'s'+at,!!c.same,c);}
   ok('the name box is focused on arrival, as before (the keyboard comes up with the step)'+at,arrive.length>0&&arrive[arrive.length-1].active==='obName',arrive.length&&arrive[arrive.length-1].active);
   ok('while the keyboard rises and the app shrinks the page, the heading, the box and the age choices hold still'+at+' (worst: '+worst(dA)+')',still(dA),dA);
   // Continue: never drawn where the risen keyboard covers it, and once the page is its new size, fully above the keyboard
@@ -189,6 +205,7 @@ for(const D of DEVICES){
   await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
   const leave=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='therapy'&&f.r.tCard);
   const dL=drift(leave,['tHead','tYes','tCard','echo']);
+  {const c=firstLast(leave,'tCard');ok('the next question\'s first frame is drawn at its own size, not the name card\'s'+at,!!c.same,c);}
   // (Echo included: he is beside the question from its first frame, or, on a phone too short for him, never)
   ok('Continue with the keyboard up: the next question opens once, at its own size, nothing re-laid out after it shows'+at+' (worst: '+worst(dL)+')',leave.length>0&&still(dL),dL);
   // 7. Back to the name: the step looks exactly as it did the first time
@@ -197,6 +214,7 @@ for(const D of DEVICES){
   await page.tap('#backBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,D);await page.waitForTimeout(500);
   const back=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name');
   const dB=drift(back,KEYS,home);
+  {const c=firstLast(back,'card');ok('Back: the name card\'s first frame is drawn at its own size, not the question\'s'+at,!!c.same,c);}
   ok('Back to the name: it opens where it stood before, and the keyboard rising moves nothing'+at+' (worst: '+worst(dB)+')',back.length>0&&back[back.length-1].active==='obName'&&still(dB),dB);
   ok('no runtime errors'+at,errors.length===0,errors);
  }catch(e){ok('the walk completes'+at,false,e.stack);}
@@ -219,6 +237,97 @@ for(const D of DEVICES){
   ok('…while an age choice under the lock is still not taken',await page.evaluate(()=>draft.childAge!=='8'));
   ok('no runtime errors (tap lock)',errors.length===0,errors);
  }finally{await context.close();}}
+
+// A tap the lock turns away falls through to the page, and a press there took
+// the focus off the name box: on Android the keyboard went back down under a
+// double tap on "Let's go!" or Back, or a tap on an age or the box's label in
+// that half second. On the website (an Android phone in Chrome), where it was
+// found, and in the app.
+for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:0,bottom:0}:DEVICES[0],{context,page,errors}=await openPhone(D,{web});const on=web?' (website)':' (app)';try{
+  const focus=()=>page.evaluate(()=>({active:document.activeElement&&(document.activeElement.id||document.activeElement.tagName),screen:document.body.dataset.setupScreen,settling:document.body.classList.contains('ob-settling'),age:draft.childAge}));
+  const go=await center(page,'#nextBtn');
+  for(const gap of [90,300]){
+    await page.tap('#nextBtn');await page.waitForTimeout(gap);await page.touchscreen.tap(go.x,go.y);
+    const st=await focus();
+    ok('a double tap on "Let\'s go!" ('+gap+' ms apart) leaves the name box focused, the keyboard up'+on,st.screen==='name'&&st.active==='obName',st);
+    await page.waitForTimeout(500);await page.evaluate(()=>{document.activeElement.blur();});
+    // back to the hello for the next go: a fresh page
+    await page.reload();await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(400);
+  }
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
+  await page.touchscreen.tap((await center(page,'#obAge [data-age="4"]')).x,(await center(page,'#obAge [data-age="4"]')).y);
+  const a=await focus();
+  await page.touchscreen.tap((await center(page,'label[for="obName"]')).x,(await center(page,'label[for="obName"]')).y);
+  const l=await focus();
+  ok('a tap on an age or on the box\'s label during the tap lock leaves the box focused, and picks nothing'+on,a.settling&&a.active==='obName'&&a.age!=='4'&&l.active==='obName',{age:a,label:l});
+  // Back, twice: the name step opens with the box focused, and the second tap leaves it so
+  await page.waitForTimeout(500);await page.fill('#obName','Milo');
+  await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
+  const bk=await center(page,'#backBtn');await page.touchscreen.tap(bk.x,bk.y);await page.waitForTimeout(150);await page.touchscreen.tap(bk.x,bk.y);
+  const b=await focus();
+  ok('a double tap on Back opens the name step with the box focused, and keeps it so'+on,b.screen==='name'&&b.active==='obName',b);
+  ok('no runtime errors (double taps)'+on,errors.length===0,errors);
+ }catch(e){ok('the walk completes (double taps)'+on,false,e.message);}finally{await context.close();}}
+
+// THE WEBSITE: no app, so nothing lifts Continue above the keyboard. An age
+// tap there lets go of the name box, so the keyboard goes down and Continue
+// is in sight, as before 15 Oct 2026; in the app it keeps the box (the walk).
+{const D={name:'412x839',w:412,h:839,kb:0,top:0,bottom:0},{context,page,errors}=await openPhone(D,{web:true});try{
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
+  const before=await page.evaluate(()=>document.activeElement&&document.activeElement.id);
+  await page.keyboard.type('Milo');await tapAt(page,'#obAge [data-age="6"]');await page.waitForTimeout(200);
+  const st=await page.evaluate(()=>({app:!!window.Capacitor,active:document.activeElement&&(document.activeElement.id||document.activeElement.tagName),age:draft.childAge,pressed:document.querySelector('#obAge [data-age="6"]').getAttribute('aria-pressed')}));
+  ok('on the website an age tap picks the age and lets go of the name box (the keyboard goes down, Continue in sight)',before==='obName'&&!st.app&&st.active!=='obName'&&st.age==='6'&&st.pressed==='true',{before,...st});
+  ok('no runtime errors (website age tap)',errors.length===0,errors);
+ }catch(e){ok('the walk completes (website age tap)',false,e.message);}finally{await context.close();}}
+
+// AN IPAD TURNED WITH THE KEYBOARD UP. The keyboard is not the iPad: the
+// height it leaves is never taken as the iPad's, so the step stays its full
+// size while the keyboard is up and does not change when it goes down; the
+// turned iPad's own height is taken once the keyboard is down.
+{const D={name:'820x1180',w:820,h:1180,kb:320,top:24,bottom:20},{context,page,errors}=await openPhone(D);try{
+  const st=()=>page.evaluate(()=>{const r=document.getElementById('obName').getBoundingClientRect();return {cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),phone:obPhone.h(),h:innerHeight,field:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width)},label:document.querySelector('label[for="obName"]').offsetHeight,seg:document.getElementById('seg').offsetHeight,fit:{fieldTop:Math.round(r.top),agesBottom:Math.round(Math.max(...[...document.querySelectorAll('#obAge .sound')].map(b=>b.getBoundingClientRect().bottom))),btnTop:Math.round(document.getElementById('nextBtn').getBoundingClientRect().top),scroll:document.querySelector('.ob').scrollHeight-document.querySelector('.ob').clientHeight}};});
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,D);await page.waitForTimeout(400);
+  const portrait=await st();
+  // turned on its side, the keyboard still up: the plugin sends willShow again with the landscape keyboard
+  await page.setViewportSize({width:1180,height:820-400});await page.evaluate(()=>{__steady.kbState='up';__steady.kb.keyboardWillShow({keyboardHeight:400});});await page.waitForTimeout(1200);
+  const turned=await st();
+  await page.keyboard.press('Enter');await kbHide(page,{w:1180,h:820});await page.waitForTimeout(1200);
+  const down=await st();
+  ok('an iPad turned with the keyboard up keeps the full-size name step: the keyboard is not taken for the iPad',portrait.cls.length===0&&turned.cls.length===0&&down.cls.length===0,{portrait,turned,down});
+  ok('…with the box and all three age choices above Continue while the keyboard is up, nothing scrolled',turned.fit.agesBottom<=turned.fit.btnTop&&turned.fit.fieldTop>=0&&turned.fit.scroll<=1,turned.fit);
+  ok('…so nothing moves when the keyboard goes down',Math.abs(turned.field.y-down.field.y)<=TOL&&Math.abs(turned.field.x-down.field.x)<=TOL&&turned.label===down.label&&turned.seg===down.seg,{turned,down});
+  ok('…and the turned iPad\'s own height is taken once the keyboard is down',turned.phone===1180&&down.phone===820,{turned:turned.phone,down:down.phone});
+  ok('no runtime errors (iPad turned)',errors.length===0,errors);
+ }catch(e){ok('the walk completes (iPad turned)',false,e.message);}finally{await context.close();}}
+
+// A SHORT LAPTOP WINDOW (the clinician's setup in a browser) is not a phone:
+// the phone sizes are for touch screens, so it keeps the full-size name step,
+// with the progress bar and the box's label drawn.
+{const D={name:'1280x560',w:1280,h:560,kb:0,top:0,bottom:0},{context,page,errors}=await openPhone(D,{laptop:true,path:'/onboarding.html?slp=1'});try{
+  await page.click('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(500);
+  const st=await page.evaluate(()=>({role:draft.role,cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),seg:document.getElementById('seg').offsetHeight,label:document.querySelector('label[for="obName"]').offsetHeight}));
+  ok('a short laptop window (the clinician\'s setup at /onboarding.html?slp=1) keeps the full-size name step: progress bar and label drawn',st.role==='slp'&&st.cls.length===0&&st.seg>0&&st.label>2,st);
+  ok('no runtime errors (laptop)',errors.length===0,errors);
+ }catch(e){ok('the walk completes (laptop)',false,e.message);}finally{await context.close();}}
+
+// AN IPAD'S HARDWARE KEYBOARD: the plugin reports a height under 80 (0, or
+// its shortcut bar) and the page never resizes. It is not a keyboard to the
+// layout: Continue stays exactly where it is as the box gains and loses focus.
+for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,bottom:20},{context,page,errors}=await openPhone(D);try{
+  const foot=()=>page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect();return {top:Math.round(b.top*10)/10,h:innerHeight,open:document.body.classList.contains('keyboard-open'),op:+getComputedStyle(document.querySelector('.obfoot')).opacity,active:document.activeElement&&document.activeElement.id};});
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
+  const before=await foot();
+  await page.evaluate(h=>__steady.kb.keyboardWillShow({keyboardHeight:h}),kbh);await page.waitForTimeout(950);
+  const shown=await foot();
+  await page.keyboard.press('Enter');await page.evaluate(()=>__steady.kb.keyboardWillHide());await page.waitForTimeout(300);
+  const let_go=await foot();
+  await tapAt(page,'#obName');await page.evaluate(h=>__steady.kb.keyboardWillShow({keyboardHeight:h}),kbh);await page.waitForTimeout(950);
+  const again=await foot();
+  const tops=[before,shown,let_go,again].map(f=>f.top);
+  ok('with an iPad\'s hardware keyboard (height '+kbh+'), Continue stays where it is as the box gains and loses focus',Math.max(...tops)-Math.min(...tops)<=TOL&&!shown.open&&!again.open&&again.op>0.95&&again.active==='obName',{before,shown,let_go,again});
+  ok('no runtime errors (hardware keyboard '+kbh+')',errors.length===0,errors);
+ }catch(e){ok('the walk completes (hardware keyboard '+kbh+')',false,e.message);}finally{await context.close();}}
 
 // With motion on, the step enters as one piece: the heading, the labels, the
 // box and the age choices ride with the card and never slide on their own,

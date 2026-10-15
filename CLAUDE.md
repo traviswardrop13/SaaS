@@ -220,18 +220,31 @@ changing one. What follows from the rule:
     sat under the keyboard and then jumped 300 px, and an age tap closed the
     keyboard and did all of it under the finger. Now the step has one layout
     that already fits above the keyboard, sized by the phone and never by
-    the keyboard (`html.ob-short` / `ob-tiny`, from the window's height with
-    no keyboard, `obPhone` in `onboarding.html`). The cost: no Echo and no
-    "So Echo knows who to cheer for." on this one screen (the line is still
-    the box's spoken description; Travis's to bring back), and on a 4-inch
-    phone no progress bar there and the box's label read, not drawn. An age
-    tap keeps the keyboard up; Continue steps aside while the keyboard rises
-    and fades in above it; leaving the step with the keyboard up draws the
-    next screen once, at full height (`whenRoomy`); a tap on the box during
-    the tap lock stays on the box; every step slides in as one piece. Only a
+    the keyboard (`html.ob-short` / `ob-tiny`, `obPhone` in
+    `onboarding.html`: the window's height, taken only with no box focused
+    and the keyboard down, so a phone or iPad turned while the keyboard is
+    up waits for it to go down; on a touch screen only, so a short laptop
+    window, a clinician's setup in a browser, keeps the full-size step).
+    The cost: no Echo and no "So Echo knows who to cheer for." on this one
+    screen (the line is still the box's spoken description; Travis's to
+    bring back); on a 4-inch phone no progress bar there and the box's label
+    read, not drawn; and under Reduce Motion nothing in setup fades, Continue
+    included. **In the iPhone app** an age tap keeps the keyboard up; **on
+    the website** it still lets go of the box, because nothing there lifts
+    Continue above the keyboard and the keyboard going down is what shows
+    it. Continue steps aside while the keyboard rises and fades in above it;
+    an iPad's hardware keyboard (a height under 80) is no keyboard to the
+    layout and moves nothing; leaving the step with the keyboard up draws the
+    next screen once, at full height (`whenRoomy`); during the tap lock no
+    tap takes the focus off the box (a double tap on "Let's go!" or Back, a
+    tap on an age or the box's label); every step slides in as one piece,
+    and under Reduce Motion each screen's first frame is its own (sona.css's
+    0.01 ms transitions painted it in the last screen's layout). Only a
     window under 400 px with the keyboard up (an iPad on its side) still
-    changes. The email step still re-lays out for the keyboard as before.
-    `setupsteadytest` measures every frame at 390×844, 375×667 and 320×568.
+    changes, to the 4-inch phone's layout. The email step still re-lays out
+    for the keyboard as before. `setupsteadytest` measures every frame at
+    390×844, 375×667 and 320×568, with motion on and under Reduce Motion,
+    and plays each of these edges.
 - **The price is ONE screen** (the two ReciMe-style screens before it are
   gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
   today.") and **the billing day** (the store's price starts "unless you

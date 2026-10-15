@@ -127,6 +127,11 @@
     #micNotNow{display:block;margin:14px auto 0;min-height:44px;}
     #micStatus{font-weight:800;color:#795534;line-height:1.5;margin-top:12px;}
     @media(prefers-reduced-motion:reduce){.step.on,.mascot .leo,#obBuild img,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
+    /* Under Reduce Motion sona.css gives every property a 0.01 ms transition,
+       and the frame a step changes was painted in the last step's layout (the
+       name card 718 px tall for a frame at 390x844, then 260). Setup's steps
+       and footer take no transition at all there (15 Oct 2026). */
+    @media(prefers-reduced-motion:reduce){.ob,.ob *,.obfoot,.obfoot *{transition-property:none!important;}}
     .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);border-color:var(--act);background:#e8f6f7;color:var(--act-d);box-shadow:0 0 0 3px rgba(31,152,166,.16);}
     /* fixed footer */
     .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
@@ -406,21 +411,32 @@
     // name and age"). In the iPhone app the keyboard shrinks the whole web
     // view, so "how tall is the window?" changes while a parent types, and
     // the name card used to be laid out again on the way up and the way down.
-    // obPhone.h() is the window's height with no keyboard: a new width (a
-    // turned phone, an iPad window) or more height is always the window's
-    // own, but less height while a box is focused, the keyboard is up, or a
-    // box was just let go of is the keyboard's. onboarding-crafted.css sizes
-    // the name step from the two classes (tests/setupsteadytest.mjs).
+    // obPhone.h() is the window's height with no keyboard: a new size is
+    // taken only while no box is focused, the keyboard is down and no box was
+    // just let go of; one that comes while a parent types (the keyboard's, or
+    // a phone turned with the keyboard up) waits until the keyboard is down.
+    // Taking the turned phone's height with the keyboard still up read the
+    // keyboard as the phone, and the step changed size twice. The two classes
+    // are for touch screens only (a coarse pointer): a short laptop window,
+    // a clinician's setup in a browser, keeps the full-size step.
+    // onboarding-crafted.css sizes the name step from them
+    // (tests/setupsteadytest.mjs).
     var obPhone=(function(){
-      var root=document.documentElement,w=window.innerWidth,h=window.innerHeight,kbAt=0;
-      function paint(){root.classList.toggle("ob-short",h<=700);root.classList.toggle("ob-tiny",h<=600);}
+      var root=document.documentElement,h=window.innerHeight,kbAt=0,pend=false,waitT=0;
+      function touch(){try{return window.matchMedia("(pointer:coarse)").matches;}catch(e){return false;}}
+      function paint(){var t=touch();root.classList.toggle("ob-short",t&&h<=700);root.classList.toggle("ob-tiny",t&&h<=600);}
       function typing(){var a=document.activeElement;return Date.now()-kbAt<800||!!(a&&a.tagName==="INPUT")||document.body.classList.contains("keyboard-open");}
-      window.addEventListener("resize",function(){var nw=window.innerWidth,nh=window.innerHeight;if(nw!==w||nh>h||!typing()){w=nw;h=nh;paint();}});
-      document.addEventListener("focusout",function(e){if(e.target&&e.target.tagName==="INPUT")kbAt=Date.now();},true);
+      function take(){clearTimeout(waitT);if(!pend||typing())return;pend=false;h=window.innerHeight;paint();}
+      // asked again once the box has let go or the keyboard has gone down (and after the last resize)
+      function soon(){if(pend){clearTimeout(waitT);waitT=setTimeout(take,850);}}
+      window.addEventListener("resize",function(){pend=true;if(typing())soon();else take();});
+      document.addEventListener("focusout",function(e){if(e.target&&e.target.tagName==="INPUT"){kbAt=Date.now();soon();}},true);
       paint();
-      return {h:function(){return h;},kb:function(){kbAt=Date.now();},small:function(){return window.innerHeight<h-40;}};
+      return {h:function(){return h;},kb:function(){kbAt=Date.now();soon();},small:function(){return window.innerHeight<h-40;}};
     })();
-    (function setupNativeKeyboard(){
+    // true in the iPhone app with the keyboard plugin, the one place Continue
+    // is raised above the keyboard (the age choices read it)
+    var nativeKeyboard=(function setupNativeKeyboard(){
       var cap=window.Capacitor;
       if(!cap||!cap.isNativePlatform||!cap.isNativePlatform()||!cap.getPlatform||cap.getPlatform()!=="ios")return;
       var keyboard=cap.Plugins&&cap.Plugins.Keyboard;
@@ -441,13 +457,20 @@
       function reveal(){var a=document.activeElement,f=document.querySelector(".obfoot");if(a&&a.tagName==="INPUT"&&f&&a.getBoundingClientRect().bottom>f.getBoundingClientRect().top)a.scrollIntoView({block:"nearest",behavior:"auto"});}
       safely(function(){return keyboard.setAccessoryBarVisible({isVisible:false});});
       safely(function(){return keyboard.addListener("keyboardWillShow",function(info){
-        obPhone.kb();body.classList.add("keyboard-open");
+        obPhone.kb();
+        // AN IPAD'S HARDWARE KEYBOARD IS NOT A KEYBOARD TO THE LAYOUT (15 Oct
+        // 2026). The plugin reports its shortcut bar as a height under 80 (0,
+        // mostly) and never shrinks the page, so nothing may make room for it:
+        // keyboard-open's footer rule used to drop Continue 28-42 px each time
+        // the box gained focus.
+        if(info&&typeof info.keyboardHeight==="number"&&info.keyboardHeight<80){body.classList.remove("keyboard-open");moved();return;}
+        body.classList.add("keyboard-open");
         if(obPhone.small()){moved();reveal();return;}
-        if(info&&typeof info.keyboardHeight==="number"&&info.keyboardHeight<80)return;
         body.classList.add("kb-moving");clearTimeout(moveT);moveT=setTimeout(moved,900);
       });});
       safely(function(){return keyboard.addListener("keyboardWillHide",function(){obPhone.kb();body.classList.remove("keyboard-open");moved();});});
       window.addEventListener("resize",function(){if(body.classList.contains("keyboard-open")&&obPhone.small()){moved();reveal();}});
+      return true;
     })();
     var p = Sona.getProfile();
     // AFTER THE PRICE (5 Oct 2026). Where Sona can sell, the ready screen's
@@ -802,8 +825,11 @@
         // on a button takes focus off the name box, and the keyboard went down
         // under the finger as the age was picked. The press keeps the focus
         // where it is (the way a chat app's Send keeps typing going); Continue
-        // and Done still close the keyboard.
-        ch.addEventListener("mousedown",function(e){e.preventDefault();});
+        // and Done still close the keyboard. Only in the iPhone app, which
+        // raises Continue above the keyboard: on the website nothing does, so
+        // there the tap still lets go of the box and the keyboard goes down,
+        // leaving Continue in sight.
+        if(nativeKeyboard)ch.addEventListener("mousedown",function(e){e.preventDefault();});
         ch.onclick=function(){Sona.sfx.tap();draft.childAge=ch.dataset.age;host.querySelectorAll(".sound").forEach(function(n){n.classList.remove("on");n.setAttribute("aria-pressed","false");});ch.classList.add("on");ch.setAttribute("aria-pressed","true");saveDraft();};
       });
     })();
@@ -846,6 +872,11 @@
     // screen a moment after the tap and re-arms it then).
     var settleTimer=0;
     function settle(){document.body.classList.add("ob-settling");clearTimeout(settleTimer);settleTimer=setTimeout(function(){document.body.classList.remove("ob-settling");},450);}
+    // A tap the pause turns away falls through to the page, and a press there
+    // takes the focus off the name box (on Android the keyboard went back
+    // down under a double tap on "Let's go!"). While the pause lasts a press
+    // moves no focus, except on the box itself.
+    document.addEventListener("mousedown",function(e){if(settling()&&!(e.target&&e.target.id==="obName"))e.preventDefault();},true);
     // LEAVING A STEP WITH THE KEYBOARD UP WAITS FOR THE KEYBOARD (15 Oct
     // 2026). The app gives the web view its height back only once the
     // keyboard starts down, so the next screen was laid out for the short
