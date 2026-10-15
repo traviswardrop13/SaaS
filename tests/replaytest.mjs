@@ -4,24 +4,24 @@
 // holds the rules; setup (onboarding.html) and the plan screen
 // (subscribe.html) say when.
 //
-// This suite runs the REAL recorder: posthog-js 1.438.12 (the version the
-// CDN served that day), loaded from node_modules in place of PostHog's CDN,
-// on pages served at https://speaksona.com (analytics.js records nowhere
-// else), against a fake PostHog that keeps every request. Its project
-// settings are as loose as PostHog allows (no input masking, console logs,
-// network bodies, canvas, heatmaps, dead clicks, exceptions, surveys), so
-// every guarantee below is the page's own and none is PostHog's default.
-// What is checked is what would actually be sent:
-//   - a recording happens where it should (not a vacuous pass), and nowhere
-//     else: not Settings, not a clinician's setup, not a test server;
-//   - no child's name, no parent's address, nothing typed, ever;
-//   - setup's speech therapy question and the screen that repeats its
+// This suite runs the REAL recorder: the posthog-js build speaksona.com
+// serves itself (public/vendor/posthog/static/<version>/, the one version
+// this suite checks), on pages served at https://speaksona.com (analytics.js
+// records nowhere else), against a fake PostHog that keeps every request.
+// Its project settings are as loose as PostHog allows (no input masking,
+// console logs, network bodies, canvas, heatmaps, dead clicks, exceptions,
+// surveys), so every guarantee below is the page's own, none PostHog's
+// default. What is checked is what would actually be sent:
+//   - a recording happens where it should (never a vacuous pass), and
+//     nowhere else: not Settings, not a child's tap on a locked game, not a
+//     clinician's setup, not a test server;
+//   - no child's name, no parent's address, nothing typed, ever, even for a
+//     name that is also a word on the page ("Echo") or inside one ("Max");
+//   - setup's speech therapy question and the ready screen that repeats its
 //     answer are never recorded, not even a pointer moving over them;
-//   - nothing after "Hand the phone to <Name>!".
-// Needs posthog-js: `npm install --no-save posthog-js@1.438.12` (CI's tests
-// job installs it beside playwright).
+//   - nothing after "Hand the phone to <Name>!";
+//   - PostHog's ordinary events go out exactly as PostHog wrote them.
 import { readFileSync, existsSync, statSync } from "node:fs";
-import { createRequire } from "node:module";
 import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -34,15 +34,14 @@ const ok = (name, cond, info) => {
 };
 async function scenario(label, run) { try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
 
-const require = createRequire(import.meta.url);
-let PH = null;
-try { PH = path.join(path.dirname(require.resolve("posthog-js/package.json")), "dist"); } catch (e) {}
-if (!PH || !existsSync(path.join(PH, "array.js")) || !existsSync(path.join(PH, "lazy-recorder.js"))) {
-  console.log("FAIL posthog-js is installed (npm install --no-save posthog-js@1.438.12)");
+const SRC = readFileSync(path.join(ROOT, "analytics.js"), "utf8");
+const PH_VERSION = (SRC.match(/PH_VERSION = "([0-9.]+)"/) || [])[1];
+const PH = path.join(ROOT, "vendor", "posthog", "static", String(PH_VERSION));
+if (!PH_VERSION || !existsSync(path.join(PH, "array.js")) || !existsSync(path.join(PH, "lazy-recorder.js"))) {
+  console.log("FAIL the posthog-js build analytics.js names is in public/vendor/posthog/static/" + PH_VERSION + "/");
   process.exit(1);
 }
-
-const SRC = readFileSync(path.join(ROOT, "analytics.js"), "utf8");
+const TODAY = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const TOKEN = (SRC.match(/POSTHOG_KEY = "(phc_[A-Za-z0-9]+)"/) || [])[1];
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", json: "application/json", wav: "audio/wav", mp3: "audio/mpeg", ico: "image/x-icon", webmanifest: "application/manifest+json" };
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "GET, POST, OPTIONS" };
@@ -88,12 +87,13 @@ async function world(browser, cfg = {}) {
   await context.addInitScript(() => { try { Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }); } catch (e) {} });
   if (cfg.phone) await context.addInitScript(phone, cfg.phone);
   if (cfg.seed) await context.addInitScript((seed) => { try { if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1"); for (const k in seed) localStorage.setItem(k, typeof seed[k] === "string" ? seed[k] : JSON.stringify(seed[k])); } catch (e) {} }, cfg.seed);
-  const w = { context, sent: [], assets: [], api: [], aborted: [] };
+  const w = { context, sent: [], assets: [], vendor: [], api: [], aborted: [] };
   await context.route("**/*", async (route) => {
     const req = route.request(), u = new URL(req.url());
     if (u.hostname === "speaksona.com" || u.hostname === "www.speaksona.com" || u.hostname === "127.0.0.1") {
       if (u.pathname.startsWith("/api/")) { w.api.push({ path: u.pathname, body: req.postData() }); return route.fulfill({ status: 503, contentType: "application/json", body: "{}" }); }
       if (cfg.stubs && cfg.stubs[u.pathname]) return route.fulfill({ status: 200, contentType: "text/html", body: cfg.stubs[u.pathname] });
+      if (u.pathname.indexOf("/vendor/posthog/") === 0) w.vendor.push(u.pathname);
       const p = u.pathname === "/" ? "/parents.html" : (u.pathname === "/try" ? "/try.html" : (u.pathname === "/for-slps" ? "/for-slps.html" : u.pathname));
       const f = file(p);
       if (!f) return route.fulfill({ status: 404, body: "" });
@@ -101,6 +101,7 @@ async function world(browser, cfg = {}) {
     }
     if (u.hostname === "us-assets.i.posthog.com") {
       w.assets.push(u.pathname);
+      // off speaksona.com analytics.js loads PostHog's own copy: the same build stands in for it
       if (u.pathname === "/static/array.js") return route.fulfill({ status: 200, headers: Object.assign({ "content-type": "text/javascript" }, CORS), body: readFileSync(path.join(PH, "array.js")) });
       if (/\/lazy-recorder\.js$/.test(u.pathname)) return route.fulfill({ status: 200, headers: Object.assign({ "content-type": "text/javascript" }, CORS), body: readFileSync(path.join(PH, "lazy-recorder.js")) });
       if (u.pathname === "/array/" + TOKEN + "/config.js") return route.fulfill({ status: 200, headers: Object.assign({ "content-type": "text/javascript" }, CORS), body: "window._POSTHOG_REMOTE_CONFIG=window._POSTHOG_REMOTE_CONFIG||{};window._POSTHOG_REMOTE_CONFIG[" + JSON.stringify(TOKEN) + "]={config:" + JSON.stringify(REMOTE) + ",siteApps:[]};" });
@@ -152,8 +153,12 @@ function nodes(rr) {
   }
   return out;
 }
+// The recorder loads after the page: a pointer moved before it runs is not
+// an interaction it saw, and a fresh recording waits for one before it sends.
+const recording = (page) => page.waitForFunction(() => window.posthog && window.posthog.sessionRecordingStarted && window.posthog.sessionRecordingStarted(), null, { timeout: 15000 });
 // A pointer path no other screen's taps would make: x stays under 12, where
-// no button of these pages starts, and each y is unique to this suite.
+// no button of these pages starts, and each y is unique within a scenario
+// and inside the 844 px tall screen (a move below it never reaches the page).
 async function mark(page, y) { for (let i = 0; i < 4; i++) { await page.mouse.move(3 + i * 2, y + i); await page.waitForTimeout(120); } }
 const marked = (rr, y) => [0, 1, 2, 3].some((i) => hasPos(rr, 3 + i * 2, y + i));
 async function next(page) { await page.evaluate(() => document.body.classList.remove("ob-settling", "price-settling")); await page.locator("#nextBtn").click(); }
@@ -163,7 +168,9 @@ const browser = await chromium.launch(launchOpts());
 try {
   // ── 0. the rules as written ──
   await scenario("analytics.js, as written", async () => {
-    ok("posthog-js 1.438.12 is the copy under test (the CDN's on 15 Oct 2026)", JSON.parse(readFileSync(path.join(PH, "..", "package.json"), "utf8")).version === "1.438.12");
+    ok("the vendored build is the version analytics.js names (" + PH_VERSION + ")", readFileSync(path.join(PH, "array.js"), "utf8").indexOf('LIB_VERSION="' + PH_VERSION + '"') >= 0);
+    ok("on speaksona.com the loader and the recorder come from this site", /PH_SRC = ON_SITE \? PH_SELF \+ "\/static\/" \+ PH_VERSION \+ "\/array\.js"/.test(SRC) && /p\.src = PH_SRC/.test(SRC) && /asset_host: ON_SITE \?/.test(SRC));
+    ok("only recordings are checked; ordinary events pass as PostHog wrote them", /if \(!ev \|\| ev\.event !== "\$snapshot"\) return ev;/.test(SRC));
     ok("recording is off at the start on every page", /disable_session_recording: true,/.test(SRC));
     ok("only speaksona.com itself records", /ON_SITE = HERE\.hostname === "speaksona\.com" \|\| HERE\.hostname === "www\.speaksona\.com"/.test(SRC));
     for (const [what, re] of [
@@ -176,30 +183,29 @@ try {
       ["autocapture off", /autocapture: false/],
       ["events uncompressed until they are scrubbed", /compress_events: false/],
       ["every box blocked", /blockSelector: "input, textarea, select, \[contenteditable\]"/],
-      ["every text through the scrubber", /maskTextSelector: "\*"/],
-      ["every event through the scrubber before it is sent", /before_send: beforeSend/],
+      ["the name's own spots recorded as [child]", /maskTextSelector: "\.ph-name"/],
+      ["every recording checked before it is sent", /before_send: beforeSend/],
       ["no canvas", /captureCanvas: \{ recordCanvas: false \}/],
       ["no request headers or bodies", /recordHeaders: false,[\s\S]{0,40}recordBody: false/],
     ]) ok("analytics.js: " + what, re.test(SRC));
   });
 
-  // ── 1. the scrubber ──
-  await scenario("the scrubber", async () => {
+  // ── 1. the check before sending ──
+  await scenario("the check before sending", async () => {
     const w = await world(browser, { seed: {
-      "sona.profile.v1": { childName: "Zephyrine", email: "Zeph.Parent@Example.com", onboarded: true },
+      "sona.profile.v1": { childName: "Max", email: "Zeph.Parent@Example.com", onboarded: true },
       "sona.profile.v1@k2": { childName: "Al", onboarded: true },
-      "sona.kids.v1": { active: "", list: [{ slot: "", name: "Zephyrine" }, { slot: "k2", name: "Al" }] },
+      "sona.kids.v1": { active: "", list: [{ slot: "", name: "Max" }, { slot: "k2", name: "Al" }] },
     } });
     await w.page.goto("https://speaksona.com/try");
-    await w.page.waitForFunction(() => window.SonaAnalytics && window.SonaAnalytics.redact);
-    const r = (s) => w.page.evaluate((s) => window.SonaAnalytics.redact(s), s);
-    ok("a name anywhere, any case", await r("Is ZEPHYRINE ready? zephyrine’s turn") === "Is [child] ready? [child]’s turn", await r("Is ZEPHYRINE ready? zephyrine’s turn"));
-    ok("a two-letter name only as a whole word (not inside Alba or also)", await r("Al, Alba and al’s friend also") === "[child], Alba and [child]’s friend also", await r("Al, Alba and al’s friend also"));
-    ok("an address, any case, before the name inside it", await r("write to zeph.parent@example.com") === "write to [email]", await r("write to zeph.parent@example.com"));
-    // a name changed later is still scrubbed: nothing is forgotten while the page is open
+    await w.page.waitForFunction(() => window.SonaAnalytics && window.SonaAnalytics.holdsName);
+    const h = (t) => w.page.evaluate((t) => window.SonaAnalytics.holdsName(t), t);
+    ok("a name as a word, any case, before an apostrophe", await h("is MAX ready?") && await h("max’s turn") && await h("Al’s turn"));
+    ok("not inside a longer word, nor glued to a hyphen (max-width, minmax, Alba, also)", !(await h("max-width: 560px; minmax(0,1fr); Alba also")));
+    ok("an address, any case", await h("write to zeph.parent@example.com"));
+    ok("the placeholder is not a name", !(await h("Turn on the mic so Echo can hear [child].")));
     await w.page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childName = "Quillon"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-    ok("a new name and the old one", await r("Quillon or Zephyrine") === "[child] or [child]", await r("Quillon or Zephyrine"));
-    ok("words that are not a name are left alone", await r("Sona practice is ready") === "Sona practice is ready");
+    ok("a new name and the old one both count (nothing is forgotten while the page is open)", await h("Quillon") && await h("Max"));
     await w.context.close();
   });
 
@@ -209,6 +215,7 @@ try {
     const { page } = w;
     await page.goto("https://speaksona.com/onboarding.html?utm_source=ad&fbclid=XYZ123");
     await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
+    await recording(page);
     await mark(page, 101);                          // the hello: recorded
     await next(page);
     await page.locator('[data-step="name"].on').waitFor();
@@ -272,8 +279,13 @@ try {
     const all = nodes(rr);
     const therapy = all.filter((n) => n.attributes && /\bph-no-capture\b/.test(n.attributes.class || "") && /\bstep\b/.test(n.attributes.class || ""));
     ok("setup: the therapy screen is an empty shape in every picture of the page", therapy.length > 0 && therapy.every((n) => !(n.childNodes || []).length && !("data-step" in n.attributes) && !("aria-pressed" in n.attributes)), therapy.slice(0, 2));
-    const lines = all.filter((n) => n.attributes && /\bready-lines\b/.test(n.attributes.class || ""));
-    ok("setup: the ready screen's lines are an empty shape in every picture", lines.length > 0 && lines.every((n) => !(n.childNodes || []).length && !("hidden" in n.attributes)), lines.slice(0, 2));
+    const blocked = (re) => all.filter((n) => n.attributes && /\bph-no-capture\b/.test(n.attributes.class || "") && re.test(n.attributes.class || ""));
+    const empty = (list) => list.length > 0 && list.every((n) => !(n.childNodes || []).length && Object.keys(n.attributes).every((k) => k === "class" || /^rr_/.test(k)));
+    ok("setup: the therapy screen is an empty shape, nothing but its class and size", empty(therapy));
+    ok("setup: the ready screen is an empty shape in every picture", !all.some((n) => n.attributes && n.attributes.id === "readyLines") && !/practice is ready/i.test(text));
+    ok("setup: no ready-screen line made it in some other way", !all.some((n) => n.attributes && /\bready-lines\b/.test(n.attributes.class || "")));
+    ok("setup: the clinician screens are empty shapes too", blocked(/\bstep\b/).length >= 2);
+    ok("setup: every PostHog request was read (none the test could not decode)", w.sent.every((x) => !x.raw), w.sent.filter((x) => x.raw).map((x) => x.path));
     const boxes = all.filter((n) => /^(input|textarea|select)$/i.test(n.tagName || ""));
     ok("setup: every box is an empty shape (no value, no type, no placeholder)", boxes.length > 0 && boxes.every((n) => !("value" in n.attributes) && !("placeholder" in n.attributes)), boxes.slice(0, 2));
     ok("setup: no keystroke or box value was recorded", !rr.some((e) => e.type === INCR && e.data.source === INPUT));
@@ -286,36 +298,96 @@ try {
     const bare = (q) => q && q.name === "" && q.isInitial === true && Object.keys(q).every((k) => ["name", "entryType", "startTime", "duration", "endTime", "timeOrigin", "timestamp", "isInitial"].includes(k));
     ok("setup: no console capture and no network request inside the recording (only the page's own load timing, no address)", plug.every((e) => e.data.plugin === "rrweb/network@1" && ((e.data.payload || {}).requests || []).every(bare)) && !/\/api\/|posthog\.com\/(e|s|flags)\//.test(JSON.stringify(rr)), plug.map((e) => e.data));
     ok("setup: no event was compressed past the scrubber", !rr.some((e) => e.cv));
-    ok("setup: PostHog loaded only itself, its settings and the recorder (no dead clicks, surveys, exceptions, web vitals, logs)", w.assets.every((p) => p === "/static/array.js" || /lazy-recorder\.js$/.test(p) || p.indexOf("/array/" + TOKEN + "/config") === 0), w.assets);
+    ok("setup: PostHog's code came from speaksona.com, the tested build, and nothing else of it loaded (no surveys, toolbar, logs, dead clicks, exceptions, web vitals)", JSON.stringify(w.vendor.slice().sort()) === JSON.stringify(["/vendor/posthog/static/" + PH_VERSION + "/array.js", "/vendor/posthog/static/" + PH_VERSION + "/lazy-recorder.js"]) && w.assets.every((p) => p.indexOf("/array/" + TOKEN + "/config") === 0), { vendor: w.vendor, cdn: w.assets });
     ok("setup: no event but setup's own and the recording", w.events().every((e) => ["$snapshot", "setup step", "$pageview", "$identify", "$set", "onboarding completed", "Lead", "CompleteRegistration", "weekly summary opted in", "$opt_in"].includes(e.event)), [...new Set(w.events().map((e) => e.event))]);
     ok("setup: no page error", w.errors.length === 0, w.errors);
     await w.context.close();
   });
 
-  // ── 3. the plan screen, in the app, as the offer ──
+  // ── 3. the plan screen, in the app, as the offer a grown-up opened ──
   await scenario("the plan screen as the offer, in the app", async () => {
-    const RECAP = { "sona.outcomes.v1": { R: { days: {} } } };
-    for (const [label, url, local] of [
-      ["after a first run (?first=1)", "https://speaksona.com/subscribe.html?first=1", RECAP],
-      ["a grey game (?from=slice)", "https://speaksona.com/subscribe.html?from=slice", {}],
+    const PRACTICED = { "sona.outcomes.v1": { R: { days: { [TODAY]: { a: 12, p: 9, tries: 12 } } } }, "sona.reps.v1": { d: TODAY, n: 12 } };
+    for (const [label, url, cfg] of [
+      ["from setup (?setup=1)", "https://speaksona.com/subscribe.html?setup=1", { app: "buy", stamp: "post", setUp: true, marker: true }],
+      ["after a first practice run (?first=1)", "https://speaksona.com/subscribe.html?first=1", { app: "buy", stamp: "kept", setUp: true, local: PRACTICED }],
     ]) {
-      const w = await world(browser, { phone: { app: "buy", stamp: "post", setUp: true, local } });
+      const w = await world(browser, { phone: cfg });
       await w.page.goto(url);
       await w.page.locator("body.offer").waitFor();
+      await recording(w.page);
+      const pill = await w.page.evaluate(() => (document.getElementById("offerPill") || {}).textContent || "");
       await mark(w.page, 701);
       await w.settle();
       const rr = w.rr(), text = w.text();
       ok("plan screen, " + label + ": a recording was sent", rr.some((e) => e.type === FULL), rr.length);
       ok("plan screen, " + label + ": the pointer was recorded", marked(rr, 701));
       ok("plan screen, " + label + ": the child's name is in nothing sent", !/\bmia\b/i.test(text), (text.match(/.{60}\bmia\b.{60}/i) || [])[0]);
-      ok("plan screen, " + label + ": the name was there to scrub", /\[child\]/.test(JSON.stringify(rr)));
-      const recap = nodes(rr).filter((n) => n.attributes && /\bph-no-capture\b/.test(n.attributes.class || "") && n.attributes.class.indexOf("card") >= 0);
+      ok("plan screen, " + label + ": the headline's name is recorded as [child]", /\[child\]/.test(JSON.stringify(rr)));
+      if (/first/.test(url)) {
+        ok("plan screen, " + label + ": the line on screen names what was practiced (the case this checks)", /practiced the R sound/.test(pill), pill);
+        ok("plan screen, " + label + ": …and that line is in nothing sent", !/practiced the|out loud/i.test(text));
+      }
+      const recap = nodes(rr).filter((n) => n.attributes && /\bph-no-capture\b/.test(n.attributes.class || "") && /\bcard\b/.test(n.attributes.class));
       ok("plan screen, " + label + ": the practice recap is an empty shape", recap.length > 0 && recap.every((n) => !(n.childNodes || []).length), recap.length);
       const door = url.split("?")[1];
       ok("plan screen, " + label + ": the address keeps only which door opened it", rr.filter((e) => e.type === META).every((e) => e.data.href === "https://speaksona.com/subscribe.html?" + door), rr.filter((e) => e.type === META).map((e) => e.data.href));
+      ok("plan screen, " + label + ": every PostHog request was read", w.sent.every((x) => !x.raw));
       ok("plan screen, " + label + ": no page error", w.errors.length === 0, w.errors);
       await w.context.close();
     }
+  });
+
+  // ── 3b. a name that is also a word on the page, or inside one ──
+  await scenario("names that are words", async () => {
+    // "Echo" is all over setup: no piece of recording holding it may go,
+    // and nothing may be swapped out of the page's own words either
+    const w = await world(browser, { seed: { "sona.obdraft.v1": { childName: "Echo", email: "" } } });
+    await w.page.goto("https://speaksona.com/onboarding.html");
+    await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
+    await recording(w.page);
+    await mark(w.page, 111);
+    await w.settle();
+    const sentText = JSON.stringify(w.rr().filter((e) => e.type === FULL || (e.type === INCR && e.data.source === 0)));
+    ok("Echo: no picture of the page holding the word was sent", !/\becho\b/i.test(sentText.replace(/"(_cssText|tagName|class|src|href)":"[^"]*"/g, "")), (sentText.match(/.{50}\becho\b.{50}/i) || [])[0]);
+    ok("Echo: no page word was swapped for [child]", !/\[child\]/.test(sentText) || !/I'm \[child\]/.test(sentText));
+    await w.context.close();
+    // "Max" sits inside max-width and minmax: those are the page's own code and stay as they are
+    const m = await world(browser, { seed: { "sona.profile.v1": { childName: "Max", onboarded: true } } });
+    await m.page.goto("https://speaksona.com/");
+    await recording(m.page);
+    await mark(m.page, 121);
+    await m.settle();
+    const rrm = m.rr();
+    ok("Max: the page was recorded (max-width is not a name)", rrm.some((e) => e.type === FULL) && marked(rrm, 121));
+    ok("Max: the page's styles went as written, not rewritten", /max-width/.test(JSON.stringify(rrm)) && !/\[child\]-width|min\[child\]/.test(JSON.stringify(rrm)));
+    await m.context.close();
+  });
+
+  // ── 3c. PostHog's ordinary events are not touched ──
+  await scenario("ordinary events", async () => {
+    const w = await world(browser, { seed: { "sona.profile.v1": { childName: "Eric", onboarded: true } } });
+    await w.page.goto("https://speaksona.com/check.html");
+    await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
+    await w.settle(2000);
+    const pv = w.events().filter((e) => e.event === "$pageview");
+    ok("a pageview went, with its time zone and browser as PostHog wrote them (Eric is in America)", pv.length > 0 && pv.every((e) => e.properties.$timezone === ZONE && !/\[child\]/.test(JSON.stringify(e))), pv.map((e) => e.properties.$timezone));
+    await w.context.close();
+  });
+
+  // ── 3d. an old answer painted into setup's hidden clinician screen ──
+  await scenario("an old clinician-screen answer", async () => {
+    const w = await world(browser, { seed: { "sona.profile.v1": { childName: "Zephyrine", onboarded: true, slpEvaluated: "yes", focusSounds: ["R"] } } });
+    await w.page.goto("https://speaksona.com/onboarding.html");
+    await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
+    const painted = await w.page.evaluate(() => !!document.querySelector('#obSlp .choice.on'));
+    await recording(w.page);
+    await mark(w.page, 131);
+    await w.settle();
+    const text = w.text();
+    ok("the old answer is painted in the page (the case this checks)", painted);
+    ok("setup was recorded", w.rr().some((e) => e.type === FULL) && marked(w.rr(), 131));
+    ok("no recording holds the question or the answer", !/seen a speech therapist/i.test(text) && !/"choice on"/.test(text));
+    await w.context.close();
   });
 
   // ── 4. speaksona.com and /try: recorded by themselves, nothing typed ──
@@ -324,6 +396,7 @@ try {
       const w = await world(browser);
       await w.page.goto(url);
       await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
+      await recording(w.page);
       if (type) await w.page.locator("#fEmail").fill("dad.parent@example.com");
       await mark(w.page, 801);
       await w.settle();
@@ -342,6 +415,8 @@ try {
     for (const [label, url, cfg, ready] of [
       ["Settings", "https://speaksona.com/settings.html", seeded, null],
       ["Settings › Your plan (the plan screen without an offer)", "https://speaksona.com/subscribe.html", { phone: { app: "buy", stamp: "post", setUp: true } }, null],
+      ["the offer a child opens by tapping a locked game (?from=slice)", "https://speaksona.com/subscribe.html?from=slice", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
+      ["the offer Home opens by itself (?from=home)", "https://speaksona.com/subscribe.html?from=home", { phone: { app: "buy", stamp: "post", setUp: true } }, "offer"],
       ["the speech check", "https://speaksona.com/check.html", {}, null],
       ["the clinician page", "https://speaksona.com/for-slps", {}, null],
       ["a clinician's own setup (?slp=1)", "https://speaksona.com/onboarding.html?slp=1", {}, "slp"],
@@ -350,12 +425,13 @@ try {
       const w = await world(browser, cfg);
       await w.page.goto(url.replace("127.0.0.1:1", "127.0.0.1"));
       await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded).catch(() => {});
+      if (ready === "offer") await w.page.locator("body.offer").waitFor();
       if (ready === "slp" || ready === "local") {
         await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
         if (ready === "local") await next(w.page).catch(() => {});
         if (ready === "slp") await w.page.locator("#obName").fill("Zephyrine").catch(() => {});
       }
-      await mark(w.page, 901);
+      await mark(w.page, 151);
       await w.settle(2000);
       ok(label + ": nothing recorded", w.snaps().length === 0, w.snaps().length);
       ok(label + ": the recorder was never even loaded", !w.assets.some((p) => /lazy-recorder/.test(p)), w.assets);
@@ -367,11 +443,13 @@ try {
   await scenario("the pages", async () => {
     const ob = readFileSync(path.join(ROOT, "onboarding.html"), "utf8"), sub = readFileSync(path.join(ROOT, "subscribe.html"), "utf8");
     ok("onboarding.html: the therapy screen carries ph-no-capture", /<div class="step ph-no-capture" data-step="therapy">/.test(ob));
-    ok("onboarding.html: the ready screen's lines carry ph-no-capture", /class="ready-lines ph-no-capture" id="readyLines"/.test(ob));
+    ok("onboarding.html: the ready screen, the clinician screens and the build overlay carry ph-no-capture", /<div class="step ph-no-capture" data-step="ready">/.test(ob) && /<div class="step ph-no-capture" data-step="slp">/.test(ob) && /<div class="step ph-no-capture" data-step="email">/.test(ob) && /d\.className="show ph-no-capture"/.test(ob));
+    ok("onboarding.html: every spot that shows the name is a ph-name", ["intName", "micName", "achName", "emName"].every((id) => new RegExp('class="ph-name" id="' + id + '"').test(ob)));
     ok("onboarding.html: never recorded on the therapy, ready or clinician screens", /NO_REPLAY=\{therapy:1,ready:1,slp:1,email:1\}/.test(ob));
     ok("onboarding.html: off before a screen is painted, on only after", /var key=ORDER\[idx\];\s*replayAt\(key,false\);/.test(ob) && /stepSeen\(key\);\s*replayAt\(key,true\);\s*\}/.test(ob));
     ok("onboarding.html: the hand-off ends it for good", /function showHandoff\(\)\{[\s\S]{0,140}replayDone=true;[^\n]*SonaAnalytics\.replay\(false\)/.test(ob));
-    ok("subscribe.html: on only once the offer is painted", /fitOffer\(\);[\s\S]{0,400}SonaAnalytics\.replay\(true\)/.test(sub) && (sub.match(/SonaAnalytics\.replay\(/g) || []).length === 1);
+    ok("subscribe.html: on only once the offer is painted, and only for a grown-up's door", /fitOffer\(\);[\s\S]{0,700}if \(OFFER_SETUP \|\| OFFER_FIRST\) \{ try \{ if \(window\.SonaAnalytics && SonaAnalytics\.replay\) SonaAnalytics\.replay\(true\)/.test(sub) && (sub.match(/SonaAnalytics\.replay\(/g) || []).length === 1);
+    ok("subscribe.html: the headline's name is a ph-name, and the practice line is blocked", /nm\.className = "ph-name"/.test(sub) && /class="offer-pill ph-no-capture" id="offerPill"/.test(sub));
     ok("subscribe.html: the recap card carries ph-no-capture", /class="card ph-no-capture" id="recapCard"/.test(sub));
   });
 } finally {

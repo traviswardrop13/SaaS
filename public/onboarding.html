@@ -236,7 +236,7 @@
 
     <!-- interests (themes the games + daily practice) -->
     <div class="step" data-step="interests">
-      <div class="qh">What does <span id="intName">your child</span> love? <svg viewBox="0 0 64 64" style="width:20px;height:20px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></div>
+      <div class="qh">What does <span class="ph-name" id="intName">your child</span> love? <svg viewBox="0 0 64 64" style="width:20px;height:20px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></div>
       <p class="muted">We wrap their practice sounds in what they love — so the games feel made just for them. Pick one or a few.</p>
       <div class="bgrid" id="obInterests"></div>
     </div>
@@ -310,15 +310,16 @@
          clinician setup never does. This screen's Continue is where the
          profile is saved. It replaced the 2-second "Building…" beat for
          parents. -->
-    <div class="step" data-step="ready">
+    <!-- ph-no-capture (REPLAY1): this screen repeats the speech therapy
+         answer (#readyLines), and its size alone would tell it, so no
+         recording ever holds it; recording is also off while it shows -->
+    <div class="step ph-no-capture" data-step="ready">
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
       <ul class="ready-chips" id="readyChips" aria-label="What you told us"></ul>
       <p class="muted ready-note">You can change sounds anytime in Settings.</p>
       <section class="ready-about" aria-labelledby="readyAboutHead">
         <h2 class="ready-kicker" id="readyAboutHead">About Sona</h2>
-        <!-- ph-no-capture: these lines repeat the speech therapy answer,
-             so a recording never holds them, even hidden (REPLAY1) -->
-        <ul class="ready-lines ph-no-capture" id="readyLines" hidden></ul>
+        <ul class="ready-lines" id="readyLines" hidden></ul>
         <div class="ready-rachel">
           <img class="ready-rachel-photo" src="/assets/rachel-wardrop-profile.jpg" width="112" height="112" alt="Rachel Wardrop" />
           <p class="ready-rachel-line" id="readyRachel">Built with Rachel, <span class="nobr">MS, CF-SLP</span>, a pediatric <span class="nobr">speech-language</span> pathologist in her clinical fellowship.</p>
@@ -330,7 +331,7 @@
     <!-- The permission belongs to the grown-up's tap, before the handoff. -->
     <div class="step" data-step="mic">
       <div class="qh">Let Echo hear you</div>
-      <p class="muted">Turn on the mic so Echo can hear <span id="micName">your child</span>.</p>
+      <p class="muted">Turn on the mic so Echo can hear <span class="ph-name" id="micName">your child</span>.</p>
       <p class="muted" id="micPromise" style="margin-top:14px;font-size:13px;line-height:1.55;"></p>
       <p id="micStatus" role="status" aria-live="polite"></p>
       <button type="button" class="skip" id="micNotNow">Not now</button>
@@ -341,13 +342,15 @@
     <!-- The child takes over only when the grown-up is ready. No email box
          here since 13 Oct 2026: it comes before the price, on its own step. -->
     <div class="step" data-step="achieve">
-      <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
+      <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span class="ph-name" id="achName">your child</span>!</div>
       <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
     <!-- slp -->
-    <div class="step" data-step="slp">
+    <!-- ph-no-capture (REPLAY1): never shown to a parent, but a set-up
+         profile from before 19 Sep 2026 can paint an old answer into it -->
+    <div class="step ph-no-capture" data-step="slp">
       <div class="qh">Has your child seen a speech therapist?</div>
       <p class="muted">Optional — helps us tailor the plan. (For parents.)</p>
       <div class="choices" id="obSlp">
@@ -378,7 +381,7 @@
          deliberately NOT promised here — it is a Vercel cron that fails
          closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
          promise that depends on environment variables is not a promise. -->
-    <div class="step" data-step="email">
+    <div class="step ph-no-capture" data-step="email">
       <div class="qh">Your clinician account</div>
       <!-- The code and key CONNECT a family to the dashboard (24 Sep 2026).
            "so Sona is free for them" was the grant a link used to be; what is
@@ -392,7 +395,7 @@
            holding a clinician's link (sona.slp, slpok, slpunlock, slpticket),
            or set up by a clinician, can never turn it on (boardAllowed's
            "clinic"), so none of their families is on it. -->
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. If Sona offers its Practice Board, it stays off on any phone that holds your link. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b class="ph-name" id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. If Sona offers its Practice Board, it stays off on any phone that holds your link. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -868,8 +871,8 @@
     }
 
     // REPLAY1 (15 Oct 2026): PostHog may record a parent's setup
-    // (analytics.js, REPLAY), with every name and address replaced and every
-    // box an empty shape. It goes off BEFORE the speech therapy question or
+    // (analytics.js, REPLAY), the name only ever as "[child]" (ph-name) and
+    // every box an empty shape. It goes off BEFORE the speech therapy question or
     // the ready screen (which repeats the answer, and whose size alone would
     // tell it) is painted, and on again only once a screen without them is
     // up, so a tap on Yes or Not right now is never recorded. Never for a
@@ -952,7 +955,7 @@
       finish();
     }
     function showBuild(done){
-      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show";
+      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show ph-no-capture";
       d.setAttribute("role","status");d.setAttribute("aria-live","polite");
       d.innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
       document.body.appendChild(d);

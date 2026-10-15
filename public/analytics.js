@@ -11,11 +11,13 @@
  * Session replay (REPLAY1, 15 Oct 2026) is OFF everywhere but four grown-up
  * screens on speaksona.com (see REPLAY below): the home page, /try, parent
  * setup (the page turns it on and off screen by screen, never past the
- * hand-off) and the plan screen while it shows the offer. On those, before
- * anything leaves the phone, every child's name and parent email this phone
- * knows is replaced ("[child]", "[email]"), every box a grown-up types in is
- * recorded as an empty shape, and setup's speech therapy question and the
- * summary screen after it are not recorded at all.
+ * hand-off) and the plan screen's offer when a grown-up opened it (from
+ * setup or after the first practice run). On those, the child's name is
+ * recorded as "[child]" where the page shows it, a piece of recording that
+ * would still hold any child's name or parent's email this phone knows is
+ * not sent at all, every box a grown-up types in is an empty shape, and
+ * setup's speech therapy question and its ready screen (which repeats the
+ * answer) are never in a recording.
  *
  * Identity is the anonymous family id (Sona.fid) — never a name or an email.
  * Event properties pass a hard whitelist; free-form data never leaves.
@@ -53,6 +55,19 @@
     };
   }
 
+  // WHERE WE ARE (REPLAY1). On speaksona.com itself (the app loads the same
+  // site) PostHog's code comes from this site, pinned to the one version
+  // tests/replaytest.mjs plays (public/vendor/posthog/static/<version>/):
+  // what records a parent's setup is exactly what was checked, and no other
+  // PostHog extension (surveys, toolbar, logs…) can load, since this site
+  // serves only these two files. Anywhere else (a preview build, a test
+  // server) it is PostHog's own latest copy, and nothing is ever recorded.
+  var HERE = window.location || {};
+  var ON_SITE = HERE.hostname === "speaksona.com" || HERE.hostname === "www.speaksona.com";
+  var PATH = HERE.pathname || "";
+  var PH_VERSION = "1.438.12", PH_SELF = "/vendor/posthog";
+  var PH_SRC = ON_SITE ? PH_SELF + "/static/" + PH_VERSION + "/array.js" : "https://us-assets.i.posthog.com/static/array.js";
+
   // Official PostHog loader snippet (queues calls, then loads posthog-js).
   !(function (t, e) {
     var o, n, p, r;
@@ -70,7 +85,7 @@
         ((p = t.createElement("script")).type = "text/javascript"),
           (p.crossOrigin = "anonymous"),
           (p.async = !0),
-          (p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js"),
+          (p.src = PH_SRC),
           (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r);
         var u = e;
         for (
@@ -106,28 +121,37 @@
   //   - "/onboarding.html", the parent's setup (never a clinician's, ?slp=):
   //     the page calls SonaAnalytics.replay(on) for each screen;
   //   - "/subscribe.html": the page calls replay(true) once the offer is up,
-  //     never for Settings › Your plan.
+  //     and only when a grown-up opened it (?setup=1, ?first=1): never for a
+  //     child's tap on a locked game, Home's own offer, or Settings.
   // Recording starts as OFF at init everywhere and is only ever switched on
   // by an explicit call, so a page that forgets to call records nothing.
-  var HERE = window.location || {};
-  var ON_SITE = HERE.hostname === "speaksona.com" || HERE.hostname === "www.speaksona.com";
-  var PATH = HERE.pathname || "";
   var AUTO_PATHS = { "/": 1, "/parents.html": 1, "/try": 1, "/try.html": 1 };
   var REPLAY_AUTO = ON_SITE && !NATIVE && !window.__sonaFamilyRedirect && AUTO_PATHS[PATH] === 1;
   var REPLAY_PAGE = REPLAY_AUTO || (ON_SITE && ((PATH === "/onboarding.html" && !/[?&]slp=/.test(HERE.search || "")) || PATH === "/subscribe.html"));
 
-  // WHAT A RECORDING MAY NEVER CARRY: every child's name and grown-up's email
-  // this phone knows. Read from the profiles, the kids list and setup's draft
-  // (all in localStorage) and from the boxes being typed in right now, each
-  // time something is about to be recorded or sent, and never forgotten
-  // while the page is open (a name changed on Back is still scrubbed).
+  // WHAT A RECORDING MAY NEVER CARRY: any child's name or grown-up's email
+  // this phone knows (the profiles, the kids list and setup's draft, in
+  // localStorage; nothing is forgotten while the page is open, so a name
+  // changed on Back still counts). Two locks, no word swapping:
+  //   1. Where a page shows the name, it sits in an element of class
+  //      "ph-name", whose words the recorder writes as "[child]" whatever
+  //      they are (maskTextFn below), so neither the name nor its length
+  //      is recorded.
+  //   2. Before a piece of recording is sent, every word in it a person
+  //      could read (text, and the attributes in READ_ATTR) is checked for
+  //      any of those names, as a whole word, and those addresses. A piece
+  //      that holds one is not sent at all. Replacing the name there instead
+  //      would tell it: "Will" taken out of "Echo will listen", or "max"
+  //      out of "max-width", reads straight back.
+  // Ordinary events are never touched: track() already lets only fixed
+  // codes through, and PostHog's own fields stay as PostHog wrote them.
   var KEEP_KEYS = { childName: "n", name: "n", email: "m", parentEmail: "m" };
-  var BOXES = ["obName", "updEmail", "obEmail", "fEmail", "remindEmail"];
-  var seen = { n: {}, m: {} }, seenVer = 0, rawSeen = {}, scrubbers = null, scrubVer = -1;
+  var seen = { n: {}, m: {} }, seenVer = 0, rawSeen = {}, finders = null, findVer = -1;
   function keep(kind, v) {
     v = typeof v === "string" ? v.replace(/^\s+|\s+$/g, "") : "";
     if (!v || v.length > 200) return;
     var k = v.toLowerCase();
+    if (k === "child" || k === "email") return;   // the placeholder's own word
     if (!seen[kind][k]) { seen[kind][k] = v; seenVer++; }
   }
   function walk(v, depth) {
@@ -150,60 +174,62 @@
         try { walk(JSON.parse(raw), 0); } catch (e) {}
       }
     } catch (e) {}
-    for (var b = 0; b < BOXES.length; b++) {
-      try { var el = document.getElementById(BOXES[b]); if (el && el.value) keep(/mail/i.test(BOXES[b]) ? "m" : "n", el.value); } catch (e) {}
-    }
   }
   function reEsc(s) { return s.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&"); }
-  // A name of three letters or more is replaced wherever it appears, inside
-  // a longer word too (safer, and only the replay's words suffer). One or
-  // two letters only as a whole word, or every "a" and "Jo" would go.
-  // Addresses first: an address can hold the child's name.
-  var LETTER = "A-Za-z0-9\\u00C0-\\u024F";
-  function buildScrubbers() {
-    if (scrubVer === seenVer && scrubbers) return scrubbers;
-    var out = [], kinds = [["m", "[email]"], ["n", "[child]"]];
-    for (var t = 0; t < kinds.length; t++) {
-      var list = [];
-      for (var k in seen[kinds[t][0]]) if (Object.prototype.hasOwnProperty.call(seen[kinds[t][0]], k)) list.push(seen[kinds[t][0]][k]);
-      list.sort(function (a, b) { return b.length - a.length; });
-      for (var i = 0; i < list.length; i++) {
-        var e = reEsc(list[i]);
-        if (list[i].length >= 3) out.push([new RegExp(e, "gi"), kinds[t][1]]);
-        else out.push([new RegExp("(^|[^" + LETTER + "])" + e + "(?![" + LETTER + "])", "gi"), "$1" + kinds[t][1]]);
-      }
-    }
-    scrubVer = seenVer; scrubbers = out;
+  // a name counts only as a whole word: not inside a longer word, and not
+  // glued to a hyphen or underscore ("max" is not in "max-width")
+  var LETTER = "A-Za-z0-9_\\-\\u00C0-\\u024F\\u0370-\\u03FF\\u0400-\\u04FF\\u1E00-\\u1EFF";
+  function buildFinders() {
+    if (findVer === seenVer && finders) return finders;
+    var out = [], k;
+    for (k in seen.m) if (Object.prototype.hasOwnProperty.call(seen.m, k)) out.push(new RegExp(reEsc(seen.m[k]), "i"));
+    for (k in seen.n) if (Object.prototype.hasOwnProperty.call(seen.n, k)) out.push(new RegExp("(^|[^" + LETTER + "])" + reEsc(seen.n[k]) + "(?![" + LETTER + "])", "i"));
+    findVer = seenVer; finders = out;
     return out;
   }
-  function scrub(s) {
-    if (typeof s !== "string" || !s) return s;
-    var list = buildScrubbers();
-    for (var i = 0; i < list.length; i++) s = s.replace(list[i][0], list[i][1]);
-    return s;
+  function holds(s) {
+    if (typeof s !== "string" || !s) return false;
+    var list = buildFinders();
+    for (var i = 0; i < list.length; i++) if (list[i].test(s)) return true;
+    return false;
   }
-  // Every string in an event, at any depth, but never the ids PostHog needs
-  // to file it (a name that happens to sit inside a random id would break
-  // the event, not hide anything). Too deep to walk means not sent.
-  var IDS = { token: 1, distinct_id: 1, $session_id: 1, $window_id: 1, $device_id: 1, $anon_distinct_id: 1, uuid: 1, $insert_id: 1 };
-  function scrubDeep(v, depth) {
-    if (depth > 500) throw new Error("too deep");
-    if (typeof v === "string") return scrub(v);
-    if (!v || typeof v !== "object") return v;
-    if (Object.prototype.toString.call(v) === "[object Array]") { for (var i = 0; i < v.length; i++) v[i] = scrubDeep(v[i], depth + 1); return v; }
-    for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k) && !(depth < 2 && IDS[k])) v[k] = scrubDeep(v[k], depth + 1);
-    return v;
+  // The words a person reads. Classes, styles, ids, SVG shapes, tag names and
+  // stylesheets are the page's own code, never a name, and are not read.
+  var READ_ATTR = /^(aria-|data-|title$|alt$|placeholder$|value$|label$|content$|href$|src$|srcset$|name$|for$)/i;
+  var STYLE_SOURCES = { 8: 1, 13: 1, 15: 1 };   // rrweb: stylesheet rule, style declaration, adopted stylesheet
+  function attrsHold(map) {
+    for (var a in map) if (Object.prototype.hasOwnProperty.call(map, a) && typeof map[a] === "string" && READ_ATTR.test(a) && holds(map[a])) return true;
+    return false;
   }
-  // The last check before anything is sent, for every event (recordings
-  // included): scrubbed, or dropped if scrubbing fails. Never sent as it was.
+  function carries(v, key, parent, depth) {
+    if (depth > 500) return true;                  // too deep to read is not sent
+    if (typeof v === "string") {
+      if (key === "tagName" || key === "_cssText" || key === "rule" || key === "cssText") return false;
+      if (key === "textContent" && parent && parent.isStyle) return false;
+      return holds(v);
+    }
+    if (!v || typeof v !== "object") return false;
+    if (v.type === 3 && v.data && STYLE_SOURCES[v.data.source]) return false;
+    var i;
+    if (Object.prototype.toString.call(v) === "[object Array]") {
+      for (i = 0; i < v.length; i++) if (carries(v[i], key, v, depth + 1)) return true;
+      return false;
+    }
+    for (i in v) {
+      if (!Object.prototype.hasOwnProperty.call(v, i)) continue;
+      if (i === "attributes" && v[i] && typeof v[i] === "object" && Object.prototype.toString.call(v[i]) !== "[object Array]") { if (attrsHold(v[i])) return true; continue; }
+      if (carries(v[i], i, v, depth + 1)) return true;
+    }
+    return false;
+  }
+  // Only recordings are checked; a piece that holds a name or an address,
+  // or that cannot be checked, is dropped. Never sent as it was.
   function beforeSend(ev) {
+    if (!ev || ev.event !== "$snapshot") return ev;
     try {
       remember();
       if (!seenVer) return ev;
-      if (ev && ev.properties) ev.properties = scrubDeep(ev.properties, 0);
-      if (ev && ev.$set) ev.$set = scrubDeep(ev.$set, 0);
-      if (ev && ev.$set_once) ev.$set_once = scrubDeep(ev.$set_once, 0);
-      return ev;
+      return carries(ev.properties && ev.properties.$snapshot_data, "", null, 0) ? null : ev;
     } catch (e) { return null; }
   }
   // The page's own address only, for the replay's page marker: no query
@@ -223,9 +249,6 @@
       return { name: u + (keepQ.length ? "?" + keepQ.join("&") : "") };
     } catch (e) { return null; }
   }
-  // Only the words a person reads in an attribute go through the scrubber
-  // (classes, styles and picture addresses are left alone).
-  var WORDY = /^(aria-|data-|title$|alt$|placeholder$|value$|label$|content$)/i;
 
   window.posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,
@@ -244,6 +267,8 @@
     enable_recording_console_log: false,
     disable_surveys: true,              // nothing pops up over a child's screen
     before_send: beforeSend,
+    // On speaksona.com the recorder loads from this site too (see WHERE WE ARE)
+    asset_host: ON_SITE ? HERE.protocol + "//" + HERE.host + PH_SELF : undefined,
     // Each of these is the client's word, which PostHog's project settings
     // cannot loosen (checked against posthog-js 1.438.12, REPLAY1).
     session_recording: {
@@ -253,10 +278,10 @@
       maskInputFn: function () { return "[typed]"; },
       // every box is an empty shape: no value, no keystrokes, no length
       blockSelector: "input, textarea, select, [contenteditable]",
-      maskTextSelector: "*",
-      maskTextFn: function (text) { remember(); return scrub(text); },
-      maskAllElementAttributes: false,
-      maskAttributeFn: function (name, value) { return WORDY.test(name) ? scrub(value) : value; },
+      // a ph-name element's words are recorded as "[child]", whatever they are
+      maskTextSelector: ".ph-name",
+      maskTextFn: function () { return "[child]"; },
+      maskAllElementAttributes: false,  // the check before sending reads the attributes people read
       maskCapturedNetworkRequestFn: pageOnly,
       recordHeaders: false,
       recordBody: false,
@@ -282,10 +307,10 @@
     },
     identify: function (id) { try { if (id) window.posthog.identify(String(id)); } catch (e) {} },
     reset: function () { try { window.posthog.reset(); } catch (e) {} },
-    // the scrubber itself, for the tests (replaytest) and nothing else
-    redact: function (text) { remember(); return scrub(String(text)); },
+    // would a recording holding this be dropped? For the tests (replaytest) only
+    holdsName: function (text) { remember(); return holds(String(text)); },
     // replay(true) records from now on, replay(false) stops (what was
-    // already recorded is sent, scrubbed). Nothing on a page outside REPLAY.
+    // already recorded is sent, after the check). Nothing outside REPLAY.
     // A recording also needs "Record user sessions" on in PostHog.
     replay: function (on) {
       if (!REPLAY_PAGE) return;

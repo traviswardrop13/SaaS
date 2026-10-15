@@ -414,7 +414,9 @@
          script, so nothing here names a game or a count that can go stale. -->
     <section id="offerHero" hidden aria-labelledby="offerTitle">
       <div class="offer-art" id="offerArt" aria-hidden="true"></div>
-      <p class="offer-pill" id="offerPill" hidden></p>
+      <!-- ph-no-capture (REPLAY1): the line names the child and what they
+           just practiced, so a recording never holds it -->
+      <p class="offer-pill ph-no-capture" id="offerPill" hidden></p>
       <h1 id="offerTitle">Unlock every game</h1>
       <p class="offer-sub" id="offerSub"></p>
       <p class="offer-unl" id="offerUnl">Unlimited access</p>
@@ -1677,9 +1679,20 @@
         // From setup the headline carries on from the screen the parent just
         // left ("<Name>'s practice is ready"). It names no sound: setup
         // preselects one, so a sound here could be one nobody chose.
-        document.getElementById("offerTitle").textContent = OFFER_SETUP ? (name ? name + "'s practice is ready" : "Practice is ready")
-          : game ? "Unlock " + game.name + ", and every other game"
-          : name ? "Unlock every game for " + name : "Unlock every game";
+        // The name sits in its own span (ph-name), which a session recording
+        // writes as "[child]" (REPLAY1, analytics.js)
+        var titleEl = document.getElementById("offerTitle"), named = function (before, after) {
+          var nm = document.createElement("span"); nm.className = "ph-name"; nm.textContent = name;
+          titleEl.textContent = "";
+          if (before) titleEl.appendChild(document.createTextNode(before));
+          titleEl.appendChild(nm);
+          if (after) titleEl.appendChild(document.createTextNode(after));
+        };
+        if (OFFER_SETUP && name) named("", "'s practice is ready");
+        else if (OFFER_SETUP) titleEl.textContent = "Practice is ready";
+        else if (game) titleEl.textContent = "Unlock " + game.name + ", and every other game";
+        else if (name) named("Unlock every game for ", "");
+        else titleEl.textContent = "Unlock every game";
         // WHO THE GAMES ARE FOR, not how many (Travis, 1 Oct 2026: "a
         // different way to say 6 more games today, like more games for
         // littles and for bigs ... new ones on the way is fine"). Read from
@@ -1718,9 +1731,12 @@
         if (line) { var pill = document.getElementById("offerPill"); pill.textContent = line; pill.hidden = false; }
         fitOffer();
         // REPLAY1 (15 Oct 2026): PostHog may record the offer, once it is
-        // painted, with the child's name replaced and no box's contents
-        // (analytics.js, REPLAY). Settings › Your plan never calls this.
-        try { if (window.SonaAnalytics && SonaAnalytics.replay) SonaAnalytics.replay(true); } catch (e) {}
+        // painted, the name only as "[child]" and no box's contents
+        // (analytics.js, REPLAY), and only when a grown-up opened it: from
+        // setup, or after the first practice run through the grown-ups check.
+        // A child's tap on a locked game, Home's own offer and Settings ›
+        // Your plan never record.
+        if (OFFER_SETUP || OFFER_FIRST) { try { if (window.SonaAnalytics && SonaAnalytics.replay) SonaAnalytics.replay(true); } catch (e) {} }
       } catch (e) {}
     })();
 
