@@ -29,9 +29,11 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  * address>`, a set of device ids, no address in it, 120 days from the last
  * post) has its numbers kept. Asking is limited: once a week a phone, five
  * links a mailbox in 180 days (a fixed window from the first), 300 a day in
- * all, and only a link Resend took counts; a phone nobody confirms gives up
- * after eight weeks (sona.js), so a mistyped address hears at most five
- * times. An unconfirmed post, and one for
+ * all, and only a link Resend took counts. A phone nobody confirms stops
+ * asking after eight weeks (sona.js) and only checks once a month, quietly
+ * (`quiet`: no numbers, never a link), so a mistyped address hears at most
+ * five times in a window and a late tap still starts the report. An
+ * unconfirmed post, and one for
  * an unsubscribed address, get the same answer ("pending"), so the route says
  * nothing about anyone's mailbox; a confirmed phone of an unsubscribed
  * address is answered "off" (its confirmation kept fresh, so it keeps
@@ -74,7 +76,7 @@ const SOUND_LABEL: Record<string, string> = { THV: "TH (v)" };
 
 export type Kid = { i?: string; d: number; g: number; gw: number; r: number; p: number; s: string[] };
 export type Week = { wk: string; kids: Kid[] };
-export type Snapshot = { email: string; dev: string; weeks: Week[] };
+export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean };
 
 export const weekKey = (wk: string) => "report:wk:" + wk;
 export const sentKey = (wk: string, email: string) => "report:sent:" + wk + ":" + email;
@@ -160,7 +162,9 @@ export function validate(body: unknown, now: number = Date.now()): Snapshot | nu
     if (weeks.some((x) => x.wk === o.wk)) return null;
     weeks.push({ wk: o.wk, kids: (o.kids as unknown[]).map(kidOk).filter((k): k is Kid => k !== null) });
   }
-  return { email, dev, weeks };
+  // quiet: a phone that gave up waiting checks, with no numbers, whether the
+  // address confirmed; it never asks for a link
+  return b.quiet === true ? { email, dev, weeks, quiet: true } : { email, dev, weeks };
 }
 
 /** In `email:unsub` under this exact address or its plain mailbox; null when the store did not answer. */
@@ -234,15 +238,21 @@ async function askConfirm(snap: Snapshot, h: string, kv: Kv, f: Fetch, now: numb
   const countKey = "report:askn:" + h, dayKey = "report:asks:" + new Date(now).toISOString().slice(0, 10), slot = "report:ask:" + h + ":" + snap.dev;
   // a counter's time limit is set by its first step; if that call was lost, the next one sets it
   const bump = async (key: string, sec: number) => {
-    const n = Number(await kv(["INCR", key]));
+    const raw = await kv(["INCR", key]);
+    if (raw === undefined || raw === null) return NaN;
+    const n = Number(raw);
     if (n === 1 || Number(await kv(["TTL", key])) === -1) await kv(["EXPIRE", key, sec]);
     return n;
   };
   if ((await kv(["SET", slot, String(now), "NX", "EX", 7 * 86400])) !== "OK") return false;
+  // a step the store did not answer gives nothing back that it may never have taken
   const day = await bump(dayKey, 2 * 86400);
+  if (!Number.isFinite(day)) { await kv(["DEL", slot]); return false; }
   if (!(day >= 1 && day <= ASK_CAP)) { await kv(["DECR", dayKey]); await kv(["DEL", slot]); return false; } // tomorrow may ask
   const n = await bump(countKey, ASK_WINDOW_SEC);
-  if (!(n >= 1 && n <= ASKS_PER_MAILBOX)) { await kv(["DECR", dayKey]); return false; }
+  if (!Number.isFinite(n)) { await kv(["DECR", dayKey]); await kv(["DEL", slot]); return false; }
+  // over the mailbox's five: nothing sent, so the counts stay "links sent (or in flight)"
+  if (!(n >= 1 && n <= ASKS_PER_MAILBOX)) { await kv(["DECR", countKey]); await kv(["DECR", dayKey]); return false; }
   const confirmUrl = `https://speaksona.com/api/report/confirm?e=${encodeURIComponent(snap.email)}&d=${snap.dev}&k=${confirmToken(snap.email, snap.dev, cfg.secret)}`;
   const unsubUrl = unsubUrlFor(snap.email, cfg.secret);
   const m = renderConfirm(confirmUrl, unsubUrl, cfg.postal);
@@ -287,7 +297,7 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
   const unsub = await suppressed(snap.email, kv);
   if (unsub === null) return "error";
   if (Number(yes) !== 1) {
-    if (!unsub) { try { await askConfirm(snap, h, kv, f, now, cfg); } catch { /* best effort: the next post asks again */ } }
+    if (!unsub && !snap.quiet) { try { await askConfirm(snap, h, kv, f, now, cfg); } catch { /* best effort: the next post asks again */ } }
     return "pending";
   }
   // a confirmed phone of an unsubscribed address keeps its confirmation, so a

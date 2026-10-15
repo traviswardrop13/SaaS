@@ -150,6 +150,20 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
     const devs = Array.from({ length: 40 }, (_, i) => i.toString(16).padStart(32, "a"));
     await Promise.all(devs.map((dv) => R.store(R.validate({ email: "burst@example.com", dev: dv, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d5.cmd, slowSend, THU)));
     ok("forty posts at once from forty new phones send at most " + R.ASKS_PER_MAILBOX + " links (the limits are taken atomically, before the send)", outbox.length - out3 === R.ASKS_PER_MAILBOX, outbox.length - out3);
+    // a lost INCR reply gives nothing back it never took: the day's count never goes below zero
+    const d7 = store(); const out4 = outbox.length; let lose = true;
+    const flaky = async (c) => { if (lose && c[0] === "INCR") { lose = false; return undefined; } return d7.cmd(c); };
+    await R.store(R.validate({ email: "blip@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), flaky, fakeFetch, THU);
+    await R.store(R.validate({ email: "next@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), flaky, fakeFetch, THU);
+    await R.store(R.validate({ email: "blip@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), flaky, fakeFetch, THU + 60000);
+    ok("a store that drops one answer neither blocks the day (its count never goes below zero) nor the phone (its slot is freed)", Number(d7.kv.get("report:asks:2026-10-15")) === 2 && outbox.length - out4 === 2, [d7.kv.get("report:asks:2026-10-15"), outbox.length - out4]);
+    // over the mailbox's five, nothing is counted that was not sent
+    const d8 = store(); const box = "report:askn:" + R.mailHash("full@example.com", "s3cret");
+    for (let i = 0; i < 7; i++) await R.store(R.validate({ email: "full@example.com", dev: i.toString(16).padStart(32, "c"), weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d8.cmd, fakeFetch, THU);
+    ok("…and a mailbox over its five counts exactly the five sent", d8.kv.get(box) === "5", d8.kv.get(box));
+    // a quiet check (a phone that stopped asking) never sends a link
+    const d9 = store(); const out5 = outbox.length;
+    ok("a quiet check from a phone that gave up is \"pending\" and sends no link", await R.store(R.validate({ email: "quiet@example.com", dev: DEV, quiet: true, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d9.cmd, fakeFetch, THU) === "pending" && outbox.length === out5);
     const d6 = store(); d6.kv.set("report:askn:" + R.mailHash("lost@example.com", "s3cret"), "1");
     await R.store(R.validate({ email: "lost@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d6.cmd, fakeFetch, THU);
     ok("a count whose time limit was lost gets one back on its next step (never a mailbox blocked for good)", d6.ttl.get("report:askn:" + R.mailHash("lost@example.com", "s3cret")) === 180 * 86400);
@@ -475,9 +489,15 @@ await scenario("a phone nobody confirmed checks in once a day after two weeks, a
   ok("…two weeks on, at most once a day, even when a page hides or asks", posts.length === 3, posts.length);
   await page.evaluate(() => { window.__jump = 16 * 24 * 3600000 + 7200000; Sona.gameRep("R"); }); await settle(page);
   ok("…the next day, once more (a late tap on the link starts the report within a day)", posts.length === 4, posts.length);
-  await page.evaluate(() => { window.__jump = 57 * 24 * 3600000; Sona.gameRep("R"); Sona.reportSync(true); }); await settle(page);
-  await page.evaluate(() => { window.__jump = 59 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
-  ok("…and eight weeks unconfirmed, it gives up for good: nothing more leaves the phone", posts.length === 4 && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).gaveUp === "parent@example.com"), posts.length);
+  await page.evaluate(() => { window.__jump = 57 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
+  ok("…past eight weeks it asks once more, and still \"pending\", it stops asking", posts.length === 5 && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).gaveUp === "parent@example.com"), posts.length);
+  await page.evaluate(() => { window.__jump = 59 * 24 * 3600000; Sona.gameRep("R"); Sona.reportSync(true); }); await settle(page);
+  ok("…then nothing for a month, even when a page hides or asks", posts.length === 5, posts.length);
+  answer = { ok: true };
+  await page.evaluate(() => { window.__jump = 88 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
+  ok("…a month on, one quiet check: no child's numbers, and marked quiet (the server never sends a link for it)", posts.length === 6 && posts[5].quiet === true && posts[5].weeks.every((w) => w.kids.length === 0), posts[5]);
+  await page.evaluate(() => { window.__jump = 88 * 24 * 3600000 + 31 * 60 * 1000; Sona.gameRep("R"); }); await settle(page);
+  ok("…and a late tap on the link (that check heard a plain ok) starts the report: numbers again, every 30 minutes", posts.length === 7 && !posts[6].quiet && posts[6].weeks[1].kids.length === 2 && await page.evaluate(() => !JSON.parse(localStorage.getItem("sona.report.v1")).gaveUp), posts.length);
   await context.close();
   // a late tap: back to every 30 minutes
   posts.length = 0; answer = { ok: true, pending: true };
