@@ -48,7 +48,8 @@ function store(unsub = []) {
       if (op === "SET") { if (a.includes("NX") && kv.has(a[0])) return null; kv.set(a[0], String(a[1])); const ex = a.indexOf("EX"); if (ex > -1) { ttl.set(a[0], a[ex + 1]); if (db.clock) exp.set(a[0], db.clock + a[ex + 1] * 1000); } return "OK"; }
       if (op === "GET") return kv.has(a[0]) ? kv.get(a[0]) : null;
       if (op === "DEL") return kv.delete(a[0]) ? 1 : 0;
-      if (op === "INCR") { const n = Number(kv.get(a[0]) || 0) + 1; kv.set(a[0], String(n)); return n; }
+      if (op === "INCR" || op === "DECR") { const n = Number(kv.get(a[0]) || 0) + (op === "INCR" ? 1 : -1); kv.set(a[0], String(n)); return n; }
+      if (op === "TTL") return !kv.has(a[0]) ? -2 : ttl.has(a[0]) ? ttl.get(a[0]) : -1;
       if (op === "SISMEMBER") return (sets.get(a[0]) || new Set()).has(a[1]) ? 1 : 0;
       if (op === "SADD") { const m = sets.get(a[0]) || new Set(); let n = 0; a.slice(1).forEach((x) => { if (!m.has(x)) { n++; m.add(x); } }); sets.set(a[0], m); return n; }
       if (op === "HSET") { const m = h.get(a[0]) || new Map(); const isNew = !m.has(a[1]); m.set(a[1], a[2]); h.set(a[0], m); return isNew ? 1 : 0; }
@@ -132,8 +133,8 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
     await R.store(R.validate({ email: "capped@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d3.cmd, fakeFetch, THU);
     await R.store(R.validate({ email: "capped@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d3.cmd, fakeFetch, THU + 86400000);
     ok("a day over the 300-link cap sends nothing and spends nothing: the next day's post sends the link", outbox.length === out1 + 1, outbox.length - out1);
-    // twelve weeks of an unconfirmed phone posting every day: links in weeks 0-4, none
-    // in weeks 5-7 (five in the window), then a new window from day 60 (week 8): weeks 8-11
+    // twelve weeks of an unconfirmed phone posting every day: links in weeks 0-4, then
+    // none (five in a fixed 180-day window; the phone itself gives up at eight weeks)
     const d4 = store(); const out2 = outbox.length; const perWeek = [];
     for (let day = 0; day < 84; day++) {
       const t = THU + day * 86400000, before = outbox.length;
@@ -141,8 +142,17 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
       await R.store(R.validate({ email: "slow@example.com", dev: DEV, weeks: [{ wk: R.mondayOf(t), kids: [] }] }, t), d4.cmd, fakeFetch, t);
       perWeek[Math.floor(day / 7)] = (perWeek[Math.floor(day / 7)] || 0) + (outbox.length - before);
     }
-    ok("at most " + R.ASKS_PER_MAILBOX + " links a mailbox in 60 days, and the window is fixed: it opens again however often the phone posts",
-      perWeek.join("") === "111110001111" && outbox.length - out2 === R.ASKS_PER_MAILBOX + 4, perWeek.join(""));
+    ok("at most " + R.ASKS_PER_MAILBOX + " links a mailbox in 180 days, the window fixed from the first link (a posting phone never pushes it on)",
+      perWeek.join("") === "111110000000" && outbox.length - out2 === R.ASKS_PER_MAILBOX && d4.ttl.get("report:askn:" + R.mailHash("slow@example.com", "s3cret")) === 180 * 86400, perWeek.join(""));
+    // forty posts at the same moment, each from a new phone: the limits are taken before the send
+    const d5 = store(); const out3 = outbox.length;
+    const slowSend = async (u, init) => { await new Promise((r) => setTimeout(r, 30)); return fakeFetch(u, init); };
+    const devs = Array.from({ length: 40 }, (_, i) => i.toString(16).padStart(32, "a"));
+    await Promise.all(devs.map((dv) => R.store(R.validate({ email: "burst@example.com", dev: dv, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d5.cmd, slowSend, THU)));
+    ok("forty posts at once from forty new phones send at most " + R.ASKS_PER_MAILBOX + " links (the limits are taken atomically, before the send)", outbox.length - out3 === R.ASKS_PER_MAILBOX, outbox.length - out3);
+    const d6 = store(); d6.kv.set("report:askn:" + R.mailHash("lost@example.com", "s3cret"), "1");
+    await R.store(R.validate({ email: "lost@example.com", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [] }] }, THU), d6.cmd, fakeFetch, THU);
+    ok("a count whose time limit was lost gets one back on its next step (never a mailbox blocked for good)", d6.ttl.get("report:askn:" + R.mailHash("lost@example.com", "s3cret")) === 180 * 86400);
   }
   const markGone = outbox.length;
   const goneAns = await R.store(R.validate(Object.assign({}, good, { email: "gone@example.com" }), THU), db.cmd, fakeFetch, THU);
@@ -154,8 +164,10 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   ok("confirmed: kept, one hash a week, \"<address> <device>\" to that phone's numbers, until three weeks after that Monday (a fixed end)", await R.store(v, db.cmd, fakeFetch, THU) === "ok" &&
     db.h.get("report:wk:2026-10-05").get("mom@example.com " + DEV) === JSON.stringify(v.weeks[0].kids) &&
     db.at.get("report:wk:2026-10-05") === Date.parse("2026-10-26T00:00:00Z") / 1000 && db.at.get("report:wk:2026-10-12") === Date.parse("2026-11-02T00:00:00Z") / 1000, [...db.at]);
-  confirmed("gone@example.com", DEV);
-  ok("a confirmed phone of an address that unsubscribed is told \"off\", and nothing is kept", await R.store(R.validate(Object.assign({}, good, { email: "gone@example.com" }), THU), db.cmd, fakeFetch, THU) === "off" && ![...db.h.values()].some((m) => [...m.keys()].some((k) => k.startsWith("gone@"))));
+  confirmed("gone@example.com", DEV); db.ttl.delete(R.confirmKey(R.mailHash("gone@example.com", "s3cret")));
+  ok("a confirmed phone of an address that unsubscribed is told \"off\", nothing is kept, and its confirmation stays fresh (so it keeps hearing \"off\", never \"pending\")",
+    await R.store(R.validate(Object.assign({}, good, { email: "gone@example.com" }), THU), db.cmd, fakeFetch, THU) === "off" && ![...db.h.values()].some((m) => [...m.keys()].some((k) => k.startsWith("gone@"))) &&
+    db.ttl.get(R.confirmKey(R.mailHash("gone@example.com", "s3cret"))) === 120 * 86400);
   db.sets.get("email:unsub").add("victim@gmail.com"); confirmed("v.ictim+x@gmail.com", DEV);
   ok("…the same for a Gmail dot or +tag of an unsubscribed address", await R.store(R.validate(Object.assign({}, good, { email: "v.ictim+x@gmail.com" }), THU), db.cmd, fakeFetch, THU) === "off");
   db.down = true;
@@ -441,13 +453,17 @@ await scenario("an address that unsubscribed stops the phone", async () => {
   await page.evaluate(() => Sona.reportSync(true)); await settle(page);
   ok("told \"off\", the phone sends nothing more, even when asked", posts.length === 1 && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).off === "parent@example.com"), posts.length);
   await page.evaluate(() => { window.__jump = 31 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
-  ok("…and asks once more 30 days later (an address can come back to the list)", posts.length === 2, posts.length);
+  ok("…and checks once a month whether the address is back, with no child's numbers", posts.length === 2 && posts[1].weeks.every((w) => w.kids.length === 0), posts[1] && posts[1].weeks);
+  answer = { ok: true, pending: true };
+  await page.evaluate(() => { window.__jump = 62 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
+  await page.evaluate(() => { window.__jump = 62 * 24 * 3600000 + 3600000; Sona.gameRep("R"); Sona.reportSync(true); }); await settle(page);
+  ok("…and a \"pending\" answer never ends \"off\" (the phone does not start sending numbers again)", posts.length === 3 && posts[2].weeks.every((w) => w.kids.length === 0) && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).off === "parent@example.com"), posts.length);
   ok("no page errors", errors.length === 0, errors);
   answer = { ok: true };
   await context.close();
 });
 
-await scenario("a phone nobody confirmed checks in once a week after two weeks", async () => {
+await scenario("a phone nobody confirmed checks in once a day after two weeks, and gives up after eight", async () => {
   posts.length = 0; answer = { ok: true, pending: true };
   const { context, page, errors } = await fresh();
   await page.goto(origin + "/__page"); await page.waitForFunction(() => window.Sona);
@@ -456,11 +472,25 @@ await scenario("a phone nobody confirmed checks in once a week after two weeks",
   ok("pending: the phone keeps posting every 30 minutes at first (the parent may tap the link any minute)", posts.length === 2 && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).pend > 0), posts.length);
   await page.evaluate(() => { window.__jump = 15 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
   await page.evaluate(() => { window.__jump = 15 * 24 * 3600000 + 3600000; Sona.gameRep("R"); Sona.reportSync(true); }); await settle(page);
-  ok("…two weeks on, at most once a week, even when a page hides or asks", posts.length === 3, posts.length);
+  ok("…two weeks on, at most once a day, even when a page hides or asks", posts.length === 3, posts.length);
+  await page.evaluate(() => { window.__jump = 16 * 24 * 3600000 + 7200000; Sona.gameRep("R"); }); await settle(page);
+  ok("…the next day, once more (a late tap on the link starts the report within a day)", posts.length === 4, posts.length);
+  await page.evaluate(() => { window.__jump = 57 * 24 * 3600000; Sona.gameRep("R"); Sona.reportSync(true); }); await settle(page);
+  await page.evaluate(() => { window.__jump = 59 * 24 * 3600000; Sona.gameRep("R"); }); await settle(page);
+  ok("…and eight weeks unconfirmed, it gives up for good: nothing more leaves the phone", posts.length === 4 && await page.evaluate(() => JSON.parse(localStorage.getItem("sona.report.v1")).gaveUp === "parent@example.com"), posts.length);
+  await context.close();
+  // a late tap: back to every 30 minutes
+  posts.length = 0; answer = { ok: true, pending: true };
+  const second = await fresh();
+  await second.page.goto(origin + "/__page"); await second.page.waitForFunction(() => window.Sona);
+  await second.page.evaluate(() => Sona.gameRep("R")); await settle(second.page);
   answer = { ok: true };
-  await page.evaluate(() => { window.__jump = 22 * 24 * 3600000 + 7200000; Sona.gameRep("R"); }); await settle(page);
-  await page.evaluate(() => { window.__jump = 22 * 24 * 3600000 + 7200000 + 31 * 60 * 1000; Sona.gameRep("R"); }); await settle(page);
-  ok("…and once the link is tapped, back to every 30 minutes", posts.length === 5 && await page.evaluate(() => !JSON.parse(localStorage.getItem("sona.report.v1")).pend), posts.length);
+  await second.page.evaluate(() => { window.__jump = 15 * 24 * 3600000; Sona.gameRep("R"); }); await settle(second.page);
+  await second.page.evaluate(() => { window.__jump = 15 * 24 * 3600000 + 31 * 60 * 1000; Sona.gameRep("R"); }); await settle(second.page);
+  ok("…once the link is tapped (a plain ok), back to every 30 minutes", posts.length === 3 && await second.page.evaluate(() => !JSON.parse(localStorage.getItem("sona.report.v1")).pend), posts.length);
+  ok("no page errors", second.errors.length === 0, second.errors);
+  await second.context.close();
+  return;
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

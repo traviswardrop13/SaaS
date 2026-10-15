@@ -28,11 +28,14 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  * nothing). Only a phone confirmed that way (`report:dev:<hash of the
  * address>`, a set of device ids, no address in it, 120 days from the last
  * post) has its numbers kept. Asking is limited: once a week a phone, five
- * links a mailbox in 60 days (a fixed window from the first), 300 a day in
- * all, and only a link Resend took counts. An unconfirmed post, and one for
+ * links a mailbox in 180 days (a fixed window from the first), 300 a day in
+ * all, and only a link Resend took counts; a phone nobody confirms gives up
+ * after eight weeks (sona.js), so a mistyped address hears at most five
+ * times. An unconfirmed post, and one for
  * an unsubscribed address, get the same answer ("pending"), so the route says
  * nothing about anyone's mailbox; a confirmed phone of an unsubscribed
- * address is answered "off" and stops.
+ * address is answered "off" (its confirmation kept fresh, so it keeps
+ * hearing "off") and stops sending numbers.
  *
  * Kept per week in `report:wk:<monday>` (a hash: "<email> <device>" to that
  * phone's numbers) until three weeks after that Monday, then gone. A household
@@ -62,7 +65,8 @@ export const MAX_KIDS = 8;
 export const MAX_DEVICES = 3;
 export const SEND_CAP = 250;
 export const ASK_CAP = 300;
-export const ASKS_PER_MAILBOX = 5; // confirm links in 60 days, whichever phones asked
+export const ASKS_PER_MAILBOX = 5; // confirm links a mailbox in ASK_WINDOW_SEC, whichever phones asked
+export const ASK_WINDOW_SEC = 180 * 24 * 60 * 60;
 export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly waits the same)
 export const SEND_DAYS = [1, 2, 3]; // Monday, then Tuesday and Wednesday to catch up
 export const SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"] as const;
@@ -218,25 +222,32 @@ export function renderConfirm(confirmUrl: string, unsubUrl: string, postal: stri
 
 /**
  * Email the address a confirm link for this phone, within the limits above.
- * Best effort, and nothing is spent unless Resend takes the email: a send
- * refused (or one over the day's cap) leaves the next post free to try
- * again. The week's slot is per phone, so a stranger's post cannot take a
- * family's link; the 60-day count is per mailbox and is a fixed window from
- * the first link (a phone that keeps posting never pushes it on).
+ * Best effort. Every limit is taken with an atomic step BEFORE the send (so
+ * posts arriving at the same moment cannot all slip past a read) and given
+ * back if Resend does not take the email: the phone's week (SET NX), the
+ * day's 300 (INCR), the mailbox's five in 180 days (INCR, its window fixed
+ * from the first link). A refused post over a limit leaves that count where
+ * it is. Someone who knows an address can use up its five links (then its
+ * own phones wait for the window); they cannot take a phone's own link.
  */
 async function askConfirm(snap: Snapshot, h: string, kv: Kv, f: Fetch, now: number, cfg: NonNullable<ReturnType<typeof config>>): Promise<boolean> {
   const countKey = "report:askn:" + h, dayKey = "report:asks:" + new Date(now).toISOString().slice(0, 10), slot = "report:ask:" + h + ":" + snap.dev;
-  if (Number(await kv(["GET", countKey])) >= ASKS_PER_MAILBOX) return false;
-  if (Number(await kv(["GET", dayKey])) >= ASK_CAP) return false;
+  // a counter's time limit is set by its first step; if that call was lost, the next one sets it
+  const bump = async (key: string, sec: number) => {
+    const n = Number(await kv(["INCR", key]));
+    if (n === 1 || Number(await kv(["TTL", key])) === -1) await kv(["EXPIRE", key, sec]);
+    return n;
+  };
   if ((await kv(["SET", slot, String(now), "NX", "EX", 7 * 86400])) !== "OK") return false;
+  const day = await bump(dayKey, 2 * 86400);
+  if (!(day >= 1 && day <= ASK_CAP)) { await kv(["DECR", dayKey]); await kv(["DEL", slot]); return false; } // tomorrow may ask
+  const n = await bump(countKey, ASK_WINDOW_SEC);
+  if (!(n >= 1 && n <= ASKS_PER_MAILBOX)) { await kv(["DECR", dayKey]); return false; }
   const confirmUrl = `https://speaksona.com/api/report/confirm?e=${encodeURIComponent(snap.email)}&d=${snap.dev}&k=${confirmToken(snap.email, snap.dev, cfg.secret)}`;
   const unsubUrl = unsubUrlFor(snap.email, cfg.secret);
   const m = renderConfirm(confirmUrl, unsubUrl, cfg.postal);
   const r = await resend(f, cfg, { to: snap.email, ...m, unsubUrl, key: keyFor("confirm-" + snap.dev.slice(0, 8) + "-" + new Date(now).toISOString().slice(0, 10), snap.email) });
-  if (!r.ok) { await kv(["DEL", slot]); return false; }
-  await kv(["SET", countKey, "0", "NX", "EX", 60 * 86400]);
-  await kv(["INCR", countKey]);
-  if (Number(await kv(["INCR", dayKey])) === 1) await kv(["EXPIRE", dayKey, 2 * 86400]);
+  if (!r.ok) { await kv(["DEL", slot]); await kv(["DECR", dayKey]); await kv(["DECR", countKey]); return false; }
   return true;
 }
 
@@ -279,7 +290,9 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
     if (!unsub) { try { await askConfirm(snap, h, kv, f, now, cfg); } catch { /* best effort: the next post asks again */ } }
     return "pending";
   }
-  if (unsub) return "off";
+  // a confirmed phone of an unsubscribed address keeps its confirmation, so a
+  // later check still hears "off" (never "pending", which would start it again)
+  if (unsub) { await kv(["EXPIRE", confirmKey(h), CONFIRM_KEEP_SEC]); return "off"; }
   for (const w of snap.weeks) {
     // a fixed end, three weeks after that Monday, however late a phone posts
     const end = Math.floor(Date.parse(w.wk + "T00:00:00Z") / 1000) + KEEP_DAYS * 86400;

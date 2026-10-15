@@ -7700,18 +7700,22 @@
   // is still holding the phone), then from _goalCheck (a rep, on a practice or
   // game page) at most every 30 minutes, and once more when that page goes to
   // the background, so Sunday evening's practice is in Monday's email. A post
-  // that fails is tried again five minutes later; a phone still unconfirmed
-  // two weeks on checks in once a week. Home never sends (it writes nothing).
-  // A confirmed phone of an address that unsubscribed is answered "off" and
-  // stops (asking again after 30 days). sona.report.v1 (the device id, the
-  // last send, "off", when it first heard "pending") is
+  // that fails is tried again five minutes later. A phone still unconfirmed
+  // two weeks on checks in once a day, and after eight weeks gives up for
+  // good. Home never sends (it writes nothing). A confirmed phone of an
+  // address that unsubscribed is answered "off" and stops sending numbers; it
+  // checks once a month, with none, whether the address is back.
+  // sona.report.v1 (the device id, the last send, "off" and when, when it
+  // first heard "pending", "gaveUp") is
   // this phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is
   // a second device. The child's id (profile.reportId) does travel, so after a
   // move the email still shows that child once.
   const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000, REPORT_RETRY_MS = 5 * 60 * 1000;
-  // unconfirmed for two weeks: a check-in once a week (a late tap on the link
-  // still starts the report); "off" is asked again after 30 days
-  const REPORT_DAY_MS = 24 * 60 * 60 * 1000, REPORT_PEND_MS = 14 * REPORT_DAY_MS, REPORT_OFF_MS = 30 * REPORT_DAY_MS;
+  // unconfirmed: every 30 minutes for two weeks, then once a day (a late tap
+  // on the link still starts the report within a day), and after eight weeks
+  // the phone gives up for good. "off" is checked again every 30 days, with
+  // no child's numbers in that check.
+  const REPORT_DAY_MS = 24 * 60 * 60 * 1000, REPORT_PEND_MS = 14 * REPORT_DAY_MS, REPORT_GIVEUP_MS = 56 * REPORT_DAY_MS, REPORT_OFF_MS = 30 * REPORT_DAY_MS;
   function _reportState() { try { const v = JSON.parse(localStorage.getItem(REPORTKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
   function _reportSave(v) { try { localStorage.setItem(REPORTKEY, JSON.stringify(v)); } catch (e) {} }
   function _randomHex(bytes) {
@@ -7759,14 +7763,17 @@
     if (!email) return Promise.resolve(false);
     if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
     const st = _reportState(), now = Date.now(), prev = st.at;
-    if (st.off === email && st.offAt > 0 && st.offAt <= now && now - st.offAt < REPORT_OFF_MS) return Promise.resolve(false);
-    const longPend = st.pend > 0 && st.pend <= now && now - st.pend > REPORT_PEND_MS;
-    if ((!force || longPend) && st.at > 0 && st.at <= now && now - st.at < (longPend ? 7 * REPORT_DAY_MS : REPORT_EVERY_MS)) return Promise.resolve(false);
+    const off = st.off === email, pend = st.pend > 0 && st.pend <= now ? now - st.pend : 0;
+    if (st.gaveUp === email) return Promise.resolve(false);
+    if (pend > REPORT_GIVEUP_MS) { st.gaveUp = email; _reportSave(st); return Promise.resolve(false); }
+    const every = off ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
+    if ((!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
     st.at = now; _reportSave(st);
     let list = [];
     try { list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; }).slice(0, 8); } catch (e) {}
-    const weeks = [-1, 0].map((o) => { const wk = _mondayKey(o); return { wk: wk, kids: list.map((k) => _reportKid(k.slot, wk)) }; });
+    // a check on an address that said "off" carries no child's numbers
+    const weeks = [-1, 0].map((o) => { const wk = _mondayKey(o); return { wk: wk, kids: off ? [] : list.map((k) => _reportKid(k.slot, wk)) }; });
     _reportBusy = true; _reportDirty = false; _reportAgain = false;
     let sent;
     try {
@@ -7775,8 +7782,11 @@
         .then((r) => r.json())
         .then((j) => {
           const s2 = _reportState();
+          // only a plain "ok" ends "off"; "pending" never does (the server
+          // gives an unconfirmed phone of an unsubscribed address "pending" too)
           if (j && j.off) { s2.off = email; s2.offAt = Date.now(); }
-          else if (j && j.ok) { delete s2.off; delete s2.offAt; if (!j.pending) delete s2.pend; else if (!(s2.pend > 0)) s2.pend = Date.now(); }
+          else if (j && j.ok && j.pending) { if (s2.off !== email && !(s2.pend > 0)) s2.pend = Date.now(); }
+          else if (j && j.ok) { delete s2.off; delete s2.offAt; delete s2.pend; }
           _reportSave(s2);
           return !!(j && j.ok);
         });
@@ -7786,7 +7796,7 @@
       if (!ok) {
         // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
         _reportDirty = true;
-        const s3 = _reportState(); s3.at = Math.max(prev > 0 && prev <= now ? prev : 0, now - REPORT_EVERY_MS + REPORT_RETRY_MS); _reportSave(s3);
+        const s3 = _reportState(); s3.at = Math.max(prev > 0 && prev <= now ? prev : 0, now - every + REPORT_RETRY_MS); _reportSave(s3);
       } else if (_reportAgain && _reportDirty) reportSync(true);
       _reportAgain = false;
       return ok;

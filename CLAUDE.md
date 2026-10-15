@@ -1030,9 +1030,12 @@ from Rachel.
   link opens a page whose button POSTs (a mail scanner's GET confirms
   nothing) and marks that phone confirmed in `report:dev:<keyed hash of the
   mailbox>` (device ids, no address; 120 days from the last post). Asking is
-  limited: once a week a phone (a stranger's post never takes a family's
-  link), five links a mailbox in a fixed 60-day window from the first, 300 a
-  day in all, and only a link Resend took counts. A second phone confirms
+  limited, each limit taken atomically before the send and given back if
+  Resend refuses: once a week a phone (a stranger's post cannot take a
+  phone's own link, though five of them can use up the mailbox's), five links
+  a mailbox in a fixed 180-day window from the first, 300 a day in all. A
+  phone nobody confirms gives up after eight weeks, so a mistyped address
+  hears at most five times. A second phone confirms
   itself the same way. A confirm link for an address that has since
   unsubscribed says so. **One list:** unsubscribing from Rachel's tips stops
   the report too (and vice versa); `/api/email/unsub` now also keeps the plain
@@ -1043,8 +1046,11 @@ from Rachel.
   stamp) at most every 30 minutes, and once more when that page goes to the
   background, so Sunday evening's practice is in Monday's email. A failed post
   is tried again five minutes later; a phone still unconfirmed two weeks on
-  checks in once a week; an "off" is asked again after 30 days. Home never
-  sends: it writes nothing. The
+  checks in once a day, and gives up for good after eight weeks. A confirmed
+  phone told "off" stops sending numbers and checks once a month, with no
+  child's numbers, whether the address is back; only a plain "ok" ends
+  "off", never "pending" (the server keeps such a phone's confirmation fresh
+  so it keeps hearing "off"). Home never sends: it writes nothing. The
   body is the address (printable ASCII, at most 120 characters, as the
   unsubscribe link reads it), this phone's random device id and, for this
   week and last (local Mondays), per set-up family child (not a clinician's
@@ -1053,8 +1059,8 @@ from Rachel.
   child), days with a rep, days at the daily goal, the plan's days a week,
   reps, practice tries among them, and the sounds those reps were in. Never a
   name, an age, a word, a pass rate or a voice. `sona.report.v1` (device id,
-  last send, `off`) is on `NO_EXPORT` and `NO_IMPORT`: a restored phone is a
-  second device.
+  last send, `off`/`offAt`, `pend`, `gaveUp`) is on `NO_EXPORT` and
+  `NO_IMPORT`: a restored phone is a second device.
 - **The server (`lib/report.ts`, `app/api/report/route.ts`,
   `app/api/report/confirm/route.ts`)** takes it same-origin only, 4 KB, 40 an
   hour per IP (an IPv6 /64 as one), builds what it keeps field by field
