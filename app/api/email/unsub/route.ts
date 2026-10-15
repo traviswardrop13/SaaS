@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
+import { mailbox } from "@/lib/report";
 
 /**
  * Unsubscribe for the weekly parent email — scanner-proof and RFC 8058 ready.
@@ -71,7 +72,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const v = validate(req);
   if (!v) return page("That link didn't work", "It may have expired. Reply to any Sona email and we'll take care of it by hand.");
-  const res = await kvCmd(["SADD", "email:unsub", v.email]);
+  // the address as given, and its plain mailbox (Gmail dots and +tags), so
+  // another spelling of the same inbox is stopped too (lib/report.ts suppressed())
+  const box = mailbox(v.email);
+  const res = await kvCmd(box === v.email ? ["SADD", "email:unsub", v.email] : ["SADD", "email:unsub", v.email, box]);
   if (res === undefined) {
     return page("Almost — one hiccup", "We couldn't save that just now. Reply to any Sona email and we'll unsubscribe you by hand today.");
   }

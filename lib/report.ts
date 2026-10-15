@@ -27,8 +27,9 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  * progress report", a button on a page (a mail scanner's GET confirms
  * nothing). Only a phone confirmed that way (`report:dev:<hash of the
  * address>`, a set of device ids, no address in it, 120 days from the last
- * post) has its numbers kept. Asking is limited: once a week an address,
- * three times in 60 days, 300 a day in all. An unconfirmed post, and one for
+ * post) has its numbers kept. Asking is limited: once a week a phone, five
+ * links a mailbox in 60 days (a fixed window from the first), 300 a day in
+ * all, and only a link Resend took counts. An unconfirmed post, and one for
  * an unsubscribed address, get the same answer ("pending"), so the route says
  * nothing about anyone's mailbox; a confirmed phone of an unsubscribed
  * address is answered "off" and stops.
@@ -61,6 +62,7 @@ export const MAX_KIDS = 8;
 export const MAX_DEVICES = 3;
 export const SEND_CAP = 250;
 export const ASK_CAP = 300;
+export const ASKS_PER_MAILBOX = 5; // confirm links in 60 days, whichever phones asked
 export const PACE_MS = 550; // Resend's default limit is 2 a second (cron/weekly waits the same)
 export const SEND_DAYS = [1, 2, 3]; // Monday, then Tuesday and Wednesday to catch up
 export const SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"] as const;
@@ -214,20 +216,28 @@ export function renderConfirm(confirmUrl: string, unsubUrl: string, postal: stri
   return { subject: "Confirm your weekly progress report", html, text };
 }
 
-/** Email the address a confirm link for this phone, within the limits above. Best effort. */
+/**
+ * Email the address a confirm link for this phone, within the limits above.
+ * Best effort, and nothing is spent unless Resend takes the email: a send
+ * refused (or one over the day's cap) leaves the next post free to try
+ * again. The week's slot is per phone, so a stranger's post cannot take a
+ * family's link; the 60-day count is per mailbox and is a fixed window from
+ * the first link (a phone that keeps posting never pushes it on).
+ */
 async function askConfirm(snap: Snapshot, h: string, kv: Kv, f: Fetch, now: number, cfg: NonNullable<ReturnType<typeof config>>): Promise<boolean> {
-  if ((await kv(["SET", "report:ask:" + h, String(now), "NX", "EX", 7 * 86400])) !== "OK") return false;
-  const n = Number(await kv(["INCR", "report:askn:" + h]));
-  await kv(["EXPIRE", "report:askn:" + h, 60 * 86400]);
-  if (!(n >= 1 && n <= 3)) return false;
-  const day = "report:asks:" + new Date(now).toISOString().slice(0, 10);
-  const total = Number(await kv(["INCR", day]));
-  await kv(["EXPIRE", day, 2 * 86400]);
-  if (!(total >= 1 && total <= ASK_CAP)) return false;
+  const countKey = "report:askn:" + h, dayKey = "report:asks:" + new Date(now).toISOString().slice(0, 10), slot = "report:ask:" + h + ":" + snap.dev;
+  if (Number(await kv(["GET", countKey])) >= ASKS_PER_MAILBOX) return false;
+  if (Number(await kv(["GET", dayKey])) >= ASK_CAP) return false;
+  if ((await kv(["SET", slot, String(now), "NX", "EX", 7 * 86400])) !== "OK") return false;
   const confirmUrl = `https://speaksona.com/api/report/confirm?e=${encodeURIComponent(snap.email)}&d=${snap.dev}&k=${confirmToken(snap.email, snap.dev, cfg.secret)}`;
   const unsubUrl = unsubUrlFor(snap.email, cfg.secret);
   const m = renderConfirm(confirmUrl, unsubUrl, cfg.postal);
-  return (await resend(f, cfg, { to: snap.email, ...m, unsubUrl, key: keyFor("confirm-" + snap.dev.slice(0, 8) + "-" + new Date(now).toISOString().slice(0, 10), snap.email) })).ok;
+  const r = await resend(f, cfg, { to: snap.email, ...m, unsubUrl, key: keyFor("confirm-" + snap.dev.slice(0, 8) + "-" + new Date(now).toISOString().slice(0, 10), snap.email) });
+  if (!r.ok) { await kv(["DEL", slot]); return false; }
+  await kv(["SET", countKey, "0", "NX", "EX", 60 * 86400]);
+  await kv(["INCR", countKey]);
+  if (Number(await kv(["INCR", dayKey])) === 1) await kv(["EXPIRE", dayKey, 2 * 86400]);
+  return true;
 }
 
 /** /api/report/confirm: is this the link that address was sent for that device? */
@@ -431,12 +441,18 @@ export async function runReports(kv: Kv = kvCmd, f: Fetch = fetch, now: number =
       const m = render(wk, kids, unsubUrl, cfg.postal);
       if ((await kv(["SET", sentKey(wk, email), String(now), "NX", "EX", KEEP_DAYS * 86400])) !== "OK") { res.skipped++; continue; } // already sent, or no answer
       claimed = true;
-      if (tries > 0) await sleep(PACE_MS);
       tries++;
-      const r = await resend(f, cfg, { to: email, ...m, unsubUrl, key: keyFor(wk, email) });
+      // a pause before every send, the first too (the welcome series has just
+      // sent), and one more try after a longer one if Resend says slow down
+      let r = { ok: false, status: 0 };
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await sleep(attempt ? PACE_MS * 3 : PACE_MS);
+        r = await resend(f, cfg, { to: email, ...m, unsubUrl, key: keyFor(wk, email) });
+        if (r.status !== 429) break;
+      }
       if (r.ok) { res.sent++; claimed = false; continue; }
       res.failed++;
-      if (r.status === 429) { res.stopped = "rate"; break; } // Resend says slow down: the next run carries on
+      if (r.status === 429) { res.stopped = "rate"; break; } // still too fast: the next run carries on
     } catch (e) {
       res.failed++;
       console.error("[report] address failed:", e instanceof Error ? e.message : String(e));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { confirm, confirmOk } from "@/lib/report";
+import { kvCmd } from "@/lib/slpAuth";
+import { confirm, confirmOk, suppressed } from "@/lib/report";
 
 /**
  * The weekly progress report's confirm link (lib/report.ts): the address
@@ -40,6 +41,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const v = read(req);
   if (!v) return page(...BAD);
-  if (!(await confirm(v.email, v.dev))) return page("Almost — one hiccup", "We couldn’t save that just now. Please tap the link in the email again in a minute.");
+  // an address that unsubscribed gets no report: say so, rather than "all set"
+  const unsub = await suppressed(v.email, kvCmd);
+  if (unsub === true) return page("This address is unsubscribed", "It unsubscribed from Sona’s emails, so no report can be sent. Reply to any Sona email if you’d like them back.");
+  if (unsub === null || !(await confirm(v.email, v.dev))) return page("Almost — one hiccup", "We couldn’t save that just now. Please tap the link in the email again in a minute.");
   return page("You’re all set", "Your first weekly progress report comes on Monday. Unsubscribe anytime from the email.");
 }

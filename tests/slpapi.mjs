@@ -435,7 +435,7 @@ if (A) {
   ok("pilot.html offers 'Stop sharing with your speech therapist' to a device that is sharing",
     /Stop sharing with your speech therapist<\/button>/.test(pilotHtml) && /id="stopCard"/.test(pilotHtml) && /pi\.consent&&pi\.childId/.test(pilotHtml));
   ok("…with the confirm text agreed with the privacy review, and the two buttons",
-    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's progress stays on this device\./.test(pilotHtml) &&
+    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's practice history stays on this device\./.test(pilotHtml) &&
     />Stop sharing<\/button>/.test(pilotHtml) && />Keep sharing<\/button>/.test(pilotHtml));
   ok("…the call carries the ticket, the device's child id and the code from pilotInfo, nothing typed",
     /\/api\/pilot\/forget/.test(pilotHtml) && /sona\.slpticket/.test(pilotHtml) && /Sona\.pilotInfo\(\)/.test(pilotHtml) &&

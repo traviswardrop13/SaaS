@@ -7700,13 +7700,18 @@
   // is still holding the phone), then from _goalCheck (a rep, on a practice or
   // game page) at most every 30 minutes, and once more when that page goes to
   // the background, so Sunday evening's practice is in Monday's email. A post
-  // that fails is tried again five minutes later. Home never sends (it writes
-  // nothing). A confirmed phone of an address that unsubscribed is answered
-  // "off" and stops. sona.report.v1 (the device id, the last send, "off") is
+  // that fails is tried again five minutes later; a phone still unconfirmed
+  // two weeks on checks in once a week. Home never sends (it writes nothing).
+  // A confirmed phone of an address that unsubscribed is answered "off" and
+  // stops (asking again after 30 days). sona.report.v1 (the device id, the
+  // last send, "off", when it first heard "pending") is
   // this phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is
   // a second device. The child's id (profile.reportId) does travel, so after a
   // move the email still shows that child once.
   const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000, REPORT_RETRY_MS = 5 * 60 * 1000;
+  // unconfirmed for two weeks: a check-in once a week (a late tap on the link
+  // still starts the report); "off" is asked again after 30 days
+  const REPORT_DAY_MS = 24 * 60 * 60 * 1000, REPORT_PEND_MS = 14 * REPORT_DAY_MS, REPORT_OFF_MS = 30 * REPORT_DAY_MS;
   function _reportState() { try { const v = JSON.parse(localStorage.getItem(REPORTKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
   function _reportSave(v) { try { localStorage.setItem(REPORTKEY, JSON.stringify(v)); } catch (e) {} }
   function _randomHex(bytes) {
@@ -7754,8 +7759,9 @@
     if (!email) return Promise.resolve(false);
     if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
     const st = _reportState(), now = Date.now(), prev = st.at;
-    if (st.off === email) return Promise.resolve(false);
-    if (!force && st.at > 0 && st.at <= now && now - st.at < REPORT_EVERY_MS) return Promise.resolve(false);
+    if (st.off === email && st.offAt > 0 && st.offAt <= now && now - st.offAt < REPORT_OFF_MS) return Promise.resolve(false);
+    const longPend = st.pend > 0 && st.pend <= now && now - st.pend > REPORT_PEND_MS;
+    if ((!force || longPend) && st.at > 0 && st.at <= now && now - st.at < (longPend ? 7 * REPORT_DAY_MS : REPORT_EVERY_MS)) return Promise.resolve(false);
     if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
     st.at = now; _reportSave(st);
     let list = [];
@@ -7767,7 +7773,13 @@
       sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
         body: JSON.stringify({ email: email, dev: st.dev, weeks: weeks }) })
         .then((r) => r.json())
-        .then((j) => { if (j && j.off) { const s2 = _reportState(); s2.off = email; _reportSave(s2); } return !!(j && j.ok); });
+        .then((j) => {
+          const s2 = _reportState();
+          if (j && j.off) { s2.off = email; s2.offAt = Date.now(); }
+          else if (j && j.ok) { delete s2.off; delete s2.offAt; if (!j.pending) delete s2.pend; else if (!(s2.pend > 0)) s2.pend = Date.now(); }
+          _reportSave(s2);
+          return !!(j && j.ok);
+        });
     } catch (e) { sent = Promise.resolve(false); }
     return sent.catch(() => false).then((ok) => {
       _reportBusy = false;

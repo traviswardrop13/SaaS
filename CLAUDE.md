@@ -1030,14 +1030,21 @@ from Rachel.
   link opens a page whose button POSTs (a mail scanner's GET confirms
   nothing) and marks that phone confirmed in `report:dev:<keyed hash of the
   mailbox>` (device ids, no address; 120 days from the last post). Asking is
-  limited: once a week an address, three in 60 days, 300 a day in all. A
-  second phone confirms itself the same way.
+  limited: once a week a phone (a stranger's post never takes a family's
+  link), five links a mailbox in a fixed 60-day window from the first, 300 a
+  day in all, and only a link Resend took counts. A second phone confirms
+  itself the same way. A confirm link for an address that has since
+  unsubscribed says so. **One list:** unsubscribing from Rachel's tips stops
+  the report too (and vice versa); `/api/email/unsub` now also keeps the plain
+  mailbox, so every Gmail spelling of that inbox stops.
 - **The phone (block REPORT1 in `sona.js`, `Sona.reportSync`,
   `Sona.reportEmail`)** posts `/api/report` as setup ends, then from
   `_goalCheck` (a rep, on a practice or game page, after the day's goal
   stamp) at most every 30 minutes, and once more when that page goes to the
   background, so Sunday evening's practice is in Monday's email. A failed post
-  is tried again five minutes later. Home never sends: it writes nothing. The
+  is tried again five minutes later; a phone still unconfirmed two weeks on
+  checks in once a week; an "off" is asked again after 30 days. Home never
+  sends: it writes nothing. The
   body is the address (printable ASCII, at most 120 characters, as the
   unsubscribe link reads it), this phone's random device id and, for this
   week and last (local Mondays), per set-up family child (not a clinician's
@@ -1059,8 +1066,10 @@ from Rachel.
   its Gmail-dot/+tag mailbox) is told "off" and stops. The daily
   `/api/cron/nurture` runs `runReports` after the welcome series: Monday
   (Tuesday and Wednesday catch up) emails last week, once an address a week
-  (`report:sent:<monday>:<email>`, released if Resend refuses), 550 ms apart,
-  stopping on a 429 or 250 seconds into the run, at most 250 a run. A week
+  (`report:sent:<monday>:<email>`, released if Resend refuses), with a 550 ms
+  pause before each send (the first too: the welcome series has just sent), a
+  429 tried once more after a longer pause and then the run stopped, stopping
+  too 250 seconds into the run, at most 250 a run. A week
   with no reps sends nothing. Two phones, one address: one email, a child
   (by its id) once with the fuller count, two quiet brothers still two, at
   most three devices. A founder's manual run with `?report=1` sends on any
