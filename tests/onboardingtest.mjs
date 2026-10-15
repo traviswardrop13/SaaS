@@ -108,7 +108,7 @@ const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.
 const RACHEL='Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.';
 const HEDGE='Sona practices — it doesn\'t test or diagnose.';
 // [id, the button's words, the sentence the ready screen shows for it]
-const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home. It does not replace a speech therapist.']];
+const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home.']];
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the week's goal
 const GOAL=[['3','3 days a week','3 days a week'],['5','5 days a week','5 days a week'],['7','Every day','Every day']];
 // what the ready screen shows, as a parent reads it
@@ -329,8 +329,9 @@ await scenario('the two answers stay on this phone',async()=>{
   ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
   ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
   const lead=leadPosts(requests);
-  ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
+  ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly report opt-in)',lead);
   ok('…and the address is on the profile, where a purchase\'s plan post finds it',/"email":"parent@example\.com"/.test(kept.profile)&&/"weeklyEmail":true/.test(kept.profile),kept.profile);
+  ok('…with the weekly progress report asked for (REPORT1 sends only for weeklyReport), and setup itself posts no report',/"weeklyReport":true/.test(kept.profile)&&!requests.some((r)=>/\/api\/report/.test(r.url||'')),kept.profile);
   ok('no button on the hand-off holds the child\'s name, and the title is still "Sona — Welcome"',names===0&&kept.title==='Sona — Welcome',[names,kept.title]);
   clean('answers stay on the phone',errors);
  }finally{await context.close();}
@@ -827,10 +828,10 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
  }
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
   await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'5');await page.locator('[data-step="updates"].on').waitFor();
-  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
-  ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Get practice tips by email?'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want tips for home?',shown);
+  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),helpLine:!!st.querySelector('.upd-help'),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
+  ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Get the weekly progress report'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want a weekly report?',shown);
   ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
-  ok('…no weekly summary is promised (nothing sends one), and the child\'s name is not on the screen',!/weekly summary|weekly update/i.test(shown.text)&&!/Milo/.test(shown.text),shown.text);
+  ok('…the old help line is gone (Travis, 15 Oct 2026), and the child\'s name is not on the screen',!/Rachel.s tips for practicing at home/i.test(shown.text)&&!shown.helpLine&&!/Milo/.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
   await page.locator('#updEmail').fill('done@example.com');await page.locator('#updEmail').press('Enter');
@@ -846,7 +847,7 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   await page.locator('#updEmail').fill('typed@example.com');await calm(page);await page.locator('#updSkip').click();
   ok('Skip throws the typed address away and goes on: nothing is kept or sent',await screen(page)==='ready'&&await page.evaluate(()=>draft.email===''&&document.getElementById('updEmail').value==='')&&leadPosts(requests).length===0);
   await next(page);await page.locator('[data-step="mic"].on').waitFor();
-  ok('…and leaving ready after a Skip posts no lead and saves no address',leadPosts(requests).length===0&&await page.evaluate(()=>!Sona.getProfile().email&&!Sona.getProfile().weeklyEmail));
+  ok('…and leaving ready after a Skip posts no lead and saves no address',leadPosts(requests).length===0&&await page.evaluate(()=>!Sona.getProfile().email&&!Sona.getProfile().weeklyEmail&&!Sona.getProfile().weeklyReport&&!Sona.reportEmail()));
   clean('email step behaviour',errors);
  }finally{await context.close();}
  {const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{

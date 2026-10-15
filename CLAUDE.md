@@ -151,8 +151,8 @@ changing one. What follows from the rule:
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
   hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
-  **"How many days a week will you practice?"** → **"Get practice tips by
-  email?"** → **"<Name>'s practice is ready"** →
+  **"How many days a week will you practice?"** → **"Get the weekly progress
+  report"** → **"<Name>'s practice is ready"** →
   the price → microphone → "Hand the phone to <Name>!" → the first game. The
   old order told a parent to hand the phone over and tap "Let's play!", and
   then showed three money screens to the child holding it.
@@ -163,7 +163,10 @@ changing one. What follows from the rule:
     then also for them to be able to choose whether they want to practice
     three days a week or … five days a week or every day"). **Therapy**
     ("Yes" / "Not right now") changes nothing a child is given: it puts one
-    true sentence about SONA on the ready screen, never one about the child.
+    true sentence about SONA on the ready screen, never one about the child
+    ("Sona is practice for the days between speech visits." / "Sona is
+    practice you can do at home."; Travis took "It does not replace a speech
+    therapist." off the second on 15 Oct 2026).
     **Days a week** (3 days / 5 days / Every day) is a real setting, the
     child's weekly goal (`profile.weeklyGoal`, the one Settings shows), and
     Skip leaves that goal as it was. The wording of both, the two sentences
@@ -178,8 +181,13 @@ changing one. What follows from the rule:
     progress segment. It is optional: empty or Skip go on, and a
     wrong-looking address stays with one line ("That email doesn't look
     right."). Travis's line, "We'll also send occasional tips from Rachel.
-    Unsubscribe anytime.", is on screen before anything is sent; no weekly
-    summary is promised (nothing sends one). The address is saved in the
+    Unsubscribe anytime.", is on screen before anything is sent. **Its
+    heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
+    want the setup page to say get the weekly progress report", with no
+    "Optional. Rachel's tips…" line under it; Echo's bubble says "Want a
+    weekly report?"), **and the report is real**: an address given here sets
+    `profile.weeklyReport`, and only that sends a child's numbers (see "THE
+    WEEKLY PROGRESS REPORT" under the email list). The address is saved in the
     profile and posted once, by `postParentLead()` (the address and nothing
     else), to `/api/lead` (`source "app-setup"`, role `parent`, nothing
     about the child), when the parent leaves the ready screen, before the
@@ -999,6 +1007,57 @@ What reaches Kit: the email, a **clinician's own** first name, the role tag
 (`sona-slp`, `sona-parent`, `sona-other`), and, since 5 Oct 2026, a **plan
 tag** for a parent who started Sona Premium in the iPhone app.
 Never anything about a child.
+
+**THE WEEKLY PROGRESS REPORT (REPORT1, 15 Oct 2026)** (Travis: "i want the
+setup page to say get the weekly progress report"; told that nothing sent
+one, he picked "Build the real report" over changing the words alone). Every
+Monday a parent who asked for it gets last week's practice from Rachel.
+- **Who:** only a household whose setup email step was given an address under
+  that heading (`profile.weeklyReport: true`, beside `email` on the profile
+  of the child set up first). `weeklyEmail` alone (the hand-off box before 13
+  Oct, which asked for a "weekly summary", and the 13-15 Oct step, which asked
+  for tips) sends nothing: "Progress leaves only with a grown-up's explicit
+  consent", and those grown-ups agreed to something else. Settings has no
+  switch for them yet: Travis's call. Skip sets neither.
+- **The phone (block REPORT1 in `sona.js`, `Sona.reportSync`,
+  `Sona.reportEmail`)** posts `/api/report` from `_goalCheck` (a rep, on a
+  practice or game page) at most every 30 minutes, and once more when that
+  page goes to the background, so Sunday evening's practice is in Monday's
+  email. Home never sends: it writes nothing. The body is the address, this
+  phone's random device id and, for this week and last (local Mondays), per
+  set-up family child (not a clinician's own setup, not one mid-setup, at
+  most 8): days with a rep, days at the daily goal, the plan's days a week,
+  reps, practice tries among them, and the sounds those reps were in. Never a
+  name, an age, a word, a pass rate or a voice. `sona.report.v1` (device id,
+  last send, `off`) is on `NO_EXPORT` and `NO_IMPORT`: a restored phone is a
+  second device.
+- **The server (`lib/report.ts`, `app/api/report/route.ts`)** takes it
+  same-origin only, 4 KB, 40 an hour per IP, builds what it keeps field by
+  field (numbers clamped, unknown sounds dropped), and keeps it in
+  `report:wk:<monday>` ("<email> <device>" to the numbers) for three weeks.
+  An address in `email:unsub` is answered `off` (nothing kept) and the phone
+  stops for good. The daily `/api/cron/nurture` runs `runReports` after the
+  welcome series: on Monday (Tuesday catches up) it emails last week, once an
+  address a week (`report:sent:<monday>:<email>`, released if Resend
+  refuses), from Rachel, with the unsubscribe link and `EMAIL_POSTAL`; a week
+  with no reps sends nothing; at most 300 a run. Two phones, one address: one
+  email, a child with the same numbers on both shown once, at most three
+  devices. A founder's manual run with `?report=1` sends on any day.
+- **The email** says "Child 1", "Child 2" (never a name), the week ("Oct 12
+  to Oct 18"), days practiced, "Reached the daily goal on N days (your plan:
+  5 days a week)", reps split "in practice" and "in games and books", the
+  sounds, a kind line, what a rep is, "A practice snapshot from your phone,
+  not an evaluation." and "Rachel, MS, CF-SLP / Sona co-founder". No pass
+  rate, no clinical words, no emoji, no prices (`reporttest`). **Its words
+  are Rachel's to change**, as is whether a week with no practice should send
+  a gentle note (today it sends nothing).
+- The privacy page has its own section ("The weekly progress report (only if
+  a grown-up asks for it)") and the parents' "What's stored" answer names it.
+  **For Travis:** App Store Connect's App Privacy answers should now list
+  usage data linked to the parent's email (no review needed). The old Friday
+  email (`/api/cron/weekly`, to the retired `trials` list) is separate and
+  untouched.
+`reporttest` plays the phone and the server.
 
 Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
 `IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email

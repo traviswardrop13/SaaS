@@ -277,10 +277,15 @@
          and not one of the four questions (no progress segment). Travis's
          consent line is on screen before anything is sent; the address is
          posted once, by saveSetup(), when the parent leaves the ready
-         screen. No child's name on this screen, so none can ride along. -->
+         screen. No child's name on this screen, so none can ride along.
+         THE WEEKLY PROGRESS REPORT (Travis, 15 Oct 2026: "i want the setup
+         page to say get the weekly progress report", and no "Optional.
+         Rachel's tips…" line under it). The heading is the ask, and it is
+         true: an address given here sets profile.weeklyReport, and the phone
+         then sends a few numbers a week for the report (sona.js REPORT1,
+         lib/report.ts). The label still says it is optional. -->
     <div class="step" data-step="updates">
-      <h1 class="qh" id="updTitle" tabindex="-1">Get practice tips by email?</h1>
-      <p class="muted upd-help">Optional. Rachel's tips for practicing at home.</p>
+      <h1 class="qh" id="updTitle" tabindex="-1">Get the weekly progress report</h1>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
       <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
       <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -540,7 +545,7 @@
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
       goal: "Whatever you pick, I\u2019ll keep the week on track!",
-      updates: "Want tips for home?",
+      updates: "Want a weekly report?",
       achieve: "Here's what's ahead!",
       slp:     "Almost done!",
       email:   "One last thing!",
@@ -789,7 +794,7 @@
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
     // with Sona is, so the words are Rachel's to change.
-    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home. It does not replace a speech therapist."};
+    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home."};
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
@@ -955,7 +960,7 @@
     // IN_APP_SOURCES: no App Store email) and campaign tags.
     function postParentLead(email){
       var pu=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
-      fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({email:email,source:"app-setup",role:"parent",summary:"New parent (weekly summary opt-in)",utm_source:pu.utm_source,utm_medium:pu.utm_medium,utm_campaign:pu.utm_campaign,utm_content:pu.utm_content,utm_term:pu.utm_term,referrer:pu.referrer,landing:pu.landing})}).catch(function(){});
+      fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({email:email,source:"app-setup",role:"parent",summary:"New parent (weekly report opt-in)",utm_source:pu.utm_source,utm_medium:pu.utm_medium,utm_campaign:pu.utm_campaign,utm_content:pu.utm_content,utm_term:pu.utm_term,referrer:pu.referrer,landing:pu.landing})}).catch(function(){});
       try{if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in");}catch(e){}
     }
 
@@ -999,8 +1004,11 @@
         pathReason: draft.pathReason || "",
         onboarded: true,
       };
-      // a parent who gave the email step an address (nothing reads it; kept as the hand-off kept it)
-      if(draft.role!=="slp"&&draft.email&&ORDER.indexOf("updates")>-1)prof.weeklyEmail=true;
+      // a parent who gave the email step an address asked for the weekly
+      // progress report: weeklyReport is what sona.js REPORT1 reads (only an
+      // address given under that heading sends a child's numbers);
+      // weeklyEmail is kept as the hand-off kept it, and nothing reads it
+      if(draft.role!=="slp"&&draft.email&&ORDER.indexOf("updates")>-1){prof.weeklyEmail=true;prof.weeklyReport=true;}
       Sona.saveProfile(prof);
       // The two one-tap answers go to ONE household key and nowhere else (the
       // profile above gets no field for them: the profile is what a clinician
