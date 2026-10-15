@@ -877,11 +877,23 @@
     // tell it) is painted, and on again only once a screen without them is
     // up, so a tap on Yes or Not right now is never recorded. Never for a
     // clinician's own setup, and never again once the hand-off is reached.
-    var NO_REPLAY={therapy:1,ready:1,slp:1,email:1},replayDone=false;
+    // Two more locks (the second review, 15 Oct 2026):
+    //  - the screen a therapy answer lands on is not recorded either: Yes,
+    //    Not right now and Skip sit inside the step, so a double tap's second
+    //    tap, or a mouse moving on from where it clicked, would be recorded
+    //    at the answer's place. Recording comes back on the screen after it,
+    //    reached by the footer, which is in the same place on every screen;
+    //  - a child already set up walking setup again (Back from the first
+    //    game, a second visit) is never recorded: whoever holds the phone
+    //    may be the child. The hand-off also ends recording for the whole tab
+    //    (sona.replayoff.v1, read by SonaAnalytics.replay).
+    var NO_REPLAY={therapy:1,ready:1,slp:1,email:1},replayDone=false,replayFrom=null,replayHold=false;
+    var REWALK=!!(p.onboarded&&!AFTER);
     function replayAt(key,painted){
       try{
+        if(!painted&&key!==replayFrom){replayHold=replayFrom==="therapy";replayFrom=key;}
         if(!window.SonaAnalytics||!SonaAnalytics.replay)return;
-        var ok=!replayDone&&draft.role!=="slp"&&ORDER===ORDER_PARENT&&!NO_REPLAY[key];
+        var ok=!replayDone&&!REWALK&&!replayHold&&draft.role!=="slp"&&ORDER===ORDER_PARENT&&!NO_REPLAY[key];
         if(!ok&&!painted)SonaAnalytics.replay(false);
         else if(ok&&painted)SonaAnalytics.replay(true);
       }catch(e){}
@@ -1146,7 +1158,7 @@
     // on "Let's play!" and opened the game past the hand-off.
     function showHandoff(){
         // the child is about to hold the phone: the recording ends first (REPLAY1)
-        replayDone=true;try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
+        replayDone=true;try{sessionStorage.setItem("sona.replayoff.v1","1");}catch(e){}try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
         settle();stepSeen("handoff");nextBtn.removeAttribute("aria-busy");
         var ach=steps.achieve,nm=(nameEl.value||draft.childName||"").trim()||"your child";
         document.getElementById("achName").textContent=nm;

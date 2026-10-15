@@ -1127,8 +1127,15 @@ sessions" on in PostHog too.
   `replayAt(key, painted)` turns it off BEFORE the therapy question, the
   ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
   once a screen without them is up, so a tap on Yes / Not right now is never
-  recorded (the ready card's size alone would tell the answer). The plan
-  screen calls `replay(true)` once the offer is painted.
+  recorded (the ready card's size alone would tell the answer). **The
+  screen a therapy answer lands on is not recorded either** (`replayHold`):
+  a double tap's second tap, or a mouse moving on, would be recorded at the
+  answer's place; recording comes back one screen later, reached by the
+  fixed footer. **A child already set up walking setup again** (`REWALK`:
+  Back from the first game, a second visit) is never recorded, and **the
+  hand-off ends recording for the whole tab** (`sona.replayoff.v1` in
+  sessionStorage, which `SonaAnalytics.replay` reads). The plan screen
+  calls `replay(true)` once the offer is painted.
 - **The name: masked where it is shown, and a backstop that drops.** Every
   spot a recorded page shows the child's name is an element of class
   `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, the plan screen's
@@ -1163,8 +1170,9 @@ sessions" on in PostHog too.
   `replaytest` plays the real recorder against a fake PostHog whose project
   settings are as loose as they go, and fails on a name (also one that is a
   word on the page, or inside one), an address, anything typed, a pointer on
-  the therapy, ready or hand-off screens, a recording anywhere else, or a
-  touched ordinary event. **For Travis:** the privacy page and the parents'
+  the therapy, ready or hand-off screens or a double-tapped answer, a
+  recording after the hand-off or anywhere else, or a touched ordinary
+  event. **For Travis:** the privacy page and the parents'
   "What's stored" answer say so; App Store Connect's App Privacy answers owe
   a line (NATIVE.md). What a recording may show of a child (the age group,
   sounds and days a week picked in setup) is Rachel's to know.

@@ -315,6 +315,9 @@
     replay: function (on) {
       if (!REPLAY_PAGE) return;
       on = !!on;
+      // once setup has handed the phone to the child, never again in this
+      // tab (onboarding.html writes it at the hand-off); unreadable is "no"
+      if (on) { try { if (window.sessionStorage.getItem("sona.replayoff.v1")) return; } catch (e) { return; } }
       if (on === replaying) return;
       replaying = on;
       try { remember(); if (on) window.posthog.startSessionRecording(); else window.posthog.stopSessionRecording(); } catch (e) {}

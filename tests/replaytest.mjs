@@ -61,7 +61,7 @@ const REMOTE = {
   supportedCompression: ["gzip-js"], hasFeatureFlags: false,
 };
 
-// ── the fake web: speaksona.com from public/, PostHog's CDN from node_modules ──
+// ── the fake web: speaksona.com from public/ (PostHog's code included), PostHog's own hosts faked ──
 function file(p) {
   const f = path.join(ROOT, decodeURIComponent(p));
   return f.startsWith(ROOT) && existsSync(f) && statSync(f).isFile() ? f : null;
@@ -240,14 +240,22 @@ try {
     await next(page);
     await page.locator('[data-step="therapy"].on').waitFor();
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
-    await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').click();
+    // This time a double tap, the way a hurried thumb answers: the second tap
+    // lands on the next screen, and then the pointer moves on from the answer
+    const yes = await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').boundingBox();
+    const t1 = await page.evaluate(() => Date.now());
+    await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').dblclick();
     await page.locator('[data-step="sounds"].on').waitFor();
-    await mark(page, 301);                          // the sounds: recorded (the control)
+    for (let i = 0; i <= 10; i++) { await page.mouse.move(yes.x + yes.width / 2 + i * 5, yes.y + yes.height / 2 + i * 30); await page.waitForTimeout(60); }
+    await mark(page, 301);                          // the screen after the answer: not recorded either
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
     const chip = page.locator('#obSounds [data-sound="R"]');
     if (await chip.getAttribute("aria-pressed") !== "true") await chip.click();
+    const t2 = await page.evaluate(() => Date.now());
     await next(page);
     await page.locator('[data-step="goal"].on').waitFor();
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+    await mark(page, 351);                          // the days a week: recorded (the control)
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
     await page.locator("#goalSkip").click();
     await page.locator('[data-step="updates"].on').waitFor();
@@ -266,7 +274,12 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the sounds' pointer was recorded (the control)", marked(rr, 301));
+    ok("setup: the days-a-week screen's pointer was recorded (the control)", marked(rr, 351));
+    ok("setup: nothing on the screen a therapy answer lands on (sounds)", !marked(rr, 301));
+    // every incremental event, each pointer position at its own time
+    const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
+    const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));
+    ok("setup: nothing at all from the double-tapped answer to the next footer tap (no tap, no pointer at the answer's place)", between.length === 0, between.slice(0, 3));
     ok("setup: the microphone's pointer was recorded (the control)", marked(rr, 501));
     ok("setup: nothing on the therapy question, first visit", !marked(rr, 201));
     ok("setup: nothing on the therapy question after Back", !marked(rr, 211));
@@ -301,6 +314,17 @@ try {
     ok("setup: PostHog's code came from speaksona.com, the tested build, and nothing else of it loaded (no surveys, toolbar, logs, dead clicks, exceptions, web vitals)", JSON.stringify(w.vendor.slice().sort()) === JSON.stringify(["/vendor/posthog/static/" + PH_VERSION + "/array.js", "/vendor/posthog/static/" + PH_VERSION + "/lazy-recorder.js"]) && w.assets.every((p) => p.indexOf("/array/" + TOKEN + "/config") === 0), { vendor: w.vendor, cdn: w.assets });
     ok("setup: no event but setup's own and the recording", w.events().every((e) => ["$snapshot", "setup step", "$pageview", "$identify", "$set", "onboarding completed", "Lead", "CompleteRegistration", "weekly summary opted in", "$opt_in"].includes(e.event)), [...new Set(w.events().map((e) => e.event))]);
     ok("setup: no page error", w.errors.length === 0, w.errors);
+    // The child now holds the phone. "Let's play!", then Back (no page
+    // cache: setup loads afresh, set up): never recorded again in this tab
+    const before = w.snaps().length;
+    await page.evaluate(() => document.body.classList.remove("ob-settling"));
+    await page.locator("#nextBtn").click();
+    await page.waitForURL(/charge\.html|arcade-feed|today\.html/);
+    await page.goBack();
+    await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn") && window.posthog && window.posthog.__loaded);
+    await mark(page, 171);
+    await w.settle(2000);
+    ok("after the hand-off, Back into setup: never recorded again", w.snaps().length === before && !(await page.evaluate(() => window.posthog.sessionRecordingStarted())), { before, after: w.snaps().length });
     await w.context.close();
   });
 
@@ -374,18 +398,19 @@ try {
     await w.context.close();
   });
 
-  // ── 3d. an old answer painted into setup's hidden clinician screen ──
+  // ── 3d. a set-up child walking setup again, with an old answer painted
+  // into its hidden clinician screen ──
   await scenario("an old clinician-screen answer", async () => {
     const w = await world(browser, { seed: { "sona.profile.v1": { childName: "Zephyrine", onboarded: true, slpEvaluated: "yes", focusSounds: ["R"] } } });
     await w.page.goto("https://speaksona.com/onboarding.html");
     await w.page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
     const painted = await w.page.evaluate(() => !!document.querySelector('#obSlp .choice.on'));
-    await recording(w.page);
+    await w.page.waitForFunction(() => window.posthog && window.posthog.__loaded);
     await mark(w.page, 131);
     await w.settle();
     const text = w.text();
     ok("the old answer is painted in the page (the case this checks)", painted);
-    ok("setup was recorded", w.rr().some((e) => e.type === FULL) && marked(w.rr(), 131));
+    ok("a child already set up, walking setup again, is not recorded at all", !w.rr().length && !w.vendor.some((x) => /lazy-recorder/.test(x)), w.vendor);
     ok("no recording holds the question or the answer", !/seen a speech therapist/i.test(text) && !/"choice on"/.test(text));
     await w.context.close();
   });
@@ -446,6 +471,8 @@ try {
     ok("onboarding.html: the ready screen, the clinician screens and the build overlay carry ph-no-capture", /<div class="step ph-no-capture" data-step="ready">/.test(ob) && /<div class="step ph-no-capture" data-step="slp">/.test(ob) && /<div class="step ph-no-capture" data-step="email">/.test(ob) && /d\.className="show ph-no-capture"/.test(ob));
     ok("onboarding.html: every spot that shows the name is a ph-name", ["intName", "micName", "achName", "emName"].every((id) => new RegExp('class="ph-name" id="' + id + '"').test(ob)));
     ok("onboarding.html: never recorded on the therapy, ready or clinician screens", /NO_REPLAY=\{therapy:1,ready:1,slp:1,email:1\}/.test(ob));
+    ok("onboarding.html: nor the screen a therapy answer lands on, nor a set-up child walking setup again", /replayHold=replayFrom==="therapy"/.test(ob) && /var REWALK=!!\(p\.onboarded&&!AFTER\);/.test(ob) && /var ok=!replayDone&&!REWALK&&!replayHold&&/.test(ob));
+    ok("onboarding.html + analytics.js: the hand-off ends recording for the tab", /sessionStorage\.setItem\("sona\.replayoff\.v1","1"\)/.test(ob) && /sessionStorage\.getItem\("sona\.replayoff\.v1"\)\) return; \} catch \(e\) \{ return; \}/.test(SRC));
     ok("onboarding.html: off before a screen is painted, on only after", /var key=ORDER\[idx\];\s*replayAt\(key,false\);/.test(ob) && /stepSeen\(key\);\s*replayAt\(key,true\);\s*\}/.test(ob));
     ok("onboarding.html: the hand-off ends it for good", /function showHandoff\(\)\{[\s\S]{0,140}replayDone=true;[^\n]*SonaAnalytics\.replay\(false\)/.test(ob));
     ok("subscribe.html: on only once the offer is painted, and only for a grown-up's door", /fitOffer\(\);[\s\S]{0,700}if \(OFFER_SETUP \|\| OFFER_FIRST\) \{ try \{ if \(window\.SonaAnalytics && SonaAnalytics\.replay\) SonaAnalytics\.replay\(true\)/.test(sub) && (sub.match(/SonaAnalytics\.replay\(/g) || []).length === 1);
