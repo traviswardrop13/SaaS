@@ -737,7 +737,8 @@ if (A) {
     fin.length > 0 && /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /source:"app-setup"/.test(fin) && /keepalive:true/.test(fin) && /^function postParentLead\(email\)\{/.test(fin));
   ok("…and never with the child's name or age",
     fin.length > 0 && !/childName|draft\.|achEmName|nameEl|child:/.test(fin));
-  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.indexOf('<div class="step" data-step="ready">'));
+  // (the ready step carries ph-no-capture since 15 Oct 2026, REPLAY1)
+  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.search(/<div class="step[^"]*" data-step="ready">/));
   ok("the email step says the email joins the list before it is given, in Travis's words",
     updStep.length > 0 && /We(&rsquo;|’|')ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(updStep), updStep.slice(0, 300));
 

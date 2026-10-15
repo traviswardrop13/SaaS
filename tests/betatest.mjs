@@ -544,7 +544,8 @@ ok("today no pageerrors", errs.length === 0);
 // phone?" at the bottom of Settings, which opens it.
 {
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
-  const step = (ob.match(/<div class="step" data-step="email">[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
+  // (the step carries ph-no-capture too since 15 Oct 2026: no session recording holds it)
+  const step = (ob.match(/<div class="step[^"]*" data-step="email">[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
   ok("the email step exists to read", step.length > 0);
   for (const lie of [/save progress across devices/i, /starter guide/i, /progress report/i, /just your child's progress/i]) {
     ok("…and claims no sync that does not exist: " + lie.source,
