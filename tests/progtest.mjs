@@ -197,15 +197,15 @@ ok("Echo shows a visual checking state", /echo-checking/.test(chargeSrc) && /leo
 // 24 Sep 2026: the spoken line is calm now ("I have an idea. Let's try this one.").
 ok("step-down retry offers an easier same-sound target", /Let's try this one/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
 
-// ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
+// ── voice revive: "keep playing" copy + family-aware trigger in all 6 round games ──
 {
   const { readFileSync: rf } = await import("fs");
-  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide"];
+  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-rise"];
   const all = games.every((g) => {
     const src = rf(ROOT + "/" + g + ".html", "utf8");
     return src.includes("to keep playing!") && src.includes("famOK") && src.includes("Sona.frameShape");
   });
-  ok("all 5 games: revive says 'keep playing' + family-checked", all);
+  ok("all 6 round games: revive says 'keep playing' + family-checked", all);
   const sj = rf(ROOT + "/sona.js", "utf8");
   ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
 }

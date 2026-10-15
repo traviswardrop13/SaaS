@@ -104,7 +104,7 @@ async function clean(label,page,errors){
   ok(label+': no runtime errors',errors.length===0,errors);
 }
 
-const games=['slice','stack','run','glide'], available=[];
+const games=['slice','stack','run','glide','rise'], available=[];
 const selected=process.env.ARCADE_SPEECH_GAMES?process.env.ARCADE_SPEECH_GAMES.split(','):games;
 // Deliberately put one real game object away from collisions. We observe its
 // rendered motion, rather than calling the helper's success function.
@@ -114,6 +114,8 @@ async function seed(page,game){return page.evaluate(game=>{
   if(game==='stack'){cur={x:30,w:100,dir:1,c:'#ffeeaa'};}
   if(game==='run'){things=[{t:'c',e:'🪙',lane:0,y:-50}];spawnGap=10000;lane=laneX=1;}
   if(game==='glide'){gates=[{x:W+50,cy:H*.5,passed:false,star:false,gold:false,got:false}];gateMs=0;gateEvery=10000;py=H*.5;vy=0;G=0;}
+  // Rise Up: one cube falling well clear of the balloon and the shield, and no new ones
+  if(game==='rise'){Rise.clear();Rise.add('cube',W*.15,H*.2);Rise.shield.x=Rise.shield.tx=W*.85;spawnMs=0;spawnEvery=1e9;}
 },game);}
 async function state(page,game){return page.evaluate(game=>{
   var common={at:performance.now(),frames:__slowTest.frames,phase,slowMs,playing,rev:REV};
@@ -121,6 +123,7 @@ async function state(page,game){return page.evaluate(game=>{
   if(game==='stack')Object.assign(common,{x:cur&&cur.x,score,progress:floorGot,count:stack.length,normal:speed});
   if(game==='run')Object.assign(common,{y:things[0]&&things[0].y,clock:spawnGap,score:coins,progress:dist,count:things.length,normal:speed});
   if(game==='glide')Object.assign(common,{x:gates[0]&&gates[0].x,y:py,velocity:vy,clock:gateMs,score,progress:legGot,count:gates.length,normal:gspeed});
+  if(game==='rise')Object.assign(common,{y:Rise.pieces[0]&&Rise.pieces[0].y,clock:spawnMs,score:pushed,progress:climbMs,count:Rise.pieces.length,normal:fallNow()});
   return common;
 },game);}
 function frozen(s){const{at,frames,...rest}=s;return rest;}
@@ -176,10 +179,10 @@ try {
         ok(game+': the next ask waits twenty seconds of play, counted once the help is over',await page.evaluate(()=>slowAskAt===SLOW_ASK.every&&slowMissed===0&&slowAskPlay===0));
         await seed(page,game);const c=await state(page,game);await page.waitForTimeout(500);const d=await state(page,game);
         const frames=d.frames-c.frames,elapsed=d.at-c.at;
-        const travel=game==='run'?(d.y-c.y):game==='glide'?(c.x-d.x):(d.x-c.x);
+        const travel=game==='run'||game==='rise'?(d.y-c.y):game==='glide'?(c.x-d.x):(d.x-c.x);
         const rate=travel/(frames*c.normal);
         ok(game+': the real moving game object slows to about 55 percent',frames>12&&rate>.47&&rate<.64,{frames,rate,c,d});
-        if(game==='slice'||game==='glide'){
+        if(game==='slice'||game==='glide'||game==='rise'){
           const pacing=(d.clock-c.clock)/elapsed;
           ok(game+': new obstacles or fruit slow too, preserving spacing',pacing>.43&&pacing<.67,{pacing});
         }

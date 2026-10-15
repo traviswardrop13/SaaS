@@ -32,7 +32,9 @@ const sayLittle = ["balloon", "cake", "fishtank", "flower", "gifts", "puppy", "r
 const sayBig = ["castle", "dino", "hoops", "monster", "pizza", "racecar", "robot", "soccer", "space", "treasure"];
 const adventureKeys = ["glide", "run", "slice", "stack", "tiles"];
 const simpleKeys = ["bubbles", "feed", "peekaboo", ...sayLittle].sort();
-const arcadeKeys = [...adventureKeys, ...sayBig].sort();
+// Rise Up (9 Oct 2026) is a round game on the big kids' shelf, entered through
+// its practice page like the five, but never in the adventure's deck.
+const arcadeKeys = [...adventureKeys, "rise", ...sayBig].sort();
 const directKeys = ["bubbles", "feed", "peekaboo", ...sayLittle, ...sayBig];
 const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 // COMING SOON (Travis, 26 Sep 2026): Bubble Pop and Peekaboo, and every Say &
@@ -131,7 +133,7 @@ await section("library prerequisites", async () => {
       freeKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "free").map(game => game.key).sort();
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
       ok("Coming soon: Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
-      ok("…and the six first games are never Coming soon", ["feed", ...adventureKeys].every((key) => playableKeys.includes(key)), playableKeys);
+      ok("…and the six first games and Rise Up are never Coming soon", ["feed", ...adventureKeys, "rise"].every((key) => playableKeys.includes(key)), playableKeys);
     }
     ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === allKeys.length);
   } finally { await ctx.close(); }
@@ -171,7 +173,7 @@ if (present && hasContract) {
       ok("the daily adventure is five rounds of arcade games the family can open",
         adventure.length === 5 && adventure.every((g) => adventureKeys.includes(g.key) && g.open)
           && (!everyGame || same(sorted(adventure.map((g) => g.key)), adventureKeys)), adventure);
-      ok("Arcade contains the five earned arcade games and the ten Say & Play games for 5-8", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
+      ok("Arcade contains the five earned arcade games, Rise Up and the ten Say & Play games for 5-8", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
       ok("Simple play presents the suggested 3–4 range", simple.ageLabel === "Suggested ages 3–4", simple.ageLabel);
       ok("Arcade presents the suggested 5–8 range", arcade.ageLabel === "Suggested ages 5–8", arcade.ageLabel);
       ok("every game has explicit catalog metadata",

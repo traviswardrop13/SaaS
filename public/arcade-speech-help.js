@@ -1,6 +1,6 @@
-/* Echo's sound power in the five round games: Fruit Slice (Super Slice),
-   Piano Tiles (slow keys), Block Stacker, Sound Sprint and Flappy Glide (slow
-   help). Each page sets window.SLOW_HELP and keeps its own microphone
+/* Echo's sound power in the six round games: Fruit Slice (Super Slice),
+   Piano Tiles (slow keys), Block Stacker, Sound Sprint, Flappy Glide and Rise
+   Up (slow help). Each page sets window.SLOW_HELP and keeps its own microphone
    (openReviveMic, closeReviveMic, listenFor) and its own ear; this file holds
    the turn, the ask and the reward, once.
 

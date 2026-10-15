@@ -175,13 +175,19 @@ await section("ages and access", async () => {
 
 // ── 5. every game the adventure can name finishes it from its end card ──
 {
-  const hooks = { slice: "arcade-slice.html", tiles: "arcade-tiles.html", stack: "arcade-stack.html", run: "arcade-run.html", glide: "arcade-glide.html", feed: "arcade-feed.html" };
+  const hooks = { slice: "arcade-slice.html", tiles: "arcade-tiles.html", stack: "arcade-stack.html", run: "arcade-run.html", glide: "arcade-glide.html", rise: "arcade-rise.html", feed: "arcade-feed.html" };
   for (const [key, file] of Object.entries(hooks)) {
     const src = readFileSync(ROOT + "/" + file, "utf8");
     ok(`${file} finishes the quest from its end card`, src.includes(`questEnd("${key}")`));
   }
   const engine = readFileSync(ROOT + "/sayplay.js", "utf8");
   ok("the Say & Play engine (Hoops, Soccer Goal, Dino Dig, Bubble Pop) does too, with its own key", /function showEnd\(\)[\s\S]{0,200}questEnd\(G\.key\)/.test(engine));
+  // a game on the list with no hook would leave its day open for ever
+  const days = readFileSync(ROOT + "/sona.js", "utf8").match(/const QUEST_DAYS = \{[\s\S]*?\n  \};/);
+  const named = [...new Set(((days && days[0]) || "").match(/game: "(\w+)"/g).map((m) => m.slice(7, -1)))];
+  const sayGames = ["hoops", "soccer", "dino", "bubbles"];
+  ok("every game the adventure names has a way to finish its day", named.length >= 10 && named.every((g) => hooks[g] || sayGames.includes(g)), named);
+  ok("Rise Up has a day of its own", named.includes("rise"), named);
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   const block = (sona.match(/QUEST1: the daily adventure[\s\S]*?\/\/ ── Native audio capture/) || [""])[0];
   ok("the adventure mints no coins and asks for nothing new", block.length > 0 && !/addCoins|mintCoins|logAttempt|bumpReps|gameRep\(|recordRung/.test(block.replace(/\/\/.*$/gm, "")));

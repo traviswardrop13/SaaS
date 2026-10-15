@@ -403,7 +403,7 @@ try {
   const HELP=readFileSync(ROOT+'/arcade-speech-help.js','utf8');
   ok('the shared helper keeps eight seconds for pages that set no time',/SLOW_HELP\.ms\|\|8000/.test(HELP)&&/-sound\.wav/.test(HELP)&&!/-demo\.mp3/.test(HELP));
   ok('the shared helper counts every earned turn as a rep',/if\(accepted\)\{[^}]*S\.gameRep\(SND\)/.test(HELP));
-  for(const g of ['stack','run','glide']){
+  for(const g of ['stack','run','glide','rise']){
     const src=readFileSync(ROOT+'/arcade-'+g+'.html','utf8');
     ok(g+': still eight seconds (no ms set)',/window\.SLOW_HELP=\{/.test(src)&&!/SLOW_HELP=\{[^}]*\bms:/.test(src));
   }

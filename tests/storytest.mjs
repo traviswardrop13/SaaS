@@ -259,7 +259,7 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
   ok("sona.js exposes a shared onBackground()",
     /function onBackground\(/.test(sona) && /visibilitychange/.test(sona),
     "pagehide alone never fires on screen lock");
-  for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-feed"]) {
+  for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-rise", "arcade-feed"]) {
     const gs = readFileSync(ROOT + "/" + g + ".html", "utf8");
     ok(g + " releases its mic when backgrounded", /onBackground/.test(gs),
       "this game holds its own keep-playing mic and only listened to pagehide");

@@ -3373,6 +3373,7 @@
     "arcade-tiles.html": { name: "Piano Tiles",   icon: "🎹", band: "Arcade",   c: "#9775fa" },
     "arcade-run.html":   { name: "Sound Sprint",  icon: "🏃", band: "Arcade",   c: "#2f9e44" },
     "arcade-glide.html": { name: "Flappy Glide",  icon: "🎈", band: "Arcade",   c: "#4f8fc7" },
+    "arcade-rise.html":  { name: "Rise Up",       icon: "🎈", band: "Arcade",   c: "#5aa6dc" },
   };
   function gameMeta(file) {
     const k = String(file || "").replace(/^\//, "").split("?")[0];
@@ -3395,6 +3396,8 @@
     stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "premium", playDescription: "Time your tap to stack the blocks." },
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
+    // Rise Up (Travis, 9 Oct 2026: "lets build the game rise up"): a round game like Flappy Glide, entered through its practice page; adventure: false keeps it out of the old five-game run.
+    rise:  { name: "Rise Up",       sub: "Say it 5× to play",          go: "/charge.html?game=arcade-rise.html", group: "arcade", tier: "premium", adventure: false, playDescription: "Drag the shield to keep your balloon safe." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
     // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
     // older kids, the two free games for younger kids"): with Feed Echo, the
@@ -3474,7 +3477,7 @@
   const ACTIVITY_KEYS = GAME_KEYS.concat(
     SAY_KEYS.filter(function (key) { return !GAME_ACTS[key].comingSoon; }),
     SAY_KEYS.filter(function (key) { return GAME_ACTS[key].comingSoon; }),
-    ["bubbles", "peekaboo"]);
+    ["bubbles", "peekaboo", "rise"]);
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";
@@ -3772,7 +3775,8 @@
     var style = playStyle();
     // A Say & Play game is its own practice-shaped loop with no earned turn
     // to bank, so it never joins the adventure's deck.
-    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && !GAME_ACTS[key].say && gameAccess(key).allowed; });
+    // adventure: false (Rise Up) keeps a round game out of the old five-game run.
+    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && !GAME_ACTS[key].say && GAME_ACTS[key].adventure !== false && gameAccess(key).allowed; });
     var count = ROT_LEN;
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
@@ -5237,7 +5241,7 @@
       { game: "soccer", line: "Can you kick the ball past Bo the bear?" },
       { game: "slice", line: "The fruit trees are full again. Slice a big feast!" },
       { game: "tiles", line: "Echo made up a new song. Play it with him!" },
-      { game: "run", line: "The forest race starts now. Ready, set, run!" },
+      { game: "rise", line: "Toy blocks are falling! Keep the balloon safe all the way up to the stars." },
       { game: "stack", line: "Build a tower so tall it touches the clouds!" },
       { game: "glide", line: "Fly the balloon home over the hills!" },
       { game: "hoops", line: "The big final game! Shoot hoops with Echo." },
@@ -5265,6 +5269,7 @@
     stack: "Help Echo build a tall tower!", run: "Race with Echo!",
     glide: "Fly the balloon with Echo!", hoops: "Shoot hoops with Echo!",
     soccer: "Kick the ball past Bo the bear!", dino: "Dig for dinosaur bones!",
+    rise: "Keep the balloon safe from the falling blocks!",
     feed: "Echo is hungry! Help him eat.", bubbles: "Pop Echo's bubbles!",
   };
   function _questSt() {
@@ -5660,7 +5665,7 @@
   // The crafted picture each game wears on Home's card, and on the plan
   // screen's hero (30 Sep 2026): the plan screen sells these games, so it
   // shows them, in the same art Home does. One map, read by both pages.
-  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", peekaboo: "peekaboo", balloon: "balloon", flower: "flower", rocket: "rocket", snowman: "snowman", train: "train", puppy: "puppy", stars: "stars", cake: "cake", gifts: "gifts", fishtank: "fishtank", racecar: "racecar", treasure: "treasure", soccer: "soccer", robot: "robot", castle: "castle", dino: "dino", space: "space", pizza: "pizza", monster: "monster" };
+  const CRAFTED_CARDS = { slice: "fruit", tiles: "piano", stack: "stack", run: "run", glide: "glide", feed: "feed", hoops: "hoops", bubbles: "bubbles", peekaboo: "peekaboo", balloon: "balloon", flower: "flower", rocket: "rocket", snowman: "snowman", train: "train", puppy: "puppy", stars: "stars", cake: "cake", gifts: "gifts", fishtank: "fishtank", racecar: "racecar", treasure: "treasure", soccer: "soccer", robot: "robot", castle: "castle", dino: "dino", space: "space", pizza: "pizza", monster: "monster", rise: "rise" };
 
 
   // The button path: stop whatever is talking and say THIS, now.
@@ -5813,6 +5818,7 @@
   const GAME_STICKER = {
     slice: ["st-fruit", "sky"], run: ["st-sprint", "mint"], stack: ["st-blocks", "sky"],
     tiles: ["st-piano", "sky"], glide: ["st-balloon", "sky"], feed: ["p-echo-idle", "mint"],
+    rise: ["st-balloon", "sky"],
     bubbles: ["st-bubbles", "sky"], peekaboo: ["st-peekaboo", "peach"],
     story: ["st-story", "peach"], chapter: ["st-story", "peach"],
   };

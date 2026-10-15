@@ -285,19 +285,19 @@ function noOverlap(label, l, extra) {
 function clean(label, errors) { ok(label + ": no runtime errors", errors.length === 0, errors); }
 function stripComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1"); }
 
-// ── the five arcade games: STAR MODE is gone; the keep-playing card is the
+// ── the six round games: STAR MODE is gone; the keep-playing card is the
 // only listener, and only while it shows ──
-const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["stack", "arcade-stack.html"], ["tiles", "arcade-tiles.html"], ["glide", "arcade-glide.html"]];
+const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["stack", "arcade-stack.html"], ["tiles", "arcade-tiles.html"], ["glide", "arcade-glide.html"], ["rise", "arcade-rise.html"]];
 // Each game sets its own score to reach the end card with points (a round
 // with none ends on "Good try! Wanna go again?" instead). Fruit Slice sets a
 // row of five fruit through its own rowUp(); Piano Tiles sets a row
 // of seven notes the same way: their cards name the row (Beat Your Best, 1-2
 // Oct 2026).
-const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; rowN = 6; rowUp(); }, run: () => { dist = 70; }, glide: () => { score = 7; rowN = 6; rowUp(); } };
+const SCORED = { slice: () => { score = 7; rowN = 5; rowUp(); }, tiles: () => { score = 7; comboN = 7; rowUp(); }, stack: () => { score = 7; rowN = 6; rowUp(); }, run: () => { dist = 70; }, glide: () => { score = 7; rowN = 6; rowUp(); }, rise: () => { pushed = 7; } };
 // Beat Your Best: a game that keeps the child's own best dares them to pass
 // it, so its top button is "Play again" (back through its own practice page),
 // not "Next" on to a different game. Every arcade game now keeps a best and returns through its own practice page.
-const PLAYS_AGAIN = ["run", "tiles", "slice", "stack", "glide"];
+const PLAYS_AGAIN = ["run", "tiles", "slice", "stack", "glide", "rise"];
 // "orange" by hue, so a new value from the designer needs no test edit: the
 // crafted orange (#bf5d24) and action.css's (#ef6f23) both read as orange
 const isOrange = (c) => { const m = String(c).match(/(\d+),\s*(\d+),\s*(\d+)/); if (!m) return false; const [r, g, b] = m.slice(1).map(Number);
@@ -478,6 +478,10 @@ const MISS = {
   run: [() => { hurtT = -1e9; falling.on = false; tumbles = 0; things.length = 0; things.push({ t: "c", e: "🪙", lane: 0, y: 40 }, { t: "o", e: OBST[0], lane: Math.round(laneX), y: PLAYY() }); },
     () => tumbles >= 1,
     () => { things.length = 0; things.push({ t: "c", e: "🪙", lane: 0, y: 0 }); }, () => things[0] && things[0].y],
+  // Rise Up: a cube dropped on the balloon itself (a harmless one stays falling, far to the side)
+  rise: [() => { heartHitAt = -1e9; bumps = 0; Rise.clear(); Rise.add("cube", W * 0.15, H * 0.25); Rise.add("cube", Rise.balloon.x, Rise.balloon.y); },
+    () => bumps >= 1,
+    () => { Rise.clear(); Rise.add("cube", W * 0.15, 60); }, () => Rise.pieces[0] && Rise.pieces[0].y],
 };
 for (const [key, [setup, missed, place, read]] of Object.entries(MISS)) {
   await scenario(key + ": a miss mid-play", async () => {
