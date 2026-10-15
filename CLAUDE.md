@@ -222,14 +222,25 @@ changing one. What follows from the rule:
     that already fits above the keyboard, sized by the phone and never by
     the keyboard (`html.ob-short` / `ob-tiny`, `obPhone` in
     `onboarding.html`: the window's height, taken only with no box focused
-    and the keyboard down, so a phone or iPad turned while the keyboard is
-    up waits for it to go down; on a touch screen only, so a short laptop
-    window, a clinician's setup in a browser, keeps the full-size step).
-    The cost: no Echo and no "So Echo knows who to cheer for." on this one
-    screen (the line is still the box's spoken description; Travis's to
-    bring back); on a 4-inch phone no progress bar there and the box's label
-    read, not drawn; and under Reduce Motion nothing in setup fades, Continue
-    included. **In the iPhone app** an age tap keeps the keyboard up; **on
+    and the keyboard down; a phone or iPad turned while the keyboard is up
+    takes its screen's height the new way at once, and the window's own
+    once the keyboard is down; on a touch screen only, so a short laptop
+    window, a clinician's setup in a browser, keeps the progress bar and the
+    label, and its margins and Continue follow the window's height like the
+    screens around it). The cost: no Echo and no "So Echo knows who to cheer
+    for." on this one screen (the line is still the box's spoken
+    description; Travis's to bring back); and under Reduce Motion nothing in
+    setup fades, Continue included. **The smallest size (`ob-tiny`) also
+    has no progress bar on this screen, and the box's label is read, not
+    drawn.** It goes by the touch window's height with no keyboard, not by
+    the phone's size: 600 px or less, or 700 or less when 340 wide or less.
+    So it is a 4-inch iPhone, a Face ID iPhone in Display Zoom (320×693, in
+    the app: its notch and taller keyboard leave it less room than an
+    iPhone SE), **and also any bigger iPhone whose window is that short in
+    Safari**: a 4.7-inch iPhone on the website is about 553 px tall under
+    Safari's bars, so it loses the bar and the drawn label too. Whether a
+    phone on the website should keep them is Travis's call: nothing breaks
+    either way. **In the iPhone app** an age tap keeps the keyboard up; **on
     the website** it still lets go of the box, because nothing there lifts
     Continue above the keyboard and the keyboard going down is what shows
     it. Continue steps aside while the keyboard rises and fades in above it;
@@ -240,11 +251,16 @@ changing one. What follows from the rule:
     tap on an age or the box's label); every step slides in as one piece,
     and under Reduce Motion each screen's first frame is its own (sona.css's
     0.01 ms transitions painted it in the last screen's layout). Only a
-    window under 400 px with the keyboard up (an iPad on its side) still
-    changes, to the 4-inch phone's layout. The email step still re-lays out
-    for the keyboard as before. `setupsteadytest` measures every frame at
-    390×844, 375×667 and 320×568, with motion on and under Reduce Motion,
-    and plays each of these edges.
+    window taller than 700 px that the keyboard leaves 400 px or less (an
+    iPad on its side) still changes, to the `ob-tiny` layout; never a phone
+    700 px tall or less, whose own layout already fits above its keyboard
+    (an iPhone SE with a keyboard over 267 px, and a phone in Display Zoom,
+    used to lose the bar and the label as the keyboard rose, the box
+    jumping 67 px). The email step still re-lays out for the keyboard as
+    before. `setupsteadytest` measures every frame at 390×844, 375×667 and
+    320×568, with motion on and under Reduce Motion, again with the SE's
+    taller keyboards (268, 291) and at 320×693 (300, 336), and plays each of
+    these edges.
 - **The price is ONE screen** (the two ReciMe-style screens before it are
   gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
   today.") and **the billing day** (the store's price starts "unless you

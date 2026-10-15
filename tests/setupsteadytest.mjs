@@ -18,11 +18,19 @@
 // with the keyboard up must draw the next screen once, at its own size. The
 // walk runs with motion on and again under Reduce Motion.
 //
+// The walk is played again (motion on) with the taller keyboards an iPhone SE
+// can have (268 and 291: QuickType, another language, emoji) and on a Face ID
+// iPhone in Display Zoom (320x693, 300 and 336): a rule meant for an iPad on
+// its side used to hide the progress bar and the label there as the keyboard
+// rose, and the box jumped 67 px.
+//
 // After it, the review's edges (15 Oct 2026): a double tap or a tap during the
 // tap lock never drops the box's focus; on the website an age tap lets go of
 // the box (only the app lifts Continue above the keyboard); an iPad turned
-// with the keyboard up is not sized by the keyboard; a short laptop window
-// keeps the full-size step; an iPad's hardware keyboard moves nothing.
+// with the keyboard up is not sized by the keyboard, either way round; a
+// short laptop window keeps the full-size step, and its margins and Continue
+// follow the window's height like the screens around it; an iPad's hardware
+// keyboard moves nothing.
 // STEADY_SHOTS=<path prefix> also saves a screenshot of each moment.
 import {createServer} from 'http';
 import {readFileSync,existsSync,statSync} from 'fs';
@@ -30,11 +38,17 @@ import path from 'path';
 import {chromium,ROOT,launchOpts} from './_env.mjs';
 
 const PORT=9620,base='http://127.0.0.1:'+PORT,TOL=3,SHOTS=process.env.STEADY_SHOTS||'';
-// kb: the keyboard's height on that phone (no toolbar: setup hides it)
+// kb: the keyboard's height on that phone (no toolbar: setup hides it).
+// taller: a taller keyboard on the same phone, played with motion on only (the
+// Reduce Motion pass is about each screen's first frame, not the keyboard).
 const DEVICES=[
   {name:'390x844',w:390,h:844,kb:336,top:47,bottom:34},
   {name:'375x667',w:375,h:667,kb:260,top:20,bottom:0},
   {name:'320x568',w:320,h:568,kb:253,top:20,bottom:0},
+  {name:'375x667 kb268',w:375,h:667,kb:268,top:20,bottom:0,taller:true},
+  {name:'375x667 kb291',w:375,h:667,kb:291,top:20,bottom:0,taller:true},
+  {name:'320x693 kb300',w:320,h:693,kb:300,top:44,bottom:34,taller:true},
+  {name:'320x693 kb336',w:320,h:693,kb:336,top:44,bottom:34,taller:true},
 ];
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',webp:'image/webp',woff2:'font/woff2',json:'application/json',webmanifest:'application/manifest+json'};
 const server=createServer((req,res)=>{const u=new URL(req.url,base);if(u.pathname.startsWith('/api/')){res.writeHead(503,{'content-type':'application/json'});res.end('{}');return;}const file=path.join(ROOT,decodeURIComponent(u.pathname));if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':mime[file.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(file));});
@@ -69,7 +83,7 @@ function phoneInit(cfg){
   function paint(el){if(!el)return null;const r=el.getBoundingClientRect();return r.width<2||r.height<2?null:{x:Math.round(r.left*10)/10,y:Math.round(r.top*10)/10,w:Math.round(r.width*10)/10,h:Math.round(r.height*10)/10};}
   function tick(){
     if(!S.on)return;
-    const b=document.body,f={t:Math.round(performance.now()),screen:b&&b.dataset.setupScreen,kb:S.kbState,h:innerHeight,active:document.activeElement&&document.activeElement.id,settling:!!(b&&b.classList.contains('ob-settling')),r:{}};
+    const b=document.body,f={t:Math.round(performance.now()),screen:b&&b.dataset.setupScreen,kb:S.kbState,open:!!(b&&b.classList.contains('keyboard-open')),h:innerHeight,active:document.activeElement&&document.activeElement.id,settling:!!(b&&b.classList.contains('ob-settling')),r:{}};
     for(const k in SEL)f.r[k]=(k==='btn'?paint:box)(document.querySelector(SEL[k]));
     const foot=document.querySelector('.obfoot'),btn=document.getElementById('nextBtn');
     f.footOp=foot?+getComputedStyle(foot).opacity:1;f.btnFont=btn?getComputedStyle(btn).fontSize:'';
@@ -98,6 +112,9 @@ async function openPhone(D,opt={}){
   await page.goto(base+(opt.path||'/onboarding.html'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   return {context,page,errors};
 }
+// The window is resized by Playwright, which makes the screen the window's
+// size too; an iPad that turns sizes it through D.win instead (ipadWindow).
+const sizeTo=(page,D,w,h)=>D.win?D.win(w,h):page.setViewportSize({width:w,height:h});
 // the plugin, in order: willShow now; didShow after the slide; the web view shrinks 0.2 s later
 async function kbShow(page,D,shot){
   await page.evaluate(()=>{__steady.kbState='rising';const f=__steady.kb.keyboardWillShow;if(f)f({keyboardHeight:__steady.kbh});});
@@ -105,13 +122,21 @@ async function kbShow(page,D,shot){
   await page.evaluate(()=>{const f=__steady.kb.keyboardDidShow;if(f)f({keyboardHeight:__steady.kbh});});
   if(shot)await shot();
   await page.waitForTimeout(200);
-  await page.setViewportSize({width:D.w,height:D.h-D.kb});
+  await sizeTo(page,D,D.w,D.h-D.kb);
   await page.evaluate(()=>{__steady.kbState='up';});
 }
 async function kbHide(page,D){
   await page.evaluate(()=>{__steady.kbState='down';const f=__steady.kb.keyboardWillHide;if(f)f();});
   await page.waitForTimeout(10);
-  await page.setViewportSize({width:D.w,height:D.h});
+  await sizeTo(page,D,D.w,D.h);
+}
+// AN IPAD'S SCREEN never shrinks for the keyboard, and iOS reports it upright
+// whichever way the iPad is turned (setup reads only its two sides and which
+// way it is turned). Playwright's setViewportSize would shrink the screen with
+// the window, so the turning tests size the window through DevTools.
+async function ipadWindow(page,sw=820,sh=1180){
+  const cdp=await page.context().newCDPSession(page);
+  return (w,h)=>cdp.send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:2,mobile:true,screenWidth:sw,screenHeight:sh,screenOrientation:w>sw?{type:'landscapePrimary',angle:90}:{type:'portraitPrimary',angle:0}});
 }
 // an iPhone closes the keyboard whenever the box loses focus
 async function followFocus(page,D){if(await page.evaluate(()=>document.activeElement&&document.activeElement.id)!=='obName'&&await page.evaluate(()=>__steady.kbState)!=='down')await kbHide(page,D);}
@@ -123,7 +148,7 @@ const band=(page,D,on)=>page.evaluate(([on,h])=>{let d=document.getElementById('
 
 // How far each element strays from where it first stood, over a run of
 // frames; and whether it ever appeared or disappeared.
-const KEYS=['heading','label','field','ageLabel','age4','age6','age8','card'];
+const KEYS=['heading','label','field','ageLabel','age4','age6','age8','card','seg'];
 function drift(frames,keys=KEYS,ref=null){
   const out={};
   for(const k of keys){
@@ -139,15 +164,17 @@ const still=d=>Object.values(d).every(v=>v.flips===0&&v.y<=TOL&&v.x<=TOL&&v.w<=T
 const worst=d=>Object.entries(d).filter(([,v])=>v.flips||v.y>TOL||v.x>TOL||v.w>TOL||v.h>TOL).map(([k,v])=>k+(v.flips?' appears/vanishes '+v.flips+'x':'')+(v.y>TOL?' moves '+v.y+'px':'')+(v.x>TOL?' sideways '+v.x+'px':'')+(v.w>TOL?' resizes '+v.w+'px':'')+(v.h>TOL?' grows/shrinks '+v.h+'px':'')).join('; ')||'none';
 // the first frame a screen is drawn in, against the last: the same size and place
 const firstLast=(frames,k)=>{const fs=frames.filter(f=>f.r[k]);if(fs.length<2)return {n:fs.length};const a=fs[0].r[k],b=fs[fs.length-1].r[k];return {first:a,last:b,same:Math.abs(a.y-b.y)<=TOL&&Math.abs(a.h-b.h)<=TOL&&Math.abs(a.w-b.w)<=TOL};};
-const SIZES={'390x844':[],'375x667':['ob-short'],'320x568':['ob-short','ob-tiny']};
+// a Face ID iPhone in Display Zoom (320x693) takes the 4-inch phone's size: its notch and keyboard leave it less room than an SE
+const SIZES={'390x844':[],'375x667':['ob-short'],'320x568':['ob-short','ob-tiny'],'320x693':['ob-short','ob-tiny']};
 const sizeClasses=page=>page.evaluate(()=>['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)));
 
 for(const reduced of [false,true])for(const D of DEVICES){
+ if(reduced&&D.taller)continue;
  const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
  const shot=SHOTS?async n=>{await page.screenshot({path:SHOTS+'-'+D.name+(reduced?'-reduce':'')+'-'+n+'.png'});}:null;
  try{
   // the phone's own height picks the step's size (a touch screen: the classes are for phones and tablets)
-  {const cls=await sizeClasses(page);ok('the phone\'s height picks the name step\'s size ('+(cls.join(' ')||'full')+')'+at,JSON.stringify(cls)===JSON.stringify(SIZES[D.name]),cls);}
+  {const cls=await sizeClasses(page);ok('the phone\'s height picks the name step\'s size ('+(cls.join(' ')||'full')+')'+at,JSON.stringify(cls)===JSON.stringify(SIZES[D.w+'x'+D.h]),cls);}
   // 1. the hello's Continue: the name step opens, focuses the box (the keyboard rises with it)
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');
@@ -283,23 +310,55 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
 
 // AN IPAD TURNED WITH THE KEYBOARD UP. The keyboard is not the iPad: the
 // height it leaves is never taken as the iPad's, so the step stays its full
-// size while the keyboard is up and does not change when it goes down; the
-// turned iPad's own height is taken once the keyboard is down.
+// size while the keyboard is up and does not change when it goes down. The
+// turned iPad's height is its screen's short side from the moment it turns
+// (the screen never shrinks for a keyboard), and the window's own once the
+// keyboard is down.
 {const D={name:'820x1180',w:820,h:1180,kb:320,top:24,bottom:20},{context,page,errors}=await openPhone(D);try{
+  D.win=await ipadWindow(page);await D.win(820,1180);
   const st=()=>page.evaluate(()=>{const r=document.getElementById('obName').getBoundingClientRect();return {cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),phone:obPhone.h(),h:innerHeight,field:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width)},label:document.querySelector('label[for="obName"]').offsetHeight,seg:document.getElementById('seg').offsetHeight,fit:{fieldTop:Math.round(r.top),agesBottom:Math.round(Math.max(...[...document.querySelectorAll('#obAge .sound')].map(b=>b.getBoundingClientRect().bottom))),btnTop:Math.round(document.getElementById('nextBtn').getBoundingClientRect().top),scroll:document.querySelector('.ob').scrollHeight-document.querySelector('.ob').clientHeight}};});
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,D);await page.waitForTimeout(400);
   const portrait=await st();
   // turned on its side, the keyboard still up: the plugin sends willShow again with the landscape keyboard
-  await page.setViewportSize({width:1180,height:820-400});await page.evaluate(()=>{__steady.kbState='up';__steady.kb.keyboardWillShow({keyboardHeight:400});});await page.waitForTimeout(1200);
+  await D.win(1180,820-400);await page.evaluate(()=>{__steady.kbState='up';__steady.kb.keyboardWillShow({keyboardHeight:400});});await page.waitForTimeout(1200);
   const turned=await st();
-  await page.keyboard.press('Enter');await kbHide(page,{w:1180,h:820});await page.waitForTimeout(1200);
+  await page.keyboard.press('Enter');await kbHide(page,{w:1180,h:820,win:D.win});await page.waitForTimeout(1200);
   const down=await st();
   ok('an iPad turned with the keyboard up keeps the full-size name step: the keyboard is not taken for the iPad',portrait.cls.length===0&&turned.cls.length===0&&down.cls.length===0,{portrait,turned,down});
   ok('…with the box and all three age choices above Continue while the keyboard is up, nothing scrolled',turned.fit.agesBottom<=turned.fit.btnTop&&turned.fit.fieldTop>=0&&turned.fit.scroll<=1,turned.fit);
   ok('…so nothing moves when the keyboard goes down',Math.abs(turned.field.y-down.field.y)<=TOL&&Math.abs(turned.field.x-down.field.x)<=TOL&&turned.label===down.label&&turned.seg===down.seg,{turned,down});
-  ok('…and the turned iPad\'s own height is taken once the keyboard is down',turned.phone===1180&&down.phone===820,{turned:turned.phone,down:down.phone});
+  ok('…and the turned iPad\'s height is its own from the turn, and once the keyboard is down',turned.phone===820&&down.phone===820,{turned:turned.phone,down:down.phone});
   ok('no runtime errors (iPad turned)',errors.length===0,errors);
  }catch(e){ok('the walk completes (iPad turned)',false,e.message);}finally{await context.close();}}
+
+// …AND THE OTHER WAY ROUND: an iPad on its side, turned upright while a name
+// is typed. Kept from before the turn, its height on its side (820) read the
+// upright window with the keyboard up (860) as "no keyboard": Continue stayed
+// away 0.9 s after the turn, and Continue with the keyboard up drew the next
+// question twice (keyboard-sized, then full). The turn: the window full-size
+// for a moment, the plugin's willShow, the web view shrinking 0.45 s later;
+// Continue: the box lets go, keyboardWillHide 30 ms later, the window full 10
+// ms after that.
+{const L={name:'1180x820',w:1180,h:820,kb:400,top:24,bottom:20},U={w:820,h:1180,kb:320},{context,page,errors}=await openPhone(L);try{
+  L.win=U.win=await ipadWindow(page);await L.win(1180,820);await page.waitForTimeout(300);
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,L);await page.waitForTimeout(400);
+  await page.keyboard.type('Milo');await tapAt(page,'#obAge [data-age="6"]');await page.waitForTimeout(300);
+  await page.evaluate(()=>__steady.start());
+  await U.win(820,1180);await page.evaluate(h=>__steady.kb.keyboardWillShow({keyboardHeight:h}),U.kb);
+  await page.waitForTimeout(450);await U.win(820,1180-U.kb);await page.evaluate(()=>{__steady.kbState='up';});await page.waitForTimeout(800);
+  const tf=await page.evaluate(()=>__steady.take()),phone=await page.evaluate(()=>obPhone.h());
+  const shrunk=tf.findIndex(f=>f.h===1180-U.kb),back=tf.findIndex((f,i)=>i>=shrunk&&f.footOp>0.95);
+  const late=shrunk<0||back<0?null:tf[back].t-tf[shrunk].t;
+  ok('an iPad turned upright while a name is typed takes its upright height at once ('+phone+')',phone===1180,phone);
+  ok('…so Continue comes back as the window shrinks for the keyboard, not 0.9 s later ('+late+' ms after)',late!==null&&late<=250,{late,hiddenFrames:tf.filter(f=>f.footOp<0.05).length});
+  await page.evaluate(()=>{__steady.start();document.getElementById('obName').addEventListener('blur',()=>{setTimeout(()=>{__steady.kbState='down';__steady.kb.keyboardWillHide();},30);},{once:true});});
+  await page.tap('#nextBtn');await page.waitForTimeout(40);await U.win(820,1180);
+  await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(700);
+  const lf=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='therapy'&&f.r.tCard);
+  const dL=drift(lf,['tHead','tYes','tCard','echo']),squeezed=lf.filter(f=>f.open||f.h!==1180).length;
+  ok('…and Continue with the keyboard up draws the next question once, at the iPad\'s full height'+' (worst: '+worst(dL)+')',lf.length>0&&squeezed===0&&still(dL),{frames:lf.length,squeezed,dL});
+  ok('no runtime errors (iPad turned upright)',errors.length===0,errors);
+ }catch(e){ok('the walk completes (iPad turned upright)',false,e.message);}finally{await context.close();}}
 
 // A SHORT LAPTOP WINDOW (the clinician's setup in a browser) is not a phone:
 // the phone sizes are for touch screens, so it keeps the full-size name step,
@@ -310,6 +369,20 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
   ok('a short laptop window (the clinician\'s setup at /onboarding.html?slp=1) keeps the full-size name step: progress bar and label drawn',st.role==='slp'&&st.cls.length===0&&st.seg>0&&st.label>2,st);
   ok('no runtime errors (laptop)',errors.length===0,errors);
  }catch(e){ok('the walk completes (laptop)',false,e.message);}finally{await context.close();}}
+
+// …and with a mouse there is no keyboard to hold still for, so the name step
+// follows the window's height like the screens around it: at 700 px or less
+// its side margins and Continue are the next screen's (18 px, 19 px), where
+// they stayed 22 and 22 and the card was 8 px narrower.
+for(const [w,h] of [[1280,560],[1366,650],[1440,900]]){const D={name:w+'x'+h,w,h,kb:0,top:0,bottom:0},{context,page,errors}=await openPhone(D,{laptop:true,path:'/onboarding.html?slp=1'});try{
+  const look=()=>page.evaluate(()=>{const b=getComputedStyle(document.getElementById('nextBtn')),o=getComputedStyle(document.querySelector('.ob')),c=document.querySelector('.step.on').getBoundingClientRect();return {screen:document.body.dataset.setupScreen,font:b.fontSize,pad:b.padding,margins:o.paddingLeft+' '+o.paddingRight,card:Math.round(c.left)+' '+Math.round(c.width)};});
+  await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(500);
+  const name=await look();
+  await page.fill('#obName','Milo');await page.click('#nextBtn');await page.locator('[data-step="sounds"].on').waitFor();await page.waitForTimeout(600);
+  const next=await look();
+  ok('in a '+D.name+' mouse window the name step\'s margins, card and Continue are the next screen\'s ('+name.margins+', '+name.font+')',name.screen==='name'&&next.screen==='sounds'&&name.font===next.font&&name.pad===next.pad&&name.margins===next.margins&&name.card===next.card,{name,next});
+  ok('no runtime errors (mouse '+D.name+')',errors.length===0,errors);
+ }catch(e){ok('the walk completes (mouse '+D.name+')',false,e.message);}finally{await context.close();}}
 
 // AN IPAD'S HARDWARE KEYBOARD: the plugin reports a height under 80 (0, or
 // its shortcut bar) and the page never resizes. It is not a keyboard to the

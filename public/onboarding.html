@@ -414,7 +414,8 @@
     // obPhone.h() is the window's height with no keyboard: a new size is
     // taken only while no box is focused, the keyboard is down and no box was
     // just let go of; one that comes while a parent types (the keyboard's, or
-    // a phone turned with the keyboard up) waits until the keyboard is down.
+    // a phone turned with the keyboard up) waits until the keyboard is down
+    // (a turned one takes its screen's height meanwhile: turned(), below).
     // Taking the turned phone's height with the keyboard still up read the
     // keyboard as the phone, and the step changed size twice. The two classes
     // are for touch screens only (a coarse pointer): a short laptop window,
@@ -422,14 +423,34 @@
     // onboarding-crafted.css sizes the name step from them
     // (tests/setupsteadytest.mjs).
     var obPhone=(function(){
-      var root=document.documentElement,h=window.innerHeight,kbAt=0,pend=false,waitT=0;
+      var root=document.documentElement,h=window.innerHeight,w=window.innerWidth,kbAt=0,pend=false,waitT=0;
       function touch(){try{return window.matchMedia("(pointer:coarse)").matches;}catch(e){return false;}}
-      function paint(){var t=touch();root.classList.toggle("ob-short",t&&h<=700);root.classList.toggle("ob-tiny",t&&h<=600);}
+      // A window 340 wide or less and up to 700 tall is a Face ID iPhone in
+      // Display Zoom (320x693): its notch and its taller keyboard leave it
+      // less room above the keyboard than a 667-tall iPhone SE, so it takes
+      // the 4-inch phone's size (15 Oct 2026: with a 300 to 336 px keyboard
+      // the SE's size left the age choices 1 to 37 px under Continue).
+      function paint(){var t=touch();root.classList.toggle("ob-short",t&&h<=700);root.classList.toggle("ob-tiny",t&&(h<=600||h<=700&&window.innerWidth<=340));}
       function typing(){var a=document.activeElement;return Date.now()-kbAt<800||!!(a&&a.tagName==="INPUT")||document.body.classList.contains("keyboard-open");}
       function take(){clearTimeout(waitT);if(!pend||typing())return;pend=false;h=window.innerHeight;paint();}
       // asked again once the box has let go or the keyboard has gone down (and after the last resize)
       function soon(){if(pend){clearTimeout(waitT);waitT=setTimeout(take,850);}}
-      window.addEventListener("resize",function(){pend=true;if(typing())soon();else take();});
+      // AN IPAD TURNED WHILE A NAME IS TYPED (15 Oct 2026). No keyboard
+      // changes the window's width, so a new width is the device turning, and
+      // the old way's height is no longer the window's: turned from its side
+      // upright, 820 against a window of 860 with the keyboard up read as "no
+      // keyboard", so Continue stayed away 0.9 s and the next screen was drawn
+      // twice. The full height the new way is the screen's, which no keyboard
+      // shrinks: its short side on its side, its long side upright. The
+      // window's own height is still taken once the keyboard is down.
+      function turned(){var s=window.screen,a=Math.min(s.width,s.height),b=Math.max(s.width,s.height),o=s.orientation&&s.orientation.type;
+        return (o?o.indexOf("landscape")===0:typeof window.orientation==="number"?window.orientation%180!==0:window.innerWidth>a)?a:b;}
+      window.addEventListener("resize",function(){
+        var turn=window.innerWidth!==w,full;w=window.innerWidth;pend=true;
+        if(!typing()){take();return;}
+        if(turn){full=turned();if(full>=window.innerHeight){h=full;paint();}}
+        soon();
+      });
       document.addEventListener("focusout",function(e){if(e.target&&e.target.tagName==="INPUT"){kbAt=Date.now();soon();}},true);
       paint();
       return {h:function(){return h;},kb:function(){kbAt=Date.now();soon();},small:function(){return window.innerHeight<h-40;}};
