@@ -285,7 +285,8 @@ if (present && hasContract) {
 
   // Parked games carried a Friday each from 9 Oct 2026 (three a week, 16 Oct
   // to 20 Nov). Since 15 Oct 2026 (Travis: "put coming soon") none does: every
-  // parked card says "Coming soon" and the shelf keeps the catalog's order.
+  // parked card says "Coming soon" and the shelf keeps the catalog's order
+  // (the Say & Play games, then Peekaboo).
   // The day support stays (a `comingOn` on one line shows "Coming Nov 6" until
   // that day), and a day never opens anything: only taking comingSoon off does.
   await section("parked games say Coming soon", async () => {
@@ -299,7 +300,9 @@ if (present && hasContract) {
       try {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          const keys = Object.keys(Sona.GAME_ACTS);
+          // Home's order (ACTIVITY_KEYS): the Say & Play games in catalog
+          // order, then Peekaboo, which is not one of them
+          const keys = Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].say).concat(["bubbles", "peekaboo", "rise"]);
           const shelves = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => b.dataset.game));
           const tags = {};
           shelves.flat().forEach((k) => { tags[k] = tag(k); });
