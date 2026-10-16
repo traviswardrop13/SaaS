@@ -749,8 +749,9 @@ if (A) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
-  ok("family email step says it is optional and how to unsubscribe, and promises no weekly summary nothing sends",
-    /Get practice tips by email\?/.test(updStep) && /Optional\./.test(updStep) && /Unsubscribe anytime/.test(updStep) && !/weekly (summary|practice update)/i.test(updStep));
+  // (required and first since 16 Oct 2026, Travis: "I want it to be required")
+  ok("family email step asks plainly, says what it is for and how to unsubscribe, and promises no weekly summary nothing sends",
+    /What's your email\?/.test(updStep) && /Rachel's tips for practicing at home/.test(updStep) && /Unsubscribe anytime/.test(updStep) && !/weekly (summary|practice update)/i.test(updStep));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));

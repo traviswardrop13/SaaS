@@ -39,7 +39,8 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 //
 // ONE STEPPER moves setup on, whatever screen it is on: the parent's answer
 // on "who", an answer on each one-tap question (Continue is not painted
-// there), Skip on the optional email step, "Not now" on the microphone,
+// there), an address and Continue on the email step (required, first since
+// 16 Oct 2026), "Not now" on the microphone,
 // Continue everywhere else. It never
 // presses the hand-off's button and never clicks on a page that is not setup:
 // this file is top-level code, so one stray click that leaves for a game
@@ -48,7 +49,7 @@ const STEP = `(() => { const st = (document.querySelector(".step.on") || {}).dat
   if (!st || st === "achieve") return;                    // never press the hand-off's button, never click on another page
   if (st === "therapy") document.querySelector('#obTherapy [data-val="t_no"]').click();
   else if (st === "goal") document.querySelector('#obGoal [data-val="3"]').click();
-  else if (st === "updates") document.getElementById("updSkip").click();
+  else if (st === "updates") { const e = document.getElementById("updEmail"); if (!e.value) e.value = "parent@example.com"; document.getElementById("nextBtn").click(); }
   else if (st === "mic") document.getElementById("micNotNow").click();
   else document.getElementById("nextBtn").click(); })()`;
 const onStep = (pg) => pg.evaluate(() => (document.querySelector(".step.on") || {}).dataset?.step || "");
@@ -130,15 +131,15 @@ for (const [who, seed] of [["a fresh family", () => {}],
   }, STEP);
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,therapy,sounds,goal,updates,ready,mic", JSON.stringify(hosts));
+  ok("…a walk that reaches the microphone, by way of the email step first, both one-tap questions and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === "welcome,updates,name,therapy,sounds,goal,ready,mic", JSON.stringify(hosts));
   await ob2.close();
 }
 
 // ── the real walk, to the hand-off ──
 // one press of whatever moves setup on (the stepper above)
 const clickNext = async () => { await settledOb(page); await page.evaluate(STEP); await page.waitForTimeout(250); };
-await clickNext(); await clickNext(); // the hello → the question → name (the parent's answer)
+await clickNext(); await clickNext(); // the hello → the email step → name (an address typed)
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name → "What brings you to Sona?"
 ok("after the name comes one tap: \"What brings you to Sona?\"", (await onStep(page)) === "therapy", await onStep(page));
@@ -146,9 +147,8 @@ await clickNext(); // an answer → sounds
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → "How does practice go at home now?"
 ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "goal", await onStep(page));
-await clickNext(); // an answer → the optional email step
-ok("…then the optional email step, before the ready screen (and before any price)", (await onStep(page)) === "updates", await onStep(page));
-await clickNext(); // Skip → ready
+await clickNext(); // an answer → the ready screen (the email was asked first)
+ok("…then the ready screen (the email step came first, before the child's name)", (await onStep(page)) === "ready", await onStep(page));
 // "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the parent
 // picked, and under "About Sona" says who built it: Rachel's line, word for
 // word, where her own screen used to stand right before the microphone. It is
@@ -165,7 +165,7 @@ const meet = await page.evaluate(() => {
            card: st ? getComputedStyle(st).backgroundColor : "", body: getComputedStyle(document.body).backgroundColor,
            build: !!document.getElementById("obBuild"), saved: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").onboarded === true };
 });
-ok("the screen after the email step is \"Milo's practice is ready\", it asks nothing, and carries Rachel's line",
+ok("the screen after the questions is \"Milo's practice is ready\", it asks nothing, and carries Rachel's line",
   meet.step === "ready" && meet.title === "Milo's practice is ready" && meet.asks === 0 && meet.segHidden && meet.rachel === RACHEL_LINE, JSON.stringify(meet));
 ok("…on cream, with no build beat on the parent path, and nothing saved until its Continue",
   meet.card === "rgb(255, 252, 246)" && meet.body === "rgb(255, 246, 233)" && !meet.build && !meet.saved, JSON.stringify(meet));
@@ -211,7 +211,7 @@ ok("SLP-referred → tagged for the clinician's roster, with no founding grant w
 // 5 Oct 2026 (Travis: "choose whether they want to practice three days a week
 // or five days a week or every day"): setup asks, and the pick is the goal.
 ok("the days a week picked in setup are the week's goal", prof.weeklyGoal === 3);
-ok("no email was demanded to finish", prof.email === "");
+ok("the parent's email, asked first (required since 16 Oct 2026), is on the profile", prof.email === "parent@example.com", prof.email);
 ok("onboarding no pageerrors", errs.length === 0);
 
 // ── SETUP3: what the screenshots showed ──────────────────────────────────
@@ -229,8 +229,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
   await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);   // the hello's Continue
+  ok("the screen after the hello is the email step", (await onStep(pg2)) === "updates", await onStep(pg2));
+  await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an address → the child's name
   const seen = await pg2.evaluate(() => ({ title: (document.querySelector('[data-step="name"] .qh') || {}).textContent || "", on: (document.querySelector(".step.on") || {}).dataset?.step }));
-  ok("the screen after the hello is the child's name", seen.on === "name" && /^Who's practicing today\?$/.test(seen.title.trim()), JSON.stringify(seen));
+  ok("…and then the child's name", seen.on === "name" && /^Who's practicing today\?$/.test(seen.title.trim()), JSON.stringify(seen));
   // Parents go from the child's details to one tap ("What brings you to
   // Sona?"), then to a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
@@ -253,7 +255,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
-  await hop(); await hop(); // the hello → the question → name
+  await hop(); await hop(); // the hello → the email step → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
   await hop(); // name → "What brings you to Sona?"
@@ -273,10 +275,9 @@ ok("onboarding no pageerrors", errs.length === 0);
   // the reload put them back at the top with their answers intact, so this
   // walks the whole flow again: the hello → name → why →
   // sounds → home → ready, whose Continue saves the profile and tears it up
-  await hop(); await hop(); await hop();   // hello, name, why (an answer) → sounds
+  await hop(); await hop(); await hop(); await hop();   // hello, email, name, why (an answer) → sounds
   await pg.locator('#obExploreSounds').click();          // → the home question
-  await hop();                                           // an answer → the email step
-  await hop();                                           // Skip → ready
+  await hop();                                           // an answer → ready
   const onReady = await pg.evaluate(() => ({
     step: (document.querySelector(".step.on") || {}).dataset?.step,
     draft: JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"),
@@ -320,7 +321,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     door.says.slice(0, 200));
 
   const hop = async (ms) => { await settledOb(pg); await pg.evaluate(STEP); await pg.waitForTimeout(ms || 250); };
-  await hop(); await hop(); // the hello → the question → name
+  await hop(); await hop(); // the hello → the email step → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await hop(); // name → "What brings you to Sona?"
   await hop(); // an answer → sounds
@@ -331,8 +332,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   }));
   ok("…and can continue without choosing a target (to the home question, then the ready screen)",
     !landed.onSounds && landed.onHome, JSON.stringify(landed));
-  await hop(); // an answer → the email step
-  await hop(); // Skip → ready
+  await hop(); // an answer → ready
   const ready = await pg.evaluate(() => ({
     step: (document.querySelector(".step.on") || {}).dataset?.step,
     says: document.querySelector('[data-step="ready"]').innerText,
@@ -360,8 +360,8 @@ await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
-// This is the parent path, with an optional email after the core setup.
-await clickNext(); await clickNext(); // the hello → the question → name
+// This is the parent path, with the required email first.
+await clickNext(); await clickNext(); // the hello → the email step → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name → "What brings you to Sona?"
 await clickNext(); // an answer → sounds
@@ -374,30 +374,27 @@ const pickState = await page.evaluate(() => {
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
 await clickNext(); // sounds → "How does practice go at home now?"
-await clickNext(); // an answer → the email step
-// THE EMAIL ASK IS ITS OWN STEP, BEFORE THE PRICE (Travis, 13 Oct 2026: "also
-// move the email box before the price"). A parent has no email anywhere else:
-// on the SLP channel the clinician owns the family relationship and Sona's
-// roster deliberately carries no parent contact. It sat on the hand-off,
-// after the price, so a parent who closed the price was never asked. Now it
-// comes right before the ready screen, and it is never a gate: optional,
-// one tap to Skip, and the pin above ("on a phone that cannot buy, the last
-// setup step is the microphone, not a price or an email") still holds.
+await clickNext(); // an answer → the ready screen
+// THE EMAIL IS THE FIRST QUESTION AND IT IS REQUIRED (Travis, 16 Oct 2026:
+// "put the email collection step at the very beginning ... I want it to be
+// required"). A parent has no email anywhere else: on the SLP channel the
+// clinician owns the family relationship and Sona's roster deliberately
+// carries no parent contact. The pin above ("on a phone that cannot buy, the
+// last setup step is the microphone, not a price or an email") still holds.
 const stepAsk = await page.evaluate(() => {
   const st = document.querySelector('[data-step="updates"]');
   return {
-    on: !!(st && st.classList.contains("on")),
+    first: ORDER.indexOf("updates") === 1 && ORDER[0] === "welcome",
     optional: /optional/i.test((st || {}).textContent || ""),
     consent: /We.ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test((st || {}).textContent || ""),
-    cta: document.getElementById("nextBtn").textContent,
     skip: !!document.getElementById("updSkip"),
     required: !!document.querySelector("#updEmail[required]"),
+    ready: (document.querySelector(".step.on") || {}).dataset?.step === "ready",
   };
 });
-ok("the email step offers Rachel's tips, with Travis's consent line on it", stepAsk.on && stepAsk.consent, JSON.stringify(stepAsk));
-ok("…says it is optional, has a Skip, and never blocks the way on",
-  stepAsk.optional && !stepAsk.required && stepAsk.skip && /Continue/.test(stepAsk.cta), JSON.stringify(stepAsk));
-await clickNext(); // Skip, with the box blank → ready
+ok("the email step comes first, with Travis's consent line on it", stepAsk.first && stepAsk.consent && stepAsk.ready, JSON.stringify(stepAsk));
+ok("…and it is required: no Skip and no \"optional\"",
+  !stepAsk.optional && stepAsk.required && !stepAsk.skip, JSON.stringify(stepAsk));
 await clickNext(); // ready → mic (the profile is saved)
 await clickNext(); // mic → the hand-off
 await page.waitForTimeout(400);
@@ -406,7 +403,7 @@ const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
 }));
-ok("…and leaving it blank keeps no address", !skipFin.prof.email, JSON.stringify(skipFin.prof.email));
+ok("…and the address given first is on the profile", skipFin.prof.email === "parent@example.com", JSON.stringify(skipFin.prof.email));
 ok("the parent finish lands on the finale", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.childName === "Zoe", JSON.stringify(skipFin.prof));
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"), JSON.stringify(skipFin.prof.focusSounds));
 ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.stringify(skipFin.prof.role));
@@ -415,7 +412,7 @@ ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.string
 // General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
-await clickNext(); await clickNext(); // the hello → the question → name
+await clickNext(); await clickNext(); // the hello → the email step → name
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); // name → "What brings you to Sona?"
 await clickNext(); // an answer → sounds
@@ -426,8 +423,7 @@ const playSkip = await page.evaluate(() => ({
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
 ok("explore goes on (the home question, then the ready screen) without selected targets", !playSkip.onSounds && playSkip.onHome && !playSkip.build, JSON.stringify(playSkip));
-await clickNext(); // an answer → the email step
-await clickNext(); // Skip → ready
+await clickNext(); // an answer → ready
 // where the build beat said "play list, not sound plan", the ready screen now
 // says what the parent picked, in the same register
 const playReady = await page.evaluate(() => ({
@@ -449,7 +445,7 @@ ok("parents can still skip email (no gate)", parentSkipShown);
 await page.evaluate(() => document.getElementById("obEmailSkip").click());
 await page.waitForTimeout(500);
 const playProf = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
-ok("email skip still finishes onboarding", playProf.onboarded === true && playProf.email === "");
+ok("the explore path finishes onboarding, with the email given first on the profile", playProf.onboarded === true && playProf.email === "parent@example.com", playProf.email);
 ok("play mode is recorded", playProf.mode === "play", playProf.mode);
 ok("play rotation covers every sound", (playProf.focusSounds || []).length === 19, String((playProf.focusSounds || []).length));
 ok("easiest sounds first, R last", playProf.focusSounds[0] === "P" && playProf.focusSounds[18] === "R", JSON.stringify([playProf.focusSounds[0], playProf.focusSounds[18]]));

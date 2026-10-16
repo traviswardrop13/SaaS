@@ -150,9 +150,9 @@ changing one. What follows from the rule:
 - **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
-  hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
-  **"How many days a week will you practice?"** → **"Get practice tips by
-  email?"** → **"<Name>'s practice is ready"** →
+  hello → **"What's your email?"** (required) → name and age → **"Is <Name>
+  in speech therapy?"** → sounds → **"How many days a week will you
+  practice?"** → **"<Name>'s practice is ready"** →
   the price → microphone → "Hand the phone to <Name>!" → the first game. The
   old order told a parent to hand the phone over and tap "Let's play!", and
   then showed three money screens to the child holding it.
@@ -169,23 +169,30 @@ changing one. What follows from the rule:
     Skip leaves that goal as it was. The wording of both, the two sentences
     and the ready screen are Rachel's to change; so is how much practice a
     family is asked for.
-  - **The email comes before the price** (Travis, 13 Oct 2026: "also move
-    the email box before the price"). It used to be on the hand-off, after
-    the price, so a parent who closed the price was never asked. Now it is
-    its own one-tap-skippable step (`updates`) before the ready screen,
-    asked once per family and only while the household has no parent email
-    (`Sona.parentEmail()`). It is not one of the four questions and has no
-    progress segment. It is optional: empty or Skip go on, and a
-    wrong-looking address stays with one line ("That email doesn't look
-    right."). Travis's line, "We'll also send occasional tips from Rachel.
+  - **The email is the first question, and it is required** (Travis, 16 Oct
+    2026: "put the email collection step at the very beginning ... I want it
+    to be required ... just ask for their email as the first step, and then
+    do the rest of the onboarding, and then have the paywall at the end").
+    It was an optional step before the ready screen (13 Oct). Now it comes
+    right after the hello (`updates`, "What's your email?", "So we can send
+    you Rachel's tips for practicing at home."), with no Skip: empty or
+    wrong-looking stays with one line ("Please enter your email to
+    continue." / "That email doesn't look right."). Asked once per family and
+    only while the household has no parent email (`Sona.parentEmail()`): a
+    second child, a household that already gave one and a clinician's setup
+    never see it. It is not one of the four questions and has no progress
+    segment. Travis's line, "We'll also send occasional tips from Rachel.
     Unsubscribe anytime.", is on screen before anything is sent; no weekly
-    summary is promised (nothing sends one). The address is saved in the
-    profile and posted once, by `postParentLead()` (the address and nothing
-    else), to `/api/lead` (`source "app-setup"`, role `parent`, nothing
-    about the child), when the parent leaves the ready screen, before the
-    price, never waiting on the network. The hand-off has no email box and
-    no ×. After a Skip there is no other place to give an email (Settings
-    has no field): Travis's call.
+    summary is promised (nothing sends one). The address is posted by
+    `postParentLead()` (the address and nothing else) to `/api/lead`
+    (`source "app-setup"`, role `parent`) **the moment the parent leaves the
+    step**, before the child's name exists, so a parent who stops later is
+    still on the list; again only if they come Back and change it
+    (`draft.emailPosted`), never a second time from the ready screen. It is
+    saved in the profile when the ready screen is left. The hand-off has no
+    email box. **A known risk, Travis's to weigh:** Apple's guideline 5.1.1
+    does not let an app demand personal data it doesn't need to work; the
+    copy says what the address is for, and a reviewer could still object.
   - **The therapy answer stays on the phone**: a household key
     (`sona.setupasks.v1`, `Sona.setupAsks()`), not in the profile, not in a
     backup (`NO_EXPORT`), in no request, event, title or log. In a browser
@@ -1047,7 +1054,7 @@ upgrade.
 **GoHighLevel was deleted on 24 Sep 2026; Kit replaced it.** Every grown-up's
 email goes through one door, `/api/lead`: the SLP sign-up (via the auth
 route's `tellCrm`), the app's setup (a clinician's account email, a parent's
-optional email from setup's email step, before the price), the parent's optional box on `join.html` and the Speech
+required email, setup's first question), the parent's optional box on `join.html` and the Speech
 Check. An address a clinician types for a parent never reaches it. That route:
 - **keeps every lead first** in the store (`leads:all`, capped), whether or not
   a list takes it — it once forwarded and forgot, and 26 "leads" were unfindable;
@@ -1073,9 +1080,9 @@ tagged `utm_source=app-setup` would skip the download email too.
 an email starts their free days, the app tells our server, and the server tags
 them in Kit"). Apple never tells Sona who bought, so the phone says it: once
 `Sona.buyPlan()` has gone through (never a restore, a cancel or a failure), it
-posts the household's parent email (`parentEmail()`: setup's optional email
-step, which since 13 Oct 2026 comes before the price, so a new family's
-address is on the phone before they buy; on any child's profile) to
+posts the household's parent email (`parentEmail()`: setup's email step,
+required and first since 16 Oct 2026, so a new family's address is on the
+phone before they buy; on any child's profile) to
 `/api/lead` with `plan: "trial"`
 (Apple's entitlement says TRIAL, or, when Apple's answer says nothing, the card
 sold free days) or `"paid"`. The route turns those two words, and only those,

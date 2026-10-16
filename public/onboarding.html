@@ -277,25 +277,26 @@
       <button type="button" class="skip ask-skip" id="goalSkip">Skip</button>
     </div>
 
-    <!-- THE EMAIL COMES BEFORE THE PRICE (Travis, 13 Oct 2026: "also move
-         the email box before the price"). It sat on the hand-off, after the
-         price, so a parent who closed the price was never asked and Sona
-         could never write to them. Its own step, not a box on the ready
-         screen: there it pushed Continue off a small phone and put the
-         keyboard over Rachel's block. Optional (empty or Skip go on), asked
-         once per family and only while the household has no parent email,
-         and not one of the four questions (no progress segment). Travis's
-         consent line is on screen before anything is sent; the address is
-         posted once, by saveSetup(), when the parent leaves the ready
-         screen. No child's name on this screen, so none can ride along. -->
+    <!-- THE EMAIL IS THE FIRST QUESTION, AND IT IS REQUIRED (Travis, 16 Oct
+         2026: "put the email collection step at the very beginning ... I
+         want it to be required ... just ask for their email as the first
+         step, and then do the rest of the onboarding, and then have the
+         paywall at the end"). It was an optional step before the ready
+         screen (13 Oct). Now it comes right after the hello, has no Skip,
+         and Continue stays until a real-looking address is in the box.
+         Asked once per family and only while the household has no parent
+         email, and not one of the four questions (no progress segment).
+         Travis's consent line is on screen before anything is sent; the
+         address is posted once, the moment the parent leaves this step, so
+         a parent who stops later is still on the list. No child's name on
+         this screen (nobody has typed one yet), so none can ride along. -->
     <div class="step" data-step="updates">
-      <h1 class="qh" id="updTitle" tabindex="-1">Get practice tips by email?</h1>
-      <p class="muted upd-help">Optional. Rachel's tips for practicing at home.</p>
-      <label class="field setup-label" for="updEmail">Your email (optional)</label>
-      <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
+      <h1 class="qh" id="updTitle" tabindex="-1">What's your email?</h1>
+      <p class="muted upd-help">So we can send you Rachel's tips for practicing at home.</p>
+      <label class="field setup-label" for="updEmail">Your email</label>
+      <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" required aria-required="true" aria-describedby="updMsg" />
       <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
       <p id="updMsg" class="muted" role="status" aria-live="polite"></p>
-      <button type="button" class="skip ask-skip" id="updSkip">Skip</button>
     </div>
 
     <!-- "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the
@@ -593,8 +594,9 @@
     // questions are asked once per family and never of a clinician: Settings
     // → Add a child sends a returning parent back through setup, and the
     // second child goes from the name to the sounds to the ready screen.
-    // The email step ("updates", 13 Oct 2026) rides with them, and only while
-    // the household has no parent email (Sona.parentEmail): never twice.
+    // The email step ("updates") rides with them, right after the hello since
+    // 16 Oct 2026, and only while the household has no parent email
+    // (Sona.parentEmail): never twice.
     // ONE array, rewritten in place: four suites hold ORDER===ORDER_PARENT.
     var SECOND=false; try{ SECOND=Sona.kids().length>1; }catch(e){}
     var ASKED=false;  try{ ASKED=!!(Sona.setupAsks&&Sona.setupAsks().asked); }catch(e){}
@@ -602,7 +604,7 @@
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
-      var o=asks?["welcome","name","therapy","sounds","goal"].concat(mail?["updates"]:[],["ready","mic"])
+      var o=asks?["welcome"].concat(mail?["updates"]:[],["name","therapy","sounds","goal","ready","mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
@@ -639,7 +641,7 @@
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
       goal: "Whatever you pick, I\u2019ll keep the week on track!",
-      updates: "Want tips for home?",
+      updates: "First, where can we reach you?",
       achieve: "Here's what's ahead!",
       slp:     "Almost done!",
       email:   "One last thing!",
@@ -947,13 +949,6 @@
       document.getElementById(skipId).onclick=function(){go("");};
     }
     wireAsk("therapy","obTherapy","therapySkip");wireAsk("goal","obGoal","goalSkip");
-    // The email step's Skip: no address, box cleared, on to the ready screen.
-    // Nothing is sent from this step at all (saveSetup() posts, once).
-    document.getElementById("updSkip").onclick=function(){
-      if(finished||saved||leaving||ORDER[idx]!=="updates"||settling())return;
-      draft.email="";updEl.value="";updMsg.textContent="";updEl.style.borderColor="";
-      try{Sona.sfx.tap();}catch(e){}saveDraft();settle();idx++;whenRoomy(render);
-    };
     // The ready screen, built ONLY from what the parent gave us: textContent
     // throughout, the age group only if one was picked, and no sentence for a
     // question that was skipped, was not asked, or was a clinician's setup.
@@ -1042,8 +1037,9 @@
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
       if(key==="sounds"){if(selSounds.size===0)return;draft.mode="speech";draft.pathReason="";}
-      // the email step: empty goes on as a Skip; a wrong-looking address stays, with one line
-      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(ue&&!/^\S+@\S+\.\S+$/.test(ue)){ updEl.style.borderColor="#ef6f23"; updMsg.textContent="That email doesn't look right."; return; } draft.email=ue; updMsg.textContent=""; }
+      // the email step is required: empty or wrong-looking stays, with one line;
+      // a good address is posted at once (once per walk), before the child's name
+      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(ue)){ updEl.style.borderColor="#ef6f23"; updMsg.textContent=ue?"That email doesn't look right.":"Please enter your email to continue."; return; } draft.email=ue; updMsg.textContent=""; if(draft.emailPosted!==ue){ draft.emailPosted=ue; postParentLead(ue); } }
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
@@ -1066,7 +1062,7 @@
     function back(){
       if(idx<=0||micBusy||finished||saved||leaving) return;
       // Back from the email step keeps what was typed, so coming forward again
-      // shows it; it is only ever checked by Continue and thrown away by Skip
+      // shows it; it is only ever checked by Continue
       if(ORDER[idx]==="updates") draft.email=(updEl.value||"").trim();
       Sona.sfx.tap(); idx--;
       settle(); whenRoomy(render);
@@ -1166,8 +1162,9 @@
                   utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
           )}).catch(function(){});
         }
-        // a parent's address from this walk's email step: once, here, before the price
-        else if(draft.email&&ORDER.indexOf("updates")>-1) postParentLead(draft.email);
+        // a parent's address from this walk's email step was posted when they
+        // left that step (16 Oct 2026); only one never posted goes from here
+        else if(draft.email&&ORDER.indexOf("updates")>-1&&draft.emailPosted!==draft.email) postParentLead(draft.email);
       }catch(e){}
       // SLP finish: create the clinician's ACCOUNT and email them a one-tap
       // sign-in link. The share credential (code + family key) is auto-minted

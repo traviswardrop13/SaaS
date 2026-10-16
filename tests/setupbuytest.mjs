@@ -32,19 +32,18 @@ const tap = async (page, sel) => { await calm(page); try { await page.locator(se
 const step = (page, key) => page.locator('[data-step="' + key + '"].on').waitFor();
 const text = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, " ").trim() : null; }, sel);
 
-// a parent's setup, as far as the ready screen (an address on the email step, or Skip)
-async function toReady(page, name, email = "") {
+// a parent's setup, as far as the ready screen (the email first, required, since 16 Oct 2026)
+async function toReady(page, name, email = "parent@example.com") {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
+  await step(page, "updates"); await page.locator("#updEmail").fill(email); await tap(page, "#nextBtn");
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
   await step(page, "goal"); await tap(page, '#obGoal .ask-pick[data-val="5"]');
-  await step(page, "updates");
-  if (email) { await page.locator("#updEmail").fill(email); await tap(page, "#nextBtn"); } else await tap(page, "#updSkip");
   await step(page, "ready");
 }
 const leads = (requests) => requests.filter((r) => r.method === "POST" && new URL(r.url).pathname === "/api/lead").map((r) => JSON.parse(r.body || "{}"));
@@ -53,7 +52,8 @@ await scenario("a family that can buy", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant" });
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
-    ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
+    ok("the email reaches the list once, the moment the parent leaves the email step, before anything about the child",
+      leads(requests).length === 1 && leads(requests)[0].email === "mia.mom@example.com", leads(requests));
     ok("setup ends on the ready screen: the child's name, and Rachel's line word for word",
       (await text(page, "#readyTitle")) === "Mia's practice is ready" &&
       (await text(page, "#readyRachel")) === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",

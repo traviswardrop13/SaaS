@@ -76,21 +76,24 @@ const screen=page=>page.evaluate(()=>document.body.dataset.setupScreen);
 // the parents"): the hello goes straight to the child's name. A clinician's
 // setup opens only from /onboarding.html?slp=1, which is where who(page,'slp')
 // goes; for a parent it only presses the hello's Continue.
-async function who(page,role='parent'){if(role==='slp'&&!/[?&]slp=1/.test(page.url())){await page.goto(base+'/onboarding.html?slp=1');await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));}if(await screen(page)==='welcome')await next(page);}
-async function toName(page){await who(page);await page.locator('[data-step="name"].on').waitFor();}
+// Since 16 Oct 2026 a parent's first question is their email, and it is
+// required (Travis: "just ask for their email as the first step"): the walk
+// types one (parent@example.com unless a scenario names another) and goes on.
+async function who(page,role='parent',email){email=email||'parent@example.com';if(role==='slp'&&!/[?&]slp=1/.test(page.url())){await page.goto(base+'/onboarding.html?slp=1');await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));}if(await screen(page)==='welcome')await next(page);if(await screen(page)==='updates'){await calm(page);await page.locator('#updEmail').fill(email);await next(page);}}
+async function toName(page,email){await who(page,'parent',email);await page.locator('[data-step="name"].on').waitFor();}
 // One tap on a one-tap question: one of its answer ids, or 'skip'.
 async function answer(page,key,val='skip'){await page.locator('[data-step="'+key+'"].on').waitFor();await calm(page);await page.locator(val==='skip'?'#'+key+'Skip':'[data-step="'+key+'"] .ask-pick[data-val="'+val+'"]').click();}
 const answerTherapy=(page,val)=>answer(page,'therapy',val),answerGoal=(page,val)=>answer(page,'goal',val);
 // name → "What brings you to Sona?" (a tap, or Skip) → the sound picker. A
 // second child and a clinician in the app are not asked, and go straight there.
-async function enter(page,{mode='speech',age='4',name='Milo',therapy='skip'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(await screen(page)==='therapy')await answerTherapy(page,therapy);await page.locator('[data-step="sounds"].on').waitFor();if(mode!=='speech'){await calm(page);await page.locator('#obExploreSounds').click();}}
+async function enter(page,{mode='speech',age='4',name='Milo',therapy='skip',email}={}){await toName(page,email);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(await screen(page)==='therapy')await answerTherapy(page,therapy);await page.locator('[data-step="sounds"].on').waitFor();if(mode!=='speech'){await calm(page);await page.locator('#obExploreSounds').click();}}
 async function choose(page,sound='R'){
   await calm(page);const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
-// The optional email step (13 Oct 2026: before the price): Skip, or an
-// address typed and Continue.
-async function updates(page,email=null){await page.locator('[data-step="updates"].on').waitFor();await calm(page);if(email){await page.locator('#updEmail').fill(email);await next(page);}else await page.locator('#updSkip').click();}
+// The email step, if it is the screen on show (since 16 Oct 2026 it is the
+// first question, which who() answers, so later in a walk this does nothing).
+async function updates(page,email=null){if(await screen(page)!=='updates')return;await calm(page);await page.locator('#updEmail').fill(email||'parent@example.com');await next(page);}
 // From the sound picker (with a sound chosen) or the home question, on to
 // "<Name>'s practice is ready" (through the email step, when it is asked)…
 async function toReady(page,goal='skip',email=null){for(let i=0;i<4;i++){const s=await screen(page);if(s==='ready')break;if(s==='goal')await answerGoal(page,goal);else if(s==='updates')await updates(page,email);else if(s==='sounds')await next(page);else throw new Error('toReady cannot walk on from '+s);}await page.locator('[data-step="ready"].on').waitFor();}
@@ -137,9 +140,8 @@ await scenario('sound selection and private paced handoff',async()=>{
   await choose(page,'S');await next(page);
   ok('after the sounds comes the second one-tap question, the last of the four groups',await page.locator('[data-step="goal"].on').count()===1&&(await progress(page)).lit===4);
   await answerGoal(page);
-  {const at=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,seg:document.getElementById('seg').hidden,groups:document.querySelectorAll('#seg i').length,input:document.activeElement.id}));
-  ok('after the four questions, the optional email step: no progress segment of its own, and the box is not focused',at.screen==='updates'&&at.seg&&at.groups===4&&at.input!=='updEmail',at);}
-  await updates(page);await page.locator('[data-step="ready"].on').waitFor();
+  ok('after the four questions, the ready screen (the email was asked first)',await screen(page)==='ready');
+  await page.locator('[data-step="ready"].on').waitFor();
   // THE READY SCREEN replaced the 2-second "Building…" beat for parents. It
   // repeats back what the parent picked and nothing else (both questions were
   // skipped here, so no sentence about Sona is shown).
@@ -179,7 +181,7 @@ await scenario('sound selection and private paced handoff',async()=>{
    // Travis, 27 Sep 2026: setup goes straight to the first game, Feed Echo for ages 3-4
    ok('handoff opens the first game for the child\'s age: Feed Echo at 4',u.pathname==='/arcade-feed.html'&&!u.search&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='feed'));
    ok('setup creates no run and starts no practice of its own',!requests.some(r=>new URL(r.url).pathname==='/charge.html')&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
-   ok('a skipped email step saves no address and posts nothing',await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email)&&leadPosts(requests).length===0,leadPosts(requests));
+   ok('the email given first is on the profile, and was posted once',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).email==='parent@example.com')&&leadPosts(requests).length===1,leadPosts(requests));
    ok('…and the tab\'s "after the price" marker is gone once the game opens',await page.evaluate(()=>sessionStorage.getItem('sona.setupafter.v1')===null));
   }
   ok('a phone that cannot buy is never sent to the price',priced(requests).length===0,priced(requests));
@@ -198,12 +200,14 @@ await scenario('a hello first, then the child\'s name: setup is for parents',asy
   const hello=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.querySelector('[data-step="welcome"]').innerText.replace(/\s+/g,' ').trim(),cta:document.getElementById('nextBtn').textContent.trim(),footer:getComputedStyle(document.querySelector('.obfoot')).display,seg:document.getElementById('seg').hidden}));
   ok('the very first screen is a hello: Sona\'s name and one Continue, no question',hello.screen==='welcome'&&/^Sona/.test(hello.text)&&!/\?/.test(hello.text)&&hello.cta==='Continue'&&hello.footer!=='none'&&hello.seg,hello);
   await next(page);
-  ok('Continue opens the child\'s name: nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='name'&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
+  ok('Continue opens the email step, the first question: nobody is asked who is setting Sona up, and no clinician answer is on the page',await page.evaluate(()=>document.body.dataset.setupScreen==='updates'&&!document.querySelector('[data-step="who"]')&&!document.querySelector('.who-pick')&&!/SLP or SLPA/.test(document.body.innerText)));
   await who(page,'parent');
   {const at=await page.evaluate(()=>({on:(document.querySelector('.step.on')||{}).dataset.step,title:document.querySelector('[data-step="name"] .qh').innerText,segs:document.querySelectorAll('#seg i').length,lit:document.querySelectorAll('#seg i.on').length,role:draft.role,parent:ORDER===ORDER_PARENT}));
   ok('a parent goes straight to the child\'s name, the first of four progress segments',at.on==='name'&&/Who's practicing/.test(at.title)&&at.segs===4&&at.lit===1&&at.role==='parent'&&at.parent,at);}
   await calm(page);await page.locator('#backBtn').click();
-  ok('Back returns to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  ok('Back returns to the email step',await page.locator('[data-step="updates"].on').count()===1);
+  await calm(page);await page.locator('#backBtn').click();
+  ok('…and Back again to the hello, where there is no Back',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
   await who(page,'slp');
   ok('a clinician\'s setup still opens from its own address in a browser (/onboarding.html?slp=1), in a clinician\'s words',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('slpAppNote').hidden));
   ok('…and no clinician request is made just by answering',!requests.some(r=>new URL(r.url).pathname.startsWith('/api/slp/')),requests.map(r=>r.url));
@@ -243,7 +247,7 @@ await scenario('the two one-tap questions',async()=>{
   const shown=key=>page.evaluate(key=>{const st=document.querySelector('[data-step="'+key+'"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0,group=st.querySelector('.ask');return {screen:document.body.dataset.setupScreen,title:st.querySelector('h1').textContent.trim(),help:st.querySelector('.ask-help').textContent.trim(),answers:[...st.querySelectorAll('.ask-pick')].map(b=>[b.dataset.val,b.textContent.trim()]),buttons:[...st.querySelectorAll('.ask-pick')].every(b=>b.tagName==='BUTTON'&&b.type==='button'),pressed:[...st.querySelectorAll('.ask-pick')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.val),skip:st.querySelector('.ask-skip').textContent.trim(),next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),text:st.innerText,group:group.getAttribute('role')==='group'&&group.getAttribute('aria-labelledby')===st.querySelector('h1').id,focus:document.activeElement===st.querySelector('h1'),bubble:document.getElementById('bubble').textContent};},key);
   const untouched=()=>page.evaluate(()=>JSON.stringify([draft.mode,draft.pathReason,draft.focusSounds,goalVal,Sona.getProfile().onboarded,localStorage.getItem('sona.setupasks.v1')]));
   await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);
-  for(const q of [{key:'therapy',title:'Is Milo in speech therapy?',list:THERAPY,pick:'t_no',after:'sounds',bubble:'I\'m glad you\'re here!',help:/stays on this device/,says:'it says the answer stays on this device'},{key:'goal',title:'How many days a week will you practice?',list:GOAL,pick:'5',after:'updates',bubble:'Whatever you pick, I’ll keep the week on track!',help:/change it in Settings/,says:'it says the pick can be changed in Settings'}]){
+  for(const q of [{key:'therapy',title:'Is Milo in speech therapy?',list:THERAPY,pick:'t_no',after:'sounds',bubble:'I\'m glad you\'re here!',help:/stays on this device/,says:'it says the answer stays on this device'},{key:'goal',title:'How many days a week will you practice?',list:GOAL,pick:'5',after:'ready',bubble:'Whatever you pick, I’ll keep the week on track!',help:/change it in Settings/,says:'it says the pick can be changed in Settings'}]){
    const s=await shown(q.key);
    ok(q.key+': the heading is exactly "'+q.title+'"',s.screen===q.key&&s.title===q.title,s);
    ok(q.key+': its answers, in order, word for word, each a real button',JSON.stringify(s.answers)===JSON.stringify(q.list.map(a=>[a[0],a[1]]))&&s.buttons&&s.pressed.length===0,s.answers);
@@ -313,7 +317,7 @@ await scenario('the two answers stay on this phone',async()=>{
   const beforeReady=leadPosts(requests).length;
   await next(page);await page.locator('[data-step="mic"].on').waitFor();
   const afterReady=leadPosts(requests).length;
-  ok('the email typed on its step is posted once, when the parent leaves the ready screen, and not before',beforeReady===0&&afterReady===1,[beforeReady,afterReady]);
+  ok('the email typed on its step was posted once, when the parent left that step, and not again from the ready screen',beforeReady===1&&afterReady===1,[beforeReady,afterReady]);
   await notNow(page);await atHandoff(page);
   const names=await page.evaluate(()=>[...document.querySelectorAll('button')].filter(b=>/Zephyrine/.test(b.textContent+' '+b.id+' '+b.className+' '+(b.value||''))).length);
   const kept=await page.evaluate(()=>({asks:localStorage.getItem('sona.setupasks.v1'),read:Sona.setupAsks(),profile:localStorage.getItem('sona.profile.v1'),backup:Sona.exportString(),draft:localStorage.getItem('sona.obdraft.v1'),fbq:JSON.stringify(Array.from(fbq.queue).map(a=>Array.from(a))),posthog:Array.from(window.posthog).filter(c=>Array.isArray(c)).map(c=>Array.from(c)),title:document.title}));
@@ -325,7 +329,7 @@ await scenario('the two answers stay on this phone',async()=>{
   ok('no request to any host, in its address or its body, carries an answer, an answer\'s id, the child\'s name or the age group',leaks.length===0,leaks);
   ok('…nor does anything queued for Meta or for PostHog',!SECRET.test(kept.fbq)&&!SECRET.test(JSON.stringify(kept.posthog)),[kept.fbq,kept.posthog]);
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
-  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","therapy","sounds","goal","updates","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
+  ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","updates","name","therapy","sounds","goal","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
   ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
   ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
   const lead=leadPosts(requests);
@@ -354,8 +358,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
   ok('the screen reads as what the parent picked, never as a result: no plan, recommendation, score, norm, price or promise',!/recommend|we think|based on|assess|evaluat|score|result|usually by|\bplan\b|\$|\bfree\b/i.test(honest)&&(honest.match(/diagnos/gi)||[]).length===1,honest);
-  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the email step',await page.locator('[data-step="updates"].on').count()===1);
-  await calm(page);await page.locator('#backBtn').click();ok('…and Back again to the home question, with its answer held',await page.locator('[data-step="goal"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obGoal [aria-pressed="true"]').getAttribute('data-val')==='7');
+  await calm(page);await page.locator('#backBtn').click();ok('Back from ready returns to the home question (the email was asked first), with its answer held',await page.locator('[data-step="goal"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#obGoal [aria-pressed="true"]').getAttribute('data-val')==='7');
   await next(page);await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   await next(page);
   ok('Continue goes on to the microphone: the hand-off card is not showing and no microphone grant is recorded',await page.locator('[data-step="mic"].on').count()===1&&await page.locator('[data-step="achieve"].on').count()===0&&await page.evaluate(()=>localStorage.getItem('sona.micok')!=='1'));
@@ -413,7 +416,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   await toName(page);await page.locator('#obName').fill('Ava');await next(page);await answerTherapy(page);await choose(page,'S');await toReady(page);
   let ready=await readyShown(page);
   ok('with no age picked there is no age chip, and two sounds read "Sounds: R · S"',JSON.stringify(ready.chips)==='["Sounds: R · S"]',ready.chips);
-  await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
+  await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#backBtn').click();await calm(page);await page.locator('#obExploreSounds').click();await toReady(page);
   ready=await readyShown(page);
   ok('a family who explores every sound reads "Every sound, easiest first", never a list Sona chose',ready.title==='Ava\'s practice is ready'&&JSON.stringify(ready.chips)==='["Every sound, easiest first"]',ready.chips);
   clean('ready chips',errors);
@@ -506,7 +509,7 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
 // A reload restores draft.role; the order has to follow it or a clinician
 // finishes on the family path with no email step and no account.
 // (The two one-tap questions hide Continue, so the walk taps their first answer.)
-async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await who(page);continue;}if(s==='therapy'||s==='goal'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updSkip').click();continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+async function walk(page){const seen=[];for(let i=0;i<12;i++){const s=await screen(page);seen.push(s);if(s==='email'||s==='mic')break;if(s==='welcome'){await next(page);continue;}if(s==='therapy'||s==='goal'){await calm(page);await page.locator('[data-step="'+s+'"] .ask-pick').first().click();continue;}if(s==='updates'){await calm(page);await page.locator('#updEmail').fill('parent@example.com');await next(page);continue;}if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
 await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await who(page,'slp');await page.locator('#obName').fill('Milo');await next(page);
@@ -524,7 +527,7 @@ await scenario('clinician setup survives a reload',async()=>{
   ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
   ok('…and an old draft that names no child still restores for a first child',await native.page.evaluate(()=>document.getElementById('obName').value==='Milo'));
   const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
-  ok('…it walks the family path: '+'welcome,name,therapy,sounds,goal,updates,ready,mic',seen.join()==='welcome,name,therapy,sounds,goal,updates,ready,mic',seen);
+  ok('…it walks the family path: '+'welcome,updates,name,therapy,sounds,goal,ready,mic',seen.join()==='welcome,updates,name,therapy,sounds,goal,ready,mic',seen);
   clean('native clinician draft',native.errors);
  }finally{await native.context.close();}
  // …and a clinician who answers "SLP or SLPA" in the app walks the shorter one
@@ -602,15 +605,16 @@ await scenario('a double tap on the microphone step stops on the hand-off',async
   clean('double tap on the microphone button',errors);
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh({viewport:{width:375,height:667}});try{
-  // THE EMAIL STEP comes up right under the finger that answered the days a
-  // week. Where its box sits: go and look, then come Back to the question.
-  await enter(page,{age:'8'});await choose(page,'S');await next(page);await answerGoal(page,'3');await page.locator('[data-step="updates"].on').waitFor();await settled(page);
+  // THE EMAIL STEP comes up right under the finger that tapped the hello's
+  // Continue (16 Oct 2026: it is the first question). Where its box sits: go
+  // and look, then come Back to the hello.
+  await next(page);await page.locator('[data-step="updates"].on').waitFor();await settled(page);
   const box=await page.evaluate(()=>{const r=document.getElementById('updEmail').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,painted:r.height>0};});
-  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="goal"].on').waitFor();await page.waitForTimeout(600);
-  const pick=await centre(page,'#obGoal .ask-pick[data-val="3"]');
-  await page.mouse.click(pick.x,pick.y);await page.waitForTimeout(120);await page.mouse.click(box.x,box.y);await page.waitForTimeout(200);
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="welcome"].on').waitFor();await page.waitForTimeout(600);
+  const cont=await centre(page,'#nextBtn');
+  await page.mouse.click(cont.x,cont.y);await page.waitForTimeout(120);await page.mouse.click(box.x,box.y);await page.waitForTimeout(200);
   const st=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,focus:document.activeElement?document.activeElement.id:'',title:document.getElementById('updTitle').getBoundingClientRect().height>0}));
-  ok('a days-a-week answer, then a tap that lands on the email box: the email step shows with its title, and the box is not focused (no keyboard comes up over it)',box.painted&&st.screen==='updates'&&st.focus!=='updEmail'&&st.title,[box,st]);
+  ok('the hello\'s Continue, then a tap that lands on the email box: the email step shows with its title, and the box is not focused (no keyboard comes up over it)',box.painted&&st.screen==='updates'&&st.focus!=='updEmail'&&st.title,[box,st]);
   await page.waitForTimeout(500);await page.mouse.click(box.x,box.y);
   ok('…and the same tap, on the same spot, once the step has settled does open the email box',await page.evaluate(()=>document.activeElement.id==='updEmail'));
   clean('double tap onto the email step',errors);
@@ -674,7 +678,7 @@ await scenario('a double tap never answers a one-tap question',async()=>{
   await page.waitForTimeout(700);
   ok('the pause lifts by itself after about half a second',await page.evaluate(()=>!document.body.classList.contains('ob-settling')));
   await page.mouse.click(skip.x,skip.y);
-  ok('…and then the same tap on Skip is taken (on to the email step)',await page.evaluate(()=>document.body.dataset.setupScreen==='updates'&&draft.goal===''));
+  ok('…and then the same tap on Skip is taken (on to the ready screen)',await page.evaluate(()=>document.body.dataset.setupScreen==='ready'&&draft.goal===''));
   clean('double tap on a question',errors);
  }finally{await context.close();}}
 });
@@ -799,20 +803,22 @@ await scenario('phone fit, and the hand-off asks for nothing',async()=>{
   ok('…and has no email box, no × and no Rachel line',!/Rachel|occasional tips|email/i.test(await page.locator('[data-step="achieve"]').innerText())&&await page.locator('#skipEmail,#achEmailInput,[data-step="achieve"] input').count()===0);
   await page.screenshot({path:path.join(tmpdir(),'sona-handoff-polish.png')});
   await next(page);await page.waitForURL('**/arcade-feed.html');
-  ok('…and its one button still opens the first game, with nothing posted',leadPosts(requests).length===0);
+  ok('…and its one button still opens the first game, with nothing posted beyond the email step\'s one lead',leadPosts(requests).length===1);
   clean('phone fit and hand-off',errors);
  }finally{await context.close();}
 });
-// THE EMAIL STEP (Travis, 13 Oct 2026: "also move the email box before the
-// price"): its own one-tap-skippable step, Travis's consent line on screen
-// before anything is sent, a wrong-looking address held back with one line.
-const updFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="updates"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),i=document.getElementById('updEmail').getBoundingClientRect(),k=document.querySelector('.upd-consent').getBoundingClientRect(),s=document.getElementById('updSkip').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,inputTop:i.top,inputBottom:i.bottom,consentBottom:k.bottom,skip:s.height,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:ob.scrollWidth-ob.clientWidth,innerHeight};};
-await scenario('the email step: before the price, optional, and fits',async()=>{
+// THE EMAIL STEP (Travis, 16 Oct 2026: "put the email collection step at the
+// very beginning ... I want it to be required"): the first question, right
+// after the hello, with no Skip; Travis's consent line on screen before
+// anything is sent; a missing or wrong-looking address held back with one
+// line; the address posted once, the moment the parent leaves the step.
+const updFit=()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="updates"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),i=document.getElementById('updEmail').getBoundingClientRect(),k=document.querySelector('.upd-consent').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,inputTop:i.top,inputBottom:i.bottom,consentBottom:k.bottom,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:ob.scrollWidth-ob.clientWidth,innerHeight};};
+await scenario('the email step: first, required, and fits',async()=>{
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}}]){
   const {context,page,errors}=await fresh({...device,native:true,keyboardPlatform:'ios'}),at=device.viewport.width+'×'+device.viewport.height;try{
-   await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'3');await page.locator('[data-step="updates"].on').waitFor();await settled(page);
+   await next(page);await page.locator('[data-step="updates"].on').waitFor();await settled(page);
    let fit=await page.evaluate(updFit);
-   ok('the email step fits at '+at+': no scrolling, the card at least 12 px clear of Continue, Skip at least 44 tall',fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom+12<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight&&fit.skip>=44&&fit.sideways<=0&&fit.obSideways<=0,fit);
+   ok('the email step fits at '+at+': no scrolling, the card at least 12 px clear of Continue',fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom+12<=fit.buttonTop&&fit.buttonBottom<=fit.innerHeight&&fit.sideways<=0&&fit.obSideways<=0,fit);
    // the keyboard up, at each size: an iPhone keyboard (no toolbar) is about
    // 253 px tall on a 320-wide phone, 260 on a 375 and 422 on a 393 with its
    // home bar, and the web view shrinks by that much
@@ -826,47 +832,41 @@ await scenario('the email step: before the price, optional, and fits',async()=>{
   }finally{await context.close();}
  }
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
-  await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'5');await page.locator('[data-step="updates"].on').waitFor();
-  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type};});
-  ok('the step asks once, plainly, and is optional: a heading, an email box that is not required, Skip, Continue and Back',shown.title==='Get practice tips by email?'&&/optional/i.test(shown.text)&&!shown.required&&shown.type==='email'&&/Skip/.test(shown.text)&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want tips for home?',shown);
+  ok('a new family\'s setup asks the email first: hello, email, then the four questions',await page.evaluate(()=>ORDER.join()==='welcome,updates,name,therapy,sounds,goal,ready,mic'));
+  await next(page);await page.locator('[data-step="updates"].on').waitFor();
+  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),skip:!!document.getElementById('updSkip'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type,seg:document.getElementById('seg').hidden};});
+  ok('the step asks plainly and is required: a heading, a required email box, no Skip, Continue and Back, no progress segment',shown.title==='What\'s your email?'&&shown.required&&!shown.skip&&!/optional|Skip/i.test(shown.text)&&shown.type==='email'&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='First, where can we reach you?'&&shown.seg,shown);
   ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
-  ok('…no weekly summary is promised (nothing sends one), and the child\'s name is not on the screen',!/weekly summary|weekly update/i.test(shown.text)&&!/Milo/.test(shown.text),shown.text);
+  ok('…no weekly summary is promised (nothing sends one)',!/weekly summary|weekly update/i.test(shown.text),shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
   await page.locator('#updEmail').fill('done@example.com');await page.locator('#updEmail').press('Enter');
   const done=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,focus:document.activeElement.id,hint:document.getElementById('updEmail').getAttribute('enterkeyhint')}));
   ok('Done in the email box closes the keyboard and stays on the step: nothing is sent',done.screen==='updates'&&done.focus!=='updEmail'&&done.hint==='done'&&leadPosts(requests).length===0,done);
-  await page.locator('#updEmail').fill('not-an-email');await next(page);
-  const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent,email:draft.email}));
-  ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&bad.email===''&&leadPosts(requests).length===0,bad);
   await page.locator('#updEmail').fill('');await next(page);
-  ok('an empty box and Continue go on, as a Skip',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='')&&leadPosts(requests).length===0);
+  const empty=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent}));
+  ok('an empty box stays on the step with one line, and sends nothing',empty.screen==='updates'&&empty.msg==='Please enter your email to continue.'&&leadPosts(requests).length===0,empty);
+  await page.locator('#updEmail').fill('not-an-email');await calm(page);await next(page);
+  const bad=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,msg:document.getElementById('updMsg').textContent}));
+  ok('a wrong-looking address stays on the step with one line, and sends nothing',bad.screen==='updates'&&bad.msg==='That email doesn\'t look right.'&&leadPosts(requests).length===0,bad);
+  await page.locator('#updEmail').fill('first@example.com');await calm(page);await next(page);await page.locator('[data-step="name"].on').waitFor();
+  let leads=leadPosts(requests);
+  ok('a good address goes on to the child\'s name and is posted at once, before anything about the child is asked',leads.length===1&&leads[0].email==='first@example.com'&&leads[0].source==='app-setup'&&leads[0].role==='parent'&&JSON.stringify(Object.keys(leads[0]).sort())===JSON.stringify(['email','role','source','summary']),leads);
+  ok('…and it is kept in the draft (a phone call does not lose it)',await page.evaluate(()=>draft.email==='first@example.com'&&JSON.parse(localStorage.getItem('sona.obdraft.v1')).email==='first@example.com'));
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
-  ok('Back comes to it with the line cleared',await page.evaluate(()=>document.getElementById('updMsg').textContent===''));
-  await page.locator('#updEmail').fill('typed@example.com');await calm(page);await page.locator('#updSkip').click();
-  ok('Skip throws the typed address away and goes on: nothing is kept or sent',await screen(page)==='ready'&&await page.evaluate(()=>draft.email===''&&document.getElementById('updEmail').value==='')&&leadPosts(requests).length===0);
-  await next(page);await page.locator('[data-step="mic"].on').waitFor();
-  ok('…and leaving ready after a Skip posts no lead and saves no address',leadPosts(requests).length===0&&await page.evaluate(()=>!Sona.getProfile().email&&!Sona.getProfile().weeklyEmail));
+  ok('Back shows the address it holds, with the line cleared',await page.locator('#updEmail').inputValue()==='first@example.com'&&await page.evaluate(()=>document.getElementById('updMsg').textContent===''));
+  await calm(page);await next(page);await page.locator('[data-step="name"].on').waitFor();
+  ok('…going on again with the same address posts nothing more',leadPosts(requests).length===1);
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
+  await page.locator('#updEmail').fill('second@example.com');await calm(page);await next(page);await page.locator('[data-step="name"].on').waitFor();
+  leads=leadPosts(requests);
+  ok('a changed address is posted once more, the new one',leads.length===2&&leads[1].email==='second@example.com',leads);
+  await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="8"]').click();await next(page);await answerTherapy(page);await choose(page,'R');await next(page);await answerGoal(page,'5');
+  await page.locator('[data-step="ready"].on').waitFor();await next(page);await page.locator('[data-step="mic"].on').waitFor();
+  ok('leaving the ready screen posts nothing more: the address went out when the parent left the email step',leadPosts(requests).length===2);
+  ok('…and that address is the household\'s parent email from then on',await page.evaluate(()=>Sona.parentEmail()==='second@example.com'&&Sona.getProfile().weeklyEmail===true));
   clean('email step behaviour',errors);
  }finally{await context.close();}
- {const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
-  await enter(page,{age:'8'});await choose(page,'R');await next(page);await answerGoal(page,'5');await updates(page,'first@example.com');
-  ok('a valid address goes on to ready, kept in the draft (a phone call does not lose it), and nothing is sent yet',await screen(page)==='ready'&&await page.evaluate(()=>draft.email==='first@example.com'&&JSON.parse(localStorage.getItem('sona.obdraft.v1')).email==='first@example.com')&&leadPosts(requests).length===0);
-  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="updates"].on').waitFor();
-  ok('Back shows the address it holds',await page.locator('#updEmail').inputValue()==='first@example.com');
-  // typed, then Back to the question before it: coming forward shows what was typed
-  await page.locator('#updEmail').fill('not-yet');await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="goal"].on').waitFor();
-  await calm(page);await next(page);await page.locator('[data-step="updates"].on').waitFor();
-  ok('an address typed and left by Back is still in the box when the parent comes forward again, and nothing is sent',await page.locator('#updEmail').inputValue()==='not-yet'&&leadPosts(requests).length===0);
-  await next(page);
-  ok('…and Continue still checks it: a wrong-looking one stays on the step with its line',await screen(page)==='updates'&&await page.evaluate(()=>document.getElementById('updMsg').textContent==='That email doesn\'t look right.'));
-  await page.locator('#updEmail').fill('second@example.com');await next(page);await page.locator('[data-step="ready"].on').waitFor();
-  await next(page);await page.locator('[data-step="mic"].on').waitFor();
-  const leads=leadPosts(requests);
-  ok('a Back and a retype still make ONE post, of the last address, when ready is left',leads.length===1&&leads[0].email==='second@example.com'&&leads[0].source==='app-setup',leads);
-  ok('…and that address is the household\'s parent email from then on',await page.evaluate(()=>Sona.parentEmail()==='second@example.com'));
-  clean('email step: one post',errors);
- }finally{await context.close();}}
 });
 // The iPhone keyboard plugin (autoBackdropColor: "dom") paints the area
 // behind the keyboard's rounded corners from the BODY's background colour; a
@@ -880,7 +880,7 @@ await scenario('a solid colour behind the keyboard',async()=>{
   const opaque=(c)=>{const m=/rgba?\(([^)]+)\)/.exec(c||'');if(!m)return false;const p=m[1].split(',').map(Number);return p.length<4||p[3]>0.99;};
   const seen={};
   seen.who=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);   // (the hello: the question that came next is gone)
-  await next(page);await page.locator('[data-step="name"].on').waitFor();
+  await who(page);await page.locator('[data-step="name"].on').waitFor();
   seen.name=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
   ok('while a grown-up types in setup, the body has a solid colour for the keyboard\'s corners to show',opaque(seen.who)&&opaque(seen.name),seen);
   const fam=readFileSync(ROOT+'/crafted-family.css','utf8');
@@ -905,7 +905,7 @@ async function phone(cfg={},viewport={width:393,height:852},hold=null){
   return o;
 }
 // hello → Parent → name + age 7 → an answer → R → an answer → ready
-async function buyerAtReady(page,name='Mia',email=null){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',therapy:'t_yes'});await choose(page,'R');await toReady(page,'5',email);}
+async function buyerAtReady(page,name='Mia',email=null){await page.goto(base+'/onboarding.html');await enter(page,{name,age:'8',therapy:'t_yes',email});await choose(page,'R');await toReady(page,'5',email);}
 const tab=page=>page.evaluate(()=>({marker:sessionStorage.getItem('sona.setupafter.v1'),gate:sessionStorage.getItem('sona.gate.v1'),firstgame:sessionStorage.getItem('sona.firstgame.v1'),asks:localStorage.getItem('sona.setupasks.v1'),draft:localStorage.getItem('sona.obdraft.v1'),profile:JSON.parse(localStorage.getItem('sona.profile.v1')||'{}'),mic:Number(localStorage.getItem('__micAsks')||0),bought:__phone.bought.length,asked:__phone.askedAll.length,syncs:__phone.syncs}));
 await scenario('where Sona can sell, ready\'s Continue leaves for the price and a buyer comes back to the microphone',async()=>{
  const {context,page,errors,requests}=await phone();try{
@@ -929,7 +929,7 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.goto(base+'/onboarding.html');await page.locator('[data-step="mic"].on').waitFor();
   const back=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,html:document.documentElement.className,backBtn:getComputedStyle(document.getElementById('backBtn')).display,seg:document.getElementById('seg').hidden,hello:document.querySelector('[data-step="welcome"]').classList.contains('on'),visible:getComputedStyle(document.querySelector('.ob')).visibility,cta:document.getElementById('nextBtn').textContent.trim(),name:document.getElementById('micName').textContent,role:draft.role,steps:__phone.events.filter(e=>e.name==='setup step').map(e=>e.props.step).join()}));
   ok('with a valid marker and nothing owed, setup opens on the microphone: no hello, no Back, no progress bar, nothing left hidden',back.screen==='mic'&&!back.hello&&back.backBtn==='none'&&back.seg&&back.visible==='visible'&&!/ob-resume|ob-leaving/.test(back.html)&&back.cta==='Turn on Echo\'s ears'&&back.name==='Mia',back);
-  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,name,therapy,sounds,goal,updates,ready,mic',back.steps);
+  ok('…the profile was not saved a second time: each screen was counted once, the microphone now',back.steps==='welcome,updates,name,therapy,sounds,goal,ready,mic',back.steps);
   await page.reload();await page.locator('[data-step="mic"].on').waitFor();
   ok('a reload on the microphone comes back to the microphone',await screen(page)==='mic');
   await next(page);await page.waitForFunction(()=>__phone.mic.requests.length===1);
