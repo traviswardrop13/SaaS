@@ -7,8 +7,7 @@ import { isWorkEmail } from "@/lib/workEmail";
 /**
  * What the founder-only routes share: the FOUNDER_KEY gate, and reading the
  * two lists of grown-ups Sona holds — the lead ledger and the clinician
- * accounts. One copy, so the leads page and the Kit backfill can never
- * disagree about who is on them.
+ * accounts. One copy, so every founder page agrees about who is on them.
  */
 
 /**

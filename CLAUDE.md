@@ -288,12 +288,12 @@ changing one. What follows from the rule:
   today.") and **the billing day** (the store's price starts "unless you
   cancel at least 24 hours before", Apple's own measure), one button, and
   "Not now" in plain sight. See "THE IPHONE SELLS ONE PLAN" for where every
-  word comes from. **No reminder is promised:** Sona sends none, so the words
-  email, remind and notify may not appear on the price screen
-  (`pricescreentest`, `setupbuytest`). A real reminder (Resend, fed by
-  RevenueCat) is a later change that adds a third row for a family it is
-  truly armed for, and is Travis's to approve: it changes what the privacy
-  page says. "Paywall viewed" and the one-shot (`planShown`) count only once
+  word comes from. **No reminder is promised:** since 16 Oct 2026 Sona sends
+  one ("Your free days end soon", RCHOOK1, below), but only to a parent who
+  gave the app an email, so the price screen still promises none, and the
+  words email, remind and notify may not appear on it (`pricescreentest`,
+  `setupbuytest`, `planwordstest`). A third row promising it, for a family
+  it is truly armed for, is Travis's call. "Paywall viewed" and the one-shot (`planShown`) count only once
   a priced card is on screen.
 - **THE PRICE SCREEN IS ONE ROW, NO DATE, AND AN X (Travis, 6 Oct 2026, with
   a reference paywall: "too many words ... I don't want it to say Friday
@@ -922,7 +922,7 @@ a free download, not a pre-order). `APP_READY = true` in `lib/launch.ts` and
 email and opens the App Store (Android: the web app), and the "launches
 Friday" welcome email and the clinician's P.S. stop. **Nobody on the waiting
 list is emailed by this**: they were promised an email "the moment it's
-ready", and that is a Kit broadcast Travis sends. The switch stays, both
+ready", and that is an email Travis sends to the list himself. The switch stays, both
 states built, for the next time the app is not ready (25 Sep 2026: "the app
 launches next week"; the iOS 27 build closed on launch). While it is `false`,
 nobody is sent to the App Store: a parent or "other" is thanked
@@ -1026,7 +1026,7 @@ officer, an engineer — whose rulings are now rules:
   joined", never "declined".
 - **A parent's email, typed by the clinician, is used once** (Travis, 24 Sep
   2026). Add a child may carry it; Sona hands it to Resend to email the join
-  link one time and keeps no copy — not on the invite, not in Kit or
+  link one time and keeps no copy — not on the invite, not on the list or
   `/api/lead`, not in a log — at most 30 a day per clinician. Say "handed to
   Resend", never "kept nowhere": Resend has it, and a privacy officer checks.
   A parent joins the list only by typing their own email under the consent
@@ -1054,23 +1054,28 @@ through that clinician's caseload code or sits on their roster — and the
 clinician's free dashboard never depends on how many of their families
 upgrade.
 
-## The email list: Kit (GoHighLevel is gone)
-**GoHighLevel was deleted on 24 Sep 2026; Kit replaced it.** Every grown-up's
-email goes through one door, `/api/lead`: the SLP sign-up (via the auth
-route's `tellCrm`), the app's setup (a clinician's account email, a parent's
-optional email from setup's email step, before the price), the parent's optional box on `join.html` and the Speech
-Check. An address a clinician types for a parent never reaches it. That route:
-- **keeps every lead first** in the store (`leads:all`, capped), whether or not
-  a list takes it — it once forwarded and forgot, and 26 "leads" were unfindable;
-- sends it to **Kit** (`lib/kit.ts`: create the subscriber, then the optional
-  `KIT_FORM_ID` form and a `sona-slp` / `sona-parent` tag). Only creating the
-  subscriber counts as success; a failed form or tag step is logged, not lost;
-- says `captured` only when a list actually said yes.
-
-What reaches Kit: the email, a **clinician's own** first name, the role tag
-(`sona-slp`, `sona-parent`, `sona-other`), and, since 5 Oct 2026, a **plan
-tag** for a parent who started Sona Premium in the iPhone app.
-Never anything about a child.
+## The email list: Sona's own (Kit is gone, 16 Oct 2026)
+**GoHighLevel was deleted on 24 Sep 2026, and Kit, which replaced it, on 16
+Oct 2026** (Travis: "I'm also done using Kit. You'll send these emails with
+resend"). `lib/kit.ts`, the "Send everyone to Kit" button and its route are
+gone, and no server code reads `KIT_API_KEY` (`slpapi` fails if one comes
+back). The list is the store's own ledger, and every email to it goes
+through Resend: the welcome series (`lib/nurture.ts`), the weekly report
+and RevenueCat's two notes (RCHOOK1, below). Every grown-up's email goes
+through one door, `/api/lead`: the SLP sign-up (via the auth route's
+`tellCrm`), the app's setup (a clinician's account email, a parent's
+optional email from setup's email step, before the price), the parent's
+optional box on `join.html` and the Speech Check. An address a clinician
+types for a parent never reaches it. That route:
+- **keeps every lead** in the store (`leads:all`, capped): that IS the list —
+  it once forwarded and forgot, and 26 "leads" were unfindable;
+- welcomes it (the series), and marks a purchase's plan post a buyer;
+- says `captured` only when the ledger really took it (or the retired
+  `LEAD_WEBHOOK_URL` did), and the clinician sign-up stamps `crmAt` only
+  then.
+What is kept: the email, a **clinician's own** first name, the role, the
+source and campaign tags, and a parent's plan word. Never anything about a
+child.
 
 **THE WEEKLY PROGRESS REPORT (REPORT1, 15 Oct 2026)** (Travis: "i want the
 setup page to say get the weekly progress report"; told that nothing sent
@@ -1241,46 +1246,85 @@ sessions" on in PostHog too.
 Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
 `IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email
 ("Here's Sona", the App Store link) and start at "The 5-minute trick"; days 2,
-3 and 5 are unchanged (`nurturetest`). Two known gaps, for Travis: the series
-does not stop for a family who bought (days 3 and 5 still say "Start your free
-trial"), and `parents.html` uses an ad's `utm_source` as the source, so an ad
-tagged `utm_source=app-setup` would skip the download email too.
+3 and 5 are unchanged (`nurturetest`), except for a buyer: **a family who
+started Premium gets no sales email** (days 3 and 5, `sales: true`; RCHOOK1,
+below). One known gap, for Travis: `parents.html` uses an ad's `utm_source`
+as the source, so an ad tagged `utm_source=app-setup` would skip the
+download email too.
 
-**The plan tag** (Travis, 5 Oct 2026: "yeah build it", to "when a family with
+**The plan post** (Travis, 5 Oct 2026: "yeah build it", to "when a family with
 an email starts their free days, the app tells our server, and the server tags
-them in Kit"). Apple never tells Sona who bought, so the phone says it: once
+them in Kit"; Kit went on 16 Oct 2026). The phone says it at once: once
 `Sona.buyPlan()` has gone through (never a restore, a cancel or a failure), it
 posts the household's parent email (`parentEmail()`: setup's optional email
 step, which since 13 Oct 2026 comes before the price, so a new family's
 address is on the phone before they buy; on any child's profile) to
 `/api/lead` with `plan: "trial"`
 (Apple's entitlement says TRIAL, or, when Apple's answer says nothing, the card
-sold free days) or `"paid"`. The route turns those two words, and only those,
-into `sona-trial` / `sona-paid` (`kitPlanTag` in `lib/kit.ts`) beside the role
-tag; the ledger keeps the plan too. Once per kind and address on that phone
+sold free days) or `"paid"`. The route keeps those two words, and only those
+(`planWord` in `lib/nurture.ts`), on the ledger, and marks the address a
+buyer (`markBuyer`), so the sales emails stop before RevenueCat's own
+message arrives (anyone can post here, so the most a forged plan post does
+is stop a stranger's sales emails). Once per kind and address on that phone
 (`sona.plantold.v1`); no email, nothing sent; nobody is asked for one at that
-moment. The privacy page says Kit holds this. **What it is for is built in
-Kit, by Travis:** the welcome emails stop when `sona-trial` or `sona-paid` is
-added, and a `sona-trial` sequence can send the free days' last-day note.
-Kit's free plan has one visual automation and no sequences; Creator has both.
-The app's own words still promise no reminder (see "TRIAL FIRST"): only
-families who gave an email get one, and only once Kit sends it. Not built: a
-RevenueCat webhook (it would add cancellations, conversions and expiries), and
-App Store Connect's App Privacy answers, which should now list purchases
-linked to the parent's email (Travis's task, no review). `planwordstest` plays
-the phone side ("the list hears"), `slpapi` the route and the tags. Wherever an email joins the list, the page says
+moment. `planwordstest` plays the phone side ("the list hears"),
+`nurturetest` and `slpapi` the route. App Store Connect's App Privacy
+answers owe purchases linked to the parent's email (Travis's task, no
+review; NATIVE.md). Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
 Unsubscribe anytime." **Except the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
-still say the email goes to Kit. Meta's `Lead` fires only when an email was given.
+still say Sona keeps the email. Meta's `Lead` fires only when an email was given.
+
+**REVENUECAT TELLS SONA (RCHOOK1, 16 Oct 2026)** (Travis: "build the revcat
+webhook"; then, asked: show the parent's email in RevenueCat, stop the sales
+emails for buyers, a note before the free days end, "we miss you too", and
+turn Kit off). Apple never tells an app who bought; RevenueCat does know when
+a purchase starts, renews, is cancelled or ends.
+- **The phone hands RevenueCat the parent's email** (`_rcEmail` in sona.js,
+  once the store is set up on a page: `setEmail` with `parentEmail()`).
+  RevenueCat's dashboard then shows the parent instead of ANONYMOUS, and
+  every message it sends carries the email (`subscriber_attributes.$email`).
+  That address only, never a child's name; nothing when no email was given
+  (that family stays anonymous and gets none of this). Optional like every
+  new native call: missing, throwing or refusing changes nothing, and nothing
+  waits on it (`planwordstest` "RevenueCat hears the email").
+- **The webhook** (`/api/revenuecat`, `lib/revenuecat.ts`): RevenueCat's own
+  `Authorization` header (`REVENUECAT_WEBHOOK_AUTH`, 16+ characters, `_PREV`
+  for a change; constant-time), 64 KB, JSON. A TEST, a type Sona has no use
+  for, Apple's sandbox (unless `REVENUECAT_SANDBOX=1`) and a message with no
+  email: 200, nothing kept. Otherwise once per message id (`rc:evt:<id>`, 14
+  days, released if a write fails, so the 503 RevenueCat retries finishes
+  it): the state in `rc:plans` (email to {s, exp, ts, at}: trial, paid,
+  cancelled, billing, ended; an older message never overwrites a newer one,
+  one Lua step), the buyer mark, and the two queues. Never the price, the
+  country or a transaction id. Set-up steps for Travis: NATIVE.md.
+- **What it sends** (Resend, from Rachel; her words to change, `MAILS`):
+  "Your free days end soon" (`rc:remind`, 48 hours before the free days end;
+  the daily run at 16:00 UTC sends it only while the plan is still on its
+  free days and more than 24 hours remain, Apple's line for a cancel to
+  count, so 24 to 48 hours ahead, once per end), and "We miss you at Sona"
+  (`rc:miss`, a day after a plan ends, only if still ended, once a year an
+  address). Only to an address that joined Sona's list (`nurture:0:<email>`)
+  and is not in `email:unsub` (exact or plain mailbox): RevenueCat's
+  attributes can be set by anyone holding the app's public key, so an email
+  there proves nothing. No price, no number of free days (both the App
+  Store's), no child. The price screen still promises no reminder.
+- **/leads.html** shows a Premium column and counts (free days, paying,
+  cancelled, payment problem, ended), from `rc:plans`.
+- **Defaults Travis did not pick:** a cancelled-then-ended trial also gets
+  "We miss you"; no email for a payment problem (he did not pick it); the
+  sales emails stop for good once a family started Premium, even after it
+  ends. **For Rachel:** both emails' words. **For Travis:** NATIVE.md's three
+  set-up steps, and the App Privacy line (the email now also goes to
+  RevenueCat).
+`rcwebhooktest` plays the route, the store, both emails and the words.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
 every clinician account, counts everyone since the "I'm a…" landing page
-(25 Sep 2026) by what they chose, and its "Send everyone to Kit" button is the catch-up:
-it re-sends everyone Sona holds, tagged `sona-slp` (a clinician account or an
-SLP sign-up), `sona-other` (answered Other) or `sona-parent`, and is safe to
-press again. Kit tags only add, so a wrong tag is fixed in Kit, not by
-re-running.
+(25 Sep 2026) by what they chose, and shows each parent's Premium in the app
+as RevenueCat last told it (RCHOOK1). Its "Send everyone to Kit" button went
+with Kit.
 
 ## Home: choose a game, then practice
 **Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens

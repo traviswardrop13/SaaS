@@ -4,7 +4,6 @@ import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
   signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
 } from "@/lib/slpAuth";
-import { kitConfigured } from "@/lib/kit";
 import { CASELOAD_TERMS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
@@ -29,11 +28,10 @@ export async function GET() {
     signing,                                        // SLP_AUTH_SECRET (or non-production)
     store,                                          // KV / Upstash
     email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
-    // The lead reaches an email list. Kit since 24 Sep 2026; the webhook is
-    // the retired GoHighLevel rail, so deleting LEAD_WEBHOOK_URL must not
-    // turn this false while Kit is taking every sign-up.
-    crm: kitConfigured() || Boolean(process.env.LEAD_WEBHOOK_URL),
-    kit: kitConfigured(),
+    // The lead reaches the email list: Sona's own, in the store, since Kit
+    // went on 16 Oct 2026 (/api/lead). The webhook is the retired GoHighLevel
+    // rail, so deleting LEAD_WEBHOOK_URL must not turn this false.
+    crm: store || Boolean(process.env.LEAD_WEBHOOK_URL),
   });
 }
 
@@ -69,9 +67,9 @@ function safeAttrib(raw: unknown): Record<string, string> {
 
 /**
  * Tell the founder's email list that a clinician signed up. /api/lead is
- * the one place any opt-in goes (it sends to Kit; GoHighLevel, the list before
- * it, was deleted 24 Sep 2026), so this reuses it rather than growing a
- * second rail.
+ * the one place any opt-in goes (it keeps Sona's own list; Kit was that list
+ * until 16 Oct 2026, GoHighLevel before it until 24 Sep 2026), so this
+ * reuses it rather than growing a second rail.
  *
  * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
  * `void fetch(...)` so a CRM hiccup could never cost a clinician their
@@ -87,8 +85,8 @@ function safeAttrib(raw: unknown): Record<string, string> {
  * Never a child's, which is the rule everywhere and has no exception in a
  * marketing payload of all places.
  */
-// Long enough for Kit's create + form + tag calls (lib/kit fuses each at
-// 2.5s, run side by side), which usually finish in well under a second.
+// Long enough for /api/lead's own work (keeping the lead, then the welcome
+// emails through Resend), which usually finishes in well under a second.
 const CRM_TIMEOUT_MS = 8000;
 async function tellCrm(
   origin: string, email: string, source: string, name: string, attrib: Record<string, string>,

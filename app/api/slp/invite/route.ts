@@ -31,7 +31,7 @@ import { covered, bumpDaily, PARENT_EMAILS_PER_DAY } from "@/lib/caseload";
  * Sona sends that family ONE email with the join link. The address is used
  * for that send and for nothing else: it is not part of the invite, the
  * index row or the meta (their shapes are exactly what they were), it is not
- * logged, and it never reaches /api/lead or Kit — the only way a parent joins
+ * logged, and it never reaches /api/lead or any list — the only way a parent joins
  * the list is by typing their own email under the consent line on
  * join.html. The daily limit counts sends per CLINICIAN, keyed on the
  * clinician, so even the meter holds nothing about the parent.

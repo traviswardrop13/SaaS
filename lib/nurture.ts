@@ -4,8 +4,9 @@ import { kvCmd } from "@/lib/slpAuth";
 /**
  * THE WELCOME SERIES, on Sona's own server (Travis, 6 Oct 2026: "new sign-ups
  * automatically get [the welcome] right away and the 5-minute email the next
- * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
- * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
+ * day, with a real unsubscribe link. That's it."). It replaced hand-sending a
+ * Kit export every day; Kit itself is gone since 16 Oct 2026 (RCHOOK1), and
+ * this is Sona's whole email list.
  *
  * Five emails from Rachel (CONTENT below: two at sign-up, then day 2, 3 and 5), each with a
  * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
@@ -23,9 +24,15 @@ import { kvCmd } from "@/lib/slpAuth";
  *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
  * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
- * Not yet: stopping when a family starts a trial. Sona can't see that until
- * RevenueCat tells the server, so day 3 and day 5 say "already started? ignore
- * the button" rather than assume.
+ * A BUYER GETS NO SALES EMAIL (Travis, 16 Oct 2026: "Stop sales emails for
+ * buyers"). Day 3 and day 5 push the free trial (`sales: true`); an address
+ * marked `nurture:buyer:<email>` skips them and keeps the tips. The mark comes
+ * from RevenueCat's webhook (lib/revenuecat.ts) or from the phone's own plan
+ * post right after a purchase (/api/lead `plan`), whichever is first, and it
+ * never comes off: Apple gives the free days once, so a family who started
+ * them, or paid, has nothing left to be sold. Day 3 keeps "Already started?
+ * You can ignore the button." for a buyer Sona could not link (no email in
+ * the app, or a webhook not yet set up).
  *
  * The people who signed up before this shipped were emailed by hand from a
  * Kit export (5–6 Oct 2026), so there is no back-fill here: it starts with
@@ -53,7 +60,7 @@ type Fetch = typeof fetch;
 
 export type Step = number;
 
-type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
+type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string; sales?: boolean };
 
 /**
  * THE SEQUENCE (Travis, 7 Oct 2026: "a super short email ... to send them
@@ -124,6 +131,7 @@ export const CONTENT: Content[] = [
     button: "Try Sona free for 3 days",
     after: [],
     ps: "Already started? You can ignore the button.",
+    sales: true,
   },
   {
     day: 5,
@@ -141,6 +149,7 @@ export const CONTENT: Content[] = [
     ],
     button: "Start your free trial",
     after: [],
+    sales: true,
   },
 ];
 
@@ -229,6 +238,32 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
 
 export const nextKey = (email: string) => "nurture:next:" + email;
 
+/** Set once a family has started Premium (the free days or paid); see "A BUYER GETS NO SALES EMAIL" above. */
+export const buyerKey = (email: string) => "nurture:buyer:" + email;
+export const BUYER_KEEP_SEC = 400 * 24 * 60 * 60;
+
+/**
+ * The two words a purchase may carry into /api/lead (sona.js _tellPlan):
+ * "trial" when Apple started the free days, "paid" when it charged at once.
+ * Anything else is no plan. (This was lib/kit.ts's kitPlanTag until Kit went.)
+ */
+export const planWord = (p: unknown): "trial" | "paid" | "" => (p === "trial" || p === "paid" ? p : "");
+
+/**
+ * Mark an address as a buyer: no more sales emails (day 3, day 5). The
+ * lowercased exact address, as every nurture key. Never throws; true when
+ * the store took it.
+ */
+export async function markBuyer(rawEmail: string, kv: Kv = kvCmd): Promise<boolean> {
+  const email = rawEmail.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return false;
+  try {
+    return (await kv(["SET", buyerKey(email), "1", "EX", BUYER_KEEP_SEC])) === "OK";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * /api/lead: a new grown-up's email. Welcome now, schedule the next. Never
  * throws. `inApp`: the address came from inside the app, so the series starts
@@ -276,7 +311,11 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
     const step = Number((await kv(["GET", nextKey(e)])) ?? 1) || 1;
-    const r = await sendStep(e, step, kv, f);
+    // a sales email to a buyer is skipped, and the series moves on to the
+    // next tip; a store that did not answer skips it too (better one missed
+    // pitch than "Start your free trial" to a family already paying)
+    const skip = !!(CONTENT[step] && CONTENT[step].sales) && (await kv(["GET", buyerKey(e)])) !== null;
+    const r: SendResult = skip ? "failed" : await sendStep(e, step, kv, f);
     if (r === "sent") sent++;
     const next = step + 1;
     if (r === "unsub" || !CONTENT[next]) {

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { configured, runDue } from "@/lib/nurture";
 import { runReports } from "@/lib/report";
+import { runRc } from "@/lib/revenuecat";
 
 /**
  * Daily: sends the welcome series' day-after email to everyone it is due for
- * (lib/nurture.ts), and on Monday (Tuesday and Wednesday catch up) last week's progress
- * report to every household that asked for it (lib/report.ts). Same auth as
+ * (lib/nurture.ts), the notes RevenueCat's news has queued ("Your free days
+ * end soon", "We miss you at Sona": lib/revenuecat.ts), and on Monday
+ * (Tuesday and Wednesday catch up) last week's progress report to every
+ * household that asked for it (lib/report.ts). Same auth as
  * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
  * A manual run with ?report=1 sends the report on any day (still once an
  * address a week).
@@ -30,6 +33,7 @@ export async function GET(req: NextRequest) {
   }
   const r = await runDue();
   // stop sending well before maxDuration, so no address is left claimed and unsent
+  const rc = await runRc(undefined, undefined, undefined, { deadline: started + 120000 });
   const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
-  return NextResponse.json({ ok: true, ...r, report });
+  return NextResponse.json({ ok: true, ...r, rc, report });
 }

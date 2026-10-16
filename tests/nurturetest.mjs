@@ -78,6 +78,37 @@ mid.u = true; const mid2 = { ...mid, cmd: async (c) => (c[0] === "SISMEMBER" ? 1
 await N.runDue(mid2.cmd, fakeFetch, T + 2 * N.DAY_MS);
 ok("unsubscribing mid-way stops every email after it", sent.length === n0 && mid.z.size === 0);
 
+// A BUYER GETS NO SALES EMAIL (RCHOOK1, Travis, 16 Oct 2026: "Stop sales
+// emails for buyers"). Day 3 and day 5 push the free trial; an address marked
+// a buyer (by RevenueCat's webhook or the phone's plan post) skips them and
+// keeps the tips, and a store that does not answer skips them too.
+ok("the two sales emails are day 3 and day 5, and only they", JSON.stringify(N.CONTENT.map((c) => !!c.sales)) === "[false,false,false,true,true]");
+ok("…and they are the two whose button sells the free days",
+  N.CONTENT.every((c) => !!c.sales === /free/i.test(c.button)) && /free/i.test(N.CONTENT[3].button) && /free/i.test(N.CONTENT[4].button));
+ok("planWord: \"trial\" and \"paid\" only", N.planWord("trial") === "trial" && N.planWord("paid") === "paid" &&
+  ["", "TRIAL", "yearly", "sona-trial", null, undefined, 1, ["trial"]].every((x) => N.planWord(x) === ""));
+{
+  const b = store(), mark = sent.length;
+  await N.enroll("Buyer@Example.com", b.cmd, fakeFetch, T, { inApp: true });
+  ok("markBuyer marks the lowercased address, for 400 days", (await N.markBuyer(" Buyer@Example.com ", b.cmd)) === true && b.kv.get(N.buyerKey("buyer@example.com")) === "1");
+  ok("…and refuses a non-address", (await N.markBuyer("nope", b.cmd)) === false);
+  for (let d = 1; d <= 10; d++) await N.runDue(b.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
+  ok("a buyer gets the 5-minute email and the day-2 tip, and no sales email", JSON.stringify(sent.slice(mark).map((m) => m.subject)) === JSON.stringify([N.CONTENT[1].subject, N.CONTENT[2].subject]), sent.slice(mark).map((m) => m.subject));
+  ok("…and is left with nothing queued", b.z.size === 0 && !b.kv.has(N.nextKey("buyer@example.com")));
+  const late = store(), m2 = sent.length;
+  await N.enroll("late@example.com", late.cmd, fakeFetch, T, { inApp: true });
+  for (let d = 1; d <= 3; d++) await N.runDue(late.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
+  await N.markBuyer("late@example.com", late.cmd);
+  for (let d = 4; d <= 10; d++) await N.runDue(late.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
+  ok("a family who buys after day 3 still gets no day-5 email", JSON.stringify(sent.slice(m2).map((m) => m.subject)) === JSON.stringify(N.CONTENT.slice(1, 4).map((c) => c.subject)), sent.slice(m2).map((m) => m.subject));
+  const silent = store(), m3 = sent.length;
+  await N.enroll("quiet@example.com", silent.cmd, fakeFetch, T, { inApp: true });
+  const realCmd = silent.cmd;
+  silent.cmd = async (c) => (c[0] === "GET" && String(c[1]).startsWith("nurture:buyer:") ? undefined : realCmd(c));
+  for (let d = 1; d <= 10; d++) await N.runDue(silent.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
+  ok("a store that cannot say whether they bought: the sales emails are skipped, the tips still go", JSON.stringify(sent.slice(m3).map((m) => m.subject)) === JSON.stringify([N.CONTENT[1].subject, N.CONTENT[2].subject]), sent.slice(m3).map((m) => m.subject));
+}
+
 // AN EMAIL GIVEN INSIDE THE APP (Travis, 13 Oct 2026: setup's email box moved
 // before the price). They already have the app, so the App Store email
 // ("Here's Sona") is skipped and the series starts at the 5-minute email,
@@ -120,19 +151,19 @@ ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 // the wiring
 const lead = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
 ok("/api/lead enrolls every new email once the app is out, an in-app one without the App Store email",
-  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource \} from "@\/lib\/nurture"/.test(lead));
+  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource, markBuyer, planWord \} from "@\/lib\/nurture"/.test(lead));
 // …and played: /api/lead itself, against the in-memory store and a fake
-// Resend, with only its neighbours (the store's door, the rate limit, Kit and
-// the launch switch) stubbed. The source the app posts is what picks the
+// Resend, with only its neighbours (the store's door, the rate limit and the
+// launch switch) stubbed. The source the app posts is what picks the
 // first email, as the route really reads it off the body.
 {
   process.env.EMAIL_POSTAL = "851 NE 1st Ave, Unit 4103, Miami, FL 33132";
   const db = store(), base = db.cmd;
-  db.cmd = async (c) => (c[0] === "LPUSH" || c[0] === "LTRIM" ? 1 : base(c));
+  const ledger = [];
+  db.cmd = async (c) => (c[0] === "LPUSH" ? (ledger.unshift(JSON.parse(c[2])), ledger.length) : c[0] === "LTRIM" ? "OK" : base(c));
   const stubs = {
     "@/lib/slpAuth": { kvCmd: (c) => db.cmd(c), kvConfigured: () => true, leadSig: () => "not-a-signature" },
     "@/lib/rateLimit": { rateLimit: async () => null },
-    "@/lib/kit": { kitConfigured: () => false, kitPlanTag: () => "", kitSubscribe: async () => null, kitTagFor: () => "" },
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
     "@/lib/nurture": N,
   };
@@ -154,6 +185,11 @@ ok("/api/lead enrolls every new email once the app is out, an in-app one without
     fromApp.status === 200 && fromApp.json.welcomed === true && JSON.stringify(fromApp.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromApp);
   const fromBuy = await post({ email: "buyer@example.com", source: "app-trial", role: "parent", plan: "trial" });
   ok("…a purchase's plan post that is the first the server hears of the address, the same", JSON.stringify(fromBuy.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromBuy);
+  ok("…and it marks the address a buyer, so day 3 and day 5 never come", db.kv.get(N.buyerKey("buyer@example.com")) === "1");
+  ok("the lead is kept on Sona's own list (the ledger), and that is what \"captured\" means now Kit is gone",
+    fromApp.json.captured === true && ledger.some((l) => l.email === "setup@example.com" && l.source === "app-setup") && !ledger.some((l) => "kit" in l), ledger.slice(0, 2));
+  const noPlan = await post({ email: "odd@example.com", source: "app-paid", role: "parent", plan: "TRIAL" });
+  ok("…a plan word that is not one of the two marks nothing and is not kept", noPlan.status === 200 && !db.kv.has(N.buyerKey("odd@example.com")) && ledger[0].plan === "", ledger[0]);
   const fromSite = await post({ email: "site@example.com", source: "parents", role: "parent" });
   ok("…and the website's sign-up still gets \"Here's Sona\" first, then the 5-minute email",
     JSON.stringify(fromSite.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), fromSite);

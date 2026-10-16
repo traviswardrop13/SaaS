@@ -13,7 +13,7 @@
  * LIVE since 1 Oct 2026 (Travis: "yeah send people to app store now!", with
  * the App Store listing checked: a free download, not a pre-order). The
  * people already on the list were promised an email "the moment it's ready";
- * nothing here sends it, that is a Kit broadcast.
+ * nothing here sends it, that is an email Travis sends to the list himself.
  */
 export const APP_READY = true;
 

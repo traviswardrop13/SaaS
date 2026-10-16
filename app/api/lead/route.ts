@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
-import { kitConfigured, kitPlanTag, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
-import { enroll, inAppSource } from "@/lib/nurture";
+import { enroll, inAppSource, markBuyer, planWord } from "@/lib/nurture";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
@@ -12,15 +11,17 @@ import { enroll, inAppSource } from "@/lib/nurture";
  * optional email step, before the price since 13 Oct 2026), a purchase's
  * plan post (sona.js _tellPlan) and the Speech Check.
  *
- * Every lead is saved in the store first-class (the ledger below), then sent to:
- *   - KIT_API_KEY (+ optional KIT_FORM_ID): the email list, via lib/kit —
- *     clinicians tagged sona-slp, everyone else sona-parent;
- *   - LEAD_WEBHOOK_URL: a generic webhook. It was GoHighLevel, deleted on
- *     24 Sep 2026; remove the variable and this path goes quiet.
+ * SONA'S OWN LIST. Every lead is saved in the store (the ledger below), and
+ * that is the email list: the welcome series (lib/nurture.ts) mails it, the
+ * weekly report and RevenueCat's notes reach the same addresses, and
+ * /leads.html reads it. Kit was the list from 24 Sep to 16 Oct 2026 (Travis,
+ * 16 Oct 2026: "I'm also done using Kit"); nothing goes there now.
+ * LEAD_WEBHOOK_URL is a generic webhook, GoHighLevel's until 24 Sep 2026;
+ * remove the variable and that path goes quiet.
  *
  * Never blocks the visitor: a capture hiccup still returns ok. `captured` says
- * whether a list actually accepted the lead, and the auth route stamps a
- * clinician's account only when it did.
+ * whether the lead was actually kept (or the webhook took it), and the auth
+ * route stamps a clinician's account only when it was.
  */
 export const runtime = "nodejs";
 
@@ -35,8 +36,7 @@ export async function GET() {
     service: "lead",
     email: Boolean(process.env.RESEND_API_KEY),
     hook: Boolean(process.env.LEAD_WEBHOOK_URL),
-    kit: kitConfigured(),
-    kitForm: Boolean(process.env.KIT_FORM_ID),
+    list: kvConfigured(),
   });
 }
 
@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
 
   /**
    * A STRANGER CANNOT FLOOD THE LIST. This door takes posts from anyone, and
-   * each one is kept and sent to Kit — so a script could fill the ledger past
-   * its cap (pushing real leads out) and stuff the Kit list with junk. Ten an
+   * each one is kept and welcomed — so a script could fill the ledger past
+   * its cap (pushing real leads out) and stuff the list with junk. Ten an
    * hour from one address is far more than any family or clinician sends.
    * Our own sign-up route forwards every clinician from the same few server
    * addresses, so it signs its leads and a valid signature skips the limit.
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     name: child,                       // stripped below — never sent (see safeLead)
     child,
     age: body?.age != null ? String(body.age).slice(0, 4) : "",
-    practice,                          // array (for Kit etc.)
+    practice,                          // array (stripped below, never sent)
     practice_text: practice.join(", "), // flat string — easy GHL field mapping
     summary,                           // one-line headline (good email subject/preview)
     report,                            // full readable report body — drop into the GHL email
@@ -125,10 +125,11 @@ export async function POST(req: NextRequest) {
     fbclid: clamp(body?.fbclid),
     // A PARENT STARTED SONA PREMIUM IN THE APP (5 Oct 2026): "trial" when
     // Apple started their free days, "paid" when it charged them at once,
-    // sent by sona.js once the purchase has gone through. It becomes a Kit
-    // tag (kitPlanTag) so the list's own automations can stop the welcome
-    // emails and send the free days' last-day note. Those two words only.
-    plan: kitPlanTag(typeof body?.plan === "string" ? body.plan : "") ? String(body!.plan) : "",
+    // sent by sona.js once the purchase has gone through. It is kept on the
+    // ledger, and it marks the address a buyer, so the welcome series skips
+    // its sales emails (lib/nurture.ts) even before RevenueCat's own message
+    // arrives (lib/revenuecat.ts). Those two words only.
+    plan: planWord(body?.plan),
     at: new Date().toISOString(),
   };
 
@@ -178,17 +179,14 @@ export async function POST(req: NextRequest) {
   };
 
   const hook = process.env.LEAD_WEBHOOK_URL;
-  let captured = false;
   let crm: { ok: boolean; status: number } | null = null;
-  let kit: KitResult | null = null;
 
   /**
-   * CAPTURED MEANS A LIST SAID YES. It used to be set the moment a fetch
+   * CAPTURED MEANS IT WAS REALLY KEPT. It used to be set the moment a fetch
    * returned, whatever the CRM answered, so a refusal read everywhere
-   * downstream as a lead safely delivered. The legacy webhook (GoHighLevel,
-   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) and Kit
-   * run side by side, each on its own fuse, and captured is true only if one
-   * of them actually took the lead.
+   * downstream as a lead safely delivered. Now it is true only when the
+   * ledger (Sona's own list) took the lead, or the legacy webhook (GoHighLevel,
+   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) did.
    */
   const toHook = async (): Promise<void> => {
     if (!hook) return;
@@ -210,26 +208,19 @@ export async function POST(req: NextRequest) {
       clearTimeout(fuse);
     }
   };
-  const toKit = async (): Promise<void> => {
-    if (!kitConfigured()) return;
-    // A clinician's own first name goes with them; nobody else's does.
-    kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role),
-      tags: safeLead.plan ? [kitPlanTag(safeLead.plan)] : [] });
-  };
   try {
-    await Promise.all([toHook(), toKit()]);
+    await toHook();
   } catch {
     // never fail the visitor on a capture hiccup
   }
   const hookRes = crm as { ok: boolean; status: number } | null;
-  const kitRes = kit as KitResult | null;
-  captured = !!(hookRes && hookRes.ok) || !!(kitRes && kitRes.ok);
+  let kept = false;
 
   /**
-   * THE LEDGER: EVERY LEAD IS KEPT ON OUR SIDE TOO. Until 24 Sep 2026 this
+   * THE LEDGER: EVERY LEAD IS KEPT ON OUR SIDE. Until 24 Sep 2026 this
    * route forwarded and forgot, so a lead the CRM dropped was gone — and the
    * first ad produced 26 "Website Leads" that nobody could find. Each lead is
-   * now appended to the store with whether the CRM accepted it, and the
+   * appended to the store (since 16 Oct 2026 that IS the list), and the
    * founder view (/leads.html, behind FOUNDER_KEY) reads it back.
    *
    * Built from safeLead, field by field, never from `lead`: the grown-up's
@@ -255,13 +246,19 @@ export async function POST(req: NextRequest) {
         // status 0 is a timeout or a network failure, not a refusal: the
         // webhook may never have seen it, or may have it without replying
         crm: hookRes ? (hookRes.ok ? "accepted" : hookRes.status ? "refused " + hookRes.status : "unreachable") : "not configured",
-        kit: kitRes ? (kitRes.ok ? kitRes.detail : "refused (" + kitRes.detail + ")") : "not configured",
       };
-      await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)]);
+      kept = Number(await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)])) > 0;
       await kvCmd(["LTRIM", "leads:all", 0, 9999]);
     } catch {
-      // the ledger is a backup; its failure never costs the visitor anything
+      // a failed write never costs the visitor anything; `captured` says so
     }
+  }
+  const captured = kept || !!(hookRes && hookRes.ok);
+
+  // A PURCHASE'S PLAN POST: the welcome series sends this address no more
+  // sales emails (day 3 "Try Sona free", day 5 "Start your free trial")
+  if (lead.plan && kvConfigured()) {
+    try { await markBuyer(email, kvCmd); } catch { /* never fail the visitor */ }
   }
 
   /**
