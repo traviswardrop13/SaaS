@@ -75,6 +75,11 @@ function phoneInit(cfg){
   const once=(k,v)=>{if(localStorage.getItem(k)==null)localStorage.setItem(k,v);};
   once('sona.freeera.v1','post');['sona.freeera2.v1','sona.freeera3.v1','sona.freeera4.v1','sona.freeera5.v1'].forEach(k=>once(k,'done'));
   once('sona.freever.v1','post');once('sona.buddyset.v1','post');
+  // Since 16 Oct 2026 a new household's first question is the parent's email,
+  // asked only while the household has none. This suite is about the name
+  // step, so its household already holds one and the hello's Continue opens
+  // the name step as before (onboardingtest walks the email step into it).
+  once('sona.profile.v1',JSON.stringify({email:'parent@example.com'}));
   const S=window.__steady={kb:{},frames:[],on:false,kbState:'down',kbh:cfg.kb};
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
