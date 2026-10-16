@@ -148,7 +148,7 @@ export function unsubToken(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex").slice(0, 24);
 }
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+export const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export function render(step: Step, unsubUrl: string, postal: string): { subject: string; html: string; text: string } {
   const c = CONTENT[step];
@@ -173,8 +173,12 @@ export function render(step: Step, unsubUrl: string, postal: string): { subject:
   return { subject: c.subject, html, text };
 }
 
-/** Everything a send needs, or null — and then nothing sends (no address, no link, no email). */
-function config(): { key: string; secret: string; postal: string; from: string; replyTo: string } | null {
+/**
+ * Everything a send needs, or null — and then nothing sends (no address, no
+ * link, no email). The weekly progress report (lib/report.ts) sends from the
+ * same address, under the same rules.
+ */
+export function config():{ key: string; secret: string; postal: string; from: string; replyTo: string } | null {
   const key = process.env.RESEND_API_KEY || "";
   const secret = process.env.UNSUB_SECRET || "";
   const postal = (process.env.EMAIL_POSTAL || "").trim();
@@ -190,7 +194,7 @@ export function configured(): boolean {
   return config() !== null;
 }
 
-async function unsubscribed(email: string, kv: Kv): Promise<boolean | null> {
+export async function unsubscribed(email: string, kv: Kv): Promise<boolean | null> {
   const r = await kv(["SISMEMBER", "email:unsub", email]);
   if (r === undefined || r === null) return null; // store didn't answer: fail closed
   return Number(r) === 1;

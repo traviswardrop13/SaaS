@@ -111,7 +111,7 @@ const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.
 const RACHEL='Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.';
 const HEDGE='Sona practices — it doesn\'t test or diagnose.';
 // [id, the button's words, the sentence the ready screen shows for it]
-const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home. It does not replace a speech therapist.']];
+const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home.']];
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the week's goal
 const GOAL=[['3','3 days a week','3 days a week'],['5','5 days a week','5 days a week'],['7','Every day','Every day']];
 // what the ready screen shows, as a parent reads it
@@ -333,8 +333,10 @@ await scenario('the two answers stay on this phone',async()=>{
   ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
   ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
   const lead=leadPosts(requests);
-  ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly summary opt-in)',lead);
+  ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly report opt-in)',lead);
   ok('…and the address is on the profile, where a purchase\'s plan post finds it',/"email":"parent@example\.com"/.test(kept.profile)&&/"weeklyEmail":true/.test(kept.profile),kept.profile);
+  const reports=requests.filter((r)=>r.method==='POST'&&new URL(r.url).pathname==='/api/report').map((r)=>JSON.parse(r.body));
+  ok('…with the weekly progress report asked for (REPORT1 sends only for weeklyReport): setup posts it once, so the confirm email comes now, with no name in it',/"weeklyReport":true/.test(kept.profile)&&reports.length===1&&reports[0].email==='parent@example.com'&&!/Zephyrine|childName|childAge/.test(JSON.stringify(reports[0])),reports);
   ok('no button on the hand-off holds the child\'s name, and the title is still "Sona — Welcome"',names===0&&kept.title==='Sona — Welcome',[names,kept.title]);
   clean('answers stay on the phone',errors);
  }finally{await context.close();}
@@ -834,10 +836,10 @@ await scenario('the email step: first, required, and fits',async()=>{
  const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
   ok('a new family\'s setup asks the email first: hello, email, then the four questions',await page.evaluate(()=>ORDER.join()==='welcome,updates,name,therapy,sounds,goal,ready,mic'));
   await next(page);await page.locator('[data-step="updates"].on').waitFor();
-  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),skip:!!document.getElementById('updSkip'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type,seg:document.getElementById('seg').hidden};});
-  ok('the step asks plainly and is required: a heading, a required email box, no Skip, Continue and Back, no progress segment',shown.title==='What\'s your email?'&&shown.required&&!shown.skip&&!/optional|Skip/i.test(shown.text)&&shown.type==='email'&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='First, where can we reach you?'&&shown.seg,shown);
+  const shown=await page.evaluate(()=>{const st=document.querySelector('[data-step="updates"]');return {title:document.getElementById('updTitle').textContent.trim(),helpLine:!!st.querySelector('.upd-help'),text:st.innerText.replace(/\s+/g,' ').trim(),required:!!document.querySelector('#updEmail[required]'),skip:!!document.getElementById('updSkip'),focus:document.activeElement.id,bubble:document.getElementById('bubble').textContent,cta:document.getElementById('nextBtn').textContent.trim(),back:getComputedStyle(document.getElementById('backBtn')).display,type:document.getElementById('updEmail').type,seg:document.getElementById('seg').hidden};});
+  ok('the step asks for the weekly progress report and is required: a heading, a required email box, no Skip, Continue and Back, no progress segment',shown.title==='Get the weekly progress report'&&shown.required&&!shown.skip&&!/optional|Skip/i.test(shown.text)&&shown.type==='email'&&shown.cta==='Continue'&&shown.back!=='none'&&shown.bubble==='Want a weekly report?'&&shown.seg,shown);
   ok('Travis\'s consent line is on screen word for word, before anything is sent',shown.text.includes('We’ll also send occasional tips from Rachel. Unsubscribe anytime.')&&leadPosts(requests).length===0,shown.text);
-  ok('…no weekly summary is promised (nothing sends one)',!/weekly summary|weekly update/i.test(shown.text),shown.text);
+  ok('…the old help line is gone (Travis, 15 Oct 2026)',!/Rachel.s tips for practicing at home/i.test(shown.text)&&!shown.helpLine,shown.text);
   ok('the heading takes focus, not the box: no keyboard comes up by itself',shown.focus==='updTitle',shown.focus);
   // Done (Enter) on the keyboard only closes it: it neither goes on nor sends
   await page.locator('#updEmail').fill('done@example.com');await page.locator('#updEmail').press('Enter');
@@ -863,8 +865,8 @@ await scenario('the email step: first, required, and fits',async()=>{
   ok('a changed address is posted once more, the new one',leads.length===2&&leads[1].email==='second@example.com',leads);
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="8"]').click();await next(page);await answerTherapy(page);await choose(page,'R');await next(page);await answerGoal(page,'5');
   await page.locator('[data-step="ready"].on').waitFor();await next(page);await page.locator('[data-step="mic"].on').waitFor();
-  ok('leaving the ready screen posts nothing more: the address went out when the parent left the email step',leadPosts(requests).length===2);
-  ok('…and that address is the household\'s parent email from then on',await page.evaluate(()=>Sona.parentEmail()==='second@example.com'&&Sona.getProfile().weeklyEmail===true));
+  ok('leaving the ready screen posts nothing more to the list: the address went out when the parent left the email step',leadPosts(requests).length===2);
+  ok('…and that address is the household\'s parent email from then on, with the weekly report switched on',await page.evaluate(()=>Sona.parentEmail()==='second@example.com'&&Sona.getProfile().weeklyEmail===true&&Sona.getProfile().weeklyReport===true));
   clean('email step behaviour',errors);
  }finally{await context.close();}
 });
