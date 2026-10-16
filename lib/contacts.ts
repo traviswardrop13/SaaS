@@ -27,9 +27,10 @@ import { readClinicians, readLeads } from "@/lib/founder";
  *  - a contact who unsubscribed in Resend (from a broadcast Travis sent)
  *    joins `email:unsub` on the daily run (pullUnsubscribes), so the welcome
  *    series and the weekly report stop for them too. One list.
- *  - before any address Sona already held is added (the backfill), Kit's
- *    own unsubscribes are copied into `email:unsub` once (importKit), while
- *    Kit's key still works, so nobody who left Kit is put back on a list.
+ *  - Kit's own leavers are copied into `email:unsub` every day while Kit's
+ *    key is set (importKit), and the addresses Sona already held wait for
+ *    the first full copy (the backfill), so nobody who left Kit is put back
+ *    on a list.
  *
  * Resend allows about two requests a second for the whole account, shared
  * with every email Sona sends, so every call here is retried once after a
@@ -89,9 +90,11 @@ export function planWord(plan: unknown): Plan {
   return plan === "trial" ? "trial" : plan === "paid" ? "paid" : "";
 }
 
+// Stricter than the lead door's own check: an address Resend would refuse
+// for good ("mom@gmail.com," or "a@b..com") is not tried at all.
 export function cleanEmail(raw: unknown): string {
   const e = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  return e.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : "";
+  return e.length <= 254 && /^[^@\s,;:<>()[\]"\\]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(e) && !/^\.|\.\.|\.@/.test(e) ? e : "";
 }
 
 type Call = { ok: boolean; status: number; json: Record<string, unknown> | null; text: string };
@@ -225,24 +228,35 @@ const forgetList = async (io: Io) => { try { await io.kv(["DEL", listKey()]); } 
 export type Contact = { email: string; firstName?: string; role?: unknown; source?: string; plan?: unknown };
 
 /**
- * A post that did not fully reach Resend (a refusal, a timeout, a 429 twice,
- * a segment not added) waits here, address → what it carried, until the
- * daily run tries it again (retryContacts). It matters most for a purchase:
- * the phone tells Sona once, and the address is usually already in Resend.
+ * A post that did not fully reach Resend (a timeout, a 429 twice, a 5xx, a
+ * segment not added) waits here, address → what it carried, until the daily
+ * run tries it again (in `backfill`). It matters most for a purchase: the
+ * phone tells Sona once, and the address is usually already in Resend. An
+ * entry is tried on at most RETRY_TRIES daily runs, then dropped (the ledger
+ * still has the lead).
  */
 export const RETRY = "resend:retry";
+export const RETRY_TRIES = 7;
+type Owed = Contact & { tries?: number };
 
-async function owe(io: Io, c: Contact): Promise<void> {
-  const email = cleanEmail(c.email);
-  if (!email) return;
+/** Two posts for one address, as one: paid over trial, the newer word where both say one. */
+function merge(c: Contact, was: Contact | null): Contact {
+  if (!was) return c;
+  const plan = planWord(c.plan) === "paid" || planWord(was.plan) === "paid" ? "paid" : planWord(c.plan) || planWord(was.plan);
+  return { email: c.email, firstName: c.firstName || was.firstName || "", role: c.role || was.role || "", source: c.source || was.source || "", plan };
+}
+
+async function owed(io: Io, email: string): Promise<Owed | null> {
   try {
-    let was: Contact | null = null;
-    try { was = JSON.parse(String(await io.kv(["HGET", RETRY, email]))) as Contact | null; } catch { was = null; }
-    // never lose a purchase the phone will not say again: paid over trial
-    const plan = planWord(c.plan) === "paid" || planWord(was && was.plan) === "paid" ? "paid" : planWord(c.plan) || planWord(was && was.plan);
-    const keep: Contact = { email, firstName: c.firstName || (was && was.firstName) || "", role: c.role || (was && was.role) || "",
-      source: c.source || (was && was.source) || "", plan };
-    await io.kv(["HSET", RETRY, email, JSON.stringify(keep)]);
+    const raw = await io.kv(["HGET", RETRY, email]);
+    return typeof raw === "string" ? (JSON.parse(raw) as Owed) : null;
+  } catch { return null; }
+}
+
+async function owe(io: Io, c: Contact, tries: number): Promise<void> {
+  try {
+    if (tries >= RETRY_TRIES) { await io.kv(["HDEL", RETRY, c.email]); return; }
+    await io.kv(["HSET", RETRY, c.email, JSON.stringify({ ...c, tries })]);
   } catch { /* the ledger still has the lead */ }
 }
 
@@ -276,16 +290,25 @@ async function topUp(io: Io, email: string, plan: Plan, off: boolean, segIds: st
  * address; anything that did not fully land is owed (RETRY).
  */
 export async function upsertContact(c: Contact, io: Io = realIo()): Promise<ListResult> {
+  return upsertWith(c, io, false);
+}
+
+async function upsertWith(c: Contact, io: Io, retrying: boolean): Promise<ListResult> {
   if (!contactsConfigured()) return { ok: false, status: 0, detail: "not configured" };
   const email = cleanEmail(c.email);
   if (!email) return { ok: false, status: 0, detail: "not an address" };
-  const r = await upsertOnce({ ...c, email }, io);
-  if (r.full) { try { await io.kv(["HDEL", RETRY, email]); } catch { /* tried again, harmlessly */ } }
-  else await owe(io, { ...c, email });
+  // whatever an earlier post for this address still owes goes with this one,
+  // so a success here never drops a purchase it did not carry
+  const was = await owed(io, email);
+  const all = merge({ ...c, email }, was);
+  const r = await upsertOnce(all, io);
+  const tries = (was && Number(was.tries)) || 0;
+  if (r.full || r.refused) { try { await io.kv(["HDEL", RETRY, email]); } catch { /* tried again, harmlessly */ } }
+  else await owe(io, all, tries + (retrying ? 1 : 0));
   return { ok: r.ok, status: r.status, detail: r.detail };
 }
 
-async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListResult & { full: boolean }> {
+async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListResult & { full: boolean; refused?: boolean }> {
   const email = c.email;
   const role = roleOf(c.role), plan = planWord(c.plan);
   const source = typeof c.source === "string" ? c.source.slice(0, 40) : "";
@@ -331,9 +354,11 @@ async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListR
     // Not there either (a definite 404): the refusal was something else,
     // perhaps a segment Travis deleted, so look the segments up again next
     // time. A slow or busy Resend says nothing about the segments.
+    // A refusal followed by "no such contact" is for good (an address Resend
+    // will not take): it is not owed.
     if (t.status === 404) await forgetList(io);
     const what = t.status === 404 ? "contact " + why(made) : "update " + why({ ok: false, status: t.status, json: null, text: "" });
-    return { ok: false, full: false, status: t.status === 404 ? made.status : t.status, detail: what };
+    return { ok: false, full: false, refused: t.status === 404, status: t.status === 404 ? made.status : t.status, detail: what };
   }
   try { await io.kv(["SADD", SYNCED, email]); } catch { /* fine */ }
   return { ok: true, full: !t.notes.length, status: t.status, detail: t.notes.length ? "updated (" + t.notes.join(", ") + ")" : "updated" };
@@ -571,21 +596,27 @@ export async function backfill(opts: { deadline?: number; batch?: number; people
   if (!contactsConfigured()) { out.detail = "not configured"; return out; }
   const deadline = opts.deadline ?? Date.now() + 30000;
   const batch = opts.batch ?? 150;
-  let tried = 0;
   const stop = (r: ListResult) => r.status === 401 || r.status === 403 || r.status === 429;
 
-  let owed: Record<string, string> = {};
-  try { owed = hashOf(await io.kv(["HGETALL", RETRY])); } catch { owed = {}; }
-  for (const [email, raw] of Object.entries(owed)) {
-    if (tried >= batch || Date.now() > deadline) break;
-    tried++;
-    let c: Contact;
-    try { c = { ...(JSON.parse(raw) as Contact), email }; } catch { c = { email }; }
-    const r = await upsertContact(c, io);
+  // the owed posts: their own budget (purchases first), so a few that will
+  // not land can never crowd out the older addresses
+  let owedAll: Record<string, string> = {};
+  try { owedAll = hashOf(await io.kv(["HGETALL", RETRY])); } catch { owedAll = {}; }
+  const queue = Object.entries(owedAll).map(([email, raw]) => {
+    let c: Owed;
+    try { c = { ...(JSON.parse(raw) as Owed), email }; } catch { c = { email }; }
+    return c;
+  }).sort((a, b) => (planWord(b.plan) ? 1 : 0) - (planWord(a.plan) ? 1 : 0));
+  let retries = 0;
+  for (const c of queue) {
+    if (retries >= 50 || Date.now() > deadline) break;
+    retries++;
+    const r = await upsertWith(c, io, true);
     if (r.ok) out.retried++;
     else if (stop(r)) { out.detail = r.detail; out.ok = true; return out; }
     await io.sleep(600);
   }
+  let tried = 0;
 
   let kitDone = false;
   try { kitDone = !!(await io.kv(["GET", KIT_DONE])); } catch { kitDone = false; }

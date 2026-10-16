@@ -271,7 +271,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /If you buy Premium, Stripe takes the payment/.test(shown) &&
     /we hand it to Resend to deliver that one email[^.]*, and Sona keeps no copy: not stored, not logged, not added to any list\./.test(shown) &&
     !/keep it nowhere/.test(shown));
-  ok("…and names Resend for every email it sends, not only sign-in", /emails via Resend/.test(shown) && !/sign-in emails via Resend/.test(shown));
+  // since 16 Oct 2026 Resend holds the email list too (Kit before it)
+  ok("…and names Resend for every email it sends, not only sign-in, and for the list", /emails and the email list via Resend/.test(shown) && !/sign-in emails via Resend/.test(shown));
   ok("the landing page links the Terms that now carry the plan", /href="\/terms"/.test(shown));
   const login = readFileSync(APP + "/public/slp-login.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
   ok("the sign-in page promises nothing 'forever'", !/forever/i.test(login) && /Your dashboard is free\./.test(login));

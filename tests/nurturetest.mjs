@@ -95,6 +95,19 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   await N.runDue(q.cmd, fakeFetch, T + 3600e3);
   ok("…and the next daily run sends it, then keeps the series to its days", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "burst@example.com" && q.z.get("burst@example.com") === T + 2 * N.DAY_MS);
 }
+{
+  // …and the FIRST email too ("Here's Sona", the App Store link): a kept 0 is
+  // step 0, not "no step"
+  const q = store(); let n = 0;
+  const busy = async (u, init) => (++n <= 2 ? { ok: false, status: 429 } : fakeFetch(u, init));
+  const m = sent.length;
+  await N.enroll("first@example.com", q.cmd, busy, T);
+  ok("a first email Resend turns away at sign-up is kept as step 0, due now", sent.length === m && q.kv.get(N.nextKey("first@example.com")) === "0" && q.z.get("first@example.com") === T);
+  await N.runDue(q.cmd, fakeFetch, T + 3600e3);
+  ok("…and the next daily run sends \"Here's Sona\" itself, then the 5-minute email next", sent.at(-1).subject === N.CONTENT[0].subject && q.kv.get(N.nextKey("first@example.com")) === "1");
+  for (let d = 1; d <= 10; d++) await N.runDue(q.cmd, fakeFetch, T + d * N.DAY_MS + 7200e3);
+  ok("…then every email once, in order", JSON.stringify(sent.slice(m).map((x) => x.subject)) === JSON.stringify(N.CONTENT.map((c) => c.subject)), sent.slice(m).map((x) => x.subject));
+}
 // a run out of time claims nothing more: the rest are still due tomorrow
 {
   const q = store(); await N.enroll("late1@example.com", q.cmd, fakeFetch, T); await N.enroll("late2@example.com", q.cmd, fakeFetch, T);

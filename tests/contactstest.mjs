@@ -54,6 +54,8 @@ function fakeResend() {
     contacts: new Map(), segments: [], props: [], calls: [], next: 1,
     exists: 409,          // the status Resend answers when the address is already a contact
     fail: new Map(),      // "METHOD /path-prefix" → status to answer once
+    refuse: new Set(),    // addresses Resend will never take (422 on create)
+    down: new Set(),      // addresses whose create always meets a 503
     key: "re_full",
   };
   const res = (status, obj) => new Response(obj === undefined ? "" : JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -79,6 +81,8 @@ function fakeResend() {
     if (u.pathname === "/contact-properties" && method === "POST") { if (R.props.some((p) => p.key === body.key)) return res(409, { message: "exists" }); R.props.push({ id: "prop_" + R.next++, key: body.key, type: body.type }); return res(201, {}); }
     if (u.pathname === "/contacts" && method === "GET") return page([...R.contacts.values()]);
     if (u.pathname === "/contacts" && method === "POST") {
+      if (R.refuse.has(body.email)) return res(422, { name: "validation_error", message: "Invalid `email` field." });
+      if (R.down.has(body.email)) return res(503, { message: "busy" });
       if (R.contacts.has(body.email)) return R.exists < 300 ? res(R.exists, { object: "contact", id: R.contacts.get(body.email).id }) : res(R.exists, { name: "validation_error", message: "Contact already exists" });
       for (const s of body.segments || []) if (!R.segments.some((x) => x.id === s.id)) return res(422, { message: "Segment not found" });
       const c = { id: "ct_" + R.next++, email: body.email, first_name: body.first_name || null, unsubscribed: body.unsubscribed === true, properties: { ...(body.properties || {}) }, segs: new Set((body.segments || []).map((s) => s.id)) };
@@ -425,6 +429,34 @@ delete process.env.KIT_API_KEY;
   R.fail.set("POST /contacts", 503);
   await C.upsertContact({ email: "two@example.com", role: "parent", source: "parents" }, io);
   ok("…two failed posts keep the purchase from either", JSON.parse(db.hashes.get(C.RETRY)["two@example.com"]).plan === "paid");
+  // a later post without the purchase, that lands, delivers what was owed
+  await C.upsertContact({ email: "again@example.com", role: "parent", source: "app-setup" }, io);
+  R.fail.set("PATCH /contacts/again", 503);
+  await C.upsertContact({ email: "again@example.com", role: "parent", source: "app-paid", plan: "paid" }, io);
+  ok("(a purchase post meets a busy Resend and is owed)", JSON.parse(db.hashes.get(C.RETRY)["again@example.com"]).plan === "paid" && !R.inSeg("again@example.com", "Started Premium"));
+  const later = await C.upsertContact({ email: "again@example.com", role: "parent", source: "join" }, io);
+  ok("…a later post with no purchase, that lands, takes the owed purchase with it, then pays the debt",
+    later.ok && R.inSeg("again@example.com", "Started Premium") && R.contacts.get("again@example.com").properties.plan === "paid" && !(db.hashes.get(C.RETRY) || {})["again@example.com"], later);
+  // an address Resend will never take is not owed at all
+  R.refuse.add("nope@example.com");
+  await C.upsertContact({ email: "nope@example.com", role: "parent", plan: "trial" }, io);
+  ok("an address Resend refuses for good (a refusal, then no such contact) is not owed", !(db.hashes.get(C.RETRY) || {})["nope@example.com"]);
+  ok("…and one that is not an address at all never reaches Resend", !(await C.upsertContact({ email: "mom@gmail.com,", role: "parent" }, io)).ok && !R.calls.some((c) => c.body && c.body.email === "mom@gmail.com,"));
+  // one that keeps failing is tried on RETRY_TRIES daily runs, then dropped
+  R.down.add("stuck@example.com");
+  await C.upsertContact({ email: "stuck@example.com", role: "parent" }, io);
+  let runs = 0;
+  while ((db.hashes.get(C.RETRY) || {})["stuck@example.com"] && runs < 20) { await C.backfill({}, io); runs++; }
+  ok("…one that keeps failing is tried on " + C.RETRY_TRIES + " daily runs, then dropped (the ledger still has it)", runs === C.RETRY_TRIES, runs);
+  // purchases are tried first, on their own budget
+  const { db: dq, R: Rq, io: iq } = fresh();
+  for (let i = 0; i < 60; i++) { Rq.down.add(`s${i}@example.com`); await C.upsertContact({ email: `s${i}@example.com`, role: "parent" }, iq); }
+  Rq.fail.set("POST /contacts", 503);
+  await C.upsertContact({ email: "buyer2@example.com", role: "parent", plan: "paid" }, iq);
+  await dq.cmd(["SET", C.KIT_DONE, "{}"]);
+  const bq = await C.backfill({ people: async () => [{ email: "old1@example.com", role: "parent" }] }, iq);
+  ok("…and the owed are tried purchases first, at most 50 a day, never crowding out the older addresses",
+    Rq.inSeg("buyer2@example.com", "Started Premium") && bq.added === 1 && Rq.calls.filter((c) => c.method === "POST" && c.path === "/contacts" && /^s\d+@/.test(c.body.email)).length <= 60 + 49, bq);
 
   founderLeads = [
     { email: "p@example.com", role: "parent", source: "parents" },

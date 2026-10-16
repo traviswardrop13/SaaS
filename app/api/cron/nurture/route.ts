@@ -11,11 +11,13 @@ import { backfill, syncUnsubscribes } from "@/lib/contacts";
  * A manual run with ?report=1 sends the report on any day (still once an
  * address a week).
  *
- * The email list (lib/contacts.ts, 16 Oct 2026) has two parts. First, Kit's
- * leavers once and the unsubscribe check both ways (45 seconds at most), so
+ * The email list (lib/contacts.ts, 16 Oct 2026) has two parts. First (45
+ * seconds at most) the unsubscribes Sona's link still owes Resend, Kit's
+ * leavers (every day while KIT_API_KEY is set) and the check both ways, so
  * nobody who left a broadcast gets the emails below. Last, with the time
- * that is left, a batch of the addresses Sona held before Resend had the
- * list. Neither is ever a reason for the emails not to go.
+ * that is left, the posts that did not fully land and a batch of the
+ * addresses Sona held before Resend had the list. Neither is ever a reason
+ * for the emails not to go.
  */
 export const runtime = "nodejs";
 export const maxDuration = 300;

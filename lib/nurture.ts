@@ -308,7 +308,11 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
     if (await kv(["GET", stopKey(e)])) { await kv(["DEL", nextKey(e)]); continue; } // started Premium
-    const step = Number((await kv(["GET", nextKey(e)])) ?? 1) || 1;
+    // no step kept: someone from the two-email build, on step 1. A kept 0 is
+    // a first email Resend turned away at sign-up, and it is sent now.
+    const kept = await kv(["GET", nextKey(e)]);
+    const n = Number(kept);
+    const step = kept === null || kept === undefined || !Number.isInteger(n) || n < 0 || !CONTENT[n] ? 1 : n;
     const r = await sendStep(e, step, kv, f);
     if (r === "sent") sent++;
     const next = step + 1;
