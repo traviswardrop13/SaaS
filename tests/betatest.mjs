@@ -235,7 +235,7 @@ ok("onboarding no pageerrors", errs.length === 0);
   // Sona?"), then to a compact sound grid.
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
   const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("therapyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obTherapy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
-  ok("after the name comes one tap, \"Is <Name> in speech therapy?\": one short heading and two answers", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 2 && !asked.overflow, JSON.stringify(asked));
+  ok("after the name comes one tap, \"Is <Name> in speech therapy?\": one short heading and three answers (Yes, No, Not yet)", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 3 && !asked.overflow, JSON.stringify(asked));
   await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → sounds
   const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
   ok("…and the sound grid is the next screen and fits at 390px", grid.onSounds&&!grid.overflow&&grid.labels.length===19, JSON.stringify(grid));

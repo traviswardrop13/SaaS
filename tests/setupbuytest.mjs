@@ -98,7 +98,7 @@ await scenario("a family that can buy", async () => {
     await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
     ok("\"Let's play!\" opens the first game (Fruit Slice's practice page for a six-year-old), open because Premium is on",
       /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()), page.url());
-    const leaked = requests.filter((r) => /t_yes|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
+    const leaked = requests.filter((r) => /t_yes|t_none|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
     ok("the two answers the parent tapped are in no request, address or body, anywhere in the walk", leaked.length === 0, leaked.slice(0, 3));
     const named = requests.filter((r) => /\bMia\b/.test(decodeURIComponent(r.url) + " " + (r.body || "")));
     ok("…and neither is the child's name", named.length === 0, named.slice(0, 3));
