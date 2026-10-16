@@ -23,9 +23,10 @@ import { kvCmd } from "@/lib/slpAuth";
  *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
  * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
- * Not yet: stopping when a family starts a trial. Sona can't see that until
- * RevenueCat tells the server, so day 3 and day 5 say "already started? ignore
- * the button" rather than assume.
+ * A parent who starts Sona Premium leaves it too (stopSeries, 16 Oct 2026),
+ * once the phone tells /api/lead; a purchase the phone never reports (no
+ * email on it, or bought elsewhere) is not seen, so day 3 and day 5 still
+ * say "already started? ignore the button" rather than assume.
  *
  * The people who signed up before this shipped were emailed by hand from a
  * Kit export (5–6 Oct 2026), so there is no back-fill here: it starts with
@@ -211,7 +212,7 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const { subject, html, text } = render(step, unsubUrl, cfg.postal);
   try {
-    const r = await f("https://api.resend.com/emails", {
+    const send = () => f("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", "Idempotency-Key": `nurture-${step}-${email}` },
       body: JSON.stringify({
@@ -219,6 +220,15 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
         headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       }),
     });
+    let r = await send();
+    // Resend's two requests a second are shared with the contact list
+    // (lib/contacts), which /api/lead fills in the same moment: a 429 is
+    // tried once more, and the idempotency key makes a second send of the
+    // same email impossible
+    if (r.status === 429) {
+      await new Promise((ok) => setTimeout(ok, 1100));
+      r = await send();
+    }
     if (!r.ok) console.error("[nurture] Resend refused step", step, r.status);
     return r.ok ? "sent" : "failed";
   } catch (e) {
@@ -228,6 +238,22 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
 }
 
 export const nextKey = (email: string) => "nurture:next:" + email;
+
+export const stopKey = (email: string) => "nurture:stop:" + email;
+
+/**
+ * A parent who started Sona Premium (the phone's plan post, via /api/lead):
+ * the rest of the series is taken off the schedule. `nurture:0` stays, so
+ * the address is never enrolled again. The stop mark is for a daily run that
+ * had already claimed this address when the post came: it puts the next
+ * email back on the schedule, and the mark takes it off again unsent.
+ */
+export async function stopSeries(rawEmail: string, kv: Kv = kvCmd): Promise<void> {
+  const email = rawEmail.trim().toLowerCase();
+  await kv(["SET", stopKey(email), "1", "EX", 31536000]);
+  await kv(["ZREM", DUE_KEY, email]);
+  await kv(["DEL", nextKey(email)]);
+}
 
 /**
  * /api/lead: a new grown-up's email. Welcome now, schedule the next. Never
@@ -275,6 +301,7 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     const e = String(raw);
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
+    if (await kv(["GET", stopKey(e)])) { await kv(["DEL", nextKey(e)]); continue; } // started Premium
     const step = Number((await kv(["GET", nextKey(e)])) ?? 1) || 1;
     const r = await sendStep(e, step, kv, f);
     if (r === "sent") sent++;

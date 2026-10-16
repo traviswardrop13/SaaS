@@ -71,6 +71,18 @@ const old = store(); await old.cmd(["SET", "nurture:0:old@example.com", new Date
 const before = sent.length;
 await N.runDue(old.cmd, fakeFetch, T + N.DAY_MS + 1);
 ok("someone signed up under the two-email build gets the 5-minute email next, then the rest", sent.length === before + 1 && sent.at(-1).subject === N.CONTENT[1].subject && old.z.has("old@example.com"));
+// a purchase while a daily run is mid-send: the run puts the next email
+// back, and the stop mark takes it off unsent the day after
+{
+  const r = store(); await N.enroll("race@example.com", r.cmd, fakeFetch, T);
+  const m = sent.length;
+  const racing = async (u, init) => { if (JSON.parse(init.body).to[0] === "race@example.com") await N.stopSeries("race@example.com", r.cmd); return fakeFetch(u, init); };
+  await N.runDue(r.cmd, racing, T + 2 * N.DAY_MS + 1);
+  ok("…(the run put the next email back, as it would)", r.z.has("race@example.com"));
+  const after = sent.length;
+  for (let d = 3; d <= 10; d++) await N.runDue(r.cmd, fakeFetch, T + d * N.DAY_MS + 1);
+  ok("a purchase posted while the day-2 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
+}
 // unsubscribing mid-way stops the rest
 const mid = store(); await N.enroll("mid@example.com", mid.cmd, fakeFetch, T);
 const n0 = sent.length;
@@ -120,10 +132,10 @@ ok("no dollar figure", !/\$\d/.test(JSON.stringify(N.CONTENT)));
 // the wiring
 const lead = readFileSync(path.join(REPO, "app/api/lead/route.ts"), "utf8");
 ok("/api/lead enrolls every new email once the app is out, an in-app one without the App Store email",
-  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource \} from "@\/lib\/nurture"/.test(lead));
+  /if \(APP_READY && kvConfigured\(\)\)[\s\S]{0,120}enroll\(email, kvCmd, fetch, Date\.now\(\), \{ inApp: inAppSource\(lead\.source\) \}\)/.test(lead) && /import \{ enroll, inAppSource, stopSeries \} from "@\/lib\/nurture"/.test(lead));
 // …and played: /api/lead itself, against the in-memory store and a fake
-// Resend, with only its neighbours (the store's door, the rate limit, Kit and
-// the launch switch) stubbed. The source the app posts is what picks the
+// Resend, with only its neighbours (the store's door, the rate limit, the
+// contact list and the launch switch) stubbed. The source the app posts is what picks the
 // first email, as the route really reads it off the body.
 {
   process.env.EMAIL_POSTAL = "851 NE 1st Ave, Unit 4103, Miami, FL 33132";
@@ -132,7 +144,7 @@ ok("/api/lead enrolls every new email once the app is out, an in-app one without
   const stubs = {
     "@/lib/slpAuth": { kvCmd: (c) => db.cmd(c), kvConfigured: () => true, leadSig: () => "not-a-signature" },
     "@/lib/rateLimit": { rateLimit: async () => null },
-    "@/lib/kit": { kitConfigured: () => false, kitPlanTag: () => "", kitSubscribe: async () => null, kitTagFor: () => "" },
+    "@/lib/contacts": { contactsConfigured: () => false, planWord: (p) => (p === "trial" || p === "paid" ? p : ""), upsertContact: async () => null },
     "@/lib/launch": { APP_READY: true, sendWelcomeEmail: async () => false },
     "@/lib/nurture": N,
   };
@@ -154,6 +166,14 @@ ok("/api/lead enrolls every new email once the app is out, an in-app one without
     fromApp.status === 200 && fromApp.json.welcomed === true && JSON.stringify(fromApp.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromApp);
   const fromBuy = await post({ email: "buyer@example.com", source: "app-trial", role: "parent", plan: "trial" });
   ok("…a purchase's plan post that is the first the server hears of the address, the same", JSON.stringify(fromBuy.subjects) === JSON.stringify([N.CONTENT[1].subject]), fromBuy);
+  ok("…and nothing after it: a buyer's welcome emails stop (day 3 and 5 say \"Start your free trial\")",
+    !db.z.has("buyer@example.com") && !db.kv.has(N.nextKey("buyer@example.com")) && db.kv.get(N.stopKey("buyer@example.com")) === "1");
+  const later = await post({ email: "parent2@example.com", source: "app-setup", role: "parent" });
+  ok("a parent who gave their email in setup is in the series…", later.subjects.length === 1 && db.z.has("parent2@example.com"));
+  const bought = await post({ email: "Parent2@Example.com", source: "app-paid", role: "parent", plan: "paid" });
+  ok("…until the phone says they started Premium: no email then, and none after", bought.subjects.length === 0 && !db.z.has("parent2@example.com") && !db.kv.has(N.nextKey("parent2@example.com")));
+  const plain = await post({ email: "parent3@example.com", source: "app-setup", role: "parent", plan: "monthly" });
+  ok("…and only the words trial and paid stop it", plain.subjects.length === 1 && db.z.has("parent3@example.com"));
   const fromSite = await post({ email: "site@example.com", source: "parents", role: "parent" });
   ok("…and the website's sign-up still gets \"Here's Sona\" first, then the 5-minute email",
     JSON.stringify(fromSite.subjects) === JSON.stringify([N.CONTENT[0].subject, N.CONTENT[1].subject]), fromSite);

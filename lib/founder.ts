@@ -4,10 +4,14 @@ import { kvCmd, kvConfigured } from "@/lib/slpAuth";
 import { grandfathered, recordActive, accessKey, planKey, FREE_SELF_TERMS, type PlanRecord } from "@/lib/caseload";
 import { isWorkEmail } from "@/lib/workEmail";
 
+// lib/contacts SYNCED: every address Resend's contacts hold (not imported:
+// lib/contacts reads this file for its backfill)
+const LIST_SYNCED = "resend:synced";
+
 /**
  * What the founder-only routes share: the FOUNDER_KEY gate, and reading the
  * two lists of grown-ups Sona holds — the lead ledger and the clinician
- * accounts. One copy, so the leads page and the Kit backfill can never
+ * accounts. One copy, so the leads page and the list's backfill can never
  * disagree about who is on them.
  */
 
@@ -88,6 +92,10 @@ export async function readClinicians(): Promise<Clinician[]> {
         try { plan = JSON.parse(String(await kvCmd(["GET", planKey(email)]))) as PlanRecord | null; } catch { plan = null; }
         let mine: PlanRecord | null = null;
         try { mine = JSON.parse(String(await kvCmd(["GET", planKey(email, "self")]))) as PlanRecord | null; } catch { mine = null; }
+        // in Resend's contacts: lib/contacts SYNCED, which every add stamps
+        // (an account's crmAt also counted the Kit years, so it is not read)
+        let inList = false;
+        try { inList = Number(await kvCmd(["SISMEMBER", LIST_SYNCED, email])) === 1; } catch { inList = false; }
         const earlier = a.terms === FREE_SELF_TERMS;
         const freeSelf = grandfathered(a) || (earlier && (isWorkEmail(email) || access.approved === "1"));
         out.push({
@@ -96,7 +104,7 @@ export async function readClinicians(): Promise<Clinician[]> {
           clinic: String(a.clinic || ""),
           createdAt: String(a.createdAt || ""),
           source: String(a.source || ""),
-          inCrm: a.crmAt ? "yes" : "not yet",
+          inCrm: inList ? "yes" : "not yet",
           workEmail: isWorkEmail(email) ? "yes" : "no",
           accessRequested: access.requestedAt || "",
           approved: access.approved === "1" ? "yes" : "no",

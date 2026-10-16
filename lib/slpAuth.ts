@@ -470,7 +470,7 @@ const FRAME = "font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;c
  * clinician MAY type the parent's email, and Sona sends this ONE email with
  * the family's join link. The address is used for this send and nothing
  * else: the invite route passes it straight here, it is never stored, never
- * logged, never sent to /api/lead or Kit — a parent joins the list only by
+ * logged, never sent to /api/lead or the email list — a parent joins the list only by
  * typing their own email under the consent line on join.html.
  *
  * NO CHILD DATA AT ALL — not even the invite's label. The label is initials a
