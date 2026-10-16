@@ -224,18 +224,44 @@ const forgetList = async (io: Io) => { try { await io.kv(["DEL", listKey()]); } 
 
 export type Contact = { email: string; firstName?: string; role?: unknown; source?: string; plan?: unknown };
 
-/** A contact Resend holds: the plan (if any), unsubscribed (only ever true), the segments. */
+/**
+ * A post that did not fully reach Resend (a refusal, a timeout, a 429 twice,
+ * a segment not added) waits here, address → what it carried, until the
+ * daily run tries it again (retryContacts). It matters most for a purchase:
+ * the phone tells Sona once, and the address is usually already in Resend.
+ */
+export const RETRY = "resend:retry";
+
+async function owe(io: Io, c: Contact): Promise<void> {
+  const email = cleanEmail(c.email);
+  if (!email) return;
+  try {
+    let was: Contact | null = null;
+    try { was = JSON.parse(String(await io.kv(["HGET", RETRY, email]))) as Contact | null; } catch { was = null; }
+    // never lose a purchase the phone will not say again: paid over trial
+    const plan = planWord(c.plan) === "paid" || planWord(was && was.plan) === "paid" ? "paid" : planWord(c.plan) || planWord(was && was.plan);
+    const keep: Contact = { email, firstName: c.firstName || (was && was.firstName) || "", role: c.role || (was && was.role) || "",
+      source: c.source || (was && was.source) || "", plan };
+    await io.kv(["HSET", RETRY, email, JSON.stringify(keep)]);
+  } catch { /* the ledger still has the lead */ }
+}
+
+/** A contact Resend holds: the plan (if any), unsubscribed (only ever true), the segments, paced. */
 async function topUp(io: Io, email: string, plan: Plan, off: boolean, segIds: string[], getFirst: boolean): Promise<{ ok: boolean; status: number; notes: string[] }> {
   const at = "/contacts/" + encodeURIComponent(email);
   const patch = { ...(plan ? { properties: { plan } } : {}), ...(off ? { unsubscribed: true } : {}) };
   let status = 200;
+  // Resend's two requests a second are the whole account's: the create has
+  // just gone, so every call here waits its turn
   if (Object.keys(patch).length || getFirst) {
+    await io.sleep(550);
     const there = Object.keys(patch).length ? await resend(io, at, "PATCH", patch) : await resend(io, at, "GET");
     if (!there.ok) return { ok: false, status: there.status, notes: [] };
     status = there.status;
   }
   const notes: string[] = [];
   for (const id of segIds) {
+    await io.sleep(550);
     const s = await resend(io, at + "/segments/" + encodeURIComponent(id), "POST");
     if (!s.ok && s.status !== 409 && s.status !== 422) notes.push("segment " + why(s));
   }
@@ -246,13 +272,21 @@ async function topUp(io: Io, email: string, plan: Plan, off: boolean, segIds: st
  * One grown-up into Resend: made as a contact in their segment(s), or, when
  * Resend already has them, given the plan (if any) and the segment(s). It
  * never re-subscribes anyone: `unsubscribed` is only ever set to true, and
- * only when Sona's own list says so. Counts as ok only once Resend holds
- * the address.
+ * only when Sona's own list says so. Counts as ok once Resend holds the
+ * address; anything that did not fully land is owed (RETRY).
  */
 export async function upsertContact(c: Contact, io: Io = realIo()): Promise<ListResult> {
   if (!contactsConfigured()) return { ok: false, status: 0, detail: "not configured" };
   const email = cleanEmail(c.email);
   if (!email) return { ok: false, status: 0, detail: "not an address" };
+  const r = await upsertOnce({ ...c, email }, io);
+  if (r.full) { try { await io.kv(["HDEL", RETRY, email]); } catch { /* tried again, harmlessly */ } }
+  else await owe(io, { ...c, email });
+  return { ok: r.ok, status: r.status, detail: r.detail };
+}
+
+async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListResult & { full: boolean }> {
+  const email = c.email;
   const role = roleOf(c.role), plan = planWord(c.plan);
   const source = typeof c.source === "string" ? c.source.slice(0, 40) : "";
   // only a clinician's own name travels (the lead route already blanks the rest)
@@ -260,12 +294,11 @@ export async function upsertContact(c: Contact, io: Io = realIo()): Promise<List
 
   let off: boolean | null = null;
   try { off = await suppressed(email, io.kv); } catch { off = null; }
-  // the store didn't answer: never add someone as subscribed on a guess;
-  // the daily backfill tries again
-  if (off === null) return { ok: false, status: 0, detail: "store did not answer" };
+  // the store didn't answer: never add someone as subscribed on a guess
+  if (off === null) return { ok: false, full: false, status: 0, detail: "store did not answer" };
 
   const list = await ensureList(io);
-  if (!list.ok) return { ok: false, status: list.status, detail: list.detail };
+  if (!list.ok) return { ok: false, full: false, status: list.status, detail: list.detail };
   const segIds = [list.segs[role], ...(plan ? [list.segs.plan] : [])];
 
   const made = await resend(io, "/contacts", "POST", {
@@ -282,63 +315,77 @@ export async function upsertContact(c: Contact, io: Io = realIo()): Promise<List
     let notes: string[] = [];
     if (plan || off) {
       const t = await topUp(io, email, plan, off, segIds, false);
-      notes = t.ok ? t.notes : ["update " + t.status];
+      notes = t.ok ? t.notes : ["update " + why({ ok: false, status: t.status, json: null, text: "" })];
     }
     try { await io.kv(["SADD", SYNCED, email]); } catch { /* the backfill re-adds harmlessly */ }
-    return { ok: true, status: made.status, detail: notes.length ? "added (" + notes.join(", ") + ")" : "added" };
+    return { ok: true, full: !notes.length, status: made.status, detail: notes.length ? "added (" + notes.join(", ") + ")" : "added" };
   }
   if (made.status === 401 || made.status === 403 || made.status === 0 || made.status === 429 || made.status >= 500) {
-    return { ok: false, status: made.status, detail: "contact " + why(made) };
+    return { ok: false, full: false, status: made.status, detail: "contact " + why(made) };
   }
 
   // Resend refused to make it: most likely it already has this address. Give
   // it what is new (the plan; unsubscribed only ever true), then the segments.
   const t = await topUp(io, email, plan, off, segIds, true);
   if (!t.ok) {
-    // not there either: the refusal was something else, perhaps a segment
-    // Travis deleted, so look the segments up again next time
-    await forgetList(io);
-    return { ok: false, status: made.status, detail: "contact " + why(made) };
+    // Not there either (a definite 404): the refusal was something else,
+    // perhaps a segment Travis deleted, so look the segments up again next
+    // time. A slow or busy Resend says nothing about the segments.
+    if (t.status === 404) await forgetList(io);
+    const what = t.status === 404 ? "contact " + why(made) : "update " + why({ ok: false, status: t.status, json: null, text: "" });
+    return { ok: false, full: false, status: t.status === 404 ? made.status : t.status, detail: what };
   }
   try { await io.kv(["SADD", SYNCED, email]); } catch { /* fine */ }
-  return { ok: true, status: t.status, detail: t.notes.length ? "updated (" + t.notes.join(", ") + ")" : "updated" };
+  return { ok: true, full: !t.notes.length, status: t.status, detail: t.notes.length ? "updated (" + t.notes.join(", ") + ")" : "updated" };
 }
+
+/** Unsubscribes Sona's link could not hand Resend: paid first on the daily run. */
+export const UNSUB_OWED = "resend:unsubowed";
 
 /**
  * Sona's own unsubscribe link: the contact is unsubscribed in Resend at once
  * (and the plain mailbox's contact, another spelling of the same Gmail
  * inbox), so a broadcast Travis sends from Resend skips them. A contact
- * Resend does not have yet (404) is fine: it will be made unsubscribed. If
- * Resend does not answer, the daily check (reconcileUnsubscribes) does it.
+ * Resend does not have yet (404) is fine: it will be made unsubscribed. The
+ * address is owed first and paid on success, so a Resend that does not
+ * answer, or a function cut off mid-call, leaves it for the daily run.
  */
 export async function markUnsubscribed(raw: string, io: Io = realIo()): Promise<boolean> {
   const email = cleanEmail(raw);
   if (!email || !contactsConfigured()) return false;
+  try { await io.kv(["SADD", UNSUB_OWED, email]); } catch { /* the daily check still finds them */ }
   const box = mailbox(email);
   let done = true;
   for (const e of box === email ? [email] : [email, box]) {
     const r = await resend(io, "/contacts/" + encodeURIComponent(e), "PATCH", { unsubscribed: true });
     if (!r.ok && r.status !== 404) done = false;
   }
+  if (done) { try { await io.kv(["SREM", UNSUB_OWED, email]); } catch { /* paid again, harmlessly */ } }
   return done;
 }
 
-/** SADD to `email:unsub`: the address and its plain mailbox. False when the store did not take it. */
-async function addUnsub(io: Io, email: string): Promise<number | null> {
+/**
+ * SADD to `email:unsub`: the address and, unless `exact`, its plain mailbox.
+ * The number added, or null when the store did not take it.
+ */
+async function addUnsub(io: Io, email: string, exact = false): Promise<number | null> {
   const box = mailbox(email);
   let r: unknown;
-  try { r = await io.kv(box === email ? ["SADD", "email:unsub", email] : ["SADD", "email:unsub", email, box]); } catch { r = undefined; }
+  try { r = await io.kv(box === email || exact ? ["SADD", "email:unsub", email] : ["SADD", "email:unsub", email, box]); } catch { r = undefined; }
   return typeof r === "number" ? r : null;
 }
 
+/** Where the daily check stopped, so the next one carries on from there. */
+export const RECONCILE_AT = "resend:reconcile:after";
+
 /**
- * THE DAILY CHECK, BOTH WAYS. Every Resend contact is read once:
+ * THE DAILY CHECK, BOTH WAYS. Every Resend contact is read:
  *  - one who unsubscribed in Resend (a broadcast's link) joins `email:unsub`,
  *    with the plain mailbox, so Sona's own emails stop for them too;
- *  - one still subscribed whom Sona's list says has left (Sona's link while
- *    Resend did not answer, Kit's leavers, another spelling of the same
- *    Gmail inbox) is unsubscribed in Resend.
- * A run that runs out of time leaves the rest for tomorrow.
+ *  - one still subscribed whom Sona's list says has left (Kit's leavers,
+ *    another spelling of the same Gmail inbox) is unsubscribed in Resend.
+ * A run that runs out of time keeps its place (RECONCILE_AT), and the next
+ * carries on from it; a whole pass starts again from the top.
  */
 export async function reconcileUnsubscribes(io: Io = realIo(), deadline = Infinity, maxPages = 50):
   Promise<{ ok: boolean; added: number; stopped: number; detail: string }> {
@@ -351,12 +398,19 @@ export async function reconcileUnsubscribes(io: Io = realIo(), deadline = Infini
     gone = new Set(m.map((e) => String(e).toLowerCase()));
   } catch { out.detail = "store did not answer"; return out; }
   let after = "";
+  try { const v = await io.kv(["GET", RECONCILE_AT]); after = typeof v === "string" ? v : ""; } catch { after = ""; }
+  const resumed = !!after;
+  const keep = async (at: string) => { try { await io.kv(at ? ["SET", RECONCILE_AT, at, "EX", 7 * 86400] : ["DEL", RECONCILE_AT]); } catch { /* starts at the top */ } };
   for (let page = 0; page < maxPages; page++) {
     // the account's two requests a second are shared with every email
     if (page) await io.sleep(550);
-    if (Date.now() > deadline) { out.ok = true; out.detail = "stopped for time after " + page + " pages"; return out; }
+    if (Date.now() > deadline) { await keep(after); out.ok = true; out.detail = "stopped for time after " + page + " pages"; return out; }
     const c = await resend(io, "/contacts?limit=100" + (after ? "&after=" + encodeURIComponent(after) : ""), "GET");
-    if (!c.ok || !c.json) { out.detail = "contacts " + why(c); return out; }
+    if (!c.ok || !c.json) {
+      // a kept place Resend no longer knows (that contact was deleted): from the top next time
+      if (resumed && page === 0 && c.status >= 400 && c.status < 500 && c.status !== 429) await keep("");
+      out.detail = "contacts " + why(c); return out;
+    }
     const data = Array.isArray(c.json.data) ? (c.json.data as Record<string, unknown>[]) : [];
     for (const row of data) {
       const email = cleanEmail(row.email);
@@ -367,27 +421,32 @@ export async function reconcileUnsubscribes(io: Io = realIo(), deadline = Infini
         out.added += n;
         gone.add(email); gone.add(mailbox(email));
       } else if (gone.has(email) || gone.has(mailbox(email))) {
-        if (Date.now() > deadline) { out.ok = true; out.detail = "stopped for time"; return out; }
+        // out of time mid-page: this page again next time
+        if (Date.now() > deadline) { await keep(after); out.ok = true; out.detail = "stopped for time"; return out; }
+        await io.sleep(550);
         const id = typeof row.id === "string" && row.id ? row.id : email;
         const r = await resend(io, "/contacts/" + encodeURIComponent(id), "PATCH", { unsubscribed: true });
         if (r.ok) out.stopped++;
-        await io.sleep(550);
       }
     }
-    if (!c.json.has_more || !data.length) { out.ok = true; out.detail = "done"; return out; }
-    after = String(data[data.length - 1].id || "");
-    if (!after) { out.ok = true; out.detail = "done"; return out; }
+    const next = data.length ? String(data[data.length - 1].id || "") : "";
+    if (!c.json.has_more || !next) { await keep(""); out.ok = true; out.detail = "done"; return out; }
+    after = next;
   }
-  out.ok = true; out.detail = "stopped after " + maxPages + " pages";
+  await keep(after);
+  out.ok = true; out.detail = "stopped after " + maxPages + " pages; carries on tomorrow";
   return out;
 }
 
 /**
- * KIT'S LEAVERS, ONCE (16 Oct 2026). Kit is being closed; anyone who left
- * Kit's list must not be put back on a list by the backfill. Each status
- * that means they left is asked for, every page, and done is kept only when
- * all of them answered in full and the store took every address: a spam
- * complaint missed here would be emailed by the next broadcast.
+ * KIT'S LEAVERS, EVERY DAY WHILE KIT IS OPEN (16 Oct 2026). Kit is being
+ * closed, and until it is, an old Kit email's unsubscribe link still works,
+ * so while KIT_API_KEY is set each daily run copies every subscriber Kit
+ * lists as having left into `email:unsub` (adding is safe to repeat). The
+ * first complete copy (`resend:kitunsub`) opens the backfill. "Complete"
+ * means all three statuses answered in full and the store took every
+ * address: a spam complaint missed here would be emailed by the next
+ * broadcast.
  */
 // "inactive" is not one of them: in Kit it is someone who never confirmed,
 // not someone who left, and `email:unsub` also stops the weekly report a
@@ -412,7 +471,11 @@ export async function importKit(io: Io = realIo(), deadline = Infinity): Promise
         if (s.state === "active") continue;
         const email = cleanEmail(s.email_address);
         if (!email) continue;
-        const n = await addUnsub(io, email);
+        // A bounce is a mailbox that does not exist, not a person who left:
+        // "john+sona@" bouncing says nothing of "john@", so only the exact
+        // address. Someone who unsubscribed or complained left from that
+        // inbox, whatever its spelling.
+        const n = await addUnsub(io, email, status === "bounced");
         if (n === null) return { ok: false, added, detail: "the store did not take Kit's " + status };
         added += n;
       }
@@ -431,59 +494,99 @@ export async function importKit(io: Io = realIo(), deadline = Infinity): Promise
 /**
  * Everyone Sona already holds: every lead the ledger kept and every
  * clinician account (an account wins: whoever holds one is a clinician,
- * with their own name). Kept from the old Kit catch-up.
+ * with their own name). One address's rows are read together, newest
+ * first: the newest role and source that say anything, and a purchase from
+ * any of them (paid over trial).
  */
 export async function everyone(): Promise<Contact[]> {
   const by = new Map<string, Contact>();
   for (const l of await readLeads()) {
     const email = cleanEmail(l.email);
-    if (!email || by.has(email)) continue;
-    const slp = l.role === "slp";
-    by.set(email, { email, firstName: slp ? String(l.first_name || "") : "", role: roleOf(l.role), source: String(l.source || ""), plan: planWord(l.plan) });
+    if (!email) continue;
+    const was = by.get(email);
+    const plan = planWord(l.plan);
+    if (!was) {
+      by.set(email, { email, firstName: l.role === "slp" ? String(l.first_name || "") : "", role: l.role ? roleOf(l.role) : "",
+        source: String(l.source || ""), plan });
+      continue;
+    }
+    if (!was.role && l.role) { was.role = roleOf(l.role); if (l.role === "slp" && !was.firstName) was.firstName = String(l.first_name || ""); }
+    if (!was.source && l.source) was.source = String(l.source);
+    if (plan === "paid" || (plan && !was.plan)) was.plan = plan;
   }
   for (const c of await readClinicians()) {
     const email = cleanEmail(c.email);
     if (!email) continue;
-    by.set(email, { email, firstName: c.name, role: "slp", source: by.get(email)?.source || "slp-signup" });
+    const was = by.get(email);
+    by.set(email, { email, firstName: c.name, role: "slp", source: was?.source || "slp-signup", plan: was?.plan || "" });
   }
   return [...by.values()];
 }
 
 /**
  * THE DAILY RUN, PART ONE (/api/cron/nurture, before the emails go out):
- * Kit's leavers once, then the check both ways, so a broadcast's unsubscribe
- * stops today's welcome emails and reports.
+ * the unsubscribes Sona's link still owes Resend, Kit's leavers while Kit is
+ * open, then the check both ways, so a broadcast's unsubscribe stops today's
+ * welcome emails and reports.
  */
 export async function syncUnsubscribes(opts: { deadline?: number } = {}, io: Io = realIo()):
-  Promise<{ ok: boolean; kit: string; unsub: string; added: number; stopped: number }> {
-  const out = { ok: false, kit: "", unsub: "", added: 0, stopped: 0 };
+  Promise<{ ok: boolean; owed: number; kit: string; unsub: string; added: number; stopped: number }> {
+  const out = { ok: false, owed: 0, kit: "", unsub: "", added: 0, stopped: 0 };
   if (!contactsConfigured()) { out.unsub = "not configured"; return out; }
   const deadline = opts.deadline ?? Date.now() + 45000;
-  let kitDone = false;
-  try { kitDone = !!(await io.kv(["GET", KIT_DONE])); } catch { kitDone = false; }
-  if (!kitDone) {
+  let owed: string[] = [];
+  try { const m = await io.kv(["SMEMBERS", UNSUB_OWED]); if (Array.isArray(m)) owed = m.map(String); } catch { owed = []; }
+  for (const e of owed.slice(0, 50)) {
+    if (Date.now() > deadline) break;
+    if (await markUnsubscribed(e, io)) out.owed++;
+    await io.sleep(550);
+  }
+  if ((process.env.KIT_API_KEY || "").trim()) {
     const k = await importKit(io, deadline);
-    out.kit = k.ok ? "imported " + k.added : k.detail;
-  } else out.kit = "done before";
+    out.kit = k.ok ? "copied " + k.added + " new" : k.detail;
+  } else {
+    let done = false;
+    try { done = !!(await io.kv(["GET", KIT_DONE])); } catch { done = false; }
+    out.kit = done ? "Kit closed (its leavers were copied)" : "no KIT_API_KEY: the older emails wait";
+  }
   const u = await reconcileUnsubscribes(io, deadline);
   out.unsub = u.detail; out.added = u.added; out.stopped = u.stopped; out.ok = u.ok;
   return out;
 }
 
 /**
- * THE DAILY RUN, PART TWO (after the emails, with the time left): a batch of
- * the addresses Sona already held and Resend does not have yet. It waits
- * until Kit's leavers are in: without KIT_API_KEY it waits for good, because
+ * THE DAILY RUN, PART TWO (after the emails, with the time left). First the
+ * posts that did not fully land (RETRY: new sign-ups and purchases, which
+ * /api/lead would have added anyway), then a batch of the addresses Sona
+ * already held and Resend does not have yet. That second part waits until
+ * Kit's leavers are in: without KIT_API_KEY it waits for good, because
  * putting someone who left Kit back on a list is the one mistake here that
- * cannot be taken back. (New emails join Resend from /api/lead regardless.)
- * A clinician's account is never rewritten here (a daily run racing their
- * own edit could put an old copy back): the leads page reads SYNCED.
+ * cannot be taken back. A clinician's account is never rewritten here (a
+ * daily run racing their own edit could put an old copy back): the leads
+ * page reads SYNCED.
  */
 export async function backfill(opts: { deadline?: number; batch?: number; people?: () => Promise<Contact[]> } = {}, io: Io = realIo()):
-  Promise<{ ok: boolean; added: number; left: number; detail: string }> {
-  const out = { ok: false, added: 0, left: 0, detail: "" };
+  Promise<{ ok: boolean; retried: number; added: number; left: number; detail: string }> {
+  const out = { ok: false, retried: 0, added: 0, left: 0, detail: "" };
   if (!contactsConfigured()) { out.detail = "not configured"; return out; }
   const deadline = opts.deadline ?? Date.now() + 30000;
+  const batch = opts.batch ?? 150;
+  let tried = 0;
+  const stop = (r: ListResult) => r.status === 401 || r.status === 403 || r.status === 429;
+
+  let owed: Record<string, string> = {};
+  try { owed = hashOf(await io.kv(["HGETALL", RETRY])); } catch { owed = {}; }
+  for (const [email, raw] of Object.entries(owed)) {
+    if (tried >= batch || Date.now() > deadline) break;
+    tried++;
+    let c: Contact;
+    try { c = { ...(JSON.parse(raw) as Contact), email }; } catch { c = { email }; }
+    const r = await upsertContact(c, io);
+    if (r.ok) out.retried++;
+    else if (stop(r)) { out.detail = r.detail; out.ok = true; return out; }
+    await io.sleep(600);
+  }
+
   let kitDone = false;
   try { kitDone = !!(await io.kv(["GET", KIT_DONE])); } catch { kitDone = false; }
   if (!kitDone) { out.ok = true; out.detail = "the older emails wait for Kit's unsubscribes"; return out; }
@@ -495,14 +598,12 @@ export async function backfill(opts: { deadline?: number; batch?: number; people
     have = new Set(m.map(String));
   } catch { out.detail = "store did not answer"; return out; }
   const todo = (await (opts.people || everyone)()).filter((p) => !have.has(cleanEmail(p.email)));
-  const batch = opts.batch ?? 150;
-  let tried = 0;
   for (const p of todo) {
     if (tried >= batch || Date.now() > deadline) break;
     tried++;
     const r = await upsertContact(p, io);
     if (r.ok) out.added++;
-    else if (r.status === 401 || r.status === 403 || r.status === 429) { out.detail = r.detail; break; }
+    else if (stop(r)) { out.detail = r.detail; break; }
     await io.sleep(600);
   }
   out.left = todo.length - out.added;

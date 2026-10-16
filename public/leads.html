@@ -77,7 +77,7 @@
     <div class="tw"><table id="tLeads"></table></div>
 
     <h2>Therapist accounts</h2>
-    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Resend doesn't have them yet: the daily run adds them, and so does their next sign-in.</p>
+    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Resend doesn't have them yet: the daily run adds them, a batch a day, once Kit's unsubscribes are in.</p>
     <p class="muted">Own Premium (every game on their own phone): therapists who signed up from 29 Sep 2026 buy it, $59.99 a year. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
     <span class="muted" id="approveMsg" role="status"></span>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
@@ -150,7 +150,8 @@
         return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
       };
       var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
-        return cols.map(function (c) { return q(r[c[0]]); }).join(",");
+        // a lead saved before 16 Oct 2026 says what Kit answered, as the table does
+        return cols.map(function (c) { return q(c[0] === "list" && !r.list && r.kit ? "Kit: " + r.kit : r[c[0]]); }).join(",");
       })).join("\n");
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([body], { type: "text/csv" }));

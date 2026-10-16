@@ -272,12 +272,15 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
     while (CONTENT[step] && CONTENT[step].day === 0) {
       r = await sendStep(email, step, kv, f);
       if (firstSent === null) firstSent = r;
-      step++;
       if (r === "unsub") break;
+      // Resend busy (its two requests a second are shared with the contact
+      // list): this one waits for the next daily run instead of being lost
+      if (r === "failed") break;
+      step++;
     }
     if (r !== "unsub" && CONTENT[step]) {
       await kv(["SET", nextKey(email), step, "EX", 31536000]);
-      await kv(["ZADD", DUE_KEY, now + CONTENT[step].day * DAY_MS, email]);
+      await kv(["ZADD", DUE_KEY, r === "failed" ? now : now + CONTENT[step].day * DAY_MS, email]);
     }
     return firstSent === "sent";
   } catch {

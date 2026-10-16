@@ -39,6 +39,8 @@ function store() {
       if (op === "SMEMBERS") return [...set(k)];
       if (op === "HGETALL") { const h = hashes.get(k) || {}; return Object.entries(h).flat(); }
       if (op === "SCARD") return set(k).size;
+      if (op === "HGET") { const h = hashes.get(k) || {}; return a[0] in h ? h[a[0]] : null; }
+      if (op === "HDEL") { const h = hashes.get(k) || {}; let n = 0; for (const f of a) if (f in h) { delete h[f]; n++; } return n; }
       if (op === "HSET") { const h = hashes.get(k) || {}; for (let i = 0; i + 1 < a.length; i += 2) h[a[i]] = String(a[i + 1]); hashes.set(k, h); return 1; }
       throw new Error("unexpected " + op);
     },
@@ -111,7 +113,7 @@ function fakeResend() {
 
 // ── a fake Kit v4: subscribers by status, paged ──
 function fakeKit(byStatus) {
-  const K = { calls: [], down: new Set() };
+  const K = { calls: [], down: new Set(), rows: byStatus };
   K.fetch = async (url, init = {}) => {
     const u = new URL(String(url));
     K.calls.push({ path: u.pathname, query: Object.fromEntries(u.searchParams), key: init.headers && init.headers["X-Kit-Api-Key"] });
@@ -247,9 +249,10 @@ delete process.env.KIT_API_KEY;
   R.fail.set("PATCH /contacts/", 500);
   R.contacts.set("owed@example.com", { id: "ct_o", email: "owed@example.com", unsubscribed: false, properties: {}, segs: new Set() });
   await db.cmd(["SADD", "email:unsub", "owed@example.com"]);
-  ok("…and when Resend does not answer, the link says so", !(await C.markUnsubscribed("owed@example.com", io)) && R.contacts.get("owed@example.com").unsubscribed === false);
-  const u = await C.reconcileUnsubscribes(io);
-  ok("…and the daily check unsubscribes them in Resend", u.ok && u.stopped >= 1 && R.contacts.get("owed@example.com").unsubscribed === true, u);
+  ok("…and when Resend does not answer, the link says so, and owes it", !(await C.markUnsubscribed("owed@example.com", io)) && R.contacts.get("owed@example.com").unsubscribed === false && db.sets.get(C.UNSUB_OWED).has("owed@example.com"));
+  ok("…(paid ones are not owed)", !db.sets.get(C.UNSUB_OWED).has("leave@example.com"));
+  const u = await C.syncUnsubscribes({}, io);
+  ok("…and the daily run pays it first", u.ok && u.owed === 1 && R.contacts.get("owed@example.com").unsubscribed === true && !db.sets.get(C.UNSUB_OWED).has("owed@example.com"), u);
 }
 
 // ── unsubscribes: Resend → Sona's list ──
@@ -258,12 +261,13 @@ delete process.env.KIT_API_KEY;
   for (let i = 0; i < 230; i++) R.contacts.set(`p${i}@example.com`, { id: "ct_" + i, email: `p${i}@example.com`, unsubscribed: i % 50 === 7, properties: {}, segs: new Set() });
   R.contacts.set("Jo.Ann+x@gmail.com", { id: "ct_jo", email: "Jo.Ann+x@gmail.com", unsubscribed: true, properties: {}, segs: new Set() });
   await db.cmd(["SADD", "email:unsub", "seed@example.com"]);
+  const pace0 = sleeps.length;
   const u = await C.reconcileUnsubscribes(io);
   const unsub = db.sets.get("email:unsub");
   ok("everyone who unsubscribed in Resend (a broadcast's link) joins Sona's list, every page of them",
     u.ok && ["p7", "p57", "p107", "p157", "p207"].every((p) => unsub.has(p + "@example.com")) && !unsub.has("p8@example.com") && R.calls.filter((c) => c.path === "/contacts").length === 3, [u, [...unsub]]);
   ok("…with the plain mailbox, so every Gmail spelling of that inbox stops", unsub.has("jo.ann+x@gmail.com") && unsub.has("joann@gmail.com"));
-  ok("…paced for Resend's two requests a second", sleeps.includes(550));
+  ok("…paced for Resend's two requests a second, page by page", sleeps.slice(pace0).filter((ms) => ms === 550).length >= 2, sleeps.slice(pace0));
   ok("…and nobody else is touched", u.stopped === 0 && R.calls.every((c) => c.method === "GET"), u);
   const { db: dbz, R: Rz, io: ioz } = fresh();
   Rz.contacts.set("a@example.com", { id: "ct_a", email: "a@example.com", unsubscribed: true, properties: {}, segs: new Set() });
@@ -277,6 +281,16 @@ delete process.env.KIT_API_KEY;
   await dby.cmd(["SADD", "email:unsub", "seed@example.com"]);
   const uy = await C.reconcileUnsubscribes(ioy, Date.now() - 1);
   ok("…and a check out of time stops, for tomorrow", uy.ok && /time/.test(uy.detail) && Ry.calls.length === 0, uy);
+  // a list longer than one run: the next run carries on where the last stopped
+  Ry.contacts.get("q250@example.com").unsubscribed = true;
+  const u1 = await C.reconcileUnsubscribes(ioy, Infinity, 1);
+  const u2 = await C.reconcileUnsubscribes(ioy, Infinity, 1);
+  const u3 = await C.reconcileUnsubscribes(ioy, Infinity, 1);
+  const asked = Ry.calls.filter((c) => c.path === "/contacts").map((c) => new URLSearchParams(c.query).get("after") || "");
+  ok("…and a list longer than one run is read on, day after day, then from the top again",
+    JSON.stringify(asked) === JSON.stringify(["", "cq_99", "cq_199"]) && dby.sets.get("email:unsub").has("q250@example.com") && u3.detail === "done" && !dby.kv.has(C.RECONCILE_AT), [asked, u1, u2, u3]);
+  await C.reconcileUnsubscribes(ioy, Infinity, 1);
+  ok("…the next pass starts at the top", (new URLSearchParams(Ry.calls.filter((c) => c.path === "/contacts").at(-1).query).get("after") || "") === "");
   ok("…and Sona's welcome emails and weekly report read that same list",
     /SISMEMBER", "email:unsub"/.test(read("lib/nurture.ts")) && /SISMEMBER", "email:unsub"/.test(read("lib/report.ts")));
 }
@@ -286,7 +300,7 @@ delete process.env.KIT_API_KEY;
   const { db, io: io0 } = fresh();
   const K = fakeKit({
     cancelled: [{ email_address: "Left1@Example.com", state: "cancelled" }, { email_address: "left2@example.com", state: "cancelled" }, { email_address: "jim.bo@gmail.com", state: "cancelled" }],
-    bounced: [{ email_address: "bounce@example.com", state: "bounced" }],
+    bounced: [{ email_address: "bounce@example.com", state: "bounced" }, { email_address: "john+sona@acme.org", state: "bounced" }],
     complained: [{ email_address: "spam@example.com", state: "complained" }, { email_address: "fine@example.com", state: "active" }],
     inactive: [{ email_address: "unconfirmed@example.com", state: "inactive" }],
   });
@@ -298,6 +312,7 @@ delete process.env.KIT_API_KEY;
   const unsub = db.sets.get("email:unsub");
   ok("Kit's unsubscribes, bounces and complaints all join Sona's list, every page",
     k.ok && ["left1@example.com", "left2@example.com", "bounce@example.com", "spam@example.com", "jim.bo@gmail.com", "jimbo@gmail.com"].every((e) => unsub.has(e)), [k, [...unsub]]);
+  ok("…a bounce only as itself: \"john+sona@\" bouncing says nothing of \"john@\"", unsub.has("john+sona@acme.org") && !unsub.has("john@acme.org"));
   ok("…never someone Kit says is still active, nor one who never confirmed", !unsub.has("fine@example.com") && !unsub.has("unconfirmed@example.com") && !K.calls.some((c) => c.query.status === "inactive"));
   ok("…asked with Kit's own key, by status, a thousand a page", K.calls.every((c) => c.key === "kit_key" && c.query.per_page === "1000" && c.path === "/v4/subscribers"));
   ok("…and marked done, so it runs once", !!db.kv.get(C.KIT_DONE));
@@ -329,10 +344,18 @@ delete process.env.KIT_API_KEY;
   ok("(a parent who left Kit, then bought in the app before the first daily run, is in Resend subscribed)", R4.contacts.get("early@example.com").unsubscribed === false);
   process.env.KIT_API_KEY = "kit_key";
   const su = await C.syncUnsubscribes({}, io4);
-  ok("…and the first daily run takes Kit's leavers in, then unsubscribes them in Resend", su.ok && /imported/.test(su.kit) && su.stopped === 1 && R4.contacts.get("early@example.com").unsubscribed === true && !!d4.kv.get(C.KIT_DONE), su);
+  ok("…and the first daily run takes Kit's leavers in, then unsubscribes them in Resend", su.ok && /copied 1 new/.test(su.kit) && su.stopped === 1 && R4.contacts.get("early@example.com").unsubscribed === true && !!d4.kv.get(C.KIT_DONE), su);
+  // Kit stays open until it is cancelled, and an old Kit email's unsubscribe
+  // link still works: someone who leaves Kit later is copied the next day
+  R4.contacts.set("later@example.com", { id: "ct_later", email: "later@example.com", unsubscribed: false, properties: {}, segs: new Set() });
+  K4.rows.cancelled.push({ email_address: "later@example.com", state: "cancelled" });
   const su2 = await C.syncUnsubscribes({}, io4);
-  ok("…once: the next run asks Kit nothing", su2.kit === "done before" && K4.calls.length === 3, [su2, K4.calls.length]);
+  ok("…and every day while Kit is open: someone who leaves Kit later is copied, and unsubscribed in Resend",
+    /copied 1 new/.test(su2.kit) && R4.contacts.get("later@example.com").unsubscribed === true && d4.sets.get("email:unsub").has("later@example.com"), su2);
   delete process.env.KIT_API_KEY;
+  const k0 = K4.calls.length;
+  const su3 = await C.syncUnsubscribes({}, io4);
+  ok("…until Kit's key is gone: then Kit is not asked, and the run says so", K4.calls.length === k0 && /Kit closed/.test(su3.kit), su3);
 }
 
 // ── the daily backfill ──
@@ -380,6 +403,39 @@ delete process.env.KIT_API_KEY;
   R2.key = "re_full";
   const s5 = await C.backfill({ deadline: Date.now() - 1, people: async () => many }, i2);
   ok("…and a run out of time adds nothing more", s5.added === 0, s5);
+}
+
+// ── a post that did not fully land is tried again ──
+{
+  const { db, R, io } = fresh();
+  await C.upsertContact({ email: "setup@example.com", role: "parent", source: "app-setup" }, io);
+  ok("(a parent's setup email is in Resend)", db.sets.get(C.SYNCED).has("setup@example.com") && !db.hashes.has(C.RETRY));
+  const listKeyBefore = [...db.hashes.keys()].find((k) => k.startsWith("resend:list:"));
+  R.fail.set("PATCH /contacts/setup", 503);
+  const r = await C.upsertContact({ email: "setup@example.com", role: "parent", source: "app-trial", plan: "trial" }, io);
+  ok("the purchase post (sent once by the phone) meets a Resend that is down: not in Started Premium yet, and owed",
+    !R.inSeg("setup@example.com", "Started Premium") && JSON.parse(db.hashes.get(C.RETRY)["setup@example.com"]).plan === "trial", [r, db.hashes.get(C.RETRY)]);
+  ok("…the founder reads what failed, not \"already exists\"", /update|503/.test(r.detail) && !/already exists/.test(r.detail), r);
+  ok("…and a busy Resend does not throw away the kept segments", !!db.hashes.get(listKeyBefore));
+  const b = await C.backfill({}, io);
+  ok("…the next daily run tries it again, even before Kit's leavers are in (it is a new post), and it lands",
+    b.retried === 1 && R.inSeg("setup@example.com", "Started Premium") && R.contacts.get("setup@example.com").properties.plan === "trial" && !(db.hashes.get(C.RETRY) || {})["setup@example.com"], [b, db.hashes.get(C.RETRY)]);
+  R.fail.set("POST /contacts", 503);
+  await C.upsertContact({ email: "two@example.com", role: "parent", plan: "paid" }, io);
+  R.fail.set("POST /contacts", 503);
+  await C.upsertContact({ email: "two@example.com", role: "parent", source: "parents" }, io);
+  ok("…two failed posts keep the purchase from either", JSON.parse(db.hashes.get(C.RETRY)["two@example.com"]).plan === "paid");
+
+  founderLeads = [
+    { email: "p@example.com", role: "parent", source: "parents" },
+    { email: "p@example.com", role: "parent", source: "app-trial", plan: "trial" },
+    { email: "q@example.com", role: "", source: "speech-check" },
+    { email: "q@example.com", role: "other", source: "for-slps" },
+  ];
+  founderSlps = [];
+  const people = await C.everyone();
+  ok("the older addresses: a purchase on an older row is kept, and a role from any row",
+    people.find((x) => x.email === "p@example.com").plan === "trial" && people.find((x) => x.email === "q@example.com").role === "other", people);
 }
 
 // ── the first setup, twice at once ──

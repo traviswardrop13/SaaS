@@ -83,6 +83,18 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   for (let d = 3; d <= 10; d++) await N.runDue(r.cmd, fakeFetch, T + d * N.DAY_MS + 1);
   ok("a purchase posted while the day-2 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
 }
+// a day-0 email Resend turns away (busy: its two requests a second are
+// shared with the contact list) goes with the next daily run, never lost
+{
+  const q = store(); let n = 0;
+  // the second email meets 429 on its try and on the one retry
+  const busy = async (u, init) => (++n === 2 || n === 3 ? { ok: false, status: 429 } : fakeFetch(u, init));
+  const m = sent.length;
+  await N.enroll("burst@example.com", q.cmd, busy, T);
+  ok("a welcome Resend turns away at sign-up waits on the schedule, due now", sent.length === m + 1 && q.kv.get(N.nextKey("burst@example.com")) === "1" && q.z.get("burst@example.com") === T, [sent.length - m, q.kv.get(N.nextKey("burst@example.com")), q.z.get("burst@example.com")]);
+  await N.runDue(q.cmd, fakeFetch, T + 3600e3);
+  ok("…and the next daily run sends it, then keeps the series to its days", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "burst@example.com" && q.z.get("burst@example.com") === T + 2 * N.DAY_MS);
+}
 // a run out of time claims nothing more: the rest are still due tomorrow
 {
   const q = store(); await N.enroll("late1@example.com", q.cmd, fakeFetch, T); await N.enroll("late2@example.com", q.cmd, fakeFetch, T);

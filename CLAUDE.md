@@ -1087,28 +1087,36 @@ idempotency key makes a double send impossible).
 **One unsubscribe list, both ways.** Sona's own unsubscribe link
 (`/api/email/unsub`) also marks the Resend contact unsubscribed at once, and
 the plain mailbox's contact too (`markUnsubscribed`), so a broadcast skips
-them. The daily `/api/cron/nurture` starts with `syncUnsubscribes` (45
-seconds at most): **once**, Kit's own leavers (`importKit`: every subscriber
-Kit lists as cancelled, bounced or complained, never "inactive", which in
-Kit is someone who never confirmed; done is kept in `resend:kitunsub` only
-when all three answered in full and the store took every address), then the
-check both ways (`reconcileUnsubscribes`, every Resend contact read once): a
-contact who unsubscribed in Resend (a broadcast's link) joins `email:unsub`,
-so the welcome series and the weekly report stop for them too, and a contact
-still subscribed whom `email:unsub` says has left (Sona's link while Resend
-did not answer, a Kit leaver added before Kit's list was in, another
-spelling of the same Gmail inbox) is unsubscribed in Resend. Then the
-welcome emails (`runDue`, until 150 seconds in) and the weekly report (until
-250), and last, with what is left (until 265), the backfill: a batch of up to
-150 of the addresses Sona held before (`backfill`, `everyone()`: the ledger
-and every clinician account), paced. It never writes a clinician's account:
-the leads page's "in the list" and its "In Resend" count read
-`resend:synced`. **The backfill waits until Kit's leavers are in, and without
-`KIT_API_KEY` it waits for good**: someone who left Kit put back on a list is
-the one mistake here that cannot be undone. New emails join Resend from
-`/api/lead` either way. Once `resend:kitunsub` is set, `KIT_API_KEY` can be
-deleted from Vercel. The first segments are made under a short lock
-(`resend:listlock`), so two first leads at once make one "Parents".
+them; the address is owed (`resend:unsubowed`) until Resend says yes. The
+daily `/api/cron/nurture` starts with `syncUnsubscribes` (45 seconds at
+most): the owed unsubscribes; then, **every day while `KIT_API_KEY` is set**
+(an old Kit email's unsubscribe link works until Kit is closed), Kit's
+leavers (`importKit`: every subscriber Kit lists as cancelled, bounced or
+complained, never "inactive", which in Kit is someone who never confirmed;
+a bounce as the exact address only, since "john+sona@" bouncing says nothing
+of "john@"); then the check both ways (`reconcileUnsubscribes`): a contact
+who unsubscribed in Resend (a broadcast's link) joins `email:unsub`, so the
+welcome series and the weekly report stop for them too, and a contact still
+subscribed whom `email:unsub` says has left (a Kit leaver added before Kit's
+list was in, another spelling of the same Gmail inbox) is unsubscribed in
+Resend. A check that runs out of time keeps its place
+(`resend:reconcile:after`) and the next carries on. Then the welcome emails
+(`runDue`, until 150 seconds in; a day-0 email Resend turned away at sign-up
+waits for this run instead of being lost) and the weekly report (until 250),
+and last, with what is left (until 265), `backfill`: first every post that
+did not fully land (`resend:retry`, address to what it carried: a purchase
+the phone tells Sona once is never lost to a busy Resend), then a batch of up
+to 150 of the addresses Sona held before (`everyone()`: the ledger, one
+address's rows read together, and every clinician account), paced. It never
+writes a clinician's account: the leads page's "in the list" and its "In
+Resend" count read `resend:synced`. **The older addresses wait until Kit's
+leavers have been copied once in full (`resend:kitunsub`), and without
+`KIT_API_KEY` they wait for good**: someone who left Kit put back on a list
+is the one mistake here that cannot be undone. New emails join Resend from
+`/api/lead` either way. **Keep `KIT_API_KEY` in Vercel until the day Kit is
+closed** (Travis's task: on that day, run the daily job once by hand with the
+founder key, then delete the key). The first segments are made under a short
+lock (`resend:listlock`), so two first leads at once make one "Parents".
 
 What reaches Resend's list: the email, a **clinician's own** first name, the
 role, where it was given, and, since 5 Oct 2026, whether a parent started Sona
