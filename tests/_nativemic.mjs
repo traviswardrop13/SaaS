@@ -71,6 +71,17 @@
 //              it unavailable
 //   capLogging Capacitor.isLoggingEnabled to start with (default true, as a
 //              Debug build)
+//   audioSession  true: navigator.audioSession as WebKit has it from iOS 16.4
+//              (default false: no such thing, as Chromium). A page's own
+//              getter starts at "auto" on every load, but the override a write
+//              sets is the web process's, held across page loads (kept in
+//              sessionStorage here, as the phone's state is), and while that
+//              held override is anything but "auto" or "play-and-record" every
+//              getUserMedia is refused with InvalidStateError (WebKit's
+//              MediaDevices::getUserMedia reads the override, not the getter).
+//              __nm.as: sets[] (this page's writes: { v, at, gum }), log()
+//              (every write in the tab, { v, page }), gum[] (the held type at
+//              each getUserMedia), refused, heldAtLoad, held(), hold(v)
 //   sound      whose demo say() plays by default (R) · worldRate: the web
 //              mic's world, 48000 · staleChunkMs: how long a stream left
 //              open by the last page waits for its next chunk (100)
@@ -479,6 +490,25 @@ export function nativeMic(cfg) {
   window.addEventListener("pagehide", () => { N.unloading = true; }, true);
   window.addEventListener("pagehide", () => { persist(); });
 
+  // ── navigator.audioSession (cfg.audioSession), as WebKit has it ──
+  const AS_KEY = "__nmAS", AS_LOG = "__nmASlog";
+  let asHeld = "auto"; try { asHeld = sessionStorage.getItem(AS_KEY) || "auto"; } catch (e) {}
+  const AS = N.as = { on: !!cfg.audioSession, sets: [], gum: [], refused: 0, heldAtLoad: asHeld, held: () => asHeld,
+    hold: (v) => { asHeld = v; try { sessionStorage.setItem(AS_KEY, v); } catch (e) {} },
+    log: () => { try { return JSON.parse(sessionStorage.getItem(AS_LOG) || "[]"); } catch (e) { return []; } } };
+  if (cfg.audioSession) {
+    const TYPES = ["auto", "playback", "transient", "transient-solo", "ambient", "play-and-record"];
+    let mine = "auto";                                       // this document's own: "auto" on every load
+    const session = { state: "inactive", onstatechange: null, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; } };
+    Object.defineProperty(session, "type", { enumerable: true, get: () => mine, set: (v) => {
+      v = String(v);
+      if (TYPES.indexOf(v) < 0) return;                      // an IDL enum: an unknown value is ignored
+      mine = v; AS.sets.push({ v, at: now(), gum: N.gum }); AS.hold(v);
+      try { const l = AS.log(); l.push({ v, page: location.pathname }); sessionStorage.setItem(AS_LOG, JSON.stringify(l)); } catch (e) {}
+    } });
+    Object.defineProperty(navigator, "audioSession", { configurable: true, value: session });
+  }
+
   // ── the web mic: the same world, as a real MediaStream ──
   try {
     if (!navigator.mediaDevices) Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: {} });
@@ -486,6 +516,13 @@ export function nativeMic(cfg) {
     navigator.mediaDevices.getUserMedia = function (c) {
       N.gum++; persist();
       const rec = micRec("web", cfg.world === false && !!suites);
+      if (cfg.audioSession) {
+        AS.gum.push(asHeld);
+        if (asHeld !== "auto" && asHeld !== "play-and-record") {
+          AS.refused++; rec.end = stamp();
+          return Promise.reject(new DOMException("AudioSession category is not compatible with audio capture.", "InvalidStateError"));
+        }
+      }
       if (cfg.gum === "deny") { rec.end = stamp(); return Promise.reject(new DOMException("Permission denied", "NotAllowedError")); }
       let p;
       if (cfg.world !== false) p = (async () => { const ctx = worldCtx(); try { await ctx.resume(); } catch (e) {} const d = ctx.createMediaStreamDestination(); d.__nmWorld = true; W.bus.connect(d); return d.stream; })();

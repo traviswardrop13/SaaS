@@ -110,7 +110,9 @@ the build. "gaps" should stay near 0 once a listen has started.
 `public/sona.js` and deploy the website. The new build then listens through
 the web page exactly as today, and Apple's check opens the mic its old way.
 No App Store review. One phone alone: in Safari's Web Inspector console,
-`localStorage.setItem("sona.nativemic","off")`, then reload.
+`localStorage.setItem("sona.nativemic","off")`, then reload. Turn things off
+with these switches, never by reverting the code or rolling the website back:
+see "Taking it out" under the silent switch, below.
 
 **A call for Rachel, not engineering.** Today the phone call mode also turns
 quiet voices up and steady room noise down. Sona's own mic does neither, so
@@ -120,6 +122,40 @@ bar louder. If the app's levels come out lower, the fix is one website
 number, the mic boost (it starts at ×1.0, no boost). The checklist measures
 first; whether to boost is Rachel's call, because it changes what counts as
 practice.
+
+**The silent switch (15 Oct 2026).** Travis picked "Everything off": with the
+phone's side switch on silent, Sona plays nothing, Echo included, like most
+iPhone games. It comes in two halves that ship separately:
+- **The page: a web deploy, no App Store review.** In an app build with Sona's
+  own mic, every page sets `navigator.audioSession.type` to `"transient-solo"`
+  as it loads. Echo's voice, Rachel's sound, "Go!", the chimes, Piano Tiles'
+  notes, Bubble Pop's pops and the games' own sounds then all follow the
+  switch, and Spotify still pauses when Echo talks, as today. WebKit refuses
+  its own mic while the type is set, so before WebKit's mic is used (the
+  phone says not now, a fault, the off switch) the page sets it back to
+  `"auto"` for the rest of that page; that page then plays through the switch
+  as before. A build without `micOpen` (every App Store build on 15 Oct) and
+  Safari on speaksona.com are never touched.
+- **The plugin: needs a new App Store build.** After a listen,
+  `sessionOff()` now leaves the app's session `.ambient` (it was `.playback`,
+  which ignores the switch). The robot fallback voice plays there. A build
+  with Sona's own mic but the old `sessionOff()` plays the robot voice even on
+  silent.
+- **Taking it out: set `AUDIO_SESSION_TYPE` to `"auto"`** in
+  `public/sona.js` and deploy the website. Every page then writes `"auto"` as
+  it loads, which also clears the setting a family's open app still holds,
+  and Sona plays through the switch as before. **Never revert the block, and
+  never roll speaksona.com back to a deployment from before it (Vercel's
+  Instant Rollback included), while an app build with `micOpen` is in
+  families' hands.** WebKit keeps `"transient-solo"` for as long as the app
+  stays open, across page loads, and code without the block never gives it
+  back. WebKit then refuses its own mic: every fallback, and every listen
+  once `NATIVE_MIC_ON` is `false`, so the off switch above gives no mic at
+  all. It lasts until the family closes the app fully and opens it again.
+  The off switch works only on code that has this block.
+
+**For Rachel:** on a silenced phone a child hears no Echo and no sound to copy
+until a grown-up flips the switch, and nothing on screen says why.
 
 ## Device test checklist — do these before submitting
 
@@ -156,16 +192,31 @@ practice.
       call from another phone; locking the screen. The orange dot goes off;
       the card listens again afterwards without leaving the page; practice
       shows its normal grown-up card.
-- [ ] Side switch on silent: Echo and the chimes still play. The Hoops swish,
-      Soccer kick, Dino roar and Fruit Slice splat are now silent. That is
-      expected (with no phone call in progress, sounds a game makes itself
-      follow the switch); whether they should is Travis's call.
+- [ ] **Side switch on silent: nothing plays** (Travis, 15 Oct 2026:
+      "Everything off"). Switch to silent, then play a practice round, a
+      Fruit Slice say-it card, a Piano Tiles song, Hoops and a book page:
+      Echo, Rachel's sound, "Go!", the chimes, the piano notes and the game
+      sounds are all silent, and saying the sound still counts. Flip the
+      switch back: the next line plays, at normal loudness. In Safari's Web
+      Inspector console, on any of those pages, the one-line check:
+      `navigator.audioSession.type` must read `"transient-solo"`
+      (`Sona.micStats().session` says the same). `"auto"` on a page that never
+      fell back to the web mic (`Sona.micStats().broken` false, `busy` 0) is a
+      bug: tell Claude. Spotify playing before practice still pauses when
+      Echo speaks.
+- [ ] Silent, with the robot voice: turn on airplane mode and open a page
+      whose lines are not saved yet, so Echo's lines fail and the robot voice
+      reads them. On this build it is silent too (`.ambient`). Note it if it
+      plays: that is the old plugin.
 - [ ] **The web mic, the off switch's path (the audio-session coexistence
       risk):** `localStorage.setItem("sona.nativemic","off")`, reload, and play
       one practice round. While Apple listens, the page's own rep counter must
       keep counting, and Echo's voice must still play afterwards. If either
       breaks, the fix is in `SonaSpeechPlugin.swift`'s AVAudioSession options.
-      `localStorage.removeItem("sona.nativemic")` afterwards.
+      On this path `navigator.audioSession.type` reads `"auto"` (the web mic
+      needs it), so Echo plays on silent here, as every build did before.
+      `localStorage.removeItem("sona.nativemic")` afterwards, then load a
+      page: it reads `"transient-solo"` again.
 - [ ] Airplane mode ON: everything above still works identically. If it does
       not, on-device recognition is not actually on-device on that build. If
       the robot fallback voice plays, it plays at normal loudness, and AirPods

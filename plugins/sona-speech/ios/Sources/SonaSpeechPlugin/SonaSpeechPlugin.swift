@@ -564,12 +564,18 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /** Let go of the session. The app's own speech fallback (speechSynthesis,
-     *  offline) plays on it, so it is left as plain mixable media rather than
-     *  a recording mode it would inherit (quiet, call-quality AirPods). */
+     *  offline) plays on it, so it is left as plain media rather than a
+     *  recording mode it would inherit (quiet, call-quality AirPods).
+     *  .ambient, not .playback (15 Oct 2026, Travis: "Everything off" on
+     *  silent): .ambient follows the ring/silent switch, so the robot voice is
+     *  silent on a silenced phone like everything else; the page sets
+     *  navigator.audioSession to "transient-solo" for WebKit's own sounds.
+     *  Mixable by nature, so it can never interrupt WebKit's own session; not
+     *  .soloAmbient, which does not mix and could. */
     private func sessionOff() {
         let audio = AVAudioSession.sharedInstance()
         try? audio.setActive(false, options: .notifyOthersOnDeactivation)
-        try? audio.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+        try? audio.setCategory(.ambient, mode: .default, options: [])
     }
 
     private func routeInfo() -> [String: String] {

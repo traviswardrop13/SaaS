@@ -235,7 +235,9 @@ async function fresh(config={}){
   // config.nm: inside the iPhone app on Sona's own mic. The fake phone keeps
   // this suite's own fakes (no world, no audit) and counts any getUserMedia.
   if(config.nm){
-    await context.addInitScript(nativeMic,{mode:'new',world:false,audit:false,...config.nm});
+    // audioSession: an iPhone's navigator.audioSession (the silent switch's
+    // "transient-solo", under which WebKit would refuse its own mic)
+    await context.addInitScript(nativeMic,{mode:'new',world:false,audit:false,audioSession:true,...config.nm});
     await context.addInitScript(()=>{const h=window.__repHarness;if(h&&h.nativeRoom)h.nativeRoom();});
   }
   const page=await context.newPage();page.setDefaultTimeout(config.voice||config.cpu?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -257,9 +259,11 @@ const OWN=" (Sona's own mic)";
 // which mics this run covers: the web mic (the default), Sona's own, or both
 const MICS=process.env.REPGUARD_MIC==='own'?[true]:process.env.REPGUARD_MIC==='both'?[false,true]:[false],WEB=MICS.includes(false);
 // (still open: the stream the page is listening on is the phone's)
-async function ownMic(page,label,open){const p=await page.evaluate(()=>({gum:__nm.gum,opened:__nm.opened,closed:__nm.closed,live:__nm.live(),own:!!(micStream&&micStream.sonaNative)}));
+async function ownMic(page,label,open){const p=await page.evaluate(()=>({gum:__nm.gum,opened:__nm.opened,closed:__nm.closed,live:__nm.live(),own:!!(micStream&&micStream.sonaNative),held:__nm.as.held(),sets:__nm.as.sets.length,refused:__nm.as.refused}));
   if(open)ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia)',p.gum===0&&p.opened>=1&&p.own&&!!p.live,p);
-  else ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia), and it closed',p.gum===0&&p.opened>=1&&p.opened===p.closed&&!p.live,p);}
+  else ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia), and it closed',p.gum===0&&p.opened>=1&&p.opened===p.closed&&!p.live,p);
+  // the silent switch: practice ran under "transient-solo", never given back
+  ok(label+': under "transient-solo" throughout (every sound follows the silent switch)',p.held==='transient-solo'&&p.sets===1&&p.refused===0,p);}
 async function close(context,page){await page.evaluate(()=>{try{window.engineControl?.cancel();}catch{}try{__repHarness.ctx?.close();}catch{}}).catch(()=>{});await context.close();}
 try{
   for(const own of MICS)for(const kind of (process.env.REPGUARD_ONLY==='positive'?[]:['silence','tone','clicks','claps','breath','white noise','hum']))await scenario(kind+(own?OWN:''),async()=>{

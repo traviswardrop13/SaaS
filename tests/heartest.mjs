@@ -288,6 +288,14 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     /if let g = onStream, !\(micLive && g == micGen\) \{[\s\S]{0,120}"nostream"/.test(code) && /\{ g: h\.g \}/.test(sona));
   ok("a finished check leaves a live stream its session, and its engine",
     /private func settle\(\) \{[\s\S]{0,300}if !micLive \{ sessionOff\(\) \}/.test(code) && /private func haltAudio\(\) \{[\s\S]{0,200}if micLive \{ return \}/.test(code));
+  // THE SILENT SWITCH (15 Oct 2026, Travis: "Everything off"): what the
+  // session is left as after a listen is what the robot fallback voice plays
+  // on. .ambient follows the ring/silent switch and mixes (so it can never
+  // interrupt WebKit's own session); .playback ignores the switch, and
+  // .soloAmbient does not mix.
+  const off = (code.match(/private func sessionOff\(\) \{([\s\S]*?)\n    \}/) || [])[1] || "";
+  ok("the silent switch: sessionOff() leaves the session .ambient (follows the switch, mixable), never .playback or .soloAmbient, and nothing in the plugin sets .playback",
+    /setCategory\(\.ambient, mode: \.default, options: \[\]\)/.test(off) && !/\.playback|\.soloAmbient/.test(off) && !/\.playback\b/.test(code));
   ok("a page that stopped listening (navigation, a dead web view) closes the mic within one chunk",
     /guard hasListeners\("micpcm"\) else \{ closeMic\("nolistener"\)/.test(code));
   ok("an open nobody re-confirms is capped (micCap, at most 10 minutes)", /micCap = Timer\.scheduledTimer/.test(code) && /600000/.test(code));
