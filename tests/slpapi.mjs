@@ -435,7 +435,7 @@ if (A) {
   ok("pilot.html offers 'Stop sharing with your speech therapist' to a device that is sharing",
     /Stop sharing with your speech therapist<\/button>/.test(pilotHtml) && /id="stopCard"/.test(pilotHtml) && /pi\.consent&&pi\.childId/.test(pilotHtml));
   ok("…with the confirm text agreed with the privacy review, and the two buttons",
-    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's progress stays on this device\./.test(pilotHtml) &&
+    /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's practice history stays on this device\./.test(pilotHtml) &&
     />Stop sharing<\/button>/.test(pilotHtml) && />Keep sharing<\/button>/.test(pilotHtml));
   ok("…the call carries the ticket, the device's child id and the code from pilotInfo, nothing typed",
     /\/api\/pilot\/forget/.test(pilotHtml) && /sona\.slpticket/.test(pilotHtml) && /Sona\.pilotInfo\(\)/.test(pilotHtml) &&
@@ -737,7 +737,8 @@ if (A) {
     fin.length > 0 && /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /source:"app-setup"/.test(fin) && /keepalive:true/.test(fin) && /^function postParentLead\(email\)\{/.test(fin));
   ok("…and never with the child's name or age",
     fin.length > 0 && !/childName|draft\.|achEmName|nameEl|child:/.test(fin));
-  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.indexOf('<div class="step" data-step="ready">'));
+  // (the ready step carries ph-no-capture since 15 Oct 2026, REPLAY1)
+  const updStep = ob.slice(ob.indexOf('<div class="step" data-step="updates">'), ob.search(/<div class="step[^"]*" data-step="ready">/));
   ok("the email step says the email joins the list before it is given, in Travis's words",
     updStep.length > 0 && /We(&rsquo;|’|')ll also send occasional tips from Rachel\. Unsubscribe anytime\./.test(updStep), updStep.slice(0, 300));
 
@@ -749,8 +750,12 @@ if (A) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
-  ok("family email step says it is optional and how to unsubscribe, and promises no weekly summary nothing sends",
-    /Get practice tips by email\?/.test(updStep) && /Optional\./.test(updStep) && /Unsubscribe anytime/.test(updStep) && !/weekly (summary|practice update)/i.test(updStep));
+  // The heading asks for the weekly progress report (Travis, 15 Oct 2026),
+  // and it is a real one: the phone sends its numbers (sona.js REPORT1) and
+  // lib/report.ts mails them. reporttest plays both.
+  ok("family email step asks for the weekly progress report, says it is optional and how to unsubscribe, and the report it names is real",
+    /Get the weekly progress report/.test(updStep) && /\(optional\)/.test(updStep) && /Unsubscribe anytime/.test(updStep) &&
+    /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));

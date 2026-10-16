@@ -2191,7 +2191,9 @@
   // would change what counts as heard. It is refused by importData too.
   const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
     // what this phone showed (the offer from Home, 13 Oct 2026), like freever
-    "sona.offerseen.v1"];
+    "sona.offerseen.v1",
+    // the weekly report's device id and last send (REPORT1): this phone's own
+    "sona.report.v1"];
   function exportData() {
     const out = {};
     try {
@@ -2252,7 +2254,9 @@
     "sona.nativemic",
     // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
     // never brings the mark, so it can never take that one showing away
-    "sona.offerseen.v1"];
+    "sona.offerseen.v1",
+    // the weekly report's device id (REPORT1): a restored phone is its own device
+    "sona.report.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
@@ -4328,8 +4332,10 @@
   }
   function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
   // One daily ledger feeds both daily goals and week totals. It never writes.
-  function _repDays(sound, practiceOnly) {
-    const out = outcomes(), counts = {};
+  // slot: one child's ledger whoever is active (the weekly report, REPORT1,
+  // counts every child on the phone); left out, the active child's.
+  function _repDays(sound, practiceOnly, slot) {
+    const out = slot === undefined ? outcomes() : _loadFor(slot, OUTKEY, {}), counts = {};
     function add(k, n) { const w = _weekOf(k); if (n > 0 && isFinite(n) && w && w >= REPS_SINCE && /^\d{4}-\d{2}-\d{2}$/.test(k)) counts[k] = (counts[k] || 0) + n; }
     Object.keys(out).forEach((s) => {
       if (sound && s !== sound) return;
@@ -4337,7 +4343,7 @@
       Object.keys(days).forEach((k) => add(k, _dayTries(days[k])));
     });
     // Play reps, including accepted book words, never enter clinical outcomes.
-    const gr = practiceOnly ? {} : load(GAMEREPKEY, {});
+    const gr = practiceOnly ? {} : slot === undefined ? load(GAMEREPKEY, {}) : _loadFor(slot, GAMEREPKEY, {});
     Object.keys(gr).forEach((k) => { const d = gr[k] || {}; Object.keys(d).forEach((s) => { if (!sound || s === sound) add(k, Math.max(0, Math.floor(Number(d[s]) || 0))); }); });
     return counts;
   }
@@ -4367,10 +4373,16 @@
   // never calls this.
   function _goalCheck() {
     try { _boardSendLeaves(true); } catch (e) {}   // BOARD2: queued board deletions, at most once a minute; a no-op when none
-    const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
-    if (!d.done) return;
-    if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
-    try { _boardQueue(_slot()); } catch (e) {}     // BOARD2: a no-op unless this child is on the board
+    try {
+      const d = dayGoal(), t = today(), stamps = load(GOALKEY, {});
+      if (!d.done) return;
+      if (!stamps[t]) { stamps[t] = d.goal; save(GOALKEY, stamps); track("rep goal met"); _goalBanner(d.n); }
+      try { _boardQueue(_slot()); } catch (e) {}   // BOARD2: a no-op unless this child is on the board
+    } finally {
+      // REPORT1: the weekly report's numbers, after today's goal stamp so they
+      // count it; at most every 30 minutes, and a no-op unless asked for
+      try { _reportTouch(); } catch (e) {}
+    }
   }
   // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
   // 2026: "yeah count as reps"). Every place a game asks for the sound and
@@ -7784,6 +7796,141 @@
           summary: what === "trial" ? "Started Sona Premium's free days in the app" : "Bought Sona Premium in the app" }) }).catch(() => {});
     } catch (e) {}
   }
+  // ── REPORT1: the weekly progress report (Travis, 15 Oct 2026: "i want the
+  // setup page to say get the weekly progress report", then, told that nothing
+  // sent one, "Build the real report"). Only a household whose grown-up asked
+  // for it on setup's email step (profile.weeklyReport, on the profile that
+  // holds the address) sends anything: the address, this phone's random device
+  // id, and for each child set up here a few numbers for this week and last
+  // (a random id for the child, days with a rep, days at the daily goal, the
+  // plan's days a week, reps, practice tries among them, the sounds they were
+  // in). Never a name, an age, a word, a pass rate or a voice: the email says
+  // "Child 1". lib/report.ts keeps nothing until the address confirms this
+  // phone from the link it is emailed, then keeps three weeks and sends
+  // Monday's email.
+  // It is sent once as setup ends (so the confirm email comes while the parent
+  // is still holding the phone), then from _goalCheck (a rep, on a practice or
+  // game page) at most every 30 minutes, and once more when that page goes to
+  // the background, so Sunday evening's practice is in Monday's email. A post
+  // that fails is tried again five minutes later. A phone still unconfirmed
+  // two weeks on checks in once a day, and after eight weeks stops asking and
+  // checks once a month, quietly. Home never sends (it writes nothing). A
+  // confirmed phone of an address that unsubscribed is answered "off" and
+  // stops sending numbers; it checks once a month, with none, whether the
+  // address is back. sona.report.v1 (the device id, the last send, "off" and
+  // when, when it first heard "pending" and for which address, "gaveUp") is
+  // this phone's own (NO_EXPORT, NO_IMPORT): a phone restored from a backup is
+  // a second device. The child's id (profile.reportId) does travel, so after a
+  // move the email still shows that child once.
+  const REPORTKEY = "sona.report.v1", REPORT_EVERY_MS = 30 * 60 * 1000, REPORT_RETRY_MS = 5 * 60 * 1000;
+  // unconfirmed: every 30 minutes for two weeks, then once a day (a late tap
+  // on the link still starts the report within a day); a post still answered
+  // "pending" after eight weeks makes the phone give up asking, and from then
+  // it checks once a month, quietly (no numbers, and the server never sends a
+  // link for it), whether the address confirmed after all. "off" is checked
+  // every 30 days the same way, with no child's numbers.
+  const REPORT_DAY_MS = 24 * 60 * 60 * 1000, REPORT_PEND_MS = 14 * REPORT_DAY_MS, REPORT_GIVEUP_MS = 56 * REPORT_DAY_MS, REPORT_OFF_MS = 30 * REPORT_DAY_MS;
+  function _reportState() { try { const v = JSON.parse(localStorage.getItem(REPORTKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+  function _reportSave(v) { try { localStorage.setItem(REPORTKEY, JSON.stringify(v)); } catch (e) {} }
+  function _randomHex(bytes) {
+    const a = new Uint8Array(bytes);
+    try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < bytes; i++) a[i] = Math.floor(Math.random() * 256); }
+    return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  // The address the report goes to: on the profile of the child whose setup
+  // asked for it, or "" when nobody here did. Printable ASCII and at most 120
+  // characters, as the server (and its unsubscribe link) take them.
+  function reportEmail() {
+    let got = "";
+    try {
+      _kids().list.some((k) => {
+        const p = _loadFor(k.slot, PKEY, {}), e = typeof p.email === "string" ? p.email.trim().toLowerCase() : "";
+        if (p.weeklyReport === true && e.length <= 120 && /^[\x21-\x7e]+$/.test(e) && /^[^@]+@[^@]+\.[^@]+$/.test(e)) got = e;
+        return !!got;
+      });
+    } catch (e) {}
+    return got;
+  }
+  // One child's numbers for the week starting mon (a local Monday key), read
+  // from the same ledgers as Home's corner and Progress, whoever is active.
+  function _reportKid(slot, mon) {
+    const p = _loadFor(slot, PKEY, {}), all = _repDays(null, false, slot), prac = _repDays(null, true, slot);
+    const stamps = _loadFor(slot, GOALKEY, {}), pd = _loadFor(slot, GKEY, DEFAULT_PROGRESS).practiceDays || {}, t = today();
+    // the child's random id, made once and kept on the profile (so a backup carries it)
+    let id = typeof p.reportId === "string" && /^[a-f0-9]{16}$/.test(p.reportId) ? p.reportId : "";
+    if (!id) { id = _randomHex(8); p.reportId = id; saveFor(slot, PKEY, p); }
+    const parts = mon.split("-"), wd = [];
+    for (let i = 0; i < 7; i++) wd.push(_localDay(new Date(+parts[0], +parts[1] - 1, +parts[2] + i).getTime()));
+    let d = 0, g = 0, r = 0, pr = 0;
+    wd.forEach((k) => {
+      const n = all[k] || 0; if (n > 0) d++;
+      r += n; pr += prac[k] || 0;
+      if (k <= t && (!!stamps[k] || (k < GOAL_SINCE && !!pd[k]))) g++;
+    });
+    const s = r > 0 ? ALL_SOUNDS.filter((S) => { const by = _repDays(S, false, slot); return wd.some((k) => (by[k] || 0) > 0); }) : [];
+    const n = parseInt(p.weeklyGoal, 10);
+    return { i: id, d: d, g: g, gw: (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4, r: r, p: pr, s: s };
+  }
+  let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
+  function reportSync(force) {
+    const email = reportEmail();
+    if (!email) return Promise.resolve(false);
+    if (_reportBusy) { if (force) _reportAgain = true; return Promise.resolve(false); }
+    const st = _reportState(), now = Date.now(), prev = st.at;
+    // pend, off and gaveUp belong to one address: a corrected address starts fresh
+    const off = st.off === email, quiet = st.gaveUp === email, pend = st.pendFor === email && st.pend > 0 && st.pend <= now ? now - st.pend : 0;
+    const every = off || quiet ? REPORT_OFF_MS : pend > REPORT_PEND_MS ? REPORT_DAY_MS : REPORT_EVERY_MS;
+    if ((!force || every > REPORT_EVERY_MS) && st.at > 0 && st.at <= now && now - st.at < every) return Promise.resolve(false);
+    if (!/^[a-f0-9]{32}$/.test(st.dev || "")) st.dev = _randomHex(16);
+    st.at = now; _reportSave(st);
+    let list = [];
+    try { list = _kids().list.filter((k) => { const p = _loadFor(k.slot, PKEY, {}); return p.onboarded === true && p.role !== "slp"; }).slice(0, 8); } catch (e) {}
+    // a check on an address that said "off", or one the phone gave up on, carries no child's numbers
+    const weeks = [-1, 0].map((o) => { const wk = _mondayKey(o); return { wk: wk, kids: off || quiet ? [] : list.map((k) => _reportKid(k.slot, wk)) }; });
+    _reportBusy = true; _reportDirty = false; _reportAgain = false;
+    let sent;
+    try {
+      sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify(quiet ? { email: email, dev: st.dev, weeks: weeks, quiet: true } : { email: email, dev: st.dev, weeks: weeks }) })
+        .then((r) => r.json())
+        .then((j) => {
+          const s2 = _reportState();
+          // only a plain "ok" ends "off"; "pending" never does (the server
+          // gives an unconfirmed phone of an unsubscribed address "pending" too)
+          if (j && j.off) { s2.off = email; s2.offAt = Date.now(); delete s2.pend; delete s2.pendFor; delete s2.gaveUp; } // "off" proves the phone was confirmed
+          else if (j && j.ok && j.pending) {
+            if (s2.off !== email) {
+              if (s2.pendFor !== email || !(s2.pend > 0)) { s2.pend = Date.now(); s2.pendFor = email; }
+              else if (Date.now() - s2.pend > REPORT_GIVEUP_MS) s2.gaveUp = email; // still not confirmed eight weeks on
+            }
+          }
+          else if (j && j.ok) { delete s2.off; delete s2.offAt; delete s2.pend; delete s2.pendFor; delete s2.gaveUp; }
+          _reportSave(s2);
+          return !!(j && j.ok);
+        });
+    } catch (e) { sent = Promise.resolve(false); }
+    return sent.catch(() => false).then((ok) => {
+      _reportBusy = false;
+      if (!ok) {
+        // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
+        _reportDirty = true;
+        const s3 = _reportState(); s3.at = Math.max(prev > 0 && prev <= now ? prev : 0, now - every + REPORT_RETRY_MS); _reportSave(s3);
+      } else if (_reportAgain && _reportDirty) reportSync(true);
+      _reportAgain = false;
+      return ok;
+    });
+  }
+  function _reportTouch() {
+    if (!reportEmail()) return;
+    _reportDirty = true;
+    if (!_reportHooked) {
+      _reportHooked = true;
+      const flush = () => { if (_reportDirty) reportSync(true); };
+      window.addEventListener("pagehide", flush);
+      document.addEventListener("visibilitychange", () => { if (document.hidden) flush(); });
+    }
+    reportSync(false);
+  }
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
     if (!p) return Promise.reject(_buyError("no-plan"));
@@ -8183,5 +8330,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

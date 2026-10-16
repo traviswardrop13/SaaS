@@ -143,15 +143,14 @@ body[data-setup-screen="sounds"] .ob #leo { width: 48px !important; height: 54px
 
 /* THE EMAIL STEP (13 Oct 2026: "also move the email box before the price").
    One box, Travis's consent line under it, Skip under that, and the footer's
-   Continue. With the keyboard up the help line steps aside, and on a very
-   short window the heading too, so the box and Continue stay above it. */
+   Continue. With the keyboard up on a very short window the heading steps
+   aside, so the box and Continue stay above it. (Its help line went on 15 Oct
+   2026: the heading, "Get the weekly progress report", says it all.) */
 .ob .step[data-step="updates"] .setup-label { margin-top: 16px; }
 .ob .step[data-step="updates"] input { width: 100%; }
-.ob .upd-help { font-size: 13px; margin: 0; }
 .ob .upd-consent { font-size: 12.5px; line-height: 1.45; margin: 8px 0 0; }
 .ob #updMsg { color: #a3401a; font-weight: 800; font-size: 13px; margin: 6px 0 0; }
 .ob #updMsg:empty { display: none; }
-body.keyboard-open .ob .step[data-step="updates"] .upd-help { display: none; }
 body.keyboard-open .ob .step[data-step="updates"] .setup-label { margin-top: 8px; }
 @media (max-height: 700px) {
   .ob .step[data-step="updates"] .setup-label { margin-top: 12px; }

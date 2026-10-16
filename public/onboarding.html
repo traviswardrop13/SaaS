@@ -223,8 +223,11 @@
          picks one sentence about Sona on the ready screen, and it is kept in
          one household key that no backup, event or request carries, which is
          why the screen can say "stays on this device". The wording is
-         Rachel's to change. -->
-    <div class="step" data-step="therapy">
+         Rachel's to change. ph-no-capture (REPLAY1, 15 Oct 2026): PostHog's
+         recording is off while this screen shows (replayAt), and this block
+         is an empty shape in every later picture of the page, so a pressed
+         answer left in it after Back never travels. -->
+    <div class="step ph-no-capture" data-step="therapy">
       <h1 class="qh" id="therapyTitle" tabindex="-1">Is your child in speech therapy?</h1>
       <p class="muted ask-help">One tap. Your answer stays on this device.</p>
       <div class="ask" id="obTherapy" role="group" aria-labelledby="therapyTitle">
@@ -243,7 +246,7 @@
 
     <!-- interests (themes the games + daily practice) -->
     <div class="step" data-step="interests">
-      <div class="qh">What does <span id="intName">your child</span> love? <svg viewBox="0 0 64 64" style="width:20px;height:20px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></div>
+      <div class="qh">What does <span class="ph-name" id="intName">your child</span> love? <svg viewBox="0 0 64 64" style="width:20px;height:20px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></div>
       <p class="muted">We wrap their practice sounds in what they love — so the games feel made just for them. Pick one or a few.</p>
       <div class="bgrid" id="obInterests"></div>
     </div>
@@ -287,10 +290,15 @@
          and not one of the four questions (no progress segment). Travis's
          consent line is on screen before anything is sent; the address is
          posted once, by saveSetup(), when the parent leaves the ready
-         screen. No child's name on this screen, so none can ride along. -->
+         screen. No child's name on this screen, so none can ride along.
+         THE WEEKLY PROGRESS REPORT (Travis, 15 Oct 2026: "i want the setup
+         page to say get the weekly progress report", and no "Optional.
+         Rachel's tips…" line under it). The heading is the ask, and it is
+         true: an address given here sets profile.weeklyReport, and the phone
+         then sends a few numbers a week for the report (sona.js REPORT1,
+         lib/report.ts). The label still says it is optional. -->
     <div class="step" data-step="updates">
-      <h1 class="qh" id="updTitle" tabindex="-1">Get practice tips by email?</h1>
-      <p class="muted upd-help">Optional. Rachel's tips for practicing at home.</p>
+      <h1 class="qh" id="updTitle" tabindex="-1">Get the weekly progress report</h1>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
       <input id="updEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" />
       <p class="muted upd-consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -312,7 +320,10 @@
          clinician setup never does. This screen's Continue is where the
          profile is saved. It replaced the 2-second "Building…" beat for
          parents. -->
-    <div class="step" data-step="ready">
+    <!-- ph-no-capture (REPLAY1): this screen repeats the speech therapy
+         answer (#readyLines), and its size alone would tell it, so no
+         recording ever holds it; recording is also off while it shows -->
+    <div class="step ph-no-capture" data-step="ready">
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
       <ul class="ready-chips" id="readyChips" aria-label="What you told us"></ul>
       <p class="muted ready-note">You can change sounds anytime in Settings.</p>
@@ -330,7 +341,7 @@
     <!-- The permission belongs to the grown-up's tap, before the handoff. -->
     <div class="step" data-step="mic">
       <div class="qh">Let Echo hear you</div>
-      <p class="muted">Turn on the mic so Echo can hear <span id="micName">your child</span>.</p>
+      <p class="muted">Turn on the mic so Echo can hear <span class="ph-name" id="micName">your child</span>.</p>
       <p class="muted" id="micPromise" style="margin-top:14px;font-size:13px;line-height:1.55;"></p>
       <p id="micStatus" role="status" aria-live="polite"></p>
       <button type="button" class="skip" id="micNotNow">Not now</button>
@@ -341,13 +352,15 @@
     <!-- The child takes over only when the grown-up is ready. No email box
          here since 13 Oct 2026: it comes before the price, on its own step. -->
     <div class="step" data-step="achieve">
-      <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
+      <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span class="ph-name" id="achName">your child</span>!</div>
       <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
     <!-- slp -->
-    <div class="step" data-step="slp">
+    <!-- ph-no-capture (REPLAY1): never shown to a parent, but a set-up
+         profile from before 19 Sep 2026 can paint an old answer into it -->
+    <div class="step ph-no-capture" data-step="slp">
       <div class="qh">Has your child seen a speech therapist?</div>
       <p class="muted">Optional — helps us tailor the plan. (For parents.)</p>
       <div class="choices" id="obSlp">
@@ -378,7 +391,7 @@
          deliberately NOT promised here — it is a Vercel cron that fails
          closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
          promise that depends on environment variables is not a promise. -->
-    <div class="step" data-step="email">
+    <div class="step ph-no-capture" data-step="email">
       <div class="qh">Your clinician account</div>
       <!-- The code and key CONNECT a family to the dashboard (24 Sep 2026).
            "so Sona is free for them" was the grant a link used to be; what is
@@ -392,7 +405,7 @@
            holding a clinician's link (sona.slp, slpok, slpunlock, slpticket),
            or set up by a clinician, can never turn it on (boardAllowed's
            "clinic"), so none of their families is on it. -->
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. If Sona offers its Practice Board, it stays off on any phone that holds your link. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b class="ph-name" id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Moving to a new phone?</b> at the bottom of Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. If Sona offers its Practice Board, it stays off on any phone that holds your link. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -639,7 +652,7 @@
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
       goal: "Whatever you pick, I\u2019ll keep the week on track!",
-      updates: "Want tips for home?",
+      updates: "Want a weekly report?",
       achieve: "Here's what's ahead!",
       slp:     "Almost done!",
       email:   "One last thing!",
@@ -897,7 +910,7 @@
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
     // with Sona is, so the words are Rachel's to change.
-    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home. It does not replace a speech therapist."};
+    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home."};
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
@@ -987,8 +1000,38 @@
       return wallP;
     }
 
+    // REPLAY1 (15 Oct 2026): PostHog may record a parent's setup
+    // (analytics.js, REPLAY), the name only ever as "[child]" (ph-name) and
+    // every box an empty shape. It goes off BEFORE the speech therapy question or
+    // the ready screen (which repeats the answer, and whose size alone would
+    // tell it) is painted, and on again only once a screen without them is
+    // up, so a tap on Yes or Not right now is never recorded. Never for a
+    // clinician's own setup, and never again once the hand-off is reached.
+    // Two more locks (the second review, 15 Oct 2026):
+    //  - the screen a therapy answer lands on is not recorded either: Yes,
+    //    Not right now and Skip sit inside the step, so a double tap's second
+    //    tap, or a mouse moving on from where it clicked, would be recorded
+    //    at the answer's place. Recording comes back on the screen after it,
+    //    reached by the footer, which is in the same place on every screen;
+    //  - a child already set up walking setup again (Back from the first
+    //    game, a second visit) is never recorded: whoever holds the phone
+    //    may be the child. The hand-off also ends recording for the whole tab
+    //    (sona.replayoff.v1, read by SonaAnalytics.replay).
+    var NO_REPLAY={therapy:1,ready:1,slp:1,email:1},replayDone=false,replayFrom=null,replayHold=false;
+    var REWALK=!!(p.onboarded&&!AFTER);
+    function replayAt(key,painted){
+      try{
+        if(!painted&&key!==replayFrom){replayHold=replayFrom==="therapy";replayFrom=key;}
+        if(!window.SonaAnalytics||!SonaAnalytics.replay)return;
+        var ok=!replayDone&&!REWALK&&!replayHold&&draft.role!=="slp"&&ORDER===ORDER_PARENT&&!NO_REPLAY[key];
+        if(!ok&&!painted)SonaAnalytics.replay(false);
+        else if(ok&&painted)SonaAnalytics.replay(true);
+      }catch(e){}
+    }
+
     function render(){
       var key=ORDER[idx];
+      replayAt(key,false);
       if(document.activeElement&&document.activeElement.tagName==="INPUT")document.activeElement.blur();
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); });
       document.getElementById("obExploreOption").hidden=ORDER!==ORDER_PARENT;
@@ -1026,6 +1069,7 @@
       }
       if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
       updateNext();saveDraft();stepSeen(key);
+      replayAt(key,true);
     }
 
     function next(){
@@ -1053,7 +1097,7 @@
       finish();
     }
     function showBuild(done){
-      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show";
+      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show ph-no-capture";
       d.setAttribute("role","status");d.setAttribute("aria-live","polite");
       d.innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
       document.body.appendChild(d);
@@ -1085,7 +1129,7 @@
     // IN_APP_SOURCES: no App Store email) and campaign tags.
     function postParentLead(email){
       var pu=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
-      fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({email:email,source:"app-setup",role:"parent",summary:"New parent (weekly summary opt-in)",utm_source:pu.utm_source,utm_medium:pu.utm_medium,utm_campaign:pu.utm_campaign,utm_content:pu.utm_content,utm_term:pu.utm_term,referrer:pu.referrer,landing:pu.landing})}).catch(function(){});
+      fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({email:email,source:"app-setup",role:"parent",summary:"New parent (weekly report opt-in)",utm_source:pu.utm_source,utm_medium:pu.utm_medium,utm_campaign:pu.utm_campaign,utm_content:pu.utm_content,utm_term:pu.utm_term,referrer:pu.referrer,landing:pu.landing})}).catch(function(){});
       try{if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in");}catch(e){}
     }
 
@@ -1129,8 +1173,11 @@
         pathReason: draft.pathReason || "",
         onboarded: true,
       };
-      // a parent who gave the email step an address (nothing reads it; kept as the hand-off kept it)
-      if(draft.role!=="slp"&&draft.email&&ORDER.indexOf("updates")>-1)prof.weeklyEmail=true;
+      // a parent who gave the email step an address asked for the weekly
+      // progress report: weeklyReport is what sona.js REPORT1 reads (only an
+      // address given under that heading sends a child's numbers);
+      // weeklyEmail is kept as the hand-off kept it, and nothing reads it
+      if(draft.role!=="slp"&&draft.email&&ORDER.indexOf("updates")>-1){prof.weeklyEmail=true;prof.weeklyReport=true;}
       Sona.saveProfile(prof);
       // The two one-tap answers go to ONE household key and nowhere else (the
       // profile above gets no field for them: the profile is what a clinician
@@ -1167,7 +1214,12 @@
           )}).catch(function(){});
         }
         // a parent's address from this walk's email step: once, here, before the price
-        else if(draft.email&&ORDER.indexOf("updates")>-1) postParentLead(draft.email);
+        else if(draft.email&&ORDER.indexOf("updates")>-1){
+          postParentLead(draft.email);
+          // …and the weekly report's first post (no reps yet): the server emails
+          // the address its confirm link now, while the parent holds the phone
+          try{if(Sona.reportSync)Sona.reportSync(true);}catch(e){}
+        }
       }catch(e){}
       // SLP finish: create the clinician's ACCOUNT and email them a one-tap
       // sign-in link. The share credential (code + family key) is auto-minted
@@ -1235,6 +1287,8 @@
     // Echo's ears", on a phone that answers the microphone ask at once, landed
     // on "Let's play!" and opened the game past the hand-off.
     function showHandoff(){
+        // the child is about to hold the phone: the recording ends first (REPLAY1)
+        replayDone=true;try{sessionStorage.setItem("sona.replayoff.v1","1");}catch(e){}try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
         settle();stepSeen("handoff");nextBtn.removeAttribute("aria-busy");
         var ach=steps.achieve,nm=(nameEl.value||draft.childName||"").trim()||"your child";
         document.getElementById("achName").textContent=nm;

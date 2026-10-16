@@ -151,8 +151,8 @@ changing one. What follows from the rule:
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
   hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
-  **"How many days a week will you practice?"** → **"Get practice tips by
-  email?"** → **"<Name>'s practice is ready"** →
+  **"How many days a week will you practice?"** → **"Get the weekly progress
+  report"** → **"<Name>'s practice is ready"** →
   the price → microphone → "Hand the phone to <Name>!" → the first game. The
   old order told a parent to hand the phone over and tap "Let's play!", and
   then showed three money screens to the child holding it.
@@ -163,7 +163,10 @@ changing one. What follows from the rule:
     then also for them to be able to choose whether they want to practice
     three days a week or … five days a week or every day"). **Therapy**
     ("Yes" / "Not right now") changes nothing a child is given: it puts one
-    true sentence about SONA on the ready screen, never one about the child.
+    true sentence about SONA on the ready screen, never one about the child
+    ("Sona is practice for the days between speech visits." / "Sona is
+    practice you can do at home."; Travis took "It does not replace a speech
+    therapist." off the second on 15 Oct 2026).
     **Days a week** (3 days / 5 days / Every day) is a real setting, the
     child's weekly goal (`profile.weeklyGoal`, the one Settings shows), and
     Skip leaves that goal as it was. The wording of both, the two sentences
@@ -178,8 +181,13 @@ changing one. What follows from the rule:
     progress segment. It is optional: empty or Skip go on, and a
     wrong-looking address stays with one line ("That email doesn't look
     right."). Travis's line, "We'll also send occasional tips from Rachel.
-    Unsubscribe anytime.", is on screen before anything is sent; no weekly
-    summary is promised (nothing sends one). The address is saved in the
+    Unsubscribe anytime.", is on screen before anything is sent. **Its
+    heading is "Get the weekly progress report"** (Travis, 15 Oct 2026: "i
+    want the setup page to say get the weekly progress report", with no
+    "Optional. Rachel's tips…" line under it; Echo's bubble says "Want a
+    weekly report?"), **and the report is real**: an address given here sets
+    `profile.weeklyReport`, and only that sends a child's numbers (see "THE
+    WEEKLY PROGRESS REPORT" under the email list). The address is saved in the
     profile and posted once, by `postParentLead()` (the address and nothing
     else), to `/api/lead` (`source "app-setup"`, role `parent`, nothing
     about the child), when the parent leaves the ready screen, before the
@@ -192,6 +200,9 @@ changing one. What follows from the rule:
     Meta's pixel reports the words on tapped buttons by itself, so the setup
     page's pixel tag carries `data-autoconfig="off"` (that page only; whether
     the landing pages should too is Travis's call). Asked once per family.
+    PostHog's session recording (REPLAY1, below) is off while this question
+    and the ready screen are on screen, and both steps carry `ph-no-capture`,
+    so no recording holds the answer.
   - **The ready screen** repeats only what the parent said (name, age group
     if given, the sounds, or "Every sound, easiest first", and the days a
     week picked) with "Sona
@@ -1060,6 +1071,172 @@ What reaches Kit: the email, a **clinician's own** first name, the role tag
 (`sona-slp`, `sona-parent`, `sona-other`), and, since 5 Oct 2026, a **plan
 tag** for a parent who started Sona Premium in the iPhone app.
 Never anything about a child.
+
+**THE WEEKLY PROGRESS REPORT (REPORT1, 15 Oct 2026)** (Travis: "i want the
+setup page to say get the weekly progress report"; told that nothing sent
+one, he picked "Build the real report" over changing the words alone). Every
+Monday a parent who asked for it, and confirmed, gets last week's practice
+from Rachel.
+- **Who:** only a household whose setup email step was given an address under
+  that heading (`profile.weeklyReport: true`, beside `email` on the profile
+  of the child set up first). `weeklyEmail` alone (the hand-off box before 13
+  Oct, which asked for a "weekly summary", and the 13-15 Oct step, which asked
+  for tips) sends nothing: "Progress leaves only with a grown-up's explicit
+  consent", and those grown-ups agreed to something else. Settings has no
+  switch for them, and no status line or off switch for anyone: Travis's
+  call. Skip sets neither. A brother or sister set up later on the same phone
+  is in the report too (the address is the household's). Removing the child
+  whose profile holds the address stops the report.
+- **Nothing is kept or sent until the address says yes** (the review, 15 Oct
+  2026: a mistyped address would have sent a stranger a child's sounds every
+  week, and anyone can post). The first post from a phone (setup sends one as
+  it ends) emails "Confirm your weekly progress report" with a button; the
+  link opens a page whose button POSTs (a mail scanner's GET confirms
+  nothing) and marks that phone confirmed in `report:dev:<keyed hash of the
+  mailbox>` (device ids, no address; 120 days from the last post). Asking is
+  limited, each limit taken atomically before the send and given back if
+  Resend refuses: once a week a phone (a stranger's post cannot take a
+  phone's own link, though five of them can use up the mailbox's), five links
+  a mailbox in a fixed 180-day window from the first, 300 a day in all; a
+  step the store did not answer gives nothing back. A phone nobody confirms
+  stops asking after eight weeks and only checks once a month, quietly (no
+  numbers; the server never sends a link for a quiet check), so a mistyped
+  address hears at most five times a window and a late tap still starts the
+  report. A second phone confirms
+  itself the same way. A confirm link for an address that has since
+  unsubscribed says so. **One list:** unsubscribing from Rachel's tips stops
+  the report too (and vice versa); `/api/email/unsub` now also keeps the plain
+  mailbox, so every Gmail spelling of that inbox stops.
+- **The phone (block REPORT1 in `sona.js`, `Sona.reportSync`,
+  `Sona.reportEmail`)** posts `/api/report` as setup ends, then from
+  `_goalCheck` (a rep, on a practice or game page, after the day's goal
+  stamp) at most every 30 minutes, and once more when that page goes to the
+  background, so Sunday evening's practice is in Monday's email. A failed post
+  is tried again five minutes later; a phone still unconfirmed two weeks on
+  checks in once a day, and one still "pending" after eight weeks checks
+  quietly once a month ("pending", "off" and "gaveUp" are kept per address,
+  so a corrected address starts fresh). A confirmed
+  phone told "off" stops sending numbers and checks once a month, with no
+  child's numbers, whether the address is back; only a plain "ok" ends
+  "off", never "pending" (the server keeps such a phone's confirmation fresh
+  so it keeps hearing "off"). Home never sends: it writes nothing. The
+  body is the address (printable ASCII, at most 120 characters, as the
+  unsubscribe link reads it), this phone's random device id and, for this
+  week and last (local Mondays), per set-up family child (not a clinician's
+  own setup, not one mid-setup, at most 8): a random child id
+  (`profile.reportId`, travels in a backup, so a moved child is still one
+  child), days with a rep, days at the daily goal, the plan's days a week,
+  reps, practice tries among them, and the sounds those reps were in. Never a
+  name, an age, a word, a pass rate or a voice. `sona.report.v1` (device id,
+  last send, `off`/`offAt`, `pend`/`pendFor`, `gaveUp`) is on `NO_EXPORT` and
+  `NO_IMPORT`: a restored phone is a second device.
+- **The server (`lib/report.ts`, `app/api/report/route.ts`,
+  `app/api/report/confirm/route.ts`)** takes it same-origin only, 4 KB, 40 an
+  hour per IP (an IPv6 /64 as one), builds what it keeps field by field
+  (numbers clamped, unknown sounds dropped), and keeps a confirmed phone's
+  numbers in `report:wk:<monday>` ("<email> <device>" to the numbers) until
+  three weeks after that Monday (a fixed end). An unconfirmed phone gets
+  "pending", also when its address unsubscribed, so the route says nothing
+  about anyone; a confirmed phone of an address in `email:unsub` (exact, or
+  its Gmail-dot/+tag mailbox) is told "off" and stops. The daily
+  `/api/cron/nurture` runs `runReports` after the welcome series: Monday
+  (Tuesday and Wednesday catch up) emails last week, once an address a week
+  (`report:sent:<monday>:<email>`, released if Resend refuses), with a 550 ms
+  pause before each send (the first too: the welcome series has just sent), a
+  429 tried once more after a longer pause and then the run stopped, stopping
+  too 250 seconds into the run, at most 250 a run. A week
+  with no reps sends nothing. Two phones, one address: one email, a child
+  (by its id) once with the fuller count, two quiet brothers still two, at
+  most three devices. A founder's manual run with `?report=1` sends on any
+  day.
+- **The email** says "Child 1", "Child 2" (never a name), the week ("Oct 12
+  to Oct 18"), "Said their sound out loud on N days" (not "practiced": the
+  days count game and book words too, and Progress's "practiced" counts the
+  practice page alone), "Reached the daily goal on N days (your plan: 5 days
+  a week)", reps split "in practice" and "in games and books", the sounds, a
+  kind line ("That's the plan you set" only when every child kept it), what a
+  rep is, "A practice snapshot from your phone, not an evaluation." and
+  "Rachel, MS, CF-SLP / Sona co-founder". No pass rate, no clinical words, no
+  emoji, no prices (`reporttest`). **Its words, and the confirm email's, are
+  Rachel's to change**, as is whether a week with no practice should send a
+  gentle note (today it sends nothing).
+- **For Rachel, also:** a parent who answers "Not right now" to "Is <Name> in
+  speech therapy?" no longer reads "It does not replace a speech therapist."
+  on the ready screen (Travis, 15 Oct 2026). Whether a family with no
+  therapist should be told Sona is not a substitute is her clinical call.
+- The privacy page has its own section ("The weekly progress report (only if
+  a grown-up asks for it)"), and the parents' "What's stored" answer names it.
+  **For Travis:** App Store Connect's App Privacy answers should now list
+  usage data linked to the parent's email (no review needed). The old Friday
+  email (`/api/cron/weekly`, to the retired `trials` list) is separate and
+  untouched.
+`reporttest` plays the phone and the server.
+
+**SESSION RECORDING (REPLAY1, 15 Oct 2026)** (Travis, of PostHog's replay
+page: "how do i start recording", then yes to recording only the grown-up
+screens with names and typing blanked out). PostHog session replay runs on
+four screens of **speaksona.com itself** (a preview build or a test server
+never records): the home page and /try (in a browser; in the app they
+redirect home), **parent setup** up to the hand-off (never a clinician's own
+setup, `?slp=`), and **the plan screen's offer when a grown-up opened it**
+(`?setup=1`, `?first=1`; never a child's tap on a locked game `?from=`,
+never Home's own offer, never Settings › Your plan). It needs "Record user
+sessions" on in PostHog too.
+- **Off unless switched on.** `analytics.js` inits with
+  `disable_session_recording: true` everywhere; only
+  `SonaAnalytics.replay(true)` on one of those pages turns it on. Setup's
+  `replayAt(key, painted)` turns it off BEFORE the therapy question, the
+  ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
+  once a screen without them is up, so a tap on Yes / Not right now is never
+  recorded (the ready card's size alone would tell the answer). **The
+  screen a therapy answer lands on is not recorded either** (`replayHold`):
+  a double tap's second tap, or a mouse moving on, would be recorded at the
+  answer's place; recording comes back one screen later, reached by the
+  fixed footer. **A child already set up walking setup again** (`REWALK`:
+  Back from the first game, a second visit) is never recorded, and **the
+  hand-off ends recording for the whole tab** (`sona.replayoff.v1` in
+  sessionStorage, which `SonaAnalytics.replay` reads). The plan screen
+  calls `replay(true)` once the offer is painted.
+- **The name: masked where it is shown, and a backstop that drops.** Every
+  spot a recorded page shows the child's name is an element of class
+  `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, the plan screen's
+  headline span), recorded as "[child]" whatever it holds
+  (`maskTextSelector: ".ph-name"`). Before a piece of recording is sent,
+  `before_send` checks the words a person reads in it (text, and the
+  attributes in `READ_ATTR`; never tag names, classes, styles or
+  stylesheets) for every child's name (as a whole word) and grown-up email
+  this phone knows (profiles, the kids list, setup's draft), and a piece
+  that holds one is **not sent at all**. Never word swapping: taking "Will"
+  out of "Echo will listen", or "max" out of "max-width", reads the name
+  straight back (the review of 15 Oct 2026 caught exactly that). Only
+  `$snapshot` is checked: ordinary events go out exactly as PostHog wrote
+  them. A name that is also a word on the page ("Echo", "Rachel", "Will")
+  costs that family its recordings, never its privacy.
+- **Blocked whole (`ph-no-capture`):** setup's therapy, ready, clinician and
+  clinician-email steps and its build overlay; the plan screen's practice
+  line (`#offerPill`) and recap card. Every box (`input, textarea, select,
+  [contenteditable]`) is blocked: an empty shape, no value, no keystrokes.
+- **The recorder is ours, pinned.** On speaksona.com, `analytics.js` loads
+  posthog-js from `public/vendor/posthog/static/<PH_VERSION>/` (array.js and
+  lazy-recorder.js, 1.438.12) with `asset_host` pointing there, so what
+  records a family is exactly the build `replaytest` plays, and no other
+  PostHog extension (surveys, toolbar, logs) can load. Upgrading PostHog is
+  a reviewed change: replace both files, bump `PH_VERSION`, run `replaytest`.
+  Off speaksona.com it is PostHog's own latest copy, and nothing records.
+- **Nothing else rides along:** no console, network, canvas, heatmaps, dead
+  clicks, exceptions, surveys or web vitals (forced off in the client
+  config, which PostHog's project settings cannot loosen); the page address
+  keeps only `setup`/`first`/`from`.
+- **The hard rule still holds:** a child's name never reaches PostHog.
+  `replaytest` plays the real recorder against a fake PostHog whose project
+  settings are as loose as they go, and fails on a name (also one that is a
+  word on the page, or inside one), an address, anything typed, a pointer on
+  the therapy, ready or hand-off screens or a double-tapped answer, a
+  recording after the hand-off or anywhere else, or a touched ordinary
+  event. **For Travis:** the privacy page and the parents'
+  "What's stored" answer say so; App Store Connect's App Privacy answers owe
+  a line (NATIVE.md). What a recording may show of a child (the age group,
+  sounds and days a week picked in setup) is Rachel's to know.
 
 Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
 `IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email
