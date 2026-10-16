@@ -83,8 +83,15 @@ function decode(req) {
 }
 async function world(browser, cfg = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce", timezoneId: ZONE, userAgent: IPHONE });
-  // PostHog drops every event from a browser it takes for a bot (navigator.webdriver)
-  await context.addInitScript(() => { try { Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }); } catch (e) {} });
+  // PostHog drops every event from a browser it takes for a bot: one that
+  // says navigator.webdriver, or whose navigator.userAgentData names
+  // "HeadlessChrome" (CI's headless shell does; the cloud container's full
+  // Chromium does not, so only CI ever saw it). An iPhone's Safari has no
+  // userAgentData at all, so the page sees none, as on the phone.
+  await context.addInitScript(() => {
+    try { Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }); } catch (e) {}
+    try { Object.defineProperty(Navigator.prototype, "userAgentData", { get: () => undefined }); } catch (e) {}
+  });
   if (cfg.phone) await context.addInitScript(phone, cfg.phone);
   if (cfg.seed) await context.addInitScript((seed) => { try { if (localStorage.getItem("__seeded")) return; localStorage.setItem("__seeded", "1"); for (const k in seed) localStorage.setItem(k, typeof seed[k] === "string" ? seed[k] : JSON.stringify(seed[k])); } catch (e) {} }, cfg.seed);
   const w = { context, sent: [], assets: [], vendor: [], api: [], aborted: [] };
@@ -410,6 +417,7 @@ try {
     await w.settle();
     const text = w.text();
     ok("the old answer is painted in the page (the case this checks)", painted);
+    ok("a child already set up, walking setup again: PostHog was taking events, so not recording means something", w.events().length > 0, w.sent.length);
     ok("a child already set up, walking setup again, is not recorded at all", !w.rr().length && !w.vendor.some((x) => /lazy-recorder/.test(x)), w.vendor);
     ok("no recording holds the question or the answer", !/seen a speech therapist/i.test(text) && !/"choice on"/.test(text));
     await w.context.close();
@@ -458,6 +466,7 @@ try {
       }
       await mark(w.page, 151);
       await w.settle(2000);
+      ok(label + ": PostHog was taking this page's events, so nothing recorded means something", w.events().length > 0, w.sent.length);
       ok(label + ": nothing recorded", w.snaps().length === 0, w.snaps().length);
       ok(label + ": the recorder was never even loaded", !w.assets.some((p) => /lazy-recorder/.test(p)), w.assets);
       await w.context.close();
