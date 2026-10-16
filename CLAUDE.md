@@ -1106,8 +1106,9 @@ waits for this run instead of being lost) and the weekly report (until 250),
 and last, with what is left (until 265), `backfill`: first every post that
 did not fully land (`resend:retry`, address to what it carried: a purchase
 the phone tells Sona once is never lost to a busy Resend, and a later post
-for the same address carries it too; purchases first, 50 a day, each on at
-most 7 daily runs; an address Resend refuses for good is not owed), then a batch of up
+for the same address carries it too; purchases first, 50 a day, each tried
+on at most 7 days, and a send-only key or a busy account costs none; an
+address Resend refuses for good is not owed), then a batch of up
 to 150 of the addresses Sona held before (`everyone()`: the ledger, one
 address's rows read together, and every clinician account), paced. It never
 writes a clinician's account: the leads page's "in the list" and its "In

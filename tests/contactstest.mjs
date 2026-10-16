@@ -39,6 +39,8 @@ function store() {
       if (op === "SMEMBERS") return [...set(k)];
       if (op === "HGETALL") { const h = hashes.get(k) || {}; return Object.entries(h).flat(); }
       if (op === "SCARD") return set(k).size;
+      // the one script lib/contacts runs: HDEL a field only if it still holds the value read
+      if (op === "EVAL") { const [, key, field, val] = a; const h = hashes.get(key) || {}; if (h[field] === val) { delete h[field]; return 1; } return 0; }
       if (op === "HGET") { const h = hashes.get(k) || {}; return a[0] in h ? h[a[0]] : null; }
       if (op === "HDEL") { const h = hashes.get(k) || {}; let n = 0; for (const f of a) if (f in h) { delete h[f]; n++; } return n; }
       if (op === "HSET") { const h = hashes.get(k) || {}; for (let i = 0; i + 1 < a.length; i += 2) h[a[i]] = String(a[i + 1]); hashes.set(k, h); return 1; }
@@ -446,8 +448,47 @@ delete process.env.KIT_API_KEY;
   R.down.add("stuck@example.com");
   await C.upsertContact({ email: "stuck@example.com", role: "parent" }, io);
   let runs = 0;
-  while ((db.hashes.get(C.RETRY) || {})["stuck@example.com"] && runs < 20) { await C.backfill({}, io); runs++; }
-  ok("…one that keeps failing is tried on " + C.RETRY_TRIES + " daily runs, then dropped (the ledger still has it)", runs === C.RETRY_TRIES, runs);
+  for (let i = 0; i < 3; i++) await C.backfill({}, io);
+  ok("…a try counts once a day, however many runs that day", JSON.parse(db.hashes.get(C.RETRY)["stuck@example.com"]).tries === 1, db.hashes.get(C.RETRY)["stuck@example.com"]);
+  const RealDate = Date;
+  let dayN = 0;
+  globalThis.Date = class extends RealDate { constructor(...a) { super(...(a.length ? a : [RealDate.now() + dayN * 864e5])); } static now() { return RealDate.now() + dayN * 864e5; } };
+  try {
+    while ((db.hashes.get(C.RETRY) || {})["stuck@example.com"] && runs < 20) { dayN++; await C.backfill({}, io); runs++; }
+  } finally { globalThis.Date = RealDate; }
+  ok("…one that keeps failing is tried on " + C.RETRY_TRIES + " days, then dropped (the ledger still has it)", runs === C.RETRY_TRIES - 1, runs);
+  // a key that can only send is the same for every entry: no try is counted
+  const { db: dk, R: Rk2, io: ik } = fresh();
+  Rk2.fail.set("POST /contacts", 503);
+  await C.upsertContact({ email: "keyed@example.com", role: "parent", plan: "trial" }, ik);
+  Rk2.key = "re_send_only";
+  for (let i = 0; i < 2; i++) await C.backfill({}, ik);
+  ok("…a key that can only send costs an owed purchase no try", JSON.parse(dk.hashes.get(C.RETRY)["keyed@example.com"]).tries === 0 && JSON.parse(dk.hashes.get(C.RETRY)["keyed@example.com"]).plan === "trial");
+  // a refusal that is not about the address (a segment deleted) is owed
+  const { db: ds, R: Rs, io: is } = fresh();
+  await C.upsertContact({ email: "seed@example.com", role: "parent" }, is);
+  Rs.segments = Rs.segments.filter((x) => x.name !== "Started Premium");
+  await C.upsertContact({ email: "newbuyer@example.com", role: "parent", plan: "paid" }, is);
+  ok("…a refusal about a deleted segment is owed, not dropped", JSON.parse((ds.hashes.get(C.RETRY) || {})["newbuyer@example.com"] || "{}").plan === "paid");
+  await C.backfill({}, is);
+  ok("…and the next run makes the segment again and lands it", Rs.inSeg("newbuyer@example.com", "Started Premium") && !(ds.hashes.get(C.RETRY) || {})["newbuyer@example.com"]);
+  // a post owed while another for the same address was on its way stays owed
+  const { db: dr, R: Rr, io: ir } = fresh();
+  await C.upsertContact({ email: "race@example.com", role: "parent", source: "app-setup" }, ir);
+  const realF = ir.f;
+  let owedMid = false;
+  ir.f = async (u, init) => {
+    if (!owedMid && String(u).includes("/contacts/race%40example.com") && init.method === "GET") {
+      owedMid = true;
+      // a purchase post for the same address fails meanwhile
+      Rr.fail.set("POST /contacts", 503);
+      await C.upsertContact({ email: "race@example.com", role: "parent", plan: "paid" }, { ...ir, f: realF });
+    }
+    return realF(u, init);
+  };
+  await C.upsertContact({ email: "race@example.com", role: "parent", source: "join" }, ir);
+  ir.f = realF;
+  ok("…a purchase owed while another post for the same address was on its way stays owed", owedMid && JSON.parse((dr.hashes.get(C.RETRY) || {})["race@example.com"] || "{}").plan === "paid", dr.hashes.get(C.RETRY));
   // purchases are tried first, on their own budget
   const { db: dq, R: Rq, io: iq } = fresh();
   for (let i = 0; i < 60; i++) { Rq.down.add(`s${i}@example.com`); await C.upsertContact({ email: `s${i}@example.com`, role: "parent" }, iq); }

@@ -237,7 +237,7 @@ export type Contact = { email: string; firstName?: string; role?: unknown; sourc
  */
 export const RETRY = "resend:retry";
 export const RETRY_TRIES = 7;
-type Owed = Contact & { tries?: number };
+type Owed = Contact & { tries?: number; day?: string };
 
 /** Two posts for one address, as one: paid over trial, the newer word where both say one. */
 function merge(c: Contact, was: Contact | null): Contact {
@@ -246,19 +246,34 @@ function merge(c: Contact, was: Contact | null): Contact {
   return { email: c.email, firstName: c.firstName || was.firstName || "", role: c.role || was.role || "", source: c.source || was.source || "", plan };
 }
 
-async function owed(io: Io, email: string): Promise<Owed | null> {
+async function owed(io: Io, email: string): Promise<{ raw: string; c: Owed } | null> {
   try {
     const raw = await io.kv(["HGET", RETRY, email]);
-    return typeof raw === "string" ? (JSON.parse(raw) as Owed) : null;
+    return typeof raw === "string" ? { raw, c: JSON.parse(raw) as Owed } : null;
   } catch { return null; }
 }
 
-async function owe(io: Io, c: Contact, tries: number): Promise<void> {
+const today = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Owe a post. The entry is read again right before it is written, so a post
+ * for the same address that failed in the meantime keeps what it owed. A try
+ * counts once a day at most, whatever number of runs that day.
+ */
+async function owe(io: Io, c: Contact, counted: boolean): Promise<void> {
   try {
+    const now = await owed(io, c.email);
+    const prev = now ? now.c : null;
+    let tries = (prev && Number(prev.tries)) || 0, day = (prev && prev.day) || "";
+    if (counted && day !== today()) { tries++; day = today(); }
     if (tries >= RETRY_TRIES) { await io.kv(["HDEL", RETRY, c.email]); return; }
-    await io.kv(["HSET", RETRY, c.email, JSON.stringify({ ...c, tries })]);
+    await io.kv(["HSET", RETRY, c.email, JSON.stringify({ ...merge(c, prev), tries, day })]);
   } catch { /* the ledger still has the lead */ }
 }
+
+// Deletes the owed entry only if it is still the one this post read and
+// carried: one owed meanwhile by another post stays.
+const PAY = "if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('HDEL', KEYS[1], ARGV[1]) end return 0";
 
 /** A contact Resend holds: the plan (if any), unsubscribed (only ever true), the segments, paced. */
 async function topUp(io: Io, email: string, plan: Plan, off: boolean, segIds: string[], getFirst: boolean): Promise<{ ok: boolean; status: number; notes: string[] }> {
@@ -300,15 +315,21 @@ async function upsertWith(c: Contact, io: Io, retrying: boolean): Promise<ListRe
   // whatever an earlier post for this address still owes goes with this one,
   // so a success here never drops a purchase it did not carry
   const was = await owed(io, email);
-  const all = merge({ ...c, email }, was);
+  const all = merge({ ...c, email }, was ? was.c : null);
   const r = await upsertOnce(all, io);
-  const tries = (was && Number(was.tries)) || 0;
-  if (r.full || r.refused) { try { await io.kv(["HDEL", RETRY, email]); } catch { /* tried again, harmlessly */ } }
-  else await owe(io, all, tries + (retrying ? 1 : 0));
+  if (r.full || r.refused) {
+    if (was) { try { await io.kv(["EVAL", PAY, 1, RETRY, email, was.raw]); } catch { /* paid again, harmlessly */ } }
+  } else {
+    // A try is a day Resend itself was asked and did not take it: not a key
+    // that can only send or a busy account (the same for every entry), and
+    // not Sona's own store or setup lock.
+    const counted = retrying && !r.local && r.status !== 401 && r.status !== 403 && r.status !== 429;
+    await owe(io, all, counted);
+  }
   return { ok: r.ok, status: r.status, detail: r.detail };
 }
 
-async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListResult & { full: boolean; refused?: boolean }> {
+async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListResult & { full: boolean; refused?: boolean; local?: boolean }> {
   const email = c.email;
   const role = roleOf(c.role), plan = planWord(c.plan);
   const source = typeof c.source === "string" ? c.source.slice(0, 40) : "";
@@ -318,10 +339,10 @@ async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListR
   let off: boolean | null = null;
   try { off = await suppressed(email, io.kv); } catch { off = null; }
   // the store didn't answer: never add someone as subscribed on a guess
-  if (off === null) return { ok: false, full: false, status: 0, detail: "store did not answer" };
+  if (off === null) return { ok: false, full: false, local: true, status: 0, detail: "store did not answer" };
 
   const list = await ensureList(io);
-  if (!list.ok) return { ok: false, full: false, status: list.status, detail: list.detail };
+  if (!list.ok) return { ok: false, full: false, local: list.detail === "the list is being set up", status: list.status, detail: list.detail };
   const segIds = [list.segs[role], ...(plan ? [list.segs.plan] : [])];
 
   const made = await resend(io, "/contacts", "POST", {
@@ -354,11 +375,14 @@ async function upsertOnce(c: Contact & { email: string }, io: Io): Promise<ListR
     // Not there either (a definite 404): the refusal was something else,
     // perhaps a segment Travis deleted, so look the segments up again next
     // time. A slow or busy Resend says nothing about the segments.
-    // A refusal followed by "no such contact" is for good (an address Resend
-    // will not take): it is not owed.
+    // A refusal about the address itself, then "no such contact", is for
+    // good (an address Resend will not take): it is not owed. Any other
+    // refusal (a stale segment) is tried again with the segments looked up.
     if (t.status === 404) await forgetList(io);
+    const msg = made.json && typeof made.json.message === "string" ? made.json.message : "";
+    const refused = t.status === 404 && /email/i.test(msg);
     const what = t.status === 404 ? "contact " + why(made) : "update " + why({ ok: false, status: t.status, json: null, text: "" });
-    return { ok: false, full: false, refused: t.status === 404, status: t.status === 404 ? made.status : t.status, detail: what };
+    return { ok: false, full: false, refused, status: t.status === 404 ? made.status : t.status, detail: what };
   }
   try { await io.kv(["SADD", SYNCED, email]); } catch { /* fine */ }
   return { ok: true, full: !t.notes.length, status: t.status, detail: t.notes.length ? "updated (" + t.notes.join(", ") + ")" : "updated" };
