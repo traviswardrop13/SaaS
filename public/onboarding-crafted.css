@@ -81,11 +81,13 @@ body[data-setup-screen="achieve"] .world-scene img { width: 180px; height: 180px
 #obBuild img { width: 140px; height: 140px; }
 #obBuildT { color: #48280f; }
 #obBuildAnswers span { background: #fffcf6; border-color: #e4d7c3; border-radius: 15px; }
+/* The keyboard's rules below are for the other steps with a box: the name
+   step has one layout that no keyboard changes (the end of this file). */
 body.keyboard-open .ob .mascot { margin-bottom: 12px; }
 body.keyboard-open .ob #leo { width: 48px !important; height: 52px !important; }
 body.keyboard-open .ob .bubble2 { padding: 10px 14px; font-size: 16px; }
 body.keyboard-open .ob .seg { margin-bottom: 12px; }
-body.keyboard-open .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 16px; }
+body.keyboard-open:not([data-setup-screen="name"]) .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 16px; }
 body.keyboard-open .ob .qh { font-size: 24px; }
 body.keyboard-open .world-scene { display: none; }
 @media (max-height: 700px) {
@@ -155,11 +157,6 @@ body.keyboard-open .ob .step[data-step="updates"] .setup-label { margin-top: 8px
   .ob .step[data-step="updates"] .setup-label { margin-top: 12px; }
 }
 
-/* Keep the age choices reachable while the grown-up types a name. */
-body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
-body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
-body.keyboard-open .ob #obAge .sound { min-height: 50px; }
-
 /* THE TWO ONE-TAP QUESTIONS (5 Oct 2026): "Is <Name> in speech therapy?" and
    "How many days a week will you practice?". The answers are the buttons, in the sound
    chips' own cream and teal, so the footer offers Continue only when an answer
@@ -186,16 +183,28 @@ body[data-setup-screen="goal"]:not(.ob-answered) #nextBtn { display: none; }
    a double tap cannot answer a question the parent has not read, ask the
    phone for the microphone, or play on past the hand-off. */
 body.ob-settling .ob .step, body.ob-settling .obfoot { pointer-events: none; }
+/* …but the name box is not a way on, and setup focuses it as the step opens:
+   a tap on it in that half second used to fall through to the page and take
+   the focus away, dropping the keyboard just as it rose (15 Oct 2026). */
+body.ob-settling .ob #obName { pointer-events: auto; }
+
+/* CONTINUE COMES UP WITH THE KEYBOARD (15 Oct 2026). The app's web view
+   shrinks only after the keyboard has finished rising, so Continue sat under
+   the keyboard and then jumped about 300 px in one frame. From the
+   keyboard's first move until the page has its new size (body.kb-moving,
+   onboarding.html, 0.9 s at most) the footer steps aside, then it fades in
+   above the keyboard. */
+.obfoot { transition: opacity .15s ease-out; }
+body.kb-moving .obfoot { opacity: 0; pointer-events: none; transition: none; }
 
 /* Typing a name must never raise the "Turn your screen back!" cover: an iPad
    on its side with the keyboard up is "landscape, under 500 tall" to sona.js. */
 body.keyboard-open #sonaPortraitGuard { display: none !important; }
-/* …and with the cover gone the age choices need the room the heading took */
+/* …and with the cover gone the email box needs the room the heading took
+   (the name step's own short-window rule is at the end of this file) */
 @media (max-height: 420px) {
   body.keyboard-open .ob { padding-top: calc(8px + env(safe-area-inset-top)); }
   body.keyboard-open .ob .seg { display: none; }
-  body.keyboard-open .ob .step[data-step="name"] .qh { display: none; }
-  body.keyboard-open .ob .step[data-step="name"] .setup-label:first-of-type { margin-top: 0; }
   body.keyboard-open .ob .step[data-step="updates"] .qh { display: none; }
   body.keyboard-open .ob .step[data-step="updates"] .setup-label { margin-top: 0; }
   body.keyboard-open[data-setup-screen="updates"] .ob .mascot { display: none; }
@@ -237,4 +246,70 @@ body[data-setup-screen="ready"] .ob .mascot { display: none; }
 @media (max-height: 600px) {
   .ob .ready-note { display: none; }
   .ready-rachel-photo { width: 40px; height: 40px; }
+}
+
+/* THE NAME STEP HOLDS STILL (Travis, 15 Oct 2026: "the onboard feels jumpy
+   especially on the page where i put the name and age"). In the iPhone app
+   the keyboard shrinks the whole web view, about half a second after it
+   starts to rise, and the rules above that read the window's height (and
+   body.keyboard-open) laid the name card out again twice on the way up and
+   once on the way down: Echo came and went, the heading shrank or vanished,
+   the box and the age choices jumped by up to 190 px, and an age tap (which
+   closed the keyboard) did all of it under the finger. Now the step has ONE
+   layout, small enough to sit above the keyboard on every phone, sized by
+   the phone and never by the keyboard: html.ob-short (700 px or less) and
+   html.ob-tiny (600 or less, or 700 or less when 340 wide or less) are set by
+   onboarding.html from the window's height with no keyboard, on a touch
+   screen only (a short laptop window keeps the progress bar and the label).
+   No Echo and no hint line on this step (the hint still describes the box to
+   a screen reader). Under ob-tiny the progress bar steps aside and the box's
+   label is read, not drawn. Only a window taller than 700 px that the
+   keyboard leaves 400 px or less (an iPad on its side) still changes.
+   tests/setupsteadytest.mjs measures every frame. */
+html body[data-setup-screen="name"] .ob { padding-top: calc(14px + env(safe-area-inset-top)); }
+/* The full-size values below undo the max-height:700px rules above, which on
+   a touch screen read the keyboard's leftovers. A mouse window has no such
+   keyboard, so there the step follows the window's height like the screens
+   around it: 18 px margins and a 19 px Continue at 700 px or less (it kept
+   22 and 22 there, and the card was 8 px narrower than its neighbours'). */
+@media (pointer: coarse) {
+  html body[data-setup-screen="name"] .ob { padding-left: 22px; padding-right: 22px; }
+  html body[data-setup-screen="name"] .ob .step[data-step="name"] { border-radius: 26px; }
+  html body[data-setup-screen="name"] .obfoot .btn { font-size: 22px; padding: 16px 24px; }
+}
+html.ob-short body[data-setup-screen="name"] .ob { padding-left: 18px; padding-right: 18px; }
+html body[data-setup-screen="name"] .ob .seg { display: flex; margin: 6px 0 12px; }
+html body[data-setup-screen="name"] .ob .mascot { display: none; }
+html body[data-setup-screen="name"] .ob .step[data-step="name"] { padding: 16px; }
+html.ob-short body[data-setup-screen="name"] .ob .step[data-step="name"] { border-radius: 22px; }
+html body[data-setup-screen="name"] .ob .step[data-step="name"] .qh { display: block; font-size: 24px; }
+html body[data-setup-screen="name"] .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
+html body[data-setup-screen="name"] #nameHint { display: none; }
+html body.keyboard-open[data-setup-screen="name"] #slpAppNote { display: none; }
+/* 50 tall for real: their padding, not min-height, made them 62 */
+html body[data-setup-screen="name"] .ob #obAge .sound { min-height: 50px; padding-top: 0; padding-bottom: 0; }
+html.ob-short body[data-setup-screen="name"] .obfoot .btn { font-size: 19px; padding: 14px 16px; }
+html.ob-tiny body[data-setup-screen="name"] .ob { padding-top: calc(8px + env(safe-area-inset-top)); }
+html.ob-tiny body[data-setup-screen="name"] .ob .seg { display: none; }
+html.ob-tiny body[data-setup-screen="name"] .ob .step[data-step="name"] { padding: 14px; }
+html.ob-tiny body[data-setup-screen="name"] .ob .step[data-step="name"] .qh { margin-bottom: 6px; }
+html.ob-tiny body[data-setup-screen="name"] .ob label[for="obName"] { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* A window taller than 700 px with no keyboard that the keyboard leaves
+   400 px or less (an iPad on its side, in Split View too) takes the ob-tiny
+   layout, side margins too: the keyboard's height is never the window's
+   (onboarding.html), so there this rule alone keeps the heading on one line
+   and the age choices above Continue. Never on a phone 700 px tall or less
+   (html.ob-short): its own size fits above Apple's keyboard, and a taller
+   keyboard gives it ob-tiny from that keyboard's first rise, for good
+   (onboarding.html, ROOM). Keyed on the keyboard's
+   leftovers alone, this rule used to fire on an iPhone SE whose keyboard ran
+   past 267 px (QuickType, another language, emoji) and on a phone in Display
+   Zoom, hiding the progress bar and the label and moving the box 67 px as
+   the keyboard rose (15 Oct 2026). */
+@media (max-height: 400px) {
+  html:not(.ob-short) body.keyboard-open[data-setup-screen="name"] .ob { padding-top: calc(8px + env(safe-area-inset-top)); padding-left: 18px; padding-right: 18px; }
+  html:not(.ob-short) body.keyboard-open[data-setup-screen="name"] .ob .seg { display: none; }
+  html:not(.ob-short) body.keyboard-open[data-setup-screen="name"] .ob .step[data-step="name"] { padding: 14px; }
+  html:not(.ob-short) body.keyboard-open[data-setup-screen="name"] .ob .step[data-step="name"] .qh { margin-bottom: 6px; }
+  html:not(.ob-short) body.keyboard-open[data-setup-screen="name"] .ob label[for="obName"] { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }

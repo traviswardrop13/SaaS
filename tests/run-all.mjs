@@ -36,6 +36,7 @@ const SUITES = [
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
+  "setupsteadytest.mjs", // STEADY1: setup's name step holds still while the iPhone keyboard comes and goes, a name is typed and an age picked
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
   "repguardtest.mjs", // non-speech evidence cannot create practice

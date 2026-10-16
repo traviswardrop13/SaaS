@@ -211,6 +211,67 @@ changing one. What follows from the rule:
     `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
   - **Nothing moves under a finger:** for about half a second after a setup
     step changes, and after the price card changes shape, taps are ignored.
+  - **The name step holds still** (Travis, 15 Oct 2026: "the onboard feels
+    jumpy especially on the page where i put the name and age"). In the
+    iPhone app the keyboard shrinks the whole page about half a second after
+    it starts to rise, and setup's screen-height rules laid the name card out
+    again on the way up and down: Echo came and went, the heading shrank or
+    vanished, the box and the age choices jumped by up to 190 px, Continue
+    sat under the keyboard and then jumped 300 px, and an age tap closed the
+    keyboard and did all of it under the finger. Now the step has one layout
+    that already fits above the keyboard, sized by the phone and never by
+    the keyboard (`html.ob-short` / `ob-tiny`, `obPhone` in
+    `onboarding.html`: the window's height, taken only with no box focused
+    and the keyboard down; in the app an iPad turned while the keyboard is
+    up takes its screen's height the new way at once, and the window's own
+    once the keyboard is down, while on the website a turn waits for the
+    keyboard to go down (a browser's bars make its window 80-180 px shorter
+    than the screen); on a touch screen only, so a short laptop
+    window, a clinician's setup in a browser, keeps the progress bar and the
+    label, and its margins and Continue follow the window's height like the
+    screens around it). The cost: no Echo and no "So Echo knows who to cheer
+    for." on this one screen (the line is still the box's spoken
+    description; Travis's to bring back); and under Reduce Motion nothing in
+    setup fades, Continue included. **The smallest size (`ob-tiny`) also
+    has no progress bar on this screen, and the box's label is read, not
+    drawn.** It goes by the touch window's height with no keyboard, not by
+    the phone's size: 600 px or less, or 700 or less when 340 wide or less.
+    So it is a 4-inch iPhone, a Face ID iPhone in Display Zoom (320×693, in
+    the app: its notch and taller keyboard leave it less room than an
+    iPhone SE), **and also any bigger iPhone whose window is that short in
+    Safari**: a 4.7-inch iPhone on the website is about 553 px tall under
+    Safari's bars, so it loses the bar and the drawn label too. Whether a
+    phone on the website should keep them is Travis's call: nothing breaks
+    either way. **In the iPhone app** an age tap keeps the keyboard up; **on
+    the website** it still lets go of the box, because nothing there lifts
+    Continue above the keyboard and the keyboard going down is what shows
+    it. Continue steps aside while the keyboard rises and fades in above it;
+    an iPad's hardware keyboard (a height under 80) is no keyboard to the
+    layout and moves nothing; leaving the step with the keyboard up draws the
+    next screen once, at full height (`whenRoomy`); during the tap lock no
+    tap takes the focus off the box (a double tap on "Let's go!" or Back, a
+    tap on an age or the box's label); every step slides in as one piece,
+    and under Reduce Motion each screen's first frame is its own (sona.css's
+    0.01 ms transitions painted it in the last screen's layout). Only two
+    things still change its size. A window taller than 700 px that the
+    keyboard leaves 400 px or less (an iPad on its side) takes the `ob-tiny`
+    layout while the keyboard is up. And a phone whose keyboard is too tall
+    for its own size (on an iPhone SE, over 280 px, the footer counted: a
+    third-party keyboard with a number row; Apple's is 260) takes `ob-tiny`
+    as that keyboard first starts to rise, and keeps it (`ROOM` in
+    `obPhone`): with motion on that is while the step fades in, under
+    Reduce Motion its first two frames show the bigger size. Without it
+    the age choices sat under the footer, and a tap on "5–6" pressed
+    Continue with no age picked. A phone never changes size for a keyboard
+    its own size fits above (an iPhone SE with a 268 px keyboard, and a
+    phone in Display Zoom, used to lose the bar and the label as the
+    keyboard rose, the box jumping 67 px). The email step still re-lays out
+    for the keyboard as before. `setupsteadytest` measures every frame at
+    390×844, 375×667 and 320×568, with motion on and under Reduce Motion,
+    again with the SE's taller keyboards (268, 280), keyboards too tall for
+    it (291, 320) and at 320×693 (300, 336), turns a phone on the website
+    and narrows a laptop window while a name is typed, and plays each of
+    these edges.
 - **The price is ONE screen** (the two ReciMe-style screens before it are
   gone): a two-row timeline, **Today** ("Everything opens. Nothing to pay
   today.") and **the billing day** (the store's price starts "unless you
