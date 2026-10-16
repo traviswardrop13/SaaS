@@ -6,7 +6,7 @@ import { isWorkEmail } from "@/lib/workEmail";
 
 // lib/contacts SYNCED: every address Resend's contacts hold (not imported:
 // lib/contacts reads this file for its backfill)
-const LIST_SYNCED = "resend:synced";
+export const LIST_SYNCED = "resend:synced";
 
 /**
  * What the founder-only routes share: the FOUNDER_KEY gate, and reading the

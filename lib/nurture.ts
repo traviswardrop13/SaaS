@@ -293,11 +293,14 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
  * unsubscribed address leaves the sequence; a failed send moves on, so one
  * bad address can never loop.
  */
-export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now()): Promise<{ due: number; sent: number }> {
+export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(), opts: { deadline?: number } = {}): Promise<{ due: number; sent: number; left: number }> {
   const due = (await kv(["ZRANGEBYSCORE", DUE_KEY, "-inf", now, "LIMIT", 0, 500])) as unknown;
-  if (!Array.isArray(due)) return { due: 0, sent: 0 };
-  let sent = 0;
+  if (!Array.isArray(due)) return { due: 0, sent: 0, left: 0 };
+  let sent = 0, done = 0;
   for (const raw of due as string[]) {
+    // out of time: stop before claiming, so the rest are still due tomorrow
+    if (opts.deadline !== undefined && Date.now() > opts.deadline) break;
+    done++;
     const e = String(raw);
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
@@ -316,5 +319,5 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     await kv(["SET", nextKey(e), next, "EX", 31536000]);
     await kv(["ZADD", DUE_KEY, Math.max(at, now + 1), e]);
   }
-  return { due: due.length, sent };
+  return { due: due.length, sent, left: due.length - done };
 }

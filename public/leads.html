@@ -135,7 +135,7 @@
           if (c[0] === "at" || c[0] === "createdAt" || c[0] === "accessRequested") v = when(v);
           // a lead saved before 16 Oct 2026 says what Kit answered
           if (c[0] === "list" && !v) v = r.kit ? "Kit: " + r.kit : "—";
-          var cls = (c[0] === "list" || c[0] === "inCrm") ? (/^(added|updated|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
+          var cls = (c[0] === "list" || c[0] === "inCrm") ? (/^(Kit: )?(added|updated|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
           return "<td" + cls + ">" + esc(v) + "</td>";
         }).join("") + "</tr>";
       }).join("");
@@ -198,7 +198,8 @@
           // People, not rows: a clinician finishing setup is posted twice.
           var uniq = function (list) { var s = {}; list.forEach(function (l) { s[String(l.email || "").toLowerCase()] = 1; }); return Object.keys(s).length; };
           $("nLeads").textContent = uniq(j.leads);
-          $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^(added|updated)/.test(String(l.list || "")); }));
+          // everyone Resend holds, from the lead door and the daily backfill
+          $("nCrm").textContent = typeof j.inList === "number" ? j.inList : uniq(j.leads.filter(function (l) { return /^(added|updated)/.test(String(l.list || "")); }));
           $("nSlp").textContent = j.clinicians.length;
           paintSince(j.leads);
           table($("tLeads"), LEAD_COLS, j.leads);

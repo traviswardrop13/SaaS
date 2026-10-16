@@ -83,6 +83,15 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   for (let d = 3; d <= 10; d++) await N.runDue(r.cmd, fakeFetch, T + d * N.DAY_MS + 1);
   ok("a purchase posted while the day-2 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
 }
+// a run out of time claims nothing more: the rest are still due tomorrow
+{
+  const q = store(); await N.enroll("late1@example.com", q.cmd, fakeFetch, T); await N.enroll("late2@example.com", q.cmd, fakeFetch, T);
+  const m = sent.length;
+  const r = await N.runDue(q.cmd, fakeFetch, T + 2 * N.DAY_MS + 1, { deadline: Date.now() - 1 });
+  ok("a daily run out of time sends nothing more and leaves both on the schedule", r.sent === 0 && r.left === 2 && sent.length === m && q.z.size === 2, r);
+  const r2 = await N.runDue(q.cmd, fakeFetch, T + 2 * N.DAY_MS + 1, { deadline: Date.now() + 60000 });
+  ok("…and the next run sends them", r2.sent === 2 && r2.left === 0, r2);
+}
 // unsubscribing mid-way stops the rest
 const mid = store(); await N.enroll("mid@example.com", mid.cmd, fakeFetch, T);
 const n0 = sent.length;
