@@ -283,28 +283,16 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
-  // Parked games carry a Friday each (Travis, 1 Oct 2026, two Fridays of
-  // nine; 9 Oct 2026: "push all the games that say coming oct 9th back a week
-  // ... space it out so its like 3 games per week"): three games a Friday for
-  // six Fridays, 16 Oct to 20 Nov (Soccer Goal and Dino Dig were rebuilt on 1
-  // Oct 2026, so they are open and carry no day). Home says the day until it
-  // comes and "Coming soon" after, soonest first on each shelf, and the date
-  // never opens anything: only taking comingSoon off does.
-  await section("parked games say their Friday", async () => {
-    const dated = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*group: "(\w+)"[^\n]*\bcomingSoon: true, comingOn: "(\d{4}-\d{2}-\d{2})"/gm)].map((m) => ({ key: m[1], group: m[2], on: m[3] }));
-    const onDay = (on) => sorted(dated.filter((d) => d.on === on).map((d) => d.key));
-    const WEEKS = {
-      "2026-10-16": ["peekaboo", "balloon", "racecar"],
-      "2026-10-23": ["puppy", "rocket", "treasure"],
-      "2026-10-30": ["snowman", "space", "flower"],
-      "2026-11-06": ["robot", "train", "pizza"],
-      "2026-11-13": ["cake", "castle", "gifts"],
-      "2026-11-20": ["monster", "fishtank", "stars"],
-    };
-    ok("every parked game has a day: three a Friday, six Fridays from 16 Oct to 20 Nov",
-      same(sorted(dated.map((d) => d.key)), comingSoonKeys) && same(sorted([...new Set(dated.map((d) => d.on))]), Object.keys(WEEKS).sort())
-        && Object.keys(WEEKS).every((on) => new Date(on + "T12:00:00Z").getUTCDay() === 5), dated);
-    for (const [on, keys] of Object.entries(WEEKS)) ok("…" + on + " is " + keys.join(", "), same(onDay(on), sorted(keys)), dated);
+  // Parked games carried a Friday each from 9 Oct 2026 (three a week, 16 Oct
+  // to 20 Nov). Since 15 Oct 2026 (Travis: "put coming soon") none does: every
+  // parked card says "Coming soon" and the shelf keeps the catalog's order
+  // (the Say & Play games, then Peekaboo).
+  // The day support stays (a `comingOn` on one line shows "Coming Nov 6" until
+  // that day), and a day never opens anything: only taking comingSoon off does.
+  await section("parked games say Coming soon", async () => {
+    const parkedLines = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b[^\n]*/gm)].map((m) => ({ key: m[1], line: m[0] }));
+    ok("all 18 parked games are in the catalog, and none carries a day",
+      same(sorted(parkedLines.map((p) => p.key)), comingSoonKeys) && parkedLines.length === 18 && parkedLines.every((p) => !/\bcomingOn\b/.test(p.line)), parkedLines.filter((p) => /\bcomingOn\b/.test(p.line)).map((p) => p.key));
     const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{ name: [^\n]*/gm)].map((m) => m[0]);
     ok("…and Soccer Goal and Dino Dig, rebuilt, carry no day and are not parked", rebuilt.length === 2 && rebuilt.every((line) => !/\bcomingSoon\b|\bcomingOn\b/.test(line)), rebuilt);
     const cardsAt = async (now) => {
@@ -312,25 +300,42 @@ if (present && hasContract) {
       try {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          const shelves = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => Sona.GAME_ACTS[b.dataset.game].comingOn));
-          return { peekaboo: tag("peekaboo"), racecar: tag("racecar"), puppy: tag("puppy"), robot: tag("robot"), stars: tag("stars"), soccer: tag("soccer"), dino: tag("dino"), shelves, access: Sona.gameAccess("peekaboo") };
+          // Home's order (ACTIVITY_KEYS): the Say & Play games in catalog
+          // order, then Peekaboo, which is not one of them
+          const keys = Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].say).concat(["bubbles", "peekaboo", "rise"]);
+          const shelves = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => b.dataset.game));
+          const tags = {};
+          shelves.flat().forEach((k) => { tags[k] = tag(k); });
+          return { tags, shelves, order: shelves.every((s) => s.every((k, i) => i === 0 || keys.indexOf(s[i - 1]) < keys.indexOf(k))), soccer: tag("soccer"), dino: tag("dino"), access: Sona.gameAccess("peekaboo") };
         });
         return { got, errors };
       } finally { await ctx.close(); }
     };
-    let r = await cardsAt(Date.UTC(2026, 9, 9, 12));
-    ok("on 9 Oct a parked game says its Friday: Peekaboo and Race Car \"Coming Oct 16\", Puppy Bath \"Coming Oct 23\", Robot Builder \"Coming Nov 6\", Bedtime Stars \"Coming Nov 20\"",
-      ["peekaboo", "racecar"].every((k) => r.got[k].label === "Coming Oct 16") && r.got.puppy.label === "Coming Oct 23" && r.got.robot.label === "Coming Nov 6" && r.got.stars.label === "Coming Nov 20"
-        && r.got.peekaboo.disabled && /Coming Oct 16/.test(r.got.peekaboo.aria), JSON.stringify(r.got));
-    ok("…and each Coming soon row lists the soonest games first, all 18 between them", r.got.shelves.length >= 1 && r.got.shelves.reduce((n, days) => n + days.length, 0) === 18 && r.got.shelves.every((days) => days.length > 0 && days[0] === "2026-10-16" && days.every((d, i) => i === 0 || days[i - 1] <= d)), r.got.shelves);
-    ok("…and Soccer Goal and Dino Dig, rebuilt, are open on Home with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
-    ok("…with no page errors", r.errors.length === 0, r.errors);
-    r = await cardsAt(Date.UTC(2026, 9, 17, 12));
-    ok("past 16 Oct and still unfinished, a game goes back to \"Coming soon\", while later ones keep their day",
-      ["peekaboo", "racecar"].every((k) => r.got[k].label === "Coming soon") && r.got.puppy.label === "Coming Oct 23" && r.got.robot.label === "Coming Nov 6", JSON.stringify(r.got));
-    ok("…and the date never opens it", r.got.peekaboo.disabled && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got));
-    r = await cardsAt(Date.UTC(2026, 10, 21, 12));
-    ok("past 20 Nov every unfinished game says \"Coming soon\" and stays shut", ["peekaboo", "racecar", "puppy", "robot", "stars"].every((k) => r.got[k].label === "Coming soon" && r.got[k].disabled), JSON.stringify(r.got));
+    for (const [when, now] of [["on 15 Oct", Date.UTC(2026, 9, 15, 12)], ["on 9 Oct", Date.UTC(2026, 9, 9, 12)], ["past 20 Nov", Date.UTC(2026, 10, 21, 12)]]) {
+      const r = await cardsAt(now);
+      const all = Object.values(r.got.tags);
+      ok(when + " every parked card says \"Coming soon\", greyed out, all 18 of them",
+        all.length === 18 && all.every((t) => t && t.label === "Coming soon" && t.disabled && /coming soon/i.test(t.aria) && !/Coming [A-Z][a-z]{2} \d/.test(t.aria)), JSON.stringify(r.got.tags));
+      ok("…in the catalog's order on each Coming soon row", r.got.shelves.length >= 1 && r.got.order, r.got.shelves);
+      ok("…and the parked card never opens", r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got.access));
+      ok("…while Soccer Goal and Dino Dig, rebuilt, stay open with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
+      ok("…with no page errors", r.errors.length === 0, r.errors);
+    }
+    // the day support still works for a game given one on its own line
+    const { ctx, pg } = await fixture({ now: Date.UTC(2026, 9, 15, 12) });
+    try {
+      const d = await pg.evaluate(() => {
+        const saved = Sona.GAME_ACTS.puppy.comingOn;
+        try {
+          Sona.GAME_ACTS.puppy.comingOn = "2026-11-06";
+          const pick = (lib) => { const g = lib.groups.find((x) => x.games.some((y) => y.key === "puppy")); const parked = g.games.filter((y) => y.comingSoon); return { label: parked.find((y) => y.key === "puppy").comingLabel, first: parked[0].key }; };
+          return { before: pick(Sona.activityLibrary({ now: Date.UTC(2026, 9, 15, 12) })), after: pick(Sona.activityLibrary({ now: Date.UTC(2026, 10, 7, 12) })), access: Sona.gameAccess("puppy") };
+        } finally { if (saved === undefined) delete Sona.GAME_ACTS.puppy.comingOn; else Sona.GAME_ACTS.puppy.comingOn = saved; }
+      });
+      ok("a day set on one line still shows (\"Coming Nov 6\", first on its row) until it comes, then \"Coming soon\"",
+        d.before.label === "Coming Nov 6" && d.before.first === "puppy" && d.after.label === "Coming soon", JSON.stringify(d));
+      ok("…and the day never opens it", d.access.allowed === false && d.access.reason === "coming-soon", JSON.stringify(d.access));
+    } finally { await ctx.close(); }
   });
 
   await section("featured cards are extra working choices", async () => {
