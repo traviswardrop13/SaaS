@@ -7,6 +7,7 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = 'http://127.0.0.1:8196';
+const SIMPLE_SCENE = readFileSync(new URL('./fixtures/simpleplay-scene.html', import.meta.url));
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2' };
 // Peekaboo is parked in the shipped catalog (Bubble Pop came back on 30 Sep 2026). Keep exercising
 // their retained engines by changing only their flags in this test server's
@@ -18,7 +19,7 @@ const server = createServer((req,res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT,url.pathname);
   if(url.pathname.startsWith('/api/')) { res.writeHead(503,{'content-type':'application/json'}); res.end('{}'); return; }
   if(!existsSync(file)||!statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(url.pathname==='/sona.js'?enableParkedEngineFixture(readFileSync(file,'utf8')):readFileSync(file));
+  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(url.pathname==='/sona.js'?enableParkedEngineFixture(readFileSync(file,'utf8')):url.pathname==='/arcade-peekaboo.html'?SIMPLE_SCENE:readFileSync(file));
 });
 await new Promise(resolve=>server.listen(8196,'127.0.0.1',resolve));
 const browser = await chromium.launch(launchOpts());

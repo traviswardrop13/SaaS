@@ -3421,7 +3421,7 @@
     // Home, point its sticker at one that does not exist, and take it out of
     // the little kids' adventure deck. Its page keeps that adventure's hand-off.
     bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    peekaboo: { name: "Peekaboo", sub: "Peek, hide and follow the doors", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Remember the hidden picture, follow the doors and find it again. A matching spoken word can light a helpful clue on supported iPhones." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
     // word the child says moves the game one step, so each opens straight to

@@ -389,11 +389,21 @@ find(SP, /S\.wordsFor\(sound, "i"\) \|\| \[\] : \[\]\)\.filter\(function \(w\) \
 const simpleSay = find(SP, /render\(\); effect\("tap"\); sayWord\(\); focus\(\$\("hearWord"\)\);/, "simple-play says the word when the picture is revealed");
 const simpleHear = find(SP, /\$\("hearWord"\)\.onclick = sayWord;/, "simple-play 'Hear it'");
 const simpleVoice = find(SP, /fetch\("\/api\/tts", options\)/, "simple-play's voice request");
-coverAll(SP, /(?<![\w$.])sayWord\(/, [simpleSay], "a spoken line", true);
+const simpleHint = find(SP, /hint:function \(\) \{ if \(active\(\) && phase===\"reveal\" && !hintGranted\) sayWord\(\); \}/, "same-word optional hint retry");
+const simpleWordOwner = find(SP, /function sayWord\(\) \{ return playOwnedLine\(null,false\); \}/, "bare word through the sole SimplePlay voice owner");
+const simpleInstructionOwner = find(SP, /function instruct\(text\) \{ if \(adapter && text\) return playOwnedLine\(text,true\); \}/, "mechanical direction through the sole SimplePlay voice owner");
+coverAll(SP, /(?<![\w$.])sayWord\(/, [simpleSay, simpleHint], "a spoken line", true);
+coverAll(SP, /(?<![\w$.])playOwnedLine\(/, [simpleWordOwner, simpleInstructionOwner], "an owned word or mechanical direction", true);
 coverAll(SP, TTS_CALL, [simpleVoice], "a voice request"); coverAll(SP, SPEAK_CALL, [], "a voice call");
 const simplePages = pagesLoading("/simple-play.js");
 const simpleGames = simplePages.map(gameOfPage);
 const simpleLive = simpleGames.filter((g) => !g.comingSoon), simpleSoon = simpleGames.filter((g) => g.comingSoon);
+const peekDirectionAnchor = find("public/peekaboo.js", /var DIRECTIONS\s*=\s*(\[[\s\S]*?\]);/, "Peekaboo's three mechanical directions");
+const peekDirections = JSON.parse(peekDirectionAnchor.m[1]);
+if (peekDirections.length !== 3 || peekDirections.some((s) => typeof s !== "string" || !s.trim())) fail("Peekaboo must list its three fixed mechanical directions");
+const peekDirectionCalls = allIdx("public/peekaboo.js", /api\.instruct\(DIRECTIONS\[[012]\]\)/).map((h) => ({ idx:h.idx, end:h.idx+h.m[0].length }));
+if (!peekDirectionCalls.length) fail("Peekaboo does not use its listed mechanical directions");
+coverAll("public/peekaboo.js", /api\.instruct\(/, peekDirectionCalls, "a fixed mechanical direction");
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // A "coming soon" simple-play page is parked with the readers; a live one is not.
@@ -757,6 +767,9 @@ spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line =
 spSteps.forEach((game) => game.lines.forEach((line, i) => B("picture-" + game.key + "-step-" + (i + 1) + ".mp3", line, roundName(game.key) + " (Coming soon; preview only): mechanical direction for step " + (i + 1) + ", after the word is accepted, when Hear the step is tapped, or when returning to an interrupted direction. Never plays into a microphone; help, pause and finishing the move cancel its current playback. Completed directions do not repeat on resume.", "Short, playful and clear. This describes the finger action, not a speech target.", game.cite + "; owned at " + spInstruct.cite)));
 bTable(`B7 — Picture-game instructions (${spIntroLines.length + spSteps.reduce((n, game) => n + game.lines.length, 0)})`, "Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
 P();
+peekDirections.forEach((line, i) => B("peekaboo-direction-" + (i+1) + ".mp3", line, "Peekaboo (Coming soon; preview only): a physical peek/watch/open instruction, owned and canceled by SimplePlay. The target word is still modeled alone; microphone and recognition settle before directions play.", "Warm, short and clear for a child who cannot read.", peekDirectionAnchor.cite + "; owner at " + simpleInstructionOwner.cite));
+bTable("B8 — Peekaboo memory-game directions (3)", "These uncounted mechanical instructions do not change the five discoveries or turn the optional heard cheer into word accuracy.");
+P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
 P("picker, the mic-permission screens, the chest captions and every in-round label.");
 P("See E8.");
@@ -961,7 +974,7 @@ if (simpleLive.length) {
   P();
   P(`\`{word}\` — the bare word (${spWord.cite})`);
   P();
-  P(`The only spoken line is the word alone, when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). **Best left to TTS.**`);
+  P(`The practice word is spoken alone, when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). **Best left to TTS.** Peekaboo also has the three fixed mechanical directions in B8.`);
 }
 
 // ── Part D ──
@@ -1033,7 +1046,7 @@ P();
 P(`### E4 — ${simpleSoon.length ? simpleSoon.map((g) => g.name).join(" and ") + " (`simple-play.js`, coming soon)" : "`simple-play.js`: nothing parked"}`);
 P();
 if (simpleSoon.length) {
-  P(`"Coming soon" in the catalog, with a disabled Home card. The only spoken line is the bare **{word}** when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6).${simpleLive.length ? ` ${simpleLive.map((g) => g.name).join(" and ")} runs on the same script and is live (C10).` : ""}`);
+  P(`"Coming soon" in the catalog, with a disabled Home card. The practice model is the bare **{word}** when the picture is revealed (${simpleSay.cite}) and on "Hear it" (${simpleHear.cite}) — the same per-sound pools as Feed Echo (C6). Peekaboo’s three fixed mechanical directions are in B8.${simpleLive.length ? ` ${simpleLive.map((g) => g.name).join(" and ")} runs on the same script and is live (C10).` : ""}`);
   totals.parked += 1;
 } else P("Every page built on this script is live (C10) or has moved to another script.");
 

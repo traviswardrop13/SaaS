@@ -20,7 +20,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Space Trip | 5–8 | Built and browser-verified; production still parked |
 | Pizza Chef | 5–8 | Built and browser-verified; production still parked |
 | Monster Makeover | 5–8 | Built and browser-verified; production still parked |
-| Peekaboo | 3–4 | Queued |
+| Peekaboo | 3–4 | Built and browser-verified; production still parked |
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
 | Grow a Flower | 3–4 | Built and browser-verified; production still parked |
 | Rocket Blast | 3–4 | Built and browser-verified; production still parked |
@@ -587,3 +587,40 @@ The old automatic reveal scene also fails. Source/art/voice checks pass.
 All twenty former generated scenes now have hand-built pages/cards, and
 empty-generator checks prove regenerating cannot overwrite any of them.
 Production remains parked for phone play review.
+
+## Peekaboo
+
+A five-discovery picture-memory cottage. Pull a curtain down to preview the
+actual word picture, hide it, watch one to three real door swaps, then pull
+the remembered door's handle left and release. A wrong door is a harmless
+retry; only a physically opened correct door enables Next. A free re-peek
+keeps the same target and door positions, so missing microphone permission
+or recognition never strands a younger child. Keyboard grip, movement and
+release operate the same gestures. Canceled pulls cannot invent a find.
+
+This game deliberately retains SimplePlay's original five untimed discoveries,
+current-sound initial-word pool and zero counted practice. On supported iPhone
+builds, an optional matching-word attempt earns ten seconds of a glowing
+target door and slower actual swaps. It uses the existing local word verdict
+and the exact owned native PCM microphone. A friendly “Echo heard you!” cheer
+is distinct from word accuracy: unrelated words and unknown recognition do
+not earn help. A close word uses the existing tolerant verdict. Retrying the
+same word never adds a second heard discovery, practice rep or clinical record.
+Browser loudness alone cannot award the word hint. Mechanical directions use
+the same cancellable voice owner as the original bare word model.
+
+No new paintings were needed. The existing mint room, painted door texture
+and actual word-picture artwork are reused. Doorway pictures are generated
+at their actual fitted square size, including after resize; shelf pictures
+use their actual 48px size. Provenance is in
+`design/coming-soon-games/peekaboo-art-notes.txt`.
+
+All 120 browser checks passed, exit 0: five real finds, manual and native-word
+paths, exact/close/unrelated/unknown words, same-target retries, physical swap
+slowing, rapid pause/resume, pending native starts, keyboard, missing-art
+fallback, replay, quiet microphones and 320px/393px/iPad fit. The regression
+tests fail against the old automatic reveal and the pre-fix late-recognizer
+and oversized-picture versions. Review confirmed fully visible rock/rabbit
+pictures. Legacy SimplePlay fixture tests preserve its unadapted behavior.
+Production stays Coming Soon until phone play review; the full current app
+battery remains required before pushing this branch.

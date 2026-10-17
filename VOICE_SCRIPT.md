@@ -267,6 +267,17 @@ Queued games are explicitly marked Coming soon; their instructions are listed fo
 | B130 | picture-fishtank-step-4.mp3 | Follow this fish's gentle bob. Let go of food above its mouth. | Fish Tank (Coming soon; preview only): mechanical direction for step 4, after the word is accepted, when Hear the step is tapped, or when returning to an interrupted direction. Never plays into a microphone; help, pause and finishing the move cancel its current playback. Completed directions do not repeat on resume. | Short, playful and clear. This describes the finger action, not a speech target. | public/fishtank.js:4; owned at public/sayplay.js:624 |
 | B131 | picture-fishtank-step-5.mp3 | Feed the last hungry fish. Drop little pinches above its mouth. | Fish Tank (Coming soon; preview only): mechanical direction for step 5, after the word is accepted, when Hear the step is tapped, or when returning to an interrupted direction. Never plays into a microphone; help, pause and finishing the move cancel its current playback. Completed directions do not repeat on resume. | Short, playful and clear. This describes the finger action, not a speech target. | public/fishtank.js:4; owned at public/sayplay.js:624 |
 
+
+### B8 — Peekaboo memory-game directions (3)
+
+These uncounted mechanical instructions do not change the five discoveries or turn the optional heard cheer into word accuracy.
+
+| # | File | Say this | When Echo says it | Delivery | Source |
+|---|---|---|---|---|---|
+| B132 | peekaboo-direction-1.mp3 | Pull the little curtain to have a peek. Hide the picture, watch the doors move, then pull open the door where it is hiding. | Peekaboo (Coming soon; preview only): a physical peek/watch/open instruction, owned and canceled by SimplePlay. The target word is still modeled alone; microphone and recognition settle before directions play. | Warm, short and clear for a child who cannot read. | public/peekaboo.js:4; owner at public/simple-play.js:508 |
+| B133 | peekaboo-direction-2.mp3 | Have a little peek. Then hide the picture and watch its door. | Peekaboo (Coming soon; preview only): a physical peek/watch/open instruction, owned and canceled by SimplePlay. The target word is still modeled alone; microphone and recognition settle before directions play. | Warm, short and clear for a child who cannot read. | public/peekaboo.js:4; owner at public/simple-play.js:508 |
+| B134 | peekaboo-direction-3.mp3 | Where did your picture go? Pull the handle on the door you remember. You can peek again whenever you like. | Peekaboo (Coming soon; preview only): a physical peek/watch/open instruction, owned and canceled by SimplePlay. The target word is still modeled alone; microphone and recognition settle before directions play. | Warm, short and clear for a child who cannot read. | public/peekaboo.js:4; owner at public/simple-play.js:508 |
+
 Not in this list because they speak nothing: Home, setup, settings, the voice
 picker, the mic-permission screens, the chest captions and every in-round label.
 See E8.
@@ -1626,7 +1637,7 @@ the sections after it keep theirs.
 
 ### E4 — Peekaboo (`simple-play.js`, coming soon)
 
-"Coming soon" in the catalog, with a disabled Home card. The only spoken line is the bare **{word}** when the picture is revealed (public/simple-play.js:112) and on "Hear it" (public/simple-play.js:400) — the same per-sound pools as Feed Echo (C6).
+"Coming soon" in the catalog, with a disabled Home card. The practice model is the bare **{word}** when the picture is revealed (public/simple-play.js:148) and on "Hear it" (public/simple-play.js:518) — the same per-sound pools as Feed Echo (C6). Peekaboo’s three fixed mechanical directions are in B8.
 
 ### E5 — Speech Check (`check.html`, unlinked)
 
@@ -1726,6 +1737,6 @@ folders; they were a wish-list. They are gone, and so is the old `tools/voicepag
 
 ---
 
-**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **131 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 946 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 172 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
+**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **134 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 946 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 172 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
 
-Record B first (131 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
+Record B first (134 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
