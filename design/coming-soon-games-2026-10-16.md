@@ -29,7 +29,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Puppy Bath | 3–4 | Built and browser-verified; production still parked |
 | Bedtime Stars | 3–4 | Built and browser-verified; production still parked |
 | Birthday Cake | 3–4 | Built and browser-verified; production still parked |
-| Surprise Boxes | 3–4 | Queued |
+| Surprise Boxes | 3–4 | Built and browser-verified; production still parked |
 | Fish Tank | 3–4 | Queued |
 
 ## Race Car
@@ -528,3 +528,29 @@ and iPad widths, physical no-input/miss cases, speech powers, preserved work,
 interruptions, quiet microphones, keyboard, missing-art fallback and replay.
 The original reveal scene fails the new test. Syntax, protected art and voice
 inventory checks pass; production remains parked for phone play review.
+
+## Surprise Boxes
+
+Five different physical presents: pull a bow tail, peel paper diagonally,
+slide two separate latches, twist a circular lid, and slide a box top.
+Each then needs a real upward lid drag and release. Words and idle time do
+not open presents. Five discovered buddies remain on the shelf.
+
+The existing five turns and two sayings remain. Speech earns ten seconds of
+shorter pulls/lifts/turns and more forgiving paths. Help retains actual work
+and already opened latches. Forgiveness is latched when a grip is picked up;
+expiry cannot invalidate that gesture. Canceled final lid lifts do not reveal
+anything. Five directions use SayPlay's existing quiet voice owner.
+
+No new raster art: the quiet mint room, intro card and five sitting buddies
+are reused unchanged. Moving wrapping, ribbons, latches and lids are native
+drawing so the visible objects follow the real physical controls. Reuse and
+shelf feet anchors are in `design/coming-soon-games/gifts-art-notes.txt`.
+
+All 75 browser checks passed, exit 0: five different real mechanisms, wrong
+directions and twist shortcuts, tiny gestures, canceled final lift, preserved
+work/help/background behavior, quiet microphone, keyboard and replay. All
+five ordinary presents finish at 320px and iPad widths; all five assisted
+presents finish at 393px. Missing-art fallback also works. The old automatic
+reveal scene fails the new test. Syntax, protected art and voice inventory
+checks pass; production remains parked for phone play review.

@@ -367,8 +367,8 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
-const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza", "space", "monster", "rocket", "snowman", "train", "puppy", "stars", "cake"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
-const spSteps = [["pizza", 8], ["monster", 8], ["snowman", 5], ["train", 5], ["puppy", 5], ["stars", 5], ["cake", 5]].map(([key, count]) => {
+const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza", "space", "monster", "rocket", "snowman", "train", "puppy", "stars", "cake", "gifts"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spSteps = [["pizza", 8], ["monster", 8], ["snowman", 5], ["train", 5], ["puppy", 5], ["stars", 5], ["cake", 5], ["gifts", 5]].map(([key, count]) => {
   const file = "public/" + key + ".js", a = find(file, /var STEP_LINES\s*=\s*(\[[\s\S]*?\]);/, key + " mechanical directions");
   const lines = JSON.parse(a.m[1]);
   if (lines.length !== count || lines.some((line) => typeof line !== "string" || !line.trim())) fail(key + " must list its " + count + " mechanical directions");
