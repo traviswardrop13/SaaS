@@ -16,7 +16,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Race Car | 5–8 | Built and browser-verified; preview open, production still parked |
 | Treasure Map | 5–8 | Built and browser-verified; local preview available, production still parked |
 | Robot Builder | 5–8 | Built and browser-verified; production still parked |
-| Castle Builder | 5–8 | Queued |
+| Castle Builder | 5–8 | Built and browser-verified; production still parked |
 | Space Trip | 5–8 | Queued |
 | Pizza Chef | 5–8 | Queued |
 | Monster Makeover | 5–8 | Queued |
@@ -208,3 +208,29 @@ fallback art, quiet microphones and 320px/393px/iPad fit. The new test fails
 on the original animation. Syntax, art-generator and voice-inventory checks
 passed. The source stays parked for phone review and the younger repetition
 decision; nothing is pushed or released.
+
+## Castle Builder
+
+A real overhead crane carries eight architectural pieces into planned slots.
+Slide the trolley, hold Lower and release to park the rope. An aligned bottom
+contact places a piece; a miss hoists the same load back for another attempt.
+Lift also lets the child retry without spending an accepted word. The child
+builds a coherent castle, rather than a pile of identical blocks.
+
+The existing eight targets and two sayings remain. Speech earns ten seconds
+of a steadier pendulum and a placement window 2.2 times as wide. Optional
+help preserves the trolley, rope and current load. SayPlay still owns all
+speech, microphone and progress accounting.
+
+Nine new painted assets match the existing sandcastle card: an empty beach
+and eight transparent pieces. Their total payload is 232,622 bytes. Exact
+built-in image-generation prompts, origins and alpha-preserving crop exports
+are in design/coming-soon-games/castle-art-notes.txt. Original art is unchanged.
+
+Verification: all 44 browser checks passed, including eight physical crane
+placements, a measured swing reduction and wider acceptance window, misses,
+held/released controls, help/background/resume, keyboard movement, fallback
+art, quiet microphones, replay and 320px/393px/iPad fit. The test rejects the
+old animation. Syntax, art ownership and voice-inventory checks passed.
+The production catalog remains parked for phone play review. Nothing is
+pushed or released; the full current release battery remains required.

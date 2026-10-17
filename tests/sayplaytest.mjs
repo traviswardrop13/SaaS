@@ -189,12 +189,12 @@ const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done)
 }), spans);
 
 // ── the catalog ──
-const { GAMES } = await import("../tools/gameart/games.mjs");
+const { GAMES, PLAYED } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
 const KEYS = GAMES.map((g) => g.key);
 // Custom playable games have their own browser suites. Keep the remaining
 // generated scenes accounted for as each old animation is rebuilt.
-ok("twelve generated scenes and eight hand-built games: ten for each age group", GAMES.length === 12 && GAMES.filter((g) => g.group === "simple").length === 8 && GAMES.filter((g) => g.group === "arcade").length === 4 && !GAMES.some((g) => ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower"].includes(g.key)));
+ok("all twenty picture games remain accounted for as scenes become real games", GAMES.length + PLAYED.length === 20 && new Set([...GAMES.map(g => g.key), ...PLAYED.map(([key]) => key)]).size === 20 && !GAMES.some(g => PLAYED.some(([key]) => key === g.key)));
 {
   const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
   ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));

@@ -15,38 +15,7 @@ const range = (n) => Array.from({ length: n }, (_, i) => i);
 
 // Robot Builder is now the hand-built circuit puzzle in public/robot.js.
 
-// ── 6. Castle Builder: walls, keep, towers, gate, windows, flags; fireworks ──
-const castleGame = {
-  key: "castle", title: "Castle Builder", group: "arcade", top: "#e6f6ff", bottom: "#d4efc4",
-  sub: "Say it to build a castle", playDescription: "Every word builds another part of your castle.",
-  how: "Say each word to build a castle.", blurb: "Every word builds the castle: walls, a keep, two towers, a gate, windows and flags; then fireworks.",
-  alt: "A green hill with a place to build a castle.",
-  bg: meadowBg({ sun: [152, 54, 24], clouds: [[306, 40, 0.7]], far: 260, near: 318, front: 350 })
-    + P("M200 400 Q210 370 220 350 L240 350 Q236 372 250 400 Z", "#e8d4a8"),
-  parts: [
-    { id: "keep", x: 220, y: 334, hid: true, svg: A.keep(120, 160) },
-    { id: "wallL", x: 128, y: 336, hid: true, svg: A.wallBlock(112, 88) },
-    { id: "wallR", x: 312, y: 336, hid: true, svg: A.wallBlock(112, 88) },
-    { id: "towerL", x: 58, y: 340, hid: true, svg: A.castleTower(66, 190, "#7a5fb0") },
-    { id: "towerR", x: 382, y: 340, hid: true, svg: A.castleTower(66, 190, "#7a5fb0") },
-    { id: "gate", x: 220, y: 336, hid: true, svg: A.castleGate() },
-    { id: "windows", x: 0, y: 0, hid: true, svg: [[196, 268], [244, 268], [220, 220], [58, 250], [382, 250], [58, 196], [382, 196]].map(([x, y]) => G(`translate(${x} ${y})`, A.castleWin())).join("") },
-    { id: "flags", x: 0, y: 0, hid: true, svg: G("translate(58 82)", A.pennant("#ff5c5c")) + G("translate(382 82)", A.pennant("#ffd21c")) + G("translate(220 166)", A.pennant("#58cc02")) },
-    { id: "fw1", x: 136, y: 150, hid: true, svg: A.firework("#ffd21c", "#ff5c8a") },
-    { id: "fw2", x: 306, y: 148, hid: true, svg: A.firework("#4db3f2", "#ffffff") },
-    { id: "fw3", x: 224, y: 58, hid: true, svg: G("scale(0.8)", A.firework("#58cc02", "#ffd21c")) },
-  ],
-  steps: [
-    [{ a: "show", id: "wallL", fx: "rise" }], [{ a: "show", id: "wallR", fx: "rise" }], [{ a: "show", id: "keep", fx: "rise" }],
-    [{ a: "show", id: "towerL", fx: "rise" }], [{ a: "show", id: "towerR", fx: "rise" }], [{ a: "show", id: "gate", fx: "pop" }],
-    [{ a: "show", id: "windows", fx: "fade" }], [{ a: "show", id: "flags", fx: "pop" }],
-  ],
-  finale: [
-    { a: "show", id: "fw1", fx: "pop" }, { a: "show", id: "fw2", fx: "pop", at: 500 }, { a: "show", id: "fw3", fx: "pop", at: 1000 },
-    { a: "fx", id: "fw1", fx: "twinkle", at: 700 }, { a: "fx", id: "fw2", fx: "twinkle", at: 1200 }, { a: "fx", id: "flags", fx: "wiggle", at: 300 },
-  ],
-  done: { title: "What a castle!", sub: "Eight words built it, tower to tower." },
-};
+// Castle Builder is now a hand-built crane game in public/castle.js.
 
 // ── 8. Space Trip: every word flies to the next planet and picks up its star ──
 const PLANETS = [[104, 312, 22, "#ff8f8f"], [200, 346, 18, "#8fd4f2"], [298, 306, 24, "#ffd21c", "#ff9d3d"], [390, 336, 17, "#b9d98a"],
@@ -153,4 +122,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [ castleGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [ spaceGame, pizzaGame, monsterGame];
