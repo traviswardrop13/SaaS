@@ -12,37 +12,7 @@ import * as A from "./art.mjs";
 const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, s || 1, c)).join("");
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 
-// ── 1. Race Car: every word zooms the car toward the finish; the snail cheers ──
-const raceGame = {
-  key: "racecar", title: "Race Car", group: "arcade", top: "#e6f6ff", bottom: "#dfe6ee",
-  sub: "Say it to zoom ahead", playDescription: "Every word zooms your race car closer to the finish line.",
-  how: "Say each word to zoom to the finish line.", blurb: "Every word zooms the race car ahead; the snail in the next lane is very, very slow.",
-  alt: "A race track with a red race car at the start and a snail in the next lane.",
-  bg: sky("#bfe8fb") + cloud(80, 50, 0.8) + cloud(330, 36, 0.6) + hills(150, 186, 400, "#b5e08f", "#9bd46a")
-    + R(0, 150, W, 70, 0, "#8a6fc4") + range(24).map((i) => C(12 + i * 18.5, 168 + (i % 2) * 8, 6, ["#ff5c5c", "#ffd21c", "#4db3f2", "#ff8fb0", "#58cc02"][i % 5])).join("")
-    + range(24).map((i) => C(20 + i * 18.5, 192 + (i % 2) * 6, 6, ["#ffd21c", "#4db3f2", "#ff9d3d", "#9b7fd8", "#ff5c5c"][i % 5])).join("")
-    + R(0, 212, W, 10, 0, "#6b50a0") + R(0, 222, W, 50, 0, "#7cc152")
-    + R(0, 268, W, 118, 0, "#6f7c8e") + R(0, 268, W, 6, 0, "#ffffff") + R(0, 380, W, 6, 0, "#ffffff") + R(0, 386, W, 14, 0, "#7cc152")
-    + L("M0 330 H440", "#ffffff", 4, { "stroke-dasharray": "22 16" })
-    + A.checkerLine(34, 274, 380, 14) + A.checkerLine(392, 274, 380, 14) + G(at(424, 266, 1, true), A.flagPole()),
-  parts: [
-    { id: "snail", x: 74, y: 374, svg: G("scale(0.9)", A.snail({ helmet: "#ffd21c" })) },
-    { id: "zoom", x: 0, y: 0, hid: true, svg: L("M40 272 H0 M52 288 H10 M36 304 H4", "#ffffff", 5) },
-    { id: "car", x: 84, y: 324, svg: G("scale(1.15)", A.raceCar("#ff5c5c", "#d94444", A.helmet("#4db3f2"))) },
-    { id: "cup", x: 220, y: 150, hid: true, svg: G("scale(1.2)", A.trophy()) },
-  ],
-  steps: range(8).map((i) => [
-    { a: "move", id: "car", x: 29 * (i + 1), y: 0 }, { a: "move", id: "zoom", x: 29 * (i + 1) + 16, y: 0 },
-    { a: "show", id: "zoom", fx: "fade" }, { a: "hide", id: "zoom", at: 650 },
-    { a: "move", id: "snail", x: 5 * (i + 1), y: 0 },
-  ]),
-  finale: [
-    { a: "move", id: "car", x: 270, y: 0 }, { a: "fx", id: "car", fx: "bounce", at: 800 },
-    { a: "show", id: "cup", fx: "drop", at: 500 }, { a: "fx", id: "snail", fx: "hop", at: 900 },
-  ],
-  done: { title: "You won the race!", sub: "Eight words zoomed you to the finish." },
-  card: { crop: [96, 100, 300] },
-};
+// Race Car is now hand-built in public/racecar.js; never regenerate its page.
 
 // ── 2. Treasure Map: every word sails to the next stop; the X hides the chest ──
 const ROUTE = [[64, 346], [134, 304], [92, 236], [166, 188], [250, 226], [322, 290], [392, 232], [338, 160], [372, 92]];
@@ -254,4 +224,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [raceGame, mapGame, robotGame, castleGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [mapGame, robotGame, castleGame, spaceGame, pizzaGame, monsterGame];

@@ -93,7 +93,7 @@
   // one opening of the mic: a tap on the mic, "Hear it" and a pause all keep it.
   var said = 0;
   var SOUND = "R", WORDS = [], word = null, used = [], parts = {}, stageHTML = "";
-  var introSaid=false, themed=[], themedUsed=[], roundWords=[];
+  var introSaid=false, themed=[], themedUsed=[], roundWords=[], helpTurn=false;
 
   function setPhase(p) { phase = p; document.body.setAttribute("data-phase", paused ? "paused" : p); publish(); }
   // What tests read (the page's internals stay inside this closure otherwise).
@@ -573,7 +573,11 @@
       } catch (e) {}
       sfx("correct");
       setPhase("play");
-      G.play.onWord(step);
+      // An optional in-game speech power reuses this same quiet word turn.
+      // It returns to the SAME move: asking for help never spends a turn or
+      // opens a second microphone alongside the engine's microphone.
+      if (helpTurn && G.play.onHelp) { helpTurn=false; G.play.onHelp(step); }
+      else G.play.onWord(step);
       return;
     }
     step++; paintDots();
@@ -600,6 +604,14 @@
     // resume() already reads "step" as "the next word".
     else { setPhase("step"); nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250); }
   }
+  function practiceHelp() {
+    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp) return false;
+    helpTurn=true;
+    if (G.play.pause) G.play.pause();
+    said=0;
+    nextTurn(true);
+    return true;
+  }
   function finish() {
     micStop(); turnLive = false; face("cheer"); setPhase("finale");
     try { $("turnPanel").classList.add("done"); } catch (e) {}
@@ -620,7 +632,7 @@
     $("endOvl").classList.remove("show");
     try { $("turnPanel").classList.remove("done"); } catch (e) {}
     if (G.play) G.play.reset(); else resetStage();
-    step = 0; paintDots(); used = []; themedUsed=[]; roundWords=[];
+    step = 0; helpTurn=false; paintDots(); used = []; themedUsed=[]; roundWords=[];
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
@@ -636,7 +648,7 @@
   function resume() {
     if (!paused) return;
     paused = false; audioPaused = false; $("pauseOvl").classList.remove("show");
-    if (G.play && G.play.resume) G.play.resume();
+    if (G.play && G.play.resume) G.play.resume(phase === "play");
     // paused with the ball in hand (or in the air): the same move goes on
     if (phase === "play") { setPhase("play"); return; }
     if (step >= G.steps.length) { showEnd(); return; }
@@ -674,6 +686,7 @@
     if (G.play) G.play.init({
       sfx: function (n) { sfx(n); },
       done: moveDone,
+      practice: practiceHelp,
       hint: function (t) { try { $("micState").textContent = t; } catch (e) {} },
       cheer: function (t) { try { $("cheer").textContent = t; } catch (e) {} },
       face: face,

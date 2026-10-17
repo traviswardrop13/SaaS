@@ -279,7 +279,7 @@ find(SLICE, /\n\s*ask:askCard,\n/, "Fruit Slice's card uses the say-it voice's a
 const sliceAsk = find(SLICE, /L\.p=fetch\("\/api\/tts",\{method:"POST",headers:\{"Content-Type":"application\/json"\},body:JSON\.stringify\(\{text:"(To keep playing, say\.\.\. )"\+a\.say\+"(\.)",voice:profile\.voiceId\|\|"",stable:true\}\)/, "Fruit Slice's card: the syllable or word line");
 find(SLICE, /return \(b\?t\.bytes\(b\):Promise\.resolve\(false\)\)\.then\(function\(said\)\{/, "Fruit Slice's card plays the line it holds");
 const sliceIdea = find(SLICE, /var IDEA_LINE="([^"]*)", reviveIdea=false;/, "Fruit Slice's step-back line");
-const sliceLead = find(SLICE, /return \(lead\?t\.line\(reviveIdea\?IDEA_LINE:SayIt\.ASK\):Promise\.resolve\(\)\)\.then\(function\(\)\{ return t\.take\(\); \}\);/, "Fruit Slice's card: Echo's words before the bare sound");
+const sliceLead = find(SLICE, /return \(lead\?t\.line\(lifeCard\?LIFE_LINE:reviveIdea\?IDEA_LINE:SayIt\.ASK\):Promise\.resolve\(\)\)\.then\(function\(\)\{ return t\.take\(\); \}\);/, "Fruit Slice's card: Echo's words before the bare sound");
 const sliceBack = find(SLICE, /closeReviveMic\(\); askHeld=ASK; ASK=cardAsk\(0\); paintAsk\(\); speakRevive\(true\);/, "Fruit Slice's card steps back to the bare sound");
 const sliceWait = find(SLICE, /var ASK_WAIT_MS=(\d+), askT=0;/, "ASK_WAIT_MS");
 coverAll(SLICE, TTS_CALL, [sliceAsk], "a voice request");
@@ -294,6 +294,12 @@ for (const s of SOUNDS) if (!existsSync(join(ROOT, "public/coach/say-echo", s + 
 // Echo's mid-round ask: all six games share the say-it voice. A cached
 // reason is followed by Rachel's one take, Go!, then the microphone.
 const HELP = "public/arcade-speech-help.js";
+const lifeLine = find(HELP, /var LIFE_LINE="([^"]*)", lifeCard=false, lifeWarm=false;/, "the new-life card's instruction");
+const cardLifeAsk = {};
+for (const k of ROUND_KEYS.slice(1)) {
+  cardLifeAsk[k] = find(roundFile(k), /ask:function\(t\)\{ return t\.line\(lifeCard\?LIFE_LINE:SayIt\.ASK\)\.then\(function\(\)\{ return t\.take\(\); \}\); \},/, "the say-it card uses the new-life instruction only after the last heart");
+  coverAll(roundFile(k), /\bt\.line\(/, [cardLifeAsk[k]]);
+}
 const helpLine = find(HELP, /function slowLineText\(\)\{ return \(SLOW_HELP\.line&&SLOW_HELP\.line\(\)\)\|\|SLOW_HELP\.say\|\|\("To "\+SLOW_HELP\.action\+", say"\); \}/, "the sound power's instruction reader");
 const helpAsk = find(HELP, /ask:function\(t\)\{\n\s*var text=slowLineText\(\), first=!slowSaid\[text\];\n\s*return \(first\?t\.line\(text\):Promise\.resolve\(false\)\)\.then\(function\(said\)\{\n\s*if\(said===true\) slowSaid\[text\]=true;\n\s*return t\.take\(\);\n\s*\}\);\n\s*\},/, "the sound power: each reason once, then Rachel's recording");
 const helpSound = find(HELP, SAYIT_CLIP, "the sound power plays Rachel's one take of the sound");
@@ -339,7 +345,7 @@ for (const k of ROUND_KEYS) {
 }
 
 // ───────────────────────── the picture games (Say & Play) ─────────────────────────
-// Shared isolated word asks, with a separate first-turn instruction in three games.
+// Shared isolated word asks, with each rebuilt game's separate first-turn instruction.
 const SAYPLAY = "public/sayplay.js";
 const spAsk = find(SAYPLAY, /say\("(Say\.\.\. )" \+ word\.w \+ "(\.)"\)/, "Say & Play's ask");
 const spPoolFn = find(SAYPLAY, /^  function pool\(sound\) \{\n[\s\S]*?^  \}$/m, "Say & Play's word pool");
@@ -360,7 +366,7 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
-const spIntros = ["hoops", "soccer", "dino"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spIntros = ["hoops", "soccer", "dino", "racecar"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.
@@ -724,19 +730,21 @@ P();
   const bare = S.soundSay("R"), secs = (ms) => Number(ms) / 1000;
   B("card-say.mp3", sayitLines.m[1], `The say-it card between rounds in all six round games (${ROUND_KEYS.map(roundName).join(", ")}): Echo says this, then Rachel's recording of the sound plays (\`say-echo/<SOUND>-sound.wav\`, Part A), then "${GO}" (${GO_ROW}), then the mic opens. Screen: "Say “${bare}” for wave 2!" (each game its own words). On ${roundName("slice")}, a card that asks a syllable or a word says one line instead of this and her recording (C7).`, "Friendly and plain. It runs straight into the sound, so leave it open at the end.", `${sayitLines.cite}; in this order at ${sayitOrder.cite}`);
   B("card-idea.mp3", sliceIdea.m[1], `${roundName("slice")}'s card, when a syllable or a word got no answer for ${secs(sliceWait.m[1])} s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "${GO}". The practice page's own words for the same move (B3).`, "As B3: a good idea just arrived. Not a consolation.", `${sliceIdea.cite}; said at ${sliceLead.cite}; the step back at ${sliceBack.cite}`);
+  B("card-new-life.mp3", lifeLine.m[1], `All six round games: after the last gameplay heart is lost, the round stops on the new-life card. Echo says this, then Rachel's sound, then "${GO}", then the mic. An accepted sound restores all three hearts and resumes that same round; silence restores nothing. This is separate from mid-game sound powers, which restore no hearts.`, "Friendly and encouraging. It runs straight into the sound, so leave it open at the end.", `${lifeLine.cite}; Fruit Slice at ${sliceLead.cite}; other cards at ${ROUND_KEYS.slice(1).map((k) => cardLifeAsk[k].cite).join(", ")}`);
   for (const k of ROUND_KEYS) {
     for (const [i, text] of [power[k].text, ...power[k].extra].entries()) {
-      B(`power-${k}${i ? "-heart" + (i > 1 ? i : "") : ""}.mp3`, text, `${roundName(k)}: Echo asks automatically during play${i ? " when a heart is missing" : ""}; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "${GO}", then the mic. Later asks for the same reason play just the sound and "${GO}". A heard try earns the power and one heart back, up to three.`, `Short and bright. It runs straight into the sound, so leave it open at the end.${text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
+      B(`power-${k}${i ? "-extra" + (i > 1 ? i : "") : ""}.mp3`, text, `${roundName(k)}: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "${GO}", then the mic. Later asks for the same reason play just the sound and "${GO}". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward.`, `Short and bright. It runs straight into the sound, so leave it open at the end.${text.includes("!") ? ' Has a "!": a little lift, not a shout.' : ""}`, power[k].cite);
     }
   }
   B("sprint-howto.mp3", runLine.m[1], `${roundName("run")}'s start card, on a child's first ${NUMWORD[runRaces.m[1]] || runRaces.m[1]} races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early).`, 'Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout.', `${runLine.cite}; asked for at ${runVoice.cite}`);
 }
-bTable(`B5 — The round games (${3 + ROUND_KEYS.reduce((n, k) => n + 1 + power[k].extra.length, 0)})`, `The say-it card in all six round games (one voice for all six, \`arcade-sayit.js\`), Echo's power button in all six (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
+bTable(`B5 — The round games (${4 + ROUND_KEYS.reduce((n, k) => n + 1 + power[k].extra.length, 0)})`, `The say-it card in all six round games (one voice for all six, \`arcade-sayit.js\`), their shared new-life instruction, Echo's power button in all six (instruction at ${helpLine.cite}, her sound at ${helpSound.cite}), and ${roundName("run")}'s how-to-play line. None of them is spoken while Sona's sound is off (${[sayitMuted, helpMuted, runMuted].map((a) => a.cite.replace("public/", "")).join(", ")}). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.`);
 B("book-end.mp3", bookEnd.m[1], 'The last page of every book ("The End!"), with the star and the chime.', 'Warm and pleased, winding down. Still has its "!".', bookEnd.cite);
 B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[bookTries.m[1]] || bookTries.m[1]} tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page."`, "Kind and light. The page turns on a good note.", bookBye.cite);
 bTable("B6 — Books (2)");
-[...new Set(spIntros.map((a) => a.line))].forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => roundName(a.key) || a.key).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
-bTable("B7 — Picture-game instructions (2)");
+const spIntroLines = [...new Set(spIntros.map((a) => a.line))];
+spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => roundName(a.key) + (S.GAME_ACTS[a.key].comingSoon ? " (Coming soon; preview only)" : "")).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
+bTable(`B7 — Picture-game instructions (${spIntroLines.length})`, "Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
 P("picker, the mic-permission screens, the chest captions and every in-round label.");
@@ -896,7 +904,7 @@ P();
 P(`\`${spLine("{word}")}\` (${spAsk.cite})`);
 P();
 P(`One shared script (\`sayplay.js\`) runs every picture game. Each turn shows a picture and`);
-P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. Hoops, Soccer Goal and Dino Dig first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the`);
+P(`its word, Echo models the word with this line, then "${GO}" (${GO_ROW}), then the mic opens. ${spIntros.map((a) => roundName(a.key) + (S.GAME_ACTS[a.key].comingSoon ? " (Coming soon; preview only)" : "")).join(", ")} first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the`);
 P(`child's rotation is on (else R); the pool is up to ten of that sound's shortest`);
 P(`Beginning-position words with a picture (${spPoolFn.cite}). **Best left to TTS.**`);
 P();

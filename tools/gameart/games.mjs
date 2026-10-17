@@ -11,4 +11,4 @@ export const GAMES = [...LITTLE, ...BIG];
 // the key is added here cards.mjs refuses to run over the new tile. It lives
 // here, not in cards.mjs, because cards.mjs writes files the moment it is
 // imported and tests/arttooltest.mjs needs to read the list.
-export const PLAYED = [["hoops", "/assets/games/hoops.webp"], ["soccer", "/assets/games/soccer.webp"], ["dino", "/assets/games/dino.webp"]];
+export const PLAYED = [["hoops", "/assets/games/hoops.webp"], ["soccer", "/assets/games/soccer.webp"], ["dino", "/assets/games/dino.webp"], ["racecar", "/assets/crafted/home-racecar.webp"]];
