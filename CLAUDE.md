@@ -1369,7 +1369,9 @@ a purchase starts, renews, is cancelled or ends.
   plan carries on". Its time is also kept against the customers it left
   (`rc:moved:<id>`, 400 days, the latest only): a purchase message from
   before the move that arrives after it (a retry) records the address as
-  "moved", never on its free days. Set-up steps for Travis: NATIVE.md.
+  "moved", never on its free days. Set-up steps for Travis: NATIVE.md
+  (the webhook URL is `https://www.speaksona.com/api/revenuecat`: the bare
+  domain answers a 308 that RevenueCat does not follow).
 - **What it sends** (Resend, from Rachel; her words to change, `MAILS`):
   "Your free days end soon" (`rc:remind`, 50 hours before the free days end;
   the daily run at 16:00 UTC, which Vercel may start up to an hour late,

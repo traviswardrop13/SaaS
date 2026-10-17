@@ -424,9 +424,11 @@ To switch it on (Travis, once; nothing to build in Xcode):
 
 1. **Vercel:** add `REVENUECAT_WEBHOOK_AUTH`, a long random value (16+
    characters, for example `Bearer ` and 32 random letters and digits), and
-   redeploy. Open https://speaksona.com/api/revenuecat: `"auth": true`.
+   redeploy. Open https://www.speaksona.com/api/revenuecat: `"auth": true`.
 2. **RevenueCat:** Integrations → Webhooks → add one. URL
-   `https://speaksona.com/api/revenuecat`; **Authorization header value**:
+   `https://www.speaksona.com/api/revenuecat` (with the www: the bare
+   speaksona.com answers a 308 redirect, which RevenueCat does not follow, and
+   its test event shows 308 instead of 200); **Authorization header value**:
    exactly the same value as in Vercel; environment **Production** (Apple's
    sandbox, TestFlight and App Review, is left out); every event type. To
    try it with a test purchase on a TestFlight build, it takes both: set
