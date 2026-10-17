@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { configured, runDue } from "@/lib/nurture";
 import { runReports } from "@/lib/report";
+import { backfill, syncUnsubscribes } from "@/lib/contacts";
 
 /**
  * Daily: sends the welcome series' day-after email to everyone it is due for
@@ -9,6 +10,14 @@ import { runReports } from "@/lib/report";
  * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
  * A manual run with ?report=1 sends the report on any day (still once an
  * address a week).
+ *
+ * The email list (lib/contacts.ts, 16 Oct 2026) has two parts. First (45
+ * seconds at most) the unsubscribes Sona's link still owes Resend, Kit's
+ * leavers (every day while KIT_API_KEY is set) and the check both ways, so
+ * nobody who left a broadcast gets the emails below. Last, with the time
+ * that is left, the posts that did not fully land and a batch of the
+ * addresses Sona held before Resend had the list. Neither is ever a reason
+ * for the emails not to go.
  */
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -28,8 +37,12 @@ export async function GET(req: NextRequest) {
     const missing = ["RESEND_API_KEY", "UNSUB_SECRET", "EMAIL_POSTAL"].filter((k) => !(process.env[k] || "").trim());
     return NextResponse.json({ ok: false, error: "Not set in Vercel: " + missing.join(", ") }, { status: 500 });
   }
-  const r = await runDue();
+  const said = (e: unknown) => ({ ok: false, detail: e instanceof Error ? e.message : String(e) });
+  let unsub: unknown = null, older: unknown = null;
+  try { unsub = await syncUnsubscribes({ deadline: started + 45000 }); } catch (e) { unsub = said(e); }
   // stop sending well before maxDuration, so no address is left claimed and unsent
+  const r = await runDue(undefined, undefined, undefined, { deadline: started + 150000 });
   const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
-  return NextResponse.json({ ok: true, ...r, report });
+  try { older = await backfill({ deadline: started + 265000 }); } catch (e) { older = said(e); }
+  return NextResponse.json({ ok: true, ...r, report, list: { unsub, older } });
 }

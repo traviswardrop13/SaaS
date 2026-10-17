@@ -13,6 +13,7 @@ const SUITES = [
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
   "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
   "nurturetest.mjs", // NURTURE1: a new sign-up gets the welcome now and the 5-minute email tomorrow, once each, with a real unsubscribe
+  "contactstest.mjs", // CONTACTS1: every grown-up's email joins Resend's contacts in its segment; nobody is re-subscribed; unsubscribes go both ways; Kit's leavers first
   "replaytest.mjs", // REPLAY1: PostHog session recording only on four grown-up screens on speaksona.com, played with the real recorder: no name, no address, nothing typed, never the speech therapy question or its answer, nothing past the hand-off
   "reporttest.mjs", // REPORT1: the weekly progress report: only a household that asked sends a few numbers a child (never a name or a voice), never from Home; Monday's email from Rachel, once a week
   "launchtest.mjs", // LAUNCH1: the family app is locked until launch day (Friday 2 Oct), one email box, a team door, open by itself
