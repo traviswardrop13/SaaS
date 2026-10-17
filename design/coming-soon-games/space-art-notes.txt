@@ -1,0 +1,101 @@
+SPACE TRIP ART — built-in image_gen only
+
+References: existing home-space.webp, game/space-ship.webp and game/space-bg.webp inspected; existing art unchanged.
+
+LANDER PROMPT
+Use case: precise-object-edit. Asset type: transparent mobile game rocket sprite. Input image1 is the existing red/ivory rocket identity reference and edit target. Preserve its friendly rounded richly painted toy material, ivory body, red nose and red side fins, single small blue round window with gold-rimmed porthole. Reorient the complete rocket to an UPRIGHT perfectly front-on symmetrical view, nose straight up, ready to land vertically. Add two small clear landing legs/feet at the lower left and right, both flat on the same horizontal baseline, matching the red/ivory toy design. Keep the full rocket silhouette and feet inside the canvas with clean transparent padding. The rocket must be completely IDLE: no flame, exhaust, smoke, glow trail, sparks, clouds, ground, platform, shadows, framing or backdrop. One rocket only, no character/face, no text, no UI, no watermark. Genuinely transparent alpha background. Portrait composition, whole object centered.
+
+LUNAR FOREGROUND PROMPT
+Use case: stylized-concept. Asset type: wide horizontal transparent lunar foreground terrain cutout for a richly painted children's space-landing game. Image1 is STYLE/PALETTE reference only, not an edit target: match the soft dimensional purple/ivory/warm-gold storybook painting and gentle planet textures. Make one wide continuous strip of friendly rounded pastel lunar sand and low softly cratered terrain. Width about3×height. A gentle low curved horizon near the upper quarter, with the broad central upper surface smooth and nearly level for the game to draw a landing pad over it. Sparse shallow craters/rounded stones below or at far edges only; keep the central upper pad area empty and clear. Ground continues solidly to the bottom edge and across both side edges; above the irregular horizon is genuinely transparent alpha so a galaxy can show through. Warm ivory/lavender sand with soft gold/purple shadows, richly painted gentle texture. No pad/platform, rocket, ship, flags, stars, characters, faces, vegetation, text, UI, frames, glow, detached floating pieces, background or watermark.
+
+ROCK PROMPT
+Use case: stylized-concept. Asset type: single transparent collision asteroid sprite for a richly painted children's space-landing game. Reference image1 is style/palette reference only: match its rounded soft storybook asteroid painting in warm dusty lavender, mauve and soft sandy highlights. One friendly chunky rounded asteroid with an irregular but compact roughly circular silhouette and a few shallow dimples/craters, gentle dimensional shading, clear solid readable edges. Center the complete rock with transparent padding. No spikes or sharp shards, no face/eyes, no orbit, no trail, no ground or shadow backdrop, no other rocks, no stars, text, UI, frames or watermark. Genuinely transparent alpha background. Square composition.
+
+EXPORTS
+[
+  {
+    "file": "public/assets/crafted/game/space-lander-idle-v1.webp",
+    "dimensions": [
+      367,
+      512
+    ],
+    "mode": "RGBA",
+    "bytes": 35830,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-d3e77ad0-1cd2-4743-970d-368c9c10d857.png",
+    "crop_xyxy": [
+      92,
+      128,
+      931,
+      1298
+    ],
+    "quality": 90,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      2,
+      3,
+      365,
+      510
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/space-moon-ground-v1.webp",
+    "dimensions": [
+      1200,
+      400
+    ],
+    "mode": "RGBA",
+    "bytes": 97342,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-88100880-f722-4b7f-b5e1-ac2448859fc8.png",
+    "crop_xyxy": null,
+    "quality": 85,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      1200,
+      400
+    ],
+    "alpha_preserved": true,
+    "center_surface_y_128": 167,
+    "center_surface_y_fraction": 0.4175
+  },
+  {
+    "file": "public/assets/crafted/game/space-rock-v1.webp",
+    "dimensions": [
+      384,
+      365
+    ],
+    "mode": "RGBA",
+    "bytes": 46004,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-5531d6fc-aa2c-4433-97d4-aa11732e0532.png",
+    "crop_xyxy": [
+      55,
+      85,
+      1200,
+      1174
+    ],
+    "quality": 88,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      383,
+      365
+    ],
+    "alpha_preserved": true
+  }
+]
+
+Only rectangular bounds crops, proportional size export, and WebP conversion after generation. Alpha preserved byte-for-byte relative to resized images. No semantic edits or recoloring. Moon full canvas preserved so its transparent horizon anchor is stable.
+
+Attachment notes: upright rocket nose up, no exhaust. Landing foot pad centers approx x0.27 and0.73 of exported canvas, common base near y0.985; nozzle bottom near y0.93. Ground center horizon measured in metadata; align that y to physical ground/pad line. Rock compact irregular silhouette, use a slightly inset forgiving collision circle.

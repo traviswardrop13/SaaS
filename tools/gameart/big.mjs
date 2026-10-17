@@ -17,36 +17,7 @@ const range = (n) => Array.from({ length: n }, (_, i) => i);
 
 // Castle Builder is now a hand-built crane game in public/castle.js.
 
-// ── 8. Space Trip: every word flies to the next planet and picks up its star ──
-const PLANETS = [[104, 312, 22, "#ff8f8f"], [200, 346, 18, "#8fd4f2"], [298, 306, 24, "#ffd21c", "#ff9d3d"], [390, 336, 17, "#b9d98a"],
-  [374, 216, 22, "#c49cff", null, "#ffd21c"], [262, 200, 20, "#ff9d3d"], [146, 188, 24, "#4db3f2", "#6ac3f2"], [340, 110, 30, "#58cc02", "#8fd4f2"]];
-const EARTH = [44, 392];
-const spaceGame = {
-  key: "space", title: "Space Trip", group: "arcade", top: "#e9e4ff", bottom: "#d8d2f5",
-  sub: "Say it to fly to a planet", playDescription: "Every word flies your rocket to the next planet.",
-  how: "Say each word to fly to the next planet.", blurb: "Every word flies the rocket to the next planet, where it picks up a star.",
-  alt: "Space, full of stars and planets, with a little rocket ready to fly.",
-  bg: R(0, 0, W, 400, 0, "#252b57") + R(0, 0, W, 180, 0, "#2d3470")
-    + starsList([[30, 60, 0.35], [80, 150, 0.3], [330, 70, 0.4], [420, 130, 0.3], [180, 40, 0.3], [400, 280, 0.3], [30, 250, 0.35], [320, 380, 0.3], [150, 280, 0.25], [230, 240, 0.25]], "#c9d0f0")
-    + R(12, 8, 240, 32, 16, "#1c2147") + range(8).map((i) => G(`translate(${34 + i * 28} 24) scale(0.55)`, A.dimStar())).join("")
-    + G(`translate(${EARTH[0]} ${EARTH[1]})`, C(0, 0, 60, "#4db3f2") + P("M-40 -30 Q-20 -50 0 -40 Q10 -20 -10 -10 Q-30 0 -40 -30 Z M10 -58 Q30 -50 34 -34 Q20 -30 10 -58 Z", "#58cc02"))
-    + PLANETS.map(([x, y, r, c, band, ring]) => G(`translate(${x} ${y})`, A.planet(r, c, ring, band))).join(""),
-  parts: [
-    ...PLANETS.map(([x, y, r], i) => ({ id: "ps" + (i + 1), x, y: y - r - 14, svg: star(0, 0, 0.9, "#ffd21c") })),
-    ...range(8).map((i) => ({ id: "got" + (i + 1), x: 34 + i * 28, y: 24, hid: true, svg: star(0, 0, 1.1, "#ffd21c") })),
-    { id: "flag", x: 358, y: 84, hid: true, o: "50% 100%", svg: R(-2, -40, 4, 40, 2, "#e3e8ee") + P("M2 -40 L30 -32 L2 -24 Z", "#ff5c5c") },
-    { id: "ship", x: EARTH[0] + 20, y: EARTH[1] - 60, svg: G("scale(0.34)", A.rocket({ pilot: A.pilotBear() })) },
-  ],
-  steps: PLANETS.map(([x, y, r], i) => [
-    { a: "move", id: "ship", x: x - (EARTH[0] + 20) + (i === 7 ? -20 : 0), y: y - r + 4 - (EARTH[1] - 60), r: 0 }, { a: "hide", id: "ps" + (i + 1), at: 600 },
-    { a: "show", id: "got" + (i + 1), fx: "pop", at: 650 },
-  ]),
-  finale: [
-    { a: "fx", id: "ship", fx: "spin" }, { a: "show", id: "flag", fx: "grow", at: 700 },
-    ...range(8).map((i) => ({ a: "fx", id: "got" + (i + 1), fx: "twinkle", at: 300 + i * 90 })),
-  ],
-  done: { title: "What a space trip!", sub: "Eight words flew you across the stars." },
-};
+// Space Trip is now a hand-built piloting game in public/space.js.
 
 // Pizza Chef is now a hand-built cooking game in public/pizza.js.
 
@@ -88,4 +59,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [ spaceGame, monsterGame];
+export const BIG = [ monsterGame];

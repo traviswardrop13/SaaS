@@ -17,7 +17,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Treasure Map | 5–8 | Built and browser-verified; local preview available, production still parked |
 | Robot Builder | 5–8 | Built and browser-verified; production still parked |
 | Castle Builder | 5–8 | Built and browser-verified; production still parked |
-| Space Trip | 5–8 | Queued |
+| Space Trip | 5–8 | Built and browser-verified; production still parked |
 | Pizza Chef | 5–8 | Built and browser-verified; production still parked |
 | Monster Makeover | 5–8 | Queued |
 | Peekaboo | 3–4 | Queued |
@@ -274,3 +274,38 @@ assertions after its generic pause/permission checks were moved to the
 existing fixed scene fixtures. No speech thresholds or repetitions changed.
 Syntax, protected-art and recording-inventory checks passed. The source
 stays parked for phone review; nothing is pushed or released.
+
+## Space Trip
+
+Eight real piloted landings: gravity, inertia, a held engine, steering and
+soft contact with a glowing pad. One thumb can hold Engine and slide sideways
+to steer; separate arrows and keyboard controls also work. Physics waits for
+the first deliberate input, so neither the accepted word nor an idle scene
+can land the rocket. Hard landings and asteroid bumps retry the same flight
+without spending another word. The eight sites vary their pad, gravity and
+obstacles; fuel never runs out.
+
+The same eight targets and two sayings remain. Speech earns ten seconds of
+lower gravity, stronger damping and a more forgiving landing window/speed.
+Help preserves the rocket's position and momentum. Backgrounding releases
+held controls and keeps the same flight. All voice and microphone ownership
+remain with SayPlay.
+
+The existing painted galaxy is reused, with three new transparent assets:
+an upright idle lander, lunar foreground and rounded asteroid (179,176 bytes).
+The engine flame appears only under actual thrust. The art preserves its
+proportions and visible feet/horizon line up with physical contact. Exact
+prompts and exports are in design/coming-soon-games/space-art-notes.txt.
+
+The browser checks exercise actual thrust and steering through all eight
+landings, missed landings, one-thumb steering and unrelated pointer release,
+speech benefits, interrupted held controls, help/background/resume, quiet
+microphones, missing art, restart and small-screen fit. A review caught rocks
+scaled too large on short landscape fields: responsive radii and explicit
+spawn clearance now keep every launch safe. Later short-screen landings are
+included in the regression checks behind a verified portrait guard.
+
+All 85 browser checks passed, exit 0, including all eight landings on both
+short screens. The test rejects the original reveal scene. Syntax, protected
+art and recording-inventory checks passed. The catalog stays parked for phone
+play review; nothing is pushed or released.

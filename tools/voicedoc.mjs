@@ -367,7 +367,7 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
-const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza", "space"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
 const spSteps = ["pizza"].map((key) => {
   const file = "public/" + key + ".js", a = find(file, /var STEP_LINES\s*=\s*(\[[\s\S]*?\]);/, key + " mechanical directions");
   const lines = JSON.parse(a.m[1]);
