@@ -290,12 +290,12 @@ changing one. What follows from the rule:
   today.") and **the billing day** (the store's price starts "unless you
   cancel at least 24 hours before", Apple's own measure), one button, and
   "Not now" in plain sight. See "THE IPHONE SELLS ONE PLAN" for where every
-  word comes from. **No reminder is promised:** Sona sends none, so the words
-  email, remind and notify may not appear on the price screen
-  (`pricescreentest`, `setupbuytest`). A real reminder (Resend, fed by
-  RevenueCat) is a later change that adds a third row for a family it is
-  truly armed for, and is Travis's to approve: it changes what the privacy
-  page says. "Paywall viewed" and the one-shot (`planShown`) count only once
+  word comes from. **No reminder is promised:** since 16 Oct 2026 Sona sends
+  one ("Your free days end soon", RCHOOK1, below), but only to a parent who
+  gave the app an email, so the price screen still promises none, and the
+  words email, remind and notify may not appear on it (`pricescreentest`,
+  `setupbuytest`, `planwordstest`). A third row promising it, for a family
+  it is truly armed for, is Travis's call. "Paywall viewed" and the one-shot (`planShown`) count only once
   a priced card is on screen.
 - **THE PRICE SCREEN IS ONE ROW, NO DATE, AND AN X (Travis, 6 Oct 2026, with
   a reference paywall: "too many words ... I don't want it to say Friday
@@ -478,7 +478,8 @@ charter price, and **it is the one picked when the plan screen opens**.
   date is the same +3 days the charge uses; the price is the store's string
   on Apple's card and the charter figure on the web, so the line never names
   a different number from the box above it, and it never promises a reminder
-  (there is no trial mailer). It replaced a dated three-row timeline and the
+  (the only one, RCHOOK1, follows an App Store trial for a parent who gave
+  the app an email, never a web purchase). It replaced a dated three-row timeline and the
   Apple card's paragraph of small print, and the web's yearly small print
   steps aside for it; monthly keeps its own line, which says how to cancel.
   What Apple requires stays: each plan's price and period, the renewal, where
@@ -1322,11 +1323,9 @@ sold free days) or `"paid"`. The route keeps those two words, and only those
 Started Premium segment, and the welcome series stops; the ledger keeps the
 plan too. Once per kind and address on that phone (`sona.plantold.v1`); no
 email, nothing sent; nobody is asked for one at that moment. The privacy page
-says the email list holds this. A last-day note for the free days is not
-built (a broadcast to Started Premium is Travis's to send by hand); the app's
-own words still promise no reminder (see "TRIAL FIRST"). Not built: a
-RevenueCat webhook (it would add cancellations, conversions and expiries), and
-App Store Connect's App Privacy answers, which should now list purchases
+says the email list holds this. The note before the free days end
+is RevenueCat's (RCHOOK1, below), not a broadcast; the app's
+own words still promise no reminder (see "TRIAL FIRST"). Not built: App Store Connect's App Privacy answers, which should now list purchases
 linked to the parent's email (Travis's task, no review). `planwordstest` plays
 the phone side ("the list hears"), `slpapi` the route and `contactstest` the
 list. Wherever an email joins the list, the page says
@@ -1335,10 +1334,78 @@ Unsubscribe anytime." **Except the landing pages**, where Travis took the line
 out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
 still say the email is on the list at Resend. Meta's `Lead` fires only when an email was given.
 
+**REVENUECAT TELLS SONA (RCHOOK1, 16 Oct 2026)** (Travis: "build the revcat
+webhook"; then, asked: show the parent's email in RevenueCat, stop the sales
+emails for buyers, a note before the free days end, and "we miss you too"). Apple never tells an app who bought; RevenueCat does know when
+a purchase starts, renews, is cancelled or ends.
+- **The phone hands RevenueCat the parent's email** (`_rcEmail` in sona.js,
+  once the store is set up on a page: `setEmail` with `parentEmail()`).
+  RevenueCat's dashboard then shows the parent instead of ANONYMOUS, and
+  every message it sends carries the email (`subscriber_attributes.$email`).
+  That address only, never a child's name; nothing when no email was given
+  (that family stays anonymous and gets none of this). Optional like every
+  new native call: missing, throwing or refusing changes nothing, and nothing
+  waits on it (`planwordstest` "RevenueCat hears the email").
+- **The webhook** (`/api/revenuecat`, `lib/revenuecat.ts`): RevenueCat's own
+  `Authorization` header (`REVENUECAT_WEBHOOK_AUTH`, 16+ characters, `_PREV`
+  for a change; constant-time), 64 KB, JSON. A TEST, a type Sona has no use
+  for, Apple's sandbox (unless `REVENUECAT_SANDBOX=1`) and a message with no
+  email: 200, nothing kept. Otherwise once per message id (`rc:evt:<id>`, 14
+  days, written LAST: every write before it is safe to repeat, so a
+  delivery cut off part-way leaves no mark and RevenueCat's retry redoes
+  it): the state in `rc:plans` (email to {s, exp, ts, at}: trial, paid,
+  cancelled, billing, ended, moved; an older message never overwrites a
+  newer one, one Lua step), `stopSeries` (the welcome series stops, as the
+  phone's plan post already does; its mark now has no time limit, and
+  `enroll` reads it, so a family who gives their email again years later
+  gets day 0's tip alone, never "Here's Sona" selling free days Apple will
+  not give twice), a new year for `nurture:0:<email>` (EXPIRE, which never creates it), the
+  RevenueCat customer each address came with (`rc:uid:<id>`, 400 days), and
+  the two queues. Never the price, the country or a transaction id.
+  **TRANSFER** (the subscription moved to another device's customer, which
+  may have no email) carries no email: the customers it left are looked up
+  in `rc:uid:`, each address found is marked "moved" and loses its queued
+  reminder, so a parent who then cancels on the iPad is never told "your
+  plan carries on". Its time is also kept against the customers it left
+  (`rc:moved:<id>`, 400 days, the latest only): a purchase message from
+  before the move that arrives after it (a retry) records the address as
+  "moved", never on its free days. Set-up steps for Travis: NATIVE.md.
+- **What it sends** (Resend, from Rachel; her words to change, `MAILS`):
+  "Your free days end soon" (`rc:remind`, 50 hours before the free days end;
+  the daily run at 16:00 UTC, which Vercel may start up to an hour late,
+  sends it only while the plan is still on its free days and more than 24
+  hours remain, Apple's line for a cancel to count, so 24 to 50 hours
+  ahead, once per end; that 26-hour window always holds one run, which sends
+  these notes right after the unsubscribe check and before the welcome
+  emails, with its start time as "now", and a send Resend
+  turns away for a moment is tried twice more in it; a note leaves its queue
+  only once it is settled, and only if nobody queued it again meanwhile, so a
+  store that stops answering part-way never loses one), and "We miss you at Sona"
+  (`rc:miss`, a day after a plan ends, only if still ended, once a year an
+  address). Only to an address that joined Sona's list (`nurture:0:<email>`)
+  and is not in `email:unsub` (exact or plain mailbox): RevenueCat's
+  attributes can be set by anyone holding the app's public key, so an email
+  there proves nothing. No price, no number of free days (both the App
+  Store's), no child. The price screen still promises no reminder.
+- **/leads.html** shows a Premium column and counts (free days, paying,
+  cancelled, payment problem, ended, moved to another device), from
+  `rc:plans`.
+- **Not done here:** RevenueCat's word does not put anyone in Resend's
+  Started Premium segment (the phone's plan post still does that), so a
+  broadcast to that segment misses a buyer whose phone never reported.
+- **Defaults Travis did not pick:** a cancelled-then-ended trial also gets
+  "We miss you"; no email for a payment problem (he did not pick it); the
+  welcome series stops for good once a family started Premium, even after
+  it ends. **For Rachel:** both emails' words. **For Travis:** NATIVE.md's three
+  set-up steps, and the App Privacy line (the email now also goes to
+  RevenueCat).
+`rcwebhooktest` plays the route, the store, both emails and the words.
+
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
 every clinician account, counts everyone since the "I'm a…" landing page
 (25 Sep 2026) by what they chose, and says what the list answered for each
-(a lead saved before 16 Oct 2026 shows Kit's answer). It has no button: the
+(a lead saved before 16 Oct 2026 shows Kit's answer), and each parent's
+Premium in the app as RevenueCat last told it (RCHOOK1). It has no button: the
 list fills itself, and the old "Send everyone to Kit" catch-up
 (`/api/founders/kit-sync`) is gone with Kit.
 

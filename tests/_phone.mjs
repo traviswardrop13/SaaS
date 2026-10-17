@@ -42,6 +42,9 @@
 //   info       "ok" | "hang" | "fail"  (getCustomerInfo)
 //   sync       absent (resolves, finds nothing) | "finds" (customer info is
 //              empty until syncPurchases resolves) | "missing" | "fail" | "hang"
+//   setEmail   absent (takes it) | "missing" (a build without it) | "throw"
+//              (throws before any promise) | "fail" (rejects): the parent's
+//              email handed to RevenueCat (RCHOOK1)
 //   wait       { configure, products, elig, info, sync, buy, restore }: ms
 //              before that call answers (the page's own timers, so a fake
 //              clock drives them)
@@ -56,8 +59,8 @@
 //              EVERY method can be replaced from a test, in either mode:
 //              Capacitor.Plugins.Purchases.<name> = fn (or `delete` it, or
 //              assign undefined, for a build that lacks it). That includes
-//              the two optional calls, checkTrialOrIntroductoryPriceEligibility
-//              and syncPurchases. A function of your own is not counted by
+//              the optional calls, checkTrialOrIntroductoryPriceEligibility,
+//              syncPurchases and setEmail. A function of your own is not counted by
 //              the recorders below: count its calls yourself.
 //   mic        "grant" | "deny" | "pending" (the default): getUserMedia
 //   kids       2 (or more): Mia is set up, and the LAST child was just added
@@ -86,6 +89,7 @@
 //   asked[]      the ids of each getProducts call on THIS page load
 //                (askedAll[]: every load in this context)
 //   eligAsked    how many eligibility calls (eligIds[]: the ids of each)
+//   emails[]     every setEmail call's argument on THIS page load, in order
 //   syncs, restores, infos, configured   call counts
 //   unknown[]    proxy bridge only: the unknown method names that were called
 //   mic          { requests[] (each .grant() / .deny()), tracks[], order[] }
@@ -153,7 +157,7 @@ export function phone(cfg) {
   const kept = read("__phoneRec", {});
   const rec = {
     bought: kept.bought || [], asked: [], askedAll: kept.askedAll || [], eligAsked: 0, eligIds: [],
-    syncs: kept.syncs || 0, restores: kept.restores || 0, infos: 0, configured: 0, unknown: [],
+    syncs: kept.syncs || 0, restores: kept.restores || 0, infos: 0, configured: 0, unknown: [], emails: [],
     events: kept.events || [], mic: { requests: [], tracks: [], order: [] }, sfx: {}, confetti: 0,
   };
   const keep = () => {
@@ -268,7 +272,7 @@ export function phone(cfg) {
         return info();
       },
     };
-    // the two calls a build may not have: there, or not, as the live config
+    // the calls a build may not have: there, or not, as the live config
     // says. A suite may still put its OWN function in either's place, or
     // delete it, as it can with every other method here: a getter that
     // dropped the assignment without a word would leave the fake's default
@@ -281,6 +285,13 @@ export function phone(cfg) {
     });
     optional("checkTrialOrIntroductoryPriceEligibility", () => live.elig === "missing", eligCall);
     optional("syncPurchases", () => live.sync === "missing", syncCall);
+    // not async: "throw" has to throw before any promise exists
+    const emailCall = function (a) {
+      rec.emails.push(a === undefined ? "(nothing)" : JSON.parse(JSON.stringify(a)));
+      if (live.setEmail === "throw") throw new Error("setEmail is broken on this bridge");
+      return live.setEmail === "fail" ? Promise.reject(new Error("There was a problem with the App Store.")) : Promise.resolve();
+    };
+    optional("setEmail", () => live.setEmail === "missing", emailCall);
     // "then" stays undefined: a plugin object that answered it would be
     // swallowed by the first promise it was returned through
     const bridge = live.bridge !== "proxy" ? P : new Proxy(P, {

@@ -24,9 +24,13 @@ import { kvCmd } from "@/lib/slpAuth";
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
  * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
  * A parent who starts Sona Premium leaves it too (stopSeries, 16 Oct 2026),
- * once the phone tells /api/lead; a purchase the phone never reports (no
- * email on it, or bought elsewhere) is not seen, so day 3 and day 5 still
- * say "already started? ignore the button" rather than assume.
+ * once the phone tells /api/lead or RevenueCat's own message names their
+ * email (lib/revenuecat.ts); a purchase with no email anywhere (none on the
+ * phone, so none at RevenueCat) is not seen, so day 3 and day 5 still say
+ * "already started? ignore the button" rather than assume. Someone who
+ * started Premium and gives their email again later (`nurture:0` long
+ * gone) gets day 0's tip and nothing else: never "Here's Sona", which sells
+ * free days Apple will not give twice.
  *
  * The people who signed up before this shipped were emailed by hand from a
  * Kit export (5–6 Oct 2026), so there is no back-fill here: it starts with
@@ -244,17 +248,23 @@ export const nextKey = (email: string) => "nurture:next:" + email;
 export const stopKey = (email: string) => "nurture:stop:" + email;
 
 /**
- * A parent who started Sona Premium (the phone's plan post, via /api/lead):
- * the rest of the series is taken off the schedule. `nurture:0` stays, so
- * the address is never enrolled again. The stop mark is for a daily run that
- * had already claimed this address when the post came: it puts the next
- * email back on the schedule, and the mark takes it off again unsent.
+ * A parent who started Sona Premium (the phone's plan post, via /api/lead,
+ * or RevenueCat's own message, lib/revenuecat.ts): the rest of the series is
+ * taken off the schedule. `nurture:0` stays, so the address is never
+ * enrolled again. The stop mark is for a daily run that had already claimed
+ * this address when the post came: it puts the next email back on the
+ * schedule, and the mark takes it off again unsent. It has no time limit:
+ * Apple gives the free days once, so a family enrolled again years later (a
+ * new phone, the same email, `nurture:0` long gone) is never sold them
+ * again: enroll reads it, and sends day 0's tip alone. True when the store
+ * took all three steps.
  */
-export async function stopSeries(rawEmail: string, kv: Kv = kvCmd): Promise<void> {
+export async function stopSeries(rawEmail: string, kv: Kv = kvCmd): Promise<boolean> {
   const email = rawEmail.trim().toLowerCase();
-  await kv(["SET", stopKey(email), "1", "EX", 31536000]);
-  await kv(["ZREM", DUE_KEY, email]);
-  await kv(["DEL", nextKey(email)]);
+  const set = await kv(["SET", stopKey(email), "1"]);
+  const off = await kv(["ZREM", DUE_KEY, email]);
+  const del = await kv(["DEL", nextKey(email)]);
+  return set === "OK" && off !== undefined && off !== null && del !== undefined && del !== null;
 }
 
 /**
@@ -268,9 +278,11 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
   try {
     const first = await kv(["SET", "nurture:0:" + email, new Date(now).toISOString(), "NX", "EX", 31536000]);
     if (first !== "OK") return false;
+    // started Premium before (stopSeries' mark, kept for good): the tip only
+    const stopped = Boolean(await kv(["GET", stopKey(email)]));
     // every day-0 email goes now, in order (Travis, 7 Oct 2026: "two emails
     // right away"); the first one out decides what /api/lead reports
-    let step = opts.inApp ? IN_APP_START : 0, firstSent: SendResult | null = null, r: SendResult = "failed";
+    let step = opts.inApp || stopped ? IN_APP_START : 0, firstSent: SendResult | null = null, r: SendResult = "failed";
     while (CONTENT[step] && CONTENT[step].day === 0) {
       r = await sendStep(email, step, kv, f);
       if (firstSent === null) firstSent = r;
@@ -280,7 +292,7 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
       if (r === "failed") break;
       step++;
     }
-    if (r !== "unsub" && CONTENT[step]) {
+    if (r !== "unsub" && CONTENT[step] && !stopped) {
       await kv(["SET", nextKey(email), step, "EX", 31536000]);
       await kv(["ZADD", DUE_KEY, r === "failed" ? now : now + CONTENT[step].day * DAY_MS, email]);
     }

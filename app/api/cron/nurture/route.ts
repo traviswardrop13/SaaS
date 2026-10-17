@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { configured, runDue } from "@/lib/nurture";
 import { runReports } from "@/lib/report";
 import { backfill, syncUnsubscribes } from "@/lib/contacts";
+import { runRc } from "@/lib/revenuecat";
 
 /**
- * Daily: sends the welcome series' day-after email to everyone it is due for
- * (lib/nurture.ts), and on Monday (Tuesday and Wednesday catch up) last week's progress
- * report to every household that asked for it (lib/report.ts). Same auth as
+ * Daily: sends the notes RevenueCat's news has queued ("Your free days end
+ * soon", "We miss you at Sona": lib/revenuecat.ts), the welcome series'
+ * day-after email to everyone it is due for (lib/nurture.ts), and on Monday
+ * (Tuesday and Wednesday catch up) last week's progress report to every
+ * household that asked for it (lib/report.ts). Same auth as
  * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
  * A manual run with ?report=1 sends the report on any day (still once an
  * address a week).
@@ -40,9 +43,14 @@ export async function GET(req: NextRequest) {
   const said = (e: unknown) => ({ ok: false, detail: e instanceof Error ? e.message : String(e) });
   let unsub: unknown = null, older: unknown = null;
   try { unsub = await syncUnsubscribes({ deadline: started + 45000 }); } catch (e) { unsub = said(e); }
+  // the free-days note next, before the welcome batch: it has one day to go
+  // out, and a big batch must not use up its time. `now` is when the run
+  // started, so a note queued a few seconds after 16:00 waits for
+  // tomorrow's run, never for the one after.
+  const rc = await runRc(undefined, undefined, started, { deadline: started + 100000 });
   // stop sending well before maxDuration, so no address is left claimed and unsent
   const r = await runDue(undefined, undefined, undefined, { deadline: started + 150000 });
   const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
   try { older = await backfill({ deadline: started + 265000 }); } catch (e) { older = said(e); }
-  return NextResponse.json({ ok: true, ...r, report, list: { unsub, older } });
+  return NextResponse.json({ ok: true, ...r, rc, report, list: { unsub, older } });
 }

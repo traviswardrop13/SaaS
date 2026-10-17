@@ -72,7 +72,8 @@
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe) when a
         parent buys Premium on our website, or a clinician buys Premium for themselves or their caseload.
         We do not receive or store full card numbers. Premium bought inside the iPhone or iPad app is
-        handled by Apple.</li>
+        handled by Apple; if you gave the app your email, RevenueCat (which keeps track of app purchases for us) tells us when
+        that Premium starts, renews, is cancelled or ends (see &ldquo;In-app purchases&rdquo; below).</li>
       <li><strong>An invite email from your clinician</strong> — if your child&rsquo;s speech-language
         pathologist typed your email address when adding your child, we use it once, to email you
         their Sona link. We do not keep it: it is not stored, not added to any email list, and not
@@ -92,7 +93,9 @@
       <li>To create the progress summary you can choose to share with your speech-language pathologist.</li>
       <li>To operate, secure, and improve the service, and to provide customer support.</li>
       <li>To read and reply to feedback you send us.</li>
-      <li>To manage subscriptions and process payments.</li>
+      <li>To manage subscriptions and process payments, and, for a parent who gave the app their email,
+        to stop the welcome emails once they have started Premium and to send the two notes
+        about it described under &ldquo;Email delivery&rdquo; below.</li>
     </ul>
 
     <h2>How voice recordings are handled</h2>
@@ -194,18 +197,26 @@
         and payment details, and nothing about a child.</li>
       <li><strong>In-app purchases</strong> — Premium bought inside the iPhone or iPad app is sold and
         billed by Apple, and RevenueCat checks with Apple whether that purchase is active, under a random
-        identifier. Neither is given a child&rsquo;s name.</li>
+        identifier. If you gave the app your email (setup&rsquo;s email step), the app also gives that
+        email to RevenueCat, and RevenueCat tells our server when your Premium starts, renews, is
+        cancelled or ends, with that email. Neither Apple nor RevenueCat is given a child&rsquo;s name or
+        anything about their practice.</li>
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
         described above, clinician sign-in sessions, a copy of Stripe&rsquo;s answer about whether a
         clinician&rsquo;s Premium plans are active, the messages parents send from &ldquo;Talk to
         us&rdquo; and clinicians send from their dashboard, our own copy of each email address given
         to join our email list, only for a child a grown-up put on the Practice Board, the board
-        entry described above, and, only for a household that asked for it, the weekly progress
-        report&rsquo;s numbers described above. It never holds audio.</li>
+        entry described above, only for a household that asked for it, the weekly progress
+        report&rsquo;s numbers described above, and, for a parent who gave the app their email, what
+        RevenueCat last told us about their Premium (on its free days, paid, cancelled, a payment
+        problem, ended, or moved to another device, and when it ends), with the random identifier
+        RevenueCat gave that phone, so we can tell when Premium moves to another device. It never holds audio.</li>
       <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, the one
         thank-you email when you sign up on speaksona.com, the welcome emails and tips from Rachel to
-        anyone who gave us their address, the weekly progress report to a grown-up who asked for it, and the one
+        anyone who gave us their address, the weekly progress report to a grown-up who asked for it, and,
+        for a parent who gave the app their email, a note a day or two before Premium&rsquo;s free days
+        end (only while they are still on them) and one note after Premium ends, and the one
         invite email a clinician can ask us to send a parent. These emails never go to children and never
         contain a child&rsquo;s name. A parent&rsquo;s address is given to Resend only to deliver that one
         email; Sona keeps no copy of it. If Sona offers the Practice Board, Resend also delivers the
@@ -299,6 +310,8 @@
     us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
     our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, the ad or
     link that brought them, if any, and whether a parent started Sona Premium in the app &mdash; until you ask us to remove it;
+    for a parent who gave the app their email, what RevenueCat last told us about their Premium, until you ask us to remove it,
+    and which random RevenueCat identifier that email came with (and when Premium last moved away from that identifier), for 400 days after RevenueCat last mentioned it;
     a Practice Board entry, only if a grown-up turned it on, for as long as described above;
     and the weekly progress report&rsquo;s numbers, with the address it goes to, for three weeks
     (and a scrambled form of that address, to remember it confirmed, for 120 days after the phone last sent).

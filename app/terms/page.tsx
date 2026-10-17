@@ -428,8 +428,10 @@ function PlanTerms() {
       )}
       {/* That last sentence is backed by app/subscribe/success/page.tsx, which
           reads trial_end and the amount back off the real Stripe subscription.
-          We deliberately do NOT promise a reminder email: nothing in this repo
-          sends one, and a promise no code keeps is the kind that gets found.
+          We deliberately do NOT promise a reminder email: the only one Sona
+          sends (lib/revenuecat.ts, since 16 Oct 2026) follows an App Store
+          trial for a parent who gave the app an email, never a web purchase,
+          and a promise no code keeps is the kind that gets found.
           It is dropped while free because there is no checkout to land on, and
           while the website is not selling (WEB_SALES false) for the same
           reason: /api/checkout refuses, so nobody reaches that page anew. */}
