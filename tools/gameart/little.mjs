@@ -17,44 +17,6 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Build a Snowman is now the hand-built rolling-and-stacking game in public/snowman.js.
 
-// ── 8. Birthday Cake: two layers, icing, sprinkles, candles; then the party ──
-const CANDLES = [-44, -22, 0, 22, 44], CANDLE_C = ["#ff5c5c", "#4db3f2", "#ffd21c", "#58cc02", "#9b7fd8"];
-const cakeGame = {
-  key: "cake", title: "Birthday Cake", group: "simple", top: "#fff0f6", bottom: "#ffe1c4",
-  sub: "Say it to make the cake", playDescription: "Every word adds to the birthday cake.",
-  how: "Say each word to make a birthday cake.", blurb: "Every word builds the cake: two layers, icing, sprinkles and candles; then friends come to the party.",
-  alt: "A party table with a cake plate, bunting and balloons.",
-  bg: R(0, 0, W, 400, 0, "#ffe9f2") + L("M0 40 H440 M0 120 H440 M0 200 H440 M0 280 H440", "#ffdcea", 10)
-    + bunting(-10, 30, 450, 40, 18) + put(() => A.smallBalloon("#ffd21c"), 40, 250, 1.3) + put(() => A.smallBalloon("#4db3f2"), 70, 262, 1.1)
-    + put(() => A.smallBalloon("#ff5c5c"), 400, 250, 1.3) + put(() => A.smallBalloon("#58cc02"), 372, 264, 1.05)
-    + R(0, 352, W, 48, 0, "#f7d9b5")
-    + R(90, 322, 260, 16, 8, "#ffffff") + P("M96 336 H344 L352 400 H88 Z", "#ffffff")
-    + [[120, 360], [170, 385], [220, 356], [270, 384], [320, 360]].map(([x, y]) => C(x, y, 7, "#8fd4f2")).join("")
-    + G(at(220, 330, 1), A.plate()),
-  parts: [
-    { id: "layer1", x: 220, y: 326, hid: true, svg: A.cakeLayer(180, 70, "#f7c1d6", "#ec9dbd") },
-    { id: "layer2", x: 220, y: 258, hid: true, svg: A.cakeLayer(130, 58, "#f7c1d6", "#ec9dbd") },
-    { id: "icing", x: 220, y: 0, hid: true, svg: A.icing(184, 254) + A.icing(134, 198) },
-    { id: "sprinkles", x: 220, y: 0, hid: true, svg: A.sprinkles(116, 191, 205, 16, 3) + A.sprinkles(166, 249, 262, 22, 7) },
-    { id: "candles", x: 220, y: 194, hid: true, svg: CANDLES.map((x, i) => G(`translate(${x} 0)`, A.candle(CANDLE_C[i]))).join("") },
-    { id: "flames", x: 220, y: 140, hid: true, svg: CANDLES.map((x) => G(`translate(${x} 0)`, A.candleFlame())).join("") },
-    { id: "bear", x: 48, y: 396, hid: true, svg: G("scale(1.05)", cast.bear({ pose: "cheer", face: "grin" }) + G("translate(0 -92)", A.partyHat("#ff5c5c"))) },
-    { id: "fox", x: 392, y: 396, hid: true, svg: G("scale(1.05)", cast.fox({ pose: "cheer", face: "grin" }) + G("translate(0 -90)", A.partyHat("#4db3f2"))) },
-  ],
-  steps: [
-    [{ a: "show", id: "layer1", fx: "drop" }],
-    [{ a: "show", id: "layer2", fx: "drop" }],
-    [{ a: "show", id: "icing", fx: "fade" }],
-    [{ a: "show", id: "sprinkles", fx: "pop" }],
-    [{ a: "show", id: "candles", fx: "rise" }, { a: "show", id: "flames", fx: "pop", at: 500 }],
-  ],
-  finale: [
-    { a: "fx", id: "flames", fx: "twinkle" }, { a: "show", id: "bear", fx: "slideL", at: 200 }, { a: "show", id: "fox", fx: "slideR", at: 400 },
-    { a: "fx", id: "bear", fx: "hop", at: 1100 }, { a: "fx", id: "fox", fx: "hop", at: 1300 },
-  ],
-  done: { title: "Party time!", sub: "Your words made a birthday cake." },
-};
-
 // ── 9. Surprise Boxes: every word opens a present, and a friend pops out ──
 // Two presents on the shelf and three on the floor, opened in a zigzag.
 const GIFT_AT = [[84, 386, 118, 92], [132, 214, 98, 76], [220, 386, 118, 92], [308, 214, 98, 76], [356, 386, 118, 92]];
@@ -128,4 +90,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [ cakeGame, giftsGame, tankGame];
+export const LITTLE = [ giftsGame, tankGame];

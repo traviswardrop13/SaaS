@@ -28,7 +28,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Choo-Choo Train | 3–4 | Built and browser-verified; production still parked |
 | Puppy Bath | 3–4 | Built and browser-verified; production still parked |
 | Bedtime Stars | 3–4 | Built and browser-verified; production still parked |
-| Birthday Cake | 3–4 | Queued |
+| Birthday Cake | 3–4 | Built and browser-verified; production still parked |
 | Surprise Boxes | 3–4 | Queued |
 | Fish Tank | 3–4 | Queued |
 
@@ -501,3 +501,30 @@ background/help recovery, owned pointers, keyboard, missing-art fallback,
 replay and quiet microphones. The original reveal scene fails the new game
 test. Source and visual review found no additional blocker; syntax, protected
 art and recording inventory checks passed. Production remains parked.
+
+## Birthday Cake
+
+Five physical recipe activities: stir around the bowl, catch real falling
+batter in a tin, pipe six icing swirls, place four freely chosen fruits,
+and drag three candles before fanning their flames. Random taps, still tools
+and idle time cannot complete the recipe. The final cake keeps the child's
+chosen fruit types and positions.
+
+The existing five turns and two sayings remain. Speech earns ten seconds of
+stronger stirring, wider batter catch, broader piping contact, a decoration
+magnet or gentler fanning. Extra help repeats the same target and retains
+mix, caught batter, icing and placed decorations. A background interruption
+releases tools and returns uncommitted fruit/candles without adding them.
+Five directions use SayPlay's existing quiet voice owner.
+
+Five minimal recipe sprites total 152,302 bytes: plain sponge, circular
+bowl, spoon, jug and piping bag. The existing kitchen and fruit are reused;
+icing, fluid, candles and fan are live drawing. Exact prompts, sources,
+transparent exports and measured tool/cake anchors are in
+`design/coming-soon-games/cake-art-notes.txt`.
+
+All 73 browser checks passed, exit 0: full actual recipes at 320px, 393px
+and iPad widths, physical no-input/miss cases, speech powers, preserved work,
+interruptions, quiet microphones, keyboard, missing-art fallback and replay.
+The original reveal scene fails the new test. Syntax, protected art and voice
+inventory checks pass; production remains parked for phone play review.

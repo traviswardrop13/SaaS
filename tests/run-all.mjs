@@ -109,6 +109,7 @@ const SUITES = [
   "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
   "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections
+  "caketest.mjs", // CAKE1: real circular mixing, caught batter, piping, custom fruit and manually fanned candles
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
