@@ -1202,7 +1202,7 @@
       // registration, not a lead — counting it as one told the ad account it
       // had 26 leads when the CRM had almost none (24 Sep 2026).
       try{ if(window.sonaTrack){ if(draft.email) sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
-      // the grown-up's email joins Sona's own list via /api/lead — fire-and-forget,
+      // the grown-up's email joins the list (Resend's contacts) via /api/lead — fire-and-forget,
       // and keepalive, because the price may be loading on the next line.
       // COPPA: NO child's name, age or practice targets go to the marketing
       // CRM — not the SLP's client, and not the parent's own child either.

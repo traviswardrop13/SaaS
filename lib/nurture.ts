@@ -4,11 +4,10 @@ import { kvCmd } from "@/lib/slpAuth";
 /**
  * THE WELCOME SERIES, on Sona's own server (Travis, 6 Oct 2026: "new sign-ups
  * automatically get [the welcome] right away and the 5-minute email the next
- * day, with a real unsubscribe link. That's it."). It replaced hand-sending a
- * Kit export every day; Kit itself is gone since 16 Oct 2026 (RCHOOK1), and
- * this is Sona's whole email list.
+ * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
+ * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
  *
- * Five emails from Rachel (CONTENT below: two at sign-up, then day 2, 3 and 5), each with a
+ * Five emails from Rachel (CONTENT below: two at sign-up, then day 1, 3 and 5), each with a
  * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
  * email uses) and the mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing
  * about a child, ever: the only thing this file knows is an email address.
@@ -24,15 +23,10 @@ import { kvCmd } from "@/lib/slpAuth";
  *   its number in `nurture:next:<email>`; /api/cron/nurture sends what is due
  *   once a day. ZREM is the claim, so two overlapping runs cannot both send.
  * Anyone in `email:unsub` (the Friday email's suppression set) leaves it.
- * A BUYER GETS NO SALES EMAIL (Travis, 16 Oct 2026: "Stop sales emails for
- * buyers"). Day 3 and day 5 push the free trial (`sales: true`); an address
- * marked `nurture:buyer:<email>` skips them and keeps the tips. The mark comes
- * from RevenueCat's webhook (lib/revenuecat.ts) or from the phone's own plan
- * post right after a purchase (/api/lead `plan`), whichever is first, and it
- * never comes off: Apple gives the free days once, so a family who started
- * them, or paid, has nothing left to be sold. Day 3 keeps "Already started?
- * You can ignore the button." for a buyer Sona could not link (no email in
- * the app, or a webhook not yet set up).
+ * A parent who starts Sona Premium leaves it too (stopSeries, 16 Oct 2026),
+ * once the phone tells /api/lead; a purchase the phone never reports (no
+ * email on it, or bought elsewhere) is not seen, so day 3 and day 5 still
+ * say "already started? ignore the button" rather than assume.
  *
  * The people who signed up before this shipped were emailed by hand from a
  * Kit export (5–6 Oct 2026), so there is no back-fill here: it starts with
@@ -60,7 +54,7 @@ type Fetch = typeof fetch;
 
 export type Step = number;
 
-type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string; sales?: boolean };
+type Content = { day: number; subject: string; preview: string; paras: string[]; button: string; after: string[]; ps?: string };
 
 /**
  * THE SEQUENCE (Travis, 7 Oct 2026: "a super short email ... to send them
@@ -105,7 +99,9 @@ export const CONTENT: Content[] = [
     ps: "Already practicing? Keep the streak going!",
   },
   {
-    day: 2,
+    // day 1 since 17 Oct 2026 (Travis: "day zero, day one, day three, day
+    // five. So just move day two to day one")
+    day: 1,
     subject: "Try this the next time they say \u201cwabbit\u201d",
     preview: "One small habit that helps a lot",
     paras: [
@@ -131,7 +127,6 @@ export const CONTENT: Content[] = [
     button: "Try Sona free for 3 days",
     after: [],
     ps: "Already started? You can ignore the button.",
-    sales: true,
   },
   {
     day: 5,
@@ -149,7 +144,6 @@ export const CONTENT: Content[] = [
     ],
     button: "Start your free trial",
     after: [],
-    sales: true,
   },
 ];
 
@@ -220,7 +214,7 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
   const { subject, html, text } = render(step, unsubUrl, cfg.postal);
   try {
-    const r = await f("https://api.resend.com/emails", {
+    const send = () => f("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", "Idempotency-Key": `nurture-${step}-${email}` },
       body: JSON.stringify({
@@ -228,6 +222,15 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
         headers: { "List-Unsubscribe": `<${unsubUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       }),
     });
+    let r = await send();
+    // Resend's two requests a second are shared with the contact list
+    // (lib/contacts), which /api/lead fills in the same moment: a 429 is
+    // tried once more, and the idempotency key makes a second send of the
+    // same email impossible
+    if (r.status === 429) {
+      await new Promise((ok) => setTimeout(ok, 1100));
+      r = await send();
+    }
     if (!r.ok) console.error("[nurture] Resend refused step", step, r.status);
     return r.ok ? "sent" : "failed";
   } catch (e) {
@@ -238,31 +241,25 @@ export async function sendStep(email: string, step: Step, kv: Kv = kvCmd, f: Fet
 
 export const nextKey = (email: string) => "nurture:next:" + email;
 
-/** Set once a family has started Premium (the free days or paid); see "A BUYER GETS NO SALES EMAIL" above. */
-export const buyerKey = (email: string) => "nurture:buyer:" + email;
+export const stopKey = (email: string) => "nurture:stop:" + email;
 
 /**
- * The two words a purchase may carry into /api/lead (sona.js _tellPlan):
- * "trial" when Apple started the free days, "paid" when it charged at once.
- * Anything else is no plan. (This was lib/kit.ts's kitPlanTag until Kit went.)
+ * A parent who started Sona Premium (the phone's plan post, via /api/lead,
+ * or RevenueCat's own message, lib/revenuecat.ts): the rest of the series is
+ * taken off the schedule. `nurture:0` stays, so the address is never
+ * enrolled again. The stop mark is for a daily run that had already claimed
+ * this address when the post came: it puts the next email back on the
+ * schedule, and the mark takes it off again unsent. It has no time limit:
+ * Apple gives the free days once, so a family enrolled again years later (a
+ * new phone, the same email, `nurture:0` long gone) is never sold them
+ * again. True when the store took all three steps.
  */
-export const planWord = (p: unknown): "trial" | "paid" | "" => (p === "trial" || p === "paid" ? p : "");
-
-/**
- * Mark an address as a buyer: no more sales emails (day 3, day 5). The
- * lowercased exact address, as every nurture key. Never throws; true when
- * the store took it.
- */
-export async function markBuyer(rawEmail: string, kv: Kv = kvCmd): Promise<boolean> {
+export async function stopSeries(rawEmail: string, kv: Kv = kvCmd): Promise<boolean> {
   const email = rawEmail.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return false;
-  try {
-    // kept for good, with no time limit: a family re-enrolled years later
-    // (a new phone, the same email) is still never offered free days again
-    return (await kv(["SET", buyerKey(email), "1"])) === "OK";
-  } catch {
-    return false;
-  }
+  const set = await kv(["SET", stopKey(email), "1"]);
+  const off = await kv(["ZREM", DUE_KEY, email]);
+  const del = await kv(["DEL", nextKey(email)]);
+  return set === "OK" && off !== undefined && off !== null && del !== undefined && del !== null;
 }
 
 /**
@@ -282,12 +279,15 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
     while (CONTENT[step] && CONTENT[step].day === 0) {
       r = await sendStep(email, step, kv, f);
       if (firstSent === null) firstSent = r;
-      step++;
       if (r === "unsub") break;
+      // Resend busy (its two requests a second are shared with the contact
+      // list): this one waits for the next daily run instead of being lost
+      if (r === "failed") break;
+      step++;
     }
     if (r !== "unsub" && CONTENT[step]) {
       await kv(["SET", nextKey(email), step, "EX", 31536000]);
-      await kv(["ZADD", DUE_KEY, now + CONTENT[step].day * DAY_MS, email]);
+      await kv(["ZADD", DUE_KEY, r === "failed" ? now : now + CONTENT[step].day * DAY_MS, email]);
     }
     return firstSent === "sent";
   } catch {
@@ -303,20 +303,24 @@ export async function enroll(rawEmail: string, kv: Kv = kvCmd, f: Fetch = fetch,
  * unsubscribed address leaves the sequence; a failed send moves on, so one
  * bad address can never loop.
  */
-export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now()): Promise<{ due: number; sent: number }> {
+export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(), opts: { deadline?: number } = {}): Promise<{ due: number; sent: number; left: number }> {
   const due = (await kv(["ZRANGEBYSCORE", DUE_KEY, "-inf", now, "LIMIT", 0, 500])) as unknown;
-  if (!Array.isArray(due)) return { due: 0, sent: 0 };
-  let sent = 0;
+  if (!Array.isArray(due)) return { due: 0, sent: 0, left: 0 };
+  let sent = 0, done = 0;
   for (const raw of due as string[]) {
+    // out of time: stop before claiming, so the rest are still due tomorrow
+    if (opts.deadline !== undefined && Date.now() > opts.deadline) break;
+    done++;
     const e = String(raw);
     const claimed = await kv(["ZREM", DUE_KEY, e]);
     if (Number(claimed) !== 1) continue; // another run took it
-    const step = Number((await kv(["GET", nextKey(e)])) ?? 1) || 1;
-    // a sales email to a buyer is skipped, and the series moves on to the
-    // next tip; a store that did not answer skips it too (better one missed
-    // pitch than "Start your free trial" to a family already paying)
-    const skip = !!(CONTENT[step] && CONTENT[step].sales) && (await kv(["GET", buyerKey(e)])) !== null;
-    const r: SendResult = skip ? "failed" : await sendStep(e, step, kv, f);
+    if (await kv(["GET", stopKey(e)])) { await kv(["DEL", nextKey(e)]); continue; } // started Premium
+    // no step kept: someone from the two-email build, on step 1. A kept 0 is
+    // a first email Resend turned away at sign-up, and it is sent now.
+    const kept = await kv(["GET", nextKey(e)]);
+    const n = Number(kept);
+    const step = kept === null || kept === undefined || !Number.isInteger(n) || n < 0 || !CONTENT[n] ? 1 : n;
+    const r = await sendStep(e, step, kv, f);
     if (r === "sent") sent++;
     const next = step + 1;
     if (r === "unsub" || !CONTENT[next]) {
@@ -329,5 +333,5 @@ export async function runDue(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Dat
     await kv(["SET", nextKey(e), next, "EX", 31536000]);
     await kv(["ZADD", DUE_KEY, Math.max(at, now + 1), e]);
   }
-  return { due: due.length, sent };
+  return { due: due.length, sent, left: due.length - done };
 }

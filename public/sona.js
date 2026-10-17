@@ -7786,9 +7786,10 @@
   // purchase here has gone through, the list is told which kind it was
   // through /api/lead, the one door every grown-up's email uses: "trial"
   // when Apple started the free days, "paid" when it charged at once. The
-  // server then stops the welcome series' sales emails at once, before
-  // RevenueCat's own message arrives (RCHOOK1; Kit, which this used to tag,
-  // is gone since 16 Oct 2026). What goes: that email and that one word.
+  // server files them under Started Premium in Resend's contacts and stops
+  // the welcome series at once, before RevenueCat's own message arrives
+  // (RCHOOK1; Kit, which this used to tag, is gone since 16 Oct 2026).
+  // What goes: that email and that one word.
   // Never a child's name or anything about their practice. Never without an
   // email (nobody is asked for one here), and once per kind and address on
   // this phone.

@@ -1,7 +1,7 @@
 // RCHOOK1: RevenueCat tells Sona (Travis, 16 Oct 2026: "build the revcat
 // webhook"; then yes to the parent's email in RevenueCat, the sales emails
-// stopped for buyers, "Your free days end soon", "We miss you at Sona", and
-// Kit turned off). Played against an in-memory Upstash behind the real
+// stopped for buyers, "Your free days end soon" and "We miss you at Sona").
+// Played against an in-memory Upstash behind the real
 // kvCmd and a fake Resend, with nothing else stubbed:
 //   - the route: only RevenueCat's own header gets in; a TEST, a type Sona
 //     has no use for, Apple's sandbox and a message with no email change
@@ -10,7 +10,7 @@
 //     the message left undone, so RevenueCat's retry finishes it;
 //   - what is kept: the state, when the plan ends and RevenueCat's time,
 //     never the price, the country or a transaction id;
-//   - the buyer mark: the welcome series' sales emails stop;
+//   - the welcome series stops for a buyer (lib/nurture stopSeries), for good;
 //   - "Your free days end soon": once, between 24 and 50 hours before the
 //     free days end (a window every daily run lands in, however late Vercel
 //     starts it), only while they are still on them, only to an address
@@ -246,9 +246,9 @@ await scenario("states", async () => {
     KV.K.get(R.uidKey(ANON)) === "mom@example.com" && KV.T.get(R.uidKey(ANON)) === 400 * 86400 &&
     [...KV.K].filter(([k, v]) => (k + v).includes("RCAnonymousID")).length === 1 && ![...KV.H].some(([, h]) => JSON.stringify([...h]).includes("RCAnonymousID")),
     [...KV.K.keys()]);
-  ok("…the address is marked a buyer: no more sales emails", KV.K.get(N.buyerKey("mom@example.com")) === "1");
+  ok("…the welcome series stops for the address (no more sales emails)", KV.K.get(N.stopKey("mom@example.com")) === "1");
   ok("…and \"Your free days end soon\" is queued for 50 hours before they end", zscore(R.REMIND_KEY) === exp - 50 * HOUR, zscore(R.REMIND_KEY));
-  ok("…the buyer mark has no time limit", !KV.T.has(N.buyerKey("mom@example.com")));
+  ok("…and its stop mark has no time limit", !KV.T.has(N.stopKey("mom@example.com")));
   const same = ev({ event_timestamp_ms: t0 + 5, expiration_at_ms: exp });
   r = await hook(same);
   const n = KV.log.length;
@@ -287,7 +287,7 @@ await scenario("states", async () => {
   const newest = plan();
   r = await hook(ev({ type: "CANCELLATION", event_timestamp_ms: t0 - 1, expiration_at_ms: exp }));
   ok("an older message arriving late changes nothing", r.status === 200 && r.json.ignored === "stale" && JSON.stringify(plan()) === JSON.stringify(newest), [r, plan()]);
-  ok("…though the buyer mark holds whatever the order", KV.K.get(N.buyerKey("mom@example.com")) === "1");
+  ok("…though the series stays stopped whatever the order", KV.K.get(N.stopKey("mom@example.com")) === "1");
   ok("stateFor: a free trial is an INITIAL_PURCHASE in its TRIAL period", R.stateFor("INITIAL_PURCHASE", "TRIAL", "") === "trial" && R.stateFor("INITIAL_PURCHASE", "INTRO", "") === "paid" && R.stateFor("TEST", "TRIAL", "") === null);
 });
 
@@ -303,9 +303,9 @@ await scenario("store down", async () => {
   r = await hook(e1);
   ok("the retry lands", r.status === 200 && r.json.applied === true && plan().s === "trial", r);
   reset();
-  KV.failOn = (c) => c[0] === "SET" && String(c[1]).startsWith("nurture:buyer:");
+  KV.failOn = (c) => c[0] === "SET" && String(c[1]).startsWith("nurture:stop:");
   r = await hook(ev());
-  ok("a buyer mark that did not take: 503 too, never a 200 for something not kept", r.status === 503 && ![...KV.K.keys()].some((k) => k.startsWith("rc:evt:")), r);
+  ok("a stop mark that did not take: 503 too, never a 200 for something not kept", r.status === 503 && ![...KV.K.keys()].some((k) => k.startsWith("rc:evt:")), r);
   reset();
   const e2 = ev();
   KV.failOn = (c) => c[0] === "SET" && String(c[1]).startsWith("rc:evt:");
@@ -569,9 +569,10 @@ await scenario("the words", async () => {
 // ── 8. the wiring, the founder page, and the words elsewhere ──
 await scenario("wiring", async () => {
   const cron = read("app/api/cron/nurture/route.ts");
-  ok("the daily run sends RevenueCat's notes first, with its start time as now, then the welcome series and the weekly report",
-    /import \{ runRc \} from "@\/lib\/revenuecat"/.test(cron) && /await runRc\(undefined, undefined, started, \{ deadline: started \+ 120000 \}\)/.test(cron) &&
-    cron.indexOf("await runRc(") < cron.indexOf("await runDue()") && cron.indexOf("await runDue()") < cron.indexOf("await runReports("));
+  ok("the daily run sends RevenueCat's notes after the unsubscribe check, with its start time as now, before the welcome series and the weekly report",
+    /import \{ runRc \} from "@\/lib\/revenuecat"/.test(cron) && /await runRc\(undefined, undefined, started, \{ deadline: started \+ 100000 \}\)/.test(cron) &&
+    cron.indexOf("await syncUnsubscribes(") < cron.indexOf("await runRc(") && cron.indexOf("await runRc(") < cron.indexOf("await runDue(") &&
+    cron.indexOf("await runDue(") < cron.indexOf("await runReports("), cron.slice(cron.indexOf("const said")));
   const routeSrc = read("app/api/revenuecat/route.ts");
   ok("the route compares the header in constant time, reads the body as text (never formData), and logs nothing",
     /safeEqualStr\(given, w\)/.test(routeSrc) && /await req\.text\(\)/.test(routeSrc) && !/formData|console\./.test(routeSrc));

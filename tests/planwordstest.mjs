@@ -609,7 +609,7 @@ try {
   // ── the email list hears which plan began (Travis, 5 Oct 2026: "yeah build
   // it"). Apple never tells Sona who bought, so after a purchase goes through
   // buyPlan tells /api/lead "trial" or "paid" for the parent's own email,
-  // and the server stops the sales emails. Only with an email, once per kind and address, never
+  // and the list files them under Started Premium. Only with an email, once per kind and address, never
   // anything about the child, and never for a restore or a failure.
   await scenario("the list hears", async () => {
     const leads = () => hits.filter((h) => h.path === "/api/lead").map((h) => { try { return JSON.parse(h.body); } catch (e) { return { raw: h.body }; } });

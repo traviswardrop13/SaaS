@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
-import { APP_URL, DAY_MS, config, esc, markBuyer, unsubToken } from "@/lib/nurture";
+import { APP_URL, DAY_MS, config, esc, stopSeries, unsubToken } from "@/lib/nurture";
 import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
 
 /**
@@ -21,8 +21,9 @@ import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
  *     trial, paid, cancelled, billing, ended, moved; `ts` is RevenueCat's own
  *     event time, and an older event never overwrites a newer one
  *     (RevenueCat sends in no particular order, and more than once);
- *   - a buyer mark (`nurture:buyer:<email>`, lib/nurture.ts, kept for good):
- *     the welcome series skips its two sales emails;
+ *   - the welcome series stops for that address (lib/nurture.ts
+ *     stopSeries, its mark kept for good), as the phone's own plan post
+ *     already does: a buyer is sold nothing more;
  *   - "Your free days end soon": queued in `rc:remind` for 50 hours before
  *     the free days end, and sent by the daily run (/api/cron/nurture, 16:00
  *     UTC, which Vercel may start up to an hour late) only while the plan is
@@ -199,7 +200,7 @@ return 1`;
  * mark that it is done (`rc:evt:<id>`) is written last: a delivery that
  * stalls or is cut off part-way leaves no mark, and RevenueCat's retry does
  * it all again. "ok": acted on; "dup": already done; "stale": older than
- * what Sona has (the buyer mark and the customer link still hold); "retry":
+ * what Sona has (the series still stops, and the customer link holds); "retry":
  * the store did not answer, answer 503.
  */
 export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, now: number = Date.now()): Promise<"ok" | "dup" | "stale" | "retry"> {
@@ -209,8 +210,8 @@ export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, no
   const rec: Plan = { s: ev.state, exp: ev.exp, ts: ev.ts, at: new Date(now).toISOString() };
   const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, ev.email, ev.ts, JSON.stringify(rec)]);
   if (put === undefined || put === null) return "retry";
-  // every state is someone who started Premium at some point: no more sales emails
-  if (!(await markBuyer(ev.email, kv))) return "retry";
+  // every state is someone who started Premium at some point: no more welcome series
+  if (!(await stopSeries(ev.email, kv))) return "retry";
   // still on the list while RevenueCat still talks about them; EXPIRE never creates the key
   if ((await kv(["EXPIRE", "nurture:0:" + ev.email, LIST_KEEP_SEC])) === undefined) return "retry";
   for (const u of ev.uids) {

@@ -30,7 +30,7 @@
 //  - the caseload is an add-on: refused until the clinician's own is on,
 //    stamped addon:"1", and on the same Stripe customer where one exists;
 //  - a parent's email typed into an invite is used for ONE send and kept
-//    nowhere — not the store, not the log, not /api/lead, not Kit;
+//    nowhere — not the store, not the log, not /api/lead, not the email list;
 //  - restore-by-email and the charter count both ignore caseload plans.
 //
 // The routes are TypeScript. Like slpcommunityapi, this suite transpiles each
@@ -1034,7 +1034,7 @@ const count = (pred) => S.calls.filter(pred).length;
     mail.text.includes("You're getting this one email because Sam Rivera asked Sona to send it. We didn't keep your address."));
   ok("…with NO child data at all — not even the invite's label", !/Q\.Z\./.test(mail.subject + mail.html + mail.text) && !/\b(age|sound|practice target)\b:/i.test(mail.text));
   ok("the address is NEVER written to the store (no command carries it)", !touched(from, PARENT), JSON.stringify(mine(from).filter((c) => c.some((a) => a.includes("parent")))));
-  ok("…never reaches /api/lead or Kit — the only outbound call is the one send",
+  ok("…never reaches /api/lead or the email list — the only outbound call is the one send",
     OUT.slice(outFrom).every((o) => o.url === "https://api.resend.com/emails") && OUT.slice(outFrom).length === 1, JSON.stringify(OUT.slice(outFrom).map((o) => o.url)));
   const tok = r.json.invite.token;
   const data = JSON.parse(KV.K.get("inv:unpaid-k4:" + tok));
@@ -1081,8 +1081,8 @@ const count = (pred) => S.calls.filter(pred).length;
     r.status === 200 && r.json.emailed === false && /daily limit/.test(r.json.emailError || "") && RESEND.sent.length === 0 && !!r.json.invite, JSON.stringify(r.json));
 
   const src = noComments(read("app/api/slp/invite/route.ts"));
-  ok("the invite route never calls the lead door, Kit or a logger with the address",
-    !/\/api\/lead|kitSubscribe|lib\/kit/.test(src) && !/console\.(log|error|warn)\([^)]*parentEmail/.test(src));
+  ok("the invite route never calls the lead door, the email list or a logger with the address",
+    !/\/api\/lead|upsertContact|lib\/contacts|kitSubscribe|lib\/kit/.test(src) && !/console\.(log|error|warn)\([^)]*parentEmail/.test(src));
   const auth = read("lib/slpAuth.ts");
   ok("the parent sender logs no body from the provider (logBody false) — the sign-in email keeps its own",
     /"parent invite", false\)/.test(auth) && /Resend refused the sign-in email/.test(auth));

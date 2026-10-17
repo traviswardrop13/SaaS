@@ -337,15 +337,17 @@ if (A) {
     /Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
     !/process\.env\.SLP_AUTH_SECRET/.test((req.split("export async function POST")[0].split("export async function GET")[1]) || ""),
     "a health check that prints a secret is a leak wearing a helpful hat");
-  // GoHighLevel was deleted and its webhook goes with it (24 Sep 2026); Kit
-  // went on 16 Oct 2026 (RCHOOK1), and the list is Sona's own store. If the
-  // list flag read the webhook alone, following the setup steps would turn
-  // it false.
-  ok("…and the email-list flag counts Sona's own list, not only the retired webhook",
-    /crm: store \|\| Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) && !/kitConfigured|@\/lib\/kit/.test(req));
+  // GoHighLevel was deleted and its webhook goes with it (24 Sep 2026). If the
+  // list flag read the webhook alone, following the setup steps would turn it
+  // false on the day the list starts taking every sign-up. Since 16 Oct 2026
+  // the list is Resend's contacts (Kit before it).
+  ok("…and the email-list flag counts Resend's contacts, not only the retired webhook",
+    /crm: contactsConfigured\(\) \|\| Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
+    /list: contactsConfigured\(\)/.test(req) && /import \{ contactsConfigured \} from "@\/lib\/contacts"/.test(req));
   const founderPage = read("public/leads.html");
-  ok("the founder page no longer points at GoHighLevel or Kit",
-    !/GoHighLevel|HighLevel|\bGHL\b/.test(founderPage) && !/kitSync|kit-sync|Send everyone to Kit|In Kit/.test(founderPage) && /never reached the email list/.test(founderPage));
+  ok("the founder page no longer points at GoHighLevel or Kit, and has no button to press",
+    !/GoHighLevel|HighLevel|\bGHL\b/.test(founderPage) && /Resend doesn't have them yet/.test(founderPage) &&
+    !/kit-sync|Send everyone to/.test(founderPage) && /Nothing to press/.test(founderPage));
 }
 
 // ── source contracts: the routes ──
@@ -683,12 +685,11 @@ if (A) {
   // 24 Sep 2026: the first ad showed 26 "Website Leads" and the CRM had
   // almost none. /api/lead forwarded and forgot, and called a refusal a
   // capture; setup fired Lead whether or not an email was given.
-  ok("captured is true only when the lead was really kept (Sona's own list) or the webhook accepted it",
-    /const captured = kept \|\| !!\(hookRes && hookRes\.ok\);/.test(lead) && /kept = Number\(await kvCmd\(\["LPUSH", "leads:all", JSON\.stringify\(entry\)\]\)\) > 0;/.test(lead) &&
-    !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
-    "a 4xx from a broken workflow, or a store that did not answer, must not read as a lead delivered");
+  ok("captured is true only when the CRM accepted the lead",
+    /captured = !!\(hookRes && hookRes\.ok\) \|\| !!\(listRes && listRes\.ok\);/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
+    "a 4xx from a broken workflow must not read as a lead delivered");
   ok("…and a refusal is logged with the CRM's own answer", /CRM webhook refused the lead/.test(lead));
-  ok("every lead is kept in our own store, capped",
+  ok("every lead is also kept in our own store, capped",
     /kvCmd\(\["LPUSH", "leads:all", JSON\.stringify\(entry\)\]\)/.test(lead) && /kvCmd\(\["LTRIM", "leads:all", 0, \d+\]\)/.test(lead));
   const entry = lead.slice(lead.indexOf("const entry = {"), lead.indexOf("};", lead.indexOf("const entry = {")));
   ok("…built field by field from safeLead: never a child, never the free-text report",
@@ -707,28 +708,22 @@ if (A) {
 }
 
 
-// ── the list is Sona's own (Kit went on 16 Oct 2026, RCHOOK1): every
-// grown-up's email joins it; nothing about a child does ──
+// ── the email list (Resend's contacts since 16 Oct 2026, Kit before):
+//    every grown-up's email joins it; nothing about a child does ──
 {
   const lead = read("app/api/lead/route.ts");
   const ob = read("public/onboarding.html");
-  ok("Kit is gone: no lib/kit.ts, no catch-up route",
-    !existsSync(APP + "/lib/kit.ts") && !existsSync(APP + "/app/api/founders/kit-sync"));
-  {
-    const srcs = [];
-    const walk = (d) => { for (const f of readdirSync(d, { withFileTypes: true })) { const q = d + "/" + f.name; if (f.isDirectory()) walk(q); else if (/\.(ts|tsx)$/.test(f.name)) srcs.push([q, readFileSync(q, "utf8")]); } };
-    walk(APP + "/app"); walk(APP + "/lib");
-    const bad = srcs.filter(([, t]) => /@\/lib\/kit|api\.kit\.com|KIT_API_KEY|KIT_FORM_ID/.test(t)).map(([q]) => q.slice(APP.length));
-    ok("…and no server code reaches Kit or reads its keys", bad.length === 0, bad);
-  }
-  ok("the lead route keeps only a clinician's own first name, and the role as said",
+  ok("Kit is gone: no lib/kit.ts, no catch-up route, nothing imports it",
+    !existsSync(APP + "/lib/kit.ts") && !existsSync(APP + "/app/api/founders/kit-sync") && !/@\/lib\/kit"/.test(lead));
+  ok("the lead route sends every lead to the list, with only a clinician's own first name",
+    /upsertContact\(\{ email: safeLead\.email, firstName: safeLead\.first_name, role: safeLead\.role,\s+source: safeLead\.source, plan: safeLead\.plan \}\)/.test(lead) &&
     /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
     /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
     "first_name is only ever a clinician's own name; a parent's lead carries none");
-  ok("…and the ledger entry no longer carries a Kit answer", !/kit:/.test(lead.slice(lead.indexOf("const entry = {"), lead.indexOf("};", lead.indexOf("const entry = {")))));
-  ok("the landing page's questions say the email is kept by Sona, and no longer that it goes to Kit",
-    /your email and whether you're a parent, a speech therapist or something else, kept by Sona so Rachel's tips can reach you/.test(read("public/for-slps.html")) &&
-    !/\bKit\b/.test(read("public/for-slps.html")) && !/\bKit\b/.test(read("public/parents.html")));
+  ok("…and records the list's answer on the saved lead", /list: listRes \? \(listRes\.ok \? listRes\.detail : "refused \(" \+ listRes\.detail \+ "\)"\) : "not configured"/.test(lead));
+  ok("the landing page says, in its questions, that the email goes to the list at Resend",
+    /your email and whether you're a parent, a speech therapist or something else, kept by Sona and on our email list at Resend/.test(read("public/for-slps.html")) &&
+    /just your email, kept by Sona and on our email list at Resend/.test(read("public/parents.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
   // the grown-up's email and nothing from the child. Since 13 Oct 2026 it is
@@ -746,8 +741,8 @@ if (A) {
 
   // The consent line, everywhere an email can join the list (Travis's wording)
   // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
-  // rid of this text"); its "What's stored" answer still says Sona keeps the
-  // email.
+  // rid of this text"); its "What's stored" answer still says the email goes
+  // to the list.
   for (const f of ["public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
@@ -759,8 +754,9 @@ if (A) {
     /Get the weekly progress report/.test(updStep) && /\(optional\)/.test(updStep) && /Unsubscribe anytime/.test(updStep) &&
     /function runReports\(/.test(read("lib/report.ts")) && /function reportSync\(/.test(read("public/sona.js")) && /runReports\(/.test(read("app/api/cron/nurture/route.ts")));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
-  ok("the privacy policy names no Kit, and says the welcome emails come through Resend",
-    !/\bKit\b/.test(read("public/privacy.html")) && /Resend delivers[^<]*the welcome emails and tips from Rachel/.test(read("public/privacy.html")));
+  ok("the privacy policy names Resend as the email list and says it holds nothing about a child",
+    /<strong>Email list<\/strong> — Resend also keeps Sona&rsquo;s email list/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")) &&
+    !/\bKit\b/.test(read("public/privacy.html")));
 
   // Behaviour, against a fake Resend: the welcome email (25 Sep 2026).
   {
@@ -793,6 +789,7 @@ if (A) {
     }
   }
 
+  // Behaviour, against a fake Resend: tests/contactstest.mjs.
 }
 
 
@@ -804,24 +801,23 @@ if (A) {
   ok("an address longer than email allows is refused before it is kept", /email\.length > 254/.test(lead));
   ok("a stranger is limited to ten leads an hour from one address",
     /rateLimit\(req, \{ key: "lead", limit: 10, windowSec: 3600 \}\)/.test(lead),
-    "otherwise a script fills the ledger past its cap and stuffs the list with junk");
+    "otherwise a script fills the ledger past its cap and stuffs the email list with junk");
   ok("…while our own sign-up route, which forwards every clinician from the same servers, signs its leads past it",
     /"x-sona-lead-sig": leadSig\(email\)/.test(req) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
-    lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toHook"));
+    lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toList"));
   if (A) {
     ok("the signature is the server's own: same for the same email, different for another",
       A.leadSig("Sam@Clinic.org") === A.leadSig("sam@clinic.org") && A.leadSig("sam@clinic.org") !== A.leadSig("pat@clinic.org"));
   }
   ok("a timeout or network failure reads 'unreachable', never 'refused 0'",
-    /hookRes\.status \? "refused " \+ hookRes\.status : "unreachable"/.test(lead));
+    /hookRes\.status \? "refused " \+ hookRes\.status : "unreachable"/.test(lead) && /if \(c\.status === 0\) return "unreachable";/.test(read("lib/contacts.ts")));
   ok("the founder CSV cannot run a formula someone typed into a form",
     /if \(\/\^\[=\+\\-@\\t\\r\]\/\.test\(v\)\) v = "'" \+ v;/.test(page));
   ok("the founder page counts people, not rows", /var uniq = function \(list\)/.test(page) && /\$\("nLeads"\)\.textContent = uniq\(j\.leads\)/.test(page));
-  // 5 Oct 2026: the app tells this door when a parent starts Sona Premium;
-  // since 16 Oct 2026 it stops the welcome series' sales emails (RCHOOK1)
-  ok("a parent's plan arrives only as one of planWord's two words, rides in the safe copy, and marks the address a buyer",
+  // 5 Oct 2026: the app tells this door when a parent starts Sona Premium
+  ok("a parent's plan arrives only as one of planWord's two words, rides in the safe copy, and goes to the list",
     /plan: planWord\(body\?\.plan\),/.test(lead) &&
-    /plan: lead\.plan,/.test(lead) && /plan: safeLead\.plan,/.test(lead) && /if \(lead\.plan && kvConfigured\(\)\) \{\s*try \{ await markBuyer\(email, kvCmd\); \}/.test(lead));
+    /plan: lead\.plan,/.test(lead) && /source: safeLead\.source, plan: safeLead\.plan \}\)/.test(lead) && /plan: safeLead\.plan,/.test(lead));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
