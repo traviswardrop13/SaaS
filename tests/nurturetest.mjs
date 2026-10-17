@@ -58,8 +58,8 @@ ok("…with a working unsubscribe link (the token /api/email/unsub checks) in th
 ok("…and the mailing address, in html and text", w.html.includes("851 NE 1st Ave") && w.text.includes("851 NE 1st Ave"));
 ok("…and links to the App Store", w.html.includes(N.APP_URL));
 ok("a second sign-up with the same address sends nothing", !(await N.enroll("mom@example.com", s.cmd, fakeFetch, T + 1000)) && sent.length === 2);
-ok("the sequence is two at sign-up, then day 2, 3, 5", JSON.stringify(N.CONTENT.map((c) => c.day)) === "[0,0,2,3,5]");
-ok("nothing more before day 2", (await N.runDue(s.cmd, fakeFetch, T + 2 * N.DAY_MS - 1000)).sent === 0 && sent.length === 2);
+ok("the sequence is two at sign-up, then day 1, 3, 5 (Travis, 17 Oct 2026: \"just move day two to day one\")", JSON.stringify(N.CONTENT.map((c) => c.day)) === "[0,0,1,3,5]");
+ok("nothing more before day 1", (await N.runDue(s.cmd, fakeFetch, T + 1 * N.DAY_MS - 1000)).sent === 0 && sent.length === 2);
 // a daily run, an hour after each sign-up anniversary, for ten days
 for (let d = 1; d <= 10; d++) await N.runDue(s.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
 ok("…then each email once, in order, and nothing after the last", JSON.stringify(sent.map((m) => m.subject)) === JSON.stringify(N.CONTENT.map((c) => c.subject)), sent.map((m) => m.subject));
@@ -77,11 +77,11 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   const r = store(); await N.enroll("race@example.com", r.cmd, fakeFetch, T);
   const m = sent.length;
   const racing = async (u, init) => { if (JSON.parse(init.body).to[0] === "race@example.com") await N.stopSeries("race@example.com", r.cmd); return fakeFetch(u, init); };
-  await N.runDue(r.cmd, racing, T + 2 * N.DAY_MS + 1);
+  await N.runDue(r.cmd, racing, T + 1 * N.DAY_MS + 1);
   ok("…(the run put the next email back, as it would)", r.z.has("race@example.com"));
   const after = sent.length;
   for (let d = 3; d <= 10; d++) await N.runDue(r.cmd, fakeFetch, T + d * N.DAY_MS + 1);
-  ok("a purchase posted while the day-2 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
+  ok("a purchase posted while the day-1 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
 }
 // a day-0 email Resend turns away (busy: its two requests a second are
 // shared with the contact list) goes with the next daily run, never lost
@@ -93,7 +93,7 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   await N.enroll("burst@example.com", q.cmd, busy, T);
   ok("a welcome Resend turns away at sign-up waits on the schedule, due now", sent.length === m + 1 && q.kv.get(N.nextKey("burst@example.com")) === "1" && q.z.get("burst@example.com") === T, [sent.length - m, q.kv.get(N.nextKey("burst@example.com")), q.z.get("burst@example.com")]);
   await N.runDue(q.cmd, fakeFetch, T + 3600e3);
-  ok("…and the next daily run sends it, then keeps the series to its days", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "burst@example.com" && q.z.get("burst@example.com") === T + 2 * N.DAY_MS);
+  ok("…and the next daily run sends it, then keeps the series to its days", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "burst@example.com" && q.z.get("burst@example.com") === T + 1 * N.DAY_MS);
 }
 {
   // …and the FIRST email too ("Here's Sona", the App Store link): a kept 0 is
@@ -112,9 +112,9 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
 {
   const q = store(); await N.enroll("late1@example.com", q.cmd, fakeFetch, T); await N.enroll("late2@example.com", q.cmd, fakeFetch, T);
   const m = sent.length;
-  const r = await N.runDue(q.cmd, fakeFetch, T + 2 * N.DAY_MS + 1, { deadline: Date.now() - 1 });
+  const r = await N.runDue(q.cmd, fakeFetch, T + 1 * N.DAY_MS + 1, { deadline: Date.now() - 1 });
   ok("a daily run out of time sends nothing more and leaves both on the schedule", r.sent === 0 && r.left === 2 && sent.length === m && q.z.size === 2, r);
-  const r2 = await N.runDue(q.cmd, fakeFetch, T + 2 * N.DAY_MS + 1, { deadline: Date.now() + 60000 });
+  const r2 = await N.runDue(q.cmd, fakeFetch, T + 1 * N.DAY_MS + 1, { deadline: Date.now() + 60000 });
   ok("…and the next run sends them", r2.sent === 2 && r2.left === 0, r2);
 }
 // unsubscribing mid-way stops the rest
@@ -127,7 +127,7 @@ ok("unsubscribing mid-way stops every email after it", sent.length === n0 && mid
 // AN EMAIL GIVEN INSIDE THE APP (Travis, 13 Oct 2026: setup's email box moved
 // before the price). They already have the app, so the App Store email
 // ("Here's Sona") is skipped and the series starts at the 5-minute email,
-// still on day 0; days 2, 3 and 5 are unchanged, and the copy is untouched.
+// still on day 0; days 1, 3 and 5 are unchanged, and the copy is untouched.
 ok("the first email is the App Store one: \"Here's Sona\", whose button is the App Store link",
   N.CONTENT[0].subject === "Here\u2019s Sona" && /App Store/.test(N.CONTENT[0].button) && /iPhone or iPad/.test(N.CONTENT[0].paras.join(" ")) && N.render(0, "u", "p").html.includes(N.APP_URL));
 ok("…and an in-app lead starts at \"The 5-minute trick\", also day 0", N.IN_APP_START === 1 && N.CONTENT[N.IN_APP_START].subject === "The 5-minute trick" && N.CONTENT[N.IN_APP_START].day === 0);
@@ -138,9 +138,9 @@ ok("in-app sources: setup's email step and a purchase's plan post, nothing else"
   const app = store(), mark = sent.length;
   ok("an in-app enroll sends one email now and says so", await N.enroll("App@Example.com", app.cmd, fakeFetch, T, { inApp: true }) && sent.length === mark + 1);
   ok("…the 5-minute email, never the App Store one", sent.at(-1).subject === N.CONTENT[1].subject && sent.at(-1).to[0] === "app@example.com" && !sent.slice(mark).some((m) => m.subject === N.CONTENT[0].subject));
-  ok("…and the next one waits for day 2, as for everyone", app.kv.get(N.nextKey("app@example.com")) === "2" && app.z.get("app@example.com") === T + 2 * N.DAY_MS, [app.kv.get(N.nextKey("app@example.com")), app.z.get("app@example.com")]);
+  ok("…and the next one waits for day 1, as for everyone", app.kv.get(N.nextKey("app@example.com")) === "2" && app.z.get("app@example.com") === T + 1 * N.DAY_MS, [app.kv.get(N.nextKey("app@example.com")), app.z.get("app@example.com")]);
   for (let d = 1; d <= 10; d++) await N.runDue(app.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
-  ok("…then days 2, 3 and 5 in order: four emails in all, nothing left queued",
+  ok("…then days 1, 3 and 5 in order: four emails in all, nothing left queued",
     JSON.stringify(sent.slice(mark).map((m) => m.subject)) === JSON.stringify(N.CONTENT.slice(1).map((c) => c.subject)) && app.z.size === 0, sent.slice(mark).map((m) => m.subject));
   const n1 = sent.length;
   ok("a later sign-up on the website with the same address sends nothing", !(await N.enroll("app@example.com", app.cmd, fakeFetch, T + 9e6)) && sent.length === n1);

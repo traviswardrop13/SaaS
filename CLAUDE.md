@@ -1295,8 +1295,10 @@ sessions" on in PostHog too.
 
 Leads from inside the app (`app-setup`, `app-trial`, `app-paid`:
 `IN_APP_SOURCES` in `lib/nurture.ts`) skip the welcome series' first email
-("Here's Sona", the App Store link) and start at "The 5-minute trick"; days 2,
-3 and 5 are unchanged (`nurturetest`). **A parent whose phone reports a
+("Here's Sona", the App Store link) and start at "The 5-minute trick"; days 1,
+3 and 5 are unchanged (`nurturetest`). **The series is day 0 (two emails),
+day 1, day 3 and day 5** (Travis, 17 Oct 2026: "just move day two to day
+one"); someone already waiting for the old day-2 email keeps that day. **A parent whose phone reports a
 purchase leaves the series** (`stopSeries`, 16 Oct 2026): the plan post takes
 the rest off the schedule, so days 3 and 5 no longer sell free days they
 started; a purchase the phone never reports (no email on it) still gets them.

@@ -7,7 +7,7 @@ import { kvCmd } from "@/lib/slpAuth";
  * day, with a real unsubscribe link. That's it."). It replaces hand-sending a
  * Kit export every day, and keeps working after Kit is cancelled (24 Oct).
  *
- * Five emails from Rachel (CONTENT below: two at sign-up, then day 2, 3 and 5), each with a
+ * Five emails from Rachel (CONTENT below: two at sign-up, then day 1, 3 and 5), each with a
  * one-tap unsubscribe link (/api/email/unsub, the same HMAC token the Friday
  * email uses) and the mailing address (EMAIL_POSTAL) — CAN-SPAM. Nothing
  * about a child, ever: the only thing this file knows is an email address.
@@ -99,7 +99,9 @@ export const CONTENT: Content[] = [
     ps: "Already practicing? Keep the streak going!",
   },
   {
-    day: 2,
+    // day 1 since 17 Oct 2026 (Travis: "day zero, day one, day three, day
+    // five. So just move day two to day one")
+    day: 1,
     subject: "Try this the next time they say \u201cwabbit\u201d",
     preview: "One small habit that helps a lot",
     paras: [
