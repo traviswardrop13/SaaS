@@ -21,7 +21,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Pizza Chef | 5–8 | Queued |
 | Monster Makeover | 5–8 | Queued |
 | Peekaboo | 3–4 | Queued |
-| Balloon Party | 3–4 | Queued |
+| Balloon Party | 3–4 | Built and browser-verified; production still parked |
 | Grow a Flower | 3–4 | Queued |
 | Rocket Blast | 3–4 | Queued |
 | Build a Snowman | 3–4 | Queued |
@@ -55,7 +55,7 @@ The source catalog stays Coming Soon while the build is reviewed. Local
 browser tests unpark only their served fixture, never production access.
 New instruction: “Say each word two times to slow the road. Then drag to steer.
 Follow the glowing ring.” Targets, repetition count and acceptance thresholds
-are unchanged; the new mechanic/reward wording belongs in Rachel's review.
+are unchanged. These are gameplay instructions, with phone play review still required before reopening.
 
 Browser checks cover silence, two sayings, real movement reduction, continuous
 steering, brakes, help without stage credit, background/resume during help,
@@ -91,7 +91,7 @@ chests, dotted routes, footprints and X. Original art is unchanged.
 The catalog stays Coming Soon during review. New instruction: “Say each word
 two times for calm seas. Then draw a line from your boat to the glowing ring.
 Go around the islands.” Targets and acceptance thresholds are unchanged;
-Rachel can review the mechanic/reward wording alongside the other games.
+Phone play review is still required before reopening.
 
 Verification: all 45 sailing/touch/fit checks passed, including all eight
 voyages, a hint after an island bump, help/background/resume, restart,
@@ -132,7 +132,7 @@ image generation only. Exact prompts, origins and export metadata are in
 
 New instruction: “Say each word two times for a blueprint. Tap the wires to
 turn them. Connect the battery to the socket, then test the power.” It is in
-the recording inventory and remains preview-only for Rachel's wording review.
+the recording inventory and remains preview-only pending Travis's phone play review.
 
 Verification: all 55 browser checks passed. They independently traverse the
 wires rather than trusting the game's connected flag; rotate and test all
@@ -140,3 +140,44 @@ eight actual boards; verify speech/help, silence, background/resume, keyboard
 controls, missing-art fallbacks, replay, quiet microphones, and 320px/393px/
 iPad fit. The same test fails on the original robot animation. Syntax, art
 generator and recording-inventory checks passed. No push or release yet.
+
+### Why completed games stay parked during this build
+
+`CLAUDE.md` lines1542–1546 requires each rebuilt game to be “played by him on
+his phone” before taking `comingSoon` off. Lines1561–1563 repeats that opening
+rule. This is the reason for the production gate; the short nonclinical
+mechanic instructions do not create a new Rachel approval requirement. For
+the younger games, lines1694–1699 separately records an unresolved decision
+about asking twice. This build preserves the existing two sayings, and that
+release question remains for Rachel before a younger game reopens.
+
+## Balloon Party
+
+A preschool pump-and-guide game. Real taps fill a balloon; the child grabs its
+painted envelope and releases it inside a wide glowing garland ring. Five
+physical deliveries fill the party garland. Missed drops keep the full
+balloon and cost no new word. Wind and timers never attach one automatically.
+Arrow keys move the same balloon; Enter/Space can attach it.
+
+The existing five targets and two sayings remain. Accepted speech earns ten
+seconds of big pumps (0.34 air per tap instead of0.17) and calm wind. Optional
+help parks the same balloon and keeps its air, position and stage. All
+microphones, model words and quiet tails stay with SayPlay.
+
+Existing painted party, balloon and pump assets are reused. The envelope is
+sized independently of the long string. Missing sprites have visible
+fallbacks; the pump fallback hides once painted art has loaded.
+
+New instruction: “Say each word two times for big pumps and calm wind. Pump
+up your balloon. Then pull it into the glowing ring and let go.” Recording
+inventory is updated. The source stays parked for phone review and the
+already-documented younger repetition decision.
+
+Verification: all 41 browser checks passed, including five real deliveries,
+measured pump assistance, missed-drop retry, silence, help/background/resume,
+keyboard movement, unrelated-pointer cancellation, asset failures, quiet
+microphones and playable controls at320px/393px/iPad. The new test fails on
+the original animation. Syntax and art-generator checks passed. The old
+preschool scene is frozen for engine-only tests; protection checks now choose
+a remaining generated scene rather than assuming Balloon is still generated.
+No push or release yet.

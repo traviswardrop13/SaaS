@@ -1,6 +1,5 @@
-// The ten Say & Play games for ages 3-4: five words a game, one big thing
-// happening, nothing to read and nothing to aim at. See page.mjs for the shape
-// of a game and sayplay.js for what each action does.
+// Remaining generated scenes for ages3–4. Custom playable games keep their
+// own controllers and are absent here so regeneration cannot replace them.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, ground, star, heart, sparkle, house, tree, fence, flower, face, zzz, note } from "../bookart/kit.mjs";
 import { meadowBg, SKY, starsList, bubblesUp, kelp } from "../bookart/scene.mjs";
 import { bunting } from "../bookart/props.mjs";
@@ -10,38 +9,7 @@ import * as A from "./art.mjs";
 const put = (fn, x, y, s = 1, o = {}) => G(at(x, y, s, !!o.flip), fn(o));
 const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, s || 1, c)).join("");
 
-// ── 1. Balloon Party: every word blows the balloon bigger; then it lifts Bo up ──
-const balloon = {
-  key: "balloon", title: "Balloon Party", group: "simple", top: "#e6f6ff", bottom: "#d4efc4",
-  sub: "Say it to blow up the balloon", playDescription: "Every word you say blows the balloon bigger.",
-  how: "Say each word to blow up the big balloon.", blurb: "Every word blows Bo's balloon bigger, and at the end it lifts him up.",
-  alt: "Bo the bear holds a balloon at a party in the park.",
-  bg: meadowBg({ sun: [380, 60, 24], clouds: [[70, 70, 0.9], [300, 120, 0.6]] })
-    + bunting(-10, 18, 450, 30, 16)
-    + put(() => A.smallBalloon("#ffd21c"), 40, 356, 0.9) + put(() => A.smallBalloon("#58cc02"), 62, 360, 0.8)
-    + put(() => A.smallBalloon("#9b7fd8"), 404, 356, 0.9) + put(() => A.smallBalloon("#4db3f2"), 382, 362, 0.75),
-  parts: [
-    { id: "string", x: 0, y: 0, svg: L("M246 292 Q240 262 250 226", "#9aa7b8", 2.2) },
-    { id: "bear", x: 214, y: 366, o: "50% 100%", svg: G("scale(1.25)", cast.bear({ pose: "wave", face: "grin" })) },
-    { id: "puffs", x: 250, y: 220, hid: true, svg: A.airPuffs() },
-    { id: "balloon", x: 250, y: 228, s: 0.32, o: "50% 100%", svg: A.bigBalloon() },
-    { id: "b1", x: 110, y: 420, hid: true, svg: A.smallBalloon("#ff8fb0", 1.3) },
-    { id: "b2", x: 360, y: 430, hid: true, svg: A.smallBalloon("#4db3f2", 1.2) },
-    { id: "b3", x: 170, y: 440, hid: true, svg: A.smallBalloon("#ffd21c", 1.1) },
-    { id: "joy", x: 0, y: 0, hid: true, svg: sparkles([[110, 140, 1.3], [350, 90, 1.1], [390, 200, 1.4], [70, 230, 1]]) },
-  ],
-  steps: [0.48, 0.63, 0.77, 0.9, 1].map((s) => [
-    { a: "scale", id: "balloon", s }, { a: "fx", id: "balloon", fx: "wiggle", at: 150 },
-    { a: "show", id: "puffs", fx: "fade" }, { a: "hide", id: "puffs", at: 700 }, { a: "fx", id: "bear", fx: "bounce" },
-  ]),
-  finale: [
-    { a: "move", id: "balloon", x: 0, y: -60, s: 0.9 }, { a: "move", id: "string", x: 0, y: -60 }, { a: "move", id: "bear", x: 0, y: -60 },
-    { a: "fx", id: "balloon", fx: "float", at: 900 }, { a: "fx", id: "string", fx: "float", at: 900 }, { a: "fx", id: "bear", fx: "float", at: 900 },
-    { a: "show", id: "b1", fx: "flyaway", at: 200 }, { a: "show", id: "b2", fx: "flyaway", at: 500 }, { a: "show", id: "b3", fx: "flyaway", at: 800 },
-    { a: "show", id: "joy", fx: "fade", at: 300 },
-  ],
-  done: { title: "Up, up and away!", sub: "Your words blew up a giant balloon." },
-};
+// Balloon Party is now the hand-built pump-and-guide game in public/balloon.js.
 
 // ── 2. Grow a Flower: water the seed with every word; it sprouts, buds and blooms ──
 const flowerGame = {
@@ -356,4 +324,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [balloon, flowerGame, rocketGame, snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [flowerGame, rocketGame, snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];

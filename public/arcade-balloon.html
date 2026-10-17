@@ -1,80 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e9">
   <title>Sona — Balloon Party</title>
-  <link href="/fonts.css" rel="stylesheet">
-  <link href="/action.css" rel="stylesheet">
-  <link href="/sayplay.css" rel="stylesheet">
-  <meta name="theme-color" content="#e6f6ff" />
-  <!--
-    Balloon Party: a Say & Play game (suggested ages 3-4). Every word blows Bo's balloon bigger, and at the end it lifts him up.
-    Written by tools/gameart/build.mjs: change the game there and rebuild,
-    not here. What the mic may do, and why a spoken move is play and never
-    practice data, is at the top of /sayplay.js.
-  -->
-  <style>:root{--top:#e6f6ff;--bottom:#d4efc4;}</style>
+  <link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet"><link href="/balloon.css" rel="stylesheet">
 </head>
 <body data-phase="boot">
-  <div id="app">
-    <div id="top">
-      <button id="close" aria-label="Back">✕</button>
-      <span class="hudpill"><span id="ttl">Balloon Party</span></span>
-      <span id="spacer"></span>
-      <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
+  <main id="app">
+    <canvas id="partyCanvas" role="img" aria-label="A sunny garden party. Pump up your balloon, then pull it into the glowing ring and let go."></canvas>
+    <header id="top"><button id="close" type="button" aria-label="Back to games"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl">Balloon Party</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span></header>
+    <div id="partyBanner" role="status" aria-live="polite">Let's make a balloon party!</div>
+    <button id="partyBalloon" type="button" hidden aria-label="Drag your full balloon to the glowing ring"></button>
+    <div id="partyControls">
+      <button id="partyPump" class="cream-pill" type="button" disabled aria-label="Pump the balloon">
+        <span class="party-pump-art" aria-hidden="true"><svg class="party-pump-fallback" viewBox="0 0 60 145"><path d="M30 21v23" stroke="#b6a260" stroke-width="12"/><rect x="4" y="8" width="52" height="15" rx="7" fill="var(--act)"/><rect x="10" y="43" width="40" height="79" rx="13" fill="#e8d58b" stroke="#b5a05d" stroke-width="3"/><rect x="14" y="61" width="32" height="41" rx="10" fill="#75c9d0"/><path d="M28 121q-25 8-10 15h29" fill="none" stroke="#b5a05d" stroke-width="6" stroke-linecap="round"/><path d="m46 130 10 6-10 5" fill="none" stroke="var(--act-d)" stroke-width="4"/></svg><img src="/assets/crafted/game/balloon-pump.webp" alt="" draggable="false" onload="this.hidden=false;this.parentNode.classList.add('art-ready')" onerror="this.hidden=true;this.parentNode.classList.remove('art-ready')"></span>
+        <span id="partyPumpLabel">Pump</span>
+      </button>
+      <button id="partyHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for big pumps and calm wind"><img src="/assets/crafted/echo-wave.webp" alt=""><span>Big pumps</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
-    <div id="stageWrap"><svg id="stage" viewBox="0 0 440 400" role="img" aria-label="Bo the bear holds a balloon at a party in the park."><rect x="0" y="0" width="440" height="400" rx="0" fill="#bfe8fb"></rect><circle cx="380" cy="60" r="37.2" fill="#fff3b0" opacity="0.6"></circle><circle cx="380" cy="60" r="24" fill="#ffd21c"></circle><circle cx="372.3" cy="52.3" r="5.5" fill="#ffffff" opacity="0.7"></circle><g transform="translate(70 70) scale(0.9 0.9)"><ellipse cx="0" cy="10" rx="42" ry="14" fill="#ffffff"></ellipse><circle cx="-14" cy="2" r="15" fill="#ffffff"></circle><circle cx="10" cy="-4" r="19" fill="#ffffff"></circle><circle cx="28" cy="6" r="12" fill="#ffffff"></circle></g><g transform="translate(300 120) scale(0.6 0.6)"><ellipse cx="0" cy="10" rx="42" ry="14" fill="#ffffff"></ellipse><circle cx="-14" cy="2" r="15" fill="#ffffff"></circle><circle cx="10" cy="-4" r="19" fill="#ffffff"></circle><circle cx="28" cy="6" r="12" fill="#ffffff"></circle></g><path d="M0 250 Q 90 220 180 246 Q 280 272 360 240 Q 410 228 440 242 L440 400 L0 400 Z" fill="#b5e08f"></path><path d="M0 302 Q 220 282 440 306 L440 400 L0 400 Z" fill="#8fd06a"></path><path d="M0 362 Q 220 348 440 364 L440 400 L0 400 Z" fill="#7cc152"></path><path d="M36 372 l3 -10 l3 10 l3 -8 l3 8" stroke="#5fae3c" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><path d="M396 368 l3 -10 l3 10 l3 -8 l3 8" stroke="#5fae3c" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="120" cy="324" r="3" fill="#ffffff"></circle><circle cx="330" cy="338" r="3" fill="#ffd21c"></circle><path d="M-10 18 Q220 56 450 30" stroke="#b07a45" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><path d="M46.714285714285715 27.551020408163264 L64.71428571428572 27.551020408163264 L55.714285714285715 45.55102040816327 Z" fill="#ffd21c"></path><path d="M112.42857142857142 34.48979591836735 L130.42857142857142 34.48979591836735 L121.42857142857142 52.48979591836735 Z" fill="#4db3f2"></path><path d="M178.1428571428571 38.81632653061224 L196.1428571428571 38.81632653061224 L187.1428571428571 56.81632653061224 Z" fill="#58cc02"></path><path d="M243.85714285714283 40.53061224489796 L261.85714285714283 40.53061224489796 L252.85714285714283 58.53061224489796 Z" fill="#ff8fb0"></path><path d="M309.57142857142856 39.63265306122449 L327.57142857142856 39.63265306122449 L318.57142857142856 57.63265306122449 Z" fill="#9b7fd8"></path><path d="M375.2857142857143 36.12244897959184 L393.2857142857143 36.12244897959184 L384.2857142857143 54.12244897959184 Z" fill="#ff5c5c"></path><g transform="translate(40 356) scale(0.9 0.9)"><g transform="scale(1)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#ffd21c"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#ffd21c"></path></g></g><g transform="translate(62 360) scale(0.8 0.8)"><g transform="scale(1)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#58cc02"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#58cc02"></path></g></g><g transform="translate(404 356) scale(0.9 0.9)"><g transform="scale(1)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#9b7fd8"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#9b7fd8"></path></g></g><g transform="translate(382 362) scale(0.8 0.8)"><g transform="scale(1)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#4db3f2"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#4db3f2"></path></g></g><g id="p-string" class="part" transform="translate(0 0)"><g class="pm"><g class="pa"><path d="M246 292 Q240 262 250 226" stroke="#9aa7b8" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-bear" class="part" transform="translate(214 366)" style="--o:50% 100%"><g class="pm"><g class="pa"><g transform="scale(1.25)"><ellipse cx="0" cy="0" rx="28" ry="5.3" fill="#2f6b1a" opacity="0.2"></ellipse><circle cx="18" cy="-14" r="7" fill="#b5875a"></circle><ellipse cx="21" cy="-50.4" rx="6" ry="12" fill="#a57a4f" transform="rotate(-150 21 -50.4)"></ellipse><circle cx="27" cy="-60.8" r="5.6" fill="#b5875a"></circle><ellipse cx="-11" cy="-4" rx="11" ry="5.5" fill="#8f6a42"></ellipse><ellipse cx="11" cy="-4" rx="11" ry="5.5" fill="#8f6a42"></ellipse><ellipse cx="0" cy="-26" rx="24" ry="26" fill="#b5875a"></ellipse><ellipse cx="0" cy="-21" rx="13.7" ry="15.6" fill="#e0b98a"></ellipse><ellipse cx="-18.5" cy="-28.5" rx="6" ry="12" fill="#a57a4f" transform="rotate(17 -18.5 -28.5)"></ellipse><circle cx="-22" cy="-17" r="5.6" fill="#b5875a"></circle><circle cx="-18" cy="-86" r="9" fill="#b5875a"></circle><circle cx="18" cy="-86" r="9" fill="#b5875a"></circle><circle cx="-18" cy="-86" r="4.5" fill="#e0b98a"></circle><circle cx="18" cy="-86" r="4.5" fill="#e0b98a"></circle><circle cx="0" cy="-66" r="26" fill="#b5875a"></circle><ellipse cx="0" cy="-56" rx="12" ry="9" fill="#e0b98a"></ellipse><circle cx="-16" cy="-61" r="4.6" fill="#ffb9c8" opacity="0.8"></circle><circle cx="16" cy="-61" r="4.6" fill="#ffb9c8" opacity="0.8"></circle><circle cx="-9.5" cy="-71" r="3.5" fill="#4a2c14"></circle><circle cx="9.5" cy="-71" r="3.5" fill="#4a2c14"></circle><circle cx="-8.3" cy="-72.4" r="1.2" fill="#ffffff"></circle><circle cx="10.7" cy="-72.4" r="1.2" fill="#ffffff"></circle><path d="M-5.5 -52 Q0 -43.3 5.5 -52 Z" fill="#c0475a"></path><ellipse cx="0" cy="-61" rx="4.4" ry="3.2" fill="#4a2c14"></ellipse><circle cx="-10" cy="-82" r="2.6" fill="#ffffff" opacity="0.8"></circle></g></g></g></g><g id="p-puffs" class="part hid" transform="translate(250 220)"><g class="pm"><g class="pa"><path d="M-40 -30 q-12 -4 -20 -2 M-44 -12 q-12 0 -18 4 M40 -30 q12 -4 20 -2 M44 -12 q12 0 18 4" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-balloon" class="part" transform="translate(250 228)" style="--o:50% 100%" data-s="0.32"><g class="pm" style="transform:translate(0px,0px) rotate(0deg) scale(0.32)"><g class="pa"><path d="M0 -2 Q-6 -8 -4 -12 H4 Q6 -8 0 -2 Z" fill="#e84a4a"></path><ellipse cx="0" cy="-92" rx="70" ry="82" fill="#ff5c5c"></ellipse><ellipse cx="-30" cy="-120" rx="14" ry="26" fill="#ffffff" transform="rotate(28 -30 -120)" opacity="0.5"></ellipse><circle cx="-14" cy="-150" r="6" fill="#ffffff" opacity="0.5"></circle><path d="M-5 -10 Q0 -14 5 -10 Z" fill="#e84a4a"></path></g></g></g><g id="p-b1" class="part hid" transform="translate(110 420)"><g class="pm"><g class="pa"><g transform="scale(1.3)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#ff8fb0"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#ff8fb0"></path></g></g></g></g><g id="p-b2" class="part hid" transform="translate(360 430)"><g class="pm"><g class="pa"><g transform="scale(1.2)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#4db3f2"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#4db3f2"></path></g></g></g></g><g id="p-b3" class="part hid" transform="translate(170 440)"><g class="pm"><g class="pa"><g transform="scale(1.1)"><path d="M0 0 q-5 -24 0 -46" stroke="#9aa7b8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><ellipse cx="0" cy="-66" rx="17" ry="21" fill="#ffd21c"></ellipse><ellipse cx="-7" cy="-73" rx="4" ry="7" fill="#ffffff" transform="rotate(25 -7 -73)" opacity="0.5"></ellipse><path d="M-3 -45 H3 L0 -41 Z" fill="#ffd21c"></path></g></g></g></g><g id="p-joy" class="part hid" transform="translate(0 0)"><g class="pm"><g class="pa"><g transform="translate(110 140) scale(0.9 0.9)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g><g transform="translate(350 90) scale(0.8 0.8)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g><g transform="translate(390 200) scale(1 1)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g><g transform="translate(70 230) scale(0.7 0.7)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g></g></g></g></svg></div>
-    <div id="turnPanel" aria-live="polite">
-      <div id="picBox"><span id="pic"></span></div>
-      <div id="word"></div>
-      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
-      <div id="listenRow">
-        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></span>
-        <span id="micState"></span>
-        <span id="cheer"></span>
-        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
-      </div>
-    </div>
-  </div>
-
-  <div class="ovl" id="startOvl">
-    <div class="ovlCard">
-      <h2 id="startTitle">Balloon Party</h2>
-      <p>Say each word to blow up the big balloon.</p>
-      <p class="small" id="startSound"></p>
-      <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
-    </div>
-  </div>
-  <div class="ovl" id="primer">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
-      <h2>Let Echo hear you!</h2>
-      <p>Say each word, and watch what happens.</p>
-      <p class="small" id="micPromise"></p>
-      <button class="btn" id="primerYes">Turn on Echo's ears</button>
-      <button class="ghost" id="primerNo">Not now</button>
-    </div>
-  </div>
-  <div class="ovl" id="pauseOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
-      <h2>Paused</h2>
-      <button class="btn" id="resume">Keep playing</button>
-    </div>
-  </div>
-  <div class="ovl" id="endOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
-      <h2 id="endTitle"></h2>
-      <p id="endSub"></p>
-      <button class="btn" id="again">Play again</button>
-      <button class="ghost" id="goHome">Back home</button>
-    </div>
-  </div>
-
-  <script src="/sona.js"></script>
-  <script src="/sayplay.js"></script>
-  <script>SayPlay.start({"key":"balloon","title":"Balloon Party","steps":[[{"a":"scale","id":"balloon","s":0.48},{"a":"fx","id":"balloon","fx":"wiggle","at":150},{"a":"show","id":"puffs","fx":"fade"},{"a":"hide","id":"puffs","at":700},{"a":"fx","id":"bear","fx":"bounce"}],[{"a":"scale","id":"balloon","s":0.63},{"a":"fx","id":"balloon","fx":"wiggle","at":150},{"a":"show","id":"puffs","fx":"fade"},{"a":"hide","id":"puffs","at":700},{"a":"fx","id":"bear","fx":"bounce"}],[{"a":"scale","id":"balloon","s":0.77},{"a":"fx","id":"balloon","fx":"wiggle","at":150},{"a":"show","id":"puffs","fx":"fade"},{"a":"hide","id":"puffs","at":700},{"a":"fx","id":"bear","fx":"bounce"}],[{"a":"scale","id":"balloon","s":0.9},{"a":"fx","id":"balloon","fx":"wiggle","at":150},{"a":"show","id":"puffs","fx":"fade"},{"a":"hide","id":"puffs","at":700},{"a":"fx","id":"bear","fx":"bounce"}],[{"a":"scale","id":"balloon","s":1},{"a":"fx","id":"balloon","fx":"wiggle","at":150},{"a":"show","id":"puffs","fx":"fade"},{"a":"hide","id":"puffs","at":700},{"a":"fx","id":"bear","fx":"bounce"}]],"finale":[{"a":"move","id":"balloon","x":0,"y":-60,"s":0.9},{"a":"move","id":"string","x":0,"y":-60},{"a":"move","id":"bear","x":0,"y":-60},{"a":"fx","id":"balloon","fx":"float","at":900},{"a":"fx","id":"string","fx":"float","at":900},{"a":"fx","id":"bear","fx":"float","at":900},{"a":"show","id":"b1","fx":"flyaway","at":200},{"a":"show","id":"b2","fx":"flyaway","at":500},{"a":"show","id":"b3","fx":"flyaway","at":800},{"a":"show","id":"joy","fx":"fade","at":300}],"done":{"title":"Up, up and away!","sub":"Your words blew up a giant balloon."}});</script>
+    <div id="partyPower" hidden><span>Big pumps · Calm wind</span><div><i id="partyPowerFill"></i></div></div>
+    <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
+  </main>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="party-intro" src="/assets/crafted/home-balloon.webp" alt="Echo and balloons at a garden party"><h1 id="startTitle">Balloon Party</h1><p>Pump it up. Pull it into the glowing ring. Let go!</p><div class="party-demo" aria-hidden="true"><svg viewBox="0 0 150 40"><ellipse cx="20" cy="16" rx="12" ry="15" fill="currentColor"/><path d="M20 31v7M42 25q20-22 45-6m-6-7 8 7-10 2" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="121" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="4 4"/></svg></div><p>Say your word two times for big pumps and calm wind.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's play</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt=""><h2>Let Echo hear you!</h2><p>Say your word two times for big pumps.</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt=""><h2>A little party break</h2><p>Your balloon is waiting right here.</p><button class="btn" id="resume" type="button">Keep playing</button></div></div>
+  <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Play again</button><button class="ghost" id="goHome" type="button">Back to games</button></div></div>
+  <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/balloon.js"></script>
+  <script>
+    SayPlay.start({key:"balloon",title:"Balloon Party",intro:"Say each word two times for big pumps and calm wind. Pump up your balloon. Then pull it into the glowing ring and let go.",steps:[[],[],[],[],[]],finale:[],done:{title:"Party time!",sub:"You filled the party with five beautiful balloons!"},play:window.Balloon});
+    if(!document.body.hidden){try{Sona.track("game opened",{game:"balloon"});}catch(e){}}
+  </script>
 </body>
 </html>

@@ -3447,7 +3447,7 @@
     // bookshelf keeps `opens`: `comingOn: "2026-11-06"` on one line shows
     // "Coming Nov 6" until that day, then "Coming soon" again. It is a LABEL,
     // never a switch: only taking comingSoon off opens a game.
-    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word you say blows the balloon bigger." },
+    balloon: { name: "Balloon Party", sub: "Pump, float and guide", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Pump up a balloon and guide it to the party garland. Your words give bigger pumps and calm the wind." },
     flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Water the seed with your words and watch it grow." },
     rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word lights the countdown. Then blast off!" },
     snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word you say builds the snowman." },
