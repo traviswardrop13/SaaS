@@ -14,7 +14,7 @@ import { rateLimit } from "@/lib/rateLimit";
  * Why this is its own route and not either of the two that already exist:
  *  - Not /api/slp/feedback: families never sign in, so there is no session to
  *    say who wrote or where to reply. The reply address is whatever the parent
- *    types, it is optional, and it is used ONLY to reply. It never reaches /api/lead, Kit, or the lead/pilot
+ *    types, it is optional, and it is used ONLY to reply. It never reaches /api/lead, the email list, or the lead/pilot
  *    webhooks: asking for help must not sign a parent up for marketing email,
  *    and the page promises exactly that ("It isn't added to any mailing list").
  *  - Not /api/feedback: that route falls back to PILOT_WEBHOOK_URL and

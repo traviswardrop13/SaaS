@@ -18,8 +18,10 @@
 //     purchase sync is never sold a second plan;
 //   - the honesty of every sentence: no "free" on a pay-today plan, no figure
 //     that is not the store's, no plain "nothing to pay today" when the phone
-//     is not sure, and no promise of a message before the charge (Sona sends
-//     none: the words fail here until a change ships a real one);
+//     is not sure, and no promise of a message before the charge (since 16
+//     Oct 2026 Sona sends one, "Your free days end soon", but only to a
+//     parent who gave the app an email, so the card still promises none);
+//   - the parent's email handed to RevenueCat (RCHOOK1), and nothing else;
 //   - buyPlan's one purchase call and its error codes, on a plain bridge and
 //     on one that answers every unknown method name;
 //   - setup's helpers that live beside them: setupWall, the tab-only marker,
@@ -474,11 +476,13 @@ try {
     const block = a > -1 && b > a ? src.slice(a, b) : "";
     ok("every sentence Apple's card may show sits between the two markers", block.length > 2000 && /function planWords\(/.test(block) && /function planSay\(/.test(block) && /function planBillDate\(/.test(block) && src.indexOf("// PLAN-WORDS-BEGIN", a + 1) === -1, block.length);
     ok("…and that source says nothing of mail, a reminder or a notification, comments included", !/mail|remind|notif/i.test(block), (block.match(/.{0,40}(?:mail|remind|notif).{0,40}/i) || [""])[0]);
-    if (!existsSync(APP + "/app/api/revenuecat")) {
-      await load({});
-      const rows = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan, {}).rows.length));
-      ok("while no route can send one (app/api/revenuecat does not exist), the free card has no dated rows", rows === 0, rows);
-    }
+    // RevenueCat's webhook (app/api/revenuecat, 16 Oct 2026) now feeds a
+    // "Your free days end soon" email, but only for a parent who gave the
+    // app an email: a family who skipped it gets none. So the card still
+    // promises no message and shows no dated rows, whatever routes exist.
+    await load({});
+    const rows = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan, {}).rows.length));
+    ok("the free card has no dated rows (a reminder reaches only a parent who gave an email, so the card promises none)", rows === 0, rows);
   }
 
   // ── 10. the billing day ──
@@ -605,7 +609,7 @@ try {
   // ── the email list hears which plan began (Travis, 5 Oct 2026: "yeah build
   // it"). Apple never tells Sona who bought, so after a purchase goes through
   // buyPlan tells /api/lead "trial" or "paid" for the parent's own email,
-  // and Kit tags them. Only with an email, once per kind and address, never
+  // and the list files them under Started Premium. Only with an email, once per kind and address, never
   // anything about the child, and never for a restore or a failure.
   await scenario("the list hears", async () => {
     const leads = () => hits.filter((h) => h.path === "/api/lead").map((h) => { try { return JSON.parse(h.body); } catch (e) { return { raw: h.body }; } });
@@ -681,6 +685,65 @@ try {
     await seed({ "sona.profile.v1": Object.assign({ email: "not an email" }, KID) });
     await buy(); await settle();
     ok("an email that is not an address is not sent", leads().length === 0, leads());
+  });
+
+  // ── RevenueCat hears the parent's email (RCHOOK1, Travis, 16 Oct 2026:
+  // "Yes, show emails"). Once the store is set up on a page, the household's
+  // parent email goes to RevenueCat (setEmail), so its dashboard and its
+  // webhook name the parent. Only that address; nothing without one; never
+  // anything about the child; and a build without the call, or one that
+  // throws or refuses, sells exactly as before.
+  await scenario("RevenueCat hears the email", async () => {
+    const KID = { childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true };
+    const seed = (o) => page.evaluate((o) => { Object.keys(o).forEach((k) => localStorage.setItem(k, typeof o[k] === "string" ? o[k] : JSON.stringify(o[k]))); }, o);
+    // a fresh phone with this household, then a page that sets the store up
+    const visit = async (cfg, house) => {
+      await load(cfg); await seed(house); await again();
+      await page.evaluate(() => Sona.storePlan());
+      await page.waitForTimeout(100);
+      return page.evaluate(() => window.__phone.emails.slice());
+    };
+    let e = await visit({}, { "sona.profile.v1": Object.assign({ email: "Mom@Example.com", weeklyReport: true }, KID) });
+    ok("a parent who gave setup an email: RevenueCat is handed exactly that address, once on the page", same(e, [{ email: "Mom@Example.com" }]), e);
+    ok("…and nothing about the child goes with it", !/Mia|childName|childAge|"R"/.test(JSON.stringify(e)), e);
+    await page.evaluate(() => Sona.storePlan({ fresh: true }));
+    await page.waitForTimeout(50);
+    e = await page.evaluate(() => window.__phone.emails.slice());
+    ok("…and asking the store again on the same page does not hand it again", e.length === 1, e);
+
+    e = await visit({}, { "sona.profile.v1": KID });
+    ok("no email anywhere in the household: RevenueCat is handed nothing", e.length === 0, e);
+    e = await visit({}, { "sona.profile.v1": Object.assign({ email: "not an email" }, KID) });
+    ok("an email that is not an address: nothing", e.length === 0, e);
+    e = await visit({}, { "sona.kids.v1": { active: "k2", hi: 2, list: [{ slot: "", name: "Mia" }, { slot: "k2", name: "Leo" }] },
+      "sona.profile.v1": Object.assign({ email: "first@example.com" }, KID), "sona.profile.v1@k2": { childName: "Leo", childAge: "5", onboarded: true } });
+    ok("the email sits on the first child's profile while a brother plays: it is still the one handed over", same(e, [{ email: "first@example.com" }]) && !/Leo|Mia/.test(JSON.stringify(e)), e);
+
+    // before the purchase, so RevenueCat sends it with that very first message
+    await visit({}, { "sona.profile.v1": Object.assign({ email: "early@example.com" }, KID) });
+    const atBuy = await page.evaluate(() => {
+      const P = Capacitor.Plugins.Purchases, orig = P.purchaseStoreProduct;
+      let seen = -1;
+      P.purchaseStoreProduct = async (a) => { seen = window.__phone.emails.length; return orig(a); };
+      return Sona.storePlan().then((plan) => Sona.buyPlan(plan)).then((r) => ({ r, seen }), (err) => ({ err: String(err && err.code), seen }));
+    });
+    ok("the address is handed over before the purchase is asked for", !!atBuy.r && atBuy.r.ok === true && atBuy.seen === 1, atBuy);
+
+    // never less able to sell: a build without the call, or one that breaks
+    for (const mode of ["missing", "throw", "fail"]) {
+      const before = errors.length;
+      await load({ setEmail: mode }); await seed({ "sona.profile.v1": Object.assign({ email: "mom@example.com" }, KID) }); await again();
+      const r = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan)).then((x) => x, (err) => ({ code: err && err.code })));
+      await page.waitForTimeout(50);
+      ok("setEmail " + mode + ": the purchase goes through exactly as before, and nothing is thrown", !!r && r.ok === true && errors.length === before, [r, errors.slice(before)]);
+    }
+    {
+      const before = errors.length;
+      await load({ bridge: "proxy", setEmail: "missing" }); await seed({ "sona.profile.v1": Object.assign({ email: "mom@example.com" }, KID) }); await again();
+      const r = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan)).then((x) => x, (err) => ({ code: err && err.code })));
+      await page.waitForTimeout(50);
+      ok("a bridge that answers every unknown name with a refusal: the purchase still goes through", !!r && r.ok === true && errors.length === before, [r, errors.slice(before)]);
+    }
   });
 
   // ── 12. setupWall: does this family still owe the price? ──
@@ -834,12 +897,12 @@ try {
       out.imported = { ok: res && res.ok, asks: localStorage.getItem(KEY), draft: localStorage.getItem("sona.obdraft.v1"), draft2: localStorage.getItem("sona.obdraft.v1@k2"), name: Sona.getProfile().childName, state: Sona.setupAsks() };
       return out;
     });
-    ok("the list of answer ids is fixed: yes, or not right now", same(r.list, ["t_yes", "t_no"]), r.list);
+    ok("the list of answer ids is fixed: yes, no, or not yet", same(r.list, ["t_yes", "t_none", "t_no"]), r.list);
     ok("before setup nothing was asked", same(r.before, { asked: false, therapy: "" }), r.before);
     ok("after it, the answer is held and 'asked' is true", r.saved === true && same(r.after, { asked: true, therapy: "t_yes" }), r.after);
     ok("…in ONE household key in localStorage, holding one id and nothing else", same(JSON.parse(r.raw), { v: 2, therapy: "t_yes" }) && r.session === null && r.kkey === "sona.setupasks.v1", r.raw);
-    ok("no profile holds a therapy field", !/"therapy"|t_yes|t_no/.test(r.profile) && !/"therapy"|t_yes|t_no/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
-    ok("A BACKUP NEVER CARRIES IT: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|t_yes|t_no/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
+    ok("no profile holds a therapy field", !/"therapy"|t_yes|t_none|t_no/.test(r.profile) && !/"therapy"|t_yes|t_none|t_no/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
+    ok("A BACKUP NEVER CARRIES IT: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|t_yes|t_none|t_no/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
     ok("…and a backup that does hold either key is not let in, while the practice beside it is", r.imported.ok === true && r.imported.asks === null && r.imported.draft === null && r.imported.draft2 === null && r.imported.name === "Zed" && same(r.imported.state, { asked: false, therapy: "" }), r.imported);
     ok("adding a child copies nothing and changes nothing: the key is the household's", r.afterKid.raw === r.raw && r.afterKid.suffixed === null && same(r.afterKid.asks, r.after), r.afterKid);
     ok("only a listed id is ever stored: anything else, a name or the days picked included, is dropped", same(JSON.parse(r.strict[0]), { v: 2, therapy: "" }) && same(r.strict[1], { asked: true, therapy: "" }), r.strict);

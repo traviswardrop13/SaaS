@@ -264,6 +264,7 @@ that cannot regress out from under you.
 - **URLs:** Privacy `speaksona.com/privacy`, Support `speaksona.com/support`
 - **Coins (Trophy Road, 11 Oct 2026):** Coins are earned only through daily chests and Trophy Road gifts and are never sold: no consumable in-app purchase, and no random rewards (every prize is shown before it opens).
 - **Session recording (15 Oct 2026, REPLAY1):** PostHog may record parent setup (until the hand-off) and the plan screen's offer when a grown-up opened it (from setup, or after the first practice run) inside the app, as a replay of the page and where it was tapped, under the anonymous device id. The child's name is recorded only as "[child]", a piece of recording that would still hold a child's name or a parent's email is not sent, and every typed box is an empty shape; the speech therapy question and the ready screen are never in a recording; no child's practice, game or book screen ever is. In App Privacy that is *Usage Data → Product Interaction* (App Functionality / Analytics, not tracking), with the device id as the identifier: add it when the answers below are filed.
+- **RevenueCat webhook (16 Oct 2026, RCHOOK1):** a parent's email (setup's email step, only if given) now goes to RevenueCat too, and RevenueCat tells Sona's server when that parent's Premium starts, renews, is cancelled or ends. In App Privacy: *Contact Info → Email Address* (already there for the list; add App Functionality, since RevenueCat links it to the purchase) and *Purchases → Purchase History*, linked to the user, purposes App Functionality and Developer's Advertising or Marketing (it decides which of Sona's own emails a parent gets), not tracking. No review needed.
 - **App Privacy, owed (not yet answered in App Store Connect):** the anonymous device id and the product-interaction events `/api/track` already relays (practice started and completed, the daily goal, the plan funnel), now including the chest, Trophy Road gift, month gift, Buddy Shop ("shop item got") and game-level events. None carries a name, a count of trophies or coins held, or audio. The practice and daily-goal events do carry the sound being practised (for example "R"), as the privacy page says, and "shop item got" carries the item and its price in coins, never a balance.
 
 ## Apple Guideline 4.2 ("minimum functionality")
@@ -403,6 +404,42 @@ with no free trial turns every line into "charged today" (and the two screens
 before the price at the end of setup are skipped). A store that has no
 monthly product, or answers with the yearly one, sells nothing in its place.
 The card never states a saving: the price is Apple's.
+
+## RevenueCat webhook (16 Oct 2026, RCHOOK1)
+
+RevenueCat tells Sona's server whenever an App Store purchase of Sona Premium
+starts, renews, is cancelled or ends (`app/api/revenuecat/route.ts`,
+`lib/revenuecat.ts`). The app hands RevenueCat the parent's email (setup's
+email step), so each message names the parent, and RevenueCat's own
+dashboard shows that email instead of ANONYMOUS. Sona then stops the welcome
+series for a buyer, sends "Your free days end soon" a day or
+two before the free days end (only while they are still on them), and "We
+miss you at Sona" a day after a plan ends. A family who gave no email stays
+anonymous, and gets none of this. If the subscription later moves to
+another device's RevenueCat customer (the child's iPad on the same Apple ID,
+set up with no email: RevenueCat sends TRANSFER), Sona marks that address
+"moved" on /leads.html and sends it no free-days note.
+
+To switch it on (Travis, once; nothing to build in Xcode):
+
+1. **Vercel:** add `REVENUECAT_WEBHOOK_AUTH`, a long random value (16+
+   characters, for example `Bearer ` and 32 random letters and digits), and
+   redeploy. Open https://speaksona.com/api/revenuecat: `"auth": true`.
+2. **RevenueCat:** Integrations → Webhooks → add one. URL
+   `https://speaksona.com/api/revenuecat`; **Authorization header value**:
+   exactly the same value as in Vercel; environment **Production** (Apple's
+   sandbox, TestFlight and App Review, is left out); every event type. To
+   try it with a test purchase on a TestFlight build, it takes both: set
+   `REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment
+   to Sandbox (or both) in RevenueCat; put both back afterwards.
+3. **Send test event** in RevenueCat: it should show 200. (A test changes
+   nothing at Sona.)
+4. To change the secret later without a gap: copy the old value to
+   `REVENUECAT_WEBHOOK_AUTH_PREV`, set the new one in both places, then
+   delete the old one.
+
+Existing payers show up as they come: the next time the app opens, it hands
+RevenueCat the email, and their next renewal brings it to Sona.
 
 ## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026)
 

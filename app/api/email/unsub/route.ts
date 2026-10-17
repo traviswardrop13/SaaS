@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { mailbox } from "@/lib/report";
+import { markUnsubscribed } from "@/lib/contacts";
 
 /**
  * Unsubscribe for the weekly parent email — scanner-proof and RFC 8058 ready.
@@ -79,5 +80,9 @@ export async function POST(req: NextRequest) {
   if (res === undefined) {
     return page("Almost — one hiccup", "We couldn't save that just now. Reply to any Sona email and we'll unsubscribe you by hand today.");
   }
+  // the email list too (lib/contacts), so a broadcast from Resend skips them;
+  // if Resend doesn't answer, the address is owed and the daily run tries
+  // again (`email:unsub` already stops every email Sona itself sends)
+  try { await markUnsubscribed(v.email); } catch { /* never fails the unsubscribe itself */ }
   return page("You're unsubscribed 🧡", "No more emails from Sona. Your child's practice and report stay right in the app, always.");
 }

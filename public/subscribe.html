@@ -74,8 +74,10 @@
        plan starts with free days the card lists Today and the day the first
        charge falls, on the founding card's dashed rail, above the one button;
        a plan charged today has one line and no rows. Only rows the code can
-       keep are there. No row promises a reminder before the charge: Sona
-       sends none, and a promise nothing keeps is worse than no promise. The
+       keep are there. No row promises a reminder before the charge: since
+       16 Oct 2026 Sona sends one ("Your free days end soon", lib/revenuecat.ts),
+       but only to a parent who gave the app an email, and a promise that
+       does not hold for everyone is worse than no promise. The
        words are Sona.planWords's; the rules (.tl.days) are at the end of this
        sheet, after the fit rules they tie with. They replaced a three-row
        timeline whose "today" dot was orange, the colour that here means a
@@ -832,8 +834,8 @@
     // The day they are billed, the web card's one line (2 Oct 2026; it was a
     // dated three-row timeline). The date comes from the same +3 days the
     // charge itself uses, and the price is this repo's (the charter figure,
-    // window.__yearPrice). No reminder is promised: there is no trial mailer
-    // to keep one. Only the web card calls this now: Apple's card paints its
+    // window.__yearPrice). No reminder is promised: the only one (RCHOOK1)
+    // follows an App Store trial, never a web one. Only the web card calls this now: Apple's card paints its
     // own two rows from Sona.planWords, so no figure for it is typed here.
     function trialTimeline(id) {
       var el = document.getElementById(id);

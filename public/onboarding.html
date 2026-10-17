@@ -232,7 +232,8 @@
       <p class="muted ask-help">One tap. Your answer stays on this device.</p>
       <div class="ask" id="obTherapy" role="group" aria-labelledby="therapyTitle">
         <button type="button" class="ask-pick" data-val="t_yes" aria-pressed="false">Yes</button>
-        <button type="button" class="ask-pick" data-val="t_no" aria-pressed="false">Not right now</button>
+        <button type="button" class="ask-pick" data-val="t_none" aria-pressed="false">No</button>
+        <button type="button" class="ask-pick" data-val="t_no" aria-pressed="false">Not yet</button>
       </div>
       <button type="button" class="skip ask-skip" id="therapySkip">Skip</button>
     </div>
@@ -910,7 +911,10 @@
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
     // with Sona is, so the words are Rachel's to change.
-    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_no:"Sona is practice you can do at home."};
+    // Three answers since 16 Oct 2026 (Travis: "add a no so there's yes, no,
+    // and then not yet"): t_no, which read "Not right now", reads "Not yet",
+    // and "No" (t_none) is new. Both say the same sentence.
+    var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_none:"Sona is practice you can do at home.",t_no:"Sona is practice you can do at home."};
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
@@ -1005,11 +1009,11 @@
     // every box an empty shape. It goes off BEFORE the speech therapy question or
     // the ready screen (which repeats the answer, and whose size alone would
     // tell it) is painted, and on again only once a screen without them is
-    // up, so a tap on Yes or Not right now is never recorded. Never for a
+    // up, so a tap on Yes, No or Not yet is never recorded. Never for a
     // clinician's own setup, and never again once the hand-off is reached.
     // Two more locks (the second review, 15 Oct 2026):
     //  - the screen a therapy answer lands on is not recorded either: Yes,
-    //    Not right now and Skip sit inside the step, so a double tap's second
+    //    No, Not yet and Skip sit inside the step, so a double tap's second
     //    tap, or a mouse moving on from where it clicked, would be recorded
     //    at the answer's place. Recording comes back on the screen after it,
     //    reached by the footer, which is in the same place on every screen;
@@ -1198,7 +1202,7 @@
       // registration, not a lead — counting it as one told the ad account it
       // had 26 leads when the CRM had almost none (24 Sep 2026).
       try{ if(window.sonaTrack){ if(draft.email) sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
-      // the grown-up's email joins the list (Kit) via /api/lead — fire-and-forget,
+      // the grown-up's email joins the list (Resend's contacts) via /api/lead — fire-and-forget,
       // and keepalive, because the price may be loading on the next line.
       // COPPA: NO child's name, age or practice targets go to the marketing
       // CRM — not the SLP's client, and not the parent's own child either.

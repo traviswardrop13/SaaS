@@ -7407,8 +7407,31 @@
   let _iapReady = null;
   function iapConfigure() {
     const P = iapPlugin(); if (!P) return Promise.reject(new Error("no-iap"));
-    if (!_iapReady) _iapReady = Promise.resolve(P.configure({ apiKey: IAP_KEY })).catch(() => {}); // configure is idempotent enough; never block on it twice
+    if (!_iapReady) {
+      _iapReady = Promise.resolve(P.configure({ apiKey: IAP_KEY })).catch(() => {}); // configure is idempotent enough; never block on it twice
+      _iapReady.then(() => _rcEmail(P));
+    }
     return _iapReady.then(() => P);
+  }
+  // THE PARENT'S EMAIL, TO REVENUECAT (RCHOOK1, Travis, 16 Oct 2026: "Yes,
+  // show emails", over keeping RevenueCat's customers ANONYMOUS). Once the
+  // store is set up on a page, the household's parent email (parentEmail():
+  // the address the parent typed on setup's email step) is handed to
+  // RevenueCat as this customer's email. RevenueCat shows it beside each
+  // trial, payment and cancellation, and puts it in every message it sends
+  // Sona's server (/api/revenuecat): that is how the welcome emails stop for
+  // a family who bought, and how "Your free days end soon" finds the right
+  // parent. That address only, never a child's name or anything about their
+  // practice, and nothing when no email was given. Optional like every new
+  // native call: a build without setEmail, or one that throws or refuses,
+  // changes nothing, and nothing waits on it (RevenueCat keeps the address
+  // on the phone and sends it with the next purchase, restore or sync).
+  function _rcEmail(P) {
+    try {
+      if (!P || typeof P.setEmail !== "function") return;
+      const email = parentEmail();
+      if (email) _soon(() => P.setEmail({ email: email })).catch(() => {});
+    } catch (e) {}
   }
   function _iapActive(info) {
     try { const e = info && (info.customerInfo || info); return !!(e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT]); } catch (e2) { return false; }
@@ -7757,16 +7780,19 @@
     if (code === "cancelled") err.cancelled = true;
     return err;
   }
-  // KIT HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
+  // THE LIST HEARS WHEN THE FREE DAYS START (Travis, 5 Oct 2026: "yeah build
   // it"). A parent who gave the app their email (setup's email step, before
-  // the price since 13 Oct 2026) is on Sona's email list already. Apple never tells Sona who bought, so
-  // once a purchase here has gone through, the list is told which kind it
-  // was through /api/lead, the one door every grown-up's email uses: "trial"
-  // when Apple started the free days, "paid" when it charged at once. Kit's
-  // own automations then stop the welcome emails and can send the last-day
-  // note. What goes: that email and that one word. Never a child's name or
-  // anything about their practice. Never without an email (nobody is asked
-  // for one here), and once per kind and address on this phone.
+  // the price since 13 Oct 2026) is on Sona's email list already. Once a
+  // purchase here has gone through, the list is told which kind it was
+  // through /api/lead, the one door every grown-up's email uses: "trial"
+  // when Apple started the free days, "paid" when it charged at once. The
+  // server files them under Started Premium in Resend's contacts and stops
+  // the welcome series at once, before RevenueCat's own message arrives
+  // (RCHOOK1; Kit, which this used to tag, is gone since 16 Oct 2026).
+  // What goes: that email and that one word.
+  // Never a child's name or anything about their practice. Never without an
+  // email (nobody is asked for one here), and once per kind and address on
+  // this phone.
   const PLANTOLD = "sona.plantold.v1";
   function parentEmail() {
     const good = (v) => { const t = typeof v === "string" ? v.trim() : ""; return t.length <= 254 && /^\S+@\S+\.\S+$/.test(t) ? t : ""; };
@@ -7984,8 +8010,10 @@
   //     names a day with no time, so "a day before" could be read as the
   //     evening before, which is too late;
   //   - the two rows are Today and the billing day, and NOTHING ELSE. No
-  //     sentence here promises a message before the charge: Sona sends none.
-  //     A third row arrives only in the change that ships a real one, and
+  //     sentence here promises a message before the charge: since 16 Oct
+  //     2026 Sona sends one, but only to a parent who gave the app an
+  //     address, so a promise here would be false for the rest. A third row
+  //     would be Travis's call, for a family it is truly armed for, and
   //     planwordstest fails on those words until then.
   const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
   // The day the first charge falls, for a plan with free time. Apple's free
@@ -8144,7 +8172,9 @@
   // them; "we could at the very least ask them if they are in speech therapy
   // or not"). The days-a-week pick that sits beside it in setup is a real
   // setting (profile.weeklyGoal), not one of these.
-  const SETUP_THERAPY = ["t_yes", "t_no"];
+  // Yes, No (t_none, 16 Oct 2026) and Not yet (t_no, which read "Not right
+  // now" before; a saved t_no keeps its meaning)
+  const SETUP_THERAPY = ["t_yes", "t_none", "t_no"];
   function _askId(list, v) { return (typeof v === "string" && list.indexOf(v) !== -1) ? v : ""; }
   function setupAsks() {
     let raw = null, v = null;
