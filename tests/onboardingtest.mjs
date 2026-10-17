@@ -108,7 +108,8 @@ const priced=requests=>requests.filter(r=>new URL(r.url).pathname==='/subscribe.
 const RACHEL='Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.';
 const HEDGE='Sona practices — it doesn\'t test or diagnose.';
 // [id, the button's words, the sentence the ready screen shows for it]
-const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_no','Not right now','Sona is practice you can do at home.']];
+// Yes, No and Not yet since 16 Oct 2026 (Travis: "add a no so there's yes, no, and then not yet")
+const THERAPY=[['t_yes','Yes','Sona is practice for the days between speech visits.'],['t_none','No','Sona is practice you can do at home.'],['t_no','Not yet','Sona is practice you can do at home.']];
 // [value, the button's words, the chip the ready screen shows for it]: a real setting, the week's goal
 const GOAL=[['3','3 days a week','3 days a week'],['5','5 days a week','5 days a week'],['7','Every day','Every day']];
 // what the ready screen shows, as a parent reads it
@@ -272,7 +273,7 @@ await scenario('the two one-tap questions',async()=>{
   await updates(page);await page.locator('[data-step="ready"].on').waitFor();
   // both answered: the ready screen shows one sentence about Sona for each
   let ready=await readyShown(page);
-  ok('the ready screen then shows the therapy answer\'s one sentence about Sona, never one about the child, and the days picked',JSON.stringify(ready.lines)===JSON.stringify([THERAPY[1][2]])&&ready.chips.indexOf(GOAL[1][2])>-1&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),ready.lines);
+  ok('the ready screen then shows the therapy answer\'s one sentence about Sona, never one about the child, and the days picked',JSON.stringify(ready.lines)===JSON.stringify([THERAPY[2][2]])&&ready.chips.indexOf(GOAL[1][2])>-1&&ready.lines.every(l=>/^(In )?Sona\b/.test(l)&&!/Milo|your child|\b(he|she|they)\b/i.test(l)),ready.lines);
   // AN ANSWER SURVIVES AN INTERRUPTION: the draft holds both, and a reload
   // (which starts a parent at the hello again) shows them pressed.
   await page.reload();
@@ -320,13 +321,13 @@ await scenario('the two answers stay on this phone',async()=>{
   await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
   ok('the answers are kept in one household key, as fixed ids',kept.asks==='{"v":2,"therapy":"t_yes"}'&&kept.read.asked===true&&kept.read.therapy==='t_yes',kept.asks);
   // (the therapy answer's ids and the words that would give it away; "Yes" alone is in too many honest places to scan for)
-  const SECRET=new RegExp(THERAPY.map(a=>a[0]).concat(['Not right now','speech therapy','in therapy','Zephyrine','Ages 5–6']).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
+  const SECRET=new RegExp(THERAPY.map(a=>a[0]).concat(['Not yet','speech therapy','in therapy','Zephyrine','Ages 5–6']).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
   const leaks=requests.filter(r=>SECRET.test(decodeURIComponent(r.url))||SECRET.test(r.body||'')).map(r=>r.url);
   ok('no request to any host, in its address or its body, carries an answer, an answer\'s id, the child\'s name or the age group',leaks.length===0,leaks);
   ok('…nor does anything queued for Meta or for PostHog',!SECRET.test(kept.fbq)&&!SECRET.test(JSON.stringify(kept.posthog)),[kept.fbq,kept.posthog]);
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
   ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))==='["welcome","name","therapy","sounds","goal","updates","ready","mic","handoff"]'&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
-  ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
+  ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_none|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_none|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
   ok('…while the days picked ARE the week\'s goal, a real setting on the profile',/"weeklyGoal":5\b/.test(kept.profile),kept.profile);
   const lead=leadPosts(requests);
   ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly report opt-in)',lead);
@@ -351,7 +352,7 @@ await scenario('Rachel is on the ready screen, right before the price or the mic
   const shown=await card.evaluate(async el=>{const img=el.querySelector('img');return {photo:await img.decode().then(()=>img.naturalWidth,()=>0),src:img.getAttribute('src'),alt:img.alt,line:document.getElementById('readyRachel').textContent,page:document.body.innerText,about:el.querySelector('.ready-about').innerText.replace(/\s+/g,' ').trim(),asks:el.querySelectorAll('input,select,textarea,button').length};});
   ok('Rachel is on the ready screen: her photo loads',shown.photo>0&&/\/rachel-wardrop-profile\.jpg$/.test(shown.src)&&/Rachel/.test(shown.alt),shown);
   ok('her line is exactly: '+RACHEL,shown.line===RACHEL,shown.line);
-  ok('…in a block of its own, "About Sona", with the sentences about Sona and the line that Sona does not test or diagnose',shown.about==='ABOUT SONA '+THERAPY[1][2]+' '+RACHEL+' '+HEDGE,shown.about);
+  ok('…in a block of its own, "About Sona", with the sentences about Sona and the line that Sona does not test or diagnose',shown.about==='ABOUT SONA '+THERAPY[2][2]+' '+RACHEL+' '+HEDGE,shown.about);
   ok('no CCC, certification or claim that the fellowship is behind her',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page+' '+shown.alt),shown.page);
   ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
   const honest=(await readyShown(page)).text;
