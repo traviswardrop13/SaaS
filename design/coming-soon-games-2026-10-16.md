@@ -19,7 +19,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Castle Builder | 5–8 | Built and browser-verified; production still parked |
 | Space Trip | 5–8 | Built and browser-verified; production still parked |
 | Pizza Chef | 5–8 | Built and browser-verified; production still parked |
-| Monster Makeover | 5–8 | Queued |
+| Monster Makeover | 5–8 | Built and browser-verified; production still parked |
 | Peekaboo | 3–4 | Queued |
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
 | Grow a Flower | 3–4 | Built and browser-verified; production still parked |
@@ -308,4 +308,39 @@ included in the regression checks behind a verified portrait guard.
 All 85 browser checks passed, exit 0, including all eight landings on both
 short screens. The test rejects the original reveal scene. Syntax, protected
 art and recording-inventory checks passed. The catalog stays parked for phone
+play review; nothing is pushed or released.
+
+## Monster Makeover
+
+A tactile salon keeps one friendly monster's changes across eight actions:
+scrub five patches of mud, hold and aim the shower to rinse the soap, brush
+three curls downward, snip three tufts, choose and stamp four colored spots,
+then drag on a bow, glasses and crown. A still sponge, off-target rinse,
+upward brush, tiny snip, off-stencil paint or misplaced accessory cannot
+finish its action. Actual path contact is required for brushing and cutting;
+two endpoints around a detour cannot stand in for touching the fur.
+
+The existing eight targets and two sayings remain. Speech grants ten seconds
+of broader cleaning tools, faster rinsing, shorter/more forgiving guided
+strokes and wider accessory placement. Help preserves the makeover and tool
+position; interrupted accessories return safely to their tray. Keyboard
+controls operate the same real tools. SayPlay owns all eight spoken mechanical
+directions and the Hear-step button; no second voice or microphone exists.
+
+Six new painted assets total 199,120 bytes: salon, monster, shower, comb,
+scissors and clear-lens glasses. The existing sponge, bow and crown are
+reused unchanged. Anatomy and tool contact anchors match the actual art;
+the monster keeps its true aspect ratio. Organic shaded mud and animated
+fur respond to the child's work. Exact prompts, exports and alpha checks are
+in design/coming-soon-games/monster-art-notes.txt.
+
+The review caught an ordinary comb guide made too short by the final art's
+aspect ratio, and endpoint-only brush/snips accepting detours. Both old-code
+regression fixtures fail as expected. The corrected gameplay run passes all
+52 checks, including full ordinary guides, directional path contact, a
+near-miss accepted only with speech help, chosen colors, interrupted
+accessories, actual keyboard tools, restart and quiet microphones. The
+screen-fit/missing-art run also passed all 14 checks, exit 0, at 320px, 393px
+and iPad widths. The original reveal scene fails the new game test. Syntax, protected
+art and recording-inventory checks passed. Production stays parked for phone
 play review; nothing is pushed or released.

@@ -103,6 +103,7 @@ const SUITES = [
   "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
   "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
   "spacetest.mjs", // SPACE1: real thrust, steering and soft touchdowns, speech eases gravity without autopiloting
+  "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
