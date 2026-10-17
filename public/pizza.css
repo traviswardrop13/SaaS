@@ -1,0 +1,63 @@
+/* A painted kitchen with real tools and a single pizza carried through it. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#pizzaCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:16px;}
+#dots{gap:4px;padding:13px 10px;}
+#dots i{width:6px;height:7px;}
+#dots i.on{background:var(--act);}
+#pizzaBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:16px;right:16px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:8px 14px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(18px,4.6vw,22px);font-weight:800;line-height:1.1;text-align:center;pointer-events:none;}
+#pizzaHearStep{position:absolute;z-index:5;top:calc(128px + env(safe-area-inset-top));left:16px;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;color:var(--cream-ink);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);}
+#pizzaHearStep svg{width:24px;height:24px;}
+#pizzaHearStep:disabled{opacity:.55;}
+#pizzaTool,#pizzaIngredient0,#pizzaIngredient1,#pizzaIngredient2{position:absolute;z-index:4;transform:translate(-50%,-50%);padding:0;border:3px solid transparent;background:transparent;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
+#pizzaTool{border-radius:50%;}
+.pizza-ingredient{border-radius:50%;}
+#pizzaTool:active,.pizza-ingredient:active{cursor:grabbing;}
+#pizzaTool[hidden],.pizza-ingredient[hidden]{display:none;}
+#pizzaTool:focus-visible,.pizza-ingredient:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;background:rgba(255,251,225,.1);}
+#pizzaControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;align-items:stretch;justify-content:flex-end;gap:9px;}
+#pizzaControls button{min-height:58px;font-size:18px;line-height:1.05;}
+#pizzaControls button[hidden]{display:none;}
+#pizzaHelp{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;min-width:125px;max-width:170px;}
+#pizzaHelp img{width:31px;height:39px;object-fit:contain;flex:none;}
+#pizzaBake,#pizzaTakeOut,#pizzaRetry{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 10px;flex:1;max-width:155px;}
+#pizzaBake svg,#pizzaTakeOut svg,#pizzaRetry svg{width:23px;height:26px;flex:none;}
+#pizzaBake[aria-pressed=true]{transform:translateY(4px);box-shadow:0 1px 0 var(--act-d);}
+#pizzaControls button:disabled{opacity:.52;cursor:default;}
+#pizzaToolCard{position:absolute;z-index:3;left:16px;bottom:calc(98px + env(safe-area-inset-bottom));width:125px;min-height:72px;padding:6px 8px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:20px;background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
+#pizzaToolCard[hidden]{display:none;}
+#pizzaToolPreview{display:block;width:77px;height:44px;object-fit:contain;}
+#pizzaToolPreview[hidden]{display:none;}
+#pizzaToolName{font-family:"Baloo 2",sans-serif;font-size:14px;font-weight:800;color:var(--cream-ink);line-height:1;text-align:center;}
+#pizzaPower{position:absolute;z-index:3;right:18px;top:calc(128px + env(safe-area-inset-top));width:142px;padding:7px 10px;background:var(--cream-card);border:2px solid var(--cream-line);border-radius:17px;box-shadow:0 3px 0 var(--cream-line);font-family:"Baloo 2",sans-serif;font-size:14px;font-weight:800;color:var(--act-d);line-height:1.1;text-align:center;pointer-events:none;}
+#pizzaPower[hidden]{display:none;}
+#pizzaPower>span{display:block;margin-bottom:4px;}
+#pizzaPower>div{height:5px;background:var(--cream-line);border-radius:99px;overflow:hidden;}
+#pizzaPowerFill{display:block;height:100%;background:var(--act);}
+#pizzaHeat{position:absolute;z-index:3;bottom:calc(98px + env(safe-area-inset-bottom));left:16px;right:16px;border-radius:20px;padding:9px 13px 11px;background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
+#pizzaHeat[hidden]{display:none;}
+#pizzaHeatLabel{display:block;font-family:"Baloo 2",sans-serif;font-size:17px;font-weight:800;color:var(--cream-ink);line-height:1.1;text-align:center;margin-bottom:7px;}
+.pizza-heat-track{height:13px;position:relative;background:#e8d9bb;border-radius:99px;}
+#pizzaReadyBand{position:absolute;top:0;bottom:0;background:#83b687;border-radius:5px;}
+#pizzaHeatNeedle{position:absolute;top:-4px;bottom:-4px;width:5px;transform:translateX(-50%);border-radius:5px;background:var(--cream-ink);box-shadow:0 0 0 2px var(--cream-card);}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #pizzaControls,body:not([data-phase=play]) #pizzaTool,body:not([data-phase=play]) .pizza-ingredient,body:not([data-phase=play]) #pizzaHearStep,body:not([data-phase=play]) #pizzaHeat,body:not([data-phase=play]) #pizzaToolCard,body:not([data-phase=play]) #pizzaPower{visibility:hidden;pointer-events:none;}
+body[data-pizza-mode=bake] #pizzaPower{display:none;}
+.pizza-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:31px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:14px;padding:9px 9px;}#top{gap:6px;}#dots{gap:3px;padding:13px 8px;}#dots i{width:5px;height:7px;}#pizzaControls{left:12px;right:12px;gap:6px;}#pizzaControls button{font-size:15px;}#pizzaHelp{min-width:103px;padding:6px;gap:3px;}#pizzaHelp img{width:26px;height:34px;}#pizzaBake,#pizzaTakeOut,#pizzaRetry{padding:7px 6px;gap:3px;}#pizzaBake svg,#pizzaTakeOut svg,#pizzaRetry svg{width:18px;}#pizzaBanner{font-size:18px;padding:7px 12px;}#pizzaPower{right:14px;width:128px;font-size:13px;}#pizzaToolCard{left:13px;width:120px;}#pizzaHearStep{left:12px;}}
+@media(max-height:640px){#pizzaBanner{top:calc(69px + env(safe-area-inset-top));}#pizzaHearStep{top:calc(116px + env(safe-area-inset-top));}#pizzaPower{top:calc(116px + env(safe-area-inset-top));}#pizzaControls{bottom:calc(14px + env(safe-area-inset-bottom));}#pizzaControls button{min-height:52px;}#pizzaToolCard,#pizzaHeat{bottom:calc(84px + env(safe-area-inset-bottom));}#pizzaToolCard{min-height:61px;}#pizzaToolPreview{height:36px;}.pizza-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(8px + env(safe-area-inset-top));}#pizzaBanner{top:calc(61px + env(safe-area-inset-top));font-size:15px;padding:5px 11px;}#pizzaHearStep{top:calc(104px + env(safe-area-inset-top));left:auto;right:16px;}#pizzaControls{bottom:calc(10px + env(safe-area-inset-bottom));}#pizzaControls button{min-height:48px;}#pizzaToolCard{left:16px;bottom:calc(68px + env(safe-area-inset-bottom));width:112px;min-height:54px;padding:4px 7px;}#pizzaToolPreview{height:29px;}#pizzaToolName{font-size:12px;}#pizzaPower{top:auto;bottom:calc(68px + env(safe-area-inset-bottom));width:110px;font-size:12px;padding:5px 8px;}#pizzaHeat{top:calc(118px + env(safe-area-inset-top));bottom:auto;left:16px;right:auto;width:180px;}#pizzaHeatLabel{font-size:14px;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.pizza-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}

@@ -353,7 +353,8 @@ const spPool = new Function("S", spPoolFn.m[0] + "\nreturn pool;")(S);
 find(SAYPLAY, /SOUND = String\(\(S\.rotSound && S\.rotSound\(\)\) \|\| "R"\)\.toUpperCase\(\);/, "Say & Play's sound");
 const spVoice = find(SAYPLAY, /fetch\("\/api\/tts", \{ method: "POST", headers: \{ "Content-Type": "application\/json" \}, body: JSON\.stringify\(\{ text: t, voice: profile\.voiceId \|\| "", stable: true \}\)/, "Say & Play's voice request");
 const spIntro = find(SAYPLAY, /say\(G\.intro\)/, "Say & Play first-turn instruction");
-coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk, spIntro]);
+const spInstruct = find(SAYPLAY, /return say\(t\)\.then/, "Say & Play's owned mechanical instructions");
+coverAll(SAYPLAY, /(?<![\w$.])say\(/, [spAsk, spIntro, spInstruct]);
 coverAll(SAYPLAY, TTS_CALL, [spVoice], "a voice request"); coverAll(SAYPLAY, SPEAK_CALL, [], "a voice call");
 const spLine = (w) => spAsk.m[1] + w + spAsk.m[2];
 // Which game a page is, from the catalog. A page that loads a speaking
@@ -366,7 +367,16 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
-const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spSteps = ["pizza"].map((key) => {
+  const file = "public/" + key + ".js", a = find(file, /var STEP_LINES\s*=\s*(\[[\s\S]*?\]);/, key + " mechanical directions");
+  const lines = JSON.parse(a.m[1]);
+  if (lines.length !== 8 || lines.some((line) => typeof line !== "string" || !line.trim())) fail(key + " must list its eight mechanical directions");
+  const calls = allIdx(file, /api\.instruct\(STEP_LINES\[stage\]\)/).map((h) => ({ idx:h.idx, end:h.idx + h.m[0].length }));
+  if (!calls.length) fail(key + " does not play its listed directions");
+  coverAll(file, /api\.instruct\(/, calls, "a mechanical instruction");
+  return { key, lines, cite:a.cite };
+});
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.
@@ -744,7 +754,8 @@ B("book-turn.mp3", bookBye.m[1], `A book page's key word (C9): after ${NUMWORD[b
 bTable("B6 — Books (2)");
 const spIntroLines = [...new Set(spIntros.map((a) => a.line))];
 spIntroLines.forEach((line, i) => { const uses = spIntros.filter((a) => a.line === line); B("picture-two-times-" + (i + 1) + ".mp3", line, uses.map((a) => roundName(a.key) + (S.GAME_ACTS[a.key].comingSoon ? " (Coming soon; preview only)" : "")).join(", ") + ": once before the first isolated word ask of a visit; never between the first and second saying.", "Clear and friendly, its own sentence. Leave a short natural pause before the target word.", uses.map((a) => a.cite).join("; ") + "; played at " + spIntro.cite); });
-bTable(`B7 — Picture-game instructions (${spIntroLines.length})`, "Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
+spSteps.forEach((game) => game.lines.forEach((line, i) => B("picture-" + game.key + "-step-" + (i + 1) + ".mp3", line, roundName(game.key) + " (Coming soon; preview only): mechanical direction for step " + (i + 1) + ", after the word is accepted, when Hear the step is tapped, or when returning to an interrupted direction. Never plays into a microphone; help, pause and finishing the move cancel its current playback. Completed directions do not repeat on resume.", "Short, playful and clear. This describes the finger action, not a speech target.", game.cite + "; owned at " + spInstruct.cite)));
+bTable(`B7 — Picture-game instructions (${spIntroLines.length + spSteps.reduce((n, game) => n + game.lines.length, 0)})`, "Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.");
 P();
 P("Not in this list because they speak nothing: Home, setup, settings, the voice");
 P("picker, the mic-permission screens, the chest captions and every in-round label.");

@@ -3472,7 +3472,7 @@
     // brush and the child rubs the sand off a bone (public/dino.js).
     dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
     space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word flies your rocket to the next planet." },
-    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds something to your pizza." },
+    pizza: { name: "Pizza Chef", sub: "Cook your own pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Roll, spread, top, bake and slice your own pizza. Saying your word lends a cooking hand." },
     monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word gives the monster a silly new look." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.

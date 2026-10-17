@@ -1335,7 +1335,7 @@ for (const gumDelay of [300, 500]) for (const tapAfter of [150, 300]) {
 if (PART === "engine") {
 // ── the first time: a grown-up says yes before any mic prompt ──
 await scenario("primer: not now", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -1350,7 +1350,7 @@ await scenario("primer: not now", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: yes", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -1362,7 +1362,7 @@ await scenario("primer: yes", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: refused", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", micMode: "deny", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", micMode: "deny", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primerYes").click();
@@ -1373,7 +1373,7 @@ await scenario("primer: refused", async () => {
 
 // ── a hidden page pauses; coming back takes a tap ──
 await scenario("pause", async () => {
-  const { context, page, errors } = await fresh("arcade-castle.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-scene.html", { age: "7", micok: true, permission: "granted", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);

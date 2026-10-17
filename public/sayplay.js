@@ -102,12 +102,12 @@
   }
 
   // ── audio: Echo's voice (cached on this phone), chimes, and their order ──
-  var audioCtx = null, speaking = false, ttsPlaying = false, audioGeneration = 0, audioPaused = !!document.hidden, audioStop = null, audioSuspend = Promise.resolve();
+  var audioCtx = null, speaking = false, ttsPlaying = false, audioGeneration = 0, audioPaused = !!document.hidden, audioStop = null, audioSuspend = Promise.resolve(), instructionActive = false, instructionOwed = null;
   function audioAllowed(generation) { return !document.hidden && !audioPaused && generation === audioGeneration; }
   function stopAudio() {
     audioGeneration++; audioPaused = true;
     var stop = audioStop; audioStop = null; if (stop) stop();
-    speaking = false; ttsPlaying = false;
+    speaking = false; ttsPlaying = false; instructionActive = false;
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     try { if (S && S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {}
     try { if (audioCtx && audioCtx.suspend) audioSuspend = Promise.resolve(audioCtx.suspend()).catch(function () {}); } catch (e) {}
@@ -576,7 +576,7 @@
       // An optional in-game speech power reuses this same quiet word turn.
       // It returns to the SAME move: asking for help never spends a turn or
       // opens a second microphone alongside the engine's microphone.
-      if (helpTurn && G.play.onHelp) { helpTurn=false; G.play.onHelp(step); }
+      if (helpTurn && G.play.onHelp) { helpTurn=false; G.play.onHelp(step); replayInstruction(); }
       else G.play.onWord(step);
       return;
     }
@@ -596,6 +596,10 @@
   function moveDone() {
     if (phase !== "play" || paused) return;
     step++; paintDots();
+    instructionOwed = null;
+    // A cooking/tool instruction belongs only to its physical move. Cancel
+    // a late fetch or playing clip before the next ask or the celebration.
+    if (instructionActive) { stopAudio(); audioPaused = !!document.hidden; }
     if (step >= G.steps.length) finish();
     // "step" while the next word is owed (1 Oct 2026). It stayed "play", and a
     // page hidden in this quarter second lost the round: pause() clears the
@@ -611,6 +615,18 @@
     said=0;
     nextTurn(true);
     return true;
+  }
+  function instruct(t) {
+    // The same owner handles mechanical instructions for nonreaders. Games
+    // cannot start a voice beside a microphone or outside their play phase.
+    if (phase !== "play" || paused || turnLive || listening || micAsking || speaking || !t) return Promise.resolve();
+    var generation = audioGeneration, owed = { text:t, step:step }; instructionActive = true; instructionOwed = owed;
+    return say(t).then(function () { if (generation === audioGeneration) { instructionActive = false; if (instructionOwed === owed) instructionOwed = null; } });
+  }
+  function replayInstruction() {
+    // A background or help ask can interrupt a fetch or half-heard direction.
+    // Keep it owed to this move only; finished directions never repeat here.
+    if (instructionOwed && instructionOwed.step === step && !instructionActive) instruct(instructionOwed.text);
   }
   function finish() {
     micStop(); turnLive = false; face("cheer"); setPhase("finale");
@@ -632,7 +648,7 @@
     $("endOvl").classList.remove("show");
     try { $("turnPanel").classList.remove("done"); } catch (e) {}
     if (G.play) G.play.reset(); else resetStage();
-    step = 0; helpTurn=false; paintDots(); used = []; themedUsed=[]; roundWords=[];
+    step = 0; helpTurn=false; instructionOwed=null; paintDots(); used = []; themedUsed=[]; roundWords=[];
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
@@ -650,7 +666,7 @@
     paused = false; audioPaused = false; $("pauseOvl").classList.remove("show");
     if (G.play && G.play.resume) G.play.resume(phase === "play");
     // paused with the ball in hand (or in the air): the same move goes on
-    if (phase === "play") { setPhase("play"); return; }
+    if (phase === "play") { setPhase("play"); replayInstruction(); return; }
     if (step >= G.steps.length) { showEnd(); return; }
     // paused mid-turn: the same word again; paused after a step: the next one
     nextTurn(phase !== "step");
@@ -687,6 +703,7 @@
       sfx: function (n) { sfx(n); },
       done: moveDone,
       practice: practiceHelp,
+      instruct: instruct,
       hint: function (t) { try { $("micState").textContent = t; } catch (e) {} },
       cheer: function (t) { try { $("cheer").textContent = t; } catch (e) {} },
       face: face,

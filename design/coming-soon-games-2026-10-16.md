@@ -18,7 +18,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Robot Builder | 5–8 | Built and browser-verified; production still parked |
 | Castle Builder | 5–8 | Built and browser-verified; production still parked |
 | Space Trip | 5–8 | Queued |
-| Pizza Chef | 5–8 | Queued |
+| Pizza Chef | 5–8 | Built and browser-verified; production still parked |
 | Monster Makeover | 5–8 | Queued |
 | Peekaboo | 3–4 | Queued |
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
@@ -234,3 +234,43 @@ art, quiet microphones, replay and 320px/393px/iPad fit. The test rejects the
 old animation. Syntax, art ownership and voice-inventory checks passed.
 The production catalog remains parked for phone play review. Nothing is
 pushed or released; the full current release battery remains required.
+
+## Pizza Chef
+
+One pizza moves through eight real cooking actions: roll dough with strokes,
+brush sauce, move to sprinkle cheese, drag three groups of toppings, control
+the oven and deliberately take the pizza out, then make four different
+full cuts. A held still tool, a cold oven, a short swipe or a repeated cut
+cannot finish the relevant task. Missed or interrupted toppings return to
+their tray without spending another word. An overheated oven offers a retry.
+
+The existing eight targets and two sayings remain. Speech gives stronger
+rolling, wider brushes and topping landing areas, a slower heat gauge, and
+more forgiving cut guides. Help keeps all committed cooking work. The oven's
+ready band stays fixed, so power expiry never invalidates a ready pizza.
+
+Nonreaders hear eight short mechanical directions, with a Hear-step button.
+The new SayPlay-owned instruct API uses the existing voice cache, quiet
+tails and cancellation generation. It cannot speak beside a microphone.
+Interrupted directions remain owed to their current move and replay after
+help or return; completed directions do not repeat, and finishing a move
+cancels any pending direction. No controller owns a microphone or voice.
+
+The new painted kitchen and nine transparent food/tool assets match the
+existing home card and total 380,918 bytes. Alpha-preserving exports, exact
+prompts and origins are in design/coming-soon-games/pizza-art-notes.txt.
+Original art is unchanged. All spoken lines are in the recording inventory.
+
+Verification: the full cooking/lifecycle run passed all 75 checks, covering
+all eight actions, actual speech benefits, missed/interrupted toppings,
+overheat/retry, ready-state preservation, knife guards, keyboard rolling,
+late voice responses, interrupted-direction replay, quiet microphones,
+fallback art and 320px/393px/iPad fit. A focused ready-band regression also
+passed both checks and rejects the previous variable ready band: power
+changes timing without moving the target. The new game
+test rejects the old reveal scene; the voice test rejects the previous owner
+without instruction support. The shared speech suite passed all 305
+assertions after its generic pause/permission checks were moved to the
+existing fixed scene fixtures. No speech thresholds or repetitions changed.
+Syntax, protected-art and recording-inventory checks passed. The source
+stays parked for phone review; nothing is pushed or released.

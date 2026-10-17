@@ -48,41 +48,7 @@ const spaceGame = {
   done: { title: "What a space trip!", sub: "Eight words flew you across the stars." },
 };
 
-// ── 9. Pizza Chef: dough, sauce, cheese and five toppings; then it bakes ──
-const PZ = [200, 300];
-const pizzaGame = {
-  key: "pizza", title: "Pizza Chef", group: "arcade", top: "#fff6e9", bottom: "#ffe1c4",
-  sub: "Say it to make a pizza", playDescription: "Every word adds something to your pizza.",
-  how: "Say each word to make a pizza.", blurb: "Every word adds to the pizza: dough, sauce, cheese and five toppings; then it bakes.",
-  alt: "A kitchen with a pizza board on the counter and a pizza oven.",
-  bg: R(0, 0, W, 250, 0, "#fff0dc") + range(11).map((c) => range(3).map((r) => R(c * 40 + (r % 2) * 20 - 20, 140 + r * 36, 36, 32, 4, (c + r) % 2 ? "#ffe0bd" : "#ffffff")).join("")).join("")
-    + G(at(80, 250, 0.9), A.ovenBack()) + R(0, 40, W, 10, 4, "#c98f4f") + C(250, 26, 12, "#ff5c5c") + C(290, 30, 10, "#58cc02") + C(320, 26, 12, "#ffd21c") + C(360, 30, 10, "#ff9d3d"),
-  parts: [
-    { id: "chef", x: 382, y: 266, svg: G("scale(1.15)", cast.bear({ pose: "wave", face: "grin" }) + G("translate(0 -92) scale(1.3)", A.chefHat())) },
-    { id: "counter", x: 0, y: 0, svg: R(0, 246, W, 154, 0, "#c98f4f") + R(0, 246, W, 16, 0, "#dba566") + L("M0 300 H440 M0 350 H440", "#b88048", 2) },
-    { id: "board", x: PZ[0], y: PZ[1], svg: A.pizzaBoard() },
-    { id: "dough", x: PZ[0], y: PZ[1], hid: true, svg: A.dough() },
-    { id: "sauce", x: PZ[0], y: PZ[1], hid: true, svg: A.sauce() },
-    { id: "cheese", x: PZ[0], y: PZ[1], hid: true, svg: A.cheese() },
-    { id: "pep", x: PZ[0], y: PZ[1], hid: true, svg: A.spread([[-70, -14], [-26, -34], [24, -30], [70, -10], [-44, 20], [6, 4], [52, 26], [90, 14], [-90, 6]], A.pepperoni) },
-    { id: "mush", x: PZ[0], y: PZ[1], hid: true, svg: A.spread([[-50, -2], [36, -8], [-8, 32], [80, -30], [-90, -24]], A.mushroom) },
-    { id: "pepper", x: PZ[0], y: PZ[1], hid: true, svg: A.spread([[-10, -18], [60, 4], [-66, 30], [20, 34], [-100, 0]], A.pepper) },
-    { id: "olive", x: PZ[0], y: PZ[1], hid: true, svg: A.spread([[-36, -40], [8, -46], [100, -8], [-80, 30], [34, 14], [-20, 14]], A.olive) },
-    { id: "basil", x: PZ[0], y: PZ[1], hid: true, svg: A.spread([[-20, -10], [46, -22], [70, 30], [-60, -30], [-6, 40]], A.basil) },
-    { id: "baked", x: PZ[0], y: PZ[1], hid: true, svg: E(0, 0, 138, 66, "#ff9d3d", { opacity: 0.16 }) + L("M-120 -8 L120 8 M-40 -60 L40 60 M40 -60 L-40 60", "#e0a050", 2.5, { opacity: 0.6 }) },
-    { id: "steam", x: PZ[0], y: PZ[1] - 70, hid: true, svg: L("M-40 0 q-8 -14 0 -26 q8 -12 0 -26 M0 -6 q-8 -14 0 -26 q8 -12 0 -26 M40 0 q-8 -14 0 -26 q8 -12 0 -26", "#c9b29a", 5, { opacity: 0.8 }) },
-  ],
-  steps: [
-    [{ a: "show", id: "dough", fx: "pop" }], [{ a: "show", id: "sauce", fx: "fade" }], [{ a: "show", id: "cheese", fx: "fade" }],
-    [{ a: "show", id: "pep", fx: "drop" }], [{ a: "show", id: "mush", fx: "drop" }], [{ a: "show", id: "pepper", fx: "drop" }],
-    [{ a: "show", id: "olive", fx: "drop" }], [{ a: "show", id: "basil", fx: "drop" }],
-  ].map((s) => s.concat([{ a: "fx", id: "chef", fx: "bounce", at: 200 }])),
-  finale: [
-    { a: "show", id: "baked", fx: "fade" }, { a: "show", id: "steam", fx: "rise", at: 400 }, { a: "fx", id: "steam", fx: "float", at: 1000 },
-    { a: "fx", id: "chef", fx: "hop", at: 300 },
-  ],
-  done: { title: "Pizza's ready!", sub: "Eight words made the best pizza." },
-};
+// Pizza Chef is now a hand-built cooking game in public/pizza.js.
 
 // ── 10. Monster Makeover: every word gives the monster a silly new part ──
 const MON = [220, 368];
@@ -122,4 +88,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [ spaceGame, pizzaGame, monsterGame];
+export const BIG = [ spaceGame, monsterGame];

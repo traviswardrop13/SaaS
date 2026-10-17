@@ -1,0 +1,271 @@
+PIZZA CHEF ART — built-in image_gen only
+
+Reference public/assets/crafted/home-pizza.webp unchanged.
+
+KITCHEN PROMPT
+Use case: stylized-concept. Asset type: portrait2:3 mobile game background for a children's pizza-making game. Reference image1 is STYLE REFERENCE ONLY: match its warm richly painted handcrafted storybook kitchen, rounded toy-like materials, honey-colored wood, cream ceramic tile, soft sunny golden light and dimensional detail. Create an EMPTY kitchen workspace with the tabletop filling the clear central and lower65percent of the image. Warm smooth wooden counter seen from a gently elevated view, broad unobstructed center for a top-down pizza and hand tools drawn by the game. Subtle cream tiled wall and a hint of warm cabinets/window light only in the far upper area. Keep peripheral decoration minimal and out of the work area. No pizza, food, ingredients, tools, utensils, appliances, oven, bowls, dishes, cutting board, characters, faces, labels, text, UI, borders or watermark. The central/lower workspace must stay simple enough for clear interaction. Opaque full background, portrait2:3.
+
+ATLAS PROMPT
+Use case: stylized-concept. Asset type: nine separate transparent game sprites on a square3columns by3rows atlas. Reference image1 is STYLE REFERENCE ONLY: match its warm rich painted storybook toy food, rounded soft shapes, dimensional handmade texture, golden ivory dough, warm wooden tools and appetizing colors. Genuinely transparent background, wide clean transparent gutters, EXACTLY one complete isolated object in each cell, NO overlap or labels. Food and tools are viewed truly from directly overhead, with no perspective tilt; only the oven is front-facing as specified. All objects share the same soft warm light, detailed painted finish and consistent material style. Row-major cells: (1) ONE round pale empty pizza base seen from directly overhead: raised golden crust rim and smooth flat pale ivory dough center, absolutely NO sauce, cheese, toppings, herbs or cut lines. (2) ONE horizontal wooden rolling pin with a broad cylindrical barrel and short handles left/right, overhead. (3) ONE wooden spoon containing red tomato sauce, overhead, oval bowl at upper-left and handle pointing diagonally down-right; no drips outside bowl. (4) ONE small neat pile of grated pale yellow cheese shreds, overhead, no bowl. (5) ONE single round red pepperoni slice, overhead, lightly marbled, no additional slices. (6) ONE single GREEN bell-pepper ring, overhead, naturally three/four lobes with hollow center, no extra pieces. (7) ONE single mushroom slice, overhead, creamy tan cap and stem silhouette with soft brown gill detail, no extra pieces. (8) ONE friendly rounded rotary pizza cutter, overhead, silver round wheel at lower-left and warm wooden handle pointing diagonally up-right; no sharp knife or extra blade. (9) ONE small friendly front-facing OPEN pizza oven, warm cream/terracotta rounded appliance, visibly dark arched opening with clear empty floor and warm red firelight only at the very rear, no pizza or food inside, no written controls. Preserve whole silhouettes and transparent edges within each separate cell. No ground, cast shadow outside objects, backdrop, characters, eyes/faces, text, UI, watermark, extra food or duplicate objects.
+
+EXPORTS
+[
+  {
+    "file": "public/assets/crafted/game/pizza-kitchen-v1.webp",
+    "dimensions": [
+      800,
+      1200
+    ],
+    "mode": "RGB",
+    "bytes": 86434,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-e945aeda-9976-49d1-8906-566fba7f05b6.png",
+    "operations": "proportional resize800x1200, WebP85"
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-base-v1.webp",
+    "dimensions": [
+      373,
+      344
+    ],
+    "mode": "RGBA",
+    "bytes": 39092,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      84,
+      14,
+      457,
+      358
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      4,
+      366,
+      344
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-rollingpin-v1.webp",
+    "dimensions": [
+      535,
+      136
+    ],
+    "mode": "RGBA",
+    "bytes": 27052,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      504,
+      117,
+      1039,
+      253
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      6,
+      0,
+      534,
+      135
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-spoon-v1.webp",
+    "dimensions": [
+      419,
+      324
+    ],
+    "mode": "RGBA",
+    "bytes": 27220,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      1062,
+      21,
+      1481,
+      345
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      7,
+      7,
+      419,
+      324
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-cheese-v1.webp",
+    "dimensions": [
+      368,
+      295
+    ],
+    "mode": "RGBA",
+    "bytes": 35416,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      89,
+      365,
+      457,
+      660
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      368,
+      295
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-pepperoni-v1.webp",
+    "dimensions": [
+      294,
+      284
+    ],
+    "mode": "RGBA",
+    "bytes": 33834,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      621,
+      370,
+      915,
+      654
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      2,
+      1,
+      290,
+      284
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-pepper-v1.webp",
+    "dimensions": [
+      333,
+      288
+    ],
+    "mode": "RGBA",
+    "bytes": 27100,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      1116,
+      362,
+      1449,
+      650
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      1,
+      5,
+      326,
+      288
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-mushroom-v1.webp",
+    "dimensions": [
+      343,
+      309
+    ],
+    "mode": "RGBA",
+    "bytes": 30950,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      102,
+      678,
+      445,
+      987
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      1,
+      342,
+      309
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-cutter-v1.webp",
+    "dimensions": [
+      430,
+      324
+    ],
+    "mode": "RGBA",
+    "bytes": 29470,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      562,
+      659,
+      992,
+      983
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      1,
+      6,
+      430,
+      321
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/pizza-oven-v1.webp",
+    "dimensions": [
+      463,
+      357
+    ],
+    "mode": "RGBA",
+    "bytes": 44350,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-edf6fbc7-80c0-4385-aedf-5ede6bc59de6.png",
+    "crop_xyxy": [
+      1035,
+      650,
+      1498,
+      1007
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      463,
+      357
+    ],
+    "alpha_preserved": true
+  }
+]
+
+Export operations: rectangular alpha-preserving crop with10px padding and WebP90, except background resize/WebP85. No semantic pixel edits, rotation or recoloring. Atlas square request yielded1536x1024 with a clean3x3 arrangement; pieces are isolated from actual content boundaries, not equal-grid cuts. Pepper/oven boundary is y650 to avoid including the oven chimney in the pepper crop or vice versa.
+
+Tool framing: base is almost round with slight natural oval silhouette, plain center; rolling pin horizontal, barrel centered; spoon sauce bowl upper-left and handle lower-right; cutter metal wheel lower-left and wooden handle upper-right. Oven front-on with clear central dark opening, no food inside. Toppings overhead and transparent.
