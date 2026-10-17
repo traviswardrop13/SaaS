@@ -11,9 +11,15 @@
 //   - what is kept: the state, when the plan ends and RevenueCat's time,
 //     never the price, the country or a transaction id;
 //   - the buyer mark: the welcome series' sales emails stop;
-//   - "Your free days end soon": once, between 24 and 48 hours before the
-//     free days end, only while they are still on them, only to an address
-//     that joined Sona's list and never left it;
+//   - "Your free days end soon": once, between 24 and 50 hours before the
+//     free days end (a window every daily run lands in, however late Vercel
+//     starts it), only while they are still on them, only to an address
+//     that joined Sona's list and never left it; Resend turning it away for
+//     a moment is tried again in the same run;
+//   - a subscription that moves to another device's customer (TRANSFER):
+//     its address is marked "moved" and gets no reminder;
+//   - every message keeps a list member on the list (a new year), and never
+//     adds one;
 //   - "We miss you at Sona": a day after a plan ends, if it is still ended,
 //     once a year an address;
 //   - the house email rules, the founder page's Premium column, the daily
@@ -48,7 +54,7 @@ function loadTs(file, stubs = {}, cache = new Map()) {
 
 // ── the store behind the real kvCmd: Upstash REST, POST [cmd, ...args] → {result} ──
 const KV_URL = "https://kv.rc.test.invalid";
-const KV = { K: new Map(), H: new Map(), Z: new Map(), S: new Map(), L: new Map(), log: [], down: false, failOn: null };
+const KV = { K: new Map(), T: new Map(), H: new Map(), Z: new Map(), S: new Map(), L: new Map(), log: [], down: false, failOn: null };
 const zget = (k) => KV.Z.get(k) || new Map();
 function kvExec([op, ...a]) {
   a = a.map((x) => (typeof x === "number" ? x : String(x)));
@@ -56,12 +62,15 @@ function kvExec([op, ...a]) {
     case "SET": {
       const rest = a.slice(2).map((x) => String(x).toUpperCase());
       if (rest.includes("NX") && KV.K.has(a[0])) return null;
-      KV.K.set(a[0], String(a[1])); return "OK";
+      KV.K.set(a[0], String(a[1]));
+      const ex = rest.indexOf("EX");
+      if (ex >= 0) KV.T.set(a[0], Number(a[2 + ex + 1])); else KV.T.delete(a[0]);
+      return "OK";
     }
     case "GET": return KV.K.has(a[0]) ? KV.K.get(a[0]) : null;
-    case "DEL": return KV.K.delete(a[0]) ? 1 : 0;
+    case "DEL": KV.T.delete(a[0]); return KV.K.delete(a[0]) ? 1 : 0;
     case "EXISTS": return KV.K.has(a[0]) ? 1 : 0;
-    case "EXPIRE": return 1;
+    case "EXPIRE": if (!KV.K.has(a[0])) return 0; KV.T.set(a[0], Number(a[1])); return 1;
     case "SISMEMBER": return (KV.S.get(a[0]) || new Set()).has(a[1]) ? 1 : 0;
     case "SADD": { const s = KV.S.get(a[0]) || new Set(); a.slice(1).forEach((x) => s.add(x)); KV.S.set(a[0], s); return 1; }
     case "ZADD": { const z = zget(a[0]); z.set(String(a[2]), Number(a[1])); KV.Z.set(a[0], z); return 1; }
@@ -110,7 +119,7 @@ globalThis.fetch = async (url, init = {}) => {
   }
   throw new Error("unexpected outbound call " + u);
 };
-const reset = () => { KV.K.clear(); KV.H.clear(); KV.Z.clear(); KV.S.clear(); KV.L.clear(); KV.log.length = 0; KV.down = false; KV.failOn = null; SENT.length = 0; resendStatus = 200; resendQueue = []; };
+const reset = () => { KV.K.clear(); KV.T.clear(); KV.H.clear(); KV.Z.clear(); KV.S.clear(); KV.L.clear(); KV.log.length = 0; KV.down = false; KV.failOn = null; SENT.length = 0; resendStatus = 200; resendQueue = []; };
 
 const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "RESEND_API_KEY", "UNSUB_SECRET",
   "EMAIL_POSTAL", "NURTURE_FROM", "NURTURE_REPLY_TO", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_WEBHOOK_AUTH_PREV", "REVENUECAT_SANDBOX"];
@@ -230,15 +239,29 @@ await scenario("states", async () => {
   ok("…keyed by the lowercased address, and only state, end, RevenueCat's time and when Sona heard",
     JSON.stringify(Object.keys(p).sort()) === JSON.stringify(["at", "exp", "s", "ts"]) && !KV.H.get(R.PLANS_KEY).has("Mom@Example.com"), p);
   const everything = JSON.stringify([...KV.K, ...[...KV.H].map(([k, h]) => [k, [...h]]), ...[...KV.Z].map(([k, z]) => [k, [...z]])]);
-  ok("no price, country, currency, transaction id, app user id or child's name is kept anywhere",
-    !/USD|"US"|2000000123456789|RCAnonymousID|Mia|price|country/.test(everything), everything.slice(0, 400));
+  ok("no price, country, currency, transaction id or child's name is kept anywhere",
+    !/USD|"US"|2000000123456789|Mia|price|country/.test(everything), everything.slice(0, 400));
+  const ANON = "$RCAnonymousID:0123456789abcdef0123456789abcdef";
+  ok("…and RevenueCat's random customer id only as the link to its address, for 400 days",
+    KV.K.get(R.uidKey(ANON)) === "mom@example.com" && KV.T.get(R.uidKey(ANON)) === 400 * 86400 &&
+    [...KV.K].filter(([k, v]) => (k + v).includes("RCAnonymousID")).length === 1 && ![...KV.H].some(([, h]) => JSON.stringify([...h]).includes("RCAnonymousID")),
+    [...KV.K.keys()]);
   ok("…the address is marked a buyer: no more sales emails", KV.K.get(N.buyerKey("mom@example.com")) === "1");
-  ok("…and \"Your free days end soon\" is queued for 48 hours before they end", zscore(R.REMIND_KEY) === exp - 48 * HOUR, zscore(R.REMIND_KEY));
+  ok("…and \"Your free days end soon\" is queued for 50 hours before they end", zscore(R.REMIND_KEY) === exp - 50 * HOUR, zscore(R.REMIND_KEY));
+  ok("…the buyer mark has no time limit", !KV.T.has(N.buyerKey("mom@example.com")));
   const same = ev({ event_timestamp_ms: t0 + 5, expiration_at_ms: exp });
   r = await hook(same);
   const n = KV.log.length;
   r = await hook(same);
   ok("the same message twice (RevenueCat retries with the same id): the second does nothing", r.status === 200 && r.json.ignored === "dup" && KV.log.length === n + 1, r);
+  {
+    const fresh = ev({ event_timestamp_ms: t0 + 6, expiration_at_ms: exp }), from = KV.log.length;
+    await hook(fresh);
+    const cmds = KV.log.slice(from);
+    ok("…and the mark that a message is done is the last thing written, after a look that writes nothing",
+      cmds[0][0] === "EXISTS" && cmds[0][1] === R.evtKey(fresh.id) && cmds.at(-1)[0] === "SET" && cmds.at(-1)[1] === R.evtKey(fresh.id) && !cmds.at(-1).includes("NX") &&
+      cmds.filter((c) => String(c[1]) === R.evtKey(fresh.id)).length === 2, cmds.map((c) => c.slice(0, 2)));
+  }
 
   const cases = [
     ["CANCELLATION", { cancel_reason: "UNSUBSCRIBE", period_type: "TRIAL" }, "cancelled"],
@@ -284,10 +307,37 @@ await scenario("store down", async () => {
   r = await hook(ev());
   ok("a buyer mark that did not take: 503 too, never a 200 for something not kept", r.status === 503 && ![...KV.K.keys()].some((k) => k.startsWith("rc:evt:")), r);
   reset();
+  const e2 = ev();
+  KV.failOn = (c) => c[0] === "SET" && String(c[1]).startsWith("rc:evt:");
+  r = await hook(e2);
+  ok("everything written but the done mark: 503, and the retry does it all again, harmlessly", r.status === 503 && plan().s === "trial", r);
+  KV.failOn = null;
+  r = await hook(e2);
+  ok("…and lands", r.status === 200 && r.json.applied === true, r);
+  ok("…with the reminder queued once", zget(R.REMIND_KEY).size === 1 && KV.K.has(R.evtKey(e2.id)));
+  reset();
+  KV.failOn = (c) => c[0] === "EXISTS";
+  r = await hook(ev());
+  ok("a store that cannot say whether a message was seen: 503, nothing written", r.status === 503 && KV.H.size === 0, r);
+  KV.failOn = null;
+  reset();
   KV.down = true;
   r = await hook(ev());
   ok("the whole store down: 503", r.status === 503, r);
   KV.down = false;
+});
+
+// ── 4b. the list keeps its members while RevenueCat talks about them ──
+await scenario("list membership", async () => {
+  reset();
+  // the parent gave setup their email 400 days ago; nurture:0 had a year
+  joinList("mom@example.com", Date.now() - 400 * DAY); KV.T.set("nurture:0:mom@example.com", 5);
+  const before = KV.K.get("nurture:0:mom@example.com");
+  await hook(ev({ type: "RENEWAL", period_type: "NORMAL" }));
+  ok("a message about a list member starts its year again", KV.T.get("nurture:0:mom@example.com") === 365 * 86400);
+  ok("…and changes nothing else about it (its sign-up time stays)", KV.K.get("nurture:0:mom@example.com") === before);
+  await hook(ev({ subscriber_attributes: { $email: { value: "stranger@example.com" } } }));
+  ok("an address RevenueCat names that never joined is never added", !KV.K.has("nurture:0:stranger@example.com"));
 });
 
 // ── 5. "Your free days end soon" ──
@@ -312,6 +362,31 @@ await scenario("the reminder", async () => {
   ok("…and a Resend key with no address in it", /^rc-remind-[0-9a-f]{32}$/.test(SENT[0].headers["Idempotency-Key"]), SENT[0].headers["Idempotency-Key"]);
   for (let d = 2; d <= 6; d++) await R.runRc(kv, fetch, run(d), quiet);
   ok("…and once: no other run sends it again", SENT.length === 1);
+
+  // Vercel starts a run a few seconds (or up to an hour) late: the window holds a run anyway
+  reset(); joinList("drift@example.com");
+  const S3 = Date.parse("2026-10-20T16:00:10Z"), E3 = S3 + 3 * DAY;
+  await R.apply(R.readEvent({ event: ev({ event_timestamp_ms: S3, expiration_at_ms: E3, subscriber_attributes: { $email: { value: "drift@example.com" } } }) }), kv, S3);
+  await R.runRc(kv, fetch, Date.parse("2026-10-20T16:00:02Z"), quiet);
+  await R.runRc(kv, fetch, Date.parse("2026-10-21T16:00:02Z"), quiet);
+  ok("free days that start seconds after a run: the next day's run (48 hours ahead) still sends it", SENT.length === 1 && SENT[0].body.to[0] === "drift@example.com", SENT.length);
+  reset(); joinList("drift@example.com");
+  await R.apply(R.readEvent({ event: ev({ event_timestamp_ms: S3, expiration_at_ms: E3, subscriber_attributes: { $email: { value: "drift@example.com" } } }) }), kv, S3);
+  await R.runRc(kv, fetch, Date.parse("2026-10-21T16:59:00Z"), quiet);
+  ok("…and so does a run that starts nearly an hour late", SENT.length === 1);
+  {
+    // free days starting at any minute of the day, and each day's run on time
+    // or 59 minutes late, in every mix: some run is due and still in time
+    let missed = 0;
+    for (let m = 0; m < 24 * 60; m += 7) {
+      const st = Date.parse("2026-10-20T00:00:00Z") + m * 60e3, en = st + 3 * DAY, q = en - R.REMIND_BEFORE_MS;
+      for (let mix = 0; mix < 16; mix++) {
+        const runs = [0, 1, 2, 3].map((d) => Date.parse("2026-10-20T16:00:00Z") + d * DAY + ((mix >> d) & 1 ? 59 * 60e3 : 0));
+        if (!runs.some((t) => t >= q && en - t > R.REMIND_LATE_MS)) missed++;
+      }
+    }
+    ok("for free days starting at any minute of the day, some run lands in the window, however late Vercel starts each", missed === 0, missed);
+  }
 
   // free days that start late in the day: the run 28 hours before the end
   reset(); joinList("late@example.com");
@@ -361,9 +436,30 @@ await scenario("the reminder", async () => {
   await start();
   resendQueue = [500];
   r = await R.runRc(kv, fetch, run(1), quiet);
-  ok("Resend down: counted failed, the sent-mark released, and it goes back in the queue", r.failed === 1 && !KV.K.has(R.sentKey("remind", "mom@example.com", E)) && zscore(R.REMIND_KEY) === E - 48 * HOUR, r);
-  r = await R.runRc(kv, fetch, run(1) + HOUR, quiet);
-  ok("…so the next run sends it", r.reminded === 1 && SENT.filter((s) => s.status === 200).length === 1, r);
+  ok("Resend down for a moment: tried again in the same run, and sent", r.reminded === 1 && r.failed === 0 && SENT.length === 2 && SENT[1].status === 200, r);
+  ok("…under the same Resend key, so it can never arrive twice", SENT[0].headers["Idempotency-Key"] === SENT[1].headers["Idempotency-Key"]);
+  reset(); joinList();
+  await start();
+  resendQueue = [0, 503, 200];
+  r = await R.runRc(kv, fetch, run(1), quiet);
+  ok("…the third try is the last", r.reminded === 1 && SENT.length === 3, r);
+  reset(); joinList();
+  await start();
+  resendQueue = [500, 500, 500];
+  r = await R.runRc(kv, fetch, run(1), quiet);
+  ok("Resend down all run: counted failed, the sent-mark released, and it goes back in the queue", r.failed === 1 && SENT.length === 3 && !KV.K.has(R.sentKey("remind", "mom@example.com", E)) && zscore(R.REMIND_KEY) === E - 50 * HOUR, r);
+  r = await R.runRc(kv, fetch, run(2), quiet);
+  ok("…and when the next run is less than 24 hours before the end, it is dropped, never sent late", r.reminded === 0 && SENT.length === 3 && !zscore(R.REMIND_KEY), r);
+  {
+    // free days that start at 17:00: two runs land in the window, so a bad day gets a second go
+    reset(); joinList();
+    const S4 = Date.parse("2026-10-20T17:00:00Z"), E4 = S4 + 3 * DAY;
+    await R.apply(R.readEvent({ event: ev({ event_timestamp_ms: S4, expiration_at_ms: E4 }) }), kv, S4);
+    resendQueue = [500, 500, 500];
+    r = await R.runRc(kv, fetch, run(1), quiet);
+    const r2 = await R.runRc(kv, fetch, run(2), quiet);
+    ok("…but when the next run is still in time, it sends it", r.failed === 1 && r2.reminded === 1 && SENT.at(-1).status === 200, [r, r2]);
+  }
   reset(); joinList();
   await start();
   resendQueue = [422];
@@ -371,9 +467,9 @@ await scenario("the reminder", async () => {
   ok("refused for good (a bad address): dropped, not retried forever", r.failed === 1 && !zscore(R.REMIND_KEY), r);
   reset(); joinList();
   await start();
-  resendQueue = [429, 429];
+  resendQueue = [429, 429, 429];
   r = await R.runRc(kv, fetch, run(1), quiet);
-  ok("Resend says slow down twice: the run stops and the note waits for the next one", r.stopped === "rate" && zscore(R.REMIND_KEY) === E - 48 * HOUR, r);
+  ok("Resend says slow down three times: the run stops and the note waits for the next one", r.stopped === "rate" && zscore(R.REMIND_KEY) === E - 50 * HOUR, r);
 
   reset(); joinList();
   await start();
@@ -381,12 +477,51 @@ await scenario("the reminder", async () => {
   KV.failOn = (c) => c[0] === "HGET";
   r = await R.runRc(kv, fetch, run(1), quiet);
   KV.failOn = realHget;
-  ok("a store that cannot say where the plan stands: nothing is sent, and the note waits", SENT.length === 0 && zscore(R.REMIND_KEY) === E - 48 * HOUR, r);
+  ok("a store that cannot say where the plan stands: nothing is sent, and the note waits", SENT.length === 0 && zscore(R.REMIND_KEY) === E - 50 * HOUR, r);
   const n = SENT.length;
   delete process.env.EMAIL_POSTAL;
   r = await R.runRc(kv, fetch, run(1), quiet);
-  ok("no mailing address set: nothing sends, nothing is claimed", SENT.length === n && zscore(R.REMIND_KEY) === E - 48 * HOUR, r);
+  ok("no mailing address set: nothing sends, nothing is claimed", SENT.length === n && zscore(R.REMIND_KEY) === E - 50 * HOUR, r);
   env();
+});
+
+// ── 5b. the subscription moves to another device ──
+await scenario("transfer", async () => {
+  const S = Date.parse("2026-10-20T10:00:00Z"), E = S + 3 * DAY, run1 = Date.parse("2026-10-21T16:00:00Z");
+  const A = "$RCAnonymousID:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", B = "$RCAnonymousID:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const move = (o = {}) => ev(Object.assign({ type: "TRANSFER", event_timestamp_ms: S + HOUR, transferred_from: [A], transferred_to: [B], app_user_id: B, original_app_user_id: B,
+    subscriber_attributes: {}, period_type: undefined, expiration_at_ms: undefined }, o));
+  reset(); joinList();
+  let r = await hook(ev({ event_timestamp_ms: S, expiration_at_ms: E, app_user_id: A, original_app_user_id: A }));
+  ok("the free days start on the parent's phone (customer A)", r.status === 200 && plan().s === "trial" && KV.K.get(R.uidKey(A)) === "mom@example.com", r);
+  const t = move();
+  r = await hook(t);
+  ok("RevenueCat moves the subscription to the iPad's customer (no email): 200, the address is marked \"moved\"", r.status === 200 && r.json.applied === true && plan().s === "moved", [r, plan()]);
+  ok("…its reminder is dropped", !zscore(R.REMIND_KEY));
+  ok("…and the run sends nothing, though the free days are still on", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.length === 0);
+  r = await hook(t);
+  ok("the same TRANSFER again: nothing more", r.status === 200 && r.json.ignored === "dup", r);
+  r = await hook(move({ transferred_from: ["$RCAnonymousID:cccccccccccccccccccccccccccccccc"] }));
+  ok("a TRANSFER from a customer Sona never saw with an email: 200, nothing changed", r.status === 200 && r.json.ignored === "none" && plan().s === "moved", r);
+  r = await hook(move({ transferred_from: [] }));
+  ok("…or from no customer at all", r.status === 200 && r.json.ignored === "type", r);
+  r = await hook(move({ environment: "SANDBOX" }));
+  ok("…and Apple's sandbox, ignored as ever", r.status === 200 && r.json.ignored === "sandbox", r);
+  // the parent's phone hears a newer message after all (same email, came back): the newest wins
+  r = await hook(ev({ type: "UNCANCELLATION", event_timestamp_ms: S + 2 * HOUR, expiration_at_ms: E, app_user_id: A, original_app_user_id: A }));
+  ok("a newer message about the address still wins over \"moved\"", plan().s === "trial", plan());
+  r = await hook(move({ event_timestamp_ms: S + 90 * 60e3 }));
+  ok("…and an older TRANSFER arriving late does not drop its reminder", plan().s === "trial" && zscore(R.REMIND_KEY) === E - 50 * HOUR, [plan(), zscore(R.REMIND_KEY)]);
+  reset(); joinList();
+  await hook(ev({ event_timestamp_ms: S, expiration_at_ms: E, app_user_id: A, original_app_user_id: A }));
+  KV.failOn = (c) => c[0] === "GET" && String(c[1]).startsWith("rc:uid:");
+  const t2 = move();
+  r = await hook(t2);
+  ok("a store that cannot say whose customer it was: 503, nothing marked done", r.status === 503 && !KV.K.has(R.evtKey(t2.id)) && plan().s === "trial", r);
+  KV.failOn = null;
+  r = await hook(t2);
+  ok("…and the retry lands", r.status === 200 && plan().s === "moved", r);
+  ok("/leads.html names it", /moved: "moved to another device"/.test(read("public/leads.html")) && /pMoved/.test(read("public/leads.html")));
 });
 
 // ── 6. "We miss you at Sona" ──
@@ -422,6 +557,7 @@ await scenario("the words", async () => {
   ok("Rachel signs as MS, CF-SLP, never certified/CCC", /MS, CF-SLP/.test(all) && !/\bCCC\b|certified/i.test(all));
   ok("practice, never therapy/treatment/diagnosis/score", !/therapy|treatment|diagnos|score/i.test(JSON.stringify(R.MAILS)));
   ok("no dollar figure and no number of free days (both are the App Store's)", !/\$\d/.test(JSON.stringify(R.MAILS)) && !/\b(3|three)[- ]days?\b/i.test(JSON.stringify(R.MAILS)));
+  ok("the miss note's inbox preview claims nothing about what is on a phone (the app may be gone)", !/practice|saved|still on your phone/i.test(R.MAILS.miss.preview), R.MAILS.miss.preview);
   ok("no emoji, no \"correct\", no \"forever\"", !/\p{Extended_Pictographic}/u.test(JSON.stringify(R.MAILS)) && !/correctly|forever/i.test(JSON.stringify(R.MAILS)));
   ok("nothing about a child but that their practice is on the phone (no name, no age, no sound, no placeholder)",
     !/\{\w*\}|child\u2019s name|\bage\b|\bsounds?\b/i.test(JSON.stringify(R.MAILS)));
@@ -433,8 +569,9 @@ await scenario("the words", async () => {
 // ── 8. the wiring, the founder page, and the words elsewhere ──
 await scenario("wiring", async () => {
   const cron = read("app/api/cron/nurture/route.ts");
-  ok("the daily run sends RevenueCat's notes after the welcome series and before the weekly report",
-    /import \{ runRc \} from "@\/lib\/revenuecat"/.test(cron) && cron.indexOf("await runDue()") < cron.indexOf("await runRc(") && cron.indexOf("await runRc(") < cron.indexOf("await runReports("));
+  ok("the daily run sends RevenueCat's notes first, with its start time as now, then the welcome series and the weekly report",
+    /import \{ runRc \} from "@\/lib\/revenuecat"/.test(cron) && /await runRc\(undefined, undefined, started, \{ deadline: started \+ 120000 \}\)/.test(cron) &&
+    cron.indexOf("await runRc(") < cron.indexOf("await runDue()") && cron.indexOf("await runDue()") < cron.indexOf("await runReports("));
   const routeSrc = read("app/api/revenuecat/route.ts");
   ok("the route compares the header in constant time, reads the body as text (never formData), and logs nothing",
     /safeEqualStr\(given, w\)/.test(routeSrc) && /await req\.text\(\)/.test(routeSrc) && !/formData|console\./.test(routeSrc));
@@ -455,12 +592,15 @@ await scenario("wiring", async () => {
   const priv = read("public/privacy.html");
   ok("the privacy page says the app gives RevenueCat the parent's email, and what RevenueCat tells Sona",
     /the app also gives that\s+email to RevenueCat, and RevenueCat tells our server when your Premium starts, renews, is\s+cancelled or ends/.test(priv));
+  ok("…the customer id link, and for how long", /with the random identifier\s+RevenueCat gave that phone/.test(priv) && /for 400 days after RevenueCat last mentioned it/.test(priv));
   ok("…that Upstash keeps RevenueCat's last word, and for how long", /what\s+RevenueCat last told us about their Premium/.test(priv) && /for a parent who gave the app their email, what RevenueCat last told us about their Premium, until you ask us to remove it/.test(priv));
   ok("…the two notes Resend delivers", /a note a day or two before Premium&rsquo;s free days\s+end \(only while they are still on them\) and one note after Premium ends/.test(priv));
   ok("…and no Kit, anywhere on it", !/\bKit\b/.test(priv));
   const native = read("NATIVE.md");
   ok("NATIVE.md says how to switch it on: the secret in Vercel, the URL and header in RevenueCat, production only",
     /REVENUECAT_WEBHOOK_AUTH/.test(native) && /https:\/\/speaksona\.com\/api\/revenuecat/.test(native) && /Authorization header/i.test(native) && /Production/.test(native));
+  ok("…and that a phone test takes both the sandbox switch in Vercel and the webhook's environment in RevenueCat",
+    /`REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment\s+to Sandbox/.test(native));
   ok("…and the App Privacy answers it owes", /RevenueCat webhook/.test(native) && /Purchase History/.test(native));
 });
 

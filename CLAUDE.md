@@ -1294,16 +1294,27 @@ a purchase starts, renews, is cancelled or ends.
   for a change; constant-time), 64 KB, JSON. A TEST, a type Sona has no use
   for, Apple's sandbox (unless `REVENUECAT_SANDBOX=1`) and a message with no
   email: 200, nothing kept. Otherwise once per message id (`rc:evt:<id>`, 14
-  days, released if a write fails, so the 503 RevenueCat retries finishes
+  days, written LAST: every write before it is safe to repeat, so a
+  delivery cut off part-way leaves no mark and RevenueCat's retry redoes
   it): the state in `rc:plans` (email to {s, exp, ts, at}: trial, paid,
-  cancelled, billing, ended; an older message never overwrites a newer one,
-  one Lua step), the buyer mark, and the two queues. Never the price, the
-  country or a transaction id. Set-up steps for Travis: NATIVE.md.
+  cancelled, billing, ended, moved; an older message never overwrites a
+  newer one, one Lua step), the buyer mark (permanent, no time limit), a
+  new year for `nurture:0:<email>` (EXPIRE, which never creates it), the
+  RevenueCat customer each address came with (`rc:uid:<id>`, 400 days), and
+  the two queues. Never the price, the country or a transaction id.
+  **TRANSFER** (the subscription moved to another device's customer, which
+  may have no email) carries no email: the customers it left are looked up
+  in `rc:uid:`, each address found is marked "moved" and loses its queued
+  reminder, so a parent who then cancels on the iPad is never told "your
+  plan carries on". Set-up steps for Travis: NATIVE.md.
 - **What it sends** (Resend, from Rachel; her words to change, `MAILS`):
-  "Your free days end soon" (`rc:remind`, 48 hours before the free days end;
-  the daily run at 16:00 UTC sends it only while the plan is still on its
-  free days and more than 24 hours remain, Apple's line for a cancel to
-  count, so 24 to 48 hours ahead, once per end), and "We miss you at Sona"
+  "Your free days end soon" (`rc:remind`, 50 hours before the free days end;
+  the daily run at 16:00 UTC, which Vercel may start up to an hour late,
+  sends it only while the plan is still on its free days and more than 24
+  hours remain, Apple's line for a cancel to count, so 24 to 50 hours
+  ahead, once per end; that 26-hour window always holds one run, which runs
+  these notes first and with its start time as "now", and a send Resend
+  turns away for a moment is tried twice more in it), and "We miss you at Sona"
   (`rc:miss`, a day after a plan ends, only if still ended, once a year an
   address). Only to an address that joined Sona's list (`nurture:0:<email>`)
   and is not in `email:unsub` (exact or plain mailbox): RevenueCat's
@@ -1311,7 +1322,8 @@ a purchase starts, renews, is cancelled or ends.
   there proves nothing. No price, no number of free days (both the App
   Store's), no child. The price screen still promises no reminder.
 - **/leads.html** shows a Premium column and counts (free days, paying,
-  cancelled, payment problem, ended), from `rc:plans`.
+  cancelled, payment problem, ended, moved to another device), from
+  `rc:plans`.
 - **Defaults Travis did not pick:** a cancelled-then-ended trial also gets
   "We miss you"; no email for a payment problem (he did not pick it); the
   sales emails stop for good once a family started Premium, even after it

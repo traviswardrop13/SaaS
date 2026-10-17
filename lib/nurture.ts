@@ -240,7 +240,6 @@ export const nextKey = (email: string) => "nurture:next:" + email;
 
 /** Set once a family has started Premium (the free days or paid); see "A BUYER GETS NO SALES EMAIL" above. */
 export const buyerKey = (email: string) => "nurture:buyer:" + email;
-export const BUYER_KEEP_SEC = 400 * 24 * 60 * 60;
 
 /**
  * The two words a purchase may carry into /api/lead (sona.js _tellPlan):
@@ -258,7 +257,9 @@ export async function markBuyer(rawEmail: string, kv: Kv = kvCmd): Promise<boole
   const email = rawEmail.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return false;
   try {
-    return (await kv(["SET", buyerKey(email), "1", "EX", BUYER_KEEP_SEC])) === "OK";
+    // kept for good, with no time limit: a family re-enrolled years later
+    // (a new phone, the same email) is still never offered free days again
+    return (await kv(["SET", buyerKey(email), "1"])) === "OK";
   } catch {
     return false;
   }

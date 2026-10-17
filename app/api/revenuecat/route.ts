@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvConfigured, safeEqualStr } from "@/lib/slpAuth";
-import { MAX_BODY, apply, readEvent } from "@/lib/revenuecat";
+import { MAX_BODY, apply, moveAway, readEvent } from "@/lib/revenuecat";
 
 /**
  * REVENUECAT'S WEBHOOK (RCHOOK1, 16 Oct 2026; lib/revenuecat.ts says what it
@@ -55,6 +55,16 @@ export async function POST(req: NextRequest) {
   // a dashboard test, a type Sona has no use for, Apple's sandbox, or a
   // family who gave the app no email: nothing to do, and nothing to retry
   if (ev.type === "TEST") return done("test");
+  // a subscription moved to another device's customer: it carries no email,
+  // so it is matched by the customer ids Sona saw with an address before
+  if (ev.type === "TRANSFER") {
+    if (ev.sandbox && process.env.REVENUECAT_SANDBOX !== "1") return done("sandbox");
+    if (!ev.from.length) return done("type");
+    if (!kvConfigured()) return fail("No data store is connected.", 503);
+    const m = await moveAway(ev);
+    if (m === "retry") return NextResponse.json({ ok: false, retry: true }, { status: 503 });
+    return done(m);
+  }
   if (!ev.state) return done("type");
   if (ev.sandbox && process.env.REVENUECAT_SANDBOX !== "1") return done("sandbox");
   if (!ev.email) return done("no email");

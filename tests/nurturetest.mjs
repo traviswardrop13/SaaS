@@ -90,7 +90,9 @@ ok("planWord: \"trial\" and \"paid\" only", N.planWord("trial") === "trial" && N
 {
   const b = store(), mark = sent.length;
   await N.enroll("Buyer@Example.com", b.cmd, fakeFetch, T, { inApp: true });
-  ok("markBuyer marks the lowercased address, for 400 days", (await N.markBuyer(" Buyer@Example.com ", b.cmd)) === true && b.kv.get(N.buyerKey("buyer@example.com")) === "1");
+  const sets = []; const rec = async (c) => { if (c[0] === "SET") sets.push(c); return b.cmd(c); };
+  ok("markBuyer marks the lowercased address, for good", (await N.markBuyer(" Buyer@Example.com ", rec)) === true && b.kv.get(N.buyerKey("buyer@example.com")) === "1" &&
+    sets.length === 1 && !sets[0].some((x) => /^(EX|PX|EXAT|PXAT)$/i.test(String(x))), sets);
   ok("…and refuses a non-address", (await N.markBuyer("nope", b.cmd)) === false);
   for (let d = 1; d <= 10; d++) await N.runDue(b.cmd, fakeFetch, T + d * N.DAY_MS + 3600e3);
   ok("a buyer gets the 5-minute email and the day-2 tip, and no sales email", JSON.stringify(sent.slice(mark).map((m) => m.subject)) === JSON.stringify([N.CONTENT[1].subject, N.CONTENT[2].subject]), sent.slice(mark).map((m) => m.subject));

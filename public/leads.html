@@ -68,6 +68,7 @@
       <div class="card"><span class="muted">Cancelled</span><b id="pCancelled">0</b></div>
       <div class="card"><span class="muted">Payment problem</span><b id="pBilling">0</b></div>
       <div class="card"><span class="muted">Ended</span><b id="pEnded">0</b></div>
+      <div class="card"><span class="muted">Moved to another device</span><b id="pMoved">0</b></div>
     </div>
 
     <h2>Since the new landing page</h2>
@@ -114,7 +115,7 @@
     var DATA = null;
     var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["premium", "Premium"]];
     // RevenueCat's word for each address (lib/revenuecat.ts), in plain words
-    var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended" };
+    var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended", moved: "moved to another device" };
     var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "Sent to email list"],
       ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
     // The CSV carries the answer, not the button.
@@ -211,10 +212,10 @@
           $("nLeads").textContent = uniq(j.leads);
           $("nSlp").textContent = j.clinicians.length;
           var plans = j.plans && typeof j.plans === "object" ? j.plans : {};
-          var n = { trial: 0, paid: 0, cancelled: 0, billing: 0, ended: 0 };
+          var n = { trial: 0, paid: 0, cancelled: 0, billing: 0, ended: 0, moved: 0 };
           Object.keys(plans).forEach(function (e) { var s = plans[e] && plans[e].s; if (s in n) n[s]++; });
           $("pTrial").textContent = n.trial; $("pPaid").textContent = n.paid; $("pCancelled").textContent = n.cancelled;
-          $("pBilling").textContent = n.billing; $("pEnded").textContent = n.ended;
+          $("pBilling").textContent = n.billing; $("pEnded").textContent = n.ended; $("pMoved").textContent = n.moved;
           j.leads.forEach(function (l) { var p = plans[String(l.email || "").trim().toLowerCase()]; l.premium = p ? PREMIUM[p.s] || "" : ""; });
           paintSince(j.leads);
           table($("tLeads"), LEAD_COLS, j.leads);

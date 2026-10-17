@@ -4,9 +4,9 @@ import { runReports } from "@/lib/report";
 import { runRc } from "@/lib/revenuecat";
 
 /**
- * Daily: sends the welcome series' day-after email to everyone it is due for
- * (lib/nurture.ts), the notes RevenueCat's news has queued ("Your free days
- * end soon", "We miss you at Sona": lib/revenuecat.ts), and on Monday
+ * Daily: sends the notes RevenueCat's news has queued ("Your free days end
+ * soon", "We miss you at Sona": lib/revenuecat.ts), the welcome series'
+ * day-after email to everyone it is due for (lib/nurture.ts), and on Monday
  * (Tuesday and Wednesday catch up) last week's progress report to every
  * household that asked for it (lib/report.ts). Same auth as
  * /api/cron/weekly — the Vercel cron bearer, or FOUNDER_KEY for a manual run.
@@ -31,9 +31,13 @@ export async function GET(req: NextRequest) {
     const missing = ["RESEND_API_KEY", "UNSUB_SECRET", "EMAIL_POSTAL"].filter((k) => !(process.env[k] || "").trim());
     return NextResponse.json({ ok: false, error: "Not set in Vercel: " + missing.join(", ") }, { status: 500 });
   }
+  // the free-days note first: it has one day to go out, and a big welcome
+  // batch must not use up its time. `now` is when the run started, so a
+  // note queued a few seconds after 16:00 waits for tomorrow's run, never
+  // for the one after. Stop sending well before maxDuration, so no address
+  // is left claimed and unsent.
+  const rc = await runRc(undefined, undefined, started, { deadline: started + 120000 });
   const r = await runDue();
-  // stop sending well before maxDuration, so no address is left claimed and unsent
-  const rc = await runRc(undefined, undefined, undefined, { deadline: started + 120000 });
   const report = await runReports(undefined, undefined, undefined, { force: okManual && req.nextUrl.searchParams.get("report") === "1", deadline: started + 250000 });
   return NextResponse.json({ ok: true, ...r, rc, report });
 }

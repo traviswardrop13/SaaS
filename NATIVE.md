@@ -415,7 +415,10 @@ dashboard shows that email instead of ANONYMOUS. Sona then stops the welcome
 series' sales emails for a buyer, sends "Your free days end soon" a day or
 two before the free days end (only while they are still on them), and "We
 miss you at Sona" a day after a plan ends. A family who gave no email stays
-anonymous, and gets none of this.
+anonymous, and gets none of this. If the subscription later moves to
+another device's RevenueCat customer (the child's iPad on the same Apple ID,
+set up with no email: RevenueCat sends TRANSFER), Sona marks that address
+"moved" on /leads.html and sends it no free-days note.
 
 To switch it on (Travis, once; nothing to build in Xcode):
 
@@ -425,8 +428,10 @@ To switch it on (Travis, once; nothing to build in Xcode):
 2. **RevenueCat:** Integrations → Webhooks → add one. URL
    `https://speaksona.com/api/revenuecat`; **Authorization header value**:
    exactly the same value as in Vercel; environment **Production** (Apple's
-   sandbox is ignored anyway unless `REVENUECAT_SANDBOX=1` is set in Vercel,
-   for a test on a phone); every event type.
+   sandbox, TestFlight and App Review, is left out); every event type. To
+   try it with a test purchase on a TestFlight build, it takes both: set
+   `REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment
+   to Sandbox (or both) in RevenueCat; put both back afterwards.
 3. **Send test event** in RevenueCat: it should show 200. (A test changes
    nothing at Sona.)
 4. To change the secret later without a gap: copy the old value to

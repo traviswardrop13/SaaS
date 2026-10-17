@@ -18,19 +18,30 @@ import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
  *
  *   - what RevenueCat last said, per address, in `rc:plans` (a hash: email
  *     to {s, exp, ts, at}), for /leads.html's Premium column. `s` is one of
- *     trial, paid, cancelled, billing, ended; `ts` is RevenueCat's own event
- *     time, and an older event never overwrites a newer one (RevenueCat
- *     sends in no particular order, and more than once);
- *   - a buyer mark (`nurture:buyer:<email>`, lib/nurture.ts): the welcome
- *     series skips its two sales emails;
- *   - "Your free days end soon": queued in `rc:remind` for 48 hours before
+ *     trial, paid, cancelled, billing, ended, moved; `ts` is RevenueCat's own
+ *     event time, and an older event never overwrites a newer one
+ *     (RevenueCat sends in no particular order, and more than once);
+ *   - a buyer mark (`nurture:buyer:<email>`, lib/nurture.ts, kept for good):
+ *     the welcome series skips its two sales emails;
+ *   - "Your free days end soon": queued in `rc:remind` for 50 hours before
  *     the free days end, and sent by the daily run (/api/cron/nurture, 16:00
- *     UTC) only while the plan is still on its free days (not cancelled, not
- *     already paid) and more than 24 hours remain, Apple's own line for a
- *     cancel to count. One run lands in every 24 hours, so a family hears
- *     between 24 and 48 hours before the end, once per free-days end;
+ *     UTC, which Vercel may start up to an hour late) only while the plan is
+ *     still on its free days (not cancelled, not already paid, not moved) and
+ *     more than 24 hours remain, Apple's own line for a cancel to count. That
+ *     window is 26 hours, so at least one run always lands in it: a family
+ *     hears between 24 and 50 hours before the end, once per free-days end.
+ *     A send Resend turns away for a moment is tried twice more in that run;
  *   - "We miss you at Sona": queued in `rc:miss` a day after a plan ends, sent
  *     only if it is still ended then, at most once a year an address.
+ *
+ * WHEN A SUBSCRIPTION MOVES. A family that sets Sona up on a second device
+ * with the same Apple ID (the child's iPad, say) can move the subscription
+ * to that device's RevenueCat customer, which may have no email. RevenueCat
+ * then sends TRANSFER, and every later message is about the other customer.
+ * So Sona remembers which customer each address came from (`rc:uid:<id>`,
+ * 400 days), and a TRANSFER away from one marks that address "moved" and
+ * drops its reminder: a parent who then cancels on the iPad is never told
+ * "your plan carries on".
  *
  * WHO MAY BE EMAILED. Only an address that joined Sona's own list (setup's
  * email step, through /api/lead: `nurture:0:<email>`), and never one in
@@ -40,9 +51,12 @@ import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
  * already gave Sona its email, with Rachel's unsubscribe link.
  *
  * WHAT IS KEPT. Of each message only its id (a mark against doing it twice,
- * kept 14 days), what it means (the state above), when the plan ends and
- * RevenueCat's event time; never the price, the country, a transaction id or
- * any other attribute. Messages from Apple's sandbox (TestFlight, App
+ * kept 14 days, written once everything else is), what it means (the state
+ * above), when the plan ends, RevenueCat's event time, and which RevenueCat
+ * customer the address belongs to (its random app user id); never the
+ * price, the country, a transaction id or any other attribute. A message
+ * about an address on the list also keeps that address on the list
+ * (`nurture:0:<email>`'s year starts again; it is never created here). Messages from Apple's sandbox (TestFlight, App
  * Review, Travis's own tests) are ignored unless REVENUECAT_SANDBOX=1.
  *
  * The route answers 200 to anything it has dealt with or chooses to ignore
@@ -60,8 +74,11 @@ export const MISS_KEY = "rc:miss";
 export const evtKey = (id: string) => "rc:evt:" + id;
 export const sentKey = (kind: "remind" | "miss", email: string, exp: number) =>
   kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:miss:" + email;
+export const uidKey = (id: string) => "rc:uid:" + id;
 export const EVT_KEEP_SEC = 14 * 24 * 60 * 60;
-export const REMIND_BEFORE_MS = 48 * 60 * 60 * 1000; // queued for 48 hours before the free days end
+export const UID_KEEP_SEC = 400 * 24 * 60 * 60;
+export const LIST_KEEP_SEC = 365 * 24 * 60 * 60; // nurture:0's own year (lib/nurture.ts enroll)
+export const REMIND_BEFORE_MS = 50 * 60 * 60 * 1000; // queued for 50 hours before the free days end: a 26-hour window always holds a daily run
 export const REMIND_LATE_MS = 24 * 60 * 60 * 1000; // less than this left: too late to cancel in time, so nothing is sent
 export const MISS_AFTER_MS = DAY_MS; // a day after a plan ends
 export const REMIND_SENT_SEC = 30 * 24 * 60 * 60;
@@ -70,17 +87,19 @@ export const MAX_BODY = 64 * 1024;
 /** Apple's page for a parent's own subscriptions (opens Settings › Subscriptions on an iPhone). */
 export const SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
-export type RcState = "trial" | "paid" | "cancelled" | "billing" | "ended";
-export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null };
+export type RcState = "trial" | "paid" | "cancelled" | "billing" | "ended" | "moved";
+/** `uids`: the customer ids this message is about; `from`: on a TRANSFER, the ones it moved away from. */
+export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null; uids: string[]; from: string[] };
 export type Plan = { s: RcState; exp: number; ts: number; at: string };
 
-const STATES: readonly string[] = ["trial", "paid", "cancelled", "billing", "ended"];
+const STATES: readonly string[] = ["trial", "paid", "cancelled", "billing", "ended", "moved"];
 
 /**
  * What a message means for a family, from its type and the period it is in
  * (and why, for a cancellation). null: a message Sona has no use for (TEST,
- * TRANSFER, a temporary grant, paywall and web-billing events, any type
- * RevenueCat adds later).
+ * a temporary grant, paywall and web-billing events, any type RevenueCat
+ * adds later). TRANSFER is null here too: it carries no email, and the
+ * route hands it to `moveAway`.
  */
 export function stateFor(type: string, period: string, reason: string): RcState | null {
   switch (type) {
@@ -110,6 +129,12 @@ const ms = (v: unknown): number => {
   return Number.isFinite(n) && n > 0 && n < 1e14 ? Math.floor(n) : 0;
 };
 
+/** A RevenueCat customer id ("$RCAnonymousID:…" or an app's own): printable ASCII, or "". */
+const uid = (v: unknown): string => {
+  const s = str(v, 200);
+  return s && /^[\x21-\x7e]+$/.test(s) ? s : "";
+};
+
 /** The parent's email RevenueCat holds for this customer (`$email`), as Sona would use it, or "". */
 function emailOf(attrs: unknown): string {
   if (!attrs || typeof attrs !== "object") return "";
@@ -132,6 +157,18 @@ export function readEvent(body: unknown): RcEvent | null {
   if (!id || !/^[A-Za-z0-9_:.\-]+$/.test(id) || !/^[A-Z_]+$/.test(type)) return null;
   const period = str(ev.period_type, 20).toUpperCase();
   const reason = str(ev.cancel_reason, 40).toUpperCase();
+  const uids: string[] = [];
+  for (const v of [ev.app_user_id, ev.original_app_user_id]) {
+    const u = uid(v);
+    if (u && !uids.includes(u)) uids.push(u);
+  }
+  const from: string[] = [];
+  if (Array.isArray(ev.transferred_from)) {
+    for (const v of ev.transferred_from.slice(0, 10)) {
+      const u = uid(v);
+      if (u && !from.includes(u)) from.push(u);
+    }
+  }
   return {
     id, type,
     ts: ms(ev.event_timestamp_ms),
@@ -139,6 +176,7 @@ export function readEvent(body: unknown): RcEvent | null {
     email: emailOf(ev.subscriber_attributes),
     exp: ms(ev.expiration_at_ms),
     state: stateFor(type, period, reason),
+    uids, from,
   };
 }
 
@@ -156,34 +194,64 @@ redis.call('HSET', KEYS[1], ARGV[1], ARGV[3])
 return 1`;
 
 /**
- * One message, once (`rc:evt:<id>`, released again if any write fails, so
- * RevenueCat's retry can redo it). "ok": acted on; "dup": already done;
- * "stale": older than what Sona has (the buyer mark still holds); "retry":
+ * One message, once. Every write here is safe to do twice (the watermark
+ * script rewrites the same record, SET and ZADD set the same values), so the
+ * mark that it is done (`rc:evt:<id>`) is written last: a delivery that
+ * stalls or is cut off part-way leaves no mark, and RevenueCat's retry does
+ * it all again. "ok": acted on; "dup": already done; "stale": older than
+ * what Sona has (the buyer mark and the customer link still hold); "retry":
  * the store did not answer, answer 503.
  */
 export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, now: number = Date.now()): Promise<"ok" | "dup" | "stale" | "retry"> {
-  const claim = await kv(["SET", evtKey(ev.id), "1", "NX", "EX", EVT_KEEP_SEC]);
-  if (claim === null) return "dup";
-  if (claim !== "OK") return "retry";
-  let done = false;
-  try {
-    const rec: Plan = { s: ev.state, exp: ev.exp, ts: ev.ts, at: new Date(now).toISOString() };
-    const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, ev.email, ev.ts, JSON.stringify(rec)]);
-    if (put === undefined || put === null) return "retry";
-    // every state is someone who started Premium at some point: no more sales emails
-    if (!(await markBuyer(ev.email, kv))) return "retry";
-    if (Number(put) !== 1) { done = true; return "stale"; }
-    if (ev.state === "trial" && ev.exp > 0) {
-      if ((await kv(["ZADD", REMIND_KEY, ev.exp - REMIND_BEFORE_MS, ev.email])) === undefined) return "retry";
-    }
-    if (ev.state === "ended") {
-      if ((await kv(["ZADD", MISS_KEY, Math.max(now, ev.ts) + MISS_AFTER_MS, ev.email])) === undefined) return "retry";
-    }
-    done = true;
-    return "ok";
-  } finally {
-    if (!done) await kv(["DEL", evtKey(ev.id)]);
+  const seen = await kv(["EXISTS", evtKey(ev.id)]);
+  if (seen === undefined || seen === null) return "retry";
+  if (Number(seen) === 1) return "dup";
+  const rec: Plan = { s: ev.state, exp: ev.exp, ts: ev.ts, at: new Date(now).toISOString() };
+  const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, ev.email, ev.ts, JSON.stringify(rec)]);
+  if (put === undefined || put === null) return "retry";
+  // every state is someone who started Premium at some point: no more sales emails
+  if (!(await markBuyer(ev.email, kv))) return "retry";
+  // still on the list while RevenueCat still talks about them; EXPIRE never creates the key
+  if ((await kv(["EXPIRE", "nurture:0:" + ev.email, LIST_KEEP_SEC])) === undefined) return "retry";
+  for (const u of ev.uids) {
+    if ((await kv(["SET", uidKey(u), ev.email, "EX", UID_KEEP_SEC])) !== "OK") return "retry";
   }
+  const fresh = Number(put) === 1;
+  if (fresh && ev.state === "trial" && ev.exp > 0) {
+    if ((await kv(["ZADD", REMIND_KEY, ev.exp - REMIND_BEFORE_MS, ev.email])) === undefined) return "retry";
+  }
+  if (fresh && ev.state === "ended") {
+    if ((await kv(["ZADD", MISS_KEY, Math.max(now, ev.ts) + MISS_AFTER_MS, ev.email])) === undefined) return "retry";
+  }
+  if ((await kv(["SET", evtKey(ev.id), "1", "EX", EVT_KEEP_SEC])) !== "OK") return "retry";
+  return fresh ? "ok" : "stale";
+}
+
+/**
+ * A TRANSFER: the subscription left the customers in `from`. Each address
+ * Sona linked to one of them is marked "moved" (unless a newer message
+ * already said something) and loses its queued reminder. "none": no address
+ * Sona knows was on those customers.
+ */
+export async function moveAway(ev: RcEvent, kv: Kv = kvCmd, now: number = Date.now()): Promise<"ok" | "dup" | "none" | "retry"> {
+  const seen = await kv(["EXISTS", evtKey(ev.id)]);
+  if (seen === undefined || seen === null) return "retry";
+  if (Number(seen) === 1) return "dup";
+  const emails: string[] = [];
+  for (const u of ev.from) {
+    const e = await kv(["GET", uidKey(u)]);
+    if (e === undefined) return "retry";
+    const a = addressOk(e);
+    if (a && !emails.includes(a)) emails.push(a);
+  }
+  for (const email of emails) {
+    const rec: Plan = { s: "moved", exp: 0, ts: ev.ts, at: new Date(now).toISOString() };
+    const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, email, ev.ts, JSON.stringify(rec)]);
+    if (put === undefined || put === null) return "retry";
+    if (Number(put) === 1 && (await kv(["ZREM", REMIND_KEY, email])) === undefined) return "retry";
+  }
+  if ((await kv(["SET", evtKey(ev.id), "1", "EX", EVT_KEEP_SEC])) !== "OK") return "retry";
+  return emails.length ? "ok" : "none";
 }
 
 export function parsePlan(raw: unknown): Plan | null {
@@ -236,7 +304,7 @@ export const MAILS: Record<"remind" | "miss", Mail> = {
   },
   miss: {
     subject: "We miss you at Sona",
-    preview: "Your child’s practice is still on your phone",
+    preview: "Come back to Sona any time",
     paras: [
       "Hi there,",
       "Your Sona Premium has ended, and we miss you.",
@@ -299,11 +367,13 @@ async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind:
 export type RcRun = { reminded: number; missed: number; skipped: number; failed: number; stopped?: string };
 
 /**
- * The daily run (/api/cron/nurture, after the welcome series): every queued
- * note that is due, if it is still true. ZREM is the claim; a note that could
- * not be checked (the store did not answer) or sent (Resend busy or down)
- * goes back in its queue for the next run, which checks it all again; a
- * reminder that has become too late is dropped there.
+ * The daily run (/api/cron/nurture, before the welcome series, with `now` the
+ * moment the run started): every queued note that is due, if it is still
+ * true. ZREM is the claim. A send Resend turns away for a moment (busy, down,
+ * no answer) is tried twice more, a little apart. A note that still could
+ * not be checked (the store did not answer) or sent goes back in its queue
+ * for the next run, which checks it all again; a reminder that has become
+ * too late is dropped there.
  */
 export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(),
   opts: { deadline?: number; sleep?: (ms: number) => Promise<void> } = {}): Promise<RcRun> {
@@ -344,17 +414,19 @@ export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date
       if (mark === null) { res.skipped++; continue; } // already sent (this free-days end, or this year)
       if (mark !== "OK") { await back(); continue; }
       tries++;
+      // busy, down or no answer: worth another try; anything else (a bad address) is final
+      const again = (st: number) => st === 0 || st === 429 || st >= 500;
       let r = { ok: false, status: 0 };
-      for (let attempt = 0; attempt < 2; attempt++) {
-        await sleep(attempt ? PACE_MS * 3 : PACE_MS);
-        r = await send(f, cfg, kind, email, exp);
-        if (r.status !== 429) break;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await sleep(attempt ? PACE_MS * 3 * attempt : PACE_MS);
+        r = await send(f, cfg, kind, email, exp); // the same Idempotency-Key each time: never two emails
+        if (r.ok || !again(r.status)) break;
       }
       if (r.ok) { if (kind === "remind") res.reminded++; else res.missed++; continue; }
       res.failed++;
       await kv(["DEL", sentKey(kind, email, exp)]);
-      // busy or down: the next run tries again; refused for good (a bad address): dropped
-      if (r.status === 0 || r.status === 429 || r.status >= 500) await back();
+      // still busy or down: the next run tries again; refused for good: dropped
+      if (again(r.status)) await back();
       if (r.status === 429) { res.stopped = "rate"; break; }
     }
   }
