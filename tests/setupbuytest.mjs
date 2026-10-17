@@ -13,7 +13,8 @@
 //   - the price is ONE plan with the store's own words, and no reminder is
 //     promised (Sona sends none yet);
 //   - a purchase comes BACK to setup for the microphone and "Hand the phone
-//     to <Name>!", and only then opens the first game;
+//     to <Name>!", and then goes Home, where the child picks a game (17 Oct
+//     2026: no jump straight into a game after the free days start);
 //   - "Not now" goes Home, with no microphone ask and no hand-off;
 //   - a phone that cannot buy never sees a price and goes on in the page;
 //   - the two answers a parent taps reach no request at all.
@@ -95,9 +96,12 @@ await scenario("a family that can buy", async () => {
         all.length === 2 && plan.length === 1 && plan[0].plan === "trial" && plan[0].source === "app-trial" && plan[0].email === "mia.mom@example.com" && plan[0].role === "parent", all);
     }
     await tap(page, "#nextBtn");                                         // Let's play!
-    await page.waitForURL(/\/charge\.html\?game=arcade-slice\.html$/, { timeout: 12000 });
-    ok("\"Let's play!\" opens the first game (Fruit Slice's practice page for a six-year-old), open because Premium is on",
-      /\/charge\.html\?game=arcade-slice\.html$/.test(page.url()), page.url());
+    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    {
+      const home = await page.evaluate(() => ({ game: sessionStorage.getItem("sona.firstgame.v1"), slice: Sona.gameAccess("slice").allowed }));
+      ok("\"Let's play!\" after the free days start goes Home to pick a game, not straight into one, with the games open",
+        /\/today\.html$/.test(page.url()) && !home.game && home.slice === true, { url: page.url(), home });
+    }
     const leaked = requests.filter((r) => /t_yes|t_none|t_no|speech therapy|in therapy/i.test(r.url + " " + (r.body || "")));
     ok("the two answers the parent tapped are in no request, address or body, anywhere in the walk", leaked.length === 0, leaked.slice(0, 3));
     const named = requests.filter((r) => /\bMia\b/.test(decodeURIComponent(r.url) + " " + (r.body || "")));

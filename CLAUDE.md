@@ -153,7 +153,8 @@ changing one. What follows from the rule:
   hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
   **"How many days a week will you practice?"** → **"Get the weekly progress
   report"** → **"<Name>'s practice is ready"** →
-  the price → microphone → "Hand the phone to <Name>!" → the first game. The
+  the price → microphone → "Hand the phone to <Name>!" → Home (the first
+  game for a phone with nothing to sell). The
   old order told a parent to hand the phone over and tap "Let's play!", and
   then showed three money screens to the child holding it.
   - **The two questions between are one tap each and can be skipped**
@@ -218,7 +219,11 @@ changing one. What follows from the rule:
     still ends on Home.
   - **A purchase or a restore comes BACK to setup** for the microphone and the
     hand-off: a tab-only marker (`sona.setupafter.v1`, `Sona.setupAfter()`)
-    written when setup leaves for the price. The marker picks a screen and
+    written when setup leaves for the price. **The hand-off's "Let's play!"
+    then goes Home, where the child picks a game** (Travis, 17 Oct 2026:
+    "once I start a trial, I don't want it to go jump straight into a game.
+    I just want to have it go to the homepage"); no first game is marked.
+    A phone that never left for the price still opens the first game. The marker picks a screen and
     grants nothing; without it (app closed on the price) the family lands on
     Home and the games ask for the microphone themselves.
     `Sona.firstGameStart()`'s mark is written by the hand-off's last tap.
