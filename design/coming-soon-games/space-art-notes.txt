@@ -99,3 +99,5 @@ EXPORTS
 Only rectangular bounds crops, proportional size export, and WebP conversion after generation. Alpha preserved byte-for-byte relative to resized images. No semantic edits or recoloring. Moon full canvas preserved so its transparent horizon anchor is stable.
 
 Attachment notes: upright rocket nose up, no exhaust. Landing foot pad centers approx x0.27 and0.73 of exported canvas, common base near y0.985; nozzle bottom near y0.93. Ground center horizon measured in metadata; align that y to physical ground/pad line. Rock compact irregular silhouette, use a slightly inset forgiving collision circle.
+
+HELP LADDER AND LANDING (17 Oct 2026): no new art. After two tries that do not land, the game draws the idle lander at 38% opacity standing on the pad (where to land), a cream-and-teal arrow above it and a dotted track from the rocket; from the third try a soft teal column of light rises from the pad. A landing shows a ring of light with five star.webp stars for about a second before the next word. All of it is canvas drawing over the existing sprites; painted versions could replace the ghost, the arrow and the ring later.
