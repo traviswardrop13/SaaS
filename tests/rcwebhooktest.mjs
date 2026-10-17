@@ -96,6 +96,20 @@ function kvExec([op, ...a]) {
         if (cur) { const m = /"ts":(\d+)/.exec(cur); if (m && Number(m[1]) > Number(tsArg)) return 0; }
         h.set(String(field), String(json)); KV.H.set(key, h); return 1;
       }
+      if (/^-- rc:moved\n/.test(script)) {
+        // the model of MOVED_SCRIPT: keep the latest TRANSFER time
+        const [key, tsArg, ex] = [a[2], a[3], a[4]];
+        const cur = Number(KV.K.get(key) || 0);
+        if (cur >= Number(tsArg)) return 0;
+        KV.K.set(key, String(tsArg)); KV.T.set(key, Number(ex)); return 1;
+      }
+      if (/^-- rc:done\n/.test(script)) {
+        // the model of DONE_SCRIPT: remove only if the score is unchanged
+        const [key, member, score] = [a[2], String(a[3]), Number(a[4])];
+        const z = KV.Z.get(key);
+        if (z && z.has(member) && z.get(member) === score) { z.delete(member); return 1; }
+        return 0;
+      }
       if (/^-- rl:incr\n/.test(script)) { const k = a[2], n = Number(KV.K.get(k) || 0) + 1; KV.K.set(k, String(n)); return n; }
       throw new Error("no model for script " + script.slice(0, 30));
     }
@@ -478,6 +492,25 @@ await scenario("the reminder", async () => {
   r = await R.runRc(kv, fetch, run(1), quiet);
   KV.failOn = realHget;
   ok("a store that cannot say where the plan stands: nothing is sent, and the note waits", SENT.length === 0 && zscore(R.REMIND_KEY) === E - 50 * HOUR, r);
+  // a store that stops answering part-way never loses the note: it stays
+  // queued, untouched, until a run can settle it
+  reset(); joinList();
+  await start();
+  KV.failOn = (c) => c[0] !== "ZRANGEBYSCORE";
+  r = await R.runRc(kv, fetch, run(1), quiet);
+  KV.failOn = null;
+  ok("the store goes down right after the queue is read: nothing sent, and the note is still queued as it was", SENT.length === 0 && zscore(R.REMIND_KEY) === E - 50 * HOUR, [r, zscore(R.REMIND_KEY)]);
+  r = await R.runRc(kv, fetch, run(1) + 2 * HOUR, quiet);
+  ok("…so a later run in time sends it, and only then is it taken off the queue", r.reminded === 1 && SENT.length === 1 && !zscore(R.REMIND_KEY), r);
+  reset(); joinList();
+  await start();
+  KV.failOn = (c) => { if (c[0] === "HGET") zget(R.REMIND_KEY).set("mom@example.com", E + DAY - 50 * HOUR); return false; };
+  r = await R.runRc(kv, fetch, run(1), quiet);
+  KV.failOn = null;
+  ok("a note queued again (new free days) while the run handled the old one stays queued, at its new time",
+    r.reminded === 1 && zscore(R.REMIND_KEY) === E + DAY - 50 * HOUR, [r, zscore(R.REMIND_KEY)]);
+  reset(); joinList();
+  await start();
   const n = SENT.length;
   delete process.env.EMAIL_POSTAL;
   r = await R.runRc(kv, fetch, run(1), quiet);
@@ -522,6 +555,30 @@ await scenario("transfer", async () => {
   r = await hook(t2);
   ok("…and the retry lands", r.status === 200 && plan().s === "moved", r);
   ok("/leads.html names it", /moved: "moved to another device"/.test(read("public/leads.html")) && /pMoved/.test(read("public/leads.html")));
+
+  // RevenueCat sends in no particular order: the TRANSFER can arrive before
+  // the purchase it moved (a retry of the purchase lands later)
+  reset(); joinList();
+  r = await hook(move());
+  ok("a TRANSFER that comes before anything about its customer: 200, and its time is kept against that customer for 400 days",
+    r.status === 200 && r.json.ignored === "none" && KV.K.get(R.movedKey(A)) === String(S + HOUR) && KV.T.get(R.movedKey(A)) === 400 * 86400, [r, [...KV.K]]);
+  r = await hook(ev({ event_timestamp_ms: S, expiration_at_ms: E, app_user_id: A, original_app_user_id: A }));
+  ok("…the late purchase message (from before the move) records the address as moved, as of the move, never on its free days",
+    r.status === 200 && plan().s === "moved" && plan().ts === S + HOUR && !zscore(R.REMIND_KEY), [r, plan(), zscore(R.REMIND_KEY)]);
+  ok("…while still stopping the welcome series and linking the address to the customer",
+    KV.K.get(N.stopKey("mom@example.com")) === "1" && KV.K.get(R.uidKey(A)) === "mom@example.com");
+  ok("…so the run sends no reminder", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.length === 0);
+  await hook(move({ event_timestamp_ms: S + 30 * 60e3 }));
+  ok("an older TRANSFER arriving later never moves the kept time back", KV.K.get(R.movedKey(A)) === String(S + HOUR));
+  r = await hook(ev({ type: "INITIAL_PURCHASE", event_timestamp_ms: S + 2 * HOUR, expiration_at_ms: E + 2 * HOUR, app_user_id: A, original_app_user_id: A }));
+  ok("a message from after the move (the family bought again on that phone) counts as ever",
+    r.status === 200 && plan().s === "trial" && zscore(R.REMIND_KEY) === E + 2 * HOUR - 50 * HOUR, [r, plan()]);
+  reset(); joinList();
+  KV.failOn = (c) => c[0] === "GET" && String(c[1]).startsWith("rc:moved:");
+  const late = ev({ event_timestamp_ms: S, expiration_at_ms: E, app_user_id: A, original_app_user_id: A });
+  r = await hook(late);
+  ok("a store that cannot say whether the customer moved: 503, nothing written", r.status === 503 && KV.H.size === 0 && !KV.K.has(R.evtKey(late.id)), r);
+  KV.failOn = null;
 });
 
 // ── 6. "We miss you at Sona" ──

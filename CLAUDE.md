@@ -1364,7 +1364,10 @@ a purchase starts, renews, is cancelled or ends.
   may have no email) carries no email: the customers it left are looked up
   in `rc:uid:`, each address found is marked "moved" and loses its queued
   reminder, so a parent who then cancels on the iPad is never told "your
-  plan carries on". Set-up steps for Travis: NATIVE.md.
+  plan carries on". Its time is also kept against the customers it left
+  (`rc:moved:<id>`, 400 days, the latest only): a purchase message from
+  before the move that arrives after it (a retry) records the address as
+  "moved", never on its free days. Set-up steps for Travis: NATIVE.md.
 - **What it sends** (Resend, from Rachel; her words to change, `MAILS`):
   "Your free days end soon" (`rc:remind`, 50 hours before the free days end;
   the daily run at 16:00 UTC, which Vercel may start up to an hour late,
@@ -1373,7 +1376,9 @@ a purchase starts, renews, is cancelled or ends.
   ahead, once per end; that 26-hour window always holds one run, which sends
   these notes right after the unsubscribe check and before the welcome
   emails, with its start time as "now", and a send Resend
-  turns away for a moment is tried twice more in it), and "We miss you at Sona"
+  turns away for a moment is tried twice more in it; a note leaves its queue
+  only once it is settled, and only if nobody queued it again meanwhile, so a
+  store that stops answering part-way never loses one), and "We miss you at Sona"
   (`rc:miss`, a day after a plan ends, only if still ended, once a year an
   address). Only to an address that joined Sona's list (`nurture:0:<email>`)
   and is not in `email:unsub` (exact or plain mailbox): RevenueCat's

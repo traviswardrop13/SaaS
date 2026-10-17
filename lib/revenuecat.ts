@@ -42,7 +42,10 @@ import { PACE_MS, SEND_CAP, addressOk, suppressed } from "@/lib/report";
  * So Sona remembers which customer each address came from (`rc:uid:<id>`,
  * 400 days), and a TRANSFER away from one marks that address "moved" and
  * drops its reminder: a parent who then cancels on the iPad is never told
- * "your plan carries on".
+ * "your plan carries on". RevenueCat sends in no particular order, so the
+ * TRANSFER's time is kept against the customers it left (`rc:moved:<id>`,
+ * 400 days) too: a purchase message from before it that arrives after it
+ * (a retry) records the address as "moved", never as on its free days.
  *
  * WHO MAY BE EMAILED. Only an address that joined Sona's own list (setup's
  * email step, through /api/lead: `nurture:0:<email>`), and never one in
@@ -76,6 +79,8 @@ export const evtKey = (id: string) => "rc:evt:" + id;
 export const sentKey = (kind: "remind" | "miss", email: string, exp: number) =>
   kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:miss:" + email;
 export const uidKey = (id: string) => "rc:uid:" + id;
+/** When the subscription last left this RevenueCat customer (a TRANSFER's time), for a message about it that arrives late. */
+export const movedKey = (id: string) => "rc:moved:" + id;
 export const EVT_KEEP_SEC = 14 * 24 * 60 * 60;
 export const UID_KEEP_SEC = 400 * 24 * 60 * 60;
 export const LIST_KEEP_SEC = 365 * 24 * 60 * 60; // nurture:0's own year (lib/nurture.ts enroll)
@@ -194,6 +199,19 @@ end
 redis.call('HSET', KEYS[1], ARGV[1], ARGV[3])
 return 1`;
 
+/** Keep the latest TRANSFER time against a customer: 1 when this one is newer. */
+const MOVED_SCRIPT = `-- rc:moved
+local cur = tonumber(redis.call('GET', KEYS[1]) or '0')
+if cur and cur >= tonumber(ARGV[1]) then return 0 end
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+return 1`;
+
+/** Take a settled note off its queue, only if nobody queued it again (a new score) meanwhile. */
+const DONE_SCRIPT = `-- rc:done
+local s = redis.call('ZSCORE', KEYS[1], ARGV[1])
+if s and tonumber(s) == tonumber(ARGV[2]) then return redis.call('ZREM', KEYS[1], ARGV[1]) end
+return 0`;
+
 /**
  * One message, once. Every write here is safe to do twice (the watermark
  * script rewrites the same record, SET and ZADD set the same values), so the
@@ -207,8 +225,19 @@ export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, no
   const seen = await kv(["EXISTS", evtKey(ev.id)]);
   if (seen === undefined || seen === null) return "retry";
   if (Number(seen) === 1) return "dup";
-  const rec: Plan = { s: ev.state, exp: ev.exp, ts: ev.ts, at: new Date(now).toISOString() };
-  const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, ev.email, ev.ts, JSON.stringify(rec)]);
+  // the subscription left this customer after this message happened (its
+  // TRANSFER came first): what this address holds is "moved", as of then
+  let moved = 0;
+  for (const u of ev.uids) {
+    const m = await kv(["GET", movedKey(u)]);
+    if (m === undefined) return "retry";
+    const t = ms(m);
+    if (t > ev.ts && t > moved) moved = t;
+  }
+  const rec: Plan = moved
+    ? { s: "moved", exp: 0, ts: moved, at: new Date(now).toISOString() }
+    : { s: ev.state, exp: ev.exp, ts: ev.ts, at: new Date(now).toISOString() };
+  const put = await kv(["EVAL", PLAN_SCRIPT, 1, PLANS_KEY, ev.email, rec.ts, JSON.stringify(rec)]);
   if (put === undefined || put === null) return "retry";
   // every state is someone who started Premium at some point: no more welcome series
   if (!(await stopSeries(ev.email, kv))) return "retry";
@@ -217,7 +246,7 @@ export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, no
   for (const u of ev.uids) {
     if ((await kv(["SET", uidKey(u), ev.email, "EX", UID_KEEP_SEC])) !== "OK") return "retry";
   }
-  const fresh = Number(put) === 1;
+  const fresh = Number(put) === 1 && !moved;
   if (fresh && ev.state === "trial" && ev.exp > 0) {
     if ((await kv(["ZADD", REMIND_KEY, ev.exp - REMIND_BEFORE_MS, ev.email])) === undefined) return "retry";
   }
@@ -225,14 +254,15 @@ export async function apply(ev: RcEvent & { state: RcState }, kv: Kv = kvCmd, no
     if ((await kv(["ZADD", MISS_KEY, Math.max(now, ev.ts) + MISS_AFTER_MS, ev.email])) === undefined) return "retry";
   }
   if ((await kv(["SET", evtKey(ev.id), "1", "EX", EVT_KEEP_SEC])) !== "OK") return "retry";
-  return fresh ? "ok" : "stale";
+  return fresh || (moved && Number(put) === 1) ? "ok" : "stale";
 }
 
 /**
- * A TRANSFER: the subscription left the customers in `from`. Each address
- * Sona linked to one of them is marked "moved" (unless a newer message
- * already said something) and loses its queued reminder. "none": no address
- * Sona knows was on those customers.
+ * A TRANSFER: the subscription left the customers in `from`. The time is
+ * kept against each of them (for a message about them that arrives later),
+ * and each address Sona linked to one of them is marked "moved" (unless a
+ * newer message already said something) and loses its queued reminder.
+ * "none": no address Sona knows was on those customers yet.
  */
 export async function moveAway(ev: RcEvent, kv: Kv = kvCmd, now: number = Date.now()): Promise<"ok" | "dup" | "none" | "retry"> {
   const seen = await kv(["EXISTS", evtKey(ev.id)]);
@@ -240,6 +270,7 @@ export async function moveAway(ev: RcEvent, kv: Kv = kvCmd, now: number = Date.n
   if (Number(seen) === 1) return "dup";
   const emails: string[] = [];
   for (const u of ev.from) {
+    if ((await kv(["EVAL", MOVED_SCRIPT, 1, movedKey(u), ev.ts, UID_KEEP_SEC])) === undefined) return "retry";
     const e = await kv(["GET", uidKey(u)]);
     if (e === undefined) return "retry";
     const a = addressOk(e);
@@ -370,11 +401,13 @@ export type RcRun = { reminded: number; missed: number; skipped: number; failed:
 /**
  * The daily run (/api/cron/nurture, before the welcome series, with `now` the
  * moment the run started): every queued note that is due, if it is still
- * true. ZREM is the claim. A send Resend turns away for a moment (busy, down,
- * no answer) is tried twice more, a little apart. A note that still could
- * not be checked (the store did not answer) or sent goes back in its queue
- * for the next run, which checks it all again; a reminder that has become
- * too late is dropped there.
+ * true. A note leaves its queue only once it is settled (sent, refused for
+ * good, or no longer true), and only if nobody queued it again meanwhile; a
+ * store that stops answering part-way leaves it where it was, so the next
+ * run checks it all again. The sent mark is the claim: two runs at once
+ * cannot both send. A send Resend turns away for a moment (busy, down, no
+ * answer) is tried twice more, a little apart; a reminder that has become
+ * too late is dropped.
  */
 export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date.now(),
   opts: { deadline?: number; sleep?: (ms: number) => Promise<void> } = {}): Promise<RcRun> {
@@ -389,31 +422,30 @@ export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date
     const due = await kv(["ZRANGEBYSCORE", key, "-inf", now, "WITHSCORES", "LIMIT", 0, 300]);
     if (!Array.isArray(due)) continue;
     for (let i = 0; i + 1 < due.length; i += 2) {
-      const email = String(due[i]), score = Number(due[i + 1]);
+      const email = String(due[i]), score = String(due[i + 1]);
       if (tries >= SEND_CAP) { res.stopped = "cap"; break; } // the next run picks up the rest
       if (opts.deadline && Date.now() > opts.deadline) { res.stopped = "time"; break; }
-      if (Number(await kv(["ZREM", key, email])) !== 1) continue; // another run took it
-      const back = async () => { await kv(["ZADD", key, score, email]); };
+      const settle = async () => { await kv(["EVAL", DONE_SCRIPT, 1, key, email, score]); };
       const rawPlan = await kv(["HGET", PLANS_KEY, email]);
-      if (rawPlan === undefined) { await back(); continue; }
+      if (rawPlan === undefined) continue; // the store did not answer: still queued
       const plan = parsePlan(rawPlan);
       let exp = 0;
       if (kind === "remind") {
-        // still on the free days (not cancelled, not paid), and still time to cancel
-        if (!plan || plan.s !== "trial" || !plan.exp || plan.exp - now <= REMIND_LATE_MS) { res.skipped++; continue; }
+        // still on the free days (not cancelled, not paid, not moved), and still time to cancel
+        if (!plan || plan.s !== "trial" || !plan.exp || plan.exp - now <= REMIND_LATE_MS) { res.skipped++; await settle(); continue; }
         if (plan.exp - REMIND_BEFORE_MS > now) { await kv(["ZADD", key, plan.exp - REMIND_BEFORE_MS, email]); continue; } // a later end: not yet
         exp = plan.exp;
-      } else if (!plan || plan.s !== "ended") { res.skipped++; continue; } // back already, or never ended
+      } else if (!plan || plan.s !== "ended") { res.skipped++; await settle(); continue; } // back already, or never ended
       // only an address that joined Sona's list, and never one that left it
       const joined = await kv(["EXISTS", "nurture:0:" + email]);
-      if (joined === undefined) { await back(); continue; }
-      if (Number(joined) !== 1) { res.skipped++; continue; }
+      if (joined === undefined || joined === null) continue;
+      if (Number(joined) !== 1) { res.skipped++; await settle(); continue; }
       const unsub = await suppressed(email, kv);
-      if (unsub === null) { await back(); continue; }
-      if (unsub) { res.skipped++; continue; }
+      if (unsub === null) continue;
+      if (unsub) { res.skipped++; await settle(); continue; }
       const mark = await kv(["SET", sentKey(kind, email, exp), String(now), "NX", "EX", kind === "remind" ? REMIND_SENT_SEC : MISS_SENT_SEC]);
-      if (mark === null) { res.skipped++; continue; } // already sent (this free-days end, or this year)
-      if (mark !== "OK") { await back(); continue; }
+      if (mark === null) { res.skipped++; await settle(); continue; } // already sent (this free-days end, or this year)
+      if (mark !== "OK") continue;
       tries++;
       // busy, down or no answer: worth another try; anything else (a bad address) is final
       const again = (st: number) => st === 0 || st === 429 || st >= 500;
@@ -423,11 +455,11 @@ export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date
         r = await send(f, cfg, kind, email, exp); // the same Idempotency-Key each time: never two emails
         if (r.ok || !again(r.status)) break;
       }
-      if (r.ok) { if (kind === "remind") res.reminded++; else res.missed++; continue; }
+      if (r.ok) { if (kind === "remind") res.reminded++; else res.missed++; await settle(); continue; }
       res.failed++;
       await kv(["DEL", sentKey(kind, email, exp)]);
-      // still busy or down: the next run tries again; refused for good: dropped
-      if (again(r.status)) await back();
+      // still busy or down: it stays queued for the next run; refused for good: dropped
+      if (!again(r.status)) await settle();
       if (r.status === 429) { res.stopped = "rate"; break; }
     }
   }
