@@ -83,6 +83,18 @@ ok("someone signed up under the two-email build gets the 5-minute email next, th
   for (let d = 3; d <= 10; d++) await N.runDue(r.cmd, fakeFetch, T + d * N.DAY_MS + 1);
   ok("a purchase posted while the day-1 email is going out: that one goes, nothing after it", after === m + 1 && sent.length === after && r.z.size === 0 && !r.kv.has(N.nextKey("race@example.com")), { m, after, now: sent.length, z: [...r.z.keys()], next: r.kv.get(N.nextKey("race@example.com")) });
 }
+// someone who started Premium gives their email again years later (nurture:0
+// long gone, the stop mark kept for good): day 0's tip alone, never "Here's
+// Sona" selling free days Apple will not give twice, and nothing after it
+{
+  const back = store(); await N.stopSeries("again@example.com", back.cmd);
+  const m = sent.length;
+  ok("the stop mark has no time limit", back.kv.get(N.stopKey("again@example.com")) === "1");
+  await N.enroll("again@example.com", back.cmd, fakeFetch, T);
+  ok("a buyer enrolled again from the website gets \"The 5-minute trick\" alone, never \"Here's Sona\"",
+    JSON.stringify(sent.slice(m).map((x) => x.subject)) === JSON.stringify([N.CONTENT[1].subject]), sent.slice(m).map((x) => x.subject));
+  ok("…and nothing is scheduled after it", !back.z.has("again@example.com") && !back.kv.has(N.nextKey("again@example.com")));
+}
 // a day-0 email Resend turns away (busy: its two requests a second are
 // shared with the contact list) goes with the next daily run, never lost
 {

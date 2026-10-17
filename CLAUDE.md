@@ -478,7 +478,8 @@ charter price, and **it is the one picked when the plan screen opens**.
   date is the same +3 days the charge uses; the price is the store's string
   on Apple's card and the charter figure on the web, so the line never names
   a different number from the box above it, and it never promises a reminder
-  (there is no trial mailer). It replaced a dated three-row timeline and the
+  (the only one, RCHOOK1, follows an App Store trial for a parent who gave
+  the app an email, never a web purchase). It replaced a dated three-row timeline and the
   Apple card's paragraph of small print, and the web's yearly small print
   steps aside for it; monthly keeps its own line, which says how to cancel.
   What Apple requires stays: each plan's price and period, the renewal, where
@@ -1355,9 +1356,10 @@ a purchase starts, renews, is cancelled or ends.
   it): the state in `rc:plans` (email to {s, exp, ts, at}: trial, paid,
   cancelled, billing, ended, moved; an older message never overwrites a
   newer one, one Lua step), `stopSeries` (the welcome series stops, as the
-  phone's plan post already does; its mark now has no time limit, so a
-  family enrolled again years later is never sold free days Apple will not
-  give twice), a new year for `nurture:0:<email>` (EXPIRE, which never creates it), the
+  phone's plan post already does; its mark now has no time limit, and
+  `enroll` reads it, so a family who gives their email again years later
+  gets day 0's tip alone, never "Here's Sona" selling free days Apple will
+  not give twice), a new year for `nurture:0:<email>` (EXPIRE, which never creates it), the
   RevenueCat customer each address came with (`rc:uid:<id>`, 400 days), and
   the two queues. Never the price, the country or a transaction id.
   **TRANSFER** (the subscription moved to another device's customer, which
