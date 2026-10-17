@@ -15,43 +15,7 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Rocket Blast is now the hand-built pull-and-release game in public/rocket.js.
 
-// ── 4. Build a Snowman: bottom, middle, head, face, then hat, scarf and arms ──
-const snowmanGame = {
-  key: "snowman", title: "Build a Snowman", group: "simple", top: "#eef7ff", bottom: "#dcecf8",
-  sub: "Say it to build a snowman", playDescription: "Every word you say builds the snowman.",
-  how: "Say each word to build a snowman.", blurb: "Every word adds to the snowman: three snowballs, a face, then a hat, a scarf and twig arms.",
-  alt: "A snowy hill with pine trees, ready for a snowman.",
-  bg: sky(SKY.chill) + C(372, 70, 30, "#ffffff", { opacity: 0.6 }) + cloud(90, 64, 0.9) + cloud(280, 44, 0.6)
-    + hills(262, 312, 400, "#e3eef8", "#f0f6fc") + A.pine(52, 318, 0.9) + A.pine(106, 300, 0.6) + A.pine(396, 326, 1.1) + A.pine(348, 296, 0.6)
-    + ground(356, "#ffffff") + E(220, 372, 90, 10, "#dbe8f5")
-    + A.flakes([[40, 120], [130, 170, 2.5], [300, 150], [410, 190, 2.5], [180, 60, 2.5], [250, 110, 2]]),
-  parts: [
-    { id: "ball1", x: 220, y: 372, hid: true, svg: A.snowball(62) },
-    { id: "ball2", x: 220, y: 262, hid: true, svg: A.snowball(46) },
-    { id: "arms", x: 220, y: 216, hid: true, svg: A.stickArms(46) },
-    { id: "buttons", x: 220, y: 218, hid: true, svg: A.coalButtons() },
-    { id: "ball3", x: 220, y: 186, hid: true, svg: A.snowball(34) },
-    { id: "face", x: 220, y: 152, hid: true, svg: A.snowFace() },
-    { id: "scarf", x: 220, y: 180, hid: true, svg: A.scarf() },
-    { id: "hat", x: 220, y: 126, hid: true, o: "50% 100%", svg: A.topHat() },
-    { id: "kid", x: 78, y: 386, hid: true, svg: G("scale(1.05)", cast.kid({ pose: "cheer", face: "grin", top: "#ff5c5c", bottom: "#4f8fe0" })) },
-    { id: "snow", x: 0, y: 0, hid: true, svg: A.flakes([[30, 40, 4], [90, 100, 3], [150, 30, 4], [200, 90, 3], [270, 50, 4], [330, 110, 3], [400, 60, 4], [60, 200, 3], [360, 220, 4], [420, 150, 3], [120, 260, 3]]) },
-    { id: "glow", x: 0, y: 0, hid: true, svg: sparkles([[140, 110, 1.3], [300, 120, 1.2], [320, 250, 1]]) },
-  ],
-  steps: [
-    [{ a: "show", id: "ball1", fx: "drop" }],
-    [{ a: "show", id: "ball2", fx: "drop" }],
-    [{ a: "show", id: "ball3", fx: "drop" }],
-    [{ a: "show", id: "face", fx: "pop" }, { a: "show", id: "buttons", fx: "pop", at: 250 }],
-    [{ a: "show", id: "hat", fx: "drop" }, { a: "show", id: "scarf", fx: "pop", at: 250 }, { a: "show", id: "arms", fx: "pop", at: 450 }],
-  ],
-  finale: [
-    { a: "fx", id: "arms", fx: "wiggle" }, { a: "fx", id: "hat", fx: "bounce", at: 150 },
-    { a: "show", id: "kid", fx: "slideL", at: 100 }, { a: "fx", id: "kid", fx: "hop", at: 1000 },
-    { a: "show", id: "snow", fx: "fade", at: 200 }, { a: "fx", id: "snow", fx: "float", at: 900 }, { a: "show", id: "glow", fx: "fade", at: 400 },
-  ],
-  done: { title: "Hello, snowman!", sub: "Your words built a snowman." },
-};
+// Build a Snowman is now the hand-built rolling-and-stacking game in public/snowman.js.
 
 // ── 5. Choo-Choo Train: every word, a friend on the platform climbs aboard ──
 // who rides: how big each looks in its window (s, with its head's height hy)
@@ -262,4 +226,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [ snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [ trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];

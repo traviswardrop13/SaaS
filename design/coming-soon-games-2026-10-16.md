@@ -24,7 +24,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
 | Grow a Flower | 3–4 | Built and browser-verified; production still parked |
 | Rocket Blast | 3–4 | Built and browser-verified; production still parked |
-| Build a Snowman | 3–4 | Queued |
+| Build a Snowman | 3–4 | Built and browser-verified; production still parked |
 | Choo-Choo Train | 3–4 | Queued |
 | Puppy Bath | 3–4 | Queued |
 | Bedtime Stars | 3–4 | Queued |
@@ -375,3 +375,32 @@ screen-fit/missing-art run also passed all 14 checks, exit 0, at 320px, 393px
 and iPad widths. The original reveal scene fails the new game test. Syntax, protected
 art and recording-inventory checks passed. Production stays parked for phone
 play review; nothing is pushed or released.
+
+## Build a Snowman
+
+A preschool rolling-and-assembly toy. Real held travel through the lower
+snow lane grows each of three snowballs; holding still or moving outside
+the snow cannot grow one. The child releases each grown ball into its
+stacking ghost, then places a coal face, carrot nose, hat, scarf and twig
+arms. Missed drops keep the accumulated snow. Keyboard pickup, arrows and
+drop operate the same ball and decorations.
+
+The existing five targets and two sayings remain. Speech grants ten seconds
+of faster growth and wider stacking/decorating contact. Help keeps snowball
+size, distance, position and every committed decoration. Interrupted drags
+release safely without discarding that work. Five step directions and the
+Hear-step control use SayPlay's existing quiet voice owner.
+
+Four painted cutouts total 91,918 bytes: a freely rotating clean snowball,
+carrot, scarf and paired twig arms. The existing winter clearing and top hat
+are reused; prompts, alpha bounds and attachment geometry are recorded in
+design/coming-soon-games/snowman-art-notes.txt. The visual review corrected
+the stack overlap so soft painted edges cannot leave a floating middle ball.
+
+The final browser pass passed all 72 checks, including full five-activity
+play at 320px, 393px and iPad widths, off-lane/static growth prevention,
+undersized/missed drops, speech help, pause recovery, interrupted decoration,
+missing-art fallback, restart, quiet microphones, physical stack overlap
+and actual keyboard pickup/rolling/drop. The original reveal scene
+fails the new test. Syntax, art protection and recording inventory checks
+passed. Production stays parked for phone play review; nothing is pushed.
