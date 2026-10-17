@@ -8171,7 +8171,9 @@
   // them; "we could at the very least ask them if they are in speech therapy
   // or not"). The days-a-week pick that sits beside it in setup is a real
   // setting (profile.weeklyGoal), not one of these.
-  const SETUP_THERAPY = ["t_yes", "t_no"];
+  // Yes, No (t_none, 16 Oct 2026) and Not yet (t_no, which read "Not right
+  // now" before; a saved t_no keeps its meaning)
+  const SETUP_THERAPY = ["t_yes", "t_none", "t_no"];
   function _askId(list, v) { return (typeof v === "string" && list.indexOf(v) !== -1) ? v : ""; }
   function setupAsks() {
     let raw = null, v = null;

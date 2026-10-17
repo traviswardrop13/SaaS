@@ -162,10 +162,12 @@ changing one. What follows from the rule:
     the very least ask them if they are in speech therapy or not. Oh, and
     then also for them to be able to choose whether they want to practice
     three days a week or … five days a week or every day"). **Therapy**
-    ("Yes" / "Not right now") changes nothing a child is given: it puts one
+    ("Yes" / "No" / "Not yet", since 16 Oct 2026, Travis: "add a no so
+    there's yes, no, and then not yet"; "Not yet" is the old "Not right now",
+    id `t_no`, and "No" is `t_none`) changes nothing a child is given: it puts one
     true sentence about SONA on the ready screen, never one about the child
     ("Sona is practice for the days between speech visits." / "Sona is
-    practice you can do at home."; Travis took "It does not replace a speech
+    practice you can do at home.", the second for both No and Not yet; Travis took "It does not replace a speech
     therapist." off the second on 15 Oct 2026).
     **Days a week** (3 days / 5 days / Every day) is a real setting, the
     child's weekly goal (`profile.weeklyGoal`, the one Settings shows), and

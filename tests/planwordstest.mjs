@@ -897,12 +897,12 @@ try {
       out.imported = { ok: res && res.ok, asks: localStorage.getItem(KEY), draft: localStorage.getItem("sona.obdraft.v1"), draft2: localStorage.getItem("sona.obdraft.v1@k2"), name: Sona.getProfile().childName, state: Sona.setupAsks() };
       return out;
     });
-    ok("the list of answer ids is fixed: yes, or not right now", same(r.list, ["t_yes", "t_no"]), r.list);
+    ok("the list of answer ids is fixed: yes, no, or not yet", same(r.list, ["t_yes", "t_none", "t_no"]), r.list);
     ok("before setup nothing was asked", same(r.before, { asked: false, therapy: "" }), r.before);
     ok("after it, the answer is held and 'asked' is true", r.saved === true && same(r.after, { asked: true, therapy: "t_yes" }), r.after);
     ok("…in ONE household key in localStorage, holding one id and nothing else", same(JSON.parse(r.raw), { v: 2, therapy: "t_yes" }) && r.session === null && r.kkey === "sona.setupasks.v1", r.raw);
-    ok("no profile holds a therapy field", !/"therapy"|t_yes|t_no/.test(r.profile) && !/"therapy"|t_yes|t_no/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
-    ok("A BACKUP NEVER CARRIES IT: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|t_yes|t_no/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
+    ok("no profile holds a therapy field", !/"therapy"|t_yes|t_none|t_no/.test(r.profile) && !/"therapy"|t_yes|t_none|t_no/.test(r.afterKid.kidProfile), r.profile.slice(0, 200));
+    ok("A BACKUP NEVER CARRIES IT: the export has no answers key, no setup draft, and no answer id", !/setupasks|obdraft|t_yes|t_none|t_no/.test(r.exported) && r.exportKeys.length > 3 && r.exportKeys.indexOf("sona.profile.v1") > -1, r.exportKeys);
     ok("…and a backup that does hold either key is not let in, while the practice beside it is", r.imported.ok === true && r.imported.asks === null && r.imported.draft === null && r.imported.draft2 === null && r.imported.name === "Zed" && same(r.imported.state, { asked: false, therapy: "" }), r.imported);
     ok("adding a child copies nothing and changes nothing: the key is the household's", r.afterKid.raw === r.raw && r.afterKid.suffixed === null && same(r.afterKid.asks, r.after), r.afterKid);
     ok("only a listed id is ever stored: anything else, a name or the days picked included, is dropped", same(JSON.parse(r.strict[0]), { v: 2, therapy: "" }) && same(r.strict[1], { asked: true, therapy: "" }), r.strict);
