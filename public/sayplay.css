@@ -83,6 +83,10 @@ body[data-listen=on] #micState{color:var(--act-d);}
 /* the mic is the teal disc, listening or not: the same mic as everywhere */
 #micBtn{margin-left:auto;border:none;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);box-shadow:0 5px 0 var(--act-d);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;animation:micNudge 1.4s ease-in-out infinite;}
 #micBtn[hidden]{display:none;}
+/* A help ask (a play game's optional power) can always be left with no
+   speech: the earned move comes straight back (sayplay.js endHelp). */
+#helpBack{grid-column:1/-1;justify-self:center;min-height:44px;padding:8px 18px 6px;font-size:15px;}
+#helpBack[hidden]{display:none;}
 #micBtn svg{width:28px;height:28px;}
 #micBtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--act-d);}
 @keyframes micNudge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}

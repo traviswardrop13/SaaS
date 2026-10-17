@@ -3,7 +3,15 @@ export function fakeDevice(cfg) {
   const T0 = performance.now();
   if(cfg.fastPlay) Math.random=()=>0.46; // deterministic exhausted-bank fallback
   const now = () => (performance.now() - T0) / 1000;
-  const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], gains: [], speech: [], requests: 0, inflight: 0, gumPlan: [], voice: false, hidden: false, speaking: 0, voicedFrames: 0, leakFrames: 0 };
+  const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], gains: [], speech: [], requests: 0, inflight: 0, gumPlan: [], voice: false, hidden: false, speaking: 0, voicedFrames: 0, leakFrames: 0, soundsBefore: 0 };
+  // A parked page bounces Home with location.replace, and this script runs
+  // again on the page it lands on: a fresh __quiet would read 0 whatever the
+  // game page did before it left. So the mic requests (and how many sounds
+  // the earlier pages in this tab made, soundsBefore) carry across pages in
+  // this tab's sessionStorage, and "no mic before the bounce" can fail.
+  try { const c = JSON.parse(sessionStorage.getItem("__quiet.carry") || "{}"); h.requests = c.req || 0; h.soundsBefore = c.snd || 0; } catch (e) {}
+  const carry = () => { try { sessionStorage.setItem("__quiet.carry", JSON.stringify({ req: h.requests, snd: h.soundsBefore + h.sounds.length })); } catch (e) {} };
+  addEventListener("pagehide", carry);
   // Two counts (24 Sep 2026). live(): tracks the page holds right now, which
   // is what "the mic is open and listening" waits on. micOn(): the audit's
   // count, which ALSO holds a request still being answered: on an iPhone
@@ -29,7 +37,7 @@ export function fakeDevice(cfg) {
   // interval runs from `asked` (the request going out) to `end` (the track
   // stopped, or the request failing).
   navigator.mediaDevices.getUserMedia = () => {
-    h.requests++;
+    h.requests++; carry();
     if (cfg.micMode === "deny") return Promise.reject(new DOMException("Denied", "NotAllowedError"));
     const plan = h.gumPlan.shift() || { delay: cfg.gumDelay || 0 };
     const rec = { asked: now(), start: null, end: null }; h.mics.push(rec);

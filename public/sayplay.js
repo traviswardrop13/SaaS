@@ -112,6 +112,14 @@
     try { if (S && S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {}
     try { if (audioCtx && audioCtx.suspend) audioSuspend = Promise.resolve(audioCtx.suspend()).catch(function () {}); } catch (e) {}
   }
+  // Echo's voice alone: a line playing or still on its way stops, and the
+  // chimes and the audio context are left as they are.
+  function stopVoice() {
+    audioGeneration++;
+    var stop = audioStop; audioStop = null; if (stop) stop();
+    speaking = false; ttsPlaying = false; instructionActive = false;
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+  }
   function getCtx() {
     if (document.hidden || audioPaused) throw new Error("Say & Play audio is paused");
     if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
@@ -360,6 +368,10 @@
   // it never moves the game, and a saying already heard is kept.
   function nudge() {
     if (!turnLive) return;
+    // A help ask nobody answered gives the earned move straight back: the
+    // child loses only the optional power, never what their word already
+    // won. This also covers a mic that failed to open for the help word.
+    if (helpTurn) { endHelp(); return; }
     try { $("micState").textContent = oneMore() ? MORE + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
     face("think");
     setPhase("nudge");
@@ -576,7 +588,7 @@
       // An optional in-game speech power reuses this same quiet word turn.
       // It returns to the SAME move: asking for help never spends a turn or
       // opens a second microphone alongside the engine's microphone.
-      if (helpTurn && G.play.onHelp) { helpTurn=false; G.play.onHelp(step); replayInstruction(); }
+      if (helpTurn && G.play.onHelp) { helpTurn=false; showHelpBack(false); G.play.onHelp(step); replayInstruction(); }
       else G.play.onWord(step);
       return;
     }
@@ -598,8 +610,10 @@
     step++; paintDots();
     instructionOwed = null;
     // A cooking/tool instruction belongs only to its physical move. Cancel
-    // a late fetch or playing clip before the next ask or the celebration.
-    if (instructionActive) { stopAudio(); audioPaused = !!document.hidden; }
+    // a late fetch or playing clip before the next ask or the celebration,
+    // but only the voice: stopAudio() also stops Sona's chimes, and the
+    // game's "correct" chime for this very move has just started.
+    if (instructionActive) stopVoice();
     if (step >= G.steps.length) finish();
     // "step" while the next word is owed (1 Oct 2026). It stayed "play", and a
     // page hidden in this quarter second lost the round: pause() clears the
@@ -614,7 +628,32 @@
     if (G.play.pause) G.play.pause();
     said=0;
     nextTurn(true);
+    showHelpBack(true);
     return true;
+  }
+  // The way out of a help ask, with no speech needed: silence (nudge), a
+  // pause, or the "Back to the game" pill. No power and no step credit.
+  function endHelp() {
+    if (!helpTurn) return;
+    helpTurn = false; turnLive = false; said = 0;
+    micStop(); stopVoice(); clearTimeout(nextTurn._t);
+    paintSaid(); showHelpBack(false);
+    try { $("micBtn").hidden = true; $("micState").textContent = ""; $("cheer").textContent = ""; } catch (e) {}
+    face("welcome");
+    setPhase("play");
+    if (G.play && G.play.resume) G.play.resume(true);
+    replayInstruction();
+  }
+  function showHelpBack(on) {
+    var b = $("helpBack");
+    if (!b && on) {
+      try {
+        b = document.createElement("button"); b.id = "helpBack"; b.type = "button"; b.className = "cream-pill";
+        b.textContent = "Back to the game"; b.onclick = function () { if (helpTurn && !paused) endHelp(); };
+        $("turnPanel").appendChild(b);
+      } catch (e) { return; }
+    }
+    if (b) b.hidden = !on;
   }
   function instruct(t) {
     // The same owner handles mechanical instructions for nonreaders. Games
@@ -648,7 +687,7 @@
     $("endOvl").classList.remove("show");
     try { $("turnPanel").classList.remove("done"); } catch (e) {}
     if (G.play) G.play.reset(); else resetStage();
-    step = 0; helpTurn=false; instructionOwed=null; paintDots(); used = []; themedUsed=[]; roundWords=[];
+    step = 0; helpTurn=false; showHelpBack(false); instructionOwed=null; paintDots(); used = []; themedUsed=[]; roundWords=[];
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
@@ -664,6 +703,8 @@
   function resume() {
     if (!paused) return;
     paused = false; audioPaused = false; $("pauseOvl").classList.remove("show");
+    // paused during a help ask: back to the earned move, not the ask again
+    if (helpTurn && (phase === "turn" || phase === "nudge")) { endHelp(); return; }
     if (G.play && G.play.resume) G.play.resume(phase === "play");
     // paused with the ball in hand (or in the air): the same move goes on
     if (phase === "play") { setPhase("play"); replayInstruction(); return; }

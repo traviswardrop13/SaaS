@@ -21,8 +21,12 @@
 //   - a hidden page pauses the game and needs a tap to come back;
 //   - a locked game bounces before any mic or sound starts;
 //   - the catalog: ten games in each age group, each with its page, its card
-//     picture and its sticker, none in the daily adventure, and every page is
-//     exactly what tools/gameart/build.mjs writes;
+//     picture and its sticker, none in the daily adventure, read from the
+//     catalog itself (since 16 Oct 2026 every game is rebuilt by hand and the
+//     generator writes none; the seventeen rebuilt by Codex stay parked, and
+//     each has its own suite). The engine-only scenarios run on two fixed
+//     scenes in tests/fixtures/ (served in place of arcade-treasure.html and
+//     arcade-balloon.html), so they keep testing the word turn itself;
 //   - HOOPS (26 Sep 2026), the first game rebuilt to be played: no ball
 //     before the word, a tap is not a shot, a miss never costs a word, the
 //     help grows until every ball goes in, a pause holds the same ball, eight
@@ -107,6 +111,9 @@ async function fresh(file, cfg = {}) {
     const url = route.request().url();
     // This fixture completes only the finger move. Real Hoops physics are
     // tested in playgamestest; here it isolates the eight-word rotation.
+    // A played game with an optional help power (the seventeen rebuilt on
+    // 16 Oct 2026 each have one): it records what the engine asks of it.
+    if (cfg.helpStub && url.split("?")[0] === BASE + "/dino.js") return route.fulfill({status:200,contentType:"text/javascript",body:"window.Dino={init:function(api){window.__stub={api:api,words:0,helps:0,pauses:0,resumes:[]};},onWord:function(){__stub.words++;},onHelp:function(){__stub.helps++;},pause:function(){__stub.pauses++;},resume:function(p){__stub.resumes.push(p);},finale:function(){},reset:function(){}};"});
     if (cfg.fastPlay && url.split("?")[0] === BASE + "/dino.js") return route.fulfill({status:200,contentType:"text/javascript",body:"window.Dino={init:function(api){this.api=api;},onWord:function(){this.api.done();},pause:function(){},resume:function(){},finale:function(){},reset:function(){}};"});
     if (cfg.unparked && url.split("?")[0] === BASE + "/sona.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: UNPARKED_SONA });
     return url.startsWith(BASE + "/") ? route.continue() : route.abort();
@@ -191,7 +198,15 @@ const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done)
 // ── the catalog ──
 const { GAMES, PLAYED } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
-const KEYS = GAMES.map((g) => g.key);
+// The generator writes no page now: every game was rebuilt by hand (Hoops,
+// Soccer Goal and Dino Dig first, the other seventeen on 16 Oct 2026). So the
+// catalog checks below read the catalog itself: every "say: true" game in
+// sona.js, with its group and name from the same line. GAMES (the generator's
+// own list) still drives the generator checks, and is empty today.
+const SONA_SRC = readFileSync(ROOT + "/sona.js", "utf8");
+const SAY = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{ name: "([^"]+)",[^\n]*\bgroup: "(simple|arcade)",[^\n]*\bsay: true\b[^\n]*$/gm)].map((m) => ({ key: m[1], title: m[2], group: m[3] }));
+const KEYS = SAY.map((g) => g.key);
+ok("the catalog still has the twenty Say & Play games, ten for each age group", KEYS.length === 20 && SAY.filter((g) => g.group === "simple").length === 10 && new Set(KEYS).size === 20, KEYS);
 // Custom playable games have their own browser suites. Keep the remaining
 // generated scenes accounted for as each old animation is rebuilt.
 ok("all twenty picture games remain accounted for as scenes become real games", GAMES.length + PLAYED.length === 20 && new Set([...GAMES.map(g => g.key), ...PLAYED.map(([key]) => key)]).size === 20 && !GAMES.some(g => PLAYED.some(([key]) => key === g.key)));
@@ -307,6 +322,30 @@ await scenario("theme rotation",async()=>{
     noOverlap("theme rotation",await log(page));clean("theme rotation",errors);
   } finally {await context.close();}
 });
+// A help ask (api.practice: a played game's optional power) never holds the
+// move the word already earned: silence, a pause or "Back to the game" each
+// give it straight back, with no power and no step.
+await scenario("help ask",async()=>{
+  const {context,page,errors}=await fresh("arcade-dino.html",{age:"7",micok:true,permission:"granted",speechMs:80,helpStub:true});
+  try {
+    await page.locator("#startBtn").click();await sayIt(page);
+    ok("help: the word earns the move",await until(page,()=>window.__sayplay.phase==="play"&&__stub.words===1,4000));
+    const asked=await page.evaluate(()=>__stub.api.practice());
+    ok("help: the ask pauses the move and offers a way back",asked===true&&await until(page,()=>__stub.pauses===1&&window.__sayplay.phase==="turn",3000)&&await page.locator("#helpBack").isVisible());
+    ok("help: silence gives the earned move back, with no power and no step",await until(page,()=>window.__sayplay.phase==="play",16000)&&await page.evaluate(()=>__stub.helps===0&&__stub.resumes[__stub.resumes.length-1]===true&&window.__sayplay.step===0)&&(await live(page))===0&&!(await page.locator("#helpBack").isVisible()));
+    await page.evaluate(()=>__stub.api.practice());await until(page,()=>window.__sayplay.phase==="turn",3000);
+    await page.locator("#helpBack").click();
+    ok("help: \"Back to the game\" does the same at once",await until(page,()=>window.__sayplay.phase==="play",2000)&&await page.evaluate(()=>__stub.helps===0&&window.__sayplay.step===0)&&(await live(page))===0);
+    await page.evaluate(()=>__stub.api.practice());await until(page,()=>window.__sayplay.phase==="turn",3000);
+    await page.evaluate(()=>__quiet.background());await page.evaluate(()=>__quiet.foreground());await page.locator("#resume").click();
+    ok("help: a pause during the ask comes back to the move, not the ask",await until(page,()=>window.__sayplay.phase==="play",3000)&&await page.evaluate(()=>__stub.helps===0&&window.__sayplay.step===0));
+    await page.evaluate(()=>__stub.api.practice());await sayIt(page);
+    ok("help: two sayings earn the power, and the same move goes on",await until(page,()=>__stub.helps===1&&window.__sayplay.phase==="play",4000)&&await page.evaluate(()=>window.__sayplay.step===0)&&!(await page.locator("#helpBack").isVisible()));
+    await page.evaluate(()=>__stub.api.done());
+    ok("help: the move then finishes the step as before",await until(page,()=>window.__sayplay.step===1,2000));
+    noOverlap("help ask",await log(page));clean("help ask",errors);
+  } finally {await context.close();}
+});
 await scenario("cancelled intro",async()=>{
   const {context,page,errors}=await fresh("arcade-hoops.html",{age:"7",micok:true,permission:"granted",speechMs:800});
   try {
@@ -331,7 +370,8 @@ for (const g of GAMES) {
   ok(g.key + ": its card picture ships", existsSync(ROOT + "/assets/games/" + g.key + ".svg"));
 }
 const sheet = readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8");
-ok("every game's sticker is in the sheet and points at its card picture", KEYS.every((k) => sheet.includes('<g id="sp-' + k + '"><image href="/assets/games/' + k + '.svg"')));
+ok("every game's sticker is in the sheet and points at its card picture", GAMES.every((g) => sheet.includes('<g id="sp-' + g.key + '"><image href="/assets/games/' + g.key + '.svg"'))
+  && PLAYED.every(([k, art]) => sheet.includes('<g id="sp-' + k + '"><image href="' + art + '"') && existsSync(ROOT + art)) && KEYS.every((k) => sheet.includes('<g id="sp-' + k + '">')));
 const engine = readFileSync(ROOT + "/sayplay.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 ok("the engine writes no practice: no attempt, rep, session, rung, rotation, sticker or coin", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|awardNextSticker|awardRandomSticker|addCoins|mintCoins|addTickets|chargeAdd|saveRecording|captureClip/.test(engine));
 ok("the engine records nothing and uploads nothing: no recorder, no upload", !/MediaRecorder|sendProgress|repsBeacon|FormData|sendBeacon/.test(engine));
@@ -360,10 +400,10 @@ await scenario("catalog in the app", async () => {
       stickers: keys.map((k) => Sona.gameSticker(k)[0]),
       cards: [...document.querySelectorAll("#activityGroups button[data-game]")].map((b) => b.dataset.game),
     }), KEYS);
-    ok("every game is in the catalog, opens its own page and says it is Say & Play", cat.acts.every((a, i) => a && a.say === true && a.go === "/arcade-" + KEYS[i] + ".html" && a.group === GAMES[i].group && a.name === GAMES[i].title));
+    ok("every game is in the catalog, opens its own page and says it is Say & Play", cat.acts.length === 20 && cat.acts.every((a, i) => a && a.say === true && a.go === "/arcade-" + KEYS[i] + ".html" && a.group === SAY[i].group && a.name === SAY[i].title));
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
-      GAMES.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
+      SAY.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
     // playable games first, then the parked ones, none of them with a day
     // since 15 Oct 2026 (Travis: "put coming soon")
     const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
@@ -383,13 +423,17 @@ await scenario("catalog in the app", async () => {
 });
 
 // ── a parked game's page sends a typed address home before anything starts ──
-for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((readFileSync(ROOT + "/sona.js", "utf8").match(new RegExp("^\\s{4}" + k + ": \\{[^\\n]*", "m")) || [""])[0]))) {
+const PARKED = KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((SONA_SRC.match(new RegExp("^\\s{4}" + k + ": \\{[^\\n]*", "m")) || [""])[0]));
+ok("the seventeen rebuilt games are still parked until Travis plays each one", PARKED.length === 17, PARKED);
+for (const key of PARKED) {
   await scenario(key + " parked", async () => {
     const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: "7", micok: true, permission: "granted" });
     try {
       await page.waitForURL(/\/(?:activities|today)\.html/, { timeout: 6000 });
       await page.waitForFunction(() => !!document.getElementById("libraryMessage"), null, { timeout: 6000 });
-      ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.sounds.length)) === 0);
+      // __quiet.requests and soundsBefore carry over from the game page the
+      // bounce left (tests/_sayplaydevice.mjs), so this can fail
+      ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.soundsBefore + __quiet.sounds.length)) === 0);
       ok(key + ": …which says the game is coming, on its day or soon", await until(page, () => /is coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(document.getElementById("libraryMessage").textContent), 4000));
       clean(key + " parked", errors);
     } finally { await context.close(); }
@@ -1495,8 +1539,11 @@ await scenario("two times", async () => {
 });
 
 // ── a quiet child: the mic closes after a while and waits for a tap to listen again ──
+// (On the fixed little scene: Bedtime Stars is a played game now, where the
+// word earns the move and the finger makes it, so the word alone no longer
+// moves its step. Each played game's own suite holds that.)
 await scenario("quiet child", async () => {
-  const { context, page, errors } = await fresh("arcade-stars.html", { age: "4", micok: true, permission: "granted", voiceOn: false, unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", micok: true, permission: "granted", voiceOn: false, unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);

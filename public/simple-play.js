@@ -18,9 +18,6 @@
   var S = window.Sona;
   if (!S) return;
   var kind = document.body.getAttribute("data-simple-game"), NEED = 5;
-  // Only the physical Peekaboo page opts in. Retained simple-play fixtures
-  // keep their original tap/reveal behavior and loudness-only cheer.
-  var adapter = document.body.getAttribute("data-simple-adapter") === "peekaboo" ? window.Peekaboo : null;
   var dailyEntry = new URLSearchParams(location.search).get("daily") === "1";
   if (!S.gameAccess(kind, { run: dailyEntry }).allowed) { document.body.hidden = true; S.gameBounce(kind); return; }
   function $(id) { return document.getElementById(id); }
@@ -29,8 +26,6 @@
   var selectedDoor = null, focusBeforePause = null, profile = S.getProfile ? S.getProfile() : {};
   var ctx = null, contextSettled = Promise.resolve(), stream = null, source = null, raf = null, micGeneration = 0;
   var voiced = 0, quietUntil = 0, speaking = false, audioGeneration = 0, audioJob = null;
-  var turnGeneration = 0, hintAttempt = false, hintGranted = false, hintVerdict = null, hintNative = false;
-  var recognition = null, recognitionPending = 0, nativeClosing = 0;
   var SETTLE_MS = 200, VOICE_TAIL_MS = 250, micClosedAt = -1e9, micPending = 0;
   // What counts as "heard" (24 Sep 2026): the bar is 3× the room's quiet
   // level, and that level belongs to the page, not the turn. roomFloor is the
@@ -49,39 +44,13 @@
   var doors = Array.prototype.slice.call(document.querySelectorAll("[data-door]"));
   function active() { return !closed && !paused && !document.hidden && (phase === "choose" || phase === "reveal"); }
   function volume() { var n = profile.volume == null ? 0.8 : Number(profile.volume); return isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.8; }
-  function nativeCloseBarrier() {
-    if (!adapter) return;
-    nativeClosing++;
-    (function wait() {
-      Promise.resolve().then(function () { return S.micQuiet ? S.micQuiet() : true; }).then(function (quiet) {
-        // A timed-out bridge close is not permission to open another stream.
-        if (quiet===false) { setTimeout(wait,40); return; }
-        nativeClosing--; observe();
-      },function () { nativeClosing--; observe(); });
-    })();
-  }
-  function stopTracks(value) {
-    try { if (value) value.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
-    // Late grants are disposed here too, before they ever become `stream`.
-    // Their native close must settle before a quick Resume opens again.
-    if (adapter && value) nativeCloseBarrier();
-  }
+  function stopTracks(value) { try { if (value) value.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
   function focus(el) { if (el) try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
   function setHidden(id, value) { var el = $(id); if (el) el.hidden = value; }
-  function model() {
-    return { phase:phase, paused:paused, closed:closed, found:found, heard:heard, heardThisTurn:heardThisTurn,
-      word:target ? target.w : "", sound:sound, target:target ? {w:target.w,e:target.e} : null,
-      listening:!!stream, speaking:speaking, micPending:micPending,
-      hintPending:recognitionPending>0, hintNative:hintNative, hintVerdict:hintVerdict, hintGranted:hintGranted,
-      recognitionPending:recognitionPending, nativeClosing:nativeClosing };
-  }
-  function hook(name) { if (adapter && typeof adapter[name] === "function") adapter[name](model()); }
-  function observe() { if (adapter) window.__simpleplay = model(); }
   function render() {
     document.body.setAttribute("data-phase", paused ? "paused" : phase);
     setHidden("startPanel", phase !== "intro" || paused);
     setHidden("playPanel", (phase !== "choose" && phase !== "reveal") || paused);
-    if (adapter && phase==="finish" && !paused) setHidden("playPanel",false);
     setHidden("pausePanel", !paused);
     setHidden("finishPanel", phase !== "finish" || paused);
     setHidden("hearWord", phase !== "reveal");
@@ -98,7 +67,6 @@
       dot.setAttribute("aria-hidden", "true");
     });
     $("heardMessage").textContent = heardThisTurn ? "Echo heard you!" : "";
-    if (adapter) { $("nextTurn").disabled = !adapter.canNext(); hook("render"); observe(); }
   }
   function prepareTargets() {
     sound = S.rotSound ? S.rotSound() : "";
@@ -108,7 +76,6 @@
   }
   function chooseTurn() {
     stopAudio(); voiced = 0; heardThisTurn = false; selectedDoor = null;
-    if (adapter) { turnGeneration++; hintAttempt=false; hintGranted=false; hintVerdict=null; hintNative=false; }
     if (used.length >= targets.length) used = [];
     var choices = targets.filter(function (_, i) { return used.indexOf(i) === -1; });
     target = choices[(Math.random() * choices.length) | 0]; used.push(targets.indexOf(target));
@@ -119,7 +86,6 @@
     $("promptTitle").textContent = kind === "bubbles" ? "Pop a bubble" : "Pick a door";
     $("promptHint").textContent = kind === "bubbles" ? "Tap the bubble to find out." : "Choose any door to find out.";
     render();
-    hook("onChoose");
   }
   function start() {
     if (closed || paused || document.hidden || (phase !== "intro" && phase !== "finish")) return;
@@ -135,7 +101,6 @@
     // The first deliberate Start begins the same existing demo window as practice.
     if (S.demoStart) S.demoStart();
     found = 0; heard = 0; finished = false; used = [];
-    hook("reset");
     chooseTurn(); unlockContext(); // no mic yet: it opens for a revealed word, never while choosing
     focus(kind === "bubbles" ? $("revealButton") : doors[0]);
   }
@@ -144,12 +109,10 @@
     selectedDoor = door || null; phase = "reveal"; voiced = 0;
     $("promptTitle").textContent = target.w;
     $("promptHint").textContent = "Say it together. Take your time.";
-    if (adapter) { hintAttempt=true; hook("onReveal"); }
     render(); effect("tap"); sayWord(); focus($("hearWord"));
   }
   function next() {
     if (!active() || phase !== "reveal") return;
-    if (adapter && !adapter.canNext()) return;
     stopAudio(); stopMic(); voiced = 0; found++;
     if (found >= NEED) finish();
     else { chooseTurn(); focus(kind === "bubbles" ? $("revealButton") : doors[0]); }
@@ -163,83 +126,27 @@
     $("finishCopy").textContent = "You found all five pictures. That was fun!";
     $("playAgain").textContent = daily ? "Keep going →" : "Play again ↻";
     render(); effect("complete", true); focus($("playAgain"));
-    hook("finish");
   }
   function pause() {
     if (closed || paused) return;
     if (phase !== "choose" && phase !== "reveal") { stopResources(); return; }
-    focusBeforePause = document.activeElement; paused = true; if (adapter) turnGeneration++;
-    stopResources(); hook("pause"); render(); focus($("resumeGame"));
+    focusBeforePause = document.activeElement; paused = true; stopResources(); render(); focus($("resumeGame"));
   }
   function resume() {
     if (!paused || closed || document.hidden) return;
     paused = false; profile = S.getProfile ? S.getProfile() : profile;
     if (phase === "reveal") $("promptHint").textContent = "Say it together. Take your time.";
     render(); unlockContext(); openMic();
-    hook("resume");
     focus(focusBeforePause && focusBeforePause.isConnected ? focusBeforePause : $("pauseGame"));
   }
-  function stopMic(keepRecognition) {
+  function stopMic() {
     micGeneration++; if (raf != null) cancelAnimationFrame(raf); raf = null;
     try { if (source) source.disconnect(); } catch (e) {} source = null;
     if (stream) micClosedAt = performance.now();
     stopTracks(stream); stream = null; voiced = 0;
-    if (adapter) {
-      if (!keepRecognition && recognition) { recognition.cancelled=true; stopRecognition(recognition); recognition=null; }
-      observe();
-    }
   }
   // Somebody's turn to be heard: a revealed picture, nothing playing, not yet heard.
-  function listenable() { return active() && phase === "reveal" && !speaking && (!heardThisTurn || !!(adapter && hintAttempt && !hintGranted)); }
-  function stopRecognition(r) {
-    if (!r) return Promise.resolve(null);
-    if (r.stopping) return r.stopping;
-    clearTimeout(r.timer);
-    function stop() { try { return Promise.resolve(S.speechStop ? S.speechStop() : null).catch(function () { return null; }); } catch (e) { return Promise.resolve(null); } }
-    var first=r.startCalled?stop():Promise.resolve(null);
-    // A start can land after a pause or replay. Settle it and stop once more
-    // before this page's sole voice owner is allowed to speak.
-    var settled=r.startSettled;
-    r.stopping=Promise.all([first,r.start]).then(function (v) {
-      if (settled || !r.started) return v[0];
-      return stop().then(function (last) { return last&&last.text?last:v[0]||last; });
-    }).then(function (result) {
-      recognitionPending=Math.max(0,recognitionPending-1); observe(); return result;
-    },function () { recognitionPending=Math.max(0,recognitionPending-1); observe(); return null; });
-    return r.stopping;
-  }
-  function startRecognition(value,generation) {
-    // Old app builds may open Apple's recognizer on another microphone.
-    // Only Sona's native PCM stream can bind it to the microphone we own.
-    if (!adapter || !value || !value.sonaNative || !S.speechStart || recognitionPending || nativeClosing) return null;
-    var r={word:target.w,sound:sound,turn:turnGeneration,generation:generation,stream:value,started:false,startCalled:false,cancelled:false,sawVoice:false,lastVoiceAt:0,chime:false};
-    recognition=r; recognitionPending++; hintVerdict=null;
-    r.start=Promise.resolve().then(function () {
-      if (r.cancelled || recognition!==r || generation!==micGeneration || !listenable()) return false;
-      r.startCalled=true;
-      return S.speechStart({words:[r.word],maxMs:8000});
-    }).then(function (v) { r.startSettled=true; r.started=!!v; if (r.started && !r.cancelled) hintNative=true; observe(); return r.started; },function () { r.startSettled=true; return false; });
-    r.timer=setTimeout(function () { if (recognition===r && !r.cancelled) finishHint(r); },8000);
-    observe(); return r;
-  }
-  function finishHint(r) {
-    if (!r || r.finishing || recognition!==r) return;
-    r.finishing=true; hintAttempt=false;
-    // End Apple's word while its owned PCM stream is still alive. Closing
-    // that stream first can make the phone discard the last word.
-    if (raf!=null) cancelAnimationFrame(raf); raf=null;
-    stopRecognition(r).then(function (result) {
-      if (stream===r.stream) stopMic(true);
-      if (recognition===r) recognition=null;
-      if (r.cancelled || r.turn!==turnGeneration || !active() || phase!=="reveal" || !target || target.w!==r.word) { observe(); return; }
-      // The transcript is only a local argument to the already-owned word
-      // verdict. Never retain, export or count it as practice data.
-      hintVerdict=r.started ? r.sawVoice&&S.hearVerdict ? S.hearVerdict(result&&result.text||"",r.sound,r.word,{level:"word"}) : "unknown" : "unavailable";
-      if (hintVerdict==="pass" && !hintGranted) { hintGranted=true; hook("onWordHint"); }
-      if (r.chime) effect("tap");
-      render();
-    });
-  }
+  function listenable() { return active() && phase === "reveal" && !heardThisTurn && !speaking; }
   function stopResources() {
     stopMic(); stopAudio();
     try { if (S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {}
@@ -263,14 +170,7 @@
     // skip this optional cheer instead of creating an unexpected OS prompt.
     if (!allowed || !navigator.permissions || !navigator.permissions.query || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
     if (!listenable() || stream) return;
-    if (adapter && (micPending || recognitionPending || nativeClosing)) {
-      var barrierMic=micGeneration,barrierTurn=turnGeneration;
-      setTimeout(function () {
-        if (barrierMic===micGeneration && barrierTurn===turnGeneration && listenable()) openMic();
-      },40);
-      return;
-    }
-    var wait = adapter ? Math.max(quietUntil,micClosedAt+SETTLE_MS)-performance.now() : quietUntil - performance.now();
+    var wait = quietUntil - performance.now();
     if (wait > 0) { var waited = micGeneration; setTimeout(function () { if (waited === micGeneration) openMic(); }, wait); return; }
     var generation = ++micGeneration, inFlight = true, asked = false; micPending++;
     // The request leaves micPending exactly once, whichever handler below
@@ -282,7 +182,7 @@
     Promise.resolve().then(function () { return navigator.permissions.query({ name: "microphone" }); }).then(function (permission) {
       if (!permission || permission.state !== "granted" || generation !== micGeneration || !listenable()) return null;
       asked = true;
-      return adapter && S.micNative && S.micNative() ? S.micOpen({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     }).then(function (value) {
       requestDone();
       if (!value) return;
@@ -291,17 +191,15 @@
       return contextSettled.then(function () {
         if (generation !== micGeneration || !active()) { stopTracks(value); return; }
         if (!ctx || ctx.state !== "running") { stopTracks(value); if (stream === value) { stream = null; micClosedAt = performance.now(); } return; }
-        var localSource = adapter && S.micSource ? S.micSource(ctx,value) : ctx.createMediaStreamSource(value), analyser = ctx.createAnalyser();
+        var localSource = ctx.createMediaStreamSource(value), analyser = ctx.createAnalyser();
         source = localSource; analyser.fftSize = 512; localSource.connect(analyser);
         var data = new Uint8Array(analyser.fftSize), frames = [];
-        var nativeTurn = startRecognition(value,generation);
-        if (adapter) { observe(); hook("render"); }
         function tick() {
           if (generation !== micGeneration || !active()) return;
           var now = performance.now();
           // belt and braces: nothing plays while this mic is open, and if
           // anything did, its frames would never be judged or join a burst
-          if (speaking || now < quietUntil || (adapter && S.micDeaf && S.micDeaf(value,ctx))) { frames = []; voiced = 0; raf = requestAnimationFrame(tick); return; }
+          if (speaking || now < quietUntil) { frames = []; voiced = 0; raf = requestAnimationFrame(tick); return; }
           analyser.getByteTimeDomainData(data);
           var total = 0; for (var i = 0; i < data.length; i++) { var d = (data[i] - 128) / 128; total += d * d; }
           frames.push({ t: now, r: Math.sqrt(total / data.length) });
@@ -314,18 +212,7 @@
           var threshold = Math.max(0.035, roomFloor * 3.0); voiced = 0;
           for (var j = 0; j < frames.length && voiced < 4; j++) voiced = frames[j].r > threshold ? voiced + 1 : 0;
           // heard once is the whole turn: close the mic, THEN the little chime
-          if (adapter && nativeTurn) {
-            var currentVoiced=frames[frames.length-1].r>threshold;
-            if (voiced>=4) {
-              nativeTurn.sawVoice=true;
-              if (!heardThisTurn) { heardThisTurn=true; heard++; $("heardMessage").textContent="Echo heard you!"; nativeTurn.chime=true; hook("onHeard"); observe(); }
-            }
-            if (currentVoiced) nativeTurn.lastVoiceAt=now;
-            // Four frames are only the friendly cheer, not a whole word.
-            // Apple keeps the same stream through the child's word ending.
-            if (nativeTurn.sawVoice && now-nativeTurn.lastVoiceAt>=250) { finishHint(nativeTurn); return; }
-          } else if (voiced >= 4 && !heardThisTurn) { heardThisTurn = true; heard++; $("heardMessage").textContent = "Echo heard you!"; if(adapter){hintAttempt=false;hintVerdict="unavailable";hook("onHeard");} stopMic(); effect("tap"); return; }
-          else if (adapter && voiced>=4 && heardThisTurn) { hintAttempt=false; hintVerdict="unavailable"; stopMic(); observe(); return; }
+          if (voiced >= 4 && !heardThisTurn) { heardThisTurn = true; heard++; $("heardMessage").textContent = "Echo heard you!"; stopMic(); effect("tap"); return; }
           raf = requestAnimationFrame(tick);
         }
         raf = requestAnimationFrame(tick);
@@ -338,7 +225,7 @@
     if (stream) return;   // never over an open mic (nothing asks to: every caller closes it first)
     // a mic request still in flight settles first; then the phone gets
     // SETTLE_MS to switch back before the chime
-    if (micPending || (adapter && (recognitionPending || nativeClosing))) { setTimeout(function () { effect(name, final); }, 60); return; }
+    if (micPending) { setTimeout(function () { effect(name, final); }, 60); return; }
     var wait = micClosedAt + SETTLE_MS - performance.now();
     if (wait > 0) { quietUntil = Math.max(quietUntil, performance.now() + wait + 700); setTimeout(function () { effect(name, final); }, wait); return; }
     if (closed || paused || document.hidden || (!active() && !final) || profile.soundOn === false || volume() === 0) return;
@@ -403,7 +290,7 @@
       var timer = null;
       cleanup(function () { clearTimeout(timer); });
       (function check() {
-        if (micPending || (adapter && (recognitionPending || nativeClosing))) { timer = setTimeout(check, 60); return; }
+        if (micPending) { timer = setTimeout(check, 60); return; }
         var wait = micClosedAt + SETTLE_MS - performance.now();
         if (wait <= 0) { done(true); return; }
         timer = setTimeout(check, wait);
@@ -471,19 +358,17 @@
       window.speechSynthesis.speak(utterance);
     });
   }
-  function playOwnedLine(line,mechanical) {
-    if (!active() || (!mechanical && phase !== "reveal") || !target) return;
+  function sayWord() {
+    if (!active() || phase !== "reveal" || !target) return;
     profile = S.getProfile ? S.getProfile() : profile;
-    if (adapter && !mechanical && !hintGranted) hintAttempt=true;
     // no voice: nothing to hear first, so the child's turn starts now (after the reveal chime's quiet window)
     if (profile.voiceOn === false || volume() === 0) { openMic(); return; }
     stopAudio(); stopMic(); // "Hear it" closes the mic before Echo speaks again
-    var word = mechanical ? String(line || "") : String(target.w), asked=String(target.w), turn=turnGeneration, generation = audioGeneration;
+    var word = String(target.w), generation = audioGeneration;
     var job = { stops: [], cancelled: false };
-    job.live = function () { return !job.cancelled && generation === audioGeneration && active() && (mechanical || phase === "reveal") && target && target.w === asked && (!adapter || turn===turnGeneration); };
+    job.live = function () { return !job.cancelled && generation === audioGeneration && active() && phase === "reveal" && target && target.w === word; };
     job.cancel = function () { if (job.cancelled) return; job.cancelled = true; job.stops.slice().forEach(function (stop) { stop(); }); };
     audioJob = job; speaking = true; unlockContext();
-    if (adapter) { render(); }
     $("promptHint").textContent = "Getting Echo ready…";
     var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v9") + "|" + word;
     cache(job, key).then(function (bytes) {
@@ -499,13 +384,10 @@
     }).catch(function () { if (job.live()) return settle(job).then(function () { if (job.live()) return browserWord(job, word); }); }).then(function () {
       job.cancel(); if (audioJob === job) { audioJob = null; speaking = false; voiced = 0; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS);
         if (active() && phase === "reveal") $("promptHint").textContent = "Your turn. Say it together.";
-        if (adapter) { render(); }
         openMic(); // the word is finished: now it is the child's turn
       }
     });
   }
-  function sayWord() { return playOwnedLine(null,false); }
-  function instruct(text) { if (adapter && text) return playOwnedLine(text,true); }
 
   $("startGame").onclick = start; $("playAgain").onclick = function () {
     if (closed || paused || document.hidden) return;
@@ -514,7 +396,7 @@
     } else start();
   };
   if ($("revealButton")) $("revealButton").onclick = function () { reveal(null); };
-  if (!adapter) doors.forEach(function (door) { door.onclick = function () { reveal(door); }; });
+  doors.forEach(function (door) { door.onclick = function () { reveal(door); }; });
   $("hearWord").onclick = sayWord; $("nextTurn").onclick = next;
   $("pauseGame").onclick = pause; $("resumeGame").onclick = resume;
   Array.prototype.forEach.call(document.querySelectorAll("a[href]"), function (link) { link.addEventListener("click", function (event) {
@@ -527,14 +409,6 @@
     if (!event.persisted || !closed) return;
     closed = false;
     if (phase === "choose" || phase === "reveal") { paused = true; render(); focus($("resumeGame")); }
-  });
-  if (adapter) adapter.init({
-    reveal:function () { reveal(null); },
-    word:sayWord,
-    hint:function () { if (active() && phase==="reveal" && !hintGranted) sayWord(); },
-    instruct:instruct,
-    refresh:render,
-    state:model
   });
   render();
 })();

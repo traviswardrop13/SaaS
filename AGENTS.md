@@ -1,11 +1,6 @@
 # AGENTS.md — read this, then read CLAUDE.md in full, before you change anything
 
 You are working on **Sona** (speaksona.com), a kids' speech-practice app.
-
-**Travis, 16 Oct 2026:** there is no default session time limit. Build the
-Coming Soon games one at a time, finishing and testing each before starting
-the next. Each must have distinct finger gameplay and useful speech rewards.
-Keep the existing speech targets, privacy rules and quiet microphone turns.
 This file is the short agent brief. **`CLAUDE.md` is the full rulebook** —
 the pricing eras and the promises made to families, Rachel's clinical rules,
 how Travis wants to be talked to — and if the two ever disagree, `CLAUDE.md`
