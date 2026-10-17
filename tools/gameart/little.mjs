@@ -17,35 +17,6 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Build a Snowman is now the hand-built rolling-and-stacking game in public/snowman.js.
 
-// ── 7. Bedtime Stars: every word lights a star; then the house says goodnight ──
-const STARS = [[180, 162], [232, 92], [312, 58], [390, 104], [340, 172]];
-const nightHouse = () => R(-50, -70, 100, 70, 4, "#c9b8e8") + P("M-60 -66 L0 -114 L60 -66 Z", "#7a5fb0") + R(-62, -70, 124, 10, 5, "#6b50a0")
-  + P("M-10 0 V-30 Q-10 -40 0 -40 Q10 -40 10 -30 V0 Z", "#5b4a7a") + R(-40, -52, 22, 20, 3, "#2d3a6b") + R(18, -52, 22, 20, 3, "#2d3a6b");
-const starsGame = {
-  key: "stars", title: "Bedtime Stars", group: "simple", top: "#e9e4ff", bottom: "#d8d2f5",
-  sub: "Say it to light a star", playDescription: "Every word lights a star in the night sky.",
-  how: "Say each word to light up a star.", blurb: "Every word lights one star over the sleepy house; then the lights go out and everyone says goodnight.",
-  alt: "A sleepy moon over a little house at night.",
-  bg: sky(SKY.night) + starsList([[30, 40, 0.3], [120, 30, 0.25], [270, 140, 0.25], [420, 40, 0.3], [150, 220, 0.25], [410, 220, 0.25]], "#aab4e8")
-    + STARS.map(([x, y]) => G(`translate(${x} ${y})`, A.dimStar())).join("")
-    + hills(280, 320, 400, "#3f4f8a", "#34457a") + ground(362, "#2e3d6e") + tree(60, 360, 1, "#3f7a5a", "#4f8a6a")
-    + G(at(330, 356, 1.1), nightHouse()),
-  parts: [
-    { id: "moon", x: 92, y: 96, svg: A.sleepyMoon() },
-    ...STARS.map(([x, y], i) => ({ id: "s" + (i + 1), x, y, hid: true, svg: A.bigStar() })),
-    { id: "lamp", x: 330, y: 356, svg: G("scale(1.1)", R(-40, -52, 22, 20, 3, "#ffe08a") + R(18, -52, 22, 20, 3, "#ffe08a") + C(-29, -42, 18, "#ffe08a", { opacity: 0.2 }) + C(29, -42, 18, "#ffe08a", { opacity: 0.2 })) },
-    { id: "zzz", x: 0, y: 0, hid: true, svg: zzz(376, 250, 1.6) + zzz(398, 222, 1.1) },
-    { id: "shoot", x: 200, y: 40, hid: true, svg: A.shootingStar() },
-  ],
-  steps: STARS.map((s, i) => [{ a: "show", id: "s" + (i + 1), fx: "pop" }, { a: "fx", id: "moon", fx: "wiggle", at: 300 }]),
-  finale: [
-    ...STARS.map((s, i) => ({ a: "fx", id: "s" + (i + 1), fx: "twinkle", at: i * 180 })),
-    { a: "show", id: "shoot", fx: "slideL", at: 200 }, { a: "hide", id: "lamp", at: 1200 }, { a: "show", id: "zzz", fx: "fade", at: 1500 },
-    { a: "fx", id: "moon", fx: "float", at: 400 },
-  ],
-  done: { title: "Goodnight, stars!", sub: "Your words lit up the whole sky." },
-};
-
 // ── 8. Birthday Cake: two layers, icing, sprinkles, candles; then the party ──
 const CANDLES = [-44, -22, 0, 22, 44], CANDLE_C = ["#ff5c5c", "#4db3f2", "#ffd21c", "#58cc02", "#9b7fd8"];
 const cakeGame = {
@@ -157,4 +128,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [ starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [ cakeGame, giftsGame, tankGame];

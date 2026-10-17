@@ -27,7 +27,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Build a Snowman | 3–4 | Built and browser-verified; production still parked |
 | Choo-Choo Train | 3–4 | Built and browser-verified; production still parked |
 | Puppy Bath | 3–4 | Built and browser-verified; production still parked |
-| Bedtime Stars | 3–4 | Queued |
+| Bedtime Stars | 3–4 | Built and browser-verified; production still parked |
 | Birthday Cake | 3–4 | Queued |
 | Surprise Boxes | 3–4 | Queued |
 | Fish Tank | 3–4 | Queued |
@@ -469,3 +469,35 @@ fallback, replay and quiet microphones. Source and visual review found the
 mud aligned with the fur and no additional blocker. The new test rejects the
 original soap-reveal scene. Syntax, art protection and recording inventory
 checks passed. Production remains parked and nothing is pushed.
+
+## Bedtime Stars
+
+A calm preschool tracing game. Five small constellations form a tent, kite,
+house, boat and fish. The child starts at the last lit star and draws the
+actual next connection; future-star taps and detours outside the path cannot
+stand in for drawing it. Completed connections remain after a slip or pause,
+and each finished picture remains in the night sky. Keyboard pickup, arrows
+and release move the same physical tracing pen.
+
+The existing five targets and two sayings remain. Speech grants ten seconds
+of a wider glowing corridor and easier star contact; it never draws the line.
+Help retains the current picture and completed connections. Backgrounding
+releases the current uncommitted stroke safely. Five spoken directions and
+Hear-step use the existing shared voice owner.
+
+One precise background edit removes baked stars/sparkles that could be
+mistaken for touch targets. The original crescent, clouds, village and ledge
+are preserved; the versioned 800×1200 export is 49,902 bytes. All interactive
+stars and paths are live drawing. Exact prompt, source and usable sky geometry
+are in design/coming-soon-games/stars-art-notes.txt.
+
+All 76 browser checks passed, exit 0. The same off-route gesture is rejected
+normally and accepted after earned speech help. All five pictures complete
+in one uninterrupted ordinary stroke and one uninterrupted assisted stroke;
+the review caught and fixed an early-snap finger offset that broke the house's
+roof corner. The pre-fix version fails that regression. Checks also cover
+five full pictures at 320px, 393px and iPad widths, preserved connections,
+background/help recovery, owned pointers, keyboard, missing-art fallback,
+replay and quiet microphones. The original reveal scene fails the new game
+test. Source and visual review found no additional blocker; syntax, protected
+art and recording inventory checks passed. Production remains parked.
