@@ -17,38 +17,6 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Build a Snowman is now the hand-built rolling-and-stacking game in public/snowman.js.
 
-// ── 6. Puppy Bath: every word scrubs a mud spot away; then a big shake ──
-const MUD = [[234, 140, 1.3, 20], [174, 180, 1.2, -30], [271, 184, 1.2, 40], [198, 236, 1.2, 10], [246, 242, 1.15, -15]];
-const puppyGame = {
-  key: "puppy", title: "Puppy Bath", group: "simple", top: "#e8f6fb", bottom: "#fde8ef",
-  sub: "Say it to wash the puppy", playDescription: "Every word washes a muddy spot away.",
-  how: "Say each word to wash the muddy puppy.", blurb: "Every word scrubs one mud spot off Dan the puppy; then he shakes himself dry.",
-  alt: "A muddy puppy sits in a bubble bath.",
-  bg: A.tiles(300) + R(0, 292, W, 8, 0, "#a9d8ee") + R(0, 300, W, 100, 0, "#f7e2c4") + L("M0 336 H440 M0 372 H440", "#ecd0aa", 3)
-    + R(300, 60, 90, 70, 10, "#ffffff") + R(308, 68, 74, 54, 6, "#bfe8fb") + L("M345 68 V122", "#ffffff", 4)
-    + E(220, 386, 150, 12, "#ff8fb0", { opacity: 0.5 }) + G(at(220, 362, 1), A.tubBack()),
-  parts: [
-    { id: "dog", x: 222, y: 300, svg: G("scale(1.9)", cast.dog({ pose: "cheer", face: "happy" })) },
-    ...MUD.map(([x, y, s, a], i) => ({ id: "mud" + (i + 1), x, y, svg: A.mud(s, a) })),
-    ...MUD.map(([x, y], i) => ({ id: "suds" + (i + 1), x, y: y + 2, hid: true, svg: A.suds(1) })),
-    { id: "duck", x: 128, y: 262, hid: true, svg: A.rubberDuck() },
-    { id: "drops", x: 222, y: 250, hid: true, svg: A.waterDrops() },
-    { id: "sponge", x: 330, y: 244, svg: A.sponge() },
-    { id: "glow", x: 0, y: 0, hid: true, svg: sparkles([[150, 170, 1.3], [300, 160, 1.2], [330, 230, 1]]) },
-  ],
-  fg: G(at(220, 362, 1), A.tubFront()) + G(at(118, 262, 1), A.suds(1)) + G(at(300, 258, 1), A.suds(0.9)) + G(at(350, 262, 1), A.suds(0.7)),
-  steps: MUD.map(([x, y], i) => [
-    { a: "move", id: "sponge", x: x - 330 + 6, y: y - 244 + 4 }, { a: "fx", id: "sponge", fx: "shake", at: 300 },
-    { a: "hide", id: "mud" + (i + 1), at: 450 }, { a: "show", id: "suds" + (i + 1), fx: "pop", at: 550 },
-  ]),
-  finale: [
-    { a: "move", id: "sponge", x: 0, y: 0 }, ...MUD.map((m, i) => ({ a: "hide", id: "suds" + (i + 1), at: 100 })),
-    { a: "fx", id: "dog", fx: "shake", at: 300 }, { a: "show", id: "drops", fx: "pop", at: 400 }, { a: "hide", id: "drops", at: 1500 },
-    { a: "show", id: "duck", fx: "rise", at: 700 }, { a: "fx", id: "duck", fx: "float", at: 1300 }, { a: "show", id: "glow", fx: "fade", at: 1300 },
-  ],
-  done: { title: "Squeaky clean!", sub: "Your words gave the puppy a bath." },
-};
-
 // ── 7. Bedtime Stars: every word lights a star; then the house says goodnight ──
 const STARS = [[180, 162], [232, 92], [312, 58], [390, 104], [340, 172]];
 const nightHouse = () => R(-50, -70, 100, 70, 4, "#c9b8e8") + P("M-60 -66 L0 -114 L60 -66 Z", "#7a5fb0") + R(-62, -70, 124, 10, 5, "#6b50a0")
@@ -189,4 +157,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [ puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [ starsGame, cakeGame, giftsGame, tankGame];

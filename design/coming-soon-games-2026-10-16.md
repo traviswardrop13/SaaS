@@ -26,7 +26,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Rocket Blast | 3–4 | Built and browser-verified; production still parked |
 | Build a Snowman | 3–4 | Built and browser-verified; production still parked |
 | Choo-Choo Train | 3–4 | Built and browser-verified; production still parked |
-| Puppy Bath | 3–4 | Queued |
+| Puppy Bath | 3–4 | Built and browser-verified; production still parked |
 | Bedtime Stars | 3–4 | Queued |
 | Birthday Cake | 3–4 | Queued |
 | Surprise Boxes | 3–4 | Queued |
@@ -437,3 +437,35 @@ wrong drops, pointer ownership, background/help recovery, keyboard driving,
 missing-art fallback, replay and quiet microphones. The original reveal
 scene fails the new game test. Syntax, art protection and recording inventory
 checks passed. Production stays parked for phone play review; nothing is pushed.
+
+## Puppy Bath
+
+A preschool hose toy. Hold and aim a stream of moving water at the current
+glowing mud patch on a gently wriggling puppy. Only actual airborne droplets
+that reach the patch gradually wash it away; aiming alone, holding off target
+or waiting cannot clean it. Five real washouts leave a clean puppy, followed
+by a happy shake. All mud follows the same body transform as the painted fur.
+Direct touch-and-hold on the canvas and a native hose control both work;
+keyboard arrows aim and Space holds the same spray.
+
+The existing five targets and two sayings remain. Speech grants ten seconds
+of slower, smaller wiggles and wider water droplets/fan. Help preserves each
+patch's washing and the chosen aim. Backgrounding releases the hose and clears
+airborne water while keeping accumulated washing. Spoken step directions and
+Hear-step use SayPlay's existing quiet voice owner.
+
+One new clean cream-puppy cutout totals 104,460 bytes and preserves its true
+512×677 proportions. The old animal baked in its tub, foam and floating
+bubbles, so it could not move independently. The original backyard is reused;
+the hose, live water and removable mud are drawn. Safe ear, forehead and paw
+anchors avoid the eyes, mouth and red bandana. Prompt, source, alpha checks
+and anatomy are in design/coming-soon-games/puppy-art-notes.txt.
+
+All 69 browser checks passed, exit 0. They play five actual washouts at regular,
+320px, 393px and iPad sizes; require airborne impacts, prevent idle/off-target
+washing, preserve partial work and aim across help/background, measure real
+ordinary/assisted motion, operate the keyboard hose, and check missing-art
+fallback, replay and quiet microphones. Source and visual review found the
+mud aligned with the fur and no additional blocker. The new test rejects the
+original soap-reveal scene. Syntax, art protection and recording inventory
+checks passed. Production remains parked and nothing is pushed.
