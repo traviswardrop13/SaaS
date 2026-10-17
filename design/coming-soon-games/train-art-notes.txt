@@ -1,0 +1,29 @@
+Choo-Choo Train artwork —2026-10-17
+Built-in image_gen only; one call each for whole-train cutout and countryside background. No API/CLI generation, no extra riders. Existing art remains unchanged.
+Export operations only proportional resize and WebP format/quality; no semantic or alpha edits. Root visually approved first whole-train output and requested no door-widening variant.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/train-engine-coach-v1.webp", "dimensions": [1024, 409], "mode": "RGBA", "bytes": 88076, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-34e229d6-22bf-47ca-9cf0-984adba113a2.png"}
+Prompt:
+Use case: stylized-concept
+Asset type: functional transparent toy train assembly sprite for Sona preschool game.
+Primary request: exactly ONE complete long train, orthographic SIDE VIEW, facing RIGHT. Richly painted handcrafted rounded wood/metal toy, warm dimensional shading, finely brushed texture, cream and turquoise passenger coach on LEFT two-thirds, friendly red/teal/brass steam locomotive on RIGHT one-third. No people or animals. A complete practical train with wheels aligned in a single row.
+Composition/framing: full complete train centered in a very wide horizontal image, train aspect approximately2.5:1, modest padding around all sides. Locomotive faces right, frontmost red curved cowcatcher on right. Coach on left from aboutimagex.03to.65: roof fromy.08to.20, cream body lowerpanel y.63to.80, teal verticalframe; long EMPTY rectangular passenger window opening spanningx.07to.41,y.26to.62; one BIG EMPTY boarding door opening spanningx.47to.63,y.22to.78. These two openings must be REAL transparent-alpha holes, exactly like cutouts in paper, so the game can place separate animals behind them. No glass, interior, curtains, doorpanel, seats, or dark fill in either opening. All pixels inside both openings should be completely transparent. Keep substantial dimensional rounded framing around both holes.
+Wheel rows: coach two simple round brass/teal wheels nearx.14and.56 atsamebaseliney.88; locomotive wheels nearx.75and.91 atsamebaseline. Plain round shaded hubs/rims with no spokes, so code can add actual rotating spokes. Locomotive chimney has no baked steam/smoke. Train only, no rails, ground, scenery, platform, station, shadow below train, sky, characters, text, labels, numbers, UI, frames. Genuinely transparent background and genuine transparent window/door holes.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/train-countryside-v1.webp", "dimensions": [1280, 548], "mode": "RGB", "bytes": 78848, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-905b6df9-4419-465c-b799-3f12cdc9a9bc.png"}
+Prompt:
+Use case: stylized-concept
+Asset type: wide countryside background for Sona's preschool toy train game.
+Primary request: a warm, sunny, richly painted storybook countryside, gentle mint and yellow-green rolling grassy hills, a clear pale blue sky with a few soft ivory clouds, small distant rounded trees and little wildflower accents at the far lower edges. Friendly dimensional handcrafted paint texture, peaceful bright morning light, warm and inviting.
+Composition/framing: panoramic wide horizontal landscape, broad simple clear sky upper half, low rolling distant hills across middle, mostly clear soft grass foreground across the lower half. The game will separately draw a large train, horizontal rails, platforms, and boarding animals; leave these areas clear. Do not draw any train, track, rail, road, station, platform, house, bridge, vehicle, person, animal, sunface, rainbow, title, signs, text, UI, frame, or border. No large foreground objects. Consistent horizon, level camera with gentle atmospheric depth, no steep diagonal ground. Opaque background.
+
+Normalized geometry relative to the full exported train rectangle (native aspect 1983/793 ≈ 2.5006; no crop):
+Passenger window: real-alpha connected opening bbox (.0903,.3329)–(.4004,.5712). Safe inner clip (.097,.345)–(.393,.56) for five buddy head crops behind the train.
+Boarding door: real-alpha opening bbox (.4634,.3203)–(.5779,.6772), center (.52065,.49875). Visual width ≈ .1145 of train width, about 34.4px with a train width of .94 × 320px. Root approved this version; match the catch area with a visible 44/64px glow. A friend may shrink into the carriage after an actual successful drop.
+Driver window: real-alpha bbox (.6853,.2938)–(.7322,.4704). No baked driver.
+Wheel centers: (.121,.782), (.533,.782), (.746,.782), (.877,.782). Outer wheel radius ≈ .046 of train width; inner rotating spokes can use radius ≈ .025 of train width. Rail contact at source y ≈ .900.
+Front faces RIGHT; coach is on the LEFT. Preserve aspect. Set train left = door canvas x − .52065 × train width; align source wheel contact y .90 to the actual rails.
+Background source: 1916×821, panorama aspect ≈ 2.334:1. Clear grass and sky with no rails, stations, trains, or passengers. Proportional export: 1280×548.
+Five reused riders, all 512×512 with true RGBA: buddy-bunny-sit.webp (36786B), buddy-cat-sit.webp (50990B), buddy-lion-sit.webp (51548B), buddy-penguin-sit.webp (47070B), buddy-frog-sit.webp (54250B).
+Rider alpha64 bounds: bunny (137,31,387,476); cat (89,31,423,478); lion (58,31,455,477); penguin (97,31,425,476); frog (73,31,445,475). Upper .06–.60 of source height yields a face/ear crop; retain the bunny's ears. Feet anchor ≈ .93 of source height.
+QA: /tmp/sona-train-source-qa.png and /tmp/sona-train-riders-qa.png. Alpha0 verified through all three opening centers in source and export. WebP alpha is exactly equal to the resized generated alpha.

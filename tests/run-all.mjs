@@ -106,6 +106,7 @@ const SUITES = [
   "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
   "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
   "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, manual face/clothes and speech-help recovery
+  "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
   "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish

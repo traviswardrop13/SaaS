@@ -25,7 +25,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Grow a Flower | 3–4 | Built and browser-verified; production still parked |
 | Rocket Blast | 3–4 | Built and browser-verified; production still parked |
 | Build a Snowman | 3–4 | Built and browser-verified; production still parked |
-| Choo-Choo Train | 3–4 | Queued |
+| Choo-Choo Train | 3–4 | Built and browser-verified; production still parked |
 | Puppy Bath | 3–4 | Queued |
 | Bedtime Stars | 3–4 | Queued |
 | Birthday Cake | 3–4 | Queued |
@@ -404,3 +404,36 @@ missing-art fallback, restart, quiet microphones, physical stack overlap
 and actual keyboard pickup/rolling/drop. The original reveal scene
 fails the new test. Syntax, art protection and recording inventory checks
 passed. Production stays parked for phone play review; nothing is pushed.
+
+## Choo-Choo Train
+
+A preschool railway trip with five real station pickups. Hold Forward to
+accelerate, release to brake, and use Back to recover a missed station.
+The carriage must stop beside the waiting friend before the child can drag
+them through its boarding door. Neither driving past, waiting, nor saying a
+word boards a passenger. Each boarded animal remains visible in the window.
+Native arrow/Space controls drive the same engine and move the same friend.
+
+The existing five targets and two sayings remain. Speech grants ten seconds
+of slower top speed, a wider stopping berth and a larger visible door catch.
+The assistance for a picked-up passenger lasts through that drag, so expiry
+cannot invalidate a good drop. Help preserves train position, velocity and
+boarded friends. Interruptions release controls safely and return an
+unplaced friend to their platform. Five step directions and Hear-step use
+SayPlay's quiet speech owner.
+
+A new painted train with real transparent window/door openings and a quiet
+countryside total 166,924 bytes. Five existing painted animal buddies are
+reused. Wheel rotation, rail contact and window/door positions match the
+actual image; prompts and export/alpha checks are recorded in
+design/coming-soon-games/train-art-notes.txt. Visual review moved the waiting
+platform below the rails; the initial geometry made the friend look perched
+on the carriage roof. Both phone sizes fail the pre-fix regression fixture.
+
+The final full browser run passed all 76 checks, exit 0. It covers the
+corrected foreground platform and two visual geometry checks, alongside
+five actual station trips on regular/320px/393px/iPad screens, reversals,
+wrong drops, pointer ownership, background/help recovery, keyboard driving,
+missing-art fallback, replay and quiet microphones. The original reveal
+scene fails the new game test. Syntax, art protection and recording inventory
+checks passed. Production stays parked for phone play review; nothing is pushed.

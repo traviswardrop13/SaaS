@@ -17,43 +17,6 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Build a Snowman is now the hand-built rolling-and-stacking game in public/snowman.js.
 
-// ── 5. Choo-Choo Train: every word, a friend on the platform climbs aboard ──
-// who rides: how big each looks in its window (s, with its head's height hy)
-// and waiting on the platform (ps); the duck's head sits lower than the rest
-const RIDERS = [
-  { fn: (o) => cast.pig(o), s: 0.6, hy: 66, ps: 0.6 }, { fn: (o) => cast.cow(o), s: 0.6, hy: 66, ps: 0.6 },
-  { fn: (o) => cast.duck(o), s: 0.85, hy: 54, ps: 0.8 }, { fn: (o) => cast.lamb(o), s: 0.6, hy: 66, ps: 0.6 },
-  { fn: (o) => cast.dog(o), s: 0.6, hy: 66, ps: 0.6 },
-];
-const COACH_X = 160, TRAIN_Y = 300, WAIT_X = [48, 134, 220, 306, 392];
-const trainGame = {
-  key: "train", title: "Choo-Choo Train", group: "simple", top: "#e6f6ff", bottom: "#d4efc4",
-  sub: "Say it to help a friend aboard", playDescription: "Every word helps a friend climb aboard the train.",
-  how: "Say each word to help a friend onto the train.", blurb: "Every word helps one friend from the platform onto the train; then it chugs and toots.",
-  alt: "A little train at a station, and five friends waiting on the platform.",
-  bg: meadowBg({ sun: [60, 56, 24], clouds: [[190, 58, 0.9], [330, 92, 0.6]], front: 300 }) + A.tracks(TRAIN_Y + 2)
-    + A.COACH_WIN.map((x) => R(COACH_X + x - 20, TRAIN_Y - 88, 40, 44, 3, "#dff4ff")).join(""),
-  parts: [
-    ...A.COACH_WIN.map((x, i) => ({ id: "in" + (i + 1), x: COACH_X + x, y: TRAIN_Y - 64 + RIDERS[i].hy * RIDERS[i].s, hid: true, svg: G(`scale(${RIDERS[i].s})`, RIDERS[i].fn({ face: "grin" })) })),
-    { id: "coach", x: COACH_X, y: TRAIN_Y, svg: A.coach() },
-    { id: "engine", x: 362, y: TRAIN_Y, svg: G("scale(1.15)", A.engine()) },
-    { id: "puff", x: 393, y: 196, hid: true, svg: A.steamPuff() },
-    { id: "platform", x: 0, y: 0, svg: R(0, 318, W, 82, 0, "#d9c4a4") + R(0, 318, W, 10, 0, "#ffd21c") + L("M0 350 H440 M0 380 H440", "#c9b08e", 3) },
-    ...WAIT_X.map((x, i) => ({ id: "on" + (i + 1), x, y: 394, svg: G(`scale(${RIDERS[i].ps})`, RIDERS[i].fn({ pose: "wave", face: "smile" })) })),
-    { id: "toot", x: 0, y: 0, hid: true, svg: note(318, 170, 1.4, "#ff5c5c") + note(290, 136, 1.2, "#4db3f2") + note(344, 120, 1.3, "#9b7fd8") },
-  ],
-  steps: WAIT_X.map((x, i) => [
-    { a: "move", id: "on" + (i + 1), x: (COACH_X + A.COACH_WIN[i] - x) * 0.6, y: -70 }, { a: "hide", id: "on" + (i + 1), at: 250 },
-    { a: "show", id: "in" + (i + 1), fx: "pop", at: 450 }, { a: "show", id: "puff", fx: "puff", at: 500 },
-  ]),
-  finale: [
-    { a: "fx", id: "engine", fx: "chug" }, ...A.COACH_WIN.map((x, i) => ({ a: "fx", id: "in" + (i + 1), fx: "hop", at: 90 * i })),
-    { a: "fx", id: "puff", fx: "puff" }, { a: "fx", id: "puff", fx: "puff", at: 800 }, { a: "fx", id: "puff", fx: "puff", at: 1600 },
-    { a: "show", id: "toot", fx: "pop", at: 300 }, { a: "fx", id: "toot", fx: "float", at: 900 },
-  ],
-  done: { title: "All aboard!", sub: "Five friends are riding your train." },
-};
-
 // ── 6. Puppy Bath: every word scrubs a mud spot away; then a big shake ──
 const MUD = [[234, 140, 1.3, 20], [174, 180, 1.2, -30], [271, 184, 1.2, 40], [198, 236, 1.2, 10], [246, 242, 1.15, -15]];
 const puppyGame = {
@@ -226,4 +189,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [ trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [ puppyGame, starsGame, cakeGame, giftsGame, tankGame];

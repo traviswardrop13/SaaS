@@ -449,7 +449,6 @@
 </g>
 </g>
 <!-- Say & Play game cards: written by tools/gameart/cards.mjs -->
-<g id="sp-train"><image href="/assets/games/train.svg" xlink:href="/assets/games/train.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-puppy"><image href="/assets/games/puppy.svg" xlink:href="/assets/games/puppy.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-stars"><image href="/assets/games/stars.svg" xlink:href="/assets/games/stars.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-cake"><image href="/assets/games/cake.svg" xlink:href="/assets/games/cake.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
@@ -469,5 +468,6 @@
 <g id="sp-monster"><image href="/assets/crafted/home-monster.webp" xlink:href="/assets/crafted/home-monster.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-rocket"><image href="/assets/crafted/home-rocket.webp" xlink:href="/assets/crafted/home-rocket.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-snowman"><image href="/assets/crafted/home-snowman.webp" xlink:href="/assets/crafted/home-snowman.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-train"><image href="/assets/crafted/home-train.webp" xlink:href="/assets/crafted/home-train.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <!-- /Say & Play game cards -->
 </defs></svg>
