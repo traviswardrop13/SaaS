@@ -1,9 +1,6 @@
-// Seven of the ten Say & Play games for ages 5-8: eight words a game and a goal
-// to reach (the finish line, the treasure, the last planet). No timer, no score
-// to lose, and nothing to aim at: every word the child says moves them on. The
-// other three, Hoops, Soccer Goal and Dino Dig, are played rather than built,
-// so they are written by hand (public/arcade-<key>.html with hoops.js,
-// soccer.js and dino.js) and have no scene here.
+// Remaining generated Say & Play scenes for ages5–8. Hand-built playable
+// games live in public/arcade-<key>.html plus their own controllers; they
+// are deliberately absent here so regeneration cannot overwrite them.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, star, heart, sparkle, note, face } from "../bookart/kit.mjs";
 import { meadowBg, starsList } from "../bookart/scene.mjs";
 import * as cast from "../bookart/cast.mjs";
@@ -16,43 +13,7 @@ const range = (n) => Array.from({ length: n }, (_, i) => i);
 
 // Treasure Map is now the hand-built route puzzle in public/treasure.js.
 
-// ── 5. Robot Builder: every word adds a part; then the robot dances ──
-const ROBOT = ["legs", "body", "armL", "armR", "head", "eyes", "antenna", "heart"];
-const robotGame = {
-  key: "robot", title: "Robot Builder", group: "arcade", top: "#eef3f8", bottom: "#dde6ee",
-  sub: "Say it to build a robot", playDescription: "Every word adds a new part to your robot.",
-  how: "Say each word to build a robot.", blurb: "Every word adds a robot part: legs, body, arms, head, eyes, antenna and a heart; then it dances.",
-  alt: "A workshop with a build platform, tools and gears.",
-  bg: R(0, 0, W, 320, 0, "#e3ecf5") + range(9).map((r) => range(12).map((c) => C(20 + c * 36, 20 + r * 34, 2.2, "#c9d6e3")).join("")).join("")
-    + G("translate(56 70)", A.gear(22, "#b9c7d6")) + G("translate(92 108)", A.gear(14, "#cfdae6")) + G("translate(388 84)", A.gear(26, "#b9c7d6"))
-    + R(330, 160, 90, 10, 4, "#b07a45") + R(344, 126, 14, 34, 3, "#ff5c5c") + R(366, 136, 30, 24, 4, "#4db3f2") + R(402, 140, 12, 20, 3, "#ffd21c")
-    + R(20, 180, 80, 10, 4, "#b07a45") + C(40, 170, 10, "#58cc02") + R(58, 156, 30, 24, 4, "#9b7fd8")
-    + R(0, 320, W, 80, 0, "#b9c7d6") + L("M0 350 H440", "#a9b8c9", 3)
-    + E(220, 380, 118, 18, "#8a97a8") + E(220, 376, 110, 14, "#cfdae6"),
-  parts: [
-    { id: "armL", x: 164, y: 270, hid: true, svg: A.robotArm(-1) },
-    { id: "armR", x: 276, y: 270, hid: true, svg: A.robotArm(1) },
-    { id: "legs", x: 220, y: 376, hid: true, svg: A.robotLegs() },
-    { id: "body", x: 220, y: 322, hid: true, svg: A.robotBody() },
-    { id: "heart", x: 220, y: 276, hid: true, svg: A.robotHeart() },
-    { id: "antenna", x: 220, y: 144, hid: true, o: "50% 100%", svg: A.antenna() },
-    { id: "head", x: 220, y: 230, hid: true, svg: A.robotHead() },
-    { id: "eyes", x: 220, y: 230, hid: true, svg: A.robotEyes() },
-    { id: "notes", x: 0, y: 0, hid: true, svg: note(90, 230, 1.5, "#9b7fd8") + note(356, 216, 1.3, "#ff5c8a") + note(380, 290, 1.1, "#4db3f2") + note(66, 300, 1.2, "#ffb100") },
-  ],
-  steps: [
-    [{ a: "show", id: "legs", fx: "drop" }],
-    [{ a: "show", id: "body", fx: "drop" }],
-    [{ a: "show", id: "armL", fx: "slideL" }],
-    [{ a: "show", id: "armR", fx: "slideR" }],
-    [{ a: "show", id: "head", fx: "drop" }],
-    [{ a: "show", id: "eyes", fx: "blink" }],
-    [{ a: "show", id: "antenna", fx: "grow" }],
-    [{ a: "show", id: "heart", fx: "pop" }],
-  ],
-  finale: [...ROBOT.map((id) => ({ a: "fx", id, fx: "hop" })), { a: "show", id: "notes", fx: "pop", at: 200 }, { a: "fx", id: "notes", fx: "float", at: 800 }],
-  done: { title: "Your robot is alive!", sub: "Eight words built a dancing robot." },
-};
+// Robot Builder is now the hand-built circuit puzzle in public/robot.js.
 
 // ── 6. Castle Builder: walls, keep, towers, gate, windows, flags; fireworks ──
 const castleGame = {
@@ -192,4 +153,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [ robotGame, castleGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [ castleGame, spaceGame, pizzaGame, monsterGame];

@@ -366,7 +366,7 @@ const gameOfPage = (f) => {
 const pagesLoading = (script) => readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") && loads("public/" + f, script)).sort();
 const spGames = pagesLoading("/sayplay.js").map(gameOfPage);
 if (!spGames.length) fail("no page loads sayplay.js any more — the picture games moved.");
-const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
+const spIntros = ["hoops", "soccer", "dino", "racecar", "treasure", "robot"].map((k) => { const f = "public/arcade-" + k + ".html", a = find(f, /intro:\s*"([^"]+)"/, k + " two-times instruction"); return { key:k, line:a.m[1], cite:a.cite }; });
 
 // ───────────────────────── parked / unlinked pages ─────────────────────────
 // simple-play.js (Bubble Pop and Peekaboo were built on it): the bare word.

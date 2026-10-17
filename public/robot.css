@@ -1,0 +1,110 @@
+/* Robot Builder's workshop. Controls keep action.css's shared colours; the
+   warm toy circuit stays HTML so every tile works with touch or a keyboard. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+body{background:var(--cream) url('/assets/crafted/game/robot-workshop-v1.webp') center/cover no-repeat;color:var(--cream-ink);}
+body:before{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(255,250,241,.15),rgba(255,246,233,.55) 45%,rgba(255,246,233,.92));pointer-events:none;}
+#app{position:relative;width:100%;height:100%;max-width:620px;min-height:0;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));gap:8px;overflow:hidden;isolation:isolate;}
+#top{position:relative;z-index:3;gap:8px;flex:none;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#ttl{font-size:16px;}
+#dots{gap:4px;padding:13px 10px;}
+#dots i{width:7px;height:7px;}
+#dots i.on{background:var(--act);}
+#robotWorkshop{position:relative;flex:1 1 220px;min-height:100px;max-height:260px;display:flex;justify-content:center;align-items:stretch;width:100%;}
+#robotWorkshop:before{content:"";position:absolute;left:9%;right:9%;bottom:0;height:11px;border-radius:50%;background:rgba(87,75,49,.14);filter:blur(4px);}
+#robotStand{position:relative;flex:none;aspect-ratio:4/5;height:100%;width:auto;max-width:85%;transform-origin:50% 92%;pointer-events:none;}
+.robot-outline{position:absolute;inset:0;width:100%;height:100%;opacity:.55;}
+#robotStand.complete .robot-outline{visibility:hidden;}
+.robot-outline path,.robot-outline rect,.robot-outline circle{fill:rgba(255,250,241,.24);stroke:rgba(70,118,122,.55);stroke-width:2.5;stroke-dasharray:5 6;}
+.robot-piece{position:absolute;opacity:0;filter:drop-shadow(0 3px 2px rgba(64,80,64,.18));transform-origin:50% 50%;}
+.robot-piece.assembled{opacity:1;}
+.robot-piece.just-built{animation:robotBuild .55s cubic-bezier(.2,1.25,.3,1) both;}
+.robot-piece img,.robot-fallback,.robot-fallback svg{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;}
+.robot-piece img{opacity:0;}
+.robot-piece img[hidden]{display:none;}
+.robot-piece.art-ready img{opacity:1;}
+.robot-piece.art-ready .robot-fallback{visibility:hidden;}
+.piece-leg-left{left:26%;top:70%;width:23%;height:28%;}
+.piece-leg-right{left:51%;top:70%;width:23%;height:28%;}
+.piece-torso{left:25%;top:41%;width:50%;height:36%;z-index:2;}
+.piece-arm-left{left:8%;top:41%;width:24%;height:35%;z-index:1;}
+.piece-arm-right{left:68%;top:41%;width:24%;height:35%;z-index:1;}
+.piece-head{left:20%;top:17%;width:60%;height:31%;z-index:3;}
+.piece-antenna{left:40%;top:0;width:20%;height:22%;z-index:2;}
+.piece-heart{left:42%;top:51%;width:16%;height:18%;z-index:4;}
+#robotStand.dancing{animation:robotDance 1.1s ease-in-out infinite;}
+#robotStand.dancing .piece-arm-left{animation:robotArm .8s ease-in-out infinite alternate;transform-origin:80% 15%;}
+#robotStand.dancing .piece-arm-right{animation:robotArm .8s ease-in-out infinite alternate-reverse;transform-origin:20% 15%;}
+@keyframes robotBuild{0%{opacity:0;transform:translateY(-26px) scale(.75)}65%{opacity:1;transform:translateY(3px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes robotDance{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-7px)}}
+@keyframes robotArm{from{transform:rotate(-13deg)}to{transform:rotate(15deg)}}
+#robotPower{position:absolute;right:1%;bottom:4%;width:96px;padding:7px 9px 8px;border:2px solid var(--cream-line);border-radius:17px;background:var(--cream-card);color:var(--act-d);font-family:"Baloo 2",sans-serif;font-size:14px;font-weight:800;text-align:center;box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
+#robotPower[hidden]{display:none;}
+#robotPower>div{height:5px;overflow:hidden;border-radius:9px;background:var(--cream-line);}
+#robotPowerFill{display:block;width:100%;height:100%;background:var(--act);}
+#robotBanner{flex:none;min-height:26px;max-width:100%;font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.9vw,22px);font-weight:800;line-height:1.15;text-align:center;color:var(--cream-ink);}
+#robotPuzzle{position:relative;flex:none;width:min(100%,374px);margin:0 auto;}
+#robotBoard{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));grid-template-rows:repeat(3,minmax(44px,1fr));gap:6px;width:calc(100% - 60px);aspect-ratio:1;margin:0 auto;padding:8px;border:3px solid #b6ab8a;border-radius:19px;background:linear-gradient(150deg,#ddd8be,#b7c8bb);box-shadow:0 5px 0 #a79875,0 9px 16px rgba(72,63,42,.16);}
+.robot-tile{position:relative;border:2px solid var(--cream-line);border-radius:12px;background:var(--cream-card);padding:0;min-width:44px;min-height:44px;aspect-ratio:1;color:#537e80;cursor:pointer;box-shadow:0 3px 0 rgba(83,100,84,.26);touch-action:manipulation;transition:background .12s,border-color .12s;}
+.robot-tile:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(83,100,84,.26);}
+.robot-tile svg{display:block;width:100%;height:100%;overflow:visible;}
+.wire-screw{fill:#d5ccb8;}
+.wire-back{fill:none;stroke:#b2c6bf;stroke-width:20;stroke-linecap:butt;stroke-linejoin:round;}
+.wire-line{fill:none;stroke:#527f85;stroke-width:11;stroke-linecap:butt;stroke-linejoin:round;}
+.wire-hub{fill:#d9ebe4;stroke:#527f85;stroke-width:4;}
+.robot-tile.powered{border-color:#81bdb9;background:#eaf8ef;}
+.robot-tile.powered .wire-line{stroke:var(--act);}
+.robot-tile.powered .wire-back{stroke:#b3e4db;}
+.robot-tile.powered .wire-hub{fill:var(--cream-card);stroke:var(--act);}
+.wire-ghost{display:none;fill:none;stroke:#86d2d4;stroke-width:33;stroke-linecap:butt;stroke-linejoin:round;opacity:.6;}
+.robot-tile.blueprint .wire-ghost{display:block;}
+.robot-tile.blueprint:after{content:"";position:absolute;inset:4px;border:1.5px dashed #6ab1b8;border-radius:7px;pointer-events:none;}
+.robot-tile.look-here{outline:4px solid var(--act);outline-offset:1px;}
+#robotBridges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1;}
+#robotBridges path{fill:none;stroke-linecap:butt;stroke-linejoin:round;}
+.bridge-wire{stroke:#527f85;}
+.bridge-live{stroke:var(--act);}
+.bridge-ghost{stroke:#86d2d4;opacity:.6;}
+.robot-tile:disabled{cursor:default;}
+#robotPuzzle.locked .robot-tile{filter:saturate(.7);}
+.robot-port{position:absolute;z-index:2;width:27px;height:44px;transform:translateY(-50%);display:grid;place-items:center;color:var(--act-d);}
+.robot-port svg{display:block;width:25px;height:42px;}
+#robotSource{left:0;}
+#robotSocket{right:0;}
+.robot-port:after{content:"";position:absolute;top:calc(50% - 3px);width:7px;height:6px;background:#527f85;}
+#robotSource:after{right:-4px;}
+#robotSocket:after{left:-4px;}
+#robotSocket .socket-bulb{fill:var(--cream-card);stroke:#8caa9c;}
+#robotSocket.live .socket-bulb{fill:#a5ddd0;stroke:var(--act);filter:drop-shadow(0 0 4px #72c9c2);}
+#robotGuide{flex:none;text-align:center;font-size:13px;font-weight:800;line-height:1.15;color:var(--muted);}
+#robotControls{flex:none;display:flex;align-items:center;justify-content:center;gap:12px;padding:1px 2px 6px;width:min(100%,374px);margin:0 auto;}
+#robotTest,#robotHelp{min-height:50px;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;font-size:18px;line-height:1.1;padding:7px 13px;flex:1;}
+#robotTest svg{width:23px;height:24px;flex:none;}
+#robotHelp img{width:30px;height:34px;object-fit:contain;flex:none;}
+#robotHelp svg{width:18px;height:23px;flex:none;}
+#robotTest:disabled,#robotHelp:disabled{opacity:.5;cursor:default;}
+#robotPartName{position:absolute;left:0;right:0;bottom:0;text-align:center;font-family:"Baloo 2",sans-serif;font-size:13px;line-height:1.1;font-weight:800;color:var(--muted);pointer-events:none;transform:translateY(3px);}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 40px rgba(48,35,21,.23);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{color:var(--act-d);background:var(--cream);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+#micBtn{color:white;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #robotControls{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #robotPower{visibility:hidden;}
+.robot-intro{width:100%;max-height:155px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+#startTitle{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:30px;line-height:1.1;}
+.robot-demo{display:flex;align-items:center;gap:9px;color:var(--act-d);}
+.robot-demo svg{width:41px;height:41px;}
+.robot-demo>span{font-weight:800;font-size:20px;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+@media(min-width:700px) and (min-height:700px){#app{max-width:720px;}#robotPuzzle{width:400px;}#robotWorkshop{max-height:310px;}#robotBanner{font-size:25px;}#robotControls{width:400px;}#robotGuide{font-size:15px;}#robotPower{right:11%;}}
+@media(max-width:359px){#app{padding-left:10px;padding-right:10px;gap:7px;}#top{gap:6px;}#ttl{font-size:14px;padding:9px 10px;}#dots{gap:3px;padding:13px 7px;}#dots i{width:6px;height:6px;}#robotBoard{gap:5px;padding:7px;}#robotTest,#robotHelp{font-size:16px;padding:7px 9px;gap:5px;}#robotControls{gap:9px;}#robotHelp img{width:26px;height:30px;}#robotGuide{font-size:12px;}#robotPower{width:83px;font-size:12px;right:0;}#turnPanel{left:10px;right:10px;}}
+@media(max-height:640px){#app{gap:6px;padding-top:calc(9px + env(safe-area-inset-top));padding-bottom:calc(12px + env(safe-area-inset-bottom));}#robotWorkshop{min-height:88px;max-height:170px;}#robotBanner{min-height:22px;font-size:17px;}#robotGuide{font-size:12px;}#robotTest,#robotHelp{min-height:46px;}#robotPower{bottom:10%;}#robotPartName{display:none;}.robot-intro{max-height:93px;}.robot-demo{display:none;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:44px 24px minmax(0,1fr) 44px;gap:7px 24px;padding:calc(9px + env(safe-area-inset-top)) 24px calc(10px + env(safe-area-inset-bottom));}#top{grid-column:1/-1;}#robotWorkshop{grid-column:1;grid-row:2/5;max-height:none;min-height:0;}#robotBanner{grid-column:2;grid-row:2;font-size:16px;}#robotPuzzle{grid-column:2;grid-row:3;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}#robotBoard{height:100%;width:auto;min-width:144px;min-height:144px;padding:5px;gap:4px;border-radius:12px;grid-template-rows:repeat(3,minmax(40px,1fr));grid-template-columns:repeat(3,minmax(40px,1fr));}.robot-tile{min-width:40px;min-height:40px;border-radius:7px;}#robotSource{left:calc(50% - (100dvh - 167px)/2 - 30px);}#robotSocket{right:calc(50% - (100dvh - 167px)/2 - 30px);}#robotControls{grid-column:2;grid-row:4;padding:0;gap:8px;}#robotGuide{display:none;}#robotTest,#robotHelp{min-height:42px;font-size:15px;}#robotHelp img{height:27px;width:25px;}#robotPower{right:0;bottom:8%;}#turnPanel{left:50%;right:16px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:15px;}.robot-intro{display:none;}#startOvl .ovlCard{gap:6px;max-width:440px;}#startBtn{min-height:45px;padding:8px 22px;font-size:20px;}}
+@media(prefers-reduced-motion:reduce){.robot-piece.just-built,#robotStand.dancing,#robotStand.dancing .robot-piece{animation:none;}.robot-tile{transition:none;}}

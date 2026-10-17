@@ -459,7 +459,6 @@
 <g id="sp-cake"><image href="/assets/games/cake.svg" xlink:href="/assets/games/cake.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-gifts"><image href="/assets/games/gifts.svg" xlink:href="/assets/games/gifts.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-fishtank"><image href="/assets/games/fishtank.svg" xlink:href="/assets/games/fishtank.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
-<g id="sp-robot"><image href="/assets/games/robot.svg" xlink:href="/assets/games/robot.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-castle"><image href="/assets/games/castle.svg" xlink:href="/assets/games/castle.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-space"><image href="/assets/games/space.svg" xlink:href="/assets/games/space.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-pizza"><image href="/assets/games/pizza.svg" xlink:href="/assets/games/pizza.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
@@ -469,5 +468,6 @@
 <g id="sp-dino"><image href="/assets/games/dino.webp" xlink:href="/assets/games/dino.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-racecar"><image href="/assets/crafted/home-racecar.webp" xlink:href="/assets/crafted/home-racecar.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <g id="sp-treasure"><image href="/assets/crafted/home-treasure.webp" xlink:href="/assets/crafted/home-treasure.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-robot"><image href="/assets/crafted/home-robot.webp" xlink:href="/assets/crafted/home-robot.webp" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
 <!-- /Say & Play game cards -->
 </defs></svg>

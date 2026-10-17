@@ -14,8 +14,8 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Game | Audience | State |
 | --- | --- | --- |
 | Race Car | 5–8 | Built and browser-verified; preview open, production still parked |
-| Treasure Map | 5–8 | Built; sailing checks pass; shared regression verification in progress |
-| Robot Builder | 5–8 | Queued |
+| Treasure Map | 5–8 | Built and browser-verified; local preview available, production still parked |
+| Robot Builder | 5–8 | Built and browser-verified; production still parked |
 | Castle Builder | 5–8 | Queued |
 | Space Trip | 5–8 | Queued |
 | Pizza Chef | 5–8 | Queued |
@@ -99,5 +99,44 @@ microphone/audio separation, quick drags, unrelated pointer cancellation,
 and narrow layouts. The test fails against the original animation (no sailing
 canvas). Syntax, art-generator, voice-inventory freshness and whitespace
 checks passed. The generic engine test keeps a frozen old scene fixture so
-these checks survive each real-game replacement. Its full rerun is pending.
+these checks survive each real-game replacement. The unchanged full engine rerun passed all 350 assertions, exit 0, when run alone.
 The source stays unpushed; a full current release battery is required.
+
+### Release check status
+
+The fixed Race Car snapshot's full battery reached the existing repetition
+checks, where a short real-time simulated response timed out under concurrent
+browser load. The run was stopped and its log preserved; it is not a passing
+release result. The unchanged shared speech suite then passed alone. No
+scoring threshold or test timing was changed. Run the complete current-tree
+battery without competing browser suites before any push.
+
+## Robot Builder
+
+Eight handmade circuit puzzles assemble a friendly toy robot. Tap a wire tile
+to rotate it clockwise. Only reciprocal connections conduct power, and a real
+battery-to-socket circuit still waits for the child to press Test power.
+Wrong wiring offers a gentle visual nudge and never spends an earned word.
+The first puzzle is a short straight path; the last visits all nine tiles.
+
+The existing eight targets and two sayings remain. Speech earns ten seconds
+of Blueprint: the solution route and connector orientations show as pale
+lines. Help parks the same puzzle, preserves every rotation, and renews the
+guide through the existing quiet word turn. It never rotates or solves a tile.
+
+The workshop and eight separate robot pieces match the existing painted
+home card. Selected files total 243,264 bytes and live under
+`public/assets/crafted/game/robot-*-v1.webp`; the parts retain alpha. Built-in
+image generation only. Exact prompts, origins and export metadata are in
+`design/coming-soon-games/robot-art-notes.txt`. Existing art is unchanged.
+
+New instruction: “Say each word two times for a blueprint. Tap the wires to
+turn them. Connect the battery to the socket, then test the power.” It is in
+the recording inventory and remains preview-only for Rachel's wording review.
+
+Verification: all 55 browser checks passed. They independently traverse the
+wires rather than trusting the game's connected flag; rotate and test all
+eight actual boards; verify speech/help, silence, background/resume, keyboard
+controls, missing-art fallbacks, replay, quiet microphones, and 320px/393px/
+iPad fit. The same test fails on the original robot animation. Syntax, art
+generator and recording-inventory checks passed. No push or release yet.

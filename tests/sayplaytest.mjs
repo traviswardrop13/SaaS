@@ -191,9 +191,9 @@ const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done)
 const { GAMES } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
 const KEYS = GAMES.map((g) => g.key);
-// Hoops, Soccer Goal and Dino Dig are rebuilt by hand (public/hoops.js,
-// soccer.js, dino.js), so the generator writes seventeen
-ok("fifteen generated scenes and five hand-built games: ten for each age group", GAMES.length === 15 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 5 && !GAMES.some((g) => ["hoops", "soccer", "dino", "racecar", "treasure"].includes(g.key)));
+// Custom playable games have their own browser suites. Keep the remaining
+// generated scenes accounted for as each old animation is rebuilt.
+ok("fourteen generated scenes and six hand-built games: ten for each age group", GAMES.length === 14 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 4 && !GAMES.some((g) => ["hoops", "soccer", "dino", "racecar", "treasure", "robot"].includes(g.key)));
 {
   const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
   ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));

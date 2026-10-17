@@ -16,7 +16,7 @@ export async function gameHarness(key,port){
  return{async fresh(options={}){
    const context=await browser.newContext({viewport:options.viewport||{width:390,height:844},reducedMotion:'reduce'}),errors=[];
    await context.addInitScript(fakeDevice,{age:'7',micok:true,permission:'granted',speechMs:100,...options.device});
-   await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(base+'/'))return r.abort();if(options.unpark!==false&&u===base+'/sona.js')return r.fulfill({contentType:'text/javascript',body:readFileSync(root+'/sona.js','utf8').replace(new RegExp('('+key+': \\{[^\\n]*)comingSoon: true, '),'$1')});return r.continue();});
+   await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(base+'/'))return r.abort();if(options.blockAssets&&u.includes('/assets/crafted/game/'+key+'-'))return r.abort();if(options.unpark!==false&&u===base+'/sona.js')return r.fulfill({contentType:'text/javascript',body:readFileSync(root+'/sona.js','utf8').replace(new RegExp('('+key+': \\{[^\\n]*)comingSoon: true, '),'$1')});return r.continue();});
    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.clock.install();await page.goto(base+'/arcade-'+key+'.html');return{page,context,errors};
  },async close(){await browser.close();await new Promise(r=>server.close(r));}};
 }

@@ -3466,7 +3466,7 @@
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
-    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds a new part to your robot." },
+    robot: { name: "Robot Builder", sub: "Connect the robot circuits", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Rotate the wires to power each robot part. Say your word to see a helpful blueprint." },
     castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word builds another part of your castle." },
     // REBUILT (Travis, 1 Oct 2026: "go to the next game"): the word earns a
     // brush and the child rubs the sand off a bone (public/dino.js).
