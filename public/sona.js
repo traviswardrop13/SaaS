@@ -3458,7 +3458,7 @@
     gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word opens a present. Who is inside?" },
     fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word brings a new fish to the tank." },
     racecar: { name: "Race Car", sub: "Steer, race and slow the road", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Steer around cones and cars. Say your word to slow the road." },
-    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word sails your boat to the next stop on the map." },
+    treasure: { name: "Treasure Map", sub: "Draw a route and sail", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Draw your boat a safe route around the islands. Say your word for calm seas." },
     // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
     // ball and the child swipes it past a goalie who slides along the goal
     // line (public/soccer.js).

@@ -72,7 +72,7 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // service that is slow, as v4 Turbo can be on launch day).
 const tts = { mode: "down", calls: 0, texts: [], delay: 0 };
 const server = createServer((req, res) => {
-  const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
+  const url = new URL(req.url, BASE), file = url.pathname === "/_sayplay-scene.html" ? path.join(SOURCE_ROOT, "..", "tests", "fixtures", "sayplay-scene.html") : path.join(ROOT, url.pathname);
   if (url.pathname === "/api/tts" && tts.mode !== "down") {
     tts.calls++;
     const standin = tts.mode === "standin";
@@ -99,6 +99,8 @@ async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " 
 // back: the same sona.js, with each Say & Play game's comingSoon lifted.
 const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/\bsay: true, comingSoon: true, /g, "say: true, ");
 async function fresh(file, cfg = {}) {
+  // Engine-only checks keep a fixed scene as the real catalog games are rebuilt.
+  if (file === "arcade-treasure.html") file = "_sayplay-scene.html";
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const url = route.request().url();
@@ -191,7 +193,7 @@ const { page: pageFor } = await import("../tools/gameart/page.mjs");
 const KEYS = GAMES.map((g) => g.key);
 // Hoops, Soccer Goal and Dino Dig are rebuilt by hand (public/hoops.js,
 // soccer.js, dino.js), so the generator writes seventeen
-ok("sixteen generated scenes and four hand-built games: ten for each age group", GAMES.length === 16 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 6 && !GAMES.some((g) => ["hoops", "soccer", "dino", "racecar"].includes(g.key)));
+ok("fifteen generated scenes and five hand-built games: ten for each age group", GAMES.length === 15 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 5 && !GAMES.some((g) => ["hoops", "soccer", "dino", "racecar", "treasure"].includes(g.key)));
 {
   const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
   ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));

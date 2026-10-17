@@ -14,7 +14,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Game | Audience | State |
 | --- | --- | --- |
 | Race Car | 5–8 | Built and browser-verified; preview open, production still parked |
-| Treasure Map | 5–8 | Queued |
+| Treasure Map | 5–8 | Built; sailing checks pass; shared regression verification in progress |
 | Robot Builder | 5–8 | Queued |
 | Castle Builder | 5–8 | Queued |
 | Space Trip | 5–8 | Queued |
@@ -68,3 +68,36 @@ Say & Play regression suite: 359 assertions, exit 0. Syntax, art generators,
 recording-script freshness and whitespace checks passed. The new test fails
 against the original Race Car, which has no playable racing canvas. The full
 release battery is still required before any push.
+
+## Treasure Map
+
+A route-drawing sailing puzzle: draw from the boat, release to sail, and steer
+around solid islands to eight harbours and the final treasure. Routes are
+physical: crossing land stops the boat. Returning to the dock gives another
+attempt without spending an accepted word. A short straight drag works too.
+
+The existing eight targets and two sayings remain. Speech earns twelve
+seconds of calm currents and a safe channel drawn from the boat's actual
+position. Help pauses the same voyage, uses the existing quiet word turn,
+and returns to the same harbour. The hint never moves the boat by itself.
+
+The original painted boat/chest are reused. A new versioned parchment map
+removes the old static boats, chests and routes so the child's live boat and
+route remain clear. Built-in image generation was used; the selected map is
+`public/assets/crafted/game/treasure-map-play-v2.webp` (365 KiB). Prompt:
+preserve parchment, compass, four island positions/style; remove boat,
+chests, dotted routes, footprints and X. Original art is unchanged.
+
+The catalog stays Coming Soon during review. New instruction: “Say each word
+two times for calm seas. Then draw a line from your boat to the glowing ring.
+Go around the islands.” Targets and acceptance thresholds are unchanged;
+Rachel can review the mechanic/reward wording alongside the other games.
+
+Verification: all 45 sailing/touch/fit checks passed, including all eight
+voyages, a hint after an island bump, help/background/resume, restart,
+microphone/audio separation, quick drags, unrelated pointer cancellation,
+and narrow layouts. The test fails against the original animation (no sailing
+canvas). Syntax, art-generator, voice-inventory freshness and whitespace
+checks passed. The generic engine test keeps a frozen old scene fixture so
+these checks survive each real-game replacement. Its full rerun is pending.
+The source stays unpushed; a full current release battery is required.

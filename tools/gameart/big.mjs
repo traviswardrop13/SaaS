@@ -14,39 +14,7 @@ const range = (n) => Array.from({ length: n }, (_, i) => i);
 
 // Race Car is now hand-built in public/racecar.js; never regenerate its page.
 
-// ── 2. Treasure Map: every word sails to the next stop; the X hides the chest ──
-const ROUTE = [[64, 346], [134, 304], [92, 236], [166, 188], [250, 226], [322, 290], [392, 232], [338, 160], [372, 92]];
-const mapGame = {
-  key: "treasure", title: "Treasure Map", group: "arcade", top: "#fff3d6", bottom: "#f3dfb0",
-  sub: "Say it to sail to the treasure", playDescription: "Every word sails your boat to the next stop on the map.",
-  how: "Say each word to sail to the treasure.", blurb: "Every word sails the boat one stop along the dotted line; at the X, a treasure chest.",
-  alt: "A treasure map with islands, a dotted path and a big red X.",
-  bg: R(0, 0, W, 400, 0, "#f3dfb0") + R(10, 10, 420, 380, 18, "#9fd8f0") + R(10, 10, 420, 380, 18, "none", { stroke: "#d9b877", "stroke-width": 8 })
-    + L("M40 120 q8 -6 16 0 q8 6 16 0 M250 60 q8 -6 16 0 q8 6 16 0 M200 380 q8 -6 16 0 q8 6 16 0 M40 270 q8 -6 16 0 q8 6 16 0", "#ffffff", 2.5, { opacity: 0.8 })
-    + G("translate(56 58)", A.compass()) + G("translate(378 364) scale(0.8)", A.whale())
-    + G("translate(214 108)", A.island(40, 18)) + A.palm(214, 106, 0.8) + G("translate(60 186)", A.island(30, 14))
-    + G("translate(250 316)", A.island(34, 15)) + A.palm(252, 314, 0.6) + G("translate(118 372)", A.island(28, 11))
-    + G("translate(372 100)", A.island(58, 28)) + A.palm(404, 86, 0.8)
-    + L(ROUTE.map(([x, y], i) => (i ? "L" : "M") + x + " " + y).join(" "), "#8a5a2c", 3.4, { "stroke-dasharray": "3 9" })
-    + ROUTE.slice(1, 8).map(([x, y]) => C(x, y, 8, "#f3dfb0") + C(x, y, 8, "none", { stroke: "#8a5a2c", "stroke-width": 2.5 })).join(""),
-  parts: [
-    { id: "x", x: 372, y: 94, svg: A.xMark() },
-    ...ROUTE.slice(1, 8).map(([x, y], i) => ({ id: "c" + (i + 1), x, y, hid: true, svg: C(0, 0, 9, "#ffd21c") + C(0, 0, 9, "none", { stroke: "#f0a800", "stroke-width": 2.5 }) + star(0, 0, 0.55, "#fff6c8") })),
-    { id: "chest", x: 374, y: 114, hid: true, svg: G("scale(1.25)", A.chest(true)) },
-    { id: "boat", x: ROUTE[0][0], y: ROUTE[0][1] + 6, svg: A.sailboat() },
-    { id: "glow", x: 0, y: 0, hid: true, svg: sparkles([[320, 50, 1.3], [420, 70, 1.1], [300, 130, 1]], "#fff6c8") },
-  ],
-  steps: range(8).map((i) => [
-    // the last sail stops beside the X's island, so the chest has room
-    { a: "move", id: "boat", x: (i === 7 ? 300 : ROUTE[i + 1][0]) - ROUTE[0][0], y: (i === 7 ? 136 : ROUTE[i + 1][1]) - ROUTE[0][1] },
-    ...(i < 7 ? [{ a: "show", id: "c" + (i + 1), fx: "pop", at: 500 }] : [{ a: "fx", id: "x", fx: "wiggle", at: 500 }]),
-  ]),
-  finale: [
-    { a: "hide", id: "x" }, { a: "show", id: "chest", fx: "pop", at: 250 }, { a: "fx", id: "chest", fx: "bounce", at: 900 },
-    { a: "show", id: "glow", fx: "twinkle", at: 600 }, { a: "fx", id: "boat", fx: "bounce", at: 400 },
-  ],
-  done: { title: "You found the treasure!", sub: "Eight words sailed you all the way to the X." },
-};
+// Treasure Map is now the hand-built route puzzle in public/treasure.js.
 
 // ── 5. Robot Builder: every word adds a part; then the robot dances ──
 const ROBOT = ["legs", "body", "armL", "armR", "head", "eyes", "antenna", "heart"];
@@ -224,4 +192,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [mapGame, robotGame, castleGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [ robotGame, castleGame, spaceGame, pizzaGame, monsterGame];

@@ -148,7 +148,7 @@ const KEYS = new Set(GAMES.map((g) => g.key));
   });
   ok("every arcade page is exactly the game builder's output for one of its games, or is written by hand and doesn't claim otherwise", pages.length >= GAMES.length && bad.length === 0, bad.join(", "));
   ok("…every generated game has its page", GAMES.every((g) => pages.includes("arcade-" + g.key + ".html")));
-  ok("Hoops, Soccer Goal and Dino Dig are written by hand, and the builder has no game by their names", ["hoops", "soccer", "dino", "racecar"].every((k) => !KEYS.has(k) && existsSync(PUB + "/arcade-" + k + ".html") && !readFileSync(PUB + "/arcade-" + k + ".html", "utf8").includes(PAGE_MARK)));
+  ok("Hoops, Soccer Goal and Dino Dig are written by hand, and the builder has no game by their names", ["hoops", "soccer", "dino", "racecar", "treasure"].every((k) => !KEYS.has(k) && existsSync(PUB + "/arcade-" + k + ".html") && !readFileSync(PUB + "/arcade-" + k + ".html", "utf8").includes(PAGE_MARK)));
 }
 ok("every generated game's start card says \"Let's play\" on a teal pill, beside the play triangle for a child who can't read yet",
   GAMES.every((g) => { const h = pageFor(g); return /<link href="\/action\.css" rel="stylesheet">/.test(h) && /<button id="startBtn" class="act-pill"><svg [^>]*aria-hidden="true">[\s\S]*?<\/svg><span>Let's play<\/span><\/button>/.test(h) && !/id="startBtn"[^>]*aria-label/.test(h); }));
