@@ -11,41 +11,7 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Balloon Party is now the hand-built pump-and-guide game in public/balloon.js.
 
-// ── 2. Grow a Flower: water the seed with every word; it sprouts, buds and blooms ──
-const flowerGame = {
-  key: "flower", title: "Grow a Flower", group: "simple", top: "#fff6e0", bottom: "#d4efc4",
-  sub: "Say it to water the seed", playDescription: "Water the seed with your words and watch it grow.",
-  how: "Say each word to water the seed.", blurb: "Every word waters the seed: a sprout, leaves, a bud, a bloom, and a bee comes to visit.",
-  alt: "A garden with a seed in the ground and a watering can.",
-  bg: meadowBg({ sun: [370, 64, 26], clouds: [[80, 64, 0.9], [240, 40, 0.6]] })
-    + fence(300, 0, 440, "#fff4e0"),
-  parts: [
-    { id: "soil", x: 220, y: 352, svg: A.soilMound() },
-    { id: "sprout", x: 220, y: 336, hid: true, o: "50% 100%", svg: A.sprout() },
-    { id: "stem", x: 220, y: 338, hid: true, o: "50% 100%", svg: A.stem() },
-    { id: "bud", x: 220, y: 212, hid: true, o: "50% 100%", svg: A.bud() },
-    { id: "bloom", x: 220, y: 176, hid: true, svg: A.bloom() },
-    { id: "can", x: 92, y: 120, svg: A.wateringCan() },
-    { id: "drops", x: 0, y: 0, hid: true, svg: A.drop(170, 132) + A.drop(182, 160, 0.9) + A.drop(172, 190) + A.drop(192, 216, 0.8) + A.drop(184, 246, 0.9) + A.drop(202, 272, 0.8) + A.drop(196, 300, 0.9) },
-    { id: "bee", x: 330, y: 150, hid: true, svg: G("scale(1.3)", cast.bee({ face: "grin" })) },
-    { id: "f2", x: 110, y: 366, hid: true, o: "50% 100%", svg: flower(0, 0, 1.6, "#9b7fd8") },
-    { id: "f3", x: 340, y: 370, hid: true, o: "50% 100%", svg: flower(0, 0, 1.5, "#ffd21c", "#ff9d3d") },
-    { id: "glow", x: 0, y: 0, hid: true, svg: sparkles([[150, 120, 1.4], [300, 96, 1.2], [290, 230, 1], [140, 250, 1.1]]) },
-  ],
-  steps: [
-    [{ a: "fx", id: "can", fx: "wiggle" }, { a: "show", id: "drops", fx: "fade" }, { a: "hide", id: "drops", at: 900 }, { a: "show", id: "sprout", fx: "grow", at: 500 }],
-    [{ a: "fx", id: "can", fx: "wiggle" }, { a: "show", id: "drops", fx: "fade" }, { a: "hide", id: "drops", at: 900 }, { a: "hide", id: "sprout", at: 400 }, { a: "show", id: "stem", fx: "grow", at: 500 }],
-    [{ a: "fx", id: "can", fx: "wiggle" }, { a: "show", id: "drops", fx: "fade" }, { a: "hide", id: "drops", at: 900 }, { a: "show", id: "bud", fx: "pop", at: 500 }],
-    [{ a: "fx", id: "can", fx: "wiggle" }, { a: "show", id: "drops", fx: "fade" }, { a: "hide", id: "drops", at: 900 }, { a: "hide", id: "bud", at: 450 }, { a: "show", id: "bloom", fx: "pop", at: 500 }],
-    [{ a: "show", id: "bee", fx: "slideR" }, { a: "show", id: "f2", fx: "grow", at: 300 }, { a: "show", id: "f3", fx: "grow", at: 500 }, { a: "fx", id: "bloom", fx: "wiggle", at: 700 }],
-  ],
-  finale: [
-    { a: "fx", id: "bloom", fx: "sway" }, { a: "fx", id: "stem", fx: "sway" }, { a: "fx", id: "bee", fx: "float" },
-    { a: "fx", id: "f2", fx: "sway", at: 200 }, { a: "fx", id: "f3", fx: "sway", at: 400 }, { a: "show", id: "glow", fx: "fade", at: 200 },
-    { a: "move", id: "can", x: -200, y: 0 },
-  ],
-  done: { title: "Your flower grew!", sub: "Five words made it bloom." },
-};
+// Grow a Flower is now the hand-built watering game in public/flower.js.
 
 // ── 3. Rocket Blast: every word lights the countdown, 5 4 3 2 1, blast off ──
 const rocketGame = {
@@ -324,4 +290,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [flowerGame, rocketGame, snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [rocketGame, snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];

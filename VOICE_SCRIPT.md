@@ -190,7 +190,7 @@ The say-it card in all six round games (one voice for all six, `arcade-sayit.js`
 | B60 | book-end.mp3 | The end! Great listening! | The last page of every book ("The End!"), with the star and the chime. | Warm and pleased, winding down. Still has its "!". | public/library.html:1688 |
 | B61 | book-turn.mp3 | Great trying. Let's turn the page. | A book page's key word (C9): after three tries that were a voice but not the book's kind of sound, Echo says this and the page turns. Screen: "Great trying! Let's turn the page." | Kind and light. The page turns on a good note. | public/library.html:1913 |
 
-### B7 — Picture-game instructions (6)
+### B7 — Picture-game instructions (7)
 
 Queued games are explicitly marked Coming soon; their instructions are listed for preview review and do not mean the game is released.
 
@@ -202,6 +202,7 @@ Queued games are explicitly marked Coming soon; their instructions are listed fo
 | B65 | picture-two-times-4.mp3 | Say each word two times for calm seas. Then draw a line from your boat to the glowing ring. Go around the islands. | Treasure Map (Coming soon; preview only): once before the first isolated word ask of a visit; never between the first and second saying. | Clear and friendly, its own sentence. Leave a short natural pause before the target word. | public/arcade-treasure.html:17; played at public/sayplay.js:534 |
 | B66 | picture-two-times-5.mp3 | Say each word two times for a blueprint. Tap the wires to turn them. Connect the battery to the socket, then test the power. | Robot Builder (Coming soon; preview only): once before the first isolated word ask of a visit; never between the first and second saying. | Clear and friendly, its own sentence. Leave a short natural pause before the target word. | public/arcade-robot.html:55; played at public/sayplay.js:534 |
 | B67 | picture-two-times-6.mp3 | Say each word two times for big pumps and calm wind. Pump up your balloon. Then pull it into the glowing ring and let go. | Balloon Party (Coming soon; preview only): once before the first isolated word ask of a visit; never between the first and second saying. | Clear and friendly, its own sentence. Leave a short natural pause before the target word. | public/arcade-balloon.html:32; played at public/sayplay.js:534 |
+| B68 | picture-two-times-7.mp3 | Say each word two times for a wider shower and more water. Hold the watering can, and move its spout over the glowing soil. Refill your can whenever you need. | Grow a Flower (Coming soon; preview only): once before the first isolated word ask of a visit; never between the first and second saying. | Clear and friendly, its own sentence. Leave a short natural pause before the target word. | public/arcade-flower.html:29; played at public/sayplay.js:534 |
 
 Not in this list because they speak nothing: Home, setup, settings, the voice
 picker, the mic-permission screens, the chest captions and every in-round label.
@@ -471,7 +472,7 @@ Rachel's calls, built on defaults until she answers: which syllables and in what
 `Say... {word}.` (public/sayplay.js:538)
 
 One shared script (`sayplay.js`) runs every picture game. Each turn shows a picture and
-its word, Echo models the word with this line, then "Go!" (B49), then the mic opens. Hoops, Soccer Goal, Dino Dig, Race Car (Coming soon; preview only), Treasure Map (Coming soon; preview only), Robot Builder (Coming soon; preview only), Balloon Party (Coming soon; preview only) first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the
+its word, Echo models the word with this line, then "Go!" (B49), then the mic opens. Hoops, Soccer Goal, Dino Dig, Race Car (Coming soon; preview only), Treasure Map (Coming soon; preview only), Robot Builder (Coming soon; preview only), Balloon Party (Coming soon; preview only), Grow a Flower (Coming soon; preview only) first explain that each word is said two times, in a separate sentence (B7). Nothing plays between the two sayings. The cheers ("Yes!", "You did it!") are text. The sound is the one the
 child's rotation is on (else R); the pool is up to ten of that sound's shortest
 Beginning-position words with a picture (public/sayplay.js:455). **Best left to TTS.**
 
@@ -1662,6 +1663,6 @@ folders; they were a wish-list. They are gone, and so is the old `tools/voicepag
 
 ---
 
-**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **67 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 946 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 172 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
+**Totals.** Part A: 19 sound models (38 files, Rachel's). Part B: **68 fixed clips** to record. Part C: **80 template lines written out** (C1 38 + C2 38 + C7 4) plus 946 fillers listed (19 cues, 19 sound names, 95 syllables, 5 sentence frames, 134 Feed Echo words, 4 game-card asks, 172 picture-game words, 498 book pages in 48 books). Part D: **356 bank entries, 294 distinct words** (TTS). Part E: 270 parked/unlinked lines not to record (210 chapter pages, 43 Coach Call, 9 Speech Check, the rest single lines).
 
-Record B first (67 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.
+Record B first (68 lines — an hour), then C1 and C2 (76 lines, where you perform the sound), and stop there: the rest of Part C and Part D are words, and words are what TTS already does well.

@@ -22,7 +22,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Monster Makeover | 5–8 | Queued |
 | Peekaboo | 3–4 | Queued |
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
-| Grow a Flower | 3–4 | Queued |
+| Grow a Flower | 3–4 | Built and browser-verified; production still parked |
 | Rocket Blast | 3–4 | Queued |
 | Build a Snowman | 3–4 | Queued |
 | Choo-Choo Train | 3–4 | Queued |
@@ -181,3 +181,30 @@ the original animation. Syntax and art-generator checks passed. The old
 preschool scene is frozen for engine-only tests; protection checks now choose
 a remaining generated scene rather than assuming Balloon is still generated.
 No push or release yet.
+
+## Grow a Flower
+
+A held watering can pours actual falling drops. The child moves its spout
+over the glowing soil; only caught drops grow the seed through five stages.
+Water runs out, and a separate refill button preserves all earned growth.
+Misses and refills cost no extra word. Idle animation cannot grow the plant.
+Arrow keys move the same can; held Space or Enter pours.
+
+The existing five targets and two sayings remain. Speech earns ten seconds
+of a shower twice as wide and a larger reservoir. Help pauses the same
+garden, including the can, water already caught and water left. Every word
+and microphone turn still belongs to SayPlay.
+
+The painted garden, sprout and bloom are reused. A new versioned transparent
+watering can removes baked-in drops, so idle art never looks like running
+water. Built-in image generation only; the selected WebP is 36,818 bytes.
+Prompt and provenance are in design/coming-soon-games/flower-art-notes.txt.
+
+Verification: all 38 main browser checks passed. The separate three-check
+short-landscape rerun passed after fixing soil covered by the progress card.
+Checks include five real waterings, a measured wider catch area, off-target
+misses, refill/help preservation, background/resume, keyboard control,
+fallback art, quiet microphones and 320px/393px/iPad fit. The new test fails
+on the original animation. Syntax, art-generator and voice-inventory checks
+passed. The source stays parked for phone review and the younger repetition
+decision; nothing is pushed or released.

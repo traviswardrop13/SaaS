@@ -1,0 +1,6 @@
+Built-in image_gen edit, transparent_background=true.
+Edit target: /Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/flower-can.webp (unchanged).
+Prompt: Use case: precise-object-edit. Asset type: transparent game sprite. Edit target: the attached blue watering can with yellow flower, handle, lid, and left-facing spout. Remove ONLY the detached water droplets/drips beyond and below the yellow nozzle. Leave the entire can, handle, lid, flower decoration, spout and perforated yellow nozzle intact and in exactly the same orientation, proportions, colors and detailed painted toy texture. The can must be dry and idle, with absolutely no water stream or detached drops. Do not crop, redesign, add anything, change viewpoint or add a shadow/backdrop. Genuinely transparent background, preserve the clean alpha silhouette. No text or UI.
+Origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-d39e2972-c667-4b5d-b3a8-15a32a1362fc.png
+Export: {"path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/flower-can-dry-v1.webp", "size": [512, 451], "mode": "RGBA", "bytes": 36818, "alpha": [0, 255], "alpha_bbox": [91, 0, 512, 442], "alpha_preserved": true}
+Only proportional format/size export after generation; no manual semantic image edits.

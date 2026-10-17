@@ -1,0 +1,50 @@
+/* A real garden, with a held watering can and the shared family controls. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#gardenCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:16px;}
+#dots{gap:6px;padding:13px 12px;}
+#dots i{width:8px;height:8px;}
+#dots i.on{background:var(--act);}
+#gardenBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:16px;right:16px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:8px 14px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.6vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
+#gardenCan{position:absolute;z-index:4;transform:translate(-50%,-50%);padding:0;border:3px solid transparent;border-radius:40%;background:transparent;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
+#gardenCan[hidden]{display:none;}
+#gardenCan:active{cursor:grabbing;}
+#gardenCan:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;background:rgba(255,251,225,.1);}
+#gardenControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;}
+#gardenControls button{pointer-events:auto;}
+#gardenRefill{min-height:61px;min-width:111px;padding:7px 15px;border-radius:22px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:18px;}
+#gardenRefill svg{width:23px;height:29px;flex:none;}
+.garden-refill-label{display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;}
+.garden-reservoir{display:block;width:58px;height:6px;border-radius:99px;overflow:hidden;background:var(--cream-line);}
+#gardenReservoirFill{display:block;height:100%;background:var(--act);}
+#gardenHelp{min-height:61px;padding:7px 13px 7px 7px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:17px;line-height:1.1;max-width:195px;}
+#gardenHelp img{width:34px;height:39px;object-fit:contain;flex:none;}
+#gardenHelp svg{width:18px;height:23px;flex:none;}
+#gardenHelp.powered{box-shadow:0 5px 0 var(--act-d),0 0 0 3px rgba(255,252,222,.8);}
+#gardenControls button:disabled{opacity:.58;cursor:default;}
+#gardenWater{position:absolute;z-index:3;bottom:calc(98px + env(safe-area-inset-bottom));left:20px;right:20px;padding:8px 12px 10px;background:var(--cream-card);border:2px solid var(--cream-line);border-radius:19px;box-shadow:0 3px 0 var(--cream-line);pointer-events:none;font-family:"Baloo 2",sans-serif;}
+.garden-water-label{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:16px;font-weight:800;line-height:1.1;color:var(--cream-ink);margin-bottom:5px;}
+#gardenPower{font-size:12px;color:var(--act-d);}
+#gardenPower[hidden]{display:none;}
+.garden-water-track{height:8px;background:var(--cream-line);border-radius:99px;overflow:hidden;}
+#gardenWaterFill{display:block;height:100%;width:0;background:var(--act);}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #gardenControls,body:not([data-phase=play]) #gardenCan,body:not([data-phase=play]) #gardenWater{visibility:hidden;pointer-events:none;}
+.garden-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;object-position:center 60%;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:31px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:14px;padding:9px 10px;}#top{gap:7px;}#dots{gap:5px;padding:13px 10px;}#dots i{width:7px;height:7px;}#gardenControls{left:12px;right:12px;gap:9px;}#gardenHelp{font-size:15px;padding:7px 9px 7px 4px;gap:4px;max-width:169px;}#gardenHelp img{width:29px;height:34px;}#gardenHelp svg{width:16px;height:23px;}#gardenRefill{min-width:103px;padding:7px 11px;font-size:17px;}#gardenBanner{font-size:17px;padding:7px 12px;}#gardenWater{left:14px;right:14px;}.garden-water-label{font-size:15px;}#gardenPower{font-size:11px;}}
+@media(max-height:640px){#gardenBanner{top:calc(69px + env(safe-area-inset-top));}#gardenControls{bottom:calc(14px + env(safe-area-inset-bottom));}#gardenRefill,#gardenHelp{min-height:53px;}#gardenWater{bottom:calc(82px + env(safe-area-inset-bottom));padding:6px 10px 8px;}.garden-water-label{font-size:14px;}#gardenPower{font-size:11px;}.garden-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(8px + env(safe-area-inset-top));}#gardenBanner{top:calc(61px + env(safe-area-inset-top));font-size:16px;padding:5px 11px;}#gardenControls{bottom:calc(11px + env(safe-area-inset-bottom));}#gardenWater{bottom:calc(75px + env(safe-area-inset-bottom));left:calc(50% - 130px);right:calc(50% - 130px);}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.garden-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}
