@@ -23,7 +23,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Peekaboo | 3–4 | Queued |
 | Balloon Party | 3–4 | Built and browser-verified; production still parked |
 | Grow a Flower | 3–4 | Built and browser-verified; production still parked |
-| Rocket Blast | 3–4 | Queued |
+| Rocket Blast | 3–4 | Built and browser-verified; production still parked |
 | Build a Snowman | 3–4 | Queued |
 | Choo-Choo Train | 3–4 | Queued |
 | Puppy Bath | 3–4 | Queued |
@@ -309,6 +309,37 @@ All 85 browser checks passed, exit 0, including all eight landings on both
 short screens. The test rejects the original reveal scene. Syntax, protected
 art and recording-inventory checks passed. The catalog stays parked for phone
 play review; nothing is pushed or released.
+
+## Rocket Blast
+
+A preschool pull-back rocket toy: drag the rocket down and sideways, follow
+the aiming dots, then release it into a real ballistic flight. Five different
+planet rings require actual launches and physical contact. Tiny/upward pulls,
+canceled gestures and idle scenes never launch or earn an arrival. Misses
+return to the pad for unlimited retries on the same accepted word; the child
+can also deliberately use Try again. Arrows and Enter operate the same toy.
+
+The existing five targets and two sayings remain. Speech widens the landing
+ring, calms the slight wind and reveals the full predicted arc for ten
+seconds. A launched flight keeps its earned assistance after expiry. Help
+parks the same flight, preserving position and velocity, then widens/calms
+it through the shared quiet word owner. Backgrounding an unfinished pull
+cancels it safely; backgrounding a flight preserves it.
+
+The painted sunset launchpad and Saturn are reused, as is the clean upright
+lander made for Space Trip. Two new transparent mint/lavender planets total
+75,028 bytes; exact prompts and exports are in
+design/coming-soon-games/rocket-art-notes.txt. True image proportions and
+the launchpad/rocket foot anchor match the live geometry.
+
+All 51 browser checks passed, exit 0. An independent closed-form calculation
+aims actual pointer launches; it never calls a completion callback. Checks
+cover all five planets at regular phone, 320px and iPad sizes, 393px fit,
+silence, tiny/backward pulls, owned-pointer cancel, missed-flight retry,
+keyboard flight, help/background recovery, latched assistance, missing-art
+fallback, restart and quiet microphones. The new test fails on the original
+countdown scene. Syntax, protected-art and recording-inventory checks passed.
+The catalog stays parked for phone play review; nothing is pushed or released.
 
 ## Monster Makeover
 

@@ -13,35 +13,7 @@ const sparkles = (list, c = "#ffd21c") => list.map(([x, y, s]) => sparkle(x, y, 
 
 // Grow a Flower is now the hand-built watering game in public/flower.js.
 
-// ── 3. Rocket Blast: every word lights the countdown, 5 4 3 2 1, blast off ──
-const rocketGame = {
-  key: "rocket", title: "Rocket Blast", group: "simple", top: "#e9e4ff", bottom: "#ffe1c4",
-  sub: "Say it to count down", playDescription: "Every word lights the countdown. Then blast off!",
-  how: "Say each word to count down to blast off.", blurb: "Every word lights one number of the countdown, 5 4 3 2 1, and Bo's rocket blasts off.",
-  alt: "A rocket on a launch pad at sunset, with a countdown board.",
-  bg: R(0, 0, W, 400, 0, "#4a4f8f") + R(0, 150, W, 120, 0, "#7a6fb0") + R(0, 230, W, 80, 0, "#c98fb0") + C(360, 250, 60, "#ffcf8a", { opacity: 0.35 })
-    + starsList([[40, 40, 0.5], [120, 90, 0.4], [200, 30, 0.6], [300, 70, 0.45], [400, 30, 0.5], [260, 130, 0.35], [420, 120, 0.4]], "#fff1b8")
-    + hills(290, 330, 400, "#6b6fa3", "#5a5f94") + ground(356, "#8a97a8") + G(at(378, 356, 1), A.launchTower()),
-  parts: [
-    { id: "smoke", x: 230, y: 360, hid: true, svg: A.smokeCloud(1.2) },
-    { id: "flame", x: 240, y: 332, hid: true, o: "50% 0%", svg: G("scale(1.2)", A.flame()) },
-    { id: "rocket", x: 240, y: 334, o: "50% 100%", svg: G("scale(1.2)", A.rocket({ pilot: A.pilotBear() })) },
-    { id: "pad", x: 240, y: 356, svg: A.launchPad() },
-    { id: "board", x: 66, y: 60, svg: R(-34, -26, 68, 238, 14, "#3d4a5c") + R(-28, -20, 56, 226, 10, "#2d3642") + [5, 4, 3, 2, 1].map((n, i) => G(`translate(0 ${10 + i * 44})`, A.countLight(n, false))).join("") },
-    ...[5, 4, 3, 2, 1].map((n, i) => ({ id: "l" + n, x: 66, y: 70 + i * 44, hid: true, svg: A.countLight(n, true) })),
-    { id: "twinkle", x: 0, y: 0, hid: true, svg: starsList([[60, 300, 1], [150, 60, 1.2], [330, 40, 1], [410, 200, 0.9]], "#fff1b8") },
-  ],
-  steps: [5, 4, 3, 2, 1].map((n, i) => [
-    { a: "show", id: "l" + n, fx: "pop" }, { a: "fx", id: "rocket", fx: i === 4 ? "shake" : "wiggle", at: 200 },
-  ]),
-  finale: [
-    { a: "show", id: "flame", fx: "pop" }, { a: "show", id: "smoke", fx: "pop", at: 100 },
-    { a: "fx", id: "rocket", fx: "launch", at: 500 }, { a: "fx", id: "flame", fx: "launch", at: 500 },
-    { a: "show", id: "twinkle", fx: "twinkle", at: 900 },
-  ],
-  done: { title: "Blast off!", sub: "Your words sent Bo's rocket to space." },
-};
-
+// Rocket Blast is now the hand-built pull-and-release game in public/rocket.js.
 
 // ── 4. Build a Snowman: bottom, middle, head, face, then hat, scarf and arms ──
 const snowmanGame = {
@@ -290,4 +262,4 @@ const tankGame = {
   done: { title: "What a happy fish tank!", sub: "Five fish came to swim." },
 };
 
-export const LITTLE = [rocketGame, snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
+export const LITTLE = [ snowmanGame, trainGame, puppyGame, starsGame, cakeGame, giftsGame, tankGame];
