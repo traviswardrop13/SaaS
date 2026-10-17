@@ -30,7 +30,7 @@ or unrelated redesign. Main merges still need Travis's explicit instruction.
 | Bedtime Stars | 3–4 | Built and browser-verified; production still parked |
 | Birthday Cake | 3–4 | Built and browser-verified; production still parked |
 | Surprise Boxes | 3–4 | Built and browser-verified; production still parked |
-| Fish Tank | 3–4 | Queued |
+| Fish Tank | 3–4 | Built and browser-verified; production still parked |
 
 ## Race Car
 
@@ -554,3 +554,36 @@ five ordinary presents finish at 320px and iPad widths; all five assisted
 presents finish at 393px. Missing-art fallback also works. The old automatic
 reveal scene fails the new test. Syntax, protected art and voice inventory
 checks pass; production remains parked for phone play review.
+
+## Fish Tank
+
+Drag a food pinch from the jar to the water's surface and release a finite
+five-pellet batch. Actual sinking pellets must reach the hungry fish's moving
+mouth; three catches feed it. Missed pellets settle in sand, with unlimited
+fresh attempts. Five visitors have distinct swimming paths. A physically fed
+fish joins the school and the next waiting visitor appears before its word;
+speech never adds a fish. Old food clears at completion so it cannot feed the
+next visitor. The finished school keeps swimming while visible.
+
+The existing five turns and two sayings remain. Speech earns ten seconds of
+slower swimming and a wider visible catch halo. Help preserves released food,
+caught bites and continuous swim phase. In-flight assisted food retains its
+help; overlapping batches use the same visible halo. Backgrounding freezes
+released food/fish and returns uncommitted pinches. Five directions use
+SayPlay's existing quiet voice owner.
+
+One transparent swimming actor is new: 31,750 bytes, with five runtime color
+variants. The quiet room is reused; the live glass aquarium, food and plants
+are native drawing. Exact prompt, origin, export and mouth anchor are in
+`design/coming-soon-games/fishtank-art-notes.txt`.
+
+All 76 browser checks passed, exit 0, including five ordinary feedings at
+320px and iPad widths and five assisted feedings at 393px, real food misses,
+physical swim slowing, preserved airborne food, interruption recovery,
+keyboard, fallback, replay and quiet microphones. Review found and fixed a
+post-expiry overlapping-batch halo mismatch; a real food drop inside the
+surviving halo feeds correctly now and fails against the pre-fix version.
+The old automatic reveal scene also fails. Source/art/voice checks pass.
+All twenty former generated scenes now have hand-built pages/cards, and
+empty-generator checks prove regenerating cannot overwrite any of them.
+Production remains parked for phone play review.
