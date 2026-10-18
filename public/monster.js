@@ -257,7 +257,7 @@
   function stopGesture() { releaseCapture(); held = false; keyHeld = false; previous = null; path = []; accessory = null; keyboardAccessory = false; }
   // the job is finished: the chime and the sparkle now, the step a beat
   // later (tick), so the next word never cuts the celebration short
-  function complete() { if (!canPlay()) return; completed = Math.max(completed, stage + 1); active = false; power = 0; stopGesture(); banner(stage === 7 ? "What a wonderful makeover!" : "Our friend looks happier already!"); api.sfx("correct"); if (api.face) api.face("cheer"); sparkle = BEAT; doneAt = BEAT; hud(); draw(); }
+  function complete() { if (!canPlay()) return; completed = Math.max(completed, stage + 1); active = false; power = 0; stopGesture(); banner(stage === 7 ? "What a wonderful makeover!" : "Looking happier already!"); api.sfx("correct"); if (api.face) api.face("cheer"); sparkle = BEAT; doneAt = BEAT; hud(); draw(); }
   // a real try that did not finish anything: the next rung of the ladder
   function missed() {
     var before = ladder(); misses++; jobMisses++; banner(ladderLine());
@@ -399,7 +399,7 @@
     pause: pause,
     resume: function (playing) { paused = playing === false; last = 0; hud(); },
     reset: reset,
-    BANNERS: (function () { var out = ["A little monster salon", "Our friend looks happier already!", "What a wonderful makeover!", "Smooth fur. Brush the next curl", "A neat tuft. Try the next line", "A makeover made by you!"].concat(LABELS); for (var k in LINES) out = out.concat(LINES[k]); return out; })(),
+    BANNERS: (function () { var out = ["A little monster salon", "Looking happier already!", "What a wonderful makeover!", "Smooth fur. Brush the next curl", "A neat tuft. Try the next line", "A makeover made by you!"].concat(LABELS); for (var k in LINES) out = out.concat(LINES[k]); return out; })(),
     finale: function () { stopGesture(); active = false; power = 0; won = true; doneAt = 0; banner("A makeover made by you!"); hud(); draw(); }
   };
 })();
