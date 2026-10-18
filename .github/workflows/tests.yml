@@ -21,7 +21,10 @@ jobs:
     # game levels and the Practice Board bring eight new suites (six drive a
     # browser), about 15 minutes more. Without the room the job would be
     # cancelled mid-run, which reads as neither pass nor fail.
-    timeout-minutes: 90
+    # 150, not 90 (18 Oct 2026): the eighteen rebuilt Coming soon games
+    # bring eighteen browser suites, and the run on #227 was cancelled at 90
+    # minutes, still running.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
