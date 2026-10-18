@@ -111,7 +111,7 @@ const SUITES = [
   "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
   "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
   "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections
-  "peekabootest.mjs", // PEEK1: physical memory doors and uncounted native-word hints, never loudness accuracy
+  "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
   "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
   "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
   "caketest.mjs", // CAKE1: real circular mixing, caught batter, piping, custom fruit and manually fanned candles
