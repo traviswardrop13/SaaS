@@ -100,6 +100,24 @@ const SUITES = [
   "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "playgamestest.mjs", // PLAYGAMES1: Hoops, Soccer Goal and Dino Dig played through: the word earns the move, every round ends on a win
+  "racecartest.mjs", // real steering, brakes, speech slow-road powers, eight pit stops, fit and interruption safety
+  "flowertest.mjs", // FLOWER1: actual poured drops grow a plant, speech widens the shower, progress survives help
+  "castletest.mjs", // CASTLE1: real crane and lowering controls, speech steadies the rope, eight architectural placements
+  "pizzatest.mjs", // PIZZA1: rolling, real coverage, topping drags, controlled baking, cuts and owned step instructions
+  "spacetest.mjs", // SPACE1: real thrust, steering and soft touchdowns, speech eases gravity without autopiloting
+  "monstertest.mjs", // MONSTER1: real salon gestures, persistent styling and speech-assisted tools
+  "rocketblasttest.mjs", // ROCKET1: pull-and-release physics, five real planet arrivals, speech-widened landing rings
+  "snowmantest.mjs", // SNOWMAN1: real snow rolling and stacking, manual face/clothes and speech-help recovery
+  "traintest.mjs", // TRAIN1: held driving, real station stops and hand-placed passengers, speech-slowed travel
+  "puppytest.mjs", // PUPPY1: moving fur patches washed only by real water particles, speech-steadied puppy
+  "bedtimestarstest.mjs", // STARS1: continuous constellation tracing, real wider speech path and preserved connections
+  "peekabootest.mjs", // PEEK1: Peekaboo on the Say & Play engine: the word hides the picture, a wrong door glows the right one, silence never finds it
+  "fishtanktest.mjs", // FISHTANK1: hand-released sinking food, moving mouth catches and speech-calmed swimming
+  "giftstest.mjs", // GIFTS1: five physical unwrapping mechanisms and speech-assisted handles
+  "caketest.mjs", // CAKE1: real circular mixing, caught batter, piping, custom fruit and manually fanned candles
+  "balloonpartytest.mjs", // BALLOON1: real pump strokes and guided garland deliveries, speech power and quiet turns
+  "robottest.mjs", // ROBOT1: rotate real circuits, speech blueprints, eight assembled parts
+  "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
   "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
   "buddyplaytest.mjs", // BUDDY2: the child plays as their own buddy in eight games; a fox child keeps today's Fruit Slice and Block Stacker pictures; the engines cheer the buddy's own pictures, never Echo's

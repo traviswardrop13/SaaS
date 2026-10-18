@@ -140,6 +140,7 @@ if (!BUILT.length) {
 
 // ── GAMES ──
 const KEYS = new Set(GAMES.map((g) => g.key));
+const SAMPLE_GAME = GAMES[0]?.key, LAST_GAME = GAMES.at(-1)?.key;
 {
   const pages = readdirSync(PUB).filter((f) => /^arcade-[a-z]+\.html$/.test(f));
   const bad = pages.filter((f) => {
@@ -148,7 +149,7 @@ const KEYS = new Set(GAMES.map((g) => g.key));
   });
   ok("every arcade page is exactly the game builder's output for one of its games, or is written by hand and doesn't claim otherwise", pages.length >= GAMES.length && bad.length === 0, bad.join(", "));
   ok("…every generated game has its page", GAMES.every((g) => pages.includes("arcade-" + g.key + ".html")));
-  ok("Hoops, Soccer Goal and Dino Dig are written by hand, and the builder has no game by their names", ["hoops", "soccer", "dino"].every((k) => !KEYS.has(k) && existsSync(PUB + "/arcade-" + k + ".html") && !readFileSync(PUB + "/arcade-" + k + ".html", "utf8").includes(PAGE_MARK)));
+  ok("custom playable games are written by hand, and the builder has no game by their names", ["hoops", "soccer", "dino", "racecar", "treasure", "robot", "balloon", "flower", "castle", "pizza", "space", "monster", "rocket", "snowman", "train", "puppy", "stars", "cake", "gifts", "fishtank"].every((k) => !KEYS.has(k) && existsSync(PUB + "/arcade-" + k + ".html") && !readFileSync(PUB + "/arcade-" + k + ".html", "utf8").includes(PAGE_MARK)));
 }
 ok("every generated game's start card says \"Let's play\" on a teal pill, beside the play triangle for a child who can't read yet",
   GAMES.every((g) => { const h = pageFor(g); return /<link href="\/action\.css" rel="stylesheet">/.test(h) && /<button id="startBtn" class="act-pill"><svg [^>]*aria-hidden="true">[\s\S]*?<\/svg><span>Let's play<\/span><\/button>/.test(h) && !/id="startBtn"[^>]*aria-label/.test(h); }));
@@ -159,20 +160,28 @@ ok("every generated game's start card says \"Let's play\" on a teal pill, beside
   const d = scratch();
   put(d + "/public/assets/sona-stickers.svg", sheet);
   const r = run(CARD_TOOL, d);
-  const cards = r.status === 0 ? readdirSync(d + "/public/assets/games").sort() : [];
+  const cards = r.status === 0 ? art(d + "/public/assets/games") : [];
   const drift = cards.filter((f) => !existsSync(PUB + "/assets/games/" + f) || readFileSync(PUB + "/assets/games/" + f, "utf8") !== readFileSync(d + "/public/assets/games/" + f, "utf8"));
   ok("the Home cards and their sticker groups are exactly what tools/gameart/cards.mjs writes (edit a card there, then rerun it)",
     r.status === 0 && readFileSync(d + "/public/assets/sona-stickers.svg", "utf8") === sheet && drift.length === 0, r.stderr || drift.join(", ") || "the sticker sheet's generated block differs");
   const handCards = PLAYED.every(([k, file]) => !cards.includes(k + ".svg") && existsSync(PUB + file)
     && (sheet.match(new RegExp('<g id="sp-' + k + '"', "g")) || []).length === 1 && sheet.includes('<g id="sp-' + k + '"><image href="' + file + '"'));
   ok("a hand-drawn Home card (games.mjs PLAYED) gets one sticker, pointing at its own picture, and no generated card", PLAYED.length > 0 && handCards);
+  if (GAMES.length) {
   // new card art for a game it still draws: it stops before writing a card or the sheet
-  const e = scratch(), seeded = { "public/assets/sona-stickers.svg": sheet, "public/assets/games/balloon.webp": "RIFF\0\0\0\0WEBPVP8 hand-made", "public/assets/games/rocket.svg": "<svg>an older card</svg>\n" };
+  const e = scratch(), seeded = { "public/assets/sona-stickers.svg": sheet, ["public/assets/games/" + SAMPLE_GAME + ".webp"]: "RIFF\0\0\0\0WEBPVP8 hand-made", "public/assets/games/rocket.svg": "<svg>an older card</svg>\n" };
   for (const [f, body] of Object.entries(seeded)) put(e + "/" + f, body);
   const before = walk(e), r2 = run(CARD_TOOL, e);
-  ok("cards.mjs refuses when a game it still draws has a new card picture (balloon.webp) beside its scene, and writes nothing: no card, no sticker sheet",
+  ok("cards.mjs refuses new card art for a game it still draws, before writing any card or sticker sheet",
     r2.status !== 0 && walk(e).join() === before.join() && Object.entries(seeded).every(([f, body]) => readFileSync(e + "/" + f, "utf8") === body)
-    && /balloon\.webp[\s\S]*PLAYED[\s\S]*Nothing was written/.test(r2.stderr), JSON.stringify({ status: r2.status, stderr: r2.stderr.slice(0, 240) }));
+    && new RegExp(SAMPLE_GAME + "\\.webp[\\s\\S]*PLAYED[\\s\\S]*Nothing was written").test(r2.stderr), JSON.stringify({ status: r2.status, stderr: r2.stderr.slice(0, 240) }));
+  } else {
+    const e = scratch(), seeded = { "public/assets/sona-stickers.svg": sheet, ...Object.fromEntries(PLAYED.map(([k,file]) => ["public" + file, "hand-made " + k])) };
+    for (const [f, body] of Object.entries(seeded)) put(e + "/" + f, body);
+    const before = walk(e), r2 = run(CARD_TOOL, e);
+    ok("with no generated games, cards.mjs leaves every hand-made card and the sheet untouched",
+      r2.status === 0 && walk(e).join() === before.join() && Object.entries(seeded).every(([f, body]) => readFileSync(e + "/" + f, "utf8") === body), r2.stderr);
+  }
 }
 
 // the game builder, run where it can do no harm
@@ -184,7 +193,7 @@ ok("every generated game's start card says \"Let's play\" on a teal pill, beside
     r.status === 0 && readdirSync(d + "/public").sort().join() === GAMES.map((g) => "arcade-" + g.key + ".html").sort().join()
     && GAMES.every((g) => readFileSync(d + "/public/arcade-" + g.key + ".html", "utf8") === pageFor(g)), r.stderr);
   const again = run(GAME_TOOL, d);
-  ok("…and runs again over its own pages", again.status === 0 && /built 17 games/.test(again.stdout), again.stderr);
+  ok("…and runs again over its own pages", again.status === 0 && new RegExp("built " + GAMES.length + " games").test(again.stdout), again.stderr);
 }
 function gameRefusal(label, seeds, args, expect) {
   const d = scratch();
@@ -197,10 +206,19 @@ function gameRefusal(label, seeds, args, expect) {
     JSON.stringify({ status: r.status, wrote: walk(d).filter((f) => !before.includes(f)).slice(0, 3), untouched, stderr: r.stderr.slice(0, 240) }));
 }
 const handPage = "<!DOCTYPE html>\n<!-- Written by hand, not by the generator -->\n<canvas id=\"court\"></canvas>\n";
-gameRefusal("the game builder refuses to overwrite a page written by hand (arcade-balloon.html without its marker), and writes nothing",
-  { "public/arcade-balloon.html": handPage }, [], /arcade-balloon\.html was written by hand[\s\S]*Nothing was written/);
+if (GAMES.length) {
+gameRefusal("the game builder refuses to overwrite a page written by hand without its marker, and writes nothing",
+  { ["public/arcade-" + SAMPLE_GAME + ".html"]: handPage }, [], new RegExp("arcade-" + SAMPLE_GAME + "\\.html was written by hand[\\s\\S]*Nothing was written"));
 gameRefusal("…checking every page before writing any, so a hand page last in the list still stops the first",
-  { "public/arcade-balloon.html": "<!-- " + PAGE_MARK + " -->an older build\n", "public/arcade-monster.html": handPage }, [], /arcade-monster\.html was written by hand/);
+  { ["public/arcade-" + SAMPLE_GAME + ".html"]: "<!-- " + PAGE_MARK + " -->an older build\n", ["public/arcade-" + LAST_GAME + ".html"]: handPage }, [], new RegExp("arcade-" + LAST_GAME + "\\.html was written by hand"));
+} else {
+  const d = scratch(), seeded = Object.fromEntries(PLAYED.map(([k]) => ["public/arcade-" + k + ".html", handPage]));
+  for (const [f, body] of Object.entries(seeded)) put(d + "/" + f, body);
+  const before = walk(d), r = run(GAME_TOOL, d);
+  ok("with no generated games, the game builder leaves every hand-made page untouched",
+    r.status === 0 && /built 0 games/.test(r.stdout) && walk(d).join() === before.join() && Object.entries(seeded).every(([f, body]) => readFileSync(d + "/" + f, "utf8") === body), r.stderr);
+  gameRefusal("asking for a rebuilt Fish Tank cannot overwrite its hand-made page", { "public/arcade-fishtank.html": handPage }, ["fishtank"], /no game called fishtank/);
+}
 gameRefusal("…and a game it doesn't build, such as Hoops", {}, ["hoops"], /no game called hoops/);
 gameRefusal("…or Soccer Goal", {}, ["soccer"], /no game called soccer/);
 gameRefusal("…or Dino Dig", {}, ["dino"], /no game called dino/);

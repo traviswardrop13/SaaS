@@ -1,0 +1,22 @@
+Rocket Blast artwork — 2026-10-17
+Generation: built-in image_gen only; one call per planet. No API or CLI generation.
+New isolated round planet friends; old assets remain unchanged.
+Export operations only: rectangular crop (48,48,1206,1206), proportional resize to384×384, WebP quality88/method6 with exact alpha. No painted, semantic, or alpha cleanup edits.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/rocket-planet-mint-v1.webp", "dimensions": [384, 384], "mode": "RGBA", "bytes": 38976, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-ee663461-a182-4481-82ca-bf2b1e8ec9d6.png", "alpha_bbox": [0, 4, 380, 383], "opaque_bbox": [6, 8, 377, 378]}
+Prompt:
+Use case: stylized-concept
+Asset type: transparent individual sprite for Sona's toddler Rocket Blast game.
+Primary request: one friendly round mint and soft sky-blue cratered planet friend, matching richly painted handcrafted toy storybook game art. A clean circular globe with subtle soft crater dimples; two large kind dark glossy eyes, a tiny happy open smile, gentle rosy cheeks. Rich brushed texture, soft rounded 3D shading, warm upper-left highlights, crisp readable silhouette at small phone size.
+Composition/framing: straight-on complete globe only, centered, nearly fills square image, modest clear padding all around. Exactly one isolated object on genuinely transparent background. No ring, no floating moons, no stars or sparkles, no rocket, no rainbow, no house, no landscape, no ground or detached shadow, no frame, no text, no UI, no logos. Keep the sphere round and all surrounding pixels truly transparent.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/rocket-planet-lavender-v1.webp", "dimensions": [384, 384], "mode": "RGBA", "bytes": 36052, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-e0a4efb4-0ea0-466c-97ec-317fdccac26e.png", "alpha_bbox": [0, 0, 383, 384], "opaque_bbox": [5, 6, 379, 380]}
+Prompt:
+Use case: stylized-concept
+Asset type: transparent individual sprite for Sona's toddler Rocket Blast game.
+Primary request: one friendly round lavender and lilac planet friend, matching richly painted handcrafted toy storybook game art. A clean circular globe with a few broad very subtle curved lavender color bands and tiny rounded crater dimples; two large kind dark glossy eyes, a tiny cheerful smile, gentle rosy cheeks. Rich brushed texture, soft rounded 3D shading, warm upper-left highlights, crisp readable silhouette at small phone size.
+Composition/framing: straight-on complete globe only, centered, nearly fills square image, modest clear padding all around. Exactly one isolated object on genuinely transparent background. No ring, no floating moons, no stars or sparkles, no rocket, no rainbow, no house, no landscape, no ground or detached shadow, no frame, no text, no UI, no logos. Keep the sphere round and all surrounding pixels truly transparent.
+
+Geometry: both planet sprite rectangles are384×384; center(.5,.5) and visible globe radius≈.49 of full spritewidth. Faces are lower-middle. Use the actual gameplay ring as collision target, keeping planet art decorative behind it.
+Existing background rocket-bg.webp800×1200: launchgrate center(.5,.588), circularpad spans roughlyy.54–.69. Use cover-transform to align ship base with that imagepoint, leaving road below for finger pullback.
+Existing clean ship space-lander-idle-v1.webp367×512: alpha bbox(2,3,365,510), physical landingfeet near bottomy.99. Existing Saturn space-planet-ring.webp512×332 should keep its nativeaspect.

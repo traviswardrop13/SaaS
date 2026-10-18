@@ -4,6 +4,7 @@ import { readFileSync, existsSync, statSync } from 'fs';
 import { chromium, ROOT as CURRENT_ROOT, launchOpts } from './_env.mjs';
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||CURRENT_ROOT;
 const origin='http://127.0.0.1:8198';
+const SIMPLE_SCENE=readFileSync(new URL('./fixtures/simpleplay-scene.html',import.meta.url));
 let mode='pcm',requests=0,failures=0;
 const ok=(name,value,detail='')=>{if(!value)failures++;console.log((value?'PASS ':'FAIL ')+name+(value?'':' '+JSON.stringify(detail)));};
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',woff2:'font/woff2'};
@@ -14,7 +15,7 @@ const server=createServer((req,res)=>{
  const file=ROOT+pathname;if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}
  res.writeHead(200,{'Content-Type':mime[file.split('.').pop()]||'application/octet-stream'});
  // Keep parked-game speech delivery covered without adding an app unlock.
- const body=pathname==='/sona.js'?readFileSync(file,'utf8').replace(/((?:bubbles|peekaboo): \{[^\n]*?)comingSoon: true/g,'$1comingSoon: false'):readFileSync(file);res.end(body);
+ const body=pathname==='/sona.js'?readFileSync(file,'utf8').replace(/((?:bubbles|peekaboo): \{[^\n]*?)comingSoon: true/g,'$1comingSoon: false'):pathname==='/arcade-peekaboo.html'?SIMPLE_SCENE:readFileSync(file);res.end(body);
 });
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
 const browser=await chromium.launch(launchOpts());

@@ -1,0 +1,244 @@
+CASTLE BUILDER ART — built-in image_gen only
+
+Reference: public/assets/crafted/home-castle.webp (unchanged)
+
+BACKGROUND PROMPT
+Use case: stylized-concept. Asset type: portrait 2:3 mobile game background for a handcrafted sandcastle crane assembly game. Reference image 1 is STYLE REFERENCE ONLY: match its richly painted soft toy-like children's illustration, warm rounded sand, turquoise sea, bright soft blue sky, gentle puffy clouds, cheerful warm light and clear dimensional texture. Create an EMPTY peaceful beach: soft distant sea and low coastline in the upper third, broad smooth golden sand across the lower two thirds. Leave the whole central sand area and upper-center air clear so a game can draw a crane and build a castle over it. Peripheral tiny shells and beach grasses only at far outer edges, subtle and sparse. No castle, blocks, characters, faces, tools, bucket, shovel, balloons, flags, text, letters, labels, UI, frames, or watermark. No foreground objects blocking the center. Portrait 2:3 composition, opaque full background.
+
+ATLAS PROMPT
+Use case: stylized-concept. Asset type: eight separate transparent game sprites for a front-on sandcastle crane assembly game. Reference image 1 is STYLE REFERENCE ONLY: match its rich painted rounded golden sand-brick castle, friendly handcrafted toy materials, soft warm lighting, small blue/yellow/red roofs. Create EXACTLY EIGHT separated parts on a genuinely transparent 2-column by 4-row sprite sheet with wide clear transparent gutters; one object per cell, no overlap, no labels. Every piece faces directly forward in the SAME orthographic front elevation, camera level, no isometric view or visible side-plane perspective, same material/palette/light. Preserve the clean silhouette of each whole object inside its cell. Row-major cells: (1) central golden sand KEEP BODY with a taller centered round tower body above a low square front wall, a centered dark arched doorway opening below, and tiny windows; NO roof, NO door/gate, NO flags or side towers; keep height/width about1.0. (2) LEFT low crenellated sand wall segment, simple horizontal brick wall, width about1.6×height, straight bottom, NO towers. (3) RIGHT low crenellated sand wall segment matching left, width about1.6×height, straight bottom, NO towers. (4) LEFT outer sand tower: slim tall cylindrical body and small blue cone roof, whole roof included, total height about2×width, no flag. (5) RIGHT outer sand tower matching left: slim tall cylindrical body and small yellow cone roof, whole roof included, total height about2×width, no flag. (6) CENTRAL RED CONE ROOF ONLY for the keep's raised round tower, rounded tiered red roof, broad flat bottom rim, no tower body, no flag; width about1.2×height. (7) single wooden ARCHED GATE, straight flat bottom, warm brown planks and brass fittings, front-facing, width about0.7×height, NO surrounding wall. (8) ONE connected visual group of three SMALL FLAGS on thin poles: blue left at equal low level as yellow right, red center noticeably higher; arrange as a wide shallow crown that can overlay tops of the three assembled towers, no supporting walls or roofs. The group must be fully isolated inside its cell. All eight pieces should read as the same castle when assembled. No characters, text, UI, ground, backdrop, cast shadows outside sprites, additional pieces, duplicate pieces or floating decorations.
+
+EXPORTS
+[
+  {
+    "file": "public/assets/crafted/game/castle-beach-v1.webp",
+    "dimensions": [
+      800,
+      1200
+    ],
+    "mode": "RGB",
+    "bytes": 102616,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-bac62e60-18a9-4595-86d0-bd898d6c1311.png",
+    "operations": "proportional resize to800x1200, WebP quality85 only"
+  },
+  {
+    "file": "public/assets/crafted/game/castle-keep-v1.webp",
+    "dimensions": [
+      361,
+      372
+    ],
+    "mode": "RGBA",
+    "bytes": 23772,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      110,
+      31,
+      471,
+      403
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      1,
+      1,
+      356,
+      372
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-wall-left-v1.webp",
+    "dimensions": [
+      415,
+      190
+    ],
+    "mode": "RGBA",
+    "bytes": 13276,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      541,
+      205,
+      956,
+      395
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      4,
+      409,
+      183
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-wall-right-v1.webp",
+    "dimensions": [
+      406,
+      191
+    ],
+    "mode": "RGBA",
+    "bytes": 13126,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      78,
+      572,
+      484,
+      763
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      1,
+      1,
+      402,
+      188
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-tower-left-v1.webp",
+    "dimensions": [
+      187,
+      393
+    ],
+    "mode": "RGBA",
+    "bytes": 14798,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      653,
+      406,
+      840,
+      799
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      0,
+      1,
+      183,
+      393
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-tower-right-v1.webp",
+    "dimensions": [
+      189,
+      391
+    ],
+    "mode": "RGBA",
+    "bytes": 13724,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      186,
+      770,
+      375,
+      1161
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      3,
+      3,
+      184,
+      386
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-roof-v1.webp",
+    "dimensions": [
+      319,
+      259
+    ],
+    "mode": "RGBA",
+    "bytes": 13574,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      586,
+      869,
+      905,
+      1128
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      6,
+      0,
+      314,
+      253
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-gate-v1.webp",
+    "dimensions": [
+      303,
+      317
+    ],
+    "mode": "RGBA",
+    "bytes": 18990,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      128,
+      1182,
+      431,
+      1499
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      5,
+      3,
+      302,
+      317
+    ],
+    "alpha_preserved": true
+  },
+  {
+    "file": "public/assets/crafted/game/castle-flags-v1.webp",
+    "dimensions": [
+      443,
+      308
+    ],
+    "mode": "RGBA",
+    "bytes": 18746,
+    "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-c2ece812-f932-4c72-b1b4-137622acb111.png",
+    "crop_xyxy": [
+      538,
+      1186,
+      981,
+      1494
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "alpha_bbox": [
+      1,
+      0,
+      442,
+      302
+    ],
+    "alpha_preserved": true
+  }
+]
+
+All piece operations are rectangular crops with10px padding and format export only. Alpha was preserved byte for byte by WebP. No semantic image edits, rotation, mirroring or recoloring. Existing assets unchanged.
+
+Framing notes: front-on golden sand body and matching walls/towers; keep includes a tall centered turret body and a dark doorway opening. Gate includes its own sand arch frame and should overlay the existing arch. Central roof includes a shallow golden crenellated base rim. Flags crop contains three separate poles as one group, with center red flag higher. Background is opaque800x1200 portrait.

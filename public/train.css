@@ -1,0 +1,58 @@
+/* Big held driving controls, with a clear platform and one boarding door. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#trainCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:15px;}
+#dots{gap:5px;padding:13px 10px;}
+#dots i{width:7px;height:7px;}
+#dots i.on{background:var(--act);}
+#trainBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:14px;right:14px;width:fit-content;max-width:calc(100% - 28px);margin:0 auto;padding:8px 13px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.5vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
+#trainPassenger{position:absolute;z-index:4;transform:translate(-50%,-50%);padding:0;border:3px solid transparent;background:transparent;box-shadow:none;border-radius:40%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;}
+#trainPassenger:active{cursor:grabbing;}
+#trainPassenger[hidden]{display:none;}
+#trainPassenger:disabled{cursor:default;}
+#trainPassenger:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;background:rgba(255,251,225,.1);}
+#trainControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:grid;grid-template-columns:64px minmax(110px,1fr) 54px;gap:10px;align-items:stretch;}
+#trainControls button{min-height:65px;touch-action:none;}
+#trainBack,#trainHearStep{display:grid;place-items:center;border-radius:23px;padding:8px;}
+#trainBack svg{width:30px;height:30px;}#trainHearStep svg{width:25px;height:25px;}
+#trainForward{display:flex;align-items:center;justify-content:center;gap:9px;padding:8px 12px;font-size:22px;font-family:"Baloo 2",sans-serif;font-weight:800;line-height:1;}
+#trainForward svg{width:32px;height:32px;flex:none;}
+#trainControls button[aria-pressed=true]{transform:translateY(4px);box-shadow:0 1px 0 var(--act-d);}
+#trainBack[aria-pressed=true]{box-shadow:0 1px 0 var(--cream-line);}
+#trainControls button:disabled,#trainHelp:disabled{opacity:.52;cursor:default;}
+#trainHelp{position:absolute;z-index:5;right:16px;bottom:calc(106px + env(safe-area-inset-bottom));width:155px;min-height:59px;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 10px;touch-action:manipulation;}
+#trainHelp img{width:32px;height:39px;object-fit:contain;flex:none;}
+.train-help-label{display:flex;flex-direction:column;gap:5px;align-items:center;min-width:0;}
+.train-help-label>span{font-family:"Baloo 2",sans-serif;font-size:18px;font-weight:800;line-height:1.05;}
+#trainPower{display:block;width:76px;height:4px;background:rgba(255,255,255,.28);border-radius:99px;overflow:hidden;}
+#trainPower[hidden]{display:none;}
+#trainPowerFill{display:block;height:100%;background:var(--cream-card);}
+#trainStatus{position:absolute;z-index:3;left:16px;bottom:calc(106px + env(safe-area-inset-bottom));width:calc(100% - 202px);max-width:180px;min-height:45px;padding:8px 10px;display:flex;align-items:center;gap:8px;background:var(--cream-card);border-radius:17px;box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
+#trainStatusText{font-family:"Baloo 2",sans-serif;font-size:15px;font-weight:800;line-height:1.05;color:var(--cream-ink);}
+#trainLamp{display:block;width:10px;height:10px;border-radius:50%;background:#c7b89d;flex:none;box-shadow:0 0 0 3px var(--cream-line);}
+#trainLamp.ready{background:#3e9c9d;box-shadow:0 0 0 3px #daebe2;}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #trainControls,body:not([data-phase=play]) #trainHelp,body:not([data-phase=play]) #trainStatus,body:not([data-phase=play]) #trainPassenger{visibility:hidden;pointer-events:none;}
+.train-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:29px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:13px;}#top{gap:6px;}#dots{gap:4px;padding:13px 8px;}#dots i{width:6px;height:6px;}#trainControls{left:12px;right:12px;gap:8px;grid-template-columns:54px minmax(100px,1fr) 48px;}#trainForward{padding:8px;gap:6px;font-size:21px;}#trainForward svg{width:28px;height:28px;}#trainHelp{right:12px;width:138px;padding:7px;gap:4px;}#trainHelp img{width:29px;height:35px;}.train-help-label>span{font-size:16px;}#trainStatus{left:12px;width:calc(100% - 178px);padding:7px 9px;gap:6px;}#trainStatusText{font-size:14px;}#trainBanner{font-size:17px;padding:7px 11px;}}
+@media(max-height:640px){#trainBanner{top:calc(69px + env(safe-area-inset-top));}#trainControls{bottom:calc(14px + env(safe-area-inset-bottom));}#trainControls button{min-height:57px;}#trainHelp,#trainStatus{bottom:calc(91px + env(safe-area-inset-bottom));}#trainHelp{min-height:52px;}.train-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:26px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(7px + env(safe-area-inset-top));}#trainBanner{top:calc(60px + env(safe-area-inset-top));font-size:15px;padding:5px 11px;}#trainControls{left:14px;right:164px;bottom:calc(10px + env(safe-area-inset-bottom));grid-template-columns:54px minmax(90px,1fr) 44px;gap:8px;}#trainControls button{min-height:48px;}#trainForward{padding:5px 9px;font-size:19px;}#trainForward svg{height:27px;width:27px;}#trainHelp{right:14px;bottom:calc(10px + env(safe-area-inset-bottom));width:138px;min-height:48px;padding:5px 8px;}#trainHelp img{height:32px;width:27px;}.train-help-label>span{font-size:15px;}#trainStatus{display:none;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.train-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}
+/* the help ladder's level 2 and up: the button to hold, and the friend to drag, glow */
+#trainControls button.guide{outline:4px solid #ffd66a;outline-offset:3px;animation:trainGuide 1.1s ease-in-out infinite;}
+#trainPassenger.guide{border-color:#ffd66a;box-shadow:0 0 0 4px rgba(255,214,106,.45),0 0 22px #ffe08a;animation:trainGuide 1.1s ease-in-out infinite;}
+@keyframes trainGuide{0%,100%{outline-color:#ffd66a;filter:none;}50%{outline-color:#fff0b3;filter:brightness(1.12);}}
+@media(prefers-reduced-motion:reduce){#trainControls button.guide,#trainPassenger.guide{animation:none;}}

@@ -1,0 +1,174 @@
+Robot Builder art exports
+Mode: built-in image_gen only; no API/CLI runner.
+Reference: /Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/home-robot.webp
+Workshop origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-60561e3f-fd07-4f72-a80f-d0372bfca4c5.png
+Transparent atlas origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-42255a36-be58-430f-86e9-1e0d40b63672.png
+Export: workshop WebP quality85; pieces WebP quality88; method6. Rectangular crops only; no repainting, alpha thresholding, mirroring, or other semantic edits. Alpha is byte-for-byte preserved by export.
+Atlas contained exactly8 disconnected solid components. A few extend slightly across nominal grid boundaries, so each bounding rectangle includes12px padding rather than clipping equal grid cells. Alpha>8 was used solely to locate bounds; original pixel alpha remained unchanged.
+Handedness uses viewer-left/viewer-right. The atlas swapped the arm cells; filenames select the correct shoulder orientation. The two legs use their original cell order.
+
+Visual QA: each exported piece inspected individually and composited over cream in /tmp/sona-robot-art-contact.png. Clean usable silhouettes; no overlapping neighboring pieces. The atlas stores colored RGB beneath transparent pixels; the actual alpha-composited assets have no colored background. Eight alpha channels were checked byte-for-byte against their original PNG crops. Workshop export inspected separately. Total project payload:243264 bytes for all9 assets.
+
+Export metadata:
+[
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-workshop-v1.webp",
+    "size": [
+      1024,
+      1536
+    ],
+    "bytes": 97272,
+    "mode": "RGB"
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-leg-left-v1.webp",
+    "size": [
+      237,
+      351
+    ],
+    "bytes": 15938,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      157,
+      29,
+      394,
+      380
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-leg-right-v1.webp",
+    "size": [
+      236,
+      351
+    ],
+    "bytes": 16128,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      631,
+      29,
+      867,
+      380
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-torso-v1.webp",
+    "size": [
+      453,
+      359
+    ],
+    "bytes": 28720,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      47,
+      406,
+      500,
+      765
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-arm-left-v1.webp",
+    "size": [
+      299,
+      375
+    ],
+    "bytes": 18588,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      112,
+      792,
+      411,
+      1167
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-arm-right-v1.webp",
+    "size": [
+      294,
+      372
+    ],
+    "bytes": 18398,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      611,
+      403,
+      905,
+      775
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-head-v1.webp",
+    "size": [
+      520,
+      319
+    ],
+    "bytes": 25632,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      496,
+      829,
+      1016,
+      1148
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-antenna-v1.webp",
+    "size": [
+      204,
+      287
+    ],
+    "bytes": 11014,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      177,
+      1204,
+      381,
+      1491
+    ]
+  },
+  {
+    "path": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/robot-heart-v1.webp",
+    "size": [
+      254,
+      221
+    ],
+    "bytes": 11574,
+    "alpha": [
+      0,
+      254
+    ],
+    "crop": [
+      634,
+      1237,
+      888,
+      1458
+    ]
+  }
+]
+
+Workshop prompt:
+Use case: illustration-story. Asset type: painted background for the Sona children's toy-robot assembly game. Create a portrait 2:3 illustration, 1024 by 1536. A sunny cozy handcrafted toy workshop, warm ivory plaster, honey-colored wood and restrained teal accents. Match a richly painted tactile children's storybook / soft clay-toy world, gently rounded wood, brushed paint, soft daylight and warm shading, detailed but calm. A large EMPTY clear wooden workbench centered across the lower half, shown nearly front-on with a little view of its top. Leave the central 65 percent of the entire picture visually simple and unobstructed so the real game can draw its robot and circuit puzzle there. Small shelves and a few simple toy-making tools only at the extreme side edges; soft window light at the back; quiet pale background behind the work area. No robots, people, birds, animals, faces or other characters. No wires, circuits, UI, buttons, labels, lettering, digits, logos or text. Do not paint any object in the central assembly space. No dramatic perspective, no large objects in foreground. Complete opaque background, not transparent.
+
+Robot-pieces prompt:
+Use case: precise-object-edit. Input image 1 is the reference edit target: use ONLY the friendly robot's identity and painted clay-toy material from that image. Transform it into a transparent asset atlas of EIGHT SEPARATE DISASSEMBLED ROBOT PIECES, no Echo bird or garden. Portrait 2:3 canvas, exactly TWO equal columns by FOUR equal rows; each piece centered in its own equal rectangular cell, with ample transparent padding and no overlap across cells. NO grid lines or labels. Same rounded cyan / warm ivory / brass-yellow toy robot across all eight parts, matte tactile painted finish, soft front lighting, crisp usable silhouettes, true FRONT-FACING orthographic assembly view, NOT three-quarter, no cast ground shadows. Cell order in reading order must be: top row LEFT LEG WITH FOOT, RIGHT LEG WITH FOOT; second row TORSO, LEFT ARM; third row RIGHT ARM, HEAD; bottom row ANTENNA, HEART BATTERY. Left/right here mean viewer's left/right in the assembled front-facing robot. Legs: short cyan jointed legs and chunky blue feet with ivory ankle cuffs and small brass accents, upright assembly orientation, foot fronts toward camera. Torso: rounded ivory chest and cyan side/bottom panels, tiny cyan/yellow lights, a small central heart-shaped battery recess, absolutely no arms, head, legs or antenna attached. Left arm: shoulder connection at upper right edge toward torso, ivory cuff, curved cyan arm and friendly three-finger hand hanging down toward viewer-left. Right arm: matching mirror, shoulder connection at upper left edge, hand down toward viewer-right. Head: rounded ivory casing with cyan top/side panels and brass ear pods, dark teal faceplate, two big kind mint eyes and a small smile, NO antenna attached. Antenna: separate little ivory/cyan base, short stem, round brass-yellow glowing bulb. Heart battery: single rounded brass-yellow and teal toy heart-shaped battery with subtle warm glow, not attached to another part. Every part is isolated on genuinely transparent background, with no white/checkerboard/color backing, no text, extra screws, tools, wires, scene, UI, characters or additional pieces. Keep the eight cells completely separate and equal-sized so they can be cropped mechanically. The limbs and body must form the SAME robot when placed together.
+

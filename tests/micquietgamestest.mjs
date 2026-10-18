@@ -50,6 +50,7 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // goVoice.delay holds the answer that long and goVoice.keep "0" makes it a
 // stand-in (one scenario); every other line gets 503.
 const GO_BYTES = 10000, GO_LEN = GO_BYTES / 2, goVoice = { delay: 0, keep: "1", asked: 0 };
+const SIMPLE_SCENE = readFileSync(new URL('./fixtures/simpleplay-scene.html', import.meta.url));
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
   if (url.pathname === "/api/tts") {
@@ -71,7 +72,7 @@ const server = createServer((req, res) => {
   // (#140). Their engines still ship, so they are still audited here: the
   // test server flips only their comingSoon flag in the sona.js it serves —
   // the same fixture simpleplaytest uses; the app has no runtime unlock.
-  res.end(url.pathname === "/sona.js" ? readFileSync(file, "utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false") : readFileSync(file));
+  res.end(url.pathname === "/sona.js" ? readFileSync(file, "utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false") : url.pathname === "/arcade-peekaboo.html" ? SIMPLE_SCENE : readFileSync(file));
 });
 await new Promise((resolve) => server.listen(8231, "127.0.0.1", resolve));
 const browser = await chromium.launch(launchOpts());

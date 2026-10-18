@@ -21,8 +21,12 @@
 //   - a hidden page pauses the game and needs a tap to come back;
 //   - a locked game bounces before any mic or sound starts;
 //   - the catalog: ten games in each age group, each with its page, its card
-//     picture and its sticker, none in the daily adventure, and every page is
-//     exactly what tools/gameart/build.mjs writes;
+//     picture and its sticker, none in the daily adventure, read from the
+//     catalog itself (since 16 Oct 2026 every game is rebuilt by hand and the
+//     generator writes none; the seventeen rebuilt by Codex stay parked, and
+//     each has its own suite). The engine-only scenarios run on two fixed
+//     scenes in tests/fixtures/ (served in place of arcade-treasure.html and
+//     arcade-balloon.html), so they keep testing the word turn itself;
 //   - HOOPS (26 Sep 2026), the first game rebuilt to be played: no ball
 //     before the word, a tap is not a shot, a miss never costs a word, the
 //     help grows until every ball goes in, a pause holds the same ball, eight
@@ -58,6 +62,7 @@
 // The device is fake (no real mic, speaker or voice), on one shared clock, the
 // same harness as micquietgamestest.
 import { createServer } from "http";
+import { fakeDevice } from "./_sayplaydevice.mjs";
 import { existsSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
@@ -71,7 +76,7 @@ const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "
 // service that is slow, as v4 Turbo can be on launch day).
 const tts = { mode: "down", calls: 0, texts: [], delay: 0 };
 const server = createServer((req, res) => {
-  const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
+  const url = new URL(req.url, BASE), file = url.pathname === "/_sayplay-scene.html" ? path.join(SOURCE_ROOT, "..", "tests", "fixtures", "sayplay-scene.html") : url.pathname === "/_sayplay-little-scene.html" ? path.join(SOURCE_ROOT, "..", "tests", "fixtures", "sayplay-little-scene.html") : path.join(ROOT, url.pathname);
   if (url.pathname === "/api/tts" && tts.mode !== "down") {
     tts.calls++;
     const standin = tts.mode === "standin";
@@ -93,158 +98,22 @@ let assertions = 0, failures = 0;
 function ok(name, pass, detail = "") { assertions++; if (!pass) failures++; console.log((pass ? "PASS " : "FAIL ") + name + (pass ? "" : " → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
 async function scenario(name, fn) { try { await fn(); } catch (e) { ok(name + " has no harness/page exception", false, e.stack); } }
 
-function fakeDevice(cfg) {
-  const T0 = performance.now();
-  if(cfg.fastPlay) Math.random=()=>0.46; // deterministic exhausted-bank fallback
-  const now = () => (performance.now() - T0) / 1000;
-  const h = window.__quiet = { cfg, now, mics: [], sounds: [], sfx: [], gains: [], speech: [], requests: 0, inflight: 0, gumPlan: [], voice: false, hidden: false, speaking: 0, voicedFrames: 0, leakFrames: 0 };
-  // Two counts (24 Sep 2026). live(): tracks the page holds right now, which
-  // is what "the mic is open and listening" waits on. micOn(): the audit's
-  // count, which ALSO holds a request still being answered: on an iPhone
-  // recording starts (and the phone flips into call audio) before
-  // getUserMedia returns, so a word that starts while a request is pending is
-  // already under the mic although the page never sees a live track. This
-  // audit used to count a mic only once its request resolved, and missed
-  // Echo's word starting under exactly that.
-  h.live = () => h.mics.filter((m) => m.start != null && m.end == null).length;
-  h.micOn = () => h.mics.filter((m) => m.end == null).length;
-  h.playingNow = () => { const t = now(); return h.speaking > 0 || h.sounds.some((s) => s.start <= t && t < s.end); };
-  Object.defineProperty(document, "hidden", { configurable: true, get: () => h.hidden });
-  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (h.hidden ? "hidden" : "visible") });
-  h.background = () => { h.hidden = true; document.dispatchEvent(new Event("visibilitychange")); };
-  h.foreground = () => { h.hidden = false; document.dispatchEvent(new Event("visibilitychange")); };
-
-  Object.defineProperty(navigator, "permissions", { configurable: true, value: { query: () => Promise.resolve({ state: cfg.permission || "granted" }) } });
-  // A request answers at once unless scripted: cfg.gumDelay, or one
-  // h.gumPlan entry per request ({ delay } or { delay, fail }), models a
-  // phone that takes a while to answer (an iPhone switching into call audio,
-  // a permission sheet) or an OS that cuts a pending request short. The
-  // page's track goes live only when the answer arrives, but the audit's mic
-  // interval runs from `asked` (the request going out) to `end` (the track
-  // stopped, or the request failing).
-  navigator.mediaDevices.getUserMedia = () => {
-    h.requests++;
-    if (cfg.micMode === "deny") return Promise.reject(new DOMException("Denied", "NotAllowedError"));
-    const plan = h.gumPlan.shift() || { delay: cfg.gumDelay || 0 };
-    const rec = { asked: now(), start: null, end: null }; h.mics.push(rec);
-    const open = () => {
-      rec.start = now();
-      const track = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; rec.end = now(); } } };
-      rec.track = track;
-      return { getTracks: () => [track], getAudioTracks: () => [track] };
-    };
-    if (!plan.delay && !plan.fail) return Promise.resolve(open());
-    h.inflight++;
-    return new Promise((resolve, reject) => setTimeout(() => {
-      h.inflight--;
-      if (plan.fail) { rec.end = now(); reject(new DOMException("Interrupted", "AbortError")); } else resolve(open());
-    }, plan.delay || 0));
-  };
-
-  function param(v) {
-    const p = { _v: v, sets: [] };
-    p.setValueAtTime = (x, t) => p.sets.push(["set", x, t]);
-    p.linearRampToValueAtTime = (x, t) => p.sets.push(["lin", x, t]);
-    p.exponentialRampToValueAtTime = (x, t) => p.sets.push(["exp", x, t]);
-    p.setTargetAtTime = () => {}; p.cancelScheduledValues = () => {};
-    Object.defineProperty(p, "value", { get: () => p._v, set: (x) => { p._v = x; p.sets.push(["value", x]); } });
-    return p;
-  }
-  function endAt(t) { return t == null || t < now() ? now() : t; }
-  function AC() { this.state = "running"; this.sampleRate = 48000; this.destination = {}; }
-  Object.defineProperty(AC.prototype, "currentTime", { get: now });
-  AC.prototype.resume = function () { this.state = "running"; return Promise.resolve(); };
-  AC.prototype.suspend = function () { this.state = "suspended"; return Promise.resolve(); };
-  AC.prototype.close = function () { this.state = "closed"; return Promise.resolve(); };
-  AC.prototype.createGain = function () { const g = { gain: param(1), at: now(), connect() {}, disconnect() {} }; h.gains.push(g); return g; };
-  AC.prototype.createOscillator = function () {
-    const o = { type: "sine", frequency: param(440), connect() {}, disconnect() {}, onended: null,
-      start(t) { o.rec = { kind: "osc", start: Math.max(now(), t || 0), end: Infinity, live: h.micOn() }; h.sounds.push(o.rec); },
-      stop(t) { if (o.rec) o.rec.end = Math.min(o.rec.end, endAt(t)); } };
-    return o;
-  };
-  AC.prototype.createBuffer = function (c, n, sr) { sr = sr || this.sampleRate; return { length: n, sampleRate: sr, duration: n / sr, numberOfChannels: c, getChannelData: () => new Float32Array(n) }; };
-  AC.prototype.createBufferSource = function () {
-    const s = { buffer: null, connect() {}, disconnect() {}, onended: null,
-      start(t) {
-        if (!s.buffer || s.buffer.length <= 1) return;   // the iOS unlock blip: one silent sample
-        s.rec = { kind: "buf", len: s.buffer.length, start: Math.max(now(), t || 0), live: h.micOn() };
-        s.rec.end = s.rec.start + s.buffer.duration; h.sounds.push(s.rec);
-        s.timer = setTimeout(() => { if (s.onended) s.onended(); }, (s.rec.end - now()) * 1000);
-      },
-      stop(t) { if (s.rec) s.rec.end = Math.min(s.rec.end, endAt(t)); clearTimeout(s.timer); if (s.onended) s.onended(); } };
-    return s;
-  };
-  AC.prototype.createBiquadFilter = function () { return { type: "lowpass", Q: param(1), frequency: param(350), gain: param(0), connect() {}, disconnect() {} }; };
-  AC.prototype.createMediaStreamSource = function (stream) { return { stream, on: false, connect(an) { an.src = this; this.on = true; }, disconnect() { this.on = false; } }; };
-  AC.prototype.createAnalyser = function () {
-    const an = { fftSize: 2048, src: null, context: this, connect() {}, disconnect() {} };
-    Object.defineProperty(an, "frequencyBinCount", { get: () => an.fftSize / 2 });
-    // What the mic hears: the child when h.voice is on — and ANY sound the
-    // page is playing right now, because a phone's mic hears its own speaker.
-    an.hears = () => { if (!an.src || !an.src.on) return false; const tr = an.src.stream.getTracks()[0]; return tr.readyState === "live" && (h.voice || h.playingNow()); };
-    an.getByteTimeDomainData = (d) => { const v = an.hears(); if (v) h.voicedFrames++; if (v && !h.voice) h.leakFrames++; for (let i = 0; i < d.length; i++) d[i] = v ? (i % 2 ? 200 : 56) : 128; };
-    // a low, voiced shape (energy under ~1 kHz): the family an /r/ child's
-    // voice — and Sona's chimes — would show
-    an.getByteFrequencyData = (d) => { const v = an.hears(); d.fill(0); if (v) for (let i = 1; i <= 10 && i < d.length; i++) d[i] = 220; };
-    return an;
-  };
-  window.AudioContext = window.webkitAudioContext = AC;
-  // A media element is a sound like any other (the iPhone app plays Echo's
-  // voice and Bubble Pop's pops this way): it joins the audit, so one that
-  // starts under a mic, or rings into the next one, is caught. cfg.refuseMedia
-  // models a phone that will not start one.
-  HTMLMediaElement.prototype.play = function () {
-    if (cfg.refuseMedia) return Promise.reject(new DOMException("refused", "NotAllowedError"));
-    const t = now(); h.sounds.push({ kind: "media", start: t, end: t + (isFinite(this.duration) && this.duration > 0 ? this.duration : 0.4), live: h.micOn() });
-    return Promise.resolve();
-  };
-
-  if (window.speechSynthesis) {
-    const pending = new Set();
-    speechSynthesis.speak = (u) => {
-      const rec = { kind: "speech", text: String(u.text), start: now(), end: Infinity, live: h.micOn() };
-      h.sounds.push(rec); h.speech.push(rec.text); h.speaking++; pending.add(rec);
-      rec.timer = setTimeout(() => { if (!pending.delete(rec)) return; rec.end = now(); h.speaking--; if (u.onend) u.onend(); }, cfg.speechMs || 400);
-    };
-    speechSynthesis.cancel = () => { pending.forEach((rec) => { clearTimeout(rec.timer); rec.end = now(); h.speaking--; }); pending.clear(); };
-    speechSynthesis.getVoices = () => [];
-  }
-
-  // Sona's own chimes stay real (they reach the fake Web Audio above); each
-  // call is also logged by name, with how many mic tracks were live
-  let sona;
-  Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set(value) {
-    sona = value;
-    value.confetti = () => {};
-    Object.keys(value.sfx || {}).forEach((k) => { const real = value.sfx[k]; if (typeof real !== "function" || k === "stop") return; value.sfx[k] = function () { h.sfx.push({ name: k, at: now(), live: h.micOn() }); return real.apply(this, arguments); }; });
-  } });
-
-  if (!localStorage.getItem("sona.test.sayplaySeed")) {
-    localStorage.setItem("sona.test.sayplaySeed", "1");
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
-    // earlyAdopter: a family holding every game, so this holds whichever way pricing points
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: cfg.age || "7", focusSounds: ["R"], onboarded: true, earlyAdopter: cfg.premium !== false,
-      voiceOn: cfg.voiceOn !== false, soundOn: cfg.soundOn !== false, volume: cfg.volume == null ? 0.6 : cfg.volume }));
-    if (cfg.micok) localStorage.setItem("sona.micok", "1");
-    // anything else a scenario starts with (Dino Dig's round of dinosaurs)
-    if (cfg.seed) Object.keys(cfg.seed).forEach((k) => localStorage.setItem(k, cfg.seed[k]));
-    if (cfg.paid) {
-      sessionStorage.setItem("sona.paidui", "1");
-      localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 100 * 3600000, done: Date.now() - 90000 }));
-    }
-  }
-}
-
+// Shared device lets each rebuilt game exercise the same real speech engine.
 // The engine's own checks run on the catalog as it will be when a game comes
 // back: the same sona.js, with each Say & Play game's comingSoon lifted.
 const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/\bsay: true, comingSoon: true, /g, "say: true, ");
 async function fresh(file, cfg = {}) {
+  // Engine-only checks keep a fixed scene as the real catalog games are rebuilt.
+  if (file === "arcade-treasure.html") file = "_sayplay-scene.html";
+  if (file === "arcade-balloon.html") file = "_sayplay-little-scene.html";
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const url = route.request().url();
     // This fixture completes only the finger move. Real Hoops physics are
     // tested in playgamestest; here it isolates the eight-word rotation.
+    // A played game with an optional help power (the seventeen rebuilt on
+    // 16 Oct 2026 each have one): it records what the engine asks of it.
+    if (cfg.helpStub && url.split("?")[0] === BASE + "/dino.js") return route.fulfill({status:200,contentType:"text/javascript",body:"window.Dino={init:function(api){window.__stub={api:api,words:0,helps:0,pauses:0,resumes:[]};},onWord:function(){__stub.words++;},onHelp:function(){__stub.helps++;},pause:function(){__stub.pauses++;},resume:function(p){__stub.resumes.push(p);},finale:function(){},reset:function(){}};"});
     if (cfg.fastPlay && url.split("?")[0] === BASE + "/dino.js") return route.fulfill({status:200,contentType:"text/javascript",body:"window.Dino={init:function(api){this.api=api;},onWord:function(){this.api.done();},pause:function(){},resume:function(){},finale:function(){},reset:function(){}};"});
     if (cfg.unparked && url.split("?")[0] === BASE + "/sona.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: UNPARKED_SONA });
     return url.startsWith(BASE + "/") ? route.continue() : route.abort();
@@ -327,12 +196,20 @@ const voiceScript = (page, spans) => page.evaluate((spans) => new Promise((done)
 }), spans);
 
 // ── the catalog ──
-const { GAMES } = await import("../tools/gameart/games.mjs");
+const { GAMES, PLAYED } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
-const KEYS = GAMES.map((g) => g.key);
-// Hoops, Soccer Goal and Dino Dig are rebuilt by hand (public/hoops.js,
-// soccer.js, dino.js), so the generator writes seventeen
-ok("seventeen scene games, Hoops, Soccer Goal and Dino Dig: ten for each age group", GAMES.length === 17 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 7 && !GAMES.some((g) => ["hoops", "soccer", "dino"].includes(g.key)));
+// The generator writes no page now: every game was rebuilt by hand (Hoops,
+// Soccer Goal and Dino Dig first, the other seventeen on 16 Oct 2026). So the
+// catalog checks below read the catalog itself: every "say: true" game in
+// sona.js, with its group and name from the same line. GAMES (the generator's
+// own list) still drives the generator checks, and is empty today.
+const SONA_SRC = readFileSync(ROOT + "/sona.js", "utf8");
+const SAY = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{ name: "([^"]+)",[^\n]*\bgroup: "(simple|arcade)",[^\n]*\bsay: true\b[^\n]*$/gm)].map((m) => ({ key: m[1], title: m[2], group: m[3] }));
+const KEYS = SAY.map((g) => g.key);
+ok("the catalog still has the twenty Say & Play games, ten for each age group", KEYS.length === 20 && SAY.filter((g) => g.group === "simple").length === 10 && new Set(KEYS).size === 20, KEYS);
+// Custom playable games have their own browser suites. Keep the remaining
+// generated scenes accounted for as each old animation is rebuilt.
+ok("all twenty picture games remain accounted for as scenes become real games", GAMES.length + PLAYED.length === 20 && new Set([...GAMES.map(g => g.key), ...PLAYED.map(([key]) => key)]).size === 20 && !GAMES.some(g => PLAYED.some(([key]) => key === g.key)));
 {
   const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
   ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));
@@ -445,6 +322,30 @@ await scenario("theme rotation",async()=>{
     noOverlap("theme rotation",await log(page));clean("theme rotation",errors);
   } finally {await context.close();}
 });
+// A help ask (api.practice: a played game's optional power) never holds the
+// move the word already earned: silence, a pause or "Back to the game" each
+// give it straight back, with no power and no step.
+await scenario("help ask",async()=>{
+  const {context,page,errors}=await fresh("arcade-dino.html",{age:"7",micok:true,permission:"granted",speechMs:80,helpStub:true});
+  try {
+    await page.locator("#startBtn").click();await sayIt(page);
+    ok("help: the word earns the move",await until(page,()=>window.__sayplay.phase==="play"&&__stub.words===1,4000));
+    const asked=await page.evaluate(()=>__stub.api.practice());
+    ok("help: the ask pauses the move and offers a way back",asked===true&&await until(page,()=>__stub.pauses===1&&window.__sayplay.phase==="turn",3000)&&await page.locator("#helpBack").isVisible());
+    ok("help: silence gives the earned move back, with no power and no step",await until(page,()=>window.__sayplay.phase==="play",16000)&&await page.evaluate(()=>__stub.helps===0&&__stub.resumes[__stub.resumes.length-1]===true&&window.__sayplay.step===0)&&(await live(page))===0&&!(await page.locator("#helpBack").isVisible()));
+    await page.evaluate(()=>__stub.api.practice());await until(page,()=>window.__sayplay.phase==="turn",3000);
+    await page.locator("#helpBack").click();
+    ok("help: \"Back to the game\" does the same at once",await until(page,()=>window.__sayplay.phase==="play",2000)&&await page.evaluate(()=>__stub.helps===0&&window.__sayplay.step===0)&&(await live(page))===0);
+    await page.evaluate(()=>__stub.api.practice());await until(page,()=>window.__sayplay.phase==="turn",3000);
+    await page.evaluate(()=>__quiet.background());await page.evaluate(()=>__quiet.foreground());await page.locator("#resume").click();
+    ok("help: a pause during the ask comes back to the move, not the ask",await until(page,()=>window.__sayplay.phase==="play",3000)&&await page.evaluate(()=>__stub.helps===0&&window.__sayplay.step===0));
+    await page.evaluate(()=>__stub.api.practice());await sayIt(page);
+    ok("help: two sayings earn the power, and the same move goes on",await until(page,()=>__stub.helps===1&&window.__sayplay.phase==="play",4000)&&await page.evaluate(()=>window.__sayplay.step===0)&&!(await page.locator("#helpBack").isVisible()));
+    await page.evaluate(()=>__stub.api.done());
+    ok("help: the move then finishes the step as before",await until(page,()=>window.__sayplay.step===1,2000));
+    noOverlap("help ask",await log(page));clean("help ask",errors);
+  } finally {await context.close();}
+});
 await scenario("cancelled intro",async()=>{
   const {context,page,errors}=await fresh("arcade-hoops.html",{age:"7",micok:true,permission:"granted",speechMs:800});
   try {
@@ -469,7 +370,8 @@ for (const g of GAMES) {
   ok(g.key + ": its card picture ships", existsSync(ROOT + "/assets/games/" + g.key + ".svg"));
 }
 const sheet = readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8");
-ok("every game's sticker is in the sheet and points at its card picture", KEYS.every((k) => sheet.includes('<g id="sp-' + k + '"><image href="/assets/games/' + k + '.svg"')));
+ok("every game's sticker is in the sheet and points at its card picture", GAMES.every((g) => sheet.includes('<g id="sp-' + g.key + '"><image href="/assets/games/' + g.key + '.svg"'))
+  && PLAYED.every(([k, art]) => sheet.includes('<g id="sp-' + k + '"><image href="' + art + '"') && existsSync(ROOT + art)) && KEYS.every((k) => sheet.includes('<g id="sp-' + k + '">')));
 const engine = readFileSync(ROOT + "/sayplay.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 ok("the engine writes no practice: no attempt, rep, session, rung, rotation, sticker or coin", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|awardNextSticker|awardRandomSticker|addCoins|mintCoins|addTickets|chargeAdd|saveRecording|captureClip/.test(engine));
 ok("the engine records nothing and uploads nothing: no recorder, no upload", !/MediaRecorder|sendProgress|repsBeacon|FormData|sendBeacon/.test(engine));
@@ -498,10 +400,10 @@ await scenario("catalog in the app", async () => {
       stickers: keys.map((k) => Sona.gameSticker(k)[0]),
       cards: [...document.querySelectorAll("#activityGroups button[data-game]")].map((b) => b.dataset.game),
     }), KEYS);
-    ok("every game is in the catalog, opens its own page and says it is Say & Play", cat.acts.every((a, i) => a && a.say === true && a.go === "/arcade-" + KEYS[i] + ".html" && a.group === GAMES[i].group && a.name === GAMES[i].title));
+    ok("every game is in the catalog, opens its own page and says it is Say & Play", cat.acts.length === 20 && cat.acts.every((a, i) => a && a.say === true && a.go === "/arcade-" + KEYS[i] + ".html" && a.group === SAY[i].group && a.name === SAY[i].title));
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
-      GAMES.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
+      SAY.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
     // playable games first, then the parked ones, none of them with a day
     // since 15 Oct 2026 (Travis: "put coming soon")
     const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
@@ -521,13 +423,17 @@ await scenario("catalog in the app", async () => {
 });
 
 // ── a parked game's page sends a typed address home before anything starts ──
-for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((readFileSync(ROOT + "/sona.js", "utf8").match(new RegExp("^\\s{4}" + k + ": \\{[^\\n]*", "m")) || [""])[0]))) {
+const PARKED = KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((SONA_SRC.match(new RegExp("^\\s{4}" + k + ": \\{[^\\n]*", "m")) || [""])[0]));
+ok("the seventeen rebuilt games are still parked until Travis plays each one", PARKED.length === 17, PARKED);
+for (const key of PARKED) {
   await scenario(key + " parked", async () => {
     const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: "7", micok: true, permission: "granted" });
     try {
       await page.waitForURL(/\/(?:activities|today)\.html/, { timeout: 6000 });
       await page.waitForFunction(() => !!document.getElementById("libraryMessage"), null, { timeout: 6000 });
-      ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.sounds.length)) === 0);
+      // __quiet.requests and soundsBefore carry over from the game page the
+      // bounce left (tests/_sayplaydevice.mjs), so this can fail
+      ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.soundsBefore + __quiet.sounds.length)) === 0);
       ok(key + ": …which says the game is coming, on its day or soon", await until(page, () => /is coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(document.getElementById("libraryMessage").textContent), 4000));
       clean(key + " parked", errors);
     } finally { await context.close(); }
@@ -543,9 +449,9 @@ for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((rea
 // clip. A stand-in "Go!" is kept for this page only (Sona.goClip), so "Hear
 // it" asks again for the word alone.
 for (const mode of ["keep", "standin"]) {
-  await scenario("racecar voice " + mode, async () => {
+  await scenario("treasure voice " + mode, async () => {
     tts.mode = mode; tts.calls = 0; tts.texts = [];
-    const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+    const { context, page, errors } = await fresh("arcade-treasure.html", { age: "7", micok: true, permission: "granted", unparked: true });
     try {
       await page.locator("#startOvl.show").waitFor();
       await page.locator("#startBtn").click();
@@ -561,15 +467,15 @@ for (const mode of ["keep", "standin"]) {
         r.onerror = () => done(-1);
         r.onsuccess = () => { try { const q = r.result.transaction("clips", "readonly").objectStore("clips").count(); q.onsuccess = () => done(q.result); q.onerror = () => done(-1); } catch (e) { done(-1); } };
       }));
-      ok("racecar " + mode + ": Echo's word and its \"Go!\" come from the voice server, one request each", first === 2 && tts.texts.slice(0, 2)[1] === "Go!" && ASK.test(tts.texts[0]), { first, texts: tts.texts });
+      ok("treasure " + mode + ": Echo's word and its \"Go!\" come from the voice server, one request each", first === 2 && tts.texts.slice(0, 2)[1] === "Go!" && ASK.test(tts.texts[0]), { first, texts: tts.texts });
       if (mode === "keep") {
-        ok("racecar keep: ordinary clips are saved on the phone (the word and \"Go!\")", saved === 2, { saved });
-        ok("racecar keep: \"Hear it\" replays the saved clips without asking again", tts.calls === 2, { calls: tts.calls });
+        ok("treasure keep: ordinary clips are saved on the phone (the word and \"Go!\")", saved === 2, { saved });
+        ok("treasure keep: \"Hear it\" replays the saved clips without asking again", tts.calls === 2, { calls: tts.calls });
       } else {
-        ok("racecar stand-in: nothing is saved on the phone", saved === 0, { saved });
-        ok("racecar stand-in: \"Hear it\" asks the server again for the word instead of replaying the old voice, and plays this page's \"Go!\"", tts.calls === 3 && tts.texts[2] !== "Go!" && (await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "buf" && x.len === 4800).length)) >= 4, { calls: tts.calls, texts: tts.texts });
+        ok("treasure stand-in: nothing is saved on the phone", saved === 0, { saved });
+        ok("treasure stand-in: \"Hear it\" asks the server again for the word instead of replaying the old voice, and plays this page's \"Go!\"", tts.calls === 3 && tts.texts[2] !== "Go!" && (await page.evaluate(() => __quiet.sounds.filter((x) => x.kind === "buf" && x.len === 4800).length)) >= 4, { calls: tts.calls, texts: tts.texts });
       }
-      clean("racecar voice " + mode, errors);
+      clean("treasure voice " + mode, errors);
     } finally { tts.mode = "down"; await context.close(); }
   });
 }
@@ -581,16 +487,16 @@ for (const mode of ["keep", "standin"]) {
 // stand-ins (never saved, so fetched again each time). Here the service takes
 // 3 s and sends only stand-ins. The first ask waits for "Go!" no longer than
 // Sona.GO_WAIT_MS (1.5 s); every later one plays this page's copy at once.
-await scenario("racecar slow stand-in voice", async () => {
+await scenario("treasure slow stand-in voice", async () => {
   tts.mode = "standin"; tts.delay = 3000; tts.calls = 0; tts.texts = [];
-  const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  const { context, page, errors } = await fresh("arcade-treasure.html", { age: "7", micok: true, permission: "granted", unparked: true });
   try {
     await page.locator("#startOvl.show").waitFor();
     await page.locator("#startBtn").click();
     // each word said as many times as the game asks (two here, 1 Oct 2026)
     for (let i = 0; i < 3; i++) {
       const heard = await sayIt(page);
-      ok("racecar slow stand-in, word " + (i + 1) + ": the mic opens and the child is heard", heard && await until(page, (n) => window.__sayplay.step === n, 3000, i + 1));
+      ok("treasure slow stand-in, word " + (i + 1) + ": the mic opens and the child is heard", heard && await until(page, (n) => window.__sayplay.step === n, 3000, i + 1));
     }
     const l = await log(page);
     // per turn: Echo's clips between the last mic and this one; the first is the word
@@ -598,17 +504,17 @@ await scenario("racecar slow stand-in voice", async () => {
       const from = i ? l.mics[i - 1].end : 0, clips = l.sounds.filter((x) => x.kind === "buf" && x.len === 4800 && x.start >= from && x.start < m.start);
       return clips.length ? { wait: +(m.start - clips[0].end).toFixed(3), go: clips.length === 2 } : null;
     });
-    ok("racecar slow stand-in: each turn's word came from the slow service (the pin is not vacuous)", gaps.length >= 3 && gaps.every(Boolean) && tts.texts.filter((t) => t !== "Go!").length >= 3, { gaps, texts: tts.texts });
-    ok("racecar slow stand-in: the first turn's mic opens within 2 s of the word's end (Go! waits 1.5 s at most)", !!gaps[0] && gaps[0].wait <= 2.0, gaps);
-    ok("racecar slow stand-in: every later turn's mic opens within 1.5 s of the word's end, after Echo's own \"Go!\"", gaps.slice(1).every((g) => g && g.go && g.wait <= 1.5), gaps);
-    ok("racecar slow stand-in: \"Go!\" was asked for once, never once a turn", tts.texts.filter((t) => t === "Go!").length === 1, tts.texts);
-    noOverlap("racecar slow stand-in", l);
-    clean("racecar slow stand-in", errors);
+    ok("treasure slow stand-in: each turn's word came from the slow service (the pin is not vacuous)", gaps.length >= 3 && gaps.every(Boolean) && tts.texts.filter((t) => t !== "Go!").length >= 3, { gaps, texts: tts.texts });
+    ok("treasure slow stand-in: the first turn's mic opens within 2 s of the word's end (Go! waits 1.5 s at most)", !!gaps[0] && gaps[0].wait <= 2.0, gaps);
+    ok("treasure slow stand-in: every later turn's mic opens within 1.5 s of the word's end, after Echo's own \"Go!\"", gaps.slice(1).every((g) => g && g.go && g.wait <= 1.5), gaps);
+    ok("treasure slow stand-in: \"Go!\" was asked for once, never once a turn", tts.texts.filter((t) => t === "Go!").length === 1, tts.texts);
+    noOverlap("treasure slow stand-in", l);
+    clean("treasure slow stand-in", errors);
   } finally { tts.mode = "down"; tts.delay = 0; await context.close(); }
 });
 
 // ── a whole game, twice: once small (five words), once big (eight) ──
-for (const key of ["balloon", "racecar"]) {
+for (const key of ["balloon", "treasure"]) {
   await scenario(key + " played through", async () => {
     const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: key === "balloon" ? "4" : "7", micok: true, permission: "granted", unparked: true });
     try {
@@ -1473,7 +1379,7 @@ for (const gumDelay of [300, 500]) for (const tapAfter of [150, 300]) {
 if (PART === "engine") {
 // ── the first time: a grown-up says yes before any mic prompt ──
 await scenario("primer: not now", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -1488,7 +1394,7 @@ await scenario("primer: not now", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: yes", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -1500,7 +1406,7 @@ await scenario("primer: yes", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: refused", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", micMode: "deny", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", permission: "prompt", micMode: "deny", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primerYes").click();
@@ -1511,7 +1417,7 @@ await scenario("primer: refused", async () => {
 
 // ── a hidden page pauses; coming back takes a tap ──
 await scenario("pause", async () => {
-  const { context, page, errors } = await fresh("arcade-castle.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-scene.html", { age: "7", micok: true, permission: "granted", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);
@@ -1539,7 +1445,7 @@ await scenario("pause", async () => {
 // saying; "Hear it", a pause and the mic button all keep it; only the second
 // earns the step.
 await scenario("two times", async () => {
-  const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+  const { context, page, errors } = await fresh("arcade-treasure.html", { age: "7", micok: true, permission: "granted", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);
@@ -1633,8 +1539,11 @@ await scenario("two times", async () => {
 });
 
 // ── a quiet child: the mic closes after a while and waits for a tap to listen again ──
+// (On the fixed little scene: Bedtime Stars is a played game now, where the
+// word earns the move and the finger makes it, so the word alone no longer
+// moves its step. Each played game's own suite holds that.)
 await scenario("quiet child", async () => {
-  const { context, page, errors } = await fresh("arcade-stars.html", { age: "4", micok: true, permission: "granted", voiceOn: false, unparked: true });
+  const { context, page, errors } = await fresh("_sayplay-little-scene.html", { age: "4", micok: true, permission: "granted", voiceOn: false, unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);

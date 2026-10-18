@@ -50,6 +50,7 @@ async function fresh({ paid = false, web = "1", replay = false, sound = "R", wid
     status:200, contentType:"text/javascript",
     body:readFileSync(path.join(publicRoot,"sona.js"),"utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false"),
   }));
+  if (parkedEngineFixture) await context.route("**/arcade-peekaboo.html*", route => route.fulfill({ status:200, contentType:"text/html", body:readFileSync(new URL("./fixtures/simpleplay-scene.html", import.meta.url)) }));
   // These scenarios finish recorded runs; none should request a real mic.
   // Feed Echo needs the word said before Echo eats (1 Oct 2026), so a run
   // that plays it gets a stand-in mic instead: window.__mic.voice is the

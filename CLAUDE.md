@@ -1676,6 +1676,47 @@ playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
+**The eighteen rebuilt by Codex, still parked** (Travis, 16 Oct 2026, to
+Codex: build the Coming soon games one at a time, each with its own finger
+play and a real reason to talk; then, to Claude: "i jsut want you to finihs
+rhe job"). Race Car, Treasure Map, Robot Builder, Castle Builder, Space Trip,
+Pizza Chef and Monster Makeover (5-8), and Balloon Party, Grow a Flower,
+Rocket Blast, Build a Snowman, Choo-Choo Train, Puppy Bath, Bedtime Stars,
+Birthday Cake, Surprise Boxes, Fish Tank and Peekaboo (3-4) are each a real
+played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
+`arcade-<key>.html`, its own suite `tests/<game>test.mjs`). All eighteen keep
+`comingSoon: true` until Travis plays each on his phone. What every one holds:
+- **The word (said two times) earns each step; the finger makes it.** No
+  progress before the word, silence earns nothing, `api.done()` once a step.
+- **Every round ends without speaking again** (the Hoops rule). Misses make
+  the move easier, per step: ages 5-8 slower after one, still and glowing
+  with a pointer after two, nearly anything works from the third; ages 3-4
+  glow from the first miss and nearly anything works from the second. A long
+  task (rubbing, stirring, tracing) steps up by time spent actively trying.
+  No help ever finishes a move by itself.
+- **An optional help word** (the teal pill: "Slow road", "Steady rope",
+  "Calmer fish"…) asks for the same word again through `api.practice()` and
+  earns a power on top. **It can always be left:** silence, a pause, or the
+  "Back to the game" pill gives the earned move straight back with no power
+  (`endHelp` in `sayplay.js`, added because Codex's version froze the game
+  until the child spoke). `sayplaytest`'s "help ask" scenario pins it.
+- **A cheer before the next word:** the step counts about 1.15 s after the
+  success, so its chime is heard (a step finished mid-direction stops only
+  Echo's voice, `stopVoice`).
+- **Echo speaks short directions** through `api.instruct()` (only in play,
+  never over the mic); `tools/voicedoc.mjs` lists every one.
+- **Peekaboo moved off `simple-play.js`**, where a child could finish all
+  five finds in silence: the word hides the picture, the doors swap, a tap
+  finds it; a wrong door glows the right one.
+- **For Rachel:** all eleven ages 3-4 games ask each word two times (Bubble
+  Pop asks once; one setting, `sayTimes: 1`, changes it), and the help pill
+  asks two more sayings, as often as the child likes; every direction
+  Echo speaks; what counts as a miss. **For Travis:** the help timings, each
+  game's pace, and that Fish Tank, Surprise Boxes and Peekaboo share Monster
+  Makeover's painted room. The review and Codex's notes are in
+  `design/coming-soon-games-2026-10-16.md` and
+  `design/coming-soon-games/*-art-notes.txt`.
+
 **Every unfinished game says "Coming soon", with no day** (Travis, 15 Oct
 2026: "put coming soon", the day before the first three were due). From 30
 Sep to 15 Oct each parked game carried a day (`comingOn`; from 9 Oct three
@@ -1872,8 +1913,8 @@ on the same play-game hook as Hoops. What it keeps:
   count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
   <word>." with start-of-word words for the child's sound, and "heard" is a
   voice of the right broad kind, exactly as in Hoops.
-Peekaboo still runs on `simple-play.js`, so the old engine's tests moved to
-it. `bubblestest` (its own suite: the three other played games already fill
+`simple-play.js` now runs only its test fixture (Peekaboo moved to
+`sayplay.js` on 16 Oct 2026), and the old engine's tests stay on it. `bubblestest` (its own suite: the three other played games already fill
 most of a suite's five minutes) plays a whole round, the smallest phone, the
 app's sounds, a slow microphone and a page hidden at the wrong moment.
 **That last one was an engine bug every played game had:** a page hidden in
@@ -2857,8 +2898,9 @@ Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
 Settings card and `board.html`.
 
 Peekaboo stays visible only as a disabled "Coming …" card, with no New
-shelf promotion and no direct-link, paid or earned bypass; its engine
-(`simple-play.js`) remains in the repo. **Bubble Pop is back** (Travis, 30 Sep
+shelf promotion and no direct-link, paid or earned bypass; since 16 Oct 2026
+it is a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"),
+and `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
 2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
 Feed Echo's
