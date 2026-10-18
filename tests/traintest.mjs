@@ -39,7 +39,9 @@ function sameMove(s,was){const now=keep(s);return s.speech.phase==='play'&&!s.sp
 async function helpAsk(p){await p.locator('#trainHelp').evaluate(e=>e.addEventListener('click',()=>window.__trainAtHelp=JSON.parse(JSON.stringify({speech:__sayplay,train:__train})),{capture:true,once:true}));await p.locator('#trainHelp').click();await until(p,()=>__sayplay.listening);return p.evaluate(()=>__trainAtHelp);}
 const part=process.env.TRAIN_PART;
 try{
- h=await gameHarness('train',PORT);const fresh=(opts={})=>h.fresh({...opts,device:{age:'7',...opts.device}});
+ h=await gameHarness('train',PORT);// The fake clock is paused once the page is up (as puppytest does), so only
+ // advance() moves the train: real time on a busy machine can't run it on.
+ const fresh=async(opts={})=>{const f=await h.fresh({...opts,device:{age:'7',...opts.device}});if(opts.unpark===false)return f;const now=await f.page.evaluate(()=>Date.now());await f.page.clock.pauseAt(now+1000);return f;};
  // ── (d) parked: a typed address goes home before any mic or sound ──
  if(!part||part==='main'){
   const {page,context,errors}=await fresh({unpark:false});

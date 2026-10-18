@@ -95,7 +95,7 @@ const fitPart=guard('fit')(async viewport=>{
    await advance(page,3300);await page.locator('#endOvl').evaluate(e=>e.style.visibility='hidden');await page.screenshot({path:path.join(OUT,'sona-stars-'+viewport.width+'x'+viewport.height+'.png')});ok('fit has no runtime errors',errors.length===0,errors);await context.close();
 });
 try{
- h=await gameHarness('stars',8359);fresh=(opts={})=>h.fresh({...opts,device:{age:'4',...opts.device}});
+ h=await gameHarness('stars',8359);fresh=async(opts={})=>{const f=await h.fresh({...opts,device:{age:'4',...opts.device}});if(opts.unpark===false)return f;const now=await f.page.evaluate(()=>Date.now());await f.page.clock.pauseAt(now+1000);return f;}; // paused, as puppytest: only advance() moves the stars
  const jobs=[];
  if(!part||part==='main')jobs.push(mainPart());
  if(!part||part==='continuous')jobs.push(continuousPart(false),continuousPart(true));
