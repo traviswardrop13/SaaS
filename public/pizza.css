@@ -30,6 +30,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--
 #pizzaBake svg,#pizzaTakeOut svg,#pizzaRetry svg{width:23px;height:26px;flex:none;}
 #pizzaBake[aria-pressed=true]{transform:translateY(4px);box-shadow:0 1px 0 var(--act-d);}
 #pizzaControls button:disabled{opacity:.52;cursor:default;}
+/* the help after two hot ovens: the green glows, and Take out glows once it is ready */
+#pizzaHeat.guide #pizzaReadyBand{background:#9fd39d;box-shadow:0 0 0 3px #ffcf4a,0 0 14px 4px rgba(255,207,74,.85);}
+#pizzaTakeOut.guide{box-shadow:0 4px 0 var(--cream-line),0 0 0 4px #ffcf4a,0 0 18px 6px rgba(255,207,74,.75);}
 #pizzaToolCard{position:absolute;z-index:3;left:16px;bottom:calc(98px + env(safe-area-inset-bottom));width:125px;min-height:72px;padding:6px 8px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:20px;background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);pointer-events:none;}
 #pizzaToolCard[hidden]{display:none;}
 #pizzaToolPreview{display:block;width:77px;height:44px;object-fit:contain;}

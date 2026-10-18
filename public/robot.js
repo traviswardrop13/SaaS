@@ -8,6 +8,15 @@
   var active = false, paused = false, boardReady = false, connected = false, solved = false, won = false;
   var startRow = 1, endRow = 1, blueprint = 0, POWER = 10, rotations = 0, tests = 0, hintIndex = -1;
   var raf = 0, lastTime = 0, away = false, boardPath = [], total = 8;
+  // Every circuit ends in a working robot part, with no speech needed. A
+  // failed Test power is a miss; finger work that has not joined the wires
+  // yet counts too (6, 12 and 20 s of tapping, never idle time; tapping is
+  // the ordinary play here, so it takes longer than a miss). The ladder:
+  // 1 the next wrong wire is outlined, and the outline follows the wires;
+  // 2 the blueprint stays on and shows how each wire should sit; 3 a tap on
+  // a wrong blueprint wire turns it straight to the right way. The finger
+  // still taps every wire and presses Test power: nothing finishes itself.
+  var misses = 0, work = 0, clock = 0, lastTapAt = -99, idleSince = 0, doneAt = 0, nudged = false, little = false;
   var $ = function (id) { return document.getElementById(id); };
   var DIRS = [1, 2, 4, 8], OPPOSITE = [4, 8, 1, 2], DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
   var NAMES = ["north", "east", "south", "west"];
@@ -58,6 +67,8 @@
     stage = index; boardPath = PATHS[index % PATHS.length].slice();
     startRow = Math.floor(boardPath[0] / 3); endRow = Math.floor(boardPath[boardPath.length - 1] / 3);
     tiles = []; rotations = 0; tests = 0; solved = false; hintIndex = -1; connected = false;
+    misses = 0; work = 0; lastTapAt = -99; idleSince = clock; doneAt = 0; nudged = false;
+    try { var age = parseInt(window.Sona && Sona.getProfile ? Sona.getProfile().age : "", 10); little = age > 0 && age <= 4; } catch (e) { little = false; }
     for (var i = 0; i < 9; i++) {
       var at = boardPath.indexOf(i), target;
       if (at >= 0) target = (at === 0 ? 8 : direction(i, boardPath[at - 1])) | (at === boardPath.length - 1 ? 2 : direction(i, boardPath[at + 1]));
@@ -98,7 +109,7 @@
   }
   function paintTile(i) {
     var tile = tiles[i], b = buttons[i]; if (!b || !tile) return;
-    b.className = "robot-tile" + (tile.powered ? " powered" : "") + (blueprint > 0 && tile.inPath ? " blueprint" : "") + (i === hintIndex ? " look-here" : "");
+    b.className = "robot-tile" + (tile.powered ? " powered" : "") + (showGhost() && tile.inPath ? " blueprint" : "") + (i === hintIndex ? " look-here" : "");
     b.disabled = !active || paused || !boardReady || solved || won || away || document.hidden;
     b.setAttribute("aria-label", labelFor(i));
     b.setAttribute("data-rotation", String(tile.rotation));
@@ -110,7 +121,7 @@
   function publish() {
     window.__robot = { active: active, paused: paused, stage: stage, stages: total, blueprint: blueprint, boardReady: boardReady,
       connected: connected, solved: solved, assembled: assembled, won: won, startRow: startRow, endRow: endRow,
-      rotations: rotations, tests: tests, hintIndex: hintIndex,
+      rotations: rotations, tests: tests, hintIndex: hintIndex, misses: misses, work: +work.toFixed(2), help: helpLevel(), doneAt: doneAt,
       tiles: tiles.map(function (tile) { return { mask: tile.mask, rotation: tile.rotation, correctRotation: tile.correctRotation, inPath: tile.inPath, powered: tile.powered }; }) };
   }
   function paintBridges() {
@@ -126,7 +137,7 @@
     }
     // Tile borders and their touch gaps must not make a genuinely connected
     // circuit look broken. These bridges have no hit area and carry no rules.
-    if (blueprint > 0) for (var p = 1; p < boardPath.length; p++) bridge(boardPath[p - 1], boardPath[p], true);
+    if (showGhost()) for (var p = 1; p < boardPath.length; p++) bridge(boardPath[p - 1], boardPath[p], true);
     for (var i = 0; i < tiles.length; i++) {
       if (i % 3 < 2 && (maskAt(i) & 2) && (maskAt(i + 1) & 8)) bridge(i, i + 1, false);
       if (i < 6 && (maskAt(i) & 4) && (maskAt(i + 3) & 1)) bridge(i, i + 3, false);
@@ -143,11 +154,12 @@
     var locked = !active || paused || !boardReady || solved || won || away || document.hidden;
     for (var i = 0; i < tiles.length; i++) paintTile(i);
     $("robotTest").disabled = locked; $("robotHelp").disabled = locked;
+    $("robotTest").classList.toggle("ready", connected && !locked);
     $("robotSocket").classList.toggle("live", connected);
     $("robotPuzzle").classList.toggle("locked", locked);
     $("robotPower").hidden = !(blueprint > 0 && active && !won);
     $("robotPowerFill").style.width = (blueprint / POWER * 100) + "%";
-    $("robotGuide").textContent = won ? "A new friend, built by you!" : connected ? "The socket is glowing. Test the power!" : blueprint > 0 ? "The pale lines show the way" : "Tap a wire to turn it";
+    $("robotGuide").textContent = won ? "A new friend, built by you!" : connected ? "The bulb is glowing. Press Test power!" : showGhost() ? "Turn the wires to match the pale lines" : "Tap a wire to turn it";
     $("robotStand").setAttribute("aria-label", assembled === 8 ? "Your complete toy robot" : "Your robot with " + assembled + " parts assembled");
     $("robotStand").classList.toggle("complete", assembled === 8);
     $("robotPartName").textContent = won ? "Your new robot friend" : solved ? "" : "Power the " + PARTS[stage].name;
@@ -155,11 +167,28 @@
     publish();
   }
   function setBanner(text) { $("robotBanner").textContent = text; }
+  function helpLevel() {
+    var lv = misses >= 3 ? 3 : misses, t = work >= 20 ? 3 : work >= 12 ? 2 : work >= 6 ? 1 : 0;
+    lv = Math.max(lv, t);
+    // ages 3-4 (not on this shelf today): outline from the first miss, the
+    // snapping wires from the second
+    if (little && lv) lv = Math.min(3, lv + 1);
+    return lv;
+  }
+  function showGhost() { return blueprint > 0 || (helpLevel() >= 2 && boardReady && !solved && !won); }
+  function isRight(i) { return maskAt(i) === rotateMask(tiles[i].mask, tiles[i].correctRotation); }
+  function followHint() { hintIndex = connected ? -1 : findOpenWire(); }
   function turnTile(index) {
     if (!active || paused || !boardReady || solved || won || away || document.hidden) return;
-    tiles[index].rotation = (tiles[index].rotation + 1) % 4;
-    rotations++; hintIndex = -1; updateNetwork();
-    setBanner(connected ? "It's connected! Test the power" : "Join the wires, battery to socket");
+    var tile = tiles[index];
+    // help 3: a blueprint wire that is the wrong way turns straight to the
+    // right way on the child's tap
+    if (helpLevel() >= 3 && tile.inPath && !isRight(index)) tile.rotation = tile.correctRotation;
+    else tile.rotation = (tile.rotation + 1) % 4;
+    rotations++; lastTapAt = clock; idleSince = clock; updateNetwork();
+    // the outline stays on its wire until that wire is right, then moves on
+    if (hintIndex >= 0 || helpLevel() >= 1) { if (connected || hintIndex < 0 || isRight(hintIndex)) followHint(); }
+    setBanner(connected ? "It's connected! Press Test power" : "Join the wires, battery to bulb");
     paint();
   }
   function findOpenWire() {
@@ -175,10 +204,13 @@
   }
   function testPower() {
     if (!active || paused || !boardReady || solved || won || away || document.hidden) return;
-    tests++; updateNetwork();
+    tests++; idleSince = clock; updateNetwork();
     if (!connected) {
-      hintIndex = findOpenWire();
-      setBanner("A little gap. Try this wire!"); paint(); return;
+      misses++; followHint();
+      try { api.cheer(misses >= 3 ? "Nearly!" : "So close!"); if (api.face) api.face("think"); } catch (e) {}
+      setBanner(misses >= 3 ? "Nearly! Tap the glowing wire" : misses >= 2 ? "So close! Match the pale lines" : "So close! Try this wire");
+      try { api.sfx("tap"); } catch (e) {}
+      paint(); return;
     }
     solved = true; active = false; blueprint = 0; hintIndex = -1;
     assembled = Math.max(assembled, stage + 1);
@@ -187,7 +219,12 @@
     setBanner("The " + PARTS[stage].name + " is ready!");
     // Say & Play delays this chime if its microphone/audio route is still
     // settling. The board never creates a sound or its own microphone.
-    api.sfx("correct"); paint(); api.done();
+    // A celebration beat before the next word: the chime and the part's
+    // build play first. The countdown runs on play time only (frame), so a
+    // pause holds it, and reset() or finale() clears it.
+    api.sfx("correct");
+    try { api.cheer("It works!"); if (api.face) api.face("cheer"); } catch (e) {}
+    doneAt = clock + 1.15; paint();
   }
   function earnBlueprint() {
     if (!boardReady || solved || won) return;
@@ -245,16 +282,30 @@
   }
   function frame(now) {
     var dt = lastTime ? Math.min(0.05, (now - lastTime) / 1000) : 0; lastTime = now;
-    if (active && !paused && !away && !document.hidden && blueprint > 0) {
-      blueprint = Math.max(0, blueprint - dt);
-      $("robotPowerFill").style.width = (blueprint / POWER * 100) + "%";
-      if (!blueprint) { setBanner("Your turn. Keep joining the wires!"); paint(); }
-      else publish();
+    if (!paused && !away && !document.hidden) {
+      clock += dt;
+      if (doneAt && clock >= doneAt) { doneAt = 0; publish(); if (api) api.done(); }
+      if (active && boardReady && !solved && !won) {
+        var before = helpLevel(), hint = hintIndex, dirty = false;
+        if (blueprint > 0) {
+          blueprint = Math.max(0, blueprint - dt);
+          $("robotPowerFill").style.width = (blueprint / POWER * 100) + "%";
+          if (!blueprint) { setBanner("Your turn. Keep joining the wires!"); dirty = true; }
+        }
+        // seconds of real tapping that have not joined the wires yet
+        if (!connected && clock - lastTapAt < 2.5) work += dt;
+        if (helpLevel() !== before) { if (helpLevel() >= 1) followHint(); dirty = true; }
+        // a child who stops tapping: point at the next wire (no ladder step)
+        if (!connected && hintIndex < 0 && clock - idleSince >= 8) followHint();
+        // a joined circuit waiting on the button: say what to press, once
+        if (connected && !nudged && clock - idleSince >= 4) { nudged = true; try { api.instruct("Now press Test power!"); } catch (e) {} }
+        if (dirty || hint !== hintIndex) paint(); else publish();
+      }
     }
     raf = requestAnimationFrame(frame);
   }
   function reset() {
-    active = false; paused = false; boardReady = false; won = false; assembled = 0; blueprint = 0; lastTime = 0;
+    active = false; paused = false; boardReady = false; won = false; assembled = 0; blueprint = 0; lastTime = 0; doneAt = 0;
     $("robotStand").classList.remove("dancing");
     for (var i = 0; i < partEls.length; i++) { partEls[i].classList.remove("assembled"); partEls[i].classList.remove("just-built"); }
     makePuzzle(0); setBanner("A little robot, ready to come alive"); paint();
@@ -263,7 +314,8 @@
   function resume(playing) { paused = playing === false; lastTime = 0; paint(); }
   window.Robot = {
     init: function (a, n) {
-      api = a; total = n || 8; buildRobot(); buildBoard(); reset();
+      api = a; total = n || 8;
+      buildRobot(); buildBoard(); reset();
       $("robotTest").onclick = testPower; $("robotHelp").onclick = help;
       window.addEventListener("resize", paint);
       document.addEventListener("visibilitychange", function () { if (document.hidden) pause(); });
@@ -276,6 +328,6 @@
     pause: pause,
     resume: resume,
     reset: reset,
-    finale: function () { active = false; blueprint = 0; won = true; $("robotStand").classList.add("dancing"); setBanner("You brought your robot to life!"); paint(); }
+    finale: function () { active = false; blueprint = 0; won = true; doneAt = 0; $("robotStand").classList.add("dancing"); setBanner("You brought your robot to life!"); paint(); }
   };
 })();

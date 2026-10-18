@@ -19,7 +19,7 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="snowmanCanvas" role="img" aria-label="A snowy clearing with a snowball rolling lane. Roll three snowballs, stack them, then add a face and winter clothes."></canvas>
+    <canvas id="snowmanCanvas" role="img" aria-label="A snowy clearing. Say your word to get each snowball, roll it big and stack it, then add a face and winter clothes."></canvas>
     <div id="snowmanBanner" role="status" aria-live="polite">Let's make a snowy little friend!</div>
     <button id="snowBall" type="button" disabled aria-label="Pick up the snowball and roll it through the snow. When it is big, drag it into the glowing circle and let go. Keyboard: Space picks up or drops; arrow keys move." aria-pressed="false"></button>
     <button id="snowPiece0" class="snow-piece" type="button" hidden disabled aria-label="Pick up the first snowman decoration"></button>
@@ -27,7 +27,7 @@
     <button id="snowPiece2" class="snow-piece" type="button" hidden disabled aria-label="Pick up the third snowman decoration"></button>
     <div id="snowmanControls">
       <button id="snowmanHearStep" class="cream-pill" type="button" disabled aria-label="Hear what to do in this step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      <button id="snowmanHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for faster snowball growth and easier stacking and decorating"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="snowman-help-label"><span>Snowy help</span><span id="snowmanPower" hidden><i id="snowmanPowerFill"></i></span></span></button>
+      <button id="snowmanHelp" class="act-pill" type="button" disabled aria-label="Extra snowy help: say your word two times for faster rolling and bigger glowing spots"><img src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span class="snowman-help-label"><span>Snowy help</span><span id="snowmanPower" hidden><i id="snowmanPowerFill"></i></span></span></button>
     </div>
     <div id="turnPanel" aria-live="polite">
       <div id="picBox"><span id="pic"></span></div>
@@ -44,8 +44,8 @@
 
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
-      <img class="snowman-intro" src="/assets/crafted/home-snowman.webp" alt="A friendly painted snowman in a snowy clearing"><h2 id="startTitle">Build a Snowman</h2>
-      <p>Roll three snowballs. Stack them up. Give your new friend a face and winter clothes!</p><p>Say your word two times for faster rolling and easier stacking.</p>
+      <img class="snowman-intro" src="/assets/crafted/home-snowman.webp" alt="A friendly painted snowman in a snowy clearing" onerror="this.hidden=true"><h2 id="startTitle">Build a Snowman</h2>
+      <p>Say your word two times to get each snowball and each piece.</p><p>Roll, stack, and dress your snow friend!</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's build</span></button>
     </div>
@@ -54,7 +54,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for a little snowy help.</p>
+      <p>Say your word two times to get each snowball.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -80,7 +80,7 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/snowman.js"></script>
   <script>
-    SayPlay.start({key:"snowman",title:"Build a Snowman",intro:"Roll a snowball through the snow to make it big, then lift it into the glowing circle. We will stack three snowballs and dress our new friend. Say your word two times for a little snowy help.",steps:[[],[],[],[],[]],finale:[],done:{title:"You made a snow friend!",sub:"Rolled, stacked, and dressed by you."},play:window.Snowman});
+    SayPlay.start({key:"snowman",title:"Build a Snowman",intro:"Say your word two times to get a snowball. Roll it big, and stack it!",steps:[[],[],[],[],[]],finale:[],done:{title:"You made a snow friend!",sub:"Rolled, stacked, and dressed by you."},play:window.Snowman});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"snowman"});}catch(e){}}
   </script>
 </body>

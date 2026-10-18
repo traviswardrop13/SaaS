@@ -19,11 +19,11 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="trainCanvas" role="img" aria-label="A painted railway through the countryside. Hold Forward to drive, release to stop beside each friend, then drag them into the coach door."></canvas>
+    <canvas id="trainCanvas" role="img" aria-label="A painted railway through the countryside. Say your word two times to start each trip. Then hold Forward, let go by the friend, and drag them into the coach door."></canvas>
     <div id="trainBanner" role="status" aria-live="polite">Ready for five friendly stops?</div>
     <button id="trainPassenger" type="button" hidden disabled aria-label="Waiting friend. Stop beside the platform, then drag this friend into the big coach door. Keyboard: Space picks up, arrow keys move, Space places." aria-pressed="false"></button>
     <div id="trainStatus"><i id="trainLamp"></i><span id="trainStatusText">Find our friend</span></div>
-    <button id="trainHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for slower driving, a wider stopping place and easier boarding"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="train-help-label"><span>Easy stops</span><span id="trainPower" hidden><i id="trainPowerFill"></i></span></span></button>
+    <button id="trainHelp" class="act-pill" type="button" disabled aria-label="Easy stops, extra help if you want it: say your word two times for slower driving and wider stops"><img src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span class="train-help-label"><span>Easy stops</span><span id="trainPower" hidden><i id="trainPowerFill"></i></span></span></button>
     <div id="trainControls">
       <button id="trainBack" class="cream-pill" type="button" disabled aria-label="Hold to drive backward. Let go to stop." aria-pressed="false"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M24 14H4M12 6l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button id="trainForward" class="act-pill" type="button" disabled aria-label="Hold to drive forward. Let go to stop. Keyboard: Right arrow or hold Space on this button." aria-pressed="false"><span>Forward</span><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 14h20M16 6l8 8-8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -44,8 +44,8 @@
 
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
-      <img class="train-intro" src="/assets/crafted/home-train.webp" alt="A painted little train ready for a friendly trip"><h2 id="startTitle">Choo-Choo Train</h2>
-      <p>Hold Forward to drive. Let go to stop. Help each waiting friend into the big coach door!</p><p>Say your word two times for easier stops and boarding.</p>
+      <img class="train-intro" src="/assets/crafted/home-train.webp" alt="A painted little train ready for a friendly trip" onerror="this.hidden=true"><h2 id="startTitle">Choo-Choo Train</h2>
+      <p>Say your word two times to start the train. Then drive, stop, and help a friend aboard!</p><p>Easy stops is extra help.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>All aboard</span></button>
     </div>
@@ -54,7 +54,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for an easier train trip.</p>
+      <p>Say your word two times to start each train trip.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -80,7 +80,9 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/train.js"></script>
   <script>
-    SayPlay.start({key:"train",title:"Choo-Choo Train",intro:"Hold Forward to drive the train. Let go to stop beside each waiting friend, then drag them into the big coach door. Use Back if you go too far. Say your word two times for easier stops and boarding.",steps:[[],[],[],[],[]],finale:[],done:{title:"All aboard!",sub:"Five friends, picked up by you."},play:window.Train});
+    // ages 2 to 4 get the gentler help ladder (train.js says what it does)
+    try{if(window.Train&&Train.setLittle&&window.Sona&&Sona.playStyle)Train.setLittle(Sona.playStyle()==="simple");}catch(e){}
+    SayPlay.start({key:"train",title:"Choo-Choo Train",intro:"Say your word two times to start the train. Then drive, stop, and help a friend aboard.",steps:[[],[],[],[],[]],finale:[],done:{title:"All aboard!",sub:"Five friends, picked up by you."},play:window.Train});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"train"});}catch(e){}}
   </script>
 </body>

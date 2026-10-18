@@ -19,12 +19,12 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="puppyCanvas" role="img" aria-label="A friendly puppy in a painted backyard. Touch and hold the glowing muddy spot to aim real water droplets at it."></canvas>
-    <div id="puppyBanner" role="status" aria-live="polite">Ready for a playful puppy bath?</div>
+    <canvas id="puppyCanvas" role="img" aria-label="A friendly puppy in a painted backyard. Say each word two times for a muddy spot, then touch and hold the glowing spot to wash it."></canvas>
+    <div id="puppyBanner" role="status" aria-live="polite">Say the word to wash a spot!</div>
     <div id="puppyStatus"><span id="puppyStatusText">Touch the muddy glow</span></div>
-    <button id="puppyHelp" class="act-pill" type="button" disabled aria-label="Say your word two times to steady the puppy and make the shower wider"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="puppy-help-label"><span>Steady puppy</span><span id="puppyPower" hidden><i id="puppyPowerFill"></i></span></span></button>
+    <button id="puppyHelp" class="act-pill" type="button" disabled aria-label="Extra help: say your word two times for a steadier puppy and wider water"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="puppy-help-label"><span>Steady puppy</span><span id="puppyPower" hidden><i id="puppyPowerFill"></i></span></span></button>
     <div id="puppyControls">
-      <button id="puppySpray" class="act-pill" type="button" disabled aria-label="Hold to spray. Slide your finger to aim at the muddy spot. Or touch and hold the spot itself. Keyboard: arrow keys aim; hold Space or Enter to spray." aria-pressed="false"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="m8 24 10-10 7 7-10 10Zm12-12 4-4 7 7-4 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m27 4 2-2m2 6 3-1m-3 6 3 1" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg><span>Spray</span></button>
+      <button id="puppySpray" class="act-pill" type="button" disabled aria-label="Hold to spray the glowing spot. Slide to aim, or touch and hold the spot itself. Keyboard: arrow keys aim; hold Space or Enter to spray." aria-pressed="false"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="m8 24 10-10 7 7-10 10Zm12-12 4-4 7 7-4 4" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m27 4 2-2m2 6 3-1m-3 6 3 1" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg><span>Spray</span></button>
       <button id="puppyHearStep" class="cream-pill" type="button" disabled aria-label="Hear what to do in this step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
     <div id="turnPanel" aria-live="polite">
@@ -43,7 +43,7 @@
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
       <img class="puppy-intro" src="/assets/crafted/home-puppy.webp" alt="A friendly painted puppy ready for a playful bath"><h2 id="startTitle">Puppy Bath</h2>
-      <p>Touch the glowing muddy spot and hold for a gentle shower. Give our wiggly puppy a good wash!</p><p>Say your word two times for a steadier puppy and wider water.</p>
+      <p>Say each word two times for a muddy spot. Then touch the glow and hold to wash it!</p><p>Steady puppy is extra help.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's splash</span></button>
     </div>
@@ -52,7 +52,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for a little puppy-washing help.</p>
+      <p>Say each word two times to start each muddy spot.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -78,7 +78,8 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/puppy.js"></script>
   <script>
-    SayPlay.start({key:"puppy",title:"Puppy Bath",intro:"Touch the glowing muddy spot and hold to give our puppy a gentle shower. Say your word two times to steady the puppy and make the water wider. Wash all five muddy spots for a happy little shake.",steps:[[],[],[],[],[]],finale:[],done:{title:"One squeaky-clean puppy!",sub:"Five muddy spots, washed away by you."},play:window.Puppy});
+    try{if(window.Puppy&&Puppy.setLittle&&window.Sona&&Sona.playStyle)Puppy.setLittle(Sona.playStyle()==="simple");}catch(e){}
+    SayPlay.start({key:"puppy",title:"Puppy Bath",intro:"Say each word two times for a muddy spot. Then touch the glowing spot and hold to wash it. Tap Steady puppy for extra help.",steps:[[],[],[],[],[]],finale:[],done:{title:"One squeaky-clean puppy!",sub:"Five muddy spots, washed away by you."},play:window.Puppy});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"puppy"});}catch(e){}}
   </script>
 </body>

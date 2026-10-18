@@ -35,3 +35,4 @@ Arms:512x174 paired sprite with clear center. Inner blunt attachment ends≈(.38
 Reused top hat: crafted/hat-tophat.webp256x256. Visiblebboxalpha64=(15,34,238,218); brim lower edge≈sourcey.85, central brimfoot anchor(.5,.84). Match that point to crown of head, preserveaspect.
 Background: existing snowman-bg.webp800x1200, open central snowy clearing from roughlyy.48 through.95, peripheraltrees/cabin/skis. No new background or full completed snowman asset.
 Dark-background QA contact sheet:/tmp/sona-snowman-art-qa.png
+Help ladder (18 Oct 2026): no new art. After a miss the drop target is drawn with a solid gold ring and a stronger glow, and a drawn gold arrow (canvas line plus head) points from the snowball or tray piece to it; slow rolling help turns the snow lane's edge gold. All canvas-drawn, so they need no picture.

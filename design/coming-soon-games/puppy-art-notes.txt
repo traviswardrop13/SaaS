@@ -25,3 +25,5 @@ Composition/framing: exact straight-on front view, no three-quarter perspective,
 Avoid: no tub, bucket, bath, floor, mat, scenery, water, hose, mud, dirt, bubbles, foam, sparkle, floating objects, soap, hat, glasses, collar besides the red bandana, text, numbers, UI, border, frame, logos. Exactly ONE complete clean sitting puppy, isolated, genuinely transparent background.
 
 Export verification: {"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/puppy-body-clean-v1.webp", "dimensions": [512, 677], "mode": "RGBA", "bytes": 104460, "alpha_bbox": [1, 0, 511, 674]}
+
+2026-10-18 (review fixes): no new raster art. The ladder's help is drawn at runtime on the canvas: a pulsing cream halo around the active mud spot (as wide as the spot really catches water) and a dashed cream arrow from the aim ring to the spot. The happy hop on a clean spot is a transform of the existing body sprite.

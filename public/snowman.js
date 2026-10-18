@@ -3,26 +3,43 @@
 (function () {
   "use strict";
   var STEP_LINES = [
-    "Roll through the snow. When your snowball is big, lift it into the big glowing circle.",
+    "Roll it back and forth. When it is big, lift it to the glowing circle.",
     "Roll another snowball, then lift it onto the middle circle.",
     "Roll the little snowball, then lift it onto the head circle.",
     "Drag the coal face and carrot onto the little snowball.",
-    "Add the hat, scarf, and twig arms."
+    "Drag the hat, scarf, and twig arms onto your snowman."
   ];
   var api, cv, ctx, W = 390, H = 844, raf = 0, last = 0, art = {}, active = false, paused = false, away = false, won = false, stage = 0, stages = 5, completed = 0, power = 0;
   var stacked = [false, false, false], rotations = [0, 0, 0], stack = [], zone = { left: 0.06, right: 0.94, top: 0.7, bottom: 0.84 }, tray = [], targets = [];
   var ball = { x: 0.3, y: 0.8, progress: 0, distance: 0, angle: 0 }, placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }, pieces = [];
   var top = 120, bottom = 750, maxR = 50, trail = [], held = null, owner = null, surface = null, grab = { x: 0, y: 0 }, keyboardHeld = false, misses = 0;
+  // Every step ends without speech (the Hoops rule, gentler for ages 3-4).
+  // stageMisses: real failed lifts or drops this step. After one the target
+  // glows and an arrow points from the piece to it, with a window about twice
+  // as wide; from the second, a release anywhere on the snowman's side works.
+  // Rolling and long drags are continuous, so they step up by time spent
+  // actively moving without success (tryTime, rollTry), as Dino Dig does.
+  // No help ever finishes a move: the finger still lifts and lets go.
+  var stageMisses = 0, tryTime = 0, rollTry = 0, clock = 0, lastMove = -9, doneAt = 0, powerLive = false, holdFrom = { x: 0, y: 0 };
   var POWER = 10, $ = function (id) { return document.getElementById(id); };
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function canPlay() { return active && !paused && !away && !won && !document.hidden; }
   function mode() { return stage < 3 ? "roll" : stage === 3 ? "face" : "dress"; }
   function banner(text) { if ($("snowmanBanner").textContent !== text) $("snowmanBanner").textContent = text; }
   function image(name) { var i = art[name]; return i && i.complete && i.naturalWidth ? i : null; }
-  function growthRate() { return power > 0 ? 1.2 : 0.6; }
+  function rollLevel() { return rollTry >= 8 ? 2 : rollTry >= 4 ? 1 : 0; }
+  function level() { return Math.max(Math.min(2, stageMisses), tryTime >= 8 ? 2 : tryTime >= 4 ? 1 : 0); }
+  function growthRate() { return (power > 0 ? 1.2 : 0.6) * [1, 1.5, 3][rollLevel()]; }
   function desiredR() { return stack[Math.min(2, stage)].r; }
   function ballR() { return desiredR() * (0.38 + 0.62 * ball.progress); }
-  function magnet() { return Math.max(power > 0 ? 26 : 18, (stage < 3 ? desiredR() : stack[2].r) * (power > 0 ? 0.85 : 0.48)) / W; }
+  // A finger-sized window first (a preschooler's finger is about 40 px), the
+  // word's power wider, and about twice as wide again once the ladder starts.
+  function magnet() {
+    var balls = stage < 3, r = balls ? desiredR() : stack[2].r, px;
+    if (balls) px = power > 0 ? Math.max(40, r * 0.85) : Math.max(30, r * 0.6);
+    else px = power > 0 ? Math.max(52, r * 1.2) : Math.max(40, r * 0.85);
+    return (level() >= 1 ? Math.max(px * 2, balls ? 60 : 80) : px) / W;
+  }
   function loadArt() {
     [["bg", "/assets/crafted/game/snowman-bg.webp"], ["ball", "/assets/crafted/game/snowman-ball-clean-v1.webp"], ["nose", "/assets/crafted/game/snowman-carrot-v1.webp"], ["scarf", "/assets/crafted/game/snowman-scarf-v1.webp"], ["arms", "/assets/crafted/game/snowman-twig-arms-v1.webp"], ["hat", "/assets/crafted/hat-tophat.webp"]].forEach(function (p) { var i = new Image(); i.onload = draw; i.src = p[1]; art[p[0]] = i; });
   }
@@ -71,7 +88,7 @@
       targets: targets.map(function (p) { return { id: p.id, x: p.x, y: p.y, r: magnet(), w: p.w, h: p.h, placed: placed[p.id] }; }),
       tray: tray.map(function (p) { return { id: p.id, x: p.x, y: p.y, w: p.w, h: p.h }; }), pieces: pieces.map(function (p) { return { id: p.id, x: p.x, y: p.y, placed: placed[p.id] }; }),
       placed: { coal: placed.coal, nose: placed.nose, hat: placed.hat, scarf: placed.scarf, arms: placed.arms }, growthRate: growthRate(), magnet: magnet(), held: held ? held.type === "ball" ? "ball" : pieces[held.index].id : null,
-      pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
+      pointerId: owner, keyboardHeld: keyboardHeld, misses: misses, stageMisses: stageMisses, level: level(), rollHelp: rollLevel(), tryTime: tryTime, rollTry: rollTry, celebrating: doneAt > 0, powerLive: powerLive, width: W, height: H, coordinates: "positions normalized to canvas; radii/distance/magnet use canvas width; growthRate is progress per width of real rolling distance" };
   }
   function hud() {
     if (!cv || !stack.length) return;
@@ -85,9 +102,10 @@
   }
   function snowLane() {
     var x = zone.left * W, y = zone.top * H, w = (zone.right - zone.left) * W, h = (zone.bottom - zone.top) * H;
-    ctx.save(); ctx.fillStyle = "rgba(248,253,252,.74)"; ctx.strokeStyle = "rgba(136,180,192,.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2 + 4, h / 2 + 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    var laneHelp = mode() === "roll" && active && !stacked[stage] && ball.progress < 1 && rollLevel() >= 1;
+    ctx.save(); ctx.fillStyle = "rgba(248,253,252,.74)"; ctx.strokeStyle = laneHelp ? "#e8b84a" : "rgba(136,180,192,.55)"; ctx.lineWidth = laneHelp ? 5 : 2; if (laneHelp) { ctx.shadowColor = "#fff2b0"; ctx.shadowBlur = 18; } ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2 + 4, h / 2 + 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
     ctx.strokeStyle = "rgba(169,199,207,.5)"; ctx.lineWidth = 2; ctx.setLineDash([4, 9]); ctx.beginPath(); ctx.moveTo(x + 20, y + h * 0.18); ctx.lineTo(x + w - 20, y + h * 0.18); ctx.moveTo(x + 20, y + h * 0.82); ctx.lineTo(x + w - 20, y + h * 0.82); ctx.stroke(); ctx.setLineDash([]);
-    if (mode() === "roll") { ctx.strokeStyle = "rgba(71,128,146,.4)"; ctx.lineWidth = 3; ctx.lineCap = "round"; var cy = y + h / 2, ax = x + w / 2, length = Math.min(25, w * 0.1); ctx.beginPath(); ctx.moveTo(ax - length, cy); ctx.lineTo(ax + length, cy); ctx.moveTo(ax - length + 7, cy - 6); ctx.lineTo(ax - length, cy); ctx.lineTo(ax - length + 7, cy + 6); ctx.moveTo(ax + length - 7, cy - 6); ctx.lineTo(ax + length, cy); ctx.lineTo(ax + length - 7, cy + 6); ctx.stroke(); }
+    if (mode() === "roll") { ctx.strokeStyle = laneHelp ? "#c98a1c" : "rgba(71,128,146,.4)"; ctx.lineWidth = laneHelp ? 5 : 3; ctx.lineCap = "round"; var cy = y + h / 2, ax = x + w / 2, length = Math.min(laneHelp ? 60 : 25, w * (laneHelp ? 0.25 : 0.1)); ctx.beginPath(); ctx.moveTo(ax - length, cy); ctx.lineTo(ax + length, cy); ctx.moveTo(ax - length + 7, cy - 6); ctx.lineTo(ax - length, cy); ctx.lineTo(ax - length + 7, cy + 6); ctx.moveTo(ax + length - 7, cy - 6); ctx.lineTo(ax + length, cy); ctx.lineTo(ax + length - 7, cy + 6); ctx.stroke(); }
     trail.forEach(function (p) { ctx.fillStyle = "rgba(164,193,202,.16)"; ctx.beginPath(); ctx.arc(p.x * W, p.y * H, p.r * W, 0, Math.PI * 2); ctx.fill(); }); ctx.restore();
   }
   function drawBall(x, y, r, angle, shadow) {
@@ -118,17 +136,28 @@
   }
   function drawStack() {
     if (placed.arms) { var arms = pieceShape("arms"); drawPiece("arms", arms.x, arms.y, arms.w, arms.h); }
-    stack.forEach(function (p, n) { if (stacked[n]) drawBall(p.x, p.y, p.r, rotations[n], n === 0); else { ctx.save(); ctx.fillStyle = "rgba(247,253,250,.25)"; ctx.strokeStyle = n === stage ? "#5b9b9f" : "rgba(104,151,167,.38)"; ctx.lineWidth = n === stage ? 3 : 2; ctx.setLineDash([5, 7]); if (n === stage) { ctx.shadowColor = "#fff9dd"; ctx.shadowBlur = 13; } ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); } });
+    stack.forEach(function (p, n) { if (stacked[n]) drawBall(p.x, p.y, p.r, rotations[n], n === 0); else { ctx.save(); ctx.fillStyle = "rgba(247,253,250,.25)"; var help = n === stage && level() >= 1; ctx.strokeStyle = help ? "#e8b84a" : n === stage ? "#5b9b9f" : "rgba(104,151,167,.38)"; ctx.lineWidth = help ? 6 : n === stage ? 3 : 2; ctx.setLineDash(help ? [] : [5, 7]); if (n === stage) { ctx.shadowColor = help ? "#ffe680" : "#fff9dd"; ctx.shadowBlur = help ? 26 : 13; } ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); } });
     ["coal", "nose", "scarf", "hat"].forEach(function (id) { if (placed[id]) { var p = pieceShape(id); drawPiece(id, p.x, p.y, p.w, p.h); } });
   }
   function drawAccessories() {
     if (mode() === "roll") return;
-    targets.forEach(function (p) { if (placed[p.id]) return; var shape = pieceShape(p.id); ctx.save(); ctx.shadowColor = "#fff6c2"; ctx.shadowBlur = 14; drawPiece(p.id, shape.x, shape.y, shape.w, shape.h, 0.28); ctx.strokeStyle = "rgba(55,132,140,.6)"; ctx.lineWidth = 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.ellipse(shape.x, shape.y, Math.max(17, shape.w * 0.53), Math.max(17, shape.h * 0.5), 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); });
+    var help = level() >= 1;
+    targets.forEach(function (p) { if (placed[p.id]) return; var shape = pieceShape(p.id); ctx.save(); ctx.shadowColor = help ? "#ffe680" : "#fff6c2"; ctx.shadowBlur = help ? 28 : 14; drawPiece(p.id, shape.x, shape.y, shape.w, shape.h, 0.28); ctx.strokeStyle = help ? "#e8b84a" : "rgba(55,132,140,.6)"; ctx.lineWidth = help ? 4 : 2; ctx.setLineDash(help ? [] : [3, 6]); ctx.beginPath(); ctx.ellipse(shape.x, shape.y, Math.max(17, shape.w * 0.53), Math.max(17, shape.h * 0.5), 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); });
+    if (help && active) pieces.forEach(function (p, n) { if (placed[p.id] || held && !(held.type === "piece" && held.index === n)) return; var t = pieceShape(p.id); arrow(p.x * W, p.y * H - 40, t.x, t.y + Math.min(t.h * 0.5, 30)); });
     pieces.forEach(function (p, n) { if (placed[p.id]) return; var dragging = held && held.type === "piece" && held.index === n, shape = pieceShape(p.id), scale = dragging ? 1 : Math.min(1, 62 / Math.max(shape.w, shape.h)); if (!dragging) { ctx.fillStyle = "rgba(255,251,240,.92)"; ctx.strokeStyle = "#d6e3e1"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(p.x * W, p.y * H, 38, 36, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } drawPiece(p.id, p.x * W, p.y * H, shape.w * scale, shape.h * scale); });
+  }
+  // The ladder's arrow: a bold gold line with a head, from the piece to where
+  // it goes. Drawn only once a miss (or a long try) asked for it.
+  function arrow(x1, y1, x2, y2) {
+    var dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy); if (len < 30) return;
+    var ux = dx / len, uy = dy / len, ex = x2 - ux * 8, ey = y2 - uy * 8, hx = ex - ux * 18, hy = ey - uy * 18;
+    ctx.save(); ctx.strokeStyle = "#c98a1c"; ctx.fillStyle = "#c98a1c"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.shadowColor = "rgba(255,255,255,.9)"; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(hx, hy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(hx - uy * 13, hy + ux * 13); ctx.lineTo(hx + uy * 13, hy - ux * 13); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   function draw() {
     if (!ctx || !stack.length) return; ctx.clearRect(0, 0, W, H); background(); snowLane(); drawStack();
-    if (mode() === "roll" && !stacked[stage]) { var r = ballR(); drawBall(ball.x * W, ball.y * H, r, ball.angle, true); if (active && ball.progress < 1) { var x = ball.x * W, y = ball.y * H + r + 12; for (var n = 0; n < 5; n++) { ctx.fillStyle = ball.progress >= (n + 1) / 5 ? "#408e96" : "rgba(255,255,248,.95)"; ctx.beginPath(); ctx.arc(x + (n - 2) * 9, y, 3, 0, Math.PI * 2); ctx.fill(); } } else if (active) { ctx.save(); ctx.strokeStyle = "rgba(57,131,140,.68)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(ball.x * W, ball.y * H - r); ctx.lineTo(stack[stage].x, stack[stage].y + stack[stage].r); ctx.stroke(); ctx.restore(); } }
+    if (mode() === "roll" && !stacked[stage]) { var r = ballR(); drawBall(ball.x * W, ball.y * H, r, ball.angle, true); if (active && ball.progress < 1) { var x = ball.x * W, y = ball.y * H + r + 12; for (var n = 0; n < 5; n++) { ctx.fillStyle = ball.progress >= (n + 1) / 5 ? "#408e96" : "rgba(255,255,248,.95)"; ctx.beginPath(); ctx.arc(x + (n - 2) * 9, y, 3, 0, Math.PI * 2); ctx.fill(); } } else if (active && level() >= 1) arrow(ball.x * W, ball.y * H - r, stack[stage].x, stack[stage].y + stack[stage].r); else if (active) { ctx.save(); ctx.strokeStyle = "rgba(57,131,140,.68)"; ctx.lineWidth = 2; ctx.setLineDash([4, 7]); ctx.beginPath(); ctx.moveTo(ball.x * W, ball.y * H - r); ctx.lineTo(stack[stage].x, stack[stage].y + stack[stage].r); ctx.stroke(); ctx.restore(); } }
     drawAccessories();
   }
   function point(event) { var rect = cv.getBoundingClientRect(); return { x: (event.clientX - rect.left) / W, y: (event.clientY - rect.top) / H }; }
@@ -139,28 +168,43 @@
   }
   function moveHeld(p) {
     if (!held || !canPlay()) return;
-    if (held.type === "ball") { var old = { x: ball.x, y: ball.y }, r = ballR(); ball.x = clamp(p.x, r / W + 0.015, 1 - r / W - 0.015); ball.y = clamp(p.y, (top + r) / H, (bottom - r) / H); var d = clippedDistance(old, ball); if (d > 0) { ball.distance += d; ball.progress = Math.min(1, ball.progress + d * growthRate()); ball.angle += ((ball.x - old.x) || (ball.y - old.y) * H / W) / Math.max(0.01, r / W); trail.push({ x: ball.x, y: ball.y, r: r / W * 0.13 }); if (trail.length > 160) trail.shift(); } banner(ball.progress >= 1 ? "Big enough! Lift it to the glowing circle" : "Roll, roll, roll through the snow!"); }
-    else { var piece = pieces[held.index]; piece.x = clamp(p.x, 0.05, 0.95); piece.y = clamp(p.y, (top + 10) / H, (bottom - 10) / H); }
+    if (held.type === "ball") { var old = { x: ball.x, y: ball.y }, r = ballR(); ball.x = clamp(p.x, r / W + 0.015, 1 - r / W - 0.015); ball.y = clamp(p.y, (top + r) / H, (bottom - r) / H); var mdx = ball.x - old.x, mdy = (ball.y - old.y) * H / W, moved = Math.sqrt(mdx * mdx + mdy * mdy), d = rollLevel() >= 2 ? moved : clippedDistance(old, ball); if (moved * W > 0.5) lastMove = clock; if (d > 0) { ball.distance += d; ball.progress = Math.min(1, ball.progress + d * growthRate()); ball.angle += ((ball.x - old.x) || (ball.y - old.y) * H / W) / Math.max(0.01, r / W); trail.push({ x: ball.x, y: ball.y, r: r / W * 0.13 }); if (trail.length > 160) trail.shift(); } banner(ball.progress >= 1 ? "Big enough! Lift it to the glowing circle" : rollLevel() >= 1 ? "Roll it back and forth on the snow!" : "Roll, roll, roll through the snow!"); }
+    else { var piece = pieces[held.index]; if (Math.abs(p.x - piece.x) * W + Math.abs(p.y - piece.y) * H > 0.5) lastMove = clock; piece.x = clamp(p.x, 0.05, 0.95); piece.y = clamp(p.y, (top + 10) / H, (bottom - 10) / H); }
     hud(); draw();
   }
   function down(event, kind, index) {
     if (!canPlay() || held || event.button !== undefined && event.button !== 0 || kind === "piece" && placed[pieces[index].id]) return;
-    event.preventDefault(); var p = point(event), object = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; owner = event.pointerId; surface = event.currentTarget; keyboardHeld = false; grab.x = p.x - object.x; grab.y = p.y - object.y; try { surface.setPointerCapture(owner); } catch (e) {} hud(); draw();
+    event.preventDefault(); var p = point(event), object = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; powerLive = true; holdFrom.x = object.x; holdFrom.y = object.y; owner = event.pointerId; surface = event.currentTarget; keyboardHeld = false; grab.x = p.x - object.x; grab.y = p.y - object.y; try { surface.setPointerCapture(owner); } catch (e) {} hud(); draw();
   }
   function move(event) { if (event.pointerId !== owner || !canPlay()) return; event.preventDefault(); var p = point(event); moveHeld({ x: p.x - grab.x, y: p.y - grab.y }); }
   function detach() { var old = held, id = owner, oldSurface = surface; held = null; owner = null; surface = null; keyboardHeld = false; if (id !== null && oldSurface) try { if (oldSurface.hasPointerCapture(id)) oldSurface.releasePointerCapture(id); } catch (e) {} return old; }
   function cancelGesture() { var old = detach(); if (old && old.type === "piece" && pieces[old.index] && tray[old.index]) { pieces[old.index].x = tray[old.index].x; pieces[old.index].y = tray[old.index].y; } }
-  function finishStage() { completed = Math.max(completed, stage + 1); active = false; detach(); api.sfx("correct"); banner(stage === 4 ? "A snow friend, made by you!" : "That looks just right!"); hud(); draw(); api.done(); }
+  // A short celebration beat, then the step counts: the next word is asked
+  // 250 ms after done(), and that ask stops chimes, so "correct" plays first.
+  // doneAt runs on the game's own clock, which stops while paused or hidden.
+  function finishStage() { completed = Math.max(completed, stage + 1); active = false; detach(); stageMisses = 0; tryTime = 0; rollTry = 0; api.sfx("correct"); try { if (api.face) api.face("cheer"); } catch (e) {} banner(stage === 4 ? "A snow friend, made by you!" : stage < 3 ? "Yay! It fits just right!" : "That looks just right!"); doneAt = clock + 1.15; hud(); draw(); }
   function drop() {
     if (!held || !canPlay()) return; var old = detach();
-    if (old.type === "ball") { var t = stack[stage], dx = ball.x - t.x / W, dy = (ball.y * H - t.y) / W; if (ball.progress >= 1 && dx * dx + dy * dy <= magnet() * magnet()) { stacked[stage] = true; rotations[stage] = ball.angle; finishStage(); return; } misses++; banner(ball.progress < 1 ? "Roll it through the snow until it is big" : "Lift your snowball into the glowing circle"); }
-    else { var p = pieces[old.index], t2 = targets[old.index], x = p.x - t2.x, y = (p.y - t2.y) * H / W; if (x * x + y * y <= magnet() * magnet()) { placed[p.id] = true; api.sfx("tap"); if (pieces.every(function (piece) { return placed[piece.id]; })) { finishStage(); return; } banner("One more snowy finishing touch!"); } else { misses++; p.x = tray[old.index].x; p.y = tray[old.index].y; banner("Try the glowing shape. You can do it!"); } }
+    var lane = zone.top * H;
+    if (old.type === "ball") {
+      var t = stack[stage], dx = ball.x - t.x / W, dy = (ball.y * H - t.y) / W, lifted = ball.y * H < lane + 6 || (holdFrom.y - ball.y) * H >= 25;
+      if (ball.progress >= 1 && (dx * dx + dy * dy <= magnet() * magnet() || level() >= 2 && lifted)) { stacked[stage] = true; rotations[stage] = ball.angle; finishStage(); return; }
+      misses++;
+      if (ball.progress < 1) { if (lifted) rollTry += 1.5; banner(rollLevel() >= 1 ? "Roll it back and forth on the snow!" : "Roll it through the snow until it is big"); }
+      else if (lifted) { stageMisses++; banner(level() >= 2 ? "Nearly! Lift it up to the snowman." : "So close! Follow the arrow."); }
+      else banner("Lift your snowball into the glowing circle");
+    }
+    else {
+      var p = pieces[old.index], t2 = targets[old.index], x = p.x - t2.x, y = (p.y - t2.y) * H / W, tx = (p.x - tray[old.index].x) * W, ty = (p.y - tray[old.index].y) * H, tried = tx * tx + ty * ty >= 24 * 24;
+      if (x * x + y * y <= magnet() * magnet() || level() >= 2 && tried && p.y * H < lane) { placed[p.id] = true; api.sfx("tap"); if (pieces.every(function (piece) { return placed[piece.id]; })) { finishStage(); return; } banner("One more snowy finishing touch!"); }
+      else { misses++; if (tried) stageMisses++; p.x = tray[old.index].x; p.y = tray[old.index].y; banner(!tried ? "Drag it to the glowing shape." : level() >= 2 ? "Nearly! Drop it on the snowman." : "So close! Follow the arrow."); }
+    }
     hud(); draw();
   }
   function release(event, canceled) { if (event.pointerId !== owner) return; event.preventDefault(); if (canceled || !canPlay()) cancelGesture(); else drop(); hud(); draw(); }
   function keyboard(event, kind, index) {
     if (!canPlay() || owner !== null || kind === "piece" && placed[pieces[index].id]) return;
-    var key = event.key; if (key === " " || key === "Enter") { event.preventDefault(); if (event.repeat) return; if (!held) { held = { type: kind, index: index }; keyboardHeld = true; } else if (held.type === kind && held.index === index) drop(); hud(); draw(); return; }
+    var key = event.key; if (key === " " || key === "Enter") { event.preventDefault(); if (event.repeat) return; if (!held) { var o = kind === "ball" ? ball : pieces[index]; held = { type: kind, index: index }; keyboardHeld = true; powerLive = true; holdFrom.x = o.x; holdFrom.y = o.y; } else if (held.type === kind && held.index === index) drop(); hud(); draw(); return; }
     if (key === "Escape") { event.preventDefault(); cancelGesture(); hud(); draw(); return; }
     if (!held || !keyboardHeld || held.type !== kind || held.index !== index) return;
     var dx = 0, dy = 0, stepSize = event.shiftKey ? 0.018 : 0.07; if (key === "ArrowLeft") dx = -stepSize; else if (key === "ArrowRight") dx = stepSize; else if (key === "ArrowUp") dy = -stepSize * W / H; else if (key === "ArrowDown") dy = stepSize * W / H; else return; event.preventDefault(); var p = kind === "ball" ? ball : pieces[index]; moveHeld({ x: p.x + dx, y: p.y + dy });
@@ -171,14 +215,22 @@
     window.addEventListener("resize", fit); window.addEventListener("blur", function () { cancelGesture(); hud(); draw(); }); document.addEventListener("visibilitychange", function () { if (document.hidden) pause(); });
     window.addEventListener("pagehide", function () { away = true; pause(); cancelAnimationFrame(raf); raf = 0; }); window.addEventListener("pageshow", function () { away = false; if (!raf) { last = 0; raf = requestAnimationFrame(frame); } hud(); });
   }
-  function frame(now) { var dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now; if (canPlay()) power = Math.max(0, power - dt); hud(); draw(); raf = requestAnimationFrame(frame); }
-  function earnPower() { active = true; paused = false; power = POWER; last = 0; banner(stage < 3 ? "Roll in the snow, then lift to the glow" : stage === 3 ? "Add a face and a carrot nose" : "A hat, a scarf, and twig arms!"); hud(); draw(); }
+  function frame(now) {
+    var dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
+    if (!paused && !away && !document.hidden) clock += dt;
+    // The word's 10 s start at the child's first touch, not while Echo reads.
+    if (canPlay() && powerLive) power = Math.max(0, power - dt);
+    if (canPlay() && held && clock - lastMove < 0.35) { if (held.type === "ball" && ball.progress < 1) rollTry += dt; else tryTime += dt; }
+    if (doneAt && !paused && !away && !document.hidden && clock >= doneAt) { doneAt = 0; if (api) api.done(); }
+    hud(); draw(); raf = requestAnimationFrame(frame);
+  }
+  function earnPower() { active = true; paused = false; power = POWER; powerLive = false; last = 0; banner(stage < 3 ? "Roll in the snow, then lift to the glow" : stage === 3 ? "Add a face and a carrot nose" : "A hat, a scarf, and twig arms!"); hud(); draw(); }
   function pause() { paused = true; last = 0; cancelGesture(); hud(); }
-  function reset() { cancelGesture(); active = false; paused = false; won = false; stage = 0; completed = 0; power = 0; misses = 0; stacked = [false, false, false]; rotations = [0, 0, 0]; placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }; ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; trail = []; buildAccessories(); banner("Let's make a snowy little friend!"); hud(); draw(); }
+  function reset() { cancelGesture(); active = false; paused = false; won = false; stage = 0; completed = 0; power = 0; misses = 0; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; powerLive = false; stacked = [false, false, false]; rotations = [0, 0, 0]; placed = { coal: false, nose: false, hat: false, scarf: false, arms: false }; ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; trail = []; buildAccessories(); banner("Let's make a snowy little friend!"); hud(); draw(); }
   window.Snowman = {
     init: function (a, n) { api = a; stages = n || 5; cv = $("snowmanCanvas"); ctx = cv.getContext("2d"); loadArt(); controls(); fit(); reset(); raf = requestAnimationFrame(frame); },
-    onWord: function (index) { cancelGesture(); stage = index; if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; buildAccessories(); earnPower(); api.instruct(STEP_LINES[stage]); },
+    onWord: function (index) { cancelGesture(); stage = index; stageMisses = 0; tryTime = 0; rollTry = 0; doneAt = 0; if (stage < 3) ball = { x: zone.left + (zone.right - zone.left) * 0.26, y: (zone.top + zone.bottom) / 2, progress: 0, distance: 0, angle: 0 }; buildAccessories(); earnPower(); api.instruct(STEP_LINES[stage]); },
     onHelp: earnPower, pause: pause, resume: function (playing) { paused = playing === false; last = 0; hud(); }, reset: reset,
-    finale: function () { cancelGesture(); active = false; power = 0; won = true; banner("A snow friend, made by you!"); hud(); draw(); }
+    finale: function () { cancelGesture(); active = false; power = 0; doneAt = 0; won = true; banner("A snow friend, made by you!"); hud(); draw(); }
   };
 })();

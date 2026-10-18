@@ -289,3 +289,6 @@ NORMALIZED ANATOMY / CONTACT ANCHORS
 }
 
 Operations after generation are rectangular crop bounds with12px padding, proportional resize and WebP format export only. Generated alpha preserved byte-for-byte relative to resized image. No semantic pixel edits, rotation, recoloring or existing artwork changes. Skipped redundant bow and crown generations after confirming existing art is suitable; no new stamp art requested (native colored stencil).
+
+HELP LADDER DRAWING (18 Oct 2026, no new art)
+The glow on the next target, the gold arrows and the finish sparkles are drawn by monster.js on the canvas (no image files). They show only after two misses (or about 8 s of rubbing with nothing finished). Painted versions, if Travis wants them, would drop in at the glow() and sparkles() draws.

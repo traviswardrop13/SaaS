@@ -27,7 +27,7 @@
     <button id="giftLid" class="gifts-grip" type="button" disabled hidden aria-label="Lift the lid along the glowing arrow, then let go to open. Keyboard: Space picks up, arrows lift, Space releases." aria-pressed="false"></button>
     <div id="giftsControls">
       <button id="giftsHearStep" class="cream-pill" type="button" disabled aria-label="Hear how to unwrap this present"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      <button id="giftsHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for easier unwrapping"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="gifts-help-label"><span>Little helper</span><span id="giftsPower" hidden><i id="giftsPowerFill"></i></span></span></button>
+      <button id="giftsHelp" class="act-pill" type="button" disabled aria-label="Optional: say your word again for extra help"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="gifts-help-label"><span>Little helper</span><span id="giftsPower" hidden><i id="giftsPowerFill"></i></span></span></button>
     </div>
     <div id="turnPanel" aria-live="polite">
       <div id="picBox"><span id="pic"></span></div>
@@ -45,7 +45,7 @@
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
       <img class="gifts-intro" src="/assets/crafted/home-gifts.webp" alt="Echo and some colorful surprise presents"><h2 id="startTitle">Surprise Boxes</h2>
-      <p>Pull, peel, twist, and slide. Lift each lid to find a new little friend.</p><p>Say your word two times for easier unwrapping.</p>
+      <p>Say each word two times to get a present.</p><p>Pull, peel, twist or slide, then lift the lid to find a friend.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's unwrap</span></button>
     </div>
@@ -54,7 +54,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for a little unwrapping help.</p>
+      <p>Say your word two times to open each present.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -80,7 +80,7 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/gifts.js"></script>
   <script>
-    SayPlay.start({key:"gifts",title:"Surprise Boxes",intro:"Pull, peel, twist, and slide to unwrap five different presents. Lift each lid to find a new little friend. Say your word two times for easier unwrapping.",steps:[[],[],[],[],[]],finale:[],done:{title:"Five lovely surprises!",sub:"Five new friends, opened by you."},play:window.Gifts});
+    SayPlay.start({key:"gifts",title:"Surprise Boxes",intro:"Say each word two times to get a present.",steps:[[],[],[],[],[]],finale:[],done:{title:"Five lovely surprises!",sub:"Five new friends, opened by you."},play:window.Gifts});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"gifts"});}catch(e){}}
   </script>
 </body>

@@ -27,3 +27,5 @@ Background source: 1916×821, panorama aspect ≈ 2.334:1. Clear grass and sky w
 Five reused riders, all 512×512 with true RGBA: buddy-bunny-sit.webp (36786B), buddy-cat-sit.webp (50990B), buddy-lion-sit.webp (51548B), buddy-penguin-sit.webp (47070B), buddy-frog-sit.webp (54250B).
 Rider alpha64 bounds: bunny (137,31,387,476); cat (89,31,423,478); lion (58,31,455,477); penguin (97,31,425,476); frog (73,31,445,475). Upper .06–.60 of source height yields a face/ear crop; retain the bunny's ears. Feet anchor ≈ .93 of source height.
 QA: /tmp/sona-train-source-qa.png and /tmp/sona-train-riders-qa.png. Alpha0 verified through all three opening centers in source and export. WebP alpha is exactly equal to the resized generated alpha.
+
+2026-10-17 review fix: the countryside painting does not tile edge to edge, so train.js now draws it in tiles with every other one mirrored (each edge meets itself; no seam). A painting made to tile would let the mirroring go. No art changed.

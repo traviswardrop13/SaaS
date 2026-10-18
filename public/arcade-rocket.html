@@ -19,13 +19,13 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="rocketCanvas" role="img" aria-label="A painted launchpad beneath a starry sky. Pull the rocket down and release it through the glowing planet ring."></canvas>
+    <canvas id="rocketCanvas" role="img" aria-label="A painted launchpad beneath a starry sky. Say your word to get a rocket, then pull it down and let go through the glowing ring."></canvas>
     <div id="rocketBanner" role="status" aria-live="polite">Ready for a little rocket adventure?</div>
     <button id="rocketPull" type="button" disabled aria-label="Grab the rocket, pull down to aim, then let go. Keyboard: arrow keys pull the rocket; Enter or Space releases it; Escape returns it to the pad." aria-pressed="false"></button>
     <div id="rocketHint" aria-hidden="true">Pull down. Let go!</div>
     <div id="rocketControls">
       <button id="rocketRetry" class="cream-pill" type="button" disabled aria-label="Return this rocket to the launchpad and try the same flight again"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M6 10a9 9 0 1 1-1 7M6 4v7h7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button id="rocketHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for a bigger landing ring, calm wind and a full aim path"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="rocket-help-label"><span>Big ring</span><span id="rocketPower" hidden><i id="rocketPowerFill"></i></span></span></button>
+      <button id="rocketHelp" class="act-pill" type="button" disabled aria-label="Extra help, if you like: say your word two times for a bigger ring"><img src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span class="rocket-help-label"><span>Big ring</span><span id="rocketPower" hidden><i id="rocketPowerFill"></i></span></span></button>
     </div>
     <div id="turnPanel" aria-live="polite">
       <div id="picBox"><span id="pic"></span></div>
@@ -42,8 +42,8 @@
 
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
-      <img class="rocket-intro" src="/assets/crafted/home-rocket.webp" alt="A little painted rocket ready for a space adventure"><h2 id="startTitle">Rocket Blast</h2>
-      <p>Pull the rocket down. Aim for the glow. Let go and fly!</p><p>Say your word two times for a bigger ring and a little help aiming.</p>
+      <img class="rocket-intro" src="/assets/crafted/home-rocket.webp" alt="A little painted rocket ready for a space adventure" onerror="this.hidden=true"><h2 id="startTitle">Rocket Blast</h2>
+      <p>Say your word two times to get a rocket. Pull it down and let go!</p><p>Big ring: say it again for extra help.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's fly</span></button>
     </div>
@@ -52,7 +52,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for a bigger landing ring.</p>
+      <p>Say your word two times to get each rocket.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -78,7 +78,7 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/rocket.js"></script>
   <script>
-    SayPlay.start({key:"rocket",title:"Rocket Blast",intro:"Pull the rocket down, aim for the glowing ring, and let go to fly. Say your word two times for a bigger ring, calm wind, and a little help aiming.",steps:[[],[],[],[],[]],finale:[],done:{title:"Five little space adventures!",sub:"You aimed and flew to every little world."},play:window.Rocket});
+    SayPlay.start({key:"rocket",title:"Rocket Blast",intro:"Say your word two times to get a rocket. Then pull it down and let go!",steps:[[],[],[],[],[]],finale:[],done:{title:"Five little space adventures!",sub:"You aimed and flew to every little world."},play:window.Rocket});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"rocket"});}catch(e){}}
   </script>
 </body>

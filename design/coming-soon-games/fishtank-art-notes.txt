@@ -22,3 +22,8 @@ Alpha>=16 bounds: (6, 5, 507, 335)
 Geometry: full image aspect 512/341. Right-facing fish; mouth opening center (0.941,0.602), eye center approx (0.845,0.465). Complete fish alpha within about x.012–.99,y.016–.982. Mouth catch radius around .035 image width covers dark opening; game help may use a larger clearly drawn mouth halo. Mirrored left-facing mouth is (1-.941,.602). Use the same image transform for motion, mouth and visible catch guide. Five runtime color/swim variants of this one actor are sufficient; native fallback fish stays code-owned.
 
 QA: source alpha extrema0..254; generated surrounding orange haze alpha<16. Dark composites /tmp/sona-fish-source-dark-qa.png and /tmp/sona-fish-export-dark-qa.png show clean cutout, no rectangle/ground shadow, clear mouth. All fins retained.
+
+18 Oct 2026 (the misses ladder): no new art. The help glow around the hungry
+fish and its mouth ring, the orange down-arrow showing where to let go, and the
+little gold dots around a just-fed fish are drawn in code on the canvas
+(fishtank.js feedingGuide and draw). Painted versions could drop in later.

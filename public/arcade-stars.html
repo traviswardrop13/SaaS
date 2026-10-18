@@ -19,12 +19,12 @@
       <span id="spacer"></span>
       <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
     </div>
-    <canvas id="starsCanvas" role="img" aria-label="A quiet night sky. Start at the bright star and slide along the path to connect each constellation."></canvas>
+    <canvas id="starsCanvas" role="img" aria-label="A quiet night sky. Say the word to start a picture, then slide from star to star to draw it."></canvas>
     <div id="starsBanner" role="status" aria-live="polite">Let's draw a quiet little night sky</div>
     <button id="starPen" type="button" disabled aria-label="Start at this glowing star. Press and slide along the path to the next star. Keyboard: Space picks up, arrow keys trace, Space releases; Shift makes smaller steps." aria-pressed="false"></button>
     <div id="starsControls">
       <button id="starsHearStep" class="cream-pill" type="button" disabled aria-label="Hear what to do in this step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      <button id="starsHelp" class="act-pill" type="button" disabled aria-label="Say your word two times for a wider glowing path and easier star connections"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="stars-help-label"><span>Glowing path</span><span id="starsPower" hidden><i id="starsPowerFill"></i></span></span></button>
+      <button id="starsHelp" class="act-pill" type="button" disabled aria-label="Extra help, if you want it: say your word two times for a wider glowing path"><img src="/assets/crafted/echo-wave.webp" alt=""><span class="stars-help-label"><span>Glowing path</span><span id="starsPower" hidden><i id="starsPowerFill"></i></span></span></button>
     </div>
     <div id="turnPanel" aria-live="polite">
       <div id="picBox"><span id="pic"></span></div>
@@ -41,8 +41,8 @@
 
   <div class="ovl" id="startOvl">
     <div class="ovlCard">
-      <img class="stars-intro" src="/assets/crafted/home-stars.webp" alt="A peaceful painted village under the moon"><h2 id="startTitle">Bedtime Stars</h2>
-      <p>Start at the bright star. Slide along the path. Draw five little pictures in the night sky.</p><p>Say your word two times for a wider glowing path.</p>
+      <img class="stars-intro" src="/assets/crafted/home-stars.webp" alt="Echo in a star nightcap, snuggled under a smiling moon"><h2 id="startTitle">Bedtime Stars</h2>
+      <p>Say each word two times to start a picture. Then slide from star to star to draw it.</p><p>Glowing path is extra help.</p>
       <p class="small" id="startSound"></p>
       <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's draw</span></button>
     </div>
@@ -51,7 +51,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
-      <p>Say your word two times for a little starlight help.</p>
+      <p>Say your word two times to start each picture.</p>
       <p class="small" id="micPromise"></p>
       <button class="btn" id="primerYes">Turn on Echo's ears</button>
       <button class="ghost" id="primerNo">Not now</button>
@@ -77,7 +77,7 @@
   <script src="/sona.js"></script>
   <script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/stars.js"></script>
   <script>
-    SayPlay.start({key:"stars",title:"Bedtime Stars",intro:"Start at the bright star and slide along the path to the next star. We will draw five little pictures in the sky. Say your word two times for a wider glowing path.",steps:[[],[],[],[],[]],finale:[],done:{title:"A sky full of little pictures!",sub:"Five constellations, drawn by you."},play:window.Stars});
+    SayPlay.start({key:"stars",title:"Bedtime Stars",intro:"Say each word two times to start a picture. Then draw it: slide from star to star. Glowing path is extra help.",steps:[[],[],[],[],[]],finale:[],done:{title:"A sky full of little pictures!",sub:"Five constellations, drawn by you."},play:window.Stars});
     if(!document.body.hidden){try{Sona.track("game opened",{game:"stars"});}catch(e){}}
   </script>
 </body>
