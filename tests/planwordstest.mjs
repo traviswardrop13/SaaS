@@ -1,9 +1,12 @@
-// THE ONE PLAN THE IPHONE SELLS, AND EVERY SENTENCE ABOUT IT (5 Oct 2026).
+// THE PLANS THE IPHONE SELLS, AND EVERY SENTENCE ABOUT THEM (5 Oct 2026).
 //
 // Travis, 5 Oct 2026: "get rid of the annual option and update the copy so
-// that it says three days free, then $9.99 a month". The app sells the monthly
-// product alone, and two functions in sona.js own everything a price screen
-// may say about it:
+// that it says three days free, then $9.99 a month". The app sold the monthly
+// product alone; since 19 Oct 2026 ("go, yes to 1 2 3") the yearly one can be
+// a second row beside it, ONLY when RevenueCat's current offering lists it
+// and the store returns it (scenario 2b; anything else is the monthly row
+// alone, exactly as before). Two functions in sona.js own everything a price
+// screen may say about either:
 //   Sona.storePlan()  turns the store's answers (the product, whether THIS
 //                     buyer may still have the free days, whether this Apple
 //                     ID already has Premium) into one of four states;
@@ -65,7 +68,7 @@ const ask = (opts = {}) => page.evaluate((o) => {
 }, opts);
 const got = () => page.evaluate(() => window.__plan);
 const late = () => page.evaluate(() => window.__late || []);
-const rec = () => page.evaluate(() => ({ asked: __phone.asked, bought: __phone.bought, eligAsked: __phone.eligAsked, eligIds: __phone.eligIds, syncs: __phone.syncs, restores: __phone.restores, infos: __phone.infos, unknown: __phone.unknown }));
+const rec = () => page.evaluate(() => ({ asked: __phone.asked, bought: __phone.bought, eligAsked: __phone.eligAsked, eligIds: __phone.eligIds, syncs: __phone.syncs, restores: __phone.restores, infos: __phone.infos, unknown: __phone.unknown, offerings: __phone.offerings }));
 const sub = () => page.evaluate(() => { try { return JSON.parse(localStorage.getItem("sona.sub.v1") || "null"); } catch (e) { return null; } });
 async function planFor(cfg, ms = 0) { await load(cfg); await ask(); if (ms) await tick(ms); return got(); }
 const brief = (p) => p && { state: p.state, kind: p.kind, sure: p.sure, why: p.why, price: p.price, id: p.id, per: p.per, free: p.free && p.free.text };
@@ -116,17 +119,134 @@ try {
     }
   });
 
-  // ── 2. one plan: the yearly product is never asked for, and never offered ──
+  // ── 2. one plan: while RevenueCat's offering does not list the yearly
+  // product, it is never asked for, and never offered ──
   await scenario("one plan", async () => {
     let p = await planFor({ store: STORES.monthlyFree, elig: { monthly: 1, annual: 0 } });
-    ok("a buyer Apple calls ineligible is charged today on monthly, whatever is known of yearly", !!p && p.state === "paid" && p.kind === "monthly", brief(p));
+    ok("a buyer Apple calls ineligible is charged today on monthly, whatever is known of yearly", !!p && p.state === "paid" && p.kind === "monthly" && p.year === null, brief(p));
     p = await planFor({ store: STORES.noFree, elig: { monthly: 3, annual: 2 } });
-    ok("yearly's free days are ignored: monthly with none is charged today, never the yearly plan with free days", !!p && p.state === "paid" && p.kind === "monthly" && p.free === null, brief(p));
+    ok("yearly's free days are ignored: monthly with none is charged today, never the yearly plan with free days", !!p && p.state === "paid" && p.kind === "monthly" && p.free === null && p.year === null, brief(p));
     const r = await rec();
     ok("the store is asked for the monthly product alone", r.asked.length === 1 && same(r.asked[0], [IDS.monthly]), r.asked);
     ok("…and eligibility is asked about the monthly product alone, once", r.eligAsked === 1 && same(r.eligIds[0], [IDS.monthly]), r.eligIds);
+    ok("…and RevenueCat's offering was read once (it lists the monthly package alone)", r.offerings === 1, r.offerings);
     const w = await page.evaluate(() => Sona.storePlan().then((plan) => JSON.stringify(Sona.planWords(plan, {}))));
     ok("…and no sentence of that plan names a year", !/year|annual/i.test(w), w);
+  });
+
+  // ── 2b. THE YEARLY ROW (19 Oct 2026): only when RevenueCat's current
+  // offering lists the yearly product AND the store returns it ──
+  await scenario("the yearly row", async () => {
+    const yb = (p) => p && p.year ? { state: p.year.state, kind: p.year.kind, id: p.year.id, price: p.year.price, per: p.year.per, free: p.year.free && p.year.free.text, sure: p.year.sure, best: p.year.best } : null;
+    let p = await planFor({ store: STORES.monthlyFree, offering: "both" });
+    ok("the offering lists both: the monthly plan, carrying a yearly row from the yearly product's own answer",
+      !!p && p.state === "free" && p.kind === "monthly" && p.sure === true && same(yb(p), { state: "free", kind: "annual", id: IDS.annual, price: "$59.99", per: "year", free: "3 days", sure: true, best: true }), [brief(p), yb(p)]);
+    let r = await rec();
+    ok("…the store was asked for monthly, then (once the offering listed it) for yearly, and eligibility for each on its own",
+      same(r.asked, [[IDS.monthly], [IDS.annual]]) && same(r.eligIds, [[IDS.monthly], [IDS.annual]]) && r.offerings === 1, [r.asked, r.eligIds, r.offerings]);
+    ok("…the yearly plan is frozen, keeps the store's product out of JSON, and carries no yearly row of its own",
+      await page.evaluate(() => Sona.storePlan().then((plan) => { const y = plan.year; try { y.price = "$1"; } catch (e) {} return Object.isFrozen(y) && y.price === "$59.99" && !!y._p && y._p.identifier === "com.speaksona.app.annual" && Object.keys(y).indexOf("_p") === -1 && JSON.stringify(plan).indexOf("introPrice") === -1 && !("year" in y); })));
+    let w = await page.evaluate(() => Sona.storePlan().then((plan) => ({ m: Sona.planWords(plan, {}), y: Sona.planWords(plan.year, {}) })));
+    ok("the yearly row's words are its own: Yearly, its free trial, the store's yearly price, Best value, and its own small print",
+      w.y.state === "free" && w.y.name === "Yearly" && w.y.sub === "3-day free trial" && w.y.amount === "$59.99/yr" && w.y.tag === "Best value" && w.y.button === "Start practicing!" &&
+      flat(w.y.check) === "No payment today · Subscription auto-renews" && w.y.note === "3 days free, then $59.99 a year. Cancel anytime." && w.y.price === "3 days free, then $59.99 a year." && w.y.act === "buy", w.y);
+    ok("…and the monthly row's are unchanged, with no tag", w.m.name === "Monthly" && w.m.amount === "$9.99/mo" && w.m.tag === "" && w.m.note === "3 days free, then $9.99 a month. Cancel anytime.", w.m);
+    ok("…no sentence on either names a saving in dollars or a ratio", !/save|saving|%|half|\bx\d|×|per month|\/mo.*\/yr|119\.88|59\.89/i.test(JSON.stringify([w.m.tag, w.m.sub, w.m.check, w.m.note, w.y.tag, w.y.sub, w.y.check, w.y.note, w.y.price, w.y.button])), w.y);
+
+    // 7 days free (Travis is setting the offer to a week in App Store Connect): the words follow the store
+    p = await planFor({ store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W", unitsOnly: true } }, offering: "both" });
+    w = await page.evaluate(() => Sona.storePlan().then((plan) => ({ m: Sona.planWords(plan, {}), y: Sona.planWords(plan.year, {}) })));
+    ok("a week free on both products reads as 7 days on both rows, whatever shape the store sends it in",
+      !!p && p.free.text === "7 days" && p.year.free.text === "7 days" && w.m.sub === "7-day free trial" && w.y.sub === "7-day free trial" && w.y.note === "7 days free, then $59.99 a year. Cancel anytime." && w.m.price === "7 days free, then $9.99 a month." && !/3.day|3 days/.test(JSON.stringify(w)), [w.m.sub, w.y.sub, w.y.note]);
+
+    // a yearly product with no free days: charged today, its own words; and each row's eligibility is its own
+    p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99" } }, offering: "both" });
+    w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.year, {})));
+    ok("a yearly product with no free days: the yearly row is charged today, and never says free", !!p && p.state === "free" && p.year.state === "paid" && p.year.free === null &&
+      w.sub === "Charged today" && w.button === "Subscribe — $59.99 a year" && !/free/i.test(JSON.stringify(w)), [yb(p), w]);
+    ok("…and no eligibility is asked for a yearly product with no offer", same((await rec()).eligIds, [[IDS.monthly]]), (await rec()).eligIds);
+    p = await planFor({ store: STORES.monthlyFree, offering: "both", elig: { monthly: 2, annual: 1 } });
+    ok("Apple says this buyer has used the yearly product's offer: the yearly row is charged today, the monthly row keeps its free days", !!p && p.state === "free" && p.sure === true && p.year.state === "paid", [brief(p), yb(p)]);
+    p = await planFor({ store: STORES.monthlyFree, offering: "both", elig: { monthly: 2, annual: 0 } });
+    ok("…eligibility unknown for yearly alone: the yearly row is free, not sure", !!p && p.sure === true && p.year.state === "free" && p.year.sure === false, yb(p));
+    p = await planFor({ store: STORES.noFree, offering: "both" });
+    ok("monthly charged today beside a yearly plan with free days: both rows, each its own", !!p && p.state === "paid" && p.year && p.year.state === "free" && p.year.sure === true, [brief(p), yb(p)]);
+
+    // "Best value": only when the store's yearly price is below twelve monthly ones
+    for (const [label, yp, want] of [["$59.99 a year against $9.99 a month", "$59.99", true], ["exactly twelve months ($119.88)", "$119.88", false], ["more than twelve months ($129.99)", "$129.99", false], ["$99.99 a year", "$99.99", true]]) {
+      p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: yp, free: "P3D" } }, offering: "both" });
+      w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.year, {})));
+      ok("Best value, " + label + ": " + (want ? "the tag" : "no tag"), !!p && !!p.year && p.year.best === want && w.tag === (want ? "Best value" : ""), [yb(p), w.tag]);
+    }
+    const rawYear = async (mExtra, yExtra) => {
+      await load({ offering: "both" });
+      return page.evaluate((x) => {
+        const base = { monthly: { identifier: "com.speaksona.app.monthly", priceString: "$9.99", price: 9.99, currencyCode: "USD", introPrice: { price: 0, period: "P3D" } },
+          annual: { identifier: "com.speaksona.app.annual", priceString: "$59.99", price: 59.99, currencyCode: "USD", introPrice: { price: 0, period: "P3D" } } };
+        Object.assign(base.monthly, x.m); Object.assign(base.annual, x.y);
+        Capacitor.Plugins.Purchases.getProducts = async (a) => ({ products: [a.productIdentifiers[0] === "com.speaksona.app.annual" ? base.annual : base.monthly] });
+        return Sona.storePlan().then((plan) => ({ best: plan.year ? plan.year.best : null, tag: plan.year ? Sona.planWords(plan.year, {}).tag : null }));
+      }, { m: mExtra, y: yExtra });
+    };
+    for (const [label, m, y] of [["two currencies", {}, { currencyCode: "EUR" }], ["no yearly number", {}, { price: null }], ["no monthly number", { price: "" }, {}], ["a yearly number that is not a number", {}, { price: "cheap" }]]) {
+      const b = await rawYear(m, y);
+      ok("no Best value with " + label, b.best === false && b.tag === "", b);
+    }
+
+    // SAFETY: anything but an offering that lists it, and a store that has it, is the monthly row alone, exactly as before
+    for (const [label, cfg] of [
+      ["the offering lists the monthly package alone (the fake's default)", {}],
+      ["getOfferings is missing", { offering: "missing" }],
+      ["getOfferings is missing on a bridge that answers every name", { offering: "missing", bridge: "proxy" }],
+      ["getOfferings throws", { offering: "throw" }],
+      ["getOfferings fails", { offering: "fail" }],
+      ["there is no current offering", { offering: "none" }],
+      ["the offering lists yearly, but the store has no yearly product", { offering: "both", store: { monthly: { price: "$9.99", free: "P3D" } } }],
+      ["the offering lists yearly, and the store answers the yearly ask with the monthly product", { offering: "both", store: { monthly: { price: "$9.99", free: "P3D" } }, wrong: true }],
+      ["the yearly product comes back with no identifier", { offering: "both", store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D", noId: true } } }],
+      ["the yearly product has no price string", { offering: "both", store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D", noPriceString: true } } }],
+      ["the yearly product's first year costs money", { offering: "both", store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P1M", paidIntro: true } } }],
+    ]) {
+      p = await planFor(Object.assign({ store: STORES.monthlyFree }, cfg));
+      r = await rec();
+      const quiet = !cfg.offering || cfg.offering === "missing" || cfg.offering === "throw" || cfg.offering === "fail" || cfg.offering === "none";
+      ok(label + ": the monthly plan alone, as before" + (quiet ? ", and the yearly product is never asked for" : ""),
+        !!p && p.state === "free" && p.kind === "monthly" && p.sure === true && p.year === null && (!quiet || (same(r.asked, [[IDS.monthly]]) && same(r.eligIds, [[IDS.monthly]]))), [brief(p), yb(p), r.asked, r.eligIds]);
+    }
+    p = await planFor({ store: STORES.yearOnly, offering: "both" });
+    ok("no monthly product: nothing is sold, the yearly row included, even when the offering lists yearly", !!p && p.state === "none" && p.year === null, [brief(p), yb(p)]);
+    p = await planFor({ store: STORES.monthlyFree, offering: "both", entitled: true });
+    ok("this Apple ID already has Premium: owned, with no row at all", !!p && p.state === "owned" && p.year === null, brief(p));
+
+    // the time limits: an offering that never answers holds the card back no longer than eligibility may
+    await load({ store: STORES.monthlyFree, offering: "hang" }); await ask(); await tick(1199);
+    ok("an offering that never answers: the card waits up to 1,199 ms after the product", await got() === null);
+    await tick(1); p = await got();
+    ok("…then the monthly row alone, at 1,200 ms", !!p && p.state === "free" && p.sure === true && p.year === null, brief(p));
+    await page.evaluate(() => __phone.set({ offering: "both" })); await tick(2000);
+    p = await page.evaluate(() => Sona.storePlan());
+    r = await rec();
+    ok("…and an offering that answers after that adds no row under a reading parent: no late call, no yearly ask", (await late()).length === 0 && p.year === null && same(r.asked, [[IDS.monthly]]), [brief(p), r.asked]);
+    await ask({ fresh: true }); p = await got();
+    ok("…a fresh ask (Try again, back at the front) may show it", !!p && !!p.year && p.year.state === "free", yb(p));
+    await load({ store: STORES.monthlyFree, offering: "both", wait: { offering: 800 } }); await ask(); await tick(799);
+    ok("an offering that answers within the limit: the card waits for it (nothing at 799 ms)", await got() === null);
+    await tick(1); p = await got();
+    ok("…and shows both rows at 800 ms", !!p && !!p.year && p.year.state === "free" && p.year.sure === true, yb(p));
+    await load({ store: STORES.monthlyFree, offering: "both", wait: { products: 300 }, elig: { monthly: 2, annual: 2 } });
+    await page.evaluate(() => { const P = Capacitor.Plugins.Purchases, real = P.checkTrialOrIntroductoryPriceEligibility; P.checkTrialOrIntroductoryPriceEligibility = (a) => a.productIdentifiers[0] === "com.speaksona.app.annual" ? new Promise((res) => setTimeout(() => res({ "com.speaksona.app.annual": { status: 1 } }), 3000)) : real(a); });
+    await ask(); await tick(300 + 1200); p = await got();
+    ok("the yearly row's eligibility still on its way at the limit: shown free, not sure (monthly is sure)", !!p && p.sure === true && p.year && p.year.state === "free" && p.year.sure === false, [brief(p), yb(p)]);
+    await tick(2000); const l = await late();
+    ok("…and when it says this buyer has used it, every onLate is told: the yearly row is now charged today", l.length === 1 && l[0].state === "free" && l[0].year && l[0].year.state === "paid", l.map(yb));
+
+    // buying: the plan a screen hands back is the product bought
+    for (const [which, want] of [["year", IDS.annual], ["month", IDS.monthly]]) {
+      await load({ store: STORES.monthlyFree, offering: "both" });
+      const b = await page.evaluate((k) => Sona.storePlan().then((plan) => Sona.buyPlan(k === "year" ? plan.year : plan)).then((x) => x, (e) => ({ err: e && e.code })), which);
+      r = await rec();
+      ok("buyPlan with the " + which + "ly row's plan buys " + want + ", once, with no second getProducts call", !!b && b.ok === true && same(r.bought, [want]) && r.asked.length === 2, [b, r.bought, r.asked]);
+    }
   });
 
   // ── 3. the time limits, on a paused clock ──
@@ -917,8 +1037,14 @@ try {
     ok("both product ids are still in sona.js: the yearly one restores the families who hold it",
       /const IAP_PRODUCTS = \{ annual: "com\.speaksona\.app\.annual", monthly: "com\.speaksona\.app\.monthly" \};/.test(src));
     const sp = src.slice(src.indexOf("function storePlan("), src.indexOf("function buyPlan("));
-    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, and never names the yearly product",
-      /iapProduct\("monthly"\)/.test(sp) && !/annual|getProducts/.test(sp) && /checkTrialOrIntroductoryPriceEligibility\(\{ productIdentifiers: \[id\] \}\)/.test(sp), sp.slice(0, 200));
+    // since 19 Oct 2026 storePlan names the yearly product, but only behind
+    // RevenueCat's offering: nothing about it comes before _offersYear(P)
+    const behind = sp.indexOf("_offersYear(P)"), offers = src.slice(src.indexOf("function _offersYear("), src.indexOf("function _yearPlan("));
+    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, with monthly's eligibility call unchanged, and names the yearly product only after RevenueCat's offering listed it",
+      /iapProduct\("monthly"\)/.test(sp) && !/getProducts|getOfferings/.test(sp) && /checkTrialOrIntroductoryPriceEligibility\(\{ productIdentifiers: \[id\] \}\)/.test(sp) &&
+      behind > 0 && !/annual/.test(sp.slice(0, behind)) && sp.indexOf('iapProduct("annual")') > behind && /if \(!listed \|\| a\.yr !== undefined\) return noYear\(\);/.test(sp), sp.slice(0, 200));
+    ok("…and the offering counts only when its CURRENT offering lists the yearly product among its packages (by the product's own id)",
+      /typeof P\.getOfferings !== "function"/.test(offers) && /r\.current/.test(offers) && /availablePackages/.test(offers) && /pk\.product\.identifier === IAP_PRODUCTS\.annual/.test(offers) && /\(\) => false\)/.test(offers), offers.slice(0, 300));
     const ip = (src.match(/function iapPurchase\(kind, product\) \{[\s\S]*?\n  \}/) || [""])[0];
     ok("iapPurchase picks ONE purchase method before it asks Apple anything: no list of attempts, no retry on a rejection",
       ip.length > 200 && !/attempts|\.catch\(fn\)/.test(ip) && (ip.match(/P\.purchaseStoreProduct\(/g) || []).length === 1 && (ip.match(/P\.purchaseProduct\(/g) || []).length === 1 &&

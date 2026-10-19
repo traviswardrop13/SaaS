@@ -30,6 +30,14 @@
 //              "free3" → monthlyFree, "none" → noFree, "hang" → products:"hang".
 //   wrong      true: asked for a product the store lacks, it answers with
 //              its OTHER product (the yearly one under the monthly ask)
+//   offering   what RevenueCat's getOfferings answers (19 Oct 2026: the
+//              yearly row shows only when the CURRENT offering lists the
+//              yearly product). Absent: a current offering with the monthly
+//              package alone (the card is the monthly row, as before) ·
+//              "both" (yearly and monthly) · an array of kinds, e.g.
+//              ["annual"] · "none" (current: null) · "missing" (a build
+//              without the call) · "throw" (throws before any promise) ·
+//              "fail" (rejects) · "hang"
 //   configure  "ok" | "hang"          products  "ok" | "hang" | "fail"
 //   elig       absent (2 for a product with any introductory offer, 3 for
 //              one with none) | "missing" | "throw" | "hang" |
@@ -45,7 +53,7 @@
 //   setEmail   absent (takes it) | "missing" (a build without it) | "throw"
 //              (throws before any promise) | "fail" (rejects): the parent's
 //              email handed to RevenueCat (RCHOOK1)
-//   wait       { configure, products, elig, info, sync, buy, restore }: ms
+//   wait       { configure, products, elig, info, sync, buy, restore, offering }: ms
 //              before that call answers (the page's own timers, so a fake
 //              clock drives them)
 //   buy        "ok" | "cancel" | "pending" | "notallowed" | "owned" |
@@ -60,7 +68,7 @@
 //              Capacitor.Plugins.Purchases.<name> = fn (or `delete` it, or
 //              assign undefined, for a build that lacks it). That includes
 //              the optional calls, checkTrialOrIntroductoryPriceEligibility,
-//              syncPurchases and setEmail. A function of your own is not counted by
+//              syncPurchases, setEmail and getOfferings. A function of your own is not counted by
 //              the recorders below: count its calls yourself.
 //   mic        "grant" | "deny" | "pending" (the default): getUserMedia
 //   kids       2 (or more): Mia is set up, and the LAST child was just added
@@ -90,7 +98,7 @@
 //                (askedAll[]: every load in this context)
 //   eligAsked    how many eligibility calls (eligIds[]: the ids of each)
 //   emails[]     every setEmail call's argument on THIS page load, in order
-//   syncs, restores, infos, configured   call counts
+//   syncs, restores, infos, configured, offerings   call counts
 //   unknown[]    proxy bridge only: the unknown method names that were called
 //   mic          { requests[] (each .grant() / .deny()), tracks[], order[] }
 //                order holds "microphone", "stop", "speech permission"
@@ -157,7 +165,7 @@ export function phone(cfg) {
   const kept = read("__phoneRec", {});
   const rec = {
     bought: kept.bought || [], asked: [], askedAll: kept.askedAll || [], eligAsked: 0, eligIds: [],
-    syncs: kept.syncs || 0, restores: kept.restores || 0, infos: 0, configured: 0, unknown: [], emails: [],
+    syncs: kept.syncs || 0, restores: kept.restores || 0, infos: 0, configured: 0, offerings: 0, unknown: [], emails: [],
     events: kept.events || [], mic: { requests: [], tracks: [], order: [] }, sfx: {}, confetti: 0,
   };
   const keep = () => {
@@ -292,6 +300,25 @@ export function phone(cfg) {
       return live.setEmail === "fail" ? Promise.reject(new Error("There was a problem with the App Store.")) : Promise.resolve();
     };
     optional("setEmail", () => live.setEmail === "missing", emailCall);
+    // RevenueCat's offerings, in the plugin's own shape ({ all, current },
+    // each package carrying its store product). Not async: "throw" has to
+    // throw before any promise exists
+    const offerCall = function () {
+      rec.offerings++;
+      if (live.offering === "throw") throw new Error("getOfferings is broken on this bridge");
+      return (async () => {
+        await hold("offering");
+        if (live.offering === "fail") throw fail("Error performing request.", "10");
+        if (live.offering === "none") return { all: {}, current: null };
+        const kinds = Array.isArray(live.offering) ? live.offering : live.offering === "both" ? ["annual", "monthly"] : ["monthly"];
+        const pkgs = kinds.map((k) => ({ identifier: k === "annual" ? "$rc_annual" : "$rc_monthly", packageType: k === "annual" ? "ANNUAL" : "MONTHLY",
+          product: product(k) || { identifier: k === "annual" ? ANNUAL : MONTHLY }, offeringIdentifier: "default" }));
+        const cur = { identifier: "default", serverDescription: "Sona Premium", metadata: {}, availablePackages: pkgs,
+          monthly: pkgs.filter((p) => p.packageType === "MONTHLY")[0] || null, annual: pkgs.filter((p) => p.packageType === "ANNUAL")[0] || null };
+        return { all: { default: cur }, current: cur };
+      })();
+    };
+    optional("getOfferings", () => live.offering === "missing", offerCall);
     // "then" stays undefined: a plugin object that answered it would be
     // swallowed by the first promise it was returned through
     const bridge = live.bridge !== "proxy" ? P : new Proxy(P, {

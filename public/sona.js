@@ -5741,15 +5741,15 @@
   // The App Store build sells Sona Premium through Apple's sheet via the
   // @revenuecat/purchases-capacitor plugin — reached over the same
   // remote-page bridge SonaAudio already uses. Web visitors never touch this
-  // (Stripe stays the web rail). We purchase DIRECTLY by product id (no
-  // offerings dependency) and unlock on the "full" entitlement. The appl_ key
-  // is publishable by design.
+  // (Stripe stays the web rail). We purchase DIRECTLY by product id, read
+  // RevenueCat's offerings only for whether the yearly row may show, and
+  // unlock on the "full" entitlement. The appl_ key is publishable by design.
   // NO PRICE AND NO FREE-TRIAL LENGTH IS WRITTEN HERE, and that is the point:
   // both live in App Store Connect, and this comment went on naming a yearly
-  // price and a trial length long after the store had changed both. Since
-  // 5 Oct 2026 the app sells ONE plan, the monthly product, and storePlan() /
-  // planWords() further down turn the store's own answer into every figure
-  // and every "free" a parent reads.
+  // price and a trial length long after the store had changed both. The app
+  // sells the monthly product (and since 19 Oct 2026 the yearly one beside
+  // it, when RevenueCat's offering lists it); storePlan() / planWords() turn
+  // the store's own answer into every figure and every "free" a parent reads.
   // ── FREE MODE ──────────────────────────────────────────────────────────
   // The switch, what "off" means since the free version shipped (24 Sep
   // 2026), and who keeps Premium regardless of it are all documented at
@@ -7389,13 +7389,15 @@
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
   // Monthly was retired from SALE on 18 Sep 2026, back on sale on 1 Oct 2026,
-  // and since 5 Oct 2026 the ONLY plan the iPhone's plan screen offers (that
-  // day: 3 days free, then $9.99 a month. Both are App Store Connect's, and
-  // storePlan() below reads them from the store, so neither is typed here).
-  // The annual id stays here all the same, as monthly's did while it was off
-  // sale: RevenueCat needs each id to recognise an existing subscriber on
-  // restore or reinstall, and dropping one would strand them behind a paywall
-  // they are already paying for.
+  // and from 5 Oct 2026 the ONLY plan the iPhone's plan screen offered (its
+  // price and free days are App Store Connect's, and storePlan() below reads
+  // them from the store, so neither is typed here). Since 19 Oct 2026 the
+  // annual product can be offered again beside it, as a second row, only
+  // while RevenueCat's current offering lists it. The annual id stays here
+  // either way, as monthly's did while it was off sale: RevenueCat needs
+  // each id to recognise an existing subscriber on restore or reinstall, and
+  // dropping one would strand them behind a paywall they are already paying
+  // for.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
@@ -7548,11 +7550,16 @@
     });
   }
 
-  // ── THE ONE PLAN THE IPHONE SELLS, AS THE STORE ANSWERS IT (5 Oct 2026) ──
+  // ── THE PLANS THE IPHONE SELLS, AS THE STORE ANSWERS THEM (5 Oct 2026) ──
   // Travis, 5 Oct 2026: "get rid of the annual option and update the copy so
-  // that it says three days free, then $9.99 a month". The app sells the
-  // MONTHLY product alone, and what a screen may say about it is decided HERE,
-  // once, from three answers only the store can give:
+  // that it says three days free, then $9.99 a month". The app sold the
+  // MONTHLY product alone; since 19 Oct 2026 the yearly one can be a second
+  // row beside it, only when RevenueCat's offering lists it (THE YEARLY ROW,
+  // below: Plan.year). The free time is whatever the store's offer says (3
+  // days on 5 Oct 2026; a week once Travis sets it in App Store Connect, as
+  // approved on 19 Oct 2026, which planFree reads as "7 days"): nothing here
+  // counts days. What a screen may say about a plan is decided HERE, once,
+  // from three answers only the store can give:
   //   - the monthly product itself: its price, and the free time its
   //     introductory offer carries, if it has one;
   //   - whether THIS Apple ID may still have that offer. Apple gives one per
@@ -7572,18 +7579,19 @@
   //   none  — everything else: no monthly product, the yearly one answering
   //           in its place (iapProduct refuses it), an offer that costs money
   //           or cannot be read, an error, no answer in time. NOTHING is sold
-  //           instead and no figure is shown; the yearly id stays in
-  //           IAP_PRODUCTS for restore only;
+  //           instead (the yearly row included) and no figure is shown;
   //   owned — this Apple ID already has Premium, so it is never sold a second
   //           plan.
   // The product and the purchase go through iapProduct("monthly") and
-  // iapPurchase("monthly", product), the calls real phones already use. The
-  // two NEW native calls (the eligibility ask and the purchase sync) are
-  // optional by construction: missing, throwing, rejecting or slow, each
-  // leaves the answer exactly as if the call did not exist, and neither can
-  // hold the card back beyond the limits below.
+  // iapPurchase("monthly", product), the calls real phones already use (the
+  // yearly row through iapProduct("annual") and iapPurchase("annual", ...)).
+  // The NEW native calls (the eligibility ask, the purchase sync, and since
+  // 19 Oct 2026 RevenueCat's getOfferings) are optional by construction:
+  // missing, throwing, rejecting or slow, each leaves the answer exactly as
+  // if the call did not exist, and none can hold the card back beyond the
+  // limits below.
   const PLAN_WAIT_MS  = 4000;  // no product by then → none/timeout. The clock starts when storePlan() is CALLED, before the store is even set up.
-  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility and "already has it" may hold the answer back
+  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility, "already has it" and the yearly row may hold the answer back
   const PLAN_OWN_MS   = 3000;  // after the product: how long "already has it" may hold back a pay-today price for a buyer Apple calls ineligible
   const WALL_WAIT_MS  = 2500;  // setupWall. Starts when setupWall() is called.
   const IAPSYNC = "sona.iapsync.v1";   // sessionStorage "1": a purchase sync has FINISHED in this app launch
@@ -7656,28 +7664,95 @@
   // into a payload by accident. FROZEN: one Plan is handed to every caller of
   // the page load, so a page that wrote to it would change the price the next
   // caller reads, and the words built from it.
-  function _plan(state, why, p, free, sure) {
+  // The plan storePlan() answers is always the MONTHLY one (or none/owned),
+  // and it carries `year`: the yearly Plan when the card may show a second
+  // row for it (see THE YEARLY ROW below), else null. A yearly Plan carries
+  // `best` instead: true only when the store's yearly price is below twelve
+  // of its monthly ones (the "Best value" tag; never a figure or a ratio).
+  function _plan(state, why, p, free, sure, kind, extra) {
     const priced = state === "free" || state === "paid";
+    const yearly = kind === "annual";
     const plan = {
       state,
-      kind: priced ? "monthly" : "",                       // handed back to buyPlan and analytics; pages never branch on it
-      id: priced ? String(p.identifier || IAP_PRODUCTS.monthly) : "",
+      kind: priced ? (yearly ? "annual" : "monthly") : "",  // handed back to buyPlan (the product bought) and analytics; the card's pick reads it
+      id: priced ? String(p.identifier || (yearly ? IAP_PRODUCTS.annual : IAP_PRODUCTS.monthly)) : "",
       price: priced ? String(p.priceString) : "",          // the store's own string, verbatim: never rebuilt from a number
-      per: priced ? "month" : "",
+      per: priced ? (yearly ? "year" : "month") : "",
       free: state === "free" ? free : null,
       sure: state === "free" && sure === true,
       why: why || "",
     };
+    if (yearly) plan.best = !!(extra && extra.best);
+    else plan.year = (priced && extra && extra.year) || null;
     if (priced) Object.defineProperty(plan, "_p", { value: p, enumerable: false });
     if (plan.free) Object.freeze(plan.free);
     return Object.freeze(plan);
+  }
+  // "Best value": the yearly price below twelve monthly ones, in whole cents
+  // (9.99 × 12 in floating point is 119.88000000000001, which would call a
+  // yearly price of exactly $119.88 cheaper), from the numbers the store
+  // gives, in one currency. Either number missing or odd: no tag.
+  function _yearBest(yp, mp) {
+    try {
+      const y = Math.round(Number(yp && yp.price) * 100), m = Math.round(Number(mp && mp.price) * 100);
+      if (!(y > 0 && m > 0 && isFinite(y) && isFinite(m))) return false;
+      if (yp.currencyCode && mp.currencyCode && String(yp.currencyCode) !== String(mp.currencyCode)) return false;
+      return y < 12 * m;
+    } catch (e) { return false; }
+  }
+  // ── THE YEARLY ROW (Travis, 19 Oct 2026: "go, yes to 1 2 3", to "show TWO
+  // plans on the price screen, monthly and yearly, so parents compare") ──
+  // The yearly product comes back to Apple's card as a second row, above the
+  // monthly one, ONLY when two answers say it can really be sold:
+  //   - RevenueCat's CURRENT OFFERING lists it among its packages
+  //     (Purchases.getOfferings). On 1 Oct 2026 the yearly product was
+  //     attached to no RevenueCat entitlement, so a sale would have taken a
+  //     parent's money and opened nothing. Putting it in the current offering
+  //     is Travis's switch, in RevenueCat's dashboard, and the sign it is set
+  //     up there;
+  //   - the store returns the yearly product itself, named by its own id,
+  //     with a price.
+  // getOfferings missing, throwing, slow (the same PLAN_GRACE_MS the
+  // eligibility ask gets after the monthly product), an offering without it,
+  // or no product: the card is exactly the monthly row alone, as before. The
+  // yearly row is decided when the card is first answered; a later yearly
+  // answer never adds a row under a reading parent (a fresh ask may). The
+  // monthly plan stays THE plan: no monthly product sells nothing, yearly
+  // included, exactly as before.
+  function _offersYear(P) {            // → Promise<boolean>. Never rejects.
+    return _soon(() => {
+      if (typeof P.getOfferings !== "function") return null;
+      return P.getOfferings();
+    }).then((r) => {
+      const cur = r && typeof r === "object" ? r.current : null;
+      if (!cur || typeof cur !== "object") return false;
+      const list = [].concat(Array.isArray(cur.availablePackages) ? cur.availablePackages : [], cur.annual ? [cur.annual] : []);
+      return list.some((pk) => !!pk && !!pk.product && pk.product.identifier === IAP_PRODUCTS.annual);
+    }, () => false);
+  }
+  // the yearly Plan for an ask, or null: its own free time and its own
+  // eligibility, by monthly's rules (a first year that costs money, or one
+  // that cannot be read, is no row at all rather than a guess)
+  function _yearPlan(a) {
+    const yp = a.yr;
+    if (!yp || !a.p) return null;
+    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = _yearBest(yp, a.p);
+    if (typeof intro === "object" && !cant) return _plan("free", "", yp, intro, a.eligY === "yes", "annual", { best });
+    if (intro === "none" || cant) return _plan("paid", "", yp, null, false, "annual", { best });
+    return null;
+  }
+  // what a late answer must change before every onLate hears it
+  function _planSig(p) {
+    const y = p && p.year;
+    return p ? [p.state, p.kind, p.sure, y ? y.state + "/" + y.sure + "/" + y.best : "-"].join("|") : "";
   }
 
   // ONE ASK PER PAGE LOAD, and the latest answer is the one every caller
   // gets, "none" included: only { fresh: true } asks the store again.
   //   opts.fresh   ask again (Try again; the app coming back to the front)
   //   opts.onLate  called with the new Plan whenever an answer that arrived
-  //                AFTER the promise resolved changes { state, kind, sure }.
+  //                AFTER the promise resolved changes { state, kind, sure }
+  //                or the yearly row's { state, sure, best } (_planSig).
   // LATE ANSWERS COUNT. The promise resolves on the limits above, but the
   // three asks stay live: a "not eligible", an "already has it" or the
   // product itself arriving later replaces the answer and tells every
@@ -7695,21 +7770,26 @@
     else if (!a.p) plan = _plan("none", "no-product");
     else {
       const ownIn = a.own !== undefined, eligIn = a.elig !== undefined || a.intro === "none";
-      if (!(ownIn && eligIn)) {
+      // the yearly row has answered: no row, or its product and its own
+      // eligibility (none needed for a product with no offer)
+      const yearIn = a.yr !== undefined && (!a.yr || a.eligY !== undefined || planFree(a.yr) === "none");
+      if (!(ownIn && eligIn && yearIn)) {
         if (!a.graceOver) return;
         // A buyer Apple calls ineligible has subscribed before and may be
         // paying right now: no pay-today price while the sync is in flight.
-        if (a.elig === "no" && !ownIn && !a.ownOver) return;
+        if ((a.elig === "no" || (a.yr && a.eligY === "no")) && !ownIn && !a.ownOver) return;
       }
+      // too slow to have answered by now: no yearly row for this ask
+      if (a.yr === undefined) a.yr = null;
       const cant = a.elig === "no" || a.elig === "none";
-      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes");
-      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p);
+      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes", "monthly", { year: _yearPlan(a) });
+      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p, null, false, "monthly", { year: _yearPlan(a) });
       // an offer that costs money, or one that cannot be read, for a buyer
       // who may get it: the first charge is unknown, so nothing is stated
       else plan = _plan("none", "no-product");
     }
     if (!a.plan) { a.plan = plan; a.resolve(plan); return; }
-    if (plan.state === a.plan.state && plan.kind === a.plan.kind && plan.sure === a.plan.sure) return;
+    if (_planSig(plan) === _planSig(a.plan)) return;
     a.plan = plan;
     _planLate.slice().forEach((fn) => { try { fn(plan); } catch (e) {} });
   }
@@ -7718,7 +7798,8 @@
     try { if (typeof opts.onLate === "function" && _planLate.indexOf(opts.onLate) === -1) _planLate.push(opts.onLate); } catch (e) {}
     if (!iapPlugin()) return Promise.resolve(_plan("none", "no-plugin"));
     if (_planAsk && !opts.fresh) return _planAsk.plan ? Promise.resolve(_planAsk.plan) : _planAsk.promise;
-    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, timedOut: false, graceOver: false, ownOver: false };
+    // yr: the yearly product (undefined while asking, null for no row); eligY: its own eligibility
+    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, yr: undefined, eligY: undefined, timedOut: false, graceOver: false, ownOver: false };
     a.promise = new Promise((resolve) => { a.resolve = resolve; });
     // whoever is still waiting on the ask this one replaces gets this one's answer
     if (_planAsk && !_planAsk.plan) _planAsk.resolve(a.promise);
@@ -7746,6 +7827,30 @@
         if (typeof P.checkTrialOrIntroductoryPriceEligibility !== "function") return "unknown";
         return Promise.resolve(P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: [id] })).then((r) => _planElig(r, id));
       }).catch(() => "unknown").then((e) => { a.elig = e; _planStep(a); });
+      // THE YEARLY ROW: RevenueCat's offering first; only an offering that
+      // lists the yearly product leads to asking the store for it, so with
+      // no such offering the asks are exactly the monthly ones above. Its
+      // own eligibility is a call of its own, so monthly's never changes.
+      const noYear = () => { if (a.yr === undefined) { a.yr = null; _planStep(a); } };
+      _soon(() => iapConfigure()).then((P) => _offersYear(P).then((listed) => {
+        if (!listed || a.yr !== undefined) return noYear();
+        return _soon(() => iapProduct("annual")).then((yp) => {
+          if (a.yr !== undefined) return;
+          // its own id, by name (iapProduct also takes an unnamed lone
+          // product on trust; a yearly row never does), and a price to show
+          const good = !!yp && yp.identifier === IAP_PRODUCTS.annual && !!String(yp.priceString == null ? "" : yp.priceString).trim();
+          if (!good) return noYear();
+          a.yr = yp;
+          if (planFree(yp) !== "none") {
+            const yid = IAP_PRODUCTS.annual;
+            _soon(() => {
+              if (typeof P.checkTrialOrIntroductoryPriceEligibility !== "function") return "unknown";
+              return Promise.resolve(P.checkTrialOrIntroductoryPriceEligibility({ productIdentifiers: [yid] })).then((r) => _planElig(r, yid));
+            }).catch(() => "unknown").then((e) => { a.eligY = e; _planStep(a); });
+          }
+          _planStep(a);
+        });
+      })).catch(noYear);
     } catch (e) {
       if (!a.plan) { a.plan = _plan("none", "error"); a.resolve(a.plan); }
     }
@@ -8033,7 +8138,10 @@
       return d;
     } catch (e) { return null; }
   }
-  // plan: what storePlan() resolved, or null/undefined while it is asking.
+  // plan: what storePlan() resolved, or null/undefined while it is asking,
+  // or that answer's yearly row (plan.year): each row's words are its own
+  // plan's, and the button, the check line and the small print are the words
+  // of whichever row is picked.
   // o.freeVersion: this family already has daily practice (the free
   // version), so Premium is not what opens it. o.now: the clock, for tests.
   function planWords(plan, o) {
@@ -8070,6 +8178,9 @@
     w.amount = P + "/" + (SHORT[per] || per);
     w.sub = ""; w.check = "Subscription auto-renews"; w.noteLast = false;
     w.act = "buy";
+    // the yearly row's one tag, and only when the store's own numbers make it
+    // true (Plan.best): never a saving in dollars, never a ratio (19 Oct 2026)
+    w.tag = plan.best === true && per === "year" ? "Best value" : "";
     if (plan.state === "paid") {
       w.state = "paid"; w.title = "Get Sona Premium";
       w.price = PP + ", charged today.";
