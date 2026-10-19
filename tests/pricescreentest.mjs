@@ -581,7 +581,7 @@ try {
     await load(...at(DOORS[1], { store: STORES.monthlyFree })); await until("free");
     s = await snap();
     ok("from a grey game there is no header either (the small X is the way out), and the headline is the game's", !s.header && s.offerTitle === "Unlock Fruit Slice, and every other game" && s.offerSub === "" && /Mia wants to play Fruit Slice/.test(s.pill), [s.header, s.offerTitle, s.offerSub, s.pill]);
-    // a family who tapped "Not sure? Explore all sounds", and one with no name
+    // a family who tapped "Not sure? Pick all sounds", and one with no name
     await load(...at(SETUP, { store: STORES.monthlyFree, local: { "sona.profile.v1": { childName: "Mia", childAge: "7", focusSounds: [], mode: "play", pathReason: "unsure", onboarded: true, voiceOn: false, soundOn: false } } })); await until("free");
     s = await snap();
     ok("the headline is the same for a family exploring every sound, and it names no sound", s.offerTitle === "Mia's practice is ready" && !/\bsound/i.test(s.offerTitle + s.offerSub), [s.offerTitle, s.offerSub]);

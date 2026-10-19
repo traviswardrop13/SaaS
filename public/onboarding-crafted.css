@@ -247,6 +247,58 @@ body[data-setup-screen="ready"] .ob .mascot { display: none; }
   .ready-rachel-photo { width: 40px; height: 40px; }
 }
 
+/* THE THREE SCREENS THAT SELL (19 Oct 2026): "Speech homework is hard at
+   home.", "<Name> plays on their own" with one painted game, and "Games
+   <Name> will play", the age group's playable games in Home's own art.
+   Statements, not questions: the footer's Continue is the only way on. Each
+   card sits in the middle of the phone, as the ready screen's does; on the
+   first Echo stands above it, and on the other two the pictures are the
+   faces on screen. The pictures keep their 16:9 box before they load, so
+   nothing moves under a finger as they arrive. */
+.ob .step.sell { text-align: center; }
+.ob .step.sell.on { margin: auto 0; }
+body[data-setup-screen="problem"] .ob .mascot { margin-top: auto; }
+body[data-setup-screen="problem"] .ob .step.sell.on { margin: 0 0 auto; }
+body[data-setup-screen="alone"] .ob .mascot, body[data-setup-screen="games"] .ob .mascot { display: none; }
+.ob .sell .qh { overflow-wrap: anywhere; }
+.ob .sell-line { margin: 0; font-size: 16px; }
+.sell-pic { margin: 16px 0 0; }
+.sell-pic img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; max-height: 34vh; object-fit: cover; border-radius: 20px; background: #f4eddf; box-shadow: 0 4px 0 #eadfcd90; }
+.sell-grid { margin: 12px 0 14px; }
+.sell-kicker { margin: 10px 0 6px; color: #087d87; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.sell-kicker:first-child { margin-top: 2px; }
+.sell-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; }
+.sell-games.two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.sell-games li { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.sell-art { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #f4eddf; box-shadow: 0 2px 0 #e8dcc9a0; }
+.sell-art img, .sell-art svg { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sell-name { font: 800 13px/1.15 'Baloo 2', sans-serif; color: #5b3a20; overflow-wrap: anywhere; }
+.sell-grid:not(.both) .sell-games.two .sell-name { font-size: 15px; }
+/* both age groups (no age given): the little kids' two games take the big
+   kids' size, centred, so all eleven fit a 4-inch phone with no scroll */
+.sell-grid.both .sell-games.two { display: flex; justify-content: center; gap: 8px; }
+.sell-grid.both .sell-games.two li { width: calc((100% - 16px) / 3); }
+@media (max-height: 700px) {
+  .ob .sell-line { font-size: 15px; }
+  .sell-pic { margin-top: 12px; }
+  .sell-grid { margin: 10px 0 10px; }
+  .sell-games { gap: 8px 6px; }
+  .sell-name { font-size: 12px; }
+}
+/* with no Echo above it (a window 650 px tall or less hides him) the first
+   card sits in the middle too */
+@media (max-height: 650px) {
+  body[data-setup-screen="problem"] .ob .step.sell.on { margin: auto 0; }
+}
+@media (max-height: 600px) {
+  html .ob .step.sell[data-step] { padding-top: 12px; padding-bottom: 12px; }
+  .ob .step.sell .qh { font-size: 23px; margin-bottom: 6px; }
+  .ob .sell-line { font-size: 14px; line-height: 1.4; }
+  .sell-kicker { margin: 6px 0 4px; font-size: 11px; }
+  .sell-games { gap: 6px 6px; }
+  .sell-name { font-size: 11.5px; }
+}
+
 /* THE NAME STEP HOLDS STILL (Travis, 15 Oct 2026: "the onboard feels jumpy
    especially on the page where i put the name and age"). In the iPhone app
    the keyboard shrinks the whole web view, about half a second after it

@@ -130,8 +130,9 @@ for (const [who, seed] of [["a fresh family", () => {}],
   }, STEP);
   ok("…and Echo hosts every step of setup, start to finish",
     hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
-  ok("…a walk that reaches the microphone, by way of both one-tap questions, the optional email step and the ready screen",
-    hosts.map((h) => h.split(":")[0]).join() === "welcome,name,therapy,sounds,goal,updates,ready,mic", JSON.stringify(hosts));
+  // (a child already set up walking setup again is not sold to again: no screens that sell)
+  ok("…a walk that reaches the microphone, by way of both one-tap questions, " + (who === "a fresh family" ? "the three screens that sell, " : "") + "the optional email step and the ready screen",
+    hosts.map((h) => h.split(":")[0]).join() === (who === "a fresh family" ? "welcome,name,therapy,problem,alone,games,sounds,goal,updates,ready,mic" : "welcome,name,therapy,sounds,goal,updates,ready,mic"), JSON.stringify(hosts));
   await ob2.close();
 }
 
@@ -142,7 +143,12 @@ await clickNext(); await clickNext(); // the hello → the question → name (th
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name → "What brings you to Sona?"
 ok("after the name comes one tap: \"What brings you to Sona?\"", (await onStep(page)) === "therapy", await onStep(page));
-await clickNext(); // an answer → sounds
+await clickNext(); // an answer → the first of the three screens that sell (19 Oct 2026)
+ok("…an answer opens \"Speech homework is hard at home.\", the first of three screens that sell Sona", (await onStep(page)) === "problem", await onStep(page));
+await clickNext(); await clickNext(); // → "<Name> plays on their own" → "Games <Name> will play"
+ok("…then \"Milo plays on their own\" and \"Games Milo will play\", each with Continue", (await onStep(page)) === "games", await onStep(page));
+await clickNext(); // → sounds
+ok("…and then the sounds", (await onStep(page)) === "sounds", await onStep(page));
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → "How does practice go at home now?"
 ok("…and after the sounds, the second one-tap question", (await onStep(page)) === "goal", await onStep(page));
@@ -236,7 +242,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; }); await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);
   const asked = await pg2.evaluate(() => ({ on: (document.querySelector(".step.on") || {}).dataset?.step, title: (document.getElementById("therapyTitle") || {}).textContent || "", answers: document.querySelectorAll("#obTherapy .ask-pick").length, overflow: document.documentElement.scrollWidth > innerWidth }));
   ok("after the name comes one tap, \"Is <Name> in speech therapy?\": one short heading and three answers (Yes, No, Not yet)", asked.on === "therapy" && asked.title === "Is Milo in speech therapy?" && asked.answers === 3 && !asked.overflow, JSON.stringify(asked));
-  await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → sounds
+  await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300);   // an answer → the three screens that sell
+  for (let i = 0; i < 3; i++) { await settledOb(pg2); await pg2.evaluate(STEP); await pg2.waitForTimeout(300); }   // their Continue → sounds
   const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
   ok("…and the sound grid is the next screen and fits at 390px", grid.onSounds&&!grid.overflow&&grid.labels.length===19, JSON.stringify(grid));
   await pg2.close();
@@ -273,7 +280,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   // the reload put them back at the top with their answers intact, so this
   // walks the whole flow again: the hello → name → why →
   // sounds → home → ready, whose Continue saves the profile and tears it up
-  await hop(); await hop(); await hop();   // hello, name, why (an answer) → sounds
+  await hop(); await hop(); await hop();   // hello, name, why (an answer) → the screens that sell
+  await hop(); await hop(); await hop();   // their three Continues → sounds
   await pg.locator('#obExploreSounds').click();          // → the home question
   await hop();                                           // an answer → the email step
   await hop();                                           // Skip → ready
@@ -310,9 +318,12 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const door = await pg.evaluate(() => ({
     has: !!document.querySelector('#obExploreSounds'),
+    label: (document.querySelector('#obExploreSounds') || {}).textContent || "",
     says: document.querySelector('[data-step="sounds"]').textContent,
   }));
   ok("a parent can say they don't know where to start", door.has);
+  // Travis, 19 Oct 2026 (the funnel review): "Explore" read as browsing; the button picks every sound
+  ok("…and the button says what it does: \"Not sure? Pick all sounds\"", door.label.trim() === "Not sure? Pick all sounds" && !/Explore all sounds/.test(door.says), door.label);
   ok("…and the screen says plainly that Sona does not test or diagnose",
     /doesn't test or diagnose/.test(door.says), door.says.slice(0, 160));
   ok("…and does not dress the choice up as a recommendation",
@@ -323,7 +334,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   await hop(); await hop(); // the hello → the question → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await hop(); // name → "What brings you to Sona?"
-  await hop(); // an answer → sounds
+  await hop(); // an answer → the screens that sell
+  await hop(); await hop(); await hop(); // their three Continues → sounds
   await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
     onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
@@ -364,7 +376,8 @@ ok("name question carries justification microcopy", /cheers them on by name|know
 await clickNext(); await clickNext(); // the hello → the question → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name → "What brings you to Sona?"
-await clickNext(); // an answer → sounds
+await clickNext(); // an answer → the screens that sell
+await clickNext(); await clickNext(); await clickNext(); // their three Continues → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
@@ -418,7 +431,8 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 await clickNext(); await clickNext(); // the hello → the question → name
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); // name → "What brings you to Sona?"
-await clickNext(); // an answer → sounds
+await clickNext(); // an answer → the screens that sell
+await clickNext(); await clickNext(); await clickNext(); // their three Continues → sounds
 await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({
   onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
