@@ -1319,9 +1319,14 @@
           // nothing more: no family is ever handed a locked game. A purchase
           // made from there lands on Home, because the marker is gone.
           try{if(Sona.setupAfterClear)Sona.setupAfterClear();}catch(e){}
+          // A family back from the price (AFTER: free days started, or
+          // Premium found) lands on Home and picks a game themselves
+          // (Travis, 17 Oct 2026: "once I start a trial, I don't want it to
+          // go jump straight into a game"). A phone with nothing to sell
+          // still opens the first game.
           var wall=false;try{wall=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
           if(wall){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){} location.href="/subscribe.html?setup=1";return;}
-          var first="/today.html";try{if(draft.role!=="slp"&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
+          var first="/today.html";try{if(draft.role!=="slp"&&!AFTER&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
           location.href=first;
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}

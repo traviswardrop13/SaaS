@@ -428,7 +428,7 @@ await scenario("the gate carries the game", async () => {
   // setup's ready screen, so by this tap a family who owed it has paid. The
   // wall line is a safety net: it leaves for the price and returns before the
   // first game is ever marked. setupbuytest plays the whole flow.)
-  ok("a parent's hand-off opens the first game; a clinician's still Home; an unpaid family is never handed a locked game", /if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(ob));
+  ok("a parent's hand-off opens the first game; a clinician's still Home; an unpaid family is never handed a locked game", /if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(ob));
 }
 
 await browser.close(); await new Promise((r) => server.close(r));

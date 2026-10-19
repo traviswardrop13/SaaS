@@ -939,9 +939,9 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   await page.evaluate(()=>__phone.mic.requests[0].grant());await atHandoff(page);
   const heard=await page.evaluate(()=>({mic:localStorage.getItem('sona.micok'),order:__phone.mic.order,title:document.getElementById('handoffTitle').innerText.trim(),email:document.querySelectorAll('[data-step="achieve"] input,#achEmail,#skipEmail').length}));
   ok('"Turn on Echo\'s ears" asks the phone once, stops both tracks before the speech ask, and opens the hand-off',heard.mic==='1'&&heard.order.filter(x=>x==='microphone').length===1&&heard.order.filter(x=>x==='stop').length===2&&heard.order.indexOf('speech permission')>heard.order.lastIndexOf('stop')&&heard.title==='Hand the phone to Mia!'&&heard.email===0,heard);
-  await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
+  await next(page);await page.waitForURL(url=>url.pathname==='/today.html');
   const end=await page.evaluate(()=>({firstgame:sessionStorage.getItem('sona.firstgame.v1'),marker:sessionStorage.getItem('sona.setupafter.v1'),done:JSON.parse(localStorage.getItem('__phoneRec')).events.filter(e=>e.name==='onboarding completed').length}));
-  ok('"Let\'s play!" opens the first game, marks it only now, and clears the marker',new URL(page.url()).search==='?game=arcade-slice.html'&&end.firstgame==='slice'&&end.marker===null&&end.done===1,[page.url(),end]);
+  ok('"Let\'s play!" back from the price goes Home to pick a game (17 Oct 2026), marks no first game, and clears the marker',new URL(page.url()).pathname==='/today.html'&&end.firstgame===null&&end.marker===null&&end.done===1,[page.url(),end]);
   ok('the only price page setup ever asked for is /subscribe.html?setup=1',priced(requests).every(u=>u===base+'/subscribe.html?setup=1')&&priced(requests).length===2,priced(requests));
   ok('…and back from the price the hand-off asked for no email: still the one lead',leadPosts(requests).length===1,leadPosts(requests));
   clean('buy path',errors);
@@ -1086,7 +1086,7 @@ await scenario('the price never loads: Continue comes back',async()=>{
 // ── the page's source: what other files hold it to ──
 {
  const src=readFileSync(root+'/onboarding.html','utf8'),code=src.replace(/<!--[\s\S]*?-->/g,' ').replace(/\/\*[\s\S]*?\*\//g,' ').replace(/(^|[^:"'\\])\/\/[^\n]*/g,'$1');
- ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
+ ok('the hand-off\'s last tap: an unpaid family is never handed a locked game; a clinician still ends on Home; the first game is marked only there',/if\(wall\)\{try\{sessionStorage\.setItem\("sona\.gate\.v1",String\(Date\.now\(\)\)\);\}catch\(e\)\{\} location\.href="\/subscribe\.html\?setup=1";return;\}\s*var first="\/today\.html";try\{if\(draft\.role!=="slp"&&!AFTER&&Sona\.firstGameStart\)first=Sona\.firstGameStart\(\);\}catch\(e\)\{\}\s*location\.href=first;/.test(src)&&(code.match(/Sona\.firstGameStart\(\)/g)||[]).length===1);
  const leave=code.slice(code.indexOf('function leaveReady('),code.indexOf('function showHandoff('));
  ok('leaving ready saves the profile and writes the marker before it names the price page',leave.indexOf('saveSetup()')>0&&leave.indexOf('saveSetup()')<leave.indexOf('Sona.setupAfterMark')&&leave.indexOf('Sona.setupAfterMark')<leave.indexOf('"/subscribe.html?setup=1"'),leave.slice(0,200));
  ok('every "setup step" is sent through SonaAnalytics, with the screen\'s key and nothing else',(code.match(/SonaAnalytics\.track\("setup step",\{step:key\}\)/g)||[]).length===1&&!/(?:^|[^.\w])track\("setup step"/.test(code)&&!/Sona\.track\(/.test(code));

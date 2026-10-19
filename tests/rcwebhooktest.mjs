@@ -656,7 +656,7 @@ await scenario("wiring", async () => {
   ok("…and no Kit, anywhere on it", !/\bKit\b/.test(priv));
   const native = read("NATIVE.md");
   ok("NATIVE.md says how to switch it on: the secret in Vercel, the URL and header in RevenueCat, production only",
-    /REVENUECAT_WEBHOOK_AUTH/.test(native) && /https:\/\/speaksona\.com\/api\/revenuecat/.test(native) && /Authorization header/i.test(native) && /Production/.test(native));
+    /REVENUECAT_WEBHOOK_AUTH/.test(native) && /URL\s+`https:\/\/www\.speaksona\.com\/api\/revenuecat`/.test(native) && /308/.test(native) && /Authorization header/i.test(native) && /Production/.test(native));
   ok("…and that a phone test takes both the sandbox switch in Vercel and the webhook's environment in RevenueCat",
     /`REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment\s+to Sandbox/.test(native));
   ok("…and the App Privacy answers it owes", /RevenueCat webhook/.test(native) && /Purchase History/.test(native));
