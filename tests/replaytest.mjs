@@ -233,7 +233,7 @@ try {
     await mark(page, 201);                          // the therapy question: never recorded
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
     await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').click();
-    await page.locator('[data-step="sounds"].on').waitFor();
+    await page.locator('[data-step="problem"].on').waitFor();   // the first of the three screens that sell (19 Oct 2026)
     // Back to the name, and a new one: both names stay out
     await page.waitForTimeout(500);
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
@@ -252,13 +252,28 @@ try {
     const yes = await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').boundingBox();
     const t1 = await page.evaluate(() => Date.now());
     await page.locator('[data-step="therapy"] .ask-pick[data-val="t_yes"]').dblclick();
-    await page.locator('[data-step="sounds"].on').waitFor();
+    await page.locator('[data-step="problem"].on').waitFor();
     for (let i = 0; i <= 10; i++) { await page.mouse.move(yes.x + yes.width / 2 + i * 5, yes.y + yes.height / 2 + i * 30); await page.waitForTimeout(60); }
-    await mark(page, 301);                          // the screen after the answer: not recorded either
+    await mark(page, 301);                          // the screen after the answer ("Speech homework is hard at home."): not recorded either
+    const t2 = await page.evaluate(() => Date.now());
+    await next(page);
+    // THE SCREENS THAT SELL (19 Oct 2026): "<Name> plays on their own" and
+    // "Games <Name> will play" show the name, as ph-name; both are recorded
+    await page.locator('[data-step="alone"].on').waitFor();
+    await page.evaluate(() => Promise.all([...document.querySelectorAll(".step.on img")].map((i) => i.decode().catch(() => {}))));
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+    await mark(page, 321);                          // "<Name> plays on their own": recorded, the name as [child]
+    await next(page);
+    await page.locator('[data-step="games"].on').waitFor();
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+    await mark(page, 331);                          // "Games <Name> will play": recorded, the name as [child]
+    await next(page);
+    await page.locator('[data-step="sounds"].on').waitFor();
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+    await mark(page, 341);                          // the sounds, now two screens past the answer: recorded
     await page.evaluate(() => document.body.classList.remove("ob-settling"));
     const chip = page.locator('#obSounds [data-sound="R"]');
     if (await chip.getAttribute("aria-pressed") !== "true") await chip.click();
-    const t2 = await page.evaluate(() => Date.now());
     await next(page);
     await page.locator('[data-step="goal"].on').waitFor();
     await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
@@ -282,7 +297,14 @@ try {
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
     ok("setup: the days-a-week screen's pointer was recorded (the control)", marked(rr, 351));
-    ok("setup: nothing on the screen a therapy answer lands on (sounds)", !marked(rr, 301));
+    ok("setup: nothing on the screen a therapy answer lands on (\"Speech homework is hard at home.\")", !marked(rr, 301));
+    ok("setup: \"<Name> plays on their own\", \"Games <Name> will play\" and the sounds were recorded (the controls)", marked(rr, 321) && marked(rr, 331) && marked(rr, 341), [marked(rr, 321), marked(rr, 331), marked(rr, 341)]);
+    // every spot those two screens show the name is recorded as [child], and
+    // the screens' own words are there, so the check below is not vacuous
+    const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
+    const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
+    ok("setup: the name on the screens that sell is recorded as [child], every time (aloneName, aloneName2, gamesName)", ["aloneName", "aloneName2", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["aloneName", "aloneName2", "gamesName"].map((id) => byId(id).map(said)));
+    ok("setup: the screens that sell were recorded with their words (\"plays on their own\", \"will play\", the games)", /plays on their own/.test(text) && /will play/.test(text) && /Fruit Slice/.test(text) && /Speech homework is hard at home/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));

@@ -33,6 +33,8 @@ async function fixture(config={}){
 // the eight original titles, the twenty Say & Play games (26 Sep 2026) and Rise Up (9 Oct 2026)
 const ALL=['bubbles','feed','glide','peekaboo','rise','run','slice','stack','tiles',
  'balloon','cake','castle','dino','fishtank','flower','gifts','hoops','monster','pizza','puppy','racecar','robot','rocket','snowman','soccer','space','stars','train','treasure'].sort();
+// Since 19 Oct 2026 Home draws no parked game (Travis: hide Coming soon).
+const HOME=ALL.filter(key=>!PARKED.includes(key));
 async function state(page){return page.evaluate(()=>({
  keys:Array.from(document.querySelectorAll('#activityGroups button[data-game]')).map(el=>el.dataset.game).sort(),
  groups:Array.from(document.querySelectorAll('#activityGroups [data-group]')).map(el=>el.dataset.group),
@@ -44,10 +46,9 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age '+age,async()=>{
  const {context,page,errors}=await fixture({age});try{
   await page.waitForTimeout(200);const st=await state(page);
-  ok('age '+age+': Home itself presents every catalog card',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
-  const parked=await page.locator('#activityGroups button[data-game]:disabled').evaluateAll(els=>els.map(el=>({key:el.dataset.game,text:el.innerText})).sort((a,b)=>a.key.localeCompare(b.key)));
-  // each says its Friday ("Coming Oct 16" … "Coming Nov 20", 9 Oct 2026), or "Coming soon" once that day has passed
-  ok('age '+age+': Peekaboo and the parked Say & Play games are explicitly Coming',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(PARKED)&&parked.every(game=>/Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(game.text)),parked);
+  ok('age '+age+': Home itself presents every catalog card but the parked ones',JSON.stringify(st.keys)===JSON.stringify(HOME),st.keys);
+  const parked=await page.evaluate(keys=>({cards:keys.filter(k=>document.querySelector('#libraryApp [data-game="'+k+'"]')),disabled:document.querySelectorAll('#libraryApp button[data-game]:disabled').length,coming:/coming soon/i.test(document.getElementById('libraryApp').innerText)}),PARKED);
+  ok('age '+age+': Peekaboo and the parked Say & Play games have no card on Home, and nothing says Coming soon',PARKED.includes('peekaboo')&&parked.cards.length===0&&parked.disabled===0&&!parked.coming,parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);
   ok('age '+age+': no adventure hero or auto-start replaces the choice',await page.locator('#goBtn,#heroCard,#jarRow').count()===0&&new URL(page.url()).pathname==='/today.html');
   const recommended=['2','3','4'].includes(age)?'simple':['5','8'].includes(age)?'arcade':null;
@@ -65,7 +66,7 @@ for(const progress of [{round:0},{round:0,pending:true},{round:0,ready:{round:0,
  const {context,page,errors}=await fixture({age:'3',run});try{
   await page.waitForTimeout(200);const st=await state(page);
   ok('saved run '+JSON.stringify(progress)+': browsing never resumes or overwrites it',st.run===JSON.stringify(run)&&new URL(page.url()).pathname==='/today.html',st);
-  ok('saved run '+JSON.stringify(progress)+': the picker remains available',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
+  ok('saved run '+JSON.stringify(progress)+': the picker remains available',JSON.stringify(st.keys)===JSON.stringify(HOME),st.keys);
   ok('saved run '+JSON.stringify(progress)+': browsing stays silent',st.speech.length===0,st.speech);
   clean('saved run',errors);
  }finally{await context.close();}

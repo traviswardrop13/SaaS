@@ -11,8 +11,9 @@
 //   - a card whose child plays Level 2 or 3 carries a small numeral and pips
 //     on its picture (top right, clear of the best tag and the Free/Included
 //     label), and its label says the level;
-//   - a grey Premium card, a Coming soon card, a book and Feed Echo never
-//     open the sheet; a grown-up's "Level 1 only" turns it all off;
+//   - a grey Premium card, a book and Feed Echo never open the sheet, and a
+//     Coming soon game has no card to tap (19 Oct 2026); a grown-up's
+//     "Level 1 only" turns it all off;
 //   - Home stays the silent library: no voice, no event, nothing written on
 //     load or on coming back to the front, only the "seen" mark and the pick
 //     on a child's tap; nothing fits off the screen at 320 px;
@@ -216,8 +217,7 @@ await section("who never sees the sheet", async () => {
     const feedTo = await tapAway(f.page, card(f.page, "feed"));
     ok("Feed Echo never opens the sheet (one level until Rachel says)", feedTo && new URL(feedTo).pathname === "/arcade-feed.html" && !(await levels(f.page)), feedTo);
     await home(f.page);
-    const parked = f.page.locator('#activityGroups .game-card[data-game="peekaboo"]').first();
-    ok("a Coming soon game stays disabled and carries no badge", (await parked.isDisabled()) && (await parked.locator(".game-level").count()) === 0);
+    ok("a Coming soon game has no card on Home, so no badge and no sheet", (await f.page.locator('#libraryApp [data-game="peekaboo"]').count()) === 0 && (await f.page.locator("#libraryApp .game-card:disabled").count()) === 0);
     const bookTo = await tapAway(f.page, f.page.locator("#booksCard"));
     ok("the books never open it", bookTo && new URL(bookTo).pathname === "/library.html" && !(await levels(f.page)), bookTo);
     ok("no page errors", f.errors.length === 0, f.errors);

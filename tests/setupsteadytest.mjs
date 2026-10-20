@@ -78,7 +78,8 @@ function phoneInit(cfg){
   const S=window.__steady={kb:{},frames:[],on:false,kbState:'down',kbh:cfg.kb};
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
-    tCard:'[data-step="therapy"]',tHead:'#therapyTitle',tYes:'#obTherapy [data-val="t_yes"]',btn:'#nextBtn'};
+    tCard:'[data-step="therapy"]',tHead:'#therapyTitle',tYes:'#obTherapy [data-val="t_yes"]',btn:'#nextBtn',
+    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .sell-line',sPic:'.step.sell.on .sell-pic img',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child'};
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
   // is. Null when it is not drawn (display:none, or smaller than 2 px).
@@ -462,6 +463,39 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
   ok('with motion on, the name step slides in as one piece: nothing moves inside the card ('+JSON.stringify(rel)+')',fr.length>5&&Object.values(rel).every(v=>v!==null&&v<=1.5),{frames:fr.length,rel});
   ok('no runtime errors (motion on)',errors.length===0,errors);
  }finally{await context.close();}}
+
+// THE THREE SCREENS THAT SELL HOLD STILL (19 Oct 2026). Right after the
+// therapy question: "Speech homework is hard at home.", "<Name> plays on
+// their own" with one painted game, and "Games <Name> will play". Each is
+// drawn once, at its own size, and nothing in it moves when its pictures
+// arrive, here held back half a second on purpose (each keeps its 16:9 box
+// from the first frame). With motion on and under Reduce Motion, on a big
+// phone and a 4-inch one. The app here can sell (a purchase plugin is there,
+// with nothing to call: setup asks the store only on the ready screen), so
+// the games peek is the full grid, every playable big-kid game.
+for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
+ const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
+ try{
+  await context.addInitScript(()=>{const C=window.Capacitor;if(C&&C.Plugins)C.Plugins.Purchases={};});
+  await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
+  ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
+  await context.route(/\/assets\/crafted\/home-[a-z]+\.webp$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
+  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
+  await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(500);
+  await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
+  await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
+  for(const [key,keys] of [['problem',['sCard','sHead','sLine','btn']],['alone',['sCard','sHead','sLine','sPic','btn']],['games',['sCard','sHead','sGrid','sLast','sLine','btn']]]){
+   await page.evaluate(()=>__steady.start());
+   if(key==='problem')await tapAt(page,'#obTherapy [data-val="t_yes"]');else{await calm(page);await page.tap('#nextBtn');}
+   await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(1100);
+   const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r.sCard);
+   const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img')].every(i=>i.complete&&i.naturalWidth>0));
+   if(key==='games')ok('…the games peek is the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
+   ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
+   await page.waitForTimeout(200);
+  }
+  ok('no runtime errors (the screens that sell'+at+')',errors.length===0,errors);
+ }catch(e){ok('the walk completes (the screens that sell'+at+')',false,e.message);}finally{await context.close();}}
 
 await browser.close();server.close();
 console.log('\n'+checks+' checks, '+failures+' failures');

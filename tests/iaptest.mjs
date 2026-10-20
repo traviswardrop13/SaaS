@@ -1669,9 +1669,11 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("an expired family keeps the library and accessible saved adventure choices",
     home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
   const freeCards = home.cards.filter(card => !card.comingSoon && card.tier === "free"), premiumCards = home.cards.filter(card => !card.comingSoon && card.tier === "premium"), comingSoonCards = home.cards.filter(card => card.comingSoon);
-  // Bubble Pop, Peekaboo and every Say & Play game not yet rebuilt (Travis,
-  // 26 Sep 2026: "put the 20 games as coming soon")
-  ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length >= 2 && ["peekaboo"].every(k => comingSoonCards.some(card => card.key === k)) && comingSoonCards.every(card => card.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.label)), JSON.stringify(comingSoonCards));
+  // Peekaboo and every Say & Play game not yet rebuilt (Travis, 26 Sep 2026:
+  // "put the 20 games as coming soon") have had no card on Home since 19 Oct
+  // 2026: nothing to buy or play there, and nothing that says Coming soon
+  const parkedInCatalog = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon));
+  ok("coming-soon games are not on Home, so they offer no purchase or play action", parkedInCatalog.length >= 2 && parkedInCatalog.includes("peekaboo") && comingSoonCards.length === 0 && await pg.locator('#libraryApp [data-game="peekaboo"]').count() === 0, JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
   if (premiumCards.length) {

@@ -66,12 +66,12 @@ ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 const DECK = () => ({
   ps: Sona.pathState(),
   games: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => card.dataset.game),
-  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)).concat(g.flatMap(group => group.games.filter(game => game.comingSoon).map(game => game.key))))(Sona.activityLibrary().groups), // playable first, then the one Coming soon section (1 Oct 2026)
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)))(Sona.activityLibrary().groups), // the playable ones only: since 19 Oct 2026 Home draws no Coming soon game
   library: !document.getElementById("libraryApp").hidden,
 });
 let pp = await page.evaluate(DECK);
 ok("Home opens the library without choosing a game", pp.library && /today\.html$/.test(page.url()), JSON.stringify(pp));
-ok("library offers every game once in the age shelves", JSON.stringify(pp.games) === JSON.stringify(pp.expected) && new Set(pp.games).size === pp.games.length, JSON.stringify(pp));
+ok("library offers every playable game once in the age shelves (no Coming soon card)", JSON.stringify(pp.games) === JSON.stringify(pp.expected) && new Set(pp.games).size === pp.games.length, JSON.stringify(pp));
 ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
 
 // ── charge free play: round 1 = isolation, header context line ──
@@ -147,7 +147,7 @@ ok("Home keeps today's real rep count", t.ring === "12", t.ring);
 ok("library leaves the current practice sound intact", t.sound === "R");
 pp = await page.evaluate(DECK);
 ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
-ok("library: mid-day still offers the complete catalog", JSON.stringify(pp.games) === JSON.stringify(pp.expected), JSON.stringify(pp));
+ok("library: mid-day still offers every playable game", JSON.stringify(pp.games) === JSON.stringify(pp.expected), JSON.stringify(pp));
 ok("Home keeps saved reps and rounds without the old star-jar menu", await page.evaluate(() => Sona.repsToday() === 12 && Sona.rotRound() === 3 && !document.getElementById("jarInfo")));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 

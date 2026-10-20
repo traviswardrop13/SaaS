@@ -119,8 +119,8 @@ Hoops, Soccer Goal and Dino Dig are Premium), **Feed Echo and Bubble Pop** for 3
 Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
-disabled "Coming …" cards (see "Two Fridays") regardless of subscription,
-trial or earned access. **Since 3 Oct 2026 the free version is not every
+closed regardless of subscription, trial or earned access, and since 19 Oct
+2026 have no card on Home (see "Coming soon games are hidden"). **Since 3 Oct 2026 the free version is not every
 family's:** where Sona can sell, a family set up from then on starts with the
 trial (see "TRIAL FIRST" right below).
 
@@ -150,7 +150,8 @@ changing one. What follows from the rule:
 - **SETUP IS OPTION B: FOUR QUESTIONS, THE PRICE, THEN THE PHONE IS HANDED
   OVER** (Travis, 4-5 Oct 2026: "number B would be good ... you can do a full
   reset i don't really care i'm not married to anything"). A parent's setup is
-  hello → name and age → **"Is <Name> in speech therapy?"** → sounds →
+  hello → name and age → **"Is <Name> in speech therapy?"** → three
+  screens that sell Sona (19 Oct 2026, below) → sounds →
   **"How many days a week will you practice?"** → **"Get the weekly progress
   report"** → **"<Name>'s practice is ready"** →
   the price → microphone → "Hand the phone to <Name>!" → Home (the first
@@ -175,6 +176,24 @@ changing one. What follows from the rule:
     Skip leaves that goal as it was. The wording of both, the two sentences
     and the ready screen are Rachel's to change; so is how much practice a
     family is asked for.
+  - **Three screens that sell, before the price** (Travis, 19 Oct 2026, "go",
+    to a funnel expert's review: setup only asked questions and never showed
+    a parent what Sona is). After the therapy question: **"Speech homework is
+    hard at home."** (worksheets turn into a fight; kids practice when it
+    feels like play), **"<Name> plays on their own"** (Echo says a word, the
+    child says it, the game moves; with the painted Home card of the game
+    setup hands the child), and **"Games <Name> will play"** (a grid of the
+    age group's playable games from the catalog, never a Coming soon one;
+    where no price follows, only the games that phone opens). Statements
+    with Continue and Back: nothing asked or stored (Travis took out two
+    question screens on 5 Oct), no progress segment, only on a family's
+    first setup (never a clinician's, a second child or a re-walk). The
+    name is `ph-name` (`#aloneName`, `#aloneName2`, `#gamesName`). The words
+    are Travis's and Rachel's to change; Rachel's to check: "Saying words out
+    loud is how every game is played." is loose for the round games, where
+    the finger plays and the sound is said before and between rounds. The
+    sounds step's "Not sure? Explore all sounds" is now "Not sure? Pick all
+    sounds". `onboardingtest`, `setupsteadytest` and `replaytest` pin them.
   - **The email comes before the price** (Travis, 13 Oct 2026: "also move
     the email box before the price"). It used to be on the hand-off, after
     the price, so a parent who closed the price was never asked. Now it is
@@ -328,8 +347,9 @@ changing one. What follows from the rule:
   for new subscribers", no "No payment today", and the "Only new subscribers
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
-  A yearly or lifetime plan would be a second row above this one; lifetime
-  needs a new App Store product first (Travis's task).
+  **Since 19 Oct 2026 the yearly plan is a second row above this one**
+  (below, "TWO PLANS ON THE IPHONE AGAIN"). Lifetime still needs a new App
+  Store product first (Travis's task).
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and the Books card says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
@@ -523,6 +543,37 @@ is charged, charter open and closed); `progtest` and `iaptest` play the pick on
 both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
+
+**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026,
+"yes" to a funnel expert's review: one plan leaves a parent only "buy or
+don't buy"; two let them compare; 3 days is too tight to see a child use it).
+This replaces "one plan, no pick" below.
+- **Yearly above monthly, yearly picked on arrival**, one button under both;
+  the button, check line and small print follow the pick, and the button buys
+  the picked product (`Sona.buyPlan`). Each row's words are its own
+  product's store answer and eligibility (`plan.year`). **"Best value"** sits
+  on the yearly row only when the store's yearly price is below twelve
+  monthly ones; still no saving in dollars and no ratio. The page is sized
+  to fit with either plan picked, so a tap moves no row; a yearly row that
+  appears after the card showed monthly alone comes in unpicked.
+- **The yearly row shows only when RevenueCat's current offering lists
+  `com.speaksona.app.annual`** (`Purchases.getOfferings()`) and the store
+  returns it; missing, slow or throwing, the card is the monthly row alone,
+  exactly as before. That listing is Travis's switch, because on 1 Oct the
+  yearly product was attached to no entitlement and a sale would have
+  charged a parent and unlocked nothing: attach it to `full`, then add it to
+  the current offering.
+- **The free days are the store's.** Travis sets the introductory offer to
+  one week in App Store Connect; `planFree` reads a week as "7 days", so the
+  card, the Premium page and the small print follow by themselves. The
+  welcome emails no longer name a number ("Try Sona free."). The web card,
+  `/api/checkout`'s Stripe trial and `trial.html` keep 3 days: the website
+  sells nothing.
+- **No "<Name> wants to play <Game>" line** on the offer: by then the one
+  tapping is the grown-up. The headline names the game.
+- **A parked game is never offered:** `?from=<a Coming soon game>` is
+  Settings › Your plan, behind the check.
+`pricescreentest` (1b, 15, 15b) and `planwordstest` (2b) play both rows.
 
 **THE IPHONE SELLS ONE PLAN: 3 DAYS FREE, THEN $9.99 A MONTH** (Travis, 5 Oct
 2026: "get rid of the annual option and update the copy so that it says three
@@ -1252,18 +1303,19 @@ sessions" on in PostHog too.
   ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
   once a screen without them is up, so a tap on Yes / Not right now is never
   recorded (the ready card's size alone would tell the answer). **The
-  screen a therapy answer lands on is not recorded either** (`replayHold`):
-  a double tap's second tap, or a mouse moving on, would be recorded at the
-  answer's place; recording comes back one screen later, reached by the
-  fixed footer. **A child already set up walking setup again** (`REWALK`:
+  screen a therapy answer lands on is not recorded either** (`replayHold`;
+  since 19 Oct 2026 that is "Speech homework is hard at home."): a double
+  tap's second tap, or a mouse moving on, would be recorded at the answer's
+  place; recording comes back one screen later ("<Name> plays on their
+  own"), reached by the fixed footer. **A child already set up walking setup again** (`REWALK`:
   Back from the first game, a second visit) is never recorded, and **the
   hand-off ends recording for the whole tab** (`sona.replayoff.v1` in
   sessionStorage, which `SonaAnalytics.replay` reads). The plan screen
   calls `replay(true)` once the offer is painted.
 - **The name: masked where it is shown, and a backstop that drops.** Every
   spot a recorded page shows the child's name is an element of class
-  `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, the plan screen's
-  headline span), recorded as "[child]" whatever it holds
+  `ph-name` (`#micName`, `#achName`, `#intName`, `#emName`, `#aloneName`,
+  `#aloneName2`, `#gamesName`, the plan screen's headline span), recorded as "[child]" whatever it holds
   (`maskTextSelector: ".ph-name"`). Before a piece of recording is sent,
   `before_send` checks the words a person reads in it (text, and the
   attributes in `READ_ATTR`; never tag names, classes, styles or
@@ -1723,6 +1775,19 @@ played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
   Makeover's painted room. The review and Codex's notes are in
   `design/coming-soon-games-2026-10-16.md` and
   `design/coming-soon-games/*-art-notes.txt`.
+
+**Coming soon games are hidden** (Travis, 19 Oct 2026, "yes", to a funnel
+expert's review: eighteen greyed cards cluttered Home and pushed parents
+away). Home draws no parked game at all: no card, no "Coming soon" label, no
+grey slot, on any shelf, in Today's picks, the daily adventure card or the
+level sheet. A parked game's card comes back by itself the day its
+`comingSoon` comes off. A typed address to one still bounces home with
+"<Game> is coming soon" (and a `comingOn` day still labels that note). The
+shelves count cards, never names (`crafted-home.css`): the little kids'
+shelf is all wide rows; on a phone the last card of an odd count is a wide
+row; on an iPad one card left over is a wide row and two share it.
+`activitytest` and `sayplaytest` pin it. The paragraph just below is the
+history before it.
 
 **Every unfinished game says "Coming soon", with no day** (Travis, 15 Oct
 2026: "put coming soon", the day before the first three were due). From 30
@@ -2904,7 +2969,7 @@ the tests first. Whether to switch it on is Travis's, after that.
 Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
 Settings card and `board.html`.
 
-Peekaboo stays visible only as a disabled "Coming …" card, with no New
+Peekaboo has no card on Home (19 Oct 2026), no New
 shelf promotion and no direct-link, paid or earned bypass; since 16 Oct 2026
 it is a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"),
 and `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
