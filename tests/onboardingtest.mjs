@@ -38,6 +38,9 @@ function edges(config){
   navigator.mediaDevices.getUserMedia=()=>new Promise((resolve,reject)=>{h.order.push('microphone');const req={grant(){const tracks=[0,1].map(()=>{const t={readyState:'live',stop(){t.readyState='ended';h.order.push('stop');}};h.tracks.push(t);return t;});resolve({getTracks:()=>tracks,getAudioTracks:()=>tracks});},deny(){reject(new DOMException('Denied','NotAllowedError'));}};h.requests.push(req);if(config.permission==='grant')req.grant();else if(config.permission==='deny')req.deny();});
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.speechPerm=()=>{h.order.push('speech permission');return Promise.resolve(true);};value.speak=value.speakNow=text=>{if(String(text||'').trim())h.speech.push(text);return Promise.resolve();};value.confetti=()=>h.confetti++;Object.keys(value.sfx||{}).forEach(k=>{if(typeof value.sfx[k]==='function')value.sfx[k]=()=>{if(k==='complete')h.complete++;};});}});
+  // a browser where the website sells (WEB_SALES's own QA seam, session-only):
+  // a phone where the price follows setup, as the iPhone app with the plugin
+  if(config.webSales)try{sessionStorage.setItem('sona.websalesui','1');}catch(e){}
   if(!localStorage.getItem('sona.test.setupseed')){localStorage.setItem('sona.test.setupseed','1');localStorage.setItem('sona.profile.v1',JSON.stringify({voiceOn:true,soundOn:false,volume:0.7}));}
 }
 // Destinations are followed without starting another page's game, mic or
@@ -929,9 +932,14 @@ const sellShown=(page,key)=>page.evaluate(key=>{const st=document.querySelector(
 const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false;}),group);
 const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] img')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
 async function toSell(page,{name='Milo',age='6',therapy='t_yes'}={}){await toName(page);await page.locator('#obName').fill(name);if(age)await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);await answerTherapy(page,therapy);await page.locator('[data-step="problem"].on').waitFor();}
+// what this phone opens, read from the catalog's own gate (Sona.gameAccess)
+const opensHere=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false&&Sona.gameAccess(k).allowed;}),group);
 await scenario('the three screens that sell: their words, the games, and nothing kept',async()=>{
- const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667}});try{
+ // a phone where the price follows setup (the trial opens every game), so
+ // the grid is every playable game of the age group
+ const {context,page,errors,requests}=await fresh({viewport:{width:375,height:667},webSales:true});try{
   await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="6"]').click();await next(page);await page.locator('[data-step="therapy"].on').waitFor();
+  ok('(this phone can sell: the price follows setup)',await page.evaluate(()=>Sona.trialFirst()===true));
   const kept=()=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);});
   ok('the order: hello, name, therapy, the three screens that sell, sounds, days, email, ready, microphone',await page.evaluate(()=>ORDER.join())==='welcome,name,therapy,problem,alone,games,sounds,goal,updates,ready,mic');
   await answerTherapy(page,'t_yes');await page.locator('[data-step="problem"].on').waitFor();await settled(page);
@@ -981,7 +989,7 @@ await scenario('the three screens that sell: their words, the games, and nothing
  }finally{await context.close();}
  // no age given, and 7+
  for(const [age,label] of [['','no age'],['8','7+']]){
-  const {context,page,errors}=await fresh({viewport:{width:375,height:667}});try{
+  const {context,page,errors}=await fresh({viewport:{width:375,height:667},webSales:true});try{
    await toSell(page,{name:'Ava',age});
    await next(page);await page.locator('[data-step="alone"].on').waitFor();
    const a=await sellShown(page,'alone');
@@ -996,13 +1004,38 @@ await scenario('the three screens that sell: their words, the games, and nothing
    clean('sell screens '+label,errors);
   }finally{await context.close();}
  }
+ // A PHONE THAT CANNOT SELL (the website while it sells nothing, so every
+ // Android family; an app build with no purchase plugin): no price follows,
+ // nothing there can open a Premium game, so "Games <Name> will play" lists
+ // only the games this phone opens, never one it will grey out
+ for(const [age,label,group] of [['6','5–6','arcade'],['4','2–4','simple'],['','no age','']]){
+  const {context,page,errors}=await fresh({viewport:{width:375,height:667}});try{
+   await toSell(page,{name:'Ava',age});
+   const kept=()=>page.evaluate(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sona\./.test(k))o[k]=localStorage.getItem(k);}o.__draft=JSON.stringify(draft);return JSON.stringify(o);}),before=await kept();
+   ok('cannot sell, '+label+': (no price follows setup on this phone)',await page.evaluate(()=>Sona.trialFirst()===false&&!Sona.webSales()));
+   await next(page);await page.locator('[data-step="alone"].on').waitFor();
+   const a=await sellShown(page,'alone');
+   ok('cannot sell, '+label+': the picture is still the game setup hands the child',a.pic===(age==='4'?'/assets/crafted/home-feed.webp':'/assets/crafted/home-fruit.webp'),a.pic);
+   await next(page);await page.locator('[data-step="games"].on').waitFor();
+   const s=await sellShown(page,'games'),here=await opensHere(page,group),all=await playable(page,group);
+   const free=await page.evaluate(keys=>keys.filter(k=>Sona.GAME_ACTS[k].tier==='free'),all);
+   ok('cannot sell, '+label+': the grid is exactly the games this phone opens ('+here.join(', ')+'), the free version\'s, and none it greys out',JSON.stringify(s.grid.slice().sort())===JSON.stringify(here.slice().sort())&&JSON.stringify(here.slice().sort())===JSON.stringify(free.slice().sort())&&here.length>=2,{grid:s.grid,here,free,all});
+   // (the little kids' two playable games are both free today; the big kids'
+   // Premium ones are what this rule keeps off a phone that cannot sell)
+   if(group!=='simple')ok('cannot sell, '+label+': …so a Premium game such as Hoops is not on it',all.indexOf('hoops')>-1&&s.grid.indexOf('hoops')<0&&here.length<all.length,{grid:s.grid,all});
+   ok('cannot sell, '+label+': asking which games open stores nothing',await kept()===before);
+   ok('cannot sell, '+label+': still unlabelled, and the same words',!/\bfree\b|premium|coming soon|\$/i.test(s.words)&&s.title===GAMES('Ava').title&&s.line===GAMES('Ava').line,s.words);
+   clean('sell screens, cannot sell, '+label,errors);
+  }finally{await context.close();}
+ }
 });
 await scenario('the three screens that sell fit every screen',async()=>{
  // one walk a screen size, with no age (both groups: the longest grid); the
  // other age groups are then painted on the same screen, as Back would
- for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}}]){
-  const {context,page,errors}=await fresh(device),size=device.viewport.width+'×'+device.viewport.height;try{
+ for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}}]){
+  const {context,page,errors}=await fresh(Object.assign({webSales:true},device)),size=device.viewport.width+'×'+device.viewport.height;try{
    await toSell(page,{name:'Maximiliana',age:''});
+   ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: '+(await playable(page,'')).length+' games)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===(await playable(page,'')).length);
    for(const key of ['problem','alone','games']){
     await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     for(const age of key==='problem'?['']:['','6','4']){

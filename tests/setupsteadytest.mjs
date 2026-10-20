@@ -470,10 +470,15 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
 // drawn once, at its own size, and nothing in it moves when its pictures
 // arrive, here held back half a second on purpose (each keeps its 16:9 box
 // from the first frame). With motion on and under Reduce Motion, on a big
-// phone and a 4-inch one.
+// phone and a 4-inch one. The app here can sell (a purchase plugin is there,
+// with nothing to call: setup asks the store only on the ready screen), so
+// the games peek is the full grid, every playable big-kid game.
 for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
  const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
  try{
+  await context.addInitScript(()=>{const C=window.Capacitor;if(C&&C.Plugins)C.Plugins.Purchases={};});
+  await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
+  ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/crafted\/home-[a-z]+\.webp$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
   await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(500);
@@ -485,6 +490,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(1100);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r.sCard);
    const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img')].every(i=>i.complete&&i.naturalWidth>0));
+   if(key==='games')ok('…the games peek is the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
    await page.waitForTimeout(200);
   }

@@ -265,8 +265,11 @@
     </div>
     <!-- the age group's playable games, read from the catalog Home reads
          (Sona.activityLibrary): never a Coming soon game, never a typed list;
-         both groups when no age was given. No "Free" or "Premium" here: since
-         trial first no surface tells a family something stays free. -->
+         both groups when no age was given. Every one where the price follows
+         (the trial opens them all); only the ones this phone opens where no
+         price can follow (the website, an app with no purchase plugin). No
+         "Free" or "Premium" here: since trial first no surface tells a family
+         something stays free. -->
     <div class="step sell" data-step="games">
       <h1 class="qh" id="gamesTitle" tabindex="-1">Games <span class="ph-name" id="gamesName">your child</span> will play</h1>
       <div class="sell-grid" id="gamesGrid"></div>
@@ -849,7 +852,7 @@
       ig.appendChild(el);
     });
 
-    // R starts selected; a parent can change it or explore all sounds.
+    // R starts selected; a parent can change it or pick all sounds ("Not sure? Pick all sounds").
     var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
     var sc = document.getElementById("obSounds");
     ["R","S","L","TH"].concat(Sona.ALL_SOUNDS.filter(function(s){return ["R","S","L","TH"].indexOf(s)<0;})).forEach(function(s){
@@ -1039,16 +1042,25 @@
     // (Sona.CRAFTED_CARDS). Which group is the age picked on the name step,
     // read from the draft (the profile is saved only on the ready screen):
     // ages 2–4 Simple play, 5 and up Arcade, both when no age was given.
+    // "Games <Name> will play" must be true for THIS phone: where the price
+    // follows (Sona.trialFirst, read the way the ready screen reads it) the
+    // trial opens every game, so all of them are shown; where no price can
+    // follow (the website, so every Android family, and an app build with no
+    // purchase plugin) only the games this phone opens are, since nothing
+    // there can open the rest. Premium, a trial or a covered caseload open
+    // every game either way (Sona.gameAccess).
     var SELL={problem:1,alone:1,games:1},sellPainted=null;
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
-    function sellGroups(style){
+    function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
+    function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
+    function sellGroups(style,all){
       var lib=null;try{lib=Sona.activityLibrary&&Sona.activityLibrary();}catch(e){}
       var out=[];
       ["simple","arcade"].forEach(function(id){
         if(style&&id!==style)return;
         ((lib&&lib.groups)||[]).forEach(function(g){
           if(g.id!==id)return;
-          var games=(g.games||[]).filter(function(x){return x&&x.kind!=="book"&&!x.comingSoon&&x.available!==false;});
+          var games=(g.games||[]).filter(function(x){return x&&x.kind!=="book"&&!x.comingSoon&&x.available!==false&&sellOpens(x.key,all);});
           if(games.length)out.push({id:g.id,label:g.ageLabel||g.name||"",games:games});
         });
       });
@@ -1064,14 +1076,16 @@
       document.getElementById("aloneName").textContent=nm||"Your child";
       document.getElementById("aloneName2").textContent=nm||"Your child";
       document.getElementById("gamesName").textContent=nm||"your child";
-      var style=sellStyle();
-      if(sellPainted===style)return;            // unchanged: no flicker of pictures already drawn
-      sellPainted=style;
-      var groups=sellGroups(style);
-      // the picture: the first game of the group, which is the one setup hands
-      // the child (Sona.firstGameKey: Feed Echo for 2–4, Fruit Slice otherwise)
-      var lead=groups.filter(function(g){return g.id===(style||"arcade");})[0]||groups[0],pic=document.getElementById("alonePic"),cards=Sona.CRAFTED_CARDS||{};
-      var leadKey=lead&&lead.games[0]&&lead.games[0].key;
+      var style=sellStyle(),all=sellsAll(),painted=style+"|"+all;
+      if(sellPainted===painted)return;          // unchanged: no flicker of pictures already drawn
+      sellPainted=painted;
+      var groups=sellGroups(style,all);
+      // the picture: the game setup hands the child, Sona.firstGameKey's rule
+      // (Feed Echo for 2–4, Fruit Slice otherwise) on the age in the draft,
+      // since firstGameKey reads the profile, which is not saved yet
+      var want=style==="simple"?"feed":"slice",leadKey=null,pic=document.getElementById("alonePic"),cards=Sona.CRAFTED_CARDS||{};
+      groups.forEach(function(g){g.games.forEach(function(x){if(x.key===want)leadKey=want;});});
+      if(!leadKey){var lead=groups.filter(function(g){return g.id===(style||"arcade");})[0]||groups[0];leadKey=lead&&lead.games[0]&&lead.games[0].key;}
       if(leadKey&&cards[leadKey])pic.src="/assets/crafted/home-"+cards[leadKey]+".webp";
       pic.parentNode.hidden=!(leadKey&&cards[leadKey]);
       var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
