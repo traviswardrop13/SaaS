@@ -405,6 +405,35 @@ before the price at the end of setup are skipped). A store that has no
 monthly product, or answers with the yearly one, sells nothing in its place.
 The card never states a saving: the price is Apple's.
 
+## Two plans again, and the store's free days (19 Oct 2026)
+
+Travis, 19 Oct 2026, "yes" to a funnel review: the price screen offers yearly
+above monthly again, yearly picked, and the free days are whatever the store
+says. This replaces "one plan" above for the Apple card only; the web card is
+unchanged. Nothing here needs an app build: it is all store settings and a
+web deploy.
+
+1. **App Store Connect:** give both products a one-week free introductory
+   offer (`com.speaksona.app.monthly`, and `com.speaksona.app.annual`). The
+   card reads each product's own offer, so a row shows "7 days" once its
+   product has a week, and "3 days" while it still has three. Apple gives one
+   introductory offer per subscription group, so someone who used free days
+   on either product is charged at once; Apple's sheet says so first.
+2. **RevenueCat, in this order:** attach `com.speaksona.app.annual` to the
+   `full` entitlement, **then** add it to the current offering. The card
+   shows the yearly row only when `getOfferings()` lists it in the current
+   offering; attached to `full` but not offered, nothing changes. Offered but
+   not attached, Apple would take a parent's money and unlock nothing, which
+   is why the order matters.
+3. **The yearly price:** check it is still the one Travis wants (set to
+   $59.99 from 4 Oct 2026, above). The card shows
+   "Best value" only when Apple's yearly price is below twelve monthly ones,
+   and never a saving in dollars or a ratio.
+
+To take the yearly row off again, remove the product from the current
+offering in RevenueCat: the card goes back to the monthly row alone, and a
+yearly buyer is still recognised on a restore.
+
 ## RevenueCat webhook (16 Oct 2026, RCHOOK1)
 
 RevenueCat tells Sona's server whenever an App Store purchase of Sona Premium
@@ -459,7 +488,7 @@ web subscription is recognised. The clinician's link opens in Safari, and the
 app keeps separate storage, so the link state (the code and the enrolment
 ticket) travels into the app through the move-in code; the app then asks
 `/api/slp/covered` itself. The cached answer never travels. A parent's own Premium in the app stays the
-existing in-app purchase (Sona Monthly since 5 Oct 2026; the yearly product stays listed, unoffered), priced in App Store Connect. Apple accepts
+existing in-app purchase (Sona Monthly since 5 Oct 2026, and Sona Yearly again once RevenueCat's current offering lists it, 19 Oct 2026), priced in App Store Connect. Apple accepts
 access bought elsewhere only while the app also sells Premium itself and never
 points a parent at buying outside it — so no page inside the app may mention
 the clinician plan or a web price.

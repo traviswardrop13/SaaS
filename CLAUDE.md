@@ -1298,11 +1298,11 @@ sessions" on in PostHog too.
   ready screen (`NO_REPLAY`) or the hand-off is painted and on again only
   once a screen without them is up, so a tap on Yes / Not right now is never
   recorded (the ready card's size alone would tell the answer). **The
-  screen a therapy answer lands on is not recorded either** (`replayHold`):
-  a double tap's second tap, or a mouse moving on, would be recorded at the
-  answer's place; recording comes back one screen later, reached by the
-  fixed footer (since 19 Oct 2026 that is "Speech homework is hard at
-  home."). **A child already set up walking setup again** (`REWALK`:
+  screen a therapy answer lands on is not recorded either** (`replayHold`;
+  since 19 Oct 2026 that is "Speech homework is hard at home."): a double
+  tap's second tap, or a mouse moving on, would be recorded at the answer's
+  place; recording comes back one screen later ("<Name> plays on their
+  own"), reached by the fixed footer. **A child already set up walking setup again** (`REWALK`:
   Back from the first game, a second visit) is never recorded, and **the
   hand-off ends recording for the whole tab** (`sona.replayoff.v1` in
   sessionStorage, which `SonaAnalytics.replay` reads). The plan screen
