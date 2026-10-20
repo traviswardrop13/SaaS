@@ -15,6 +15,14 @@
         2752
       ],
       "label": "iPad 13-inch"
+    },
+    "iphone-6.3": {
+      "canvas": [
+        1206,
+        2622
+      ],
+      "label": "iPhone 6.3-inch",
+      "from": "iphone"
     }
   },
   "slides": [
@@ -117,7 +125,7 @@
         "to slow the keys"
       ],
       "accent": 1,
-      "sub": "Then tap the tiles to play the song.",
+      "sub": "Tap the tiles to play the song.",
       "bg": [
         "#eee8ff",
         "#fff1e6"

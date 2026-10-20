@@ -45,6 +45,8 @@ const LAYOUT = {
   ipad: { top: 140, h1: 132, sub: 54, gap: 30, phoneTop: 44, bottom: 120, maxW: 0.78 },
 };
 const INK = "#28285c", ACCENT = "#ef6f23", SUBINK = "#5b5a7e";
+// how much of the canvas width a detail card (a cropped excerpt) may take
+const DETAIL_W = 0.88;
 // How much of a painted background shows: faded to this, and blurred by this
 // share of the canvas width. One place, so "plainer" or "busier" is one number.
 const PAINT_FADE = 0.45, PAINT_BLUR = 0.012;
@@ -151,10 +153,12 @@ function slideHTML(slide, dev, copyBottom) {
   const [pw, ph] = F.pt;
   // screen width from the height we have, capped by the canvas width
   let sw = availH / (ph / pw + 2 * F.bezel + 2 * F.rim);
-  sw = Math.min(sw, (CW * L.maxW) / (1 + 2 * F.bezel + 2 * F.rim));
+  // a detail card is a short excerpt: it may take more of the width, and it
+  // sits a little under the headline rather than floating in the middle
+  sw = Math.min(sw, (CW * (slide.detail ? DETAIL_W : L.maxW)) / (1 + 2 * F.bezel + 2 * F.rim));
   const sh = sw * ph / pw, k = sw / pw;
   const bez = sw * F.bezel, rim = sw * F.rim, fw = sw + 2 * (bez + rim), fh = sh + 2 * (bez + rim);
-  const fx = (CW - fw) / 2, fy = phoneTop + (availH - fh) / 2;
+  const fx = (CW - fw) / 2, fy = phoneTop + (slide.detail ? Math.min((availH - fh) / 2, CW * 0.12) : (availH - fh) / 2);
   const R = sw * F.radius;
   const shotURL = `/raw/${dev}/${slide.scene}.png`;
   const decor = (slide.decor || []).map((d) => {
@@ -253,6 +257,26 @@ async function main() {
       const context = await browser.newContext({ viewport: { width: CW, height: CH }, deviceScaleFactor: 1 });
       const page = await context.newPage();
       mkdirSync(path.join(out, dev), { recursive: true });
+      // A size with "from" (the 6.3-inch iPhone) is the bigger set, resized:
+      // the two are within 0.1% of the same shape, so nothing is cropped.
+      const from = CFG.sizes[dev].from;
+      if (from) {
+        for (const slide of CFG.slides) {
+          if (only && !only.includes(slide.id)) continue;
+          const srcFile = path.join(out, from, slide.id + ".png");
+          if (!existsSync(srcFile)) { console.log("FAIL " + dev + "/" + slide.id + ": build " + from + " first"); bad++; continue; }
+          await page.setContent(`<style>*{margin:0}body{background:#fff}</style><img src="data:image/png;base64,${readFileSync(srcFile).toString("base64")}" style="display:block;width:${CW}px;height:${CH}px">`);
+          await page.waitForFunction(() => document.images[0].complete && document.images[0].naturalWidth > 0);
+          const file = path.join(out, dev, slide.id + ".png");
+          const buf = await page.screenshot({ type: "png", clip: { x: 0, y: 0, width: CW, height: CH } });
+          writeFileSync(file, buf);
+          const info = pngInfo(buf), ok = info.w === CW && info.h === CH && info.colour === 2;
+          if (!ok) bad++;
+          console.log((ok ? "PASS " : "FAIL ") + path.relative(REPO, file) + "  " + info.w + "x" + info.h + " (from " + from + ")");
+        }
+        await context.close();
+        continue;
+      }
       for (const slide of CFG.slides) {
         if (only && !only.includes(slide.id)) continue;
         const raw = path.join(RAW, dev, slide.scene + ".png");
