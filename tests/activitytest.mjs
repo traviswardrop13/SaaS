@@ -3,6 +3,7 @@
 import { createServer } from "http";
 import { existsSync, readFileSync } from "fs";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { open as phoneOpen } from "./_phone.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://localhost:8188";
@@ -689,6 +690,38 @@ if (present && hasContract) {
       });
     }
   }
+
+  // The plan screen never offers a parked game either. A tap on a grey game
+  // opens it as "Unlock <that game>, and every other game", with the game's
+  // own picture; Home has no card for a parked game, and Premium does not
+  // open one, so a typed ?from=<parked game> is Settings › Your plan instead.
+  // On the iPhone app with the purchase plugin (the shared fake phone), for a
+  // family who owes the price, beside a real grey game as the control.
+  await section("the plan screen never offers a parked game", async () => {
+    const look = async (from) => {
+      const f = await phoneOpen(browser, BASE, { app: "buy", stamp: "post", setUp: true });
+      try {
+        await f.page.goto(BASE + "/subscribe.html?from=" + from);
+        await f.page.waitForFunction(() => /\$/.test((document.getElementById("iapCard") || {}).innerText || ""), null, { timeout: 8000 });
+        return await f.page.evaluate((key) => ({
+          offer: document.body.classList.contains("offer"),
+          title: (document.getElementById("offerTitle") || {}).textContent || "",
+          art: [...document.querySelectorAll("#offerArt img")].map((i) => i.getAttribute("src")),
+          name: Sona.GAME_ACTS[key].name,
+          said: document.body.innerText,
+          url: location.pathname,
+        }), from).then((s) => Object.assign(s, { errors: f.errors }));
+      } finally { await f.context.close(); }
+    };
+    const grey = await look("stack");
+    ok("control: a grey game (?from=stack) opens the offer, named and pictured", grey.offer && grey.title.includes(grey.name) && grey.art.some((a) => /home-stack\.webp/.test(a)), JSON.stringify([grey.offer, grey.title, grey.art]));
+    for (const key of ["racecar", "balloon", "peekaboo"]) {
+      const s = await look(key);
+      ok("a typed ?from=" + key + " is Settings › Your plan: no offer, the game named nowhere, its picture nowhere",
+        s.url === "/subscribe.html" && !s.offer && !s.said.includes(s.name) && !s.art.some((a) => a.includes("home-" + key)), JSON.stringify([s.url, s.offer, s.title, s.art]));
+      ok("…with no page errors", s.errors.length === 0, s.errors);
+    }
+  });
 } else {
   console.log("Library interaction checks await the missing page/content contract; prerequisite failures above remain failures.");
 }

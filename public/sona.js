@@ -3431,22 +3431,22 @@
     //
     // PARKED AS COMING SOON (Travis, 26 Sep 2026: "these games are not good.
     // they are essentially all the exact same ... put the 20 games as coming
-    // soon"). The child only talked and watched; none let a child PLAY. Each
-    // comes back one at a time, rebuilt and played by Travis first, by taking
-    // comingSoon off its own line. Since 19 Oct 2026 Home shows no parked game
-    // at all (Travis: the greyed cards cluttered Home); a typed address to one
-    // still bounces home with "<Game> is coming soon".
+    // soon"). None let a child PLAY. Each comes back one at a time, rebuilt
+    // and played by Travis first, by taking comingSoon off its own line.
+    // Since 19 Oct 2026 Home draws no parked game (Travis: the greyed cards
+    // cluttered Home); a typed address to one bounces home with "<Game> is
+    // coming soon".
+    //
     // TWO FRIDAYS (Travis, 1 Oct 2026: "I don't want all these books and
-    // games to have different dates ... everything that is currently in queue
-    // to just say for next Friday ... split them and have like seven or eight
-    // for next Friday and then seven or eight for the following Friday").
-    // From 9 Oct 2026 each parked game carried a Friday (`comingOn`, three a
-    // week from 16 Oct to 20 Nov). Since 15 Oct 2026 (Travis: "put coming
-    // soon") none does: every parked card says "Coming soon", so Home
-    // promises no day a game may not be ready by. The support stays, as the
-    // bookshelf keeps `opens`: `comingOn: "2026-11-06"` on one line shows
-    // "Coming Nov 6" until that day, then "Coming soon" again. It is a LABEL,
-    // never a switch: only taking comingSoon off opens a game.
+    // games to have different dates ... split them and have like seven or
+    // eight for next Friday and then seven or eight for the following
+    // Friday"). From 9 Oct 2026 each parked game carried a Friday
+    // (`comingOn`, three a week from 16 Oct to 20 Nov); since 15 Oct 2026
+    // (Travis: "put coming soon") none does. The support stays, as the
+    // bookshelf keeps `opens`: `comingOn: "2026-11-06"` on one line makes the
+    // bounce note say "coming Nov 6" until that day, then "coming soon"
+    // again. It is a LABEL, never a switch: only taking comingSoon off opens
+    // a game.
     balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
     flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
     rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },

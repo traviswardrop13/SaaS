@@ -484,10 +484,10 @@
         var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
         var game=q&&questGames[q.game];
         if(!q||!game){card.hidden=true;return;}
-        var shown=q.state==="done"&&q.next?questGames[q.next.game]||game:game;
+        var face=q.state==="done"&&q.next?questGames[q.next.game]||game:game;
         var pic=document.getElementById("questPic");pic.textContent="";
-        if(craftedCards[shown.key]){var im=node("img");im.src="/assets/crafted/home-"+craftedCards[shown.key]+".webp";im.alt="";im.decoding="async";pic.appendChild(im);}
-        else{var st=S.gameSticker(shown.key);S.paintSticker(pic,st[0],st[1]);}
+        if(craftedCards[face.key]){var im=node("img");im.src="/assets/crafted/home-"+craftedCards[face.key]+".webp";im.alt="";im.decoding="async";pic.appendChild(im);}
+        else{var st=S.gameSticker(face.key);S.paintSticker(pic,st[0],st[1]);}
         var done=q.state==="done";
         card.classList.toggle("done",done);
         document.getElementById("questDay").textContent=done?"Day "+q.day+" done!":"Today's adventure · Day "+q.day+" of "+q.total;
