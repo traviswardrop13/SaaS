@@ -37,6 +37,8 @@ async function measure(page, url) {
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
       library: el("libraryApp"), cards: document.querySelectorAll("#activityGroups .game-card").length,
+      // Home draws every catalog game but the parked ones (19 Oct 2026)
+      playable: window.Sona && Sona.GAME_ACTS ? Object.keys(Sona.GAME_ACTS).filter((k) => !Sona.GAME_ACTS[k].comingSoon).length : -1,
       firstCard: (()=>{const e=document.querySelector("#activityGroups .game-card");if(!e)return null;const r=e.getBoundingClientRect();return{w:r.width,h:r.height};})(),
       mic: el("micWrap"), build: el("reveals"), go: el("goBtn"),
       innerH: innerHeight,
@@ -54,7 +56,7 @@ for (const [dev, w, h] of PORTRAIT) {
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
   ok(dev + " today: library cards have a usable touch area", m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 80, JSON.stringify(m.firstCard));
-  ok(dev + " today: all 29 game cards remain visible by scrolling", m.cards === 29 && !m.scrollLocked, JSON.stringify(m));
+  ok(dev + " today: every playable game's card (none Coming soon) remains visible by scrolling", m.cards === m.playable && m.playable >= 11 && !m.scrollLocked, JSON.stringify(m));
   ok(dev + " today: no retired adventure action is visible", m.go === null, JSON.stringify(m));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
@@ -108,7 +110,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.micok", "1");
   });
   let m = await measure(page, "today.html");
-  ok(dev + " today: game cards have a real size in landscape", m.cards === 29 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 80, JSON.stringify(m));
+  ok(dev + " today: game cards have a real size in landscape", m.cards === m.playable && m.playable >= 11 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 80, JSON.stringify(m));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");

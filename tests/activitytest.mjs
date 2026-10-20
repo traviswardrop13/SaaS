@@ -47,21 +47,36 @@ const parkedSay = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comin
 // Bubble Pop came back on 30 Sep 2026 (Travis: "the two free games for
 // younger kids"); Peekaboo is still parked.
 const comingSoonKeys = ["peekaboo", ...parkedSay].sort();
+// HIDDEN UNTIL IT OPENS (Travis, 19 Oct 2026, from a parent-funnel review:
+// the greyed Coming soon cards cluttered Home). Home draws only these: every
+// catalog game but the parked ones. The catalog itself still lists them all.
+const homeKeys = allKeys.filter((key) => !comingSoonKeys.includes(key));
 let playableKeys = [], freeKeys = [], premiumKeys = [];
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// unpark: catalog keys whose `comingSoon: true` is taken off their own line in
+// the sona.js this browser is served, exactly the edit that opens a game.
+function unparked(source, keys) {
+  return keys.reduce((src, key) => {
+    const next = src.replace(new RegExp("^(\\s{4}" + key + ": \\{[^\\n]*?)comingSoon: true, ", "m"), "$1");
+    if (next === src) throw new Error("no parked line to open for " + key);
+    return next;
+  }, source);
+}
 // Ordinary families use the restored free release. The paid seam rehearses
 // future locks without changing the release or granting a real entitlement.
-async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null } = {}) {
+async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null, unpark = [] } = {}) {
   const ctx = await browser.newContext({ viewport });
   await ctx.route("**/*", (route) => {
     const url = new URL(route.request().url());
     if (url.origin !== origin) return route.abort();
-    if (origin === BASE && !(url.pathname === "/sona.js" && (catalog || now !== null))) return route.continue();
+    const patch = url.pathname === "/sona.js" && (catalog || now !== null || unpark.length);
+    if (origin === BASE && !patch) return route.continue();
     const file = ROOT + url.pathname;
     if (url.pathname.startsWith("/api/") || !existsSync(file)) return route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
     let body = readFileSync(file);
+    if (url.pathname === "/sona.js" && unpark.length) body = unparked(body.toString(), unpark);
     if (url.pathname === "/sona.js" && (catalog || now !== null)) body = body.toString() + `
       (function(){
         var catalog=${JSON.stringify(catalog)};
@@ -135,7 +150,7 @@ await section("library prerequisites", async () => {
       ok("Coming soon: Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
       ok("…and the six first games and Rise Up are never Coming soon", ["feed", ...adventureKeys, "rise"].every((key) => playableKeys.includes(key)), playableKeys);
     }
-    ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === allKeys.length);
+    ok("Home itself presents the game picker, with a card for every game but the parked ones", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === homeKeys.length, await pg.locator("#activityGroups button[data-game]").count());
   } finally { await ctx.close(); }
 });
 
@@ -157,7 +172,7 @@ if (present && hasContract) {
         const label = "age " + JSON.stringify(age);
         ok(label + ": recommendation uses only a valid supported age", model.recommended === recommended, model.recommended);
         ok(label + ": both play groups remain available", same(sorted(model.groups.map((g) => g.id)), ["arcade", "simple"]), model.groups);
-        ok(label + ": every catalog card remains visible", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
+        ok(label + ": the catalog still lists every game, the parked ones too", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
         ok(label + ": only the recommended group is marked",
           model.groups.every((g) => g.recommended === (g.id === recommended)), model.groups.map((g) => ({ id: g.id, recommended: g.recommended })));
         if (recommended) ok(label + ": the recommended group comes first", model.groups[0]?.id === recommended, model.groups.map((g) => g.id));
@@ -193,14 +208,16 @@ if (present && hasContract) {
       const { ctx, pg, errors } = await fixture({ age });
       try {
         ok("age " + age + ": the browser title names the play library", /play library/i.test(await pg.title()), await pg.title());
-        ok("age " + age + ": All games initially shows every game", same(sorted(await visibleGames(pg)), allKeys));
+        ok("age " + age + ": Home shows every game but the parked ones", same(sorted(await visibleGames(pg)), homeKeys), await visibleGames(pg));
         const recommended = age === "4" ? "simple" : age == null ? null : "arcade";
         if (recommended) ok("age " + age + ": recommended cards render first", (await visibleGroups(pg))[0] === recommended);
         const games = await pg.evaluate(() => Sona.activityLibrary().groups.flatMap((g) => g.games));
         for (const game of games) {
-          const button = pg.locator('#activityGroups button[data-game="' + game.key + '"]');
-          ok("age " + age + ": " + game.name + " is accessible and disabled only when Coming soon",
-            await button.count() === 1 && await button.isEnabled() === !game.comingSoon
+          const button = pg.locator('#libraryApp button[data-game="' + game.key + '"]');
+          const named = await pg.locator("#libraryApp").getByRole("button", { name: new RegExp(game.name, "i") }).count();
+          if (game.comingSoon) ok("age " + age + ": " + game.name + ", Coming soon, has no card anywhere on Home", await button.count() === 0 && named === 0 && !(await pg.locator("#libraryApp").innerText()).includes(game.name));
+          else ok("age " + age + ": " + game.name + " has one card, and it can be tapped",
+            await pg.locator('#activityGroups button[data-game="' + game.key + '"]').count() === 1 && await pg.locator('#activityGroups button[data-game="' + game.key + '"]').isEnabled()
               && await pg.locator("#activityGroups").getByRole("button", { name: new RegExp(game.name, "i") }).count() === 1);
         }
         ok("age " + age + ": Echo gives one simple invitation", await pg.getByRole("heading", {name:"Pick a game!", exact:true}).count() === 1);
@@ -219,8 +236,9 @@ if (present && hasContract) {
         const cards = await pg.locator("#activityGroups button[data-game]:enabled").allInnerTexts();
         const isFree = await pg.evaluate(() => Sona.isFree());
         if (isFree) ok("age " + age + ": normal free access is labeled Free on every playable card", cards.every((text) => /\bFree\b/.test(text) && !/\bPremium\b/.test(text)), cards);
-        const parked = await pg.locator("#activityGroups button[data-game]:disabled").allInnerTexts();
-        ok("age " + age + ": every parked title says when it is coming: its day, or Coming soon", parked.length === comingSoonKeys.length && parked.every(text => /Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(text)), parked);
+        const parked = await pg.evaluate(() => ({ disabled: document.querySelectorAll("#libraryApp button[data-game]:disabled").length,
+          coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText), shelves: document.querySelectorAll("#comingGroups,.coming-all,.coming-shelf,.coming-grid,.is-coming").length }));
+        ok("age " + age + ": Home has no Coming soon section, label or greyed-out card", parked.disabled === 0 && !parked.coming && parked.shelves === 0, parked);
         ok("age " + age + ": proposed tier preview stays hidden by default", !await pg.locator("#catalogPreviewNotice").isVisible());
         // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"): one card,
         // free while the app is free, that opens the bookshelf.
@@ -284,44 +302,55 @@ if (present && hasContract) {
   });
 
   // Parked games carried a Friday each from 9 Oct 2026 (three a week, 16 Oct
-  // to 20 Nov). Since 15 Oct 2026 (Travis: "put coming soon") none does: every
-  // parked card says "Coming soon" and the shelf keeps the catalog's order
-  // (the Say & Play games, then Peekaboo).
-  // The day support stays (a `comingOn` on one line shows "Coming Nov 6" until
-  // that day), and a day never opens anything: only taking comingSoon off does.
-  await section("parked games say Coming soon", async () => {
+  // to 20 Nov). Since 15 Oct 2026 (Travis: "put coming soon") none does, and
+  // since 19 Oct 2026 Home draws no parked game at all. The catalog still lists
+  // all 18 (a typed address to one bounces home with "<Game> is coming soon"),
+  // and the day support stays as a label: a `comingOn` on one line makes that
+  // note say "coming Nov 6" until the day. A day never opens anything, nor
+  // draws a card: only taking comingSoon off does.
+  await section("parked games stay off Home", async () => {
     const parkedLines = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b[^\n]*/gm)].map((m) => ({ key: m[1], line: m[0] }));
     ok("all 18 parked games are in the catalog, and none carries a day",
       same(sorted(parkedLines.map((p) => p.key)), comingSoonKeys) && parkedLines.length === 18 && parkedLines.every((p) => !/\bcomingOn\b/.test(p.line)), parkedLines.filter((p) => /\bcomingOn\b/.test(p.line)).map((p) => p.key));
     const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{ name: [^\n]*/gm)].map((m) => m[0]);
     ok("…and Soccer Goal and Dino Dig, rebuilt, carry no day and are not parked", rebuilt.length === 2 && rebuilt.every((line) => !/\bcomingSoon\b|\bcomingOn\b/.test(line)), rebuilt);
-    const cardsAt = async (now) => {
-      const { ctx, pg, errors } = await fixture({ now });
+    const cardsAt = async (now, opts = {}) => {
+      const { ctx, pg, errors } = await fixture({ now, ...opts });
       try {
-        const got = await pg.evaluate(() => {
-          const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          // Home's order (ACTIVITY_KEYS): the Say & Play games in catalog
-          // order, then Peekaboo, which is not one of them
-          const keys = Object.keys(Sona.GAME_ACTS).filter((k) => Sona.GAME_ACTS[k].say).concat(["bubbles", "peekaboo", "rise"]);
-          const shelves = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => [...g.querySelectorAll(".coming-grid button[data-game]")].map((b) => b.dataset.game));
-          const tags = {};
-          shelves.flat().forEach((k) => { tags[k] = tag(k); });
-          return { tags, shelves, order: shelves.every((s) => s.every((k, i) => i === 0 || keys.indexOf(s[i - 1]) < keys.indexOf(k))), soccer: tag("soccer"), dino: tag("dino"), access: Sona.gameAccess("peekaboo") };
-        });
+        const got = await pg.evaluate((parkedKeys) => {
+          const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled } : null; };
+          const lib = Sona.activityLibrary();
+          return { cards: parkedKeys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')),
+            coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText),
+            catalog: lib.groups.flatMap((g) => g.games.filter((y) => y.comingSoon).map((y) => y.key)).sort(),
+            soccer: tag("soccer"), dino: tag("dino"), access: Sona.gameAccess("peekaboo") };
+        }, comingSoonKeys);
         return { got, errors };
       } finally { await ctx.close(); }
     };
     for (const [when, now] of [["on 15 Oct", Date.UTC(2026, 9, 15, 12)], ["on 9 Oct", Date.UTC(2026, 9, 9, 12)], ["past 20 Nov", Date.UTC(2026, 10, 21, 12)]]) {
-      const r = await cardsAt(now);
-      const all = Object.values(r.got.tags);
-      ok(when + " every parked card says \"Coming soon\", greyed out, all 18 of them",
-        all.length === 18 && all.every((t) => t && t.label === "Coming soon" && t.disabled && /coming soon/i.test(t.aria) && !/Coming [A-Z][a-z]{2} \d/.test(t.aria)), JSON.stringify(r.got.tags));
-      ok("…in the catalog's order on each Coming soon row", r.got.shelves.length >= 1 && r.got.order, r.got.shelves);
-      ok("…and the parked card never opens", r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got.access));
-      ok("…while Soccer Goal and Dino Dig, rebuilt, stay open with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
-      ok("…with no page errors", r.errors.length === 0, r.errors);
+      for (const [who, opts] of [["the free version", {}], ["a family without Premium", { paid: true }], ["a family with Premium", { paid: true, premium: true }]]) {
+        const r = await cardsAt(now, opts);
+        ok(when + ", " + who + ": no parked game has a card on Home, and nothing says Coming soon", r.got.cards.length === 0 && !r.got.coming, r.got.cards);
+        ok("…while the catalog still lists all 18, and none opens", same(r.got.catalog, comingSoonKeys) && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify([r.got.catalog.length, r.got.access]));
+        ok("…and Soccer Goal and Dino Dig, rebuilt, are on Home with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
+        ok("…with no page errors", r.errors.length === 0, r.errors);
+      }
     }
-    // the day support still works for a game given one on its own line
+    // a typed address to a parked game still lands on Home with its note
+    for (const key of ["peekaboo", "racecar", "balloon"]) {
+      const { ctx, pg } = await fixture({ path: "/arcade-" + key + ".html" });
+      try {
+        await pg.waitForURL(/\/today\.html\?locked=/);
+        const name = await pg.evaluate((k) => Sona.GAME_ACTS[k].name, key);
+        const note = pg.locator("#libraryMessage");
+        await note.waitFor({ state: "visible" });
+        ok(key + ": a typed address bounces home with \"" + name + " is coming soon\", no unlock button and still no card",
+          (await note.innerText()) === name + " is coming soon. Pick another game to play." && !(await pg.locator("#libraryUnlock").isVisible()) && await pg.locator('#libraryApp [data-game="' + key + '"]').count() === 0, await note.innerText());
+      } finally { await ctx.close(); }
+    }
+    // the day support still works for a game given one on its own line: the
+    // catalog's label, and the bounce note that reads it
     const { ctx, pg } = await fixture({ now: Date.UTC(2026, 9, 15, 12) });
     try {
       const d = await pg.evaluate(() => {
@@ -332,10 +361,43 @@ if (present && hasContract) {
           return { before: pick(Sona.activityLibrary({ now: Date.UTC(2026, 9, 15, 12) })), after: pick(Sona.activityLibrary({ now: Date.UTC(2026, 10, 7, 12) })), access: Sona.gameAccess("puppy") };
         } finally { if (saved === undefined) delete Sona.GAME_ACTS.puppy.comingOn; else Sona.GAME_ACTS.puppy.comingOn = saved; }
       });
-      ok("a day set on one line still shows (\"Coming Nov 6\", first on its row) until it comes, then \"Coming soon\"",
+      ok("a day set on one line still shows (\"Coming Nov 6\", first of the parked games) until it comes, then \"Coming soon\"",
         d.before.label === "Coming Nov 6" && d.before.first === "puppy" && d.after.label === "Coming soon", JSON.stringify(d));
       ok("…and the day never opens it", d.access.allowed === false && d.access.reason === "coming-soon", JSON.stringify(d.access));
     } finally { await ctx.close(); }
+    const dated = await fixture({ path: "/today.html?locked=puppy", catalog: { puppy: { comingOn: "2026-11-06" } }, now: Date.UTC(2026, 9, 15, 12) });
+    try {
+      const note = dated.pg.locator("#libraryMessage");
+      await note.waitFor({ state: "visible" });
+      ok("…its bounce note says the day (\"Puppy Bath is coming Nov 6.\"), and still no card is drawn",
+        (await note.innerText()) === "Puppy Bath is coming Nov 6. Pick another game to play." && await dated.pg.locator('#libraryApp [data-game="puppy"]').count() === 0, await note.innerText());
+    } finally { await dated.ctx.close(); }
+  });
+
+  // Taking comingSoon off a game's own line opens it exactly as a rebuilt
+  // game opened before: its card is back on its own shelf, in catalog order,
+  // and a tap plays it (with Premium) or asks for it (without).
+  await section("opening a parked game brings its card back", async () => {
+    for (const [key, group] of [["racecar", "arcade"], ["balloon", "simple"]]) {
+      const { ctx, pg, errors } = await fixture({ age: group === "simple" ? "4" : "8", premium: true, unpark: [key] });
+      try {
+        const got = await pg.evaluate((k) => {
+          const b = document.querySelector('#activityGroups button[data-game="' + k + '"]');
+          const shelf = b && b.closest("[data-group]");
+          const order = shelf ? [...shelf.querySelectorAll("button[data-game]")].map((x) => x.dataset.game) : [];
+          return { here: !!b, enabled: !!b && !b.disabled, group: shelf && shelf.dataset.group, label: b ? b.querySelector(".game-access").textContent : "",
+            order, catalog: Sona.activityLibrary().groups.find((g) => g.id === (shelf && shelf.dataset.group)).games.filter((g) => !g.comingSoon).map((g) => g.key),
+            access: Sona.gameAccess(k), coming: /coming soon/i.test(document.getElementById("libraryApp").innerText) };
+        }, key);
+        ok(key + " opened: its card is back on the " + group + " shelf, tappable, in the catalog's order, labelled like any game", got.here && got.enabled && got.group === group && same(got.order, got.catalog) && got.label === "Included" && got.access.allowed, JSON.stringify(got));
+        ok("…while the other parked games stay off Home", await pg.evaluate((keys) => keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')), comingSoonKeys.filter((k) => k !== key)).then((left) => left.length === 0));
+        await ctx.route("**/arcade-" + key + ".html*", (route) => route.fulfill({ contentType: "text/html", body: "<p>" + key + "</p>" }));
+        await pg.locator('#activityGroups button[data-game="' + key + '"]').click();
+        await pg.waitForURL(new RegExp("/arcade-" + key + "\\.html"));
+        ok("…and a tap plays it, by its own route", new URL(pg.url()).pathname === "/arcade-" + key + ".html", pg.url());
+        ok("…with no page errors", errors.length === 0, errors);
+      } finally { await ctx.close(); }
+    }
   });
 
   await section("featured cards are extra working choices", async () => {
@@ -345,7 +407,7 @@ if (present && hasContract) {
     try {
       const featured = pg.locator("#featuredGroups");
       ok("daily picks replace the New shelf without inventing releases", await featured.locator('[data-collection="picks"] button[data-game]').count() === 2 && await featured.locator('[data-collection="new"]').count() === 0);
-      ok("featured cards leave every game once in the age groups", same(sorted(await visibleGames(pg)), allKeys));
+      ok("featured cards leave every game Home shows once in the age groups", same(sorted(await visibleGames(pg)), homeKeys));
       const shelf = await featured.locator("button[data-game]").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y }; }));
       ok("daily picks share a horizontal shelf", shelf.length === 2 && Math.abs(shelf[0].y - shelf[1].y) < 2 && shelf[1].x > shelf[0].x, shelf);
       const button = featured.locator('button[data-game="feed"],button[data-game="bubbles"]').first();
@@ -411,7 +473,7 @@ if (present && hasContract) {
         })();`
       }));
       await pg.reload();
-      ok("an older cached catalog still renders every game choice", same(sorted(await visibleGames(pg)), allKeys));
+      ok("an older cached catalog still renders every game choice (and still no parked one)", same(sorted(await visibleGames(pg)), homeKeys));
       ok("an older cached catalog causes no runtime errors", errors.length === 0, errors);
     } finally { await ctx.close(); }
   });
@@ -426,7 +488,7 @@ if (present && hasContract) {
       });
       await pg.reload();
       ok("switching to a four-year-old recommends Simple play", (await visibleGroups(pg))[0] === "simple");
-      ok("the younger sibling can still browse the full catalog", same(sorted(await visibleGames(pg)), allKeys));
+      ok("the younger sibling can still browse every game Home shows", same(sorted(await visibleGames(pg)), homeKeys));
       await pg.evaluate((slot) => Sona.switchKid(slot), firstSlot);
       await pg.reload();
       ok("switching back to an eight-year-old restores Arcade first", (await visibleGroups(pg))[0] === "arcade");
@@ -474,7 +536,7 @@ if (present && hasContract) {
       ok("the expired-demo fixture really has Premium locked, and practice open",
         await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false && !Sona.premium()));
       const before = await state(pg);
-      ok("a gated family can still browse all games", same(sorted(await visibleGames(pg)), allKeys));
+      ok("a gated family can still browse every game Home shows (no parked one)", same(sorted(await visibleGames(pg)), homeKeys));
       const locked = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => !Sona.GAME_ACTS[key].comingSoon && !Sona.gameAccess(key).allowed));
       ok("the paid library keeps its playable free choices open", same(sorted(playableKeys.filter(key => !locked.includes(key))), freeKeys));
       for (const key of locked) {
@@ -574,19 +636,34 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
-  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+  // Every shelf, measured: each row of cards runs from the shelf's left edge
+  // to its right, so no row ends on an empty slot. Today's catalog, and the
+  // day one parked game opens on each shelf (an odd count on a phone, one left
+  // over on an iPad) or two on the big kids' (two left over on an iPad).
+  async function shelfRows(pg) {
+    return pg.evaluate(() => [...document.querySelectorAll("#activityGroups [data-group]")].map((section) => {
+      const grid = section.querySelector(".game-grid"), g = grid.getBoundingClientRect();
+      const rows = [];
+      [...grid.querySelectorAll("button[data-game]")].forEach((el) => {
+        const r = el.getBoundingClientRect(), art = el.querySelector(".game-art")?.getBoundingClientRect();
+        let row = rows.find((x) => Math.abs(x.top - r.top) < 2);
+        if (!row) { row = { top: r.top, cards: [] }; rows.push(row); }
+        row.cards.push({ key: el.dataset.game, x: r.x, w: r.width, h: r.height, artW: art?.width, artH: art?.height });
+      });
+      return { group: section.dataset.group, left: g.left, right: g.right, rows: rows.map((row) => ({ left: Math.min(...row.cards.map((c) => c.x)), right: Math.max(...row.cards.map((c) => c.x + c.w)), cards: row.cards })) };
+    }));
+  }
+  const fullRows = (shelves) => shelves.every((s) => s.rows.length > 0 && s.rows.every((r) => Math.abs(r.left - s.left) <= 1.5 && Math.abs(r.right - s.right) <= 1.5));
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }]) {
     await section("library fits " + viewport.width + "px", async () => {
       const { ctx, pg } = await fixture({ age: "8", viewport });
       try {
-        const grids = await pg.locator("#activityGroups [data-group]").evaluateAll(groups => groups.map(group =>
-          Array.from(group.querySelectorAll("button[data-game]")).map(el => {
-            const r = el.getBoundingClientRect(), art = el.querySelector(".game-art")?.getBoundingClientRect();
-            return { x: r.x, y: r.y, w: r.width, h: r.height, artW: art?.width, artH: art?.height, parked: el.disabled };
-          })));
-        // The crafted reference uses landscape scenes and compact parked rows.
-        // Protect readable/tappable cards without pinning decorative pixel values.
-        ok(viewport.width + "px: playable cards have wide scene art and parked cards stay usable", grids.length === 2 && grids.every(tiles =>
-          tiles.every(t => t.w >= 90 && t.h >= 44 && (t.parked ? t.artW >= 32 && t.artH >= 32 : t.artW > t.artH * 1.3 && t.artW > 80))), grids);
+        const shelves = await shelfRows(pg);
+        const tiles = shelves.flatMap((s) => s.rows.flatMap((r) => r.cards));
+        // The crafted reference uses landscape scenes. Protect readable,
+        // tappable cards without pinning decorative pixel values.
+        ok(viewport.width + "px: every card has wide scene art", shelves.length === 2 && tiles.length === homeKeys.length && tiles.every(t => t.w >= 90 && t.h >= 44 && t.artW > t.artH * 1.3 && t.artW > 80), tiles);
+        ok(viewport.width + "px: every row of every shelf is full, with no empty slot", fullRows(shelves), JSON.stringify(shelves.map((s) => ({ group: s.group, left: s.left, right: s.right, rows: s.rows.map((r) => [r.left, r.right, r.cards.map((c) => c.key).join(" ")]) }))));
         const overflow = await pg.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth);
         ok(viewport.width + "px: library has no horizontal overflow", overflow <= 1, overflow);
         await pg.locator("#activityGroups button[data-game]:visible").last().scrollIntoViewIfNeeded();
@@ -598,6 +675,19 @@ if (present && hasContract) {
         ok(viewport.width + "px: scrolling reaches the last game button", last.visible && last.reachable, last);
       } finally { await ctx.close(); }
     });
+  }
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }]) {
+    for (const unpark of [["racecar"], ["balloon"], ["racecar", "treasure"]]) {
+      await section("library fits " + viewport.width + "px with " + unpark.join(" and ") + " opened", async () => {
+        const { ctx, pg } = await fixture({ age: "8", viewport, unpark });
+        try {
+          const shelves = await shelfRows(pg);
+          const keys = shelves.flatMap((s) => s.rows.flatMap((r) => r.cards.map((c) => c.key)));
+          ok(viewport.width + "px, " + unpark.join(" and ") + " opened: each is on its shelf, and every row is still full",
+            unpark.every((k) => keys.includes(k)) && keys.length === homeKeys.length + unpark.length && fullRows(shelves), JSON.stringify(shelves.map((s) => s.rows.map((r) => [Math.round(r.left), Math.round(r.right), r.cards.map((c) => c.key).join(" ")]))));
+        } finally { await ctx.close(); }
+      });
+    }
   }
 } else {
   console.log("Library interaction checks await the missing page/content contract; prerequisite failures above remain failures.");

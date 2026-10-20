@@ -394,7 +394,7 @@ if (appFree) {
   ok("…and the one-time offer is still an offer this family may see", st.ask === true, JSON.stringify(st));
 
   // Home stays a quiet catalog. Released Premium cards name their boundary;
-  // Coming soon cards cannot start or advertise an upgrade.
+  // Coming soon games have no card at all (19 Oct 2026).
   await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(800);
   const home = await pg.evaluate(() => ({
     heading:document.querySelector("h1").textContent,
