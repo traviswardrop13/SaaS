@@ -198,5 +198,18 @@ body[data-crafted="run"] #tapHint,body[data-crafted="glide"] #tapHint{color:#523
 body[data-crafted="stack"] #tapHint{top:32%;bottom:auto;left:20px;right:20px;background:#fff9eaeF;color:#52371d;border:1px solid #eadac0;border-radius:16px;padding:10px 12px;text-shadow:none;box-shadow:0 3px 0 #b2946355;}
 @media(max-width:350px){body[data-crafted] #best .wbar,body[data-crafted] #timer .wbar{width:42px;}body[data-crafted] #banner .pill{padding:10px 17px;}}
 
-/* Hearts use the existing flexible gap, so the HUD stays one row at 320px. */
-body[data-crafted="slice"] #hudspacer,body[data-crafted="tiles"] #hudspacer,body[data-crafted="stack"] #hudspacer,body[data-crafted="run"] #hudspacer,body[data-crafted="glide"] #hudspacer{display:flex;align-items:center;justify-content:center;gap:3px;min-width:54px;background:var(--cream);border-radius:18px;padding:5px 2px;flex:1;}
+/* Hearts use the existing flexible gap, so the HUD stays one row at 320px.
+   The hearts never give up their room: when the count goes from 9 to 10 to
+   100 its pill grows, and a hearts box allowed to shrink folded the third
+   heart under the other two (Piano Tiles, 20 Oct 2026). The right-hand pill's
+   progress bar gives way instead, never its words; the close button never
+   moves. Rise Up keeps its own copy (crafted-rise.css). */
+body[data-crafted="slice"] #hudspacer,body[data-crafted="tiles"] #hudspacer,body[data-crafted="stack"] #hudspacer,body[data-crafted="run"] #hudspacer,body[data-crafted="glide"] #hudspacer{display:flex;align-items:center;justify-content:center;gap:3px;min-width:54px;background:var(--cream);border-radius:18px;padding:5px 2px;flex:1 0 auto;}
+body[data-crafted] #hudspacer #gameHearts{display:inline-flex;flex-wrap:nowrap;white-space:nowrap;}
+body[data-crafted="slice"] #timer,body[data-crafted="tiles"] #timer,body[data-crafted="stack"] #best,body[data-crafted="run"] #timer,body[data-crafted="glide"] #timer{flex:0 1 auto;min-width:0;}
+body[data-crafted="slice"] #timer .wbar,body[data-crafted="tiles"] #timer .wbar,body[data-crafted="stack"] #best .wbar,body[data-crafted="run"] #timer .wbar,body[data-crafted="glide"] #timer .wbar{flex:0 1 auto;min-width:20px;}
+/* On a 320px phone Block Stacker and Flappy Glide had no room for a 3-digit
+   count even with the bar at its smallest, so their pills tighten the way
+   Piano Tiles' and Fruit Slice's already do; the left padding stays, so the
+   close button stays put. */
+@media(max-width:350px){body[data-crafted="stack"] #top,body[data-crafted="glide"] #top{gap:6px;padding-right:10px;}body[data-crafted="stack"] .hudpill,body[data-crafted="glide"] .hudpill{padding:9px 10px;gap:4px;font-size:15px;}}

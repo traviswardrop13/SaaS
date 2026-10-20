@@ -13,6 +13,7 @@ import { createServer } from "http";
 import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { heartsOffRow } from "./_heartsrow.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT, BASE = "http://127.0.0.1:8264";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2", mp3: "audio/mpeg" };
@@ -142,6 +143,16 @@ await scenario("hearts, pace and best", async () => {
     await page.locator("#endCharge").click();await page.waitForURL(/charge\.html/);ok("replay earns another turn in this same game",new URL(page.url()).searchParams.get("game")==="arcade-stack.html");
     ok("hearts and pace have no runtime errors",errors.length===0,errors);
   }finally{await context.close();}
+});
+
+// HEARTSROW1 (_heartsrow.mjs): the hearts never fold onto a second line as the count grows
+await scenario("the hearts stay on one line", async () => {
+  const { context, page, errors } = await open();
+  try {
+    const bad = await heartsOffRow(page);
+    ok("the three hearts stay on one line beside a count of 1, 10 or 100 at 320, 375 and 390 wide; nothing in the top bar spills or moves the close button", bad.length === 0, bad);
+    ok("…with no runtime errors", errors.length === 0, errors);
+  } finally { await context.close(); }
 });
 
 await scenario("a whole round", async () => {
