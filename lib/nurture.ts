@@ -83,7 +83,7 @@ export const CONTENT: Content[] = [
     ],
     button: "Get Sona on the App Store",
     after: [
-      "Try Sona free for 3 days. Apple shows the price before you confirm.",
+      "Try Sona free. Apple shows the price and the free days before you confirm.",
       "Tonight, hand your child the phone for one round. That\u2019s it.",
       "Hit reply and tell me what sound your child is working on.",
     ],
@@ -128,7 +128,7 @@ export const CONTENT: Content[] = [
       "Sona asks for the sound, and listens. In Hoops, saying the word is what earns the ball. Silence never counts.",
       "So the minutes your child spends in Sona are minutes spent talking. That\u2019s screen time you don\u2019t have to feel guilty about.",
     ],
-    button: "Try Sona free for 3 days",
+    button: "Try Sona free",
     after: [],
     ps: "Already started? You can ignore the button.",
   },
@@ -139,7 +139,7 @@ export const CONTENT: Content[] = [
     paras: [
       "Hi there,",
       "Here\u2019s what parents ask me most:",
-      "What does it cost? 3 days free, then Apple shows the price before you confirm.",
+      "What does it cost? The first days are free, then Apple shows the price before you confirm.",
       "Can I cancel? Yes, anytime: iPhone Settings \u2192 your name \u2192 Subscriptions \u2192 Sona.",
       "How long a day? About 5 minutes.",
       "What ages? About 3 to 8, for kids who talk but are hard to understand: \u201cwabbit,\u201d a lisp, trouble with R, S, or L.",
