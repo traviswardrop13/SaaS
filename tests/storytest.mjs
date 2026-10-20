@@ -88,12 +88,12 @@ await page.waitForTimeout(800);
 const deck = await page.evaluate(() => ({
   title: document.querySelector(".library-intro h1").textContent,
   cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ k: card.dataset.game, n: card.querySelector(".game-name").textContent })),
-  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)).concat(g.flatMap(group => group.games.filter(game => game.comingSoon).map(game => game.key))))(Sona.activityLibrary().groups), // playable first, then the one Coming soon section (1 Oct 2026)
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)))(Sona.activityLibrary().groups), // the playable ones only: since 19 Oct 2026 Home draws no Coming soon game
   chapPill: !!document.getElementById("chapPill"),
   bookLinks: [...document.querySelectorAll('a[href]')].filter(a => /\/(chapter|story|library)\.html/.test(a.getAttribute('href'))).length,
 }));
 ok("Home invites choosing a game", /pick a game/i.test(deck.title), deck.title);
-ok("every catalog game has a named card in the age shelves", JSON.stringify(deck.cards.map(card => card.k)) === JSON.stringify(deck.expected) && deck.cards.every(card => card.n.length > 3), JSON.stringify(deck.cards));
+ok("every playable catalog game has a named card in the age shelves", JSON.stringify(deck.cards.map(card => card.k)) === JSON.stringify(deck.expected) && deck.cards.every(card => card.n.length > 3), JSON.stringify(deck.cards));
 ok("Home stays at the library until a game is chosen", /today\.html$/.test(page.url()), page.url());
 ok("home screen carries no chapter furniture or reader links", !deck.chapPill && deck.bookLinks === 0);
 

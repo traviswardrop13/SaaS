@@ -17,6 +17,9 @@ const srv = createServer((req, res) => {
 });
 await new Promise((r) => srv.listen(8178, r));
 
+// The catalog's 29 titles, less the ones parked as Coming soon: since 19 Oct
+// 2026 Home draws no parked game (Travis: hide the Coming soon cards).
+const HOME_CARDS = 29 - [...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}\w+: \{[^\n]*\bcomingSoon: true\b/gm)].length;
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
@@ -43,7 +46,9 @@ for (const age of ["3", "4", "5", "8"]) {
     keys: [...document.querySelectorAll("#activityGroups .game-card")].map(e => e.dataset.game),
     groups: [...document.querySelectorAll("#activityGroups .activity-group")].map(e => e.dataset.group),
     playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
-    parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
+    parked: [...document.querySelectorAll("#libraryApp .game-card")].filter(e => (Sona.gameAct(e.dataset.game) || {}).comingSoon).map(e => e.dataset.game),
+    catalogParked: Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
+    coming: /coming soon/i.test(document.getElementById("libraryApp").innerText),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
     books: document.getElementById("booksCard")?.textContent || "",
@@ -52,12 +57,13 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
   // 29 = the six released games, Rise Up, the twenty Say & Play games, and two parked.
   // The Say & Play games are Coming soon until each is rebuilt (Travis, 26
-  // Sep 2026), so what is playable is the six first games plus any rebuilt.
-  ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 29 && new Set(st.keys).size === 29, JSON.stringify(st.keys));
+  // Sep 2026), so what is playable is the six first games plus any rebuilt;
+  // since 19 Oct 2026 Home shows only those (Travis: hide Coming soon).
+  ok("age " + age + ": every catalog game but the parked ones appears once in the age shelves", st.keys.length === 29 - st.catalogParked.length && new Set(st.keys).size === st.keys.length, JSON.stringify(st.keys));
   ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
     ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
-  ok("age " + age + ": Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 29 - st.playable.length && ["peekaboo"].every(k => st.parked.some(e => e.key === k)) && !st.parked.some(e => e.key === "bubbles") &&
-    st.parked.every(e => e.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
+  ok("age " + age + ": Peekaboo and the parked Say & Play games have no card on Home, and none opens", st.parked.length === 0 && !st.coming && st.playable.length === st.keys.length && ["peekaboo"].every(k => st.catalogParked.some(e => e.key === k)) && !st.catalogParked.some(e => e.key === "bubbles") &&
+    st.catalogParked.every(e => e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify([st.parked, st.catalogParked]));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
   // adventure and chapter readers stay parked.
@@ -74,11 +80,12 @@ for (const age of ["3", "4", "5", "8"]) {
   const st = await pg.evaluate(() => ({
     heading:document.querySelector("h1").textContent,
     cards:[...document.querySelectorAll("#activityGroups .game-card")].map(e => ({key:e.dataset.game,locked:e.dataset.locked==="true",disabled:e.disabled,tier:Sona.gameAct(e.dataset.game).tier,comingSoon:!!Sona.gameAct(e.dataset.game).comingSoon,tag:e.querySelector(".game-access").textContent})),
+    parkedInCatalog:Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon).length,
   }));
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
-  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+parked.length===29&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
-  ok("Coming soon stays disabled even on the paid-state seam", parked.length>=2&&parked.every(c=>c.locked&&c.disabled&&/^Coming (soon|[A-Z][a-z]{2} \d{1,2})$/.test(c.tag)), parked);
+  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+st.parkedInCatalog===29&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
+  ok("Coming soon has no card even on the paid-state seam", parked.length===0&&st.parkedInCatalog>=2, parked);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("the paid-state seam keeps free game practice one tap away",new URL(pg.url()).pathname==="/charge.html"&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html",pg.url());
@@ -495,15 +502,12 @@ for (const key of ["feed", "slice", "tiles", "stack", "run", "glide", "rise"]) {
 }
 
 // A parked game is unavailable even on a previously earned or paid return.
-// It keeps a visible place in the library without becoming a hidden launch door.
+// Since 19 Oct 2026 it has no place in the library at all, so there is no
+// card to become a hidden launch door.
 // (Bubble Pop came back on 30 Sep 2026; Peekaboo is still parked.)
 for (const key of ["peekaboo"]) {
   const {ctx, pg} = await home("4");
-  const before = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
-  await pg.locator('#activityGroups .game-card[data-game="' + key + '"]').evaluate(el => el.click());
-  await pg.waitForTimeout(200);
-  const after = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
-  ok(key + ": the disabled library card does not navigate, earn or start anything", new URL(pg.url()).pathname === "/today.html" && JSON.stringify(before) === JSON.stringify(after), JSON.stringify({before,after,url:pg.url()}));
+  ok(key + ": the library has no card for it, so nothing to tap", await pg.locator('#libraryApp [data-game="' + key + '"]').count() === 0 && await pg.locator("#activityGroups .game-card").count() > 0);
   await pg.evaluate(key => {
     Sona.saveSub({active:true,source:"stripe"});
     sessionStorage.setItem("sona.play.token","arcade-" + key + ".html");
@@ -523,7 +527,7 @@ for (const round of [0, 2, 5]) {
   await pg.reload();
   await pg.waitForTimeout(700);
   const state = await pg.evaluate(() => ({run:JSON.parse(sessionStorage.getItem("sona.run.v1")),cards:document.querySelectorAll("#activityGroups .game-card").length,oldHero:!!document.getElementById("goBtn")}));
-  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === 29 && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
+  ok("saved round " + round + ": reopening shows the library without resuming or changing earned progress", new URL(pg.url()).pathname === "/today.html" && state.cards === HOME_CARDS && !state.oldHero && JSON.stringify(saved) === JSON.stringify(state.run), JSON.stringify(state));
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("saved round " + round + ": a new chosen game still opens its own practice", new URL(pg.url()).searchParams.get("game") === "arcade-slice.html" && await pg.evaluate(() => window.GAME === "arcade-slice.html"), pg.url());
@@ -571,7 +575,7 @@ for (const round of [0, 2, 5]) {
   ok("the fifth return finishes the saved journey",
     done.shown && done.run.active === true && done.run.finishing === true && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
   await pg.goto("http://localhost:8178/today.html");
-  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === 29 && await pg.locator("#goBtn").count() === 0);
+  ok("an unfinished finale cannot take over the Home library", await pg.locator("#activityGroups .game-card").count() === HOME_CARDS && await pg.locator("#goBtn").count() === 0);
   await pg.goto("http://localhost:8178/charge.html?daily=1");
   ok("the earned legacy finale remains available through its explicit return", await pg.locator("#runOvl").evaluate(e => e.classList.contains("show")));
 
@@ -583,7 +587,7 @@ for (const round of [0, 2, 5]) {
     sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
   });
   await pg.goto("http://localhost:8178/today.html");
-  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === 29);
+  ok("a finished active record cannot produce a sixth-round Home resume", await pg.locator("#goBtn").count() === 0 && await pg.locator("#activityGroups .game-card").count() === HOME_CARDS);
   await ctx.close();
 }
 

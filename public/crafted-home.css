@@ -43,33 +43,35 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .game-best b{font:800 14px/1 "Baloo 2",sans-serif;letter-spacing:-.2px;}
 .game-best-star{display:flex;flex:none;}
 .game-best-star svg{display:block;width:12px;height:12px;vertical-align:0!important;}
-/* nine big-kid games: eight fill four even rows of two, and Rise Up, the ninth, is a full-width row on a phone (an iPad's three columns make three even rows); the little kids' two free games are full-width rows */
+/* WIDE ROWS (19 Oct 2026, when the Coming soon cards left Home). A card that
+   would sit alone in its row stretches across it as a picture-and-name row,
+   so a shelf never ends on an empty slot, whatever the catalog opens next.
+   The selectors count cards; none names a game:
+   - the little kids' shelf is all rows (Feed Echo and Bubble Pop today);
+   - on a phone's two columns, the last card of an odd count (Rise Up, the
+     ninth big-kid game, today: the other eight fill four even rows of two);
+   - on an iPad's three columns (six half-columns, each card two of them),
+     one card left over is a row, and two left over share the row half and
+     half (none today: nine big-kid games make three even rows).
+   activitytest measures every shelf for gaps at 320, 390 and 768 px, also
+   with a parked game opened on each shelf. */
 .game-grid [data-game="glide"] .crafted-card-image{object-position:center 53%;}
-.game-grid [data-game="feed"],.game-grid [data-game="bubbles"]{grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
-.game-grid [data-game="feed"] .game-art,.game-grid [data-game="bubbles"] .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
-.game-grid [data-game="feed"] .game-info,.game-grid [data-game="bubbles"] .game-info{padding:14px 13px;}
-.game-grid [data-game="feed"] .game-name,.game-grid [data-game="bubbles"] .game-name{font-size:19px;}
-.game-grid [data-game="feed"] .game-access,.game-grid [data-game="bubbles"] .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 @media(max-width:599px){
- .game-grid [data-game="rise"]{grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
- .game-grid [data-game="rise"] .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
- .game-grid [data-game="rise"] .game-info{padding:14px 13px;}
- .game-grid [data-game="rise"] .game-name{font-size:19px;}
- .game-grid [data-game="rise"] .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+ .activity-group[data-group="simple"] .game-grid>.game-card,.game-grid>.game-card:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-art,.game-grid>.game-card:last-child:nth-child(odd) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-info,.game-grid>.game-card:last-child:nth-child(odd) .game-info{padding:14px 13px;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:19px;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-access,.game-grid>.game-card:last-child:nth-child(odd) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 }
-.coming-shelf{margin-top:17px;}
-.coming-heading{color:#947e66;font-size:10px;font-weight:800;margin-bottom:8px;letter-spacing:.02em;}
-/* Coming soon goes down the page, two across, never a long side-scroll
-   (Travis, 1 Oct 2026: "I don't want more than like four to five options ... side by side"). */
-.coming-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:1px 1px 7px;}
-.coming-grid .game-card{min-height:0;overflow:hidden;border-radius:13px;box-shadow:0 2px 0 #e9dfd1;background:#f5f0e7;scroll-snap-align:start;border-color:#e9e0d1;}
-.coming-grid .game-art{width:100%;height:auto;aspect-ratio:16/10;margin:0;background:#efe6d8;border-radius:0;overflow:hidden;}
-.coming-grid .crafted-card-image{filter:saturate(.75);opacity:.9;}
-.coming-grid .game-art>.stk{background:none!important;}
-.coming-grid .game-info{flex-direction:column;gap:4px;text-align:center;padding:7px 4px 9px;min-height:0;}
-.coming-grid .game-name{font:800 12px/1.2 Nunito,sans-serif;color:#6f5f4c;}
-.coming-grid .game-access{position:static;padding:0;background:none;box-shadow:none;color:#9a8a77;font-size:10px;}
-.coming-grid .game-arrow{display:none;}
+@media(min-width:600px){
+ .game-grid>.game-card{grid-column:span 2;}
+ .game-grid>.game-card:last-child:nth-child(3n+2),.game-grid>.game-card:nth-last-child(2):nth-child(3n+1){grid-column:span 3;}
+ .activity-group[data-group="simple"] .game-grid>.game-card,.game-grid>.game-card:last-child:nth-child(3n+1){grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-art,.game-grid>.game-card:last-child:nth-child(3n+1) .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-info,.game-grid>.game-card:last-child:nth-child(3n+1) .game-info{padding:14px 13px;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(3n+1) .game-name{font-size:19px;}
+ .activity-group[data-group="simple"] .game-grid>.game-card .game-access,.game-grid>.game-card:last-child:nth-child(3n+1) .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+}
 .featured-group{background:#f2ebde;border:1px solid #e8d7bd;box-shadow:inset 0 1px 0 #fff;border-radius:21px;padding:16px 13px;margin:22px 0;}
 .featured-group[data-collection="seasonal"]{background:#f8ead4;border-color:#ead1aa;}
 .featured-group .shelf-heading h2{font-size:21px;}
@@ -86,8 +88,8 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #libraryMessageClose{width:44px;height:44px;background:#f0e3cd;}
 #gateQ,#wkStreak{color:#15808a;}
 #shareWeek{background:linear-gradient(#239ca2,#14858d)!important;box-shadow:0 4px 0 #0c656b!important;}
-@media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}.coming-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.coming-grid .game-name{font-size:12px;}.coming-grid .game-access{font-size:10px;}}
-@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid [data-game="feed"] .game-name,.game-grid [data-game="bubbles"] .game-name,.game-grid [data-game="rise"] .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
+@media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:20px;}.game-name{font-size:18px;}}
+@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.activity-group[data-group="simple"] .game-grid>.game-card .game-name,.game-grid>.game-card:last-child:nth-child(odd) .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
 @media(prefers-reduced-motion:reduce){.game-card,.crafted-card-image{transition:none;}.game-card:not(:disabled):hover .crafted-card-image{transform:none;}}
 
 /* Keyboard and switch access receive the same clear focus as touch. */
@@ -97,8 +99,6 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 /* book covers in the top rows are square */
 .featured-grid .book-card .game-art{aspect-ratio:1;}
 .featured-grid .book-card .crafted-card-image{object-fit:cover;}
-.coming-all{margin:26px 0 8px;}
-.coming-all .coming-heading{margin-top:12px;}
 
 /* Mixed daily picks keep equally sized cover and game art; age-group scenes
    retain their wide crops. New is a release badge, not the row's promise. */

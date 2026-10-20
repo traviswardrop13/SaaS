@@ -799,7 +799,10 @@
     // book or "See Premium" (?from=library), Home opening it once by itself
     // for a family locked out who never saw it (?from=home, 13 Oct 2026:
     // Sona.homeOfferDue), or Settings (neither). ?from= is checked against
-    // the catalog — it arrived in a URL. None of them grants anything.
+    // the catalog — it arrived in a URL. None of them grants anything. A game
+    // parked as Coming soon is no door (19 Oct 2026: Home shows no card for
+    // one, and Premium does not open it), so a typed ?from= for one is
+    // Settings › Your plan, never "Unlock <a game Premium won't open>".
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
     // ?setup=1: setup's ready screen, for a family who starts with the trial
     // (Sona.trialFirst). The grown-up is still holding the phone: the price
@@ -810,6 +813,7 @@
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
       OFFER_FROM = (_f === "library" || _f === "home") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
+      if (OFFER_FROM && Sona.GAME_ACTS && Sona.GAME_ACTS[OFFER_FROM] && Sona.GAME_ACTS[OFFER_FROM].comingSoon) OFFER_FROM = "";
     } catch (e) {}
     var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM ? "from-game" : "settings";
 

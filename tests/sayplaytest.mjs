@@ -54,8 +54,9 @@
 //     three-year-old says a word twice is Rachel's call. It runs as its own
 //     part (tests/bubblestest.mjs);
 //   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
-//     a parked game's card is greyed out, and its page sends a typed address
-//     back to Home before any mic or sound. The engine is still played through
+//     a parked game has no card on Home (19 Oct 2026; it was a greyed-out
+//     card until then), and its page sends a typed address back to Home
+//     before any mic or sound. The engine is still played through
 //     below, on a copy of sona.js with the parking lifted, because each game
 //     comes back on this engine, one at a time.
 //
@@ -412,14 +413,23 @@ await scenario("catalog in the app", async () => {
       firstParked > 0 && days.slice(firstParked).every((d) => d.parked && !d.on), days);
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
-    ok("Home shows a card for every game", KEYS.every((k) => cat.cards.includes(k)));
-    // COMING SOON: the card is there, greyed out, and says so.
-    const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon);
-    const cards = await page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('#activityGroups button[data-game="' + k + '"]'); return { k, disabled: !!b && b.disabled, text: b ? b.innerText : "", faded: b ? getComputedStyle(b.querySelector(".game-art")).opacity : "" }; }), parked);
-    const coming = /Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/;
-    ok("every parked game shows a greyed-out card, saying its day or Coming soon, that cannot be tapped", parked.length > 0 && cards.every((c) => c.disabled && coming.test(c.text) && Number(c.faded) < 1), cards.filter((c) => !c.disabled || !coming.test(c.text)));
+    // COMING SOON, HIDDEN (Travis, 19 Oct 2026): a parked game has no card on
+    // Home at all, and its card is back the day comingSoon comes off its line.
+    const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon), open = KEYS.filter((k) => !parked.includes(k));
+    ok("Home shows a card for every Say & Play game that is open", open.length > 0 && open.every((k) => cat.cards.includes(k)), open.filter((k) => !cat.cards.includes(k)));
+    const home = await page.evaluate((keys) => ({ cards: keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')),
+      disabled: document.querySelectorAll("#libraryApp button[data-game]:disabled").length, coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText) }), parked);
+    ok("no parked game shows on Home: no card, no greyed-out slot, no Coming soon label", parked.length > 0 && home.cards.length === 0 && home.disabled === 0 && !home.coming, home);
     clean("catalog", errors);
   } finally { await context.close(); }
+  // taking comingSoon off each line brings every card back, ready to tap
+  const lifted = await fresh("today.html", { age: "4", unparked: true });
+  try {
+    await lifted.page.waitForFunction(() => !!window.Sona && document.querySelectorAll("#activityGroups button[data-game]").length > 0);
+    const back = await lifted.page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('#activityGroups button[data-game="' + k + '"]'); return { k, here: !!b, enabled: !!b && !b.disabled }; }), KEYS);
+    ok("with comingSoon taken off their lines, every Say & Play game has its card on Home again, ready to tap", back.every((c) => c.here && c.enabled), back.filter((c) => !c.here || !c.enabled));
+    clean("catalog, unparked", lifted.errors);
+  } finally { await lifted.context.close(); }
 });
 
 // ── a parked game's page sends a typed address home before anything starts ──
