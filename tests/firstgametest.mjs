@@ -193,7 +193,10 @@ await scenario("a locked game opens the plan screen on that game", async () => {
       rachel: document.getElementById("offerRachel").textContent,
     }));
     ok("…opened on that game: its picture, its name in the headline", s.title === "Unlock Block Stacker, and every other game" && JSON.stringify(s.art) === '["/assets/crafted/home-stack.webp"]', s);
-    ok("…and one line about the child who tapped it", s.pill === "🎮 Mia wants to play Block Stacker", s.pill);
+    // the "🎮 Mia wants to play Block Stacker" pill is gone (Travis, 19 Oct
+    // 2026, from Dan's review: by now the one tapping is the grown-up, not
+    // the child): the headline names the game, and nothing else is said
+    ok("…and no \"wants to play\" line under the picture, empty or not", s.pill === "" && !/wants to play/.test(await page.evaluate(() => document.body.innerText)), s.pill);
     ok("the offer sheds the Settings furniture: tabs, page head and summary box", s.tabs === "none" && s.head === "none" && s.summary === "none", s);
     ok("the button is on the first screen of an iPhone", s.buy > 0 && s.buy <= 844, s.buy);
     // the line that sat under it steps aside in the offer (Travis, 2 Oct 2026:

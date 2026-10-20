@@ -159,14 +159,22 @@
           return;
         }
         if(allOpen)return;   // a live trial: every game is already open
-        // what the plan screen sells here: in the iPhone app one plan since 5 Oct
-        // 2026, Sona Monthly with its free days; the web card keeps both plans
-        // In the app the free days are the store's to promise (5 Oct 2026): the
-        // line starts plan-neutral and names them only once Sona.storePlan()
-        // says this buyer's plan really starts with them.
+        // what the plan screen sells here: in the iPhone app the monthly plan
+        // (alone from 5 Oct 2026; since 19 Oct 2026 with the yearly one beside
+        // it when the store's answer carries a yearly row, plan.year); the web
+        // card keeps both plans.
+        // In the app the plans and their free days are the store's to promise
+        // (5 Oct 2026): the line starts with what is true of every answer that
+        // sells anything (monthly is always there), and names the yearly plan
+        // or the free days only once Sona.storePlan() says this buyer really
+        // gets them (the same free time on both rows, or the line says none).
         var inApp=!!(S.isNativeApp&&S.isNativeApp());
-        el("premiumPrice").textContent=inApp?"One plan, month by month":"Yearly with 3 days free, or month by month";
-        if(inApp&&S.storePlan){try{S.storePlan().then(function(plan){if(plan&&plan.state==="free"&&plan.free&&plan.free.text)el("premiumPrice").textContent=plan.free.text+" free, then month by month";});}catch(e){}}
+        el("premiumPrice").textContent=inApp?"Month by month":"Yearly with 3 days free, or month by month";
+        if(inApp&&S.storePlan){try{S.storePlan().then(function(plan){
+          if(!plan||(plan.state!=="free"&&plan.state!=="paid"))return;
+          var y=plan.year,ft=function(p){return p&&p.state==="free"&&p.free&&p.free.text?String(p.free.text):"";},mf=ft(plan),yf=ft(y);
+          el("premiumPrice").textContent=y?(mf&&mf===yf?mf+" free, then monthly or yearly":"Monthly or yearly"):(mf?mf+" free, then month by month":"One plan, month by month");
+        });}catch(e){}}
         el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
         buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
