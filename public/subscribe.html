@@ -343,6 +343,17 @@
     body.onerow.offer #declineRow{position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;margin:0 !important;z-index:5;}
     body.onerow.offer #declineLink{width:44px !important;height:44px;min-height:0;padding:0 !important;font-size:0;line-height:44px;background:transparent;border:0;box-shadow:none;color:#a08a70;}
     body.onerow.offer #declineLink:before{content:"\2715";font-size:19px;font-weight:800;}
+    /* THE X KEEPS ITS CORNER (19 Oct 2026). Once the picture has gone (fit5)
+       the first line of the offer rises to the top, beside the X: the
+       headline ("Unlock Fruit Slice, and every other game", which the "wants
+       to play" pill used to sit above until it was cut), or the first run's
+       line. That line keeps 30 px clear on BOTH sides, so it stays centred
+       and the X never sits on its words, and its lines are balanced so a
+       name is never left alone on one. (At fit8 the first run's line has
+       gone too, and the headline is first.) */
+    body.onerow.offer.fit5 #offerPill,
+    body.onerow.offer.fit5 #offerPill[hidden] + #offerTitle,
+    body.onerow.offer.fit8 #offerTitle{margin-left:30px;margin-right:30px;text-wrap:balance;}
     body.fit7.offer .oneplan{padding:10px 12px;}
     /* TWO ROWS (19 Oct 2026): yearly above monthly, when the store can sell
        both. They are radios then: the picked one keeps the row's look above
@@ -983,12 +994,29 @@
         var fits = function () { return tgt.getBoundingClientRect().bottom + (window.pageYOffset || 0) <= window.innerHeight - inset - 8; };
         var ft = document.getElementById("freeTierCard");
         var freeSaid = !!ft && ft.style.display !== "none" && ft.getBoundingClientRect().height > 0;
-        for (var i = 0; i < LEVELS.length && !fits(); i++) {
-          // fit4 (the web card's list only) drops the third check ("the free
-          // games stay free"): only where the card under the offer says it
-          // in full.
-          if (LEVELS[i] === "fit4" && !freeSaid) continue;
-          b.classList.add(LEVELS[i]);
+        var run = function () {
+          for (var i = 0; i < LEVELS.length && !fits(); i++) {
+            // fit4 (the web card's list only) drops the third check ("the free
+            // games stay free"): only where the card under the offer says it
+            // in full.
+            if (LEVELS[i] === "fit4" && !freeSaid) continue;
+            b.classList.add(LEVELS[i]);
+          }
+        };
+        run();
+        // TWO ROWS (19 Oct 2026): the fit must hold WHICHEVER row is picked.
+        // The lines under the rows are the picked plan's, and with one plan
+        // charged today and the other free, or a "not sure" note, they differ
+        // by a line or three; fitted to the pick alone, a tap on the other
+        // row re-fitted the page and moved both rows (up to 130 px) out from
+        // under the finger that tapped. So the other row's words are painted
+        // for a moment, the fit tightened for them too, and the picked row's
+        // put back, all before anything is drawn. A pick never re-fits
+        // (paintApple).
+        if (apple && APPLE.alt) {
+          var swapped = false;
+          try { swapped = APPLE.alt(true) === true; if (swapped) run(); }
+          finally { if (swapped) APPLE.alt(false); }
         }
       } catch (e) {}
     }
@@ -1133,37 +1161,12 @@
         function paintApple() {
           var both = two(), kind = pickedKind(), done = !!APPLE.done;
           var w = wordsOf(pickOf(APPLE.plan, kind)), wm = both ? wordsOf(APPLE.plan) : w, wy = both ? wordsOf(APPLE.plan.year) : {};
-          card.setAttribute("data-state", done ? "done" : w.state);
-          g("iapTitle").textContent = done ? wordsOf(null).title : w.title;
           paintRow(ROWS.monthly, wm, done || wm.state === "none" || wm.state === "owned", both ? kind === "monthly" : null);
           paintRow(ROWS.annual, wy, !both, both ? kind === "annual" : null);
           var rows = g("iapRows");
           if (both) { rows.setAttribute("role", "radiogroup"); rows.setAttribute("aria-label", "Choose a plan"); }
           else { rows.removeAttribute("role"); rows.removeAttribute("aria-label"); }
-          g("iapCheck").textContent = w.check || ""; g("iapCheck").hidden = done || !w.check || w.state === "none" || w.state === "owned";
-          while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
-          (w.rows || []).forEach(function (row, i) {
-            var li = document.createElement("li"), dot = document.createElement("span"), b = document.createElement("b"), p = document.createElement("p");
-            li.className = "tli " + (i === 0 ? "now" : "bill");
-            dot.className = "tld"; dot.setAttribute("aria-hidden", "true");
-            b.textContent = row.when; p.textContent = row.text;
-            li.appendChild(dot); li.appendChild(b); li.appendChild(p); elTL.appendChild(li);
-          });
-          elTL.hidden = done || !elTL.firstChild;
-          g("iapNoneTitle").textContent = w.none ? w.none.title : "";
-          g("iapNoneText").textContent = w.none ? w.none.text : "";
-          g("iapNone").hidden = done || !w.none;
-          // When the phone is not sure this buyer gets the free days, the note
-          // says so directly under the tile, ABOVE the rows that name a day.
-          var before = w.noteFirst ? elTL : w.noteLast ? buyWrap.nextElementSibling : buyWrap;
-          if (elNote.nextElementSibling !== before) card.insertBefore(elNote, before);
-          elNote.classList.toggle("fine", !!w.noteLast);
-          elNote.textContent = w.note; elNote.hidden = done || !w.note;
-          var held = w.act === "wait" || APPLE.busy;
-          elBuy.textContent = w.button; elBuy.setAttribute("data-act", w.act);
-          elBuy.disabled = held;
-          if (held) elBuy.setAttribute("aria-busy", "true"); else elBuy.removeAttribute("aria-busy");
-          elBuy.hidden = done || !w.button;
+          paintPick(w, done);
           elMsg.textContent = done ? say(APPLE.done) : APPLE.msg;
           // after a sale there is nothing left to decline, restore or read
           g("declineRow").hidden = done; g("iapLegal").hidden = done;
@@ -1189,19 +1192,75 @@
             else if (w.state === "paid") tell("paid");
             else if (w.state === "none") tell(APPLE.plan.why === "timeout" ? "none-timeout" : APPLE.plan.why === "error" ? "none-error" : "none-noproduct");
           }
-          // Re-fit, and hold taps, ONLY when the words changed shape (a pick
-          // is one: the button and the lines under the rows change). A status
-          // line coming or going never re-fits the page: it can only push
-          // "Not now" down, away from the button.
-          var shape = JSON.stringify([w, both ? wm : null, both ? wy : null, kind]);
-          if (shape !== APPLE.shape) { APPLE.shape = shape; fitOffer(); settleTaps(600); }
+          // Re-fit ONLY when the store's answer changed shape. The fit holds
+          // either row picked (fitOffer, APPLE.alt), so a pick never re-fits:
+          // the rows stay where the finger is. A pick still holds taps for a
+          // moment, since the button may move with the lines above it. A
+          // status line coming or going never re-fits the page: it can only
+          // push "Not now" down, away from the button.
+          var fitShape = JSON.stringify(both ? [wm, wy] : [w]), shape = fitShape + "|" + kind;
+          if (fitShape !== APPLE.fitShape) { APPLE.fitShape = fitShape; fitOffer(); }
+          if (shape !== APPLE.shape) { APPLE.shape = shape; settleTaps(600); }
+        }
+        // For fitOffer: paint the lines under the rows as if the OTHER row
+        // were picked (on), or as the picked one again (off). Only with two
+        // rows, and never while a purchase is open or after one. Words only:
+        // nothing is counted, told or bought.
+        APPLE.alt = function (on) {
+          if (!two() || APPLE.busy || APPLE.done) return false;
+          var k = pickedKind();
+          if (on) k = k === "annual" ? "monthly" : "annual";
+          paintPick(wordsOf(pickOf(APPLE.plan, k)), false);
+          return true;
+        };
+        // Everything under the rows that belongs to the picked plan: the
+        // card's state, its title, the check line, the dated rows, the note
+        // and the button.
+        function paintPick(w, done) {
+          card.setAttribute("data-state", done ? "done" : w.state);
+          g("iapTitle").textContent = done ? wordsOf(null).title : w.title;
+          g("iapCheck").textContent = w.check || ""; g("iapCheck").hidden = done || !w.check || w.state === "none" || w.state === "owned";
+          while (elTL.firstChild) elTL.removeChild(elTL.firstChild);
+          (w.rows || []).forEach(function (row, i) {
+            var li = document.createElement("li"), dot = document.createElement("span"), b = document.createElement("b"), p = document.createElement("p");
+            li.className = "tli " + (i === 0 ? "now" : "bill");
+            dot.className = "tld"; dot.setAttribute("aria-hidden", "true");
+            b.textContent = row.when; p.textContent = row.text;
+            li.appendChild(dot); li.appendChild(b); li.appendChild(p); elTL.appendChild(li);
+          });
+          elTL.hidden = done || !elTL.firstChild;
+          g("iapNoneTitle").textContent = w.none ? w.none.title : "";
+          g("iapNoneText").textContent = w.none ? w.none.text : "";
+          g("iapNone").hidden = done || !w.none;
+          // When the phone is not sure this buyer gets the free days, the note
+          // says so directly under the tile, ABOVE the rows that name a day.
+          var before = w.noteFirst ? elTL : w.noteLast ? buyWrap.nextElementSibling : buyWrap;
+          if (elNote.nextElementSibling !== before) card.insertBefore(elNote, before);
+          elNote.classList.toggle("fine", !!w.noteLast);
+          elNote.textContent = w.note; elNote.hidden = done || !w.note;
+          var held = w.act === "wait" || APPLE.busy;
+          elBuy.textContent = w.button; elBuy.setAttribute("data-act", w.act);
+          elBuy.disabled = held;
+          if (held) elBuy.setAttribute("aria-busy", "true"); else elBuy.removeAttribute("aria-busy");
+          elBuy.hidden = done || !w.button;
         }
 
         // ── asking the store, and taking its answers ──
         // one plan the same as another; same() for a whole answer, its yearly row included
         function same1(a, b) { return !!a && !!b && a.state === b.state && a.kind === b.kind && a.sure === b.sure && a.price === b.price; }
         function same(a, b) { return same1(a, b) && !a.year === !b.year && (!a.year || (same1(a.year, b.year) && a.year.best === b.year.best)); }
-        function take(plan) { APPLE.plan = plan || { state: "none", why: "error" }; if (APPLE.plan.state === "owned") owned(); else paintApple(); }
+        function take(plan) {
+          var was = APPLE.plan;
+          APPLE.plan = plan || { state: "none", why: "error" };
+          // A yearly row that arrives on a card already showing the monthly
+          // row alone (back at the front, or after a purchase that did not
+          // go through) comes in UNPICKED: the parent was reading the monthly
+          // plan, and the same button must not start buying the yearly one
+          // without a tap. Yearly is picked when the screen opens on two
+          // rows; after that only a tap changes the pick.
+          if (was && !was.year && (was.state === "free" || was.state === "paid") && APPLE.plan.year) APPLE.pick = "monthly";
+          if (APPLE.plan.state === "owned") owned(); else paintApple();
+        }
         // LATE ANSWERS COUNT (Sona.storePlan's onLate). "Not eligible", "already
         // has it" or the product itself can arrive after the card painted; the
         // card then repaints by itself, so a sentence the phone knows to be

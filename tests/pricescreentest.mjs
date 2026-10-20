@@ -126,6 +126,25 @@ const ROWS = () => {
   return { year: row("iapYear", "iapYear"), month: row("iapPlan", "iap"), group: g("iapRows").getAttribute("role"), label: g("iapRows").getAttribute("aria-label") };
 };
 const rows = (pg = page) => pg.evaluate(ROWS);
+// THE X SITS ON NO WORDS (19 Oct 2026): which of the offer's lines (the first
+// run's pill, the headline, "Unlimited access") the X's glyph (the middle
+// 22 px of its 44 px box) covers, line by line, by their real text boxes.
+// Once the picture is gone the first line rises beside the X, and with the
+// "wants to play" pill cut the headline sat right under it.
+const X_WORDS = () => {
+  const x = document.getElementById("declineLink"), xb = x.getBoundingClientRect();
+  if (getComputedStyle(x).display === "none" || !xb.width) return [];
+  const gx = { l: xb.left + xb.width / 2 - 11, r: xb.left + xb.width / 2 + 11, t: xb.top + xb.height / 2 - 11, b: xb.top + xb.height / 2 + 11 };
+  const hit = [];
+  for (const id of ["offerPill", "offerTitle", "offerUnl"]) {
+    const el = document.getElementById(id);
+    if (!el || el.hidden || getComputedStyle(el).display === "none") continue;
+    const r = document.createRange(); r.selectNodeContents(el);
+    const boxes = id === "offerPill" ? [el.getBoundingClientRect()] : [...r.getClientRects()];
+    if (boxes.some((b) => b.width && b.right > gx.l && b.left < gx.r && b.bottom > gx.t && b.top < gx.b)) hit.push(id);
+  }
+  return hit;
+};
 // each row's words, from Sona.planWords for its own plan
 const words2 = (pg = page) => pg.evaluate(() => Sona.storePlan().then((plan) => ({ m: Sona.planWords(plan, { freeVersion: Sona.freeVersion() }), y: plan.year ? Sona.planWords(plan.year, { freeVersion: Sona.freeVersion() }) : null })));
 const viewed = (s) => s.events.filter((e) => e[0] === "paywall viewed").length;
@@ -330,6 +349,29 @@ try {
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     ok("…and the button buys the monthly product", same((await snap()).bought, [IDS.monthly]));
     await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
+
+    // late, the other way: a parent reading the monthly row alone comes back
+    // to the app and the fresh answer now carries the yearly row. It comes in
+    // UNPICKED: the button the parent was reading still buys the monthly plan
+    await load(...at(SETUP, { store: STORES.monthlyFree })); await until("free");
+    const before1 = (await snap()).button;
+    await page.evaluate(() => { window.__phone.set({ offering: "both" }); document.dispatchEvent(new Event("visibilitychange")); });
+    await page.waitForFunction(() => !document.getElementById("iapYear").hidden);
+    s = await snap(); r = await rows(); w = await words2();
+    ok("a yearly row that arrives on a card showing the monthly row alone (back at the front) comes in unpicked: Monthly stays picked, with the monthly plan's button and lines",
+      !!r.year && r.month.checked === "true" && r.year.checked === "false" && s.button === before1 && s.note === flat(w.m.note) && s.line === w.m.header, [r, s.button, s.note]);
+    await calm(page); await page.locator("#iapBuy").click(); await until("done");
+    ok("…and the button buys the monthly product", same((await snap()).bought, [IDS.monthly]), (await snap()).bought);
+    await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
+    // …and after a purchase that did not go through
+    await load(...at(SETUP, { store: STORES.monthlyFree, buy: "cancel" })); await until("free"); await calm(page);
+    await page.evaluate(() => window.__phone.set({ offering: "both" }));
+    await page.evaluate(() => Sona.storePlan({ fresh: true }));
+    await page.locator("#iapBuy").click();
+    await page.waitForFunction(() => !document.getElementById("iapYear").hidden && !document.getElementById("iapBuy").disabled);
+    s = await snap(); r = await rows();
+    ok("a yearly row that arrives while Apple's sheet was open (the sheet cancelled) comes in unpicked too: the monthly plan is still the one picked",
+      same(s.bought, [IDS.monthly]) && r.month.checked === "true" && r.year.checked === "false" && s.button === w.m.button, [s.bought, r, s.button]);
 
     // late: Apple's answer that this buyer has used the yearly offer arrives after the card painted
     await load(...at(SETUP, both({ elig: { monthly: 2, annual: 1 }, wait: { elig: 2500 } }))); await until("free");
@@ -857,7 +899,7 @@ try {
           await until(want, pg);
           // the fonts, and one frame for the page's own last fit
           await pg.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => r()))));
-          out.push({ door: door[0], price, shape, m: await pg.evaluate(MEASURE, sb) });
+          out.push({ door: door[0], price, shape, m: await pg.evaluate(MEASURE, sb), x: await pg.evaluate(X_WORDS) });
         }
       } catch (e) { out.push({ harness: String(e && e.stack || e) }); }
       await context.close();
@@ -868,8 +910,9 @@ try {
       ok(size + ": the fit was measured in every shape, with no page errors", out.length === 24 && !out.some((o) => o.harness) && errs.length === 0, [out.filter((o) => o.harness), errs]);
       for (const door of DOORS.slice(0, 4)) {
         const mine = out.filter((o) => o.door === door[0]), whole = !small || door === SETUP, bad = [];
-        for (const { price, shape, m } of mine) {
+        for (const { price, shape, m, x } of mine) {
           const say = (what) => bad.push(shape + ", " + price + ": " + what + " " + JSON.stringify({ fit: m.fit, fold: m.fold, buy: m.buy, decline: m.decline }));
+          if (x.length) say("the X sits on the words of " + x.join(", "));
           if (!m.buy || !m.tile || !m.head || !m.decline) { say("something is not painted"); continue; }
           if (m.scrollY !== 0 || m.head.top < 0 || m.tile.top < 0) say("the top is cut off");
           if (m.buy.bottom > m.fold) say("the button ends below the first screen");
@@ -883,7 +926,7 @@ try {
           if (m.guard !== "none") say("the rotate cover is showing");
         }
         ok(size + ", " + door[0] + ": in all three priced shapes, with $9.99 and with US$1,299.00, the button and every line above it are on the first screen" +
-          ", and the X that means \"Not now\" with them" + "; no sideways scroll; the row fills the card; no dated rows",
+          ", and the X that means \"Not now\" with them, on no words" + "; no sideways scroll; the row fills the card; no dated rows",
           mine.length === 6 && bad.length === 0, bad);
       }
     }
@@ -896,6 +939,11 @@ try {
       ["free days, sure", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" } } }, "free"],
       ["free days, not sure", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" } }, elig: "missing" }, "free"],
       ["charged today", { store: { monthly: { price: m }, annual: { price: y } } }, "paid"],
+      // one plan free and the other charged today: the lines under the rows
+      // differ most between the two picks (a check line, a two-line note
+      // above the button or one line of small print under it)
+      ["yearly charged today, monthly free, not sure", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y } }, elig: "missing" }, "paid"],
+      ["yearly free, monthly charged today", { store: { monthly: { price: m }, annual: { price: y, free: "P1W" } } }, "free"],
     ];
     const MEASURE2 = (sb) => {
       const g = (id) => document.getElementById(id);
@@ -916,7 +964,14 @@ try {
           await pg.goto(base + door[1]);
           await until(want, pg);
           await pg.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => r()))));
-          out.push({ door: door[0], price: m, shape, m: await pg.evaluate(MEASURE2, sb) });
+          const first = await pg.evaluate(MEASURE2, sb), x = await pg.evaluate(X_WORDS);
+          // A PICK NEVER RE-FITS: the fit already holds either row picked, so
+          // a tap on Monthly moves neither row (it used to re-fit and move
+          // both by up to 130 px), and the button and the X stay on the
+          // first screen with the other plan's lines under the rows
+          await pg.evaluate(() => document.getElementById("iapPlan").click());
+          const picked = await pg.evaluate(MEASURE2, sb), monthOn = await pg.evaluate(() => document.getElementById("iapPlan").getAttribute("aria-checked") === "true");
+          out.push({ door: door[0], price: m, shape, m: first, x, p: picked, monthOn });
         }
       } catch (e) { out.push({ harness: String(e && e.stack || e) }); }
       await context.close();
@@ -924,12 +979,18 @@ try {
     }));
     for (const { w, h, out, errs } of results) {
       const size = w + "×" + h;
-      ok(size + ", two rows: the fit was measured in every shape, with no page errors", out.length === 24 && !out.some((o) => o.harness) && errs.length === 0, [out.filter((o) => o.harness), errs]);
+      ok(size + ", two rows: the fit was measured in every shape, with no page errors", out.length === 40 && !out.some((o) => o.harness) && errs.length === 0, [out.filter((o) => o.harness), errs]);
       for (const door of DOORS.slice(0, 4)) {
         const mine = out.filter((o) => o.door === door[0]), bad = [];
-        for (const { price, shape, m } of mine) {
+        for (const { price, shape, m, x, p, monthOn } of mine) {
           const say = (what) => bad.push(shape + ", " + price + ": " + what + " " + JSON.stringify({ fit: m.fit, fold: m.fold, year: m.year, month: m.month, buy: m.buy }));
           if (!m.buy || !m.year || !m.month || !m.head || !m.decline) { say("something is not painted"); continue; }
+          if (x.length) say("the X sits on the words of " + x.join(", "));
+          if (!monthOn || !p.buy || !p.year || !p.month) say("a tap on Monthly did not pick it");
+          else {
+            if (p.fit !== m.fit || Math.abs(p.year.top - m.year.top) > 0.5 || Math.abs(p.month.top - m.month.top) > 0.5) say("a tap on Monthly re-fitted the page and moved the rows " + JSON.stringify({ fit: p.fit, year: p.year, month: p.month }));
+            if (p.buy.bottom > p.fold || p.decline.bottom > p.fold || p.scrollY !== 0) say("with Monthly picked the button or the X is off the first screen " + JSON.stringify({ buy: p.buy, decline: p.decline }));
+          }
           if (m.scrollY !== 0 || m.head.top < 0 || m.year.top < 0) say("the top is cut off");
           if (!(m.year.bottom <= m.month.top)) say("the yearly row is not above the monthly one");
           if (m.buy.bottom > m.fold) say("the button ends below the first screen");
@@ -938,8 +999,8 @@ try {
           if (Math.abs(m.year.width - m.inner) > 2 || Math.abs(m.month.width - m.inner) > 2) say("a row does not fill the card");
           if (shape === "free days, not sure" && !(m.note && m.note.top >= m.month.bottom && m.note.bottom <= m.buy.top)) say("the not-sure note is not between the rows and the button");
         }
-        ok(size + ", " + door[0] + ", two rows: in all three priced shapes, with short and long prices, both rows, the button and every line above it are on the first screen, with the X; no sideways scroll; the rows fill the card",
-          mine.length === 6 && bad.length === 0, bad);
+        ok(size + ", " + door[0] + ", two rows: in all five priced shapes, with short and long prices, both rows, the button and every line above it are on the first screen, with the X on no words; no sideways scroll; the rows fill the card; and a tap on Monthly moves neither row and keeps the button and the X on the first screen",
+          mine.length === 10 && bad.length === 0, bad);
       }
     }
   }
