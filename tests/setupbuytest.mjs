@@ -6,7 +6,8 @@
 // joins them on one fake phone that has BOTH an App Store and a microphone
 // (tests/_phone.mjs), because the hand-over between the two pages is the part
 // neither can see:
-//   - setup asks its four things, then the optional email (13 Oct 2026: before
+//   - setup asks its four things (with three screens that sell Sona right
+//     after the therapy question, 19 Oct 2026), then the optional email (13 Oct 2026: before
 //     the price, so the address is on the phone when a purchase tells the
 //     list), shows "<Name>'s practice is ready", and only then the price,
 //     while the grown-up still holds the phone;
@@ -33,12 +34,16 @@ const step = (page, key) => page.locator('[data-step="' + key + '"].on').waitFor
 const text = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, " ").trim() : null; }, sel);
 
 // a parent's setup, as far as the ready screen (an address on the email step, or Skip)
+// (sold: the headings of the three screens that sell, as the parent read them)
+const sold = [];
 async function toReady(page, name, email = "") {
+  sold.length = 0;
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
+  for (const key of ["problem", "alone", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
@@ -54,6 +59,8 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
+    ok("before the price, three screens sell Sona, after the therapy question: the problem, the child playing alone, the games",
+      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "Mia plays on their own", "Games Mia will play"]), sold);
     ok("setup ends on the ready screen: the child's name, and Rachel's line word for word",
       (await text(page, "#readyTitle")) === "Mia's practice is ready" &&
       (await text(page, "#readyRachel")) === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",

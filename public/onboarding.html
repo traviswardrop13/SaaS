@@ -181,7 +181,8 @@
          their child said a word. Buddy (Pip is preselected) and interests
          still wait, in Settings. The parent's optional email is its own
          one-tap-skippable step before the ready screen (13 Oct 2026), not
-         one of the four questions.
+         one of the four questions, and so are the three screens that sell
+         Sona, right after the therapy question (19 Oct 2026).
          THE FIRST SCREEN IS JUST A HELLO (Travis, 2 Oct 2026: "that first page
          with the bird just have that be a fun page and then they can just
          press a button on the bottom that says continue and then the second
@@ -238,6 +239,43 @@
       <button type="button" class="skip ask-skip" id="therapySkip">Skip</button>
     </div>
 
+    <!-- SETUP SELLS SONA BEFORE THE PRICE (Travis, 19 Oct 2026: "go, yes to
+         1 2 3", to a parent-funnel review: a problem screen, a "your kid
+         plays it alone" screen and a peek at the games). Three screens right
+         after the speech therapy question, each a statement with Continue
+         and Back: nothing to answer, nothing stored, no progress segment (they
+         are not questions; Travis took two question screens out on 5 Oct
+         2026 because he did not like them). Only where the therapy question is
+         asked: a family's first setup, never a second child, a clinician or a
+         child already set up. Every spot that shows the child's name is a
+         ph-name (REPLAY1: recorded as "[child]"). The first is the screen a
+         therapy answer lands on, so it is never recorded (replayHold). The
+         words are defaults for Travis and Rachel to change. -->
+    <div class="step sell" data-step="problem">
+      <h1 class="qh" id="problemTitle" tabindex="-1">Speech homework is hard at home.</h1>
+      <p class="muted sell-line">Worksheets and flashcards turn into a fight. Kids practice when it feels like play.</p>
+    </div>
+    <!-- one painted Home card of the age group's first game, the one setup
+         hands the child (Feed Echo for ages 2–4, Fruit Slice from 5 or with no
+         age): decoration, the words say it all -->
+    <div class="step sell" data-step="alone">
+      <h1 class="qh" id="aloneTitle" tabindex="-1"><span class="ph-name" id="aloneName">Your child</span> plays on their own</h1>
+      <p class="muted sell-line">Echo says a word. <span class="ph-name" id="aloneName2">Your child</span> says it out loud, and that&rsquo;s how the game moves. Just hand over the phone.</p>
+      <div class="sell-pic" aria-hidden="true"><img id="alonePic" alt="" width="768" height="432" decoding="async" /></div>
+    </div>
+    <!-- the age group's playable games, read from the catalog Home reads
+         (Sona.activityLibrary): never a Coming soon game, never a typed list;
+         both groups when no age was given. Every one where the price follows
+         (the trial opens them all); only the ones this phone opens where no
+         price can follow (the website, an app with no purchase plugin). No
+         "Free" or "Premium" here: since trial first no surface tells a family
+         something stays free. -->
+    <div class="step sell" data-step="games">
+      <h1 class="qh" id="gamesTitle" tabindex="-1">Games <span class="ph-name" id="gamesName">your child</span> will play</h1>
+      <div class="sell-grid" id="gamesGrid"></div>
+      <p class="muted sell-line">Saying words out loud is how every game is played.</p>
+    </div>
+
     <!-- buddy -->
     <div class="step" data-step="buddy">
       <div class="qh">Pick your buddy</div>
@@ -258,7 +296,7 @@
       <p class="muted">Choose your practice sounds.</p>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
       <div id="obExploreOption">
-        <button type="button" class="skip" id="obExploreSounds">Not sure? Explore all sounds</button>
+        <button type="button" class="skip" id="obExploreSounds">Not sure? Pick all sounds</button>
       </div>
       <p class="muted sound-help">Sona practices — it doesn't test or diagnose.</p>
     </div>
@@ -613,10 +651,15 @@
     var SECOND=false; try{ SECOND=Sona.kids().length>1; }catch(e){}
     var ASKED=false;  try{ ASKED=!!(Sona.setupAsks&&Sona.setupAsks().asked); }catch(e){}
     var ORDER_PARENT=[];
+    // The three screens that sell Sona (19 Oct 2026) follow the therapy
+    // question, and only for a family not set up yet: a child already set up
+    // walking setup again (Back from the first game) is not sold to again.
+    var SELL_STEPS=["problem","alone","games"];
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
-      var o=asks?["welcome","name","therapy","sounds","goal"].concat(mail?["updates"]:[],["ready","mic"])
+      var sell=asks&&!p.onboarded;
+      var o=asks?["welcome","name","therapy"].concat(sell?SELL_STEPS:[],["sounds","goal"],mail?["updates"]:[],["ready","mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
@@ -649,6 +692,7 @@
       who:     "Hi! I'm Echo!",
       name:    "Nice to meet you!",
       therapy: "I'm glad you're here!",
+      problem: "Let me show you how it works!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
@@ -665,8 +709,8 @@
     var segEl = document.getElementById("seg");
     // A parent's QUESTIONS get a segment each: four for a first child (name,
     // therapy, sounds, goal), two for a second child or a clinician in the app.
-    // The hello, "who", the optional email step, the ready screen, the
-    // microphone and the hand-off take none. The browser clinician keeps a segment a step.
+    // The hello, "who", the three screens that sell, the optional email
+    // step, the ready screen, the microphone and the hand-off take none. The browser clinician keeps a segment a step.
     var ASKS={name:1,therapy:1,sounds:1,goal:1};
     function askKeys(){return ORDER.filter(function(k){return ASKS[k];});}
     function paintSeg(){segEl.innerHTML="";var count=ORDER===ORDER_PARENT?askKeys().length:ORDER.length-1;for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i"));}
@@ -808,7 +852,7 @@
       ig.appendChild(el);
     });
 
-    // R starts selected; a parent can change it or explore all sounds.
+    // R starts selected; a parent can change it or pick all sounds ("Not sure? Pick all sounds").
     var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
     var sc = document.getElementById("obSounds");
     ["R","S","L","TH"].concat(Sona.ALL_SOUNDS.filter(function(s){return ["R","S","L","TH"].indexOf(s)<0;})).forEach(function(s){
@@ -953,7 +997,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,name:1,therapy:1,sounds:1,goal:1,updates:1,ready:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,name:1,therapy:1,problem:1,alone:1,games:1,sounds:1,goal:1,updates:1,ready:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -990,6 +1034,73 @@
         if(t){var li=document.createElement("li");li.textContent=t;lines.appendChild(li);}
       });
       lines.hidden=!lines.children.length;
+    }
+    // THE THREE SCREENS THAT SELL (19 Oct 2026). The name goes into ph-name
+    // spans by textContent only (REPLAY1). The games are the catalog's: the
+    // groups Home shows (Sona.activityLibrary), only the games a child can
+    // open (no Coming soon), each with its painted Home card
+    // (Sona.CRAFTED_CARDS). Which group is the age picked on the name step,
+    // read from the draft (the profile is saved only on the ready screen):
+    // ages 2–4 Simple play, 5 and up Arcade, both when no age was given.
+    // "Games <Name> will play" must be true for THIS phone: where the price
+    // follows (Sona.trialFirst, read the way the ready screen reads it) the
+    // trial opens every game, so all of them are shown; where no price can
+    // follow (the website, so every Android family, and an app build with no
+    // purchase plugin) only the games this phone opens are, since nothing
+    // there can open the rest. Premium, a trial or a covered caseload open
+    // every game either way (Sona.gameAccess).
+    var SELL={problem:1,alone:1,games:1},sellPainted=null;
+    function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
+    function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
+    function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
+    function sellGroups(style,all){
+      var lib=null;try{lib=Sona.activityLibrary&&Sona.activityLibrary();}catch(e){}
+      var out=[];
+      ["simple","arcade"].forEach(function(id){
+        if(style&&id!==style)return;
+        ((lib&&lib.groups)||[]).forEach(function(g){
+          if(g.id!==id)return;
+          var games=(g.games||[]).filter(function(x){return x&&x.kind!=="book"&&!x.comingSoon&&x.available!==false&&sellOpens(x.key,all);});
+          if(games.length)out.push({id:g.id,label:g.ageLabel||g.name||"",games:games});
+        });
+      });
+      return out;
+    }
+    function cardArt(host,key){
+      var cards=(Sona.CRAFTED_CARDS)||{};
+      if(cards[key]){var im=document.createElement("img");im.src="/assets/crafted/home-"+cards[key]+".webp";im.alt="";im.width=768;im.height=432;im.decoding="async";host.appendChild(im);return;}
+      try{var st=Sona.gameSticker(key);Sona.paintSticker(host,st[0],st[1]);}catch(e){}
+    }
+    function paintSell(){
+      var nm=(nameEl.value||draft.childName||"").trim();
+      document.getElementById("aloneName").textContent=nm||"Your child";
+      document.getElementById("aloneName2").textContent=nm||"Your child";
+      document.getElementById("gamesName").textContent=nm||"your child";
+      var style=sellStyle(),all=sellsAll(),painted=style+"|"+all;
+      if(sellPainted===painted)return;          // unchanged: no flicker of pictures already drawn
+      sellPainted=painted;
+      var groups=sellGroups(style,all);
+      // the picture: the game setup hands the child, Sona.firstGameKey's rule
+      // (Feed Echo for 2–4, Fruit Slice otherwise) on the age in the draft,
+      // since firstGameKey reads the profile, which is not saved yet
+      var want=style==="simple"?"feed":"slice",leadKey=null,pic=document.getElementById("alonePic"),cards=Sona.CRAFTED_CARDS||{};
+      groups.forEach(function(g){g.games.forEach(function(x){if(x.key===want)leadKey=want;});});
+      if(!leadKey){var lead=groups.filter(function(g){return g.id===(style||"arcade");})[0]||groups[0];leadKey=lead&&lead.games[0]&&lead.games[0].key;}
+      if(leadKey&&cards[leadKey])pic.src="/assets/crafted/home-"+cards[leadKey]+".webp";
+      pic.parentNode.hidden=!(leadKey&&cards[leadKey]);
+      var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
+      groups.forEach(function(g){
+        if(groups.length>1){var k=document.createElement("p");k.className="sell-kicker";k.textContent=g.label;grid.appendChild(k);}
+        var list=document.createElement("ul");list.className="sell-games"+(g.games.length<=2?" two":"");
+        list.setAttribute("aria-label",groups.length>1?g.label:"Games");
+        g.games.forEach(function(game){
+          var li=document.createElement("li");li.dataset.game=game.key;
+          var art=document.createElement("span");art.className="sell-art";art.setAttribute("aria-hidden","true");cardArt(art,game.key);li.appendChild(art);
+          var n=document.createElement("span");n.className="sell-name";n.textContent=game.name;li.appendChild(n);
+          list.appendChild(li);
+        });
+        grid.appendChild(list);
+      });
     }
     // "Does this Apple ID already have Premium?", asked of the store ONCE,
     // from the moment the ready screen shows, so a paying family who
@@ -1057,12 +1168,15 @@
       if(key==="therapy"||key==="goal"){document.getElementById(key==="therapy"?"obTherapy":"obGoal").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
       document.body.classList.toggle("ob-answered",(key==="therapy"||key==="goal")&&!!draft[key]);
       if(key==="ready"){paintReady();wallAsk();}
+      // the three screens that sell are painted together on the first, so the
+      // pictures of the next two are on their way before they are needed
+      if(SELL[key])paintSell();
       // Nothing to type on these, so a screen reader is taken to the heading.
       // the question names the child once a name is typed (a heading, never a button's words)
       if(key==="therapy"){var tn=(nameEl.value||draft.childName||"").trim();document.getElementById("therapyTitle").textContent=tn?"Is "+tn+" in speech therapy?":"Is your child in speech therapy?";}
       // The email step's heading, never its box: a double tap must not raise the keyboard.
       if(key==="updates"){updEl.value=draft.email||"";updMsg.textContent="";updEl.style.borderColor="";}
-      if(key==="therapy"||key==="goal"||key==="ready"){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
+      if(key==="therapy"||key==="goal"||key==="ready"||SELL[key]){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
       if(key==="updates"){try{document.getElementById("updTitle").focus({preventScroll:true});}catch(e){}}
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
