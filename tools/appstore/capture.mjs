@@ -341,30 +341,6 @@ SCENES.slice = async (devName) => {
   return s;
 };
 
-// 1b. Fruit Slice on its last heart, with Echo asking for the sound that
-// brings one back ("For a heart and Super Slice, say"). The two hearts are
-// taken off directly (a staged moment, like the example week on Progress);
-// the ask is the real one, opened by a tap on Echo.
-SCENES.hearts = async (devName) => {
-  const s = await open(devName, "/arcade-slice.html?from=charge", { session: { "sona.play.token": "arcade-slice.html", "sona.boost.sound": "R", "sona.boost.level": "isolation", "sona.boost.ask": "rrrr" }, goalMet: true });
-  const { page } = s;
-  await until(page, () => window.gameEntryAllowed === true && typeof startWave === "function", 15000);
-  await settle(page);
-  await until(page, () => fruits.filter((q) => !q.sliced).length >= 2, 8000);
-  await page.evaluate(() => { hearts = 1; paintHearts(); });
-  await page.evaluate(() => document.getElementById("slowKeys").click());
-  await until(page, () => /heart|Say /i.test(document.getElementById("slowStatus").textContent) && document.getElementById("slowControl").classList.contains("asking"), 12000);
-  // two or more fruit in the air, none sitting on another
-  await until(page, () => {
-    const up = fruits.filter((q) => !q.sliced && q.y < H * 0.7 && q.y > H * 0.25);
-    return up.length >= 2 && up.every((a) => up.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > 150));
-  }, 8000);
-  await page.evaluate(() => { __dev.frozen = true; });
-  s.note = await page.evaluate(() => "hearts " + hearts + ", status: " + document.getElementById("slowStatus").textContent);
-  await shot(page, devName, "hearts");
-  return s;
-};
-
 // 2. The practice page ("Say it 5 times") mid-try: Echo's bubble, the stand
 // filling with fruit, the mic listening.
 SCENES.charge = async (devName) => {
@@ -412,7 +388,14 @@ SCENES.tiles = async (devName) => {
   await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 3, 8000) ||
     await until(page, () => phase === "song" && slowMs > 0 && tiles.filter((q) => !q.hit && !q.gone && q.y > 60 && q.y + q.h < HITY() - 40).length >= 2, 4000);
   for (let i = 0; i < 40; i++) { if (await tapKeys()) break; await page.waitForTimeout(40); }
-  await page.waitForTimeout(90);
+  // A played tile shows as a blank block while it collapses, and a tile
+  // still under the top bar is cut in half: wait for a frame with neither.
+  const clean = () => until(page, () => {
+    const bar = document.getElementById("top").getBoundingClientRect().bottom + 6;
+    const live = tiles.filter((q) => !q.gone);
+    return phase === "song" && slowMs > 0 && !live.some((q) => q.hit) && live.every((q) => q.y >= bar || q.y + q.h <= 0) && live.filter((q) => q.y >= bar && q.y + q.h < HITY() - 20).length >= 2;
+  }, 6000);
+  if (!(await clean())) throw new Error("No clean Piano Tiles moment");
   await page.evaluate(() => { __dev.frozen = true; });
   s.note = await page.evaluate(() => "slow keys " + (slowMs > 0 ? "on" : "OFF") + ", phase " + phase);
   await shot(page, devName, "tiles");
@@ -427,13 +410,16 @@ SCENES.hoops = async (devName) => {
   await page.locator("#startOvl.show").waitFor();
   // (the button breathes, so it is never "stable" for a Playwright click)
   await page.evaluate(() => document.getElementById("startBtn").click());
+  // every step must happen: until() answers false on a timeout, and a turn
+  // that stalled (the mic closed, no ball) once passed as the iPad shot
+  const must = async (what, ok) => { if (!(await ok)) throw new Error("Hoops capture stalled: " + what + " " + await page.evaluate(() => JSON.stringify({ sp: window.__sayplay && { listening: __sayplay.listening, said: __sayplay.said, step: __sayplay.step }, hoops: window.__hoops && window.__hoops.state }))); };
   const listening = () => until(page, () => window.__sayplay && window.__sayplay.listening === true, 12000);
   // one basket first, so a dot is filled
   for (let n = 0; n < 2; n++) {
-    await listening(); await page.waitForTimeout(120); await voice(page, 300);
-    await until(page, () => window.__sayplay.said === 1 && window.__sayplay.listening === true, 4000);
+    await must("mic open", listening()); await page.waitForTimeout(120); await voice(page, 300);
+    await must("first saying", until(page, () => window.__sayplay.said === 1 && window.__sayplay.listening === true, 4000));
     await page.waitForTimeout(400); await voice(page, 300);
-    await until(page, () => window.__hoops && window.__hoops.state === "ready", 6000);
+    await must("ball earned", until(page, () => window.__hoops && window.__hoops.state === "ready", 6000));
     await page.waitForTimeout(500);
     if (n === 1) break;
     const box = await page.locator("#court").boundingBox();
@@ -442,7 +428,7 @@ SCENES.hoops = async (devName) => {
     await page.mouse.move(x0, y0); await page.mouse.down();
     for (let i = 1; i <= 6; i++) { await page.mouse.move(x0 + side * box.width * i / 6, y0 - up * i / 6); await page.waitForTimeout(10); }
     await page.mouse.up();
-    await until(page, () => window.__sayplay.step === 1, 6000);
+    await must("basket", until(page, () => window.__sayplay.step === 1, 6000));
   }
   await page.waitForTimeout(300);
   await shot(page, devName, "hoops");

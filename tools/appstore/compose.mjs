@@ -45,6 +45,8 @@ const LAYOUT = {
   ipad: { top: 140, h1: 132, sub: 54, gap: 30, phoneTop: 44, bottom: 120, maxW: 0.78 },
 };
 const INK = "#28285c", ACCENT = "#ef6f23", SUBINK = "#5b5a7e";
+// how much of the canvas width a detail card (a cropped excerpt) may take
+const DETAIL_W = 0.88;
 // How much of a painted background shows: faded to this, and blurred by this
 // share of the canvas width. One place, so "plainer" or "busier" is one number.
 const PAINT_FADE = 0.45, PAINT_BLUR = 0.012;
@@ -69,7 +71,76 @@ function statusBar(dev, k, ink) {
     <span style="position:absolute;right:${18 * k}px;top:${5 * k}px;display:flex;gap:${6 * k}px;align-items:center;font:600 ${12 * k}px/${15 * k}px var(--sys)">${wifi(k * 0.86)}<span>100%</span>${battery(k * 0.9)}</span></div>`;
 }
 
+// A slide with no phone: one person's photo, large, under the same
+// headline every slide has (Travis, 20 Oct 2026: Rachel's picture "bigger",
+// and first). portrait.src is a photo in public/, shown whole in a circle;
+// portrait.tag a short pill under it. The photo is never upscaled past
+// MAX_UPSCALE, so a small original stays sharp rather than filling the slot.
+// On the store a screenshot shows at about a third of its size, so a photo
+// enlarged up to MAX_UPSCALE still looks sharp where parents see it.
+const MAX_UPSCALE = 2.4;
+function portraitHTML(slide, dev, copyBottom) {
+  const [CW, CH] = CFG.sizes[dev].canvas, L = LAYOUT[dev], P = slide.portrait;
+  const textH = copyBottom || L.top + 2 * L.h1 * 1.02 + L.gap + 2 * L.sub * 1.3;
+  const native = pngOrJpgSide(path.join(PUBLIC, P.src));
+  const tagH = CW * 0.075, gap = CW * 0.045, ring = CW * 0.016;
+  const roomTop = textH + L.phoneTop, room = CH - roomTop - L.bottom;
+  // the photo, its pill and (optionally) Echo under it are one group,
+  // centred in the space under the headline
+  const echoK = P.echo ? 0.4 : 0;
+  const fixed = gap + tagH + (P.echo ? gap * 0.6 : 0);
+  const d = Math.min((room * 0.94 - fixed) / (1 + echoK), CW * (P.w || 0.8), native * MAX_UPSCALE);
+  const groupH = d + fixed + d * echoK;
+  const top = roomTop + (room - groupH) / 2;
+  const tagTop = top + d + gap;
+  const echo = P.echo ? `<img class="echo" src="/public/${P.echo}" alt="" style="width:${d * echoK}px;left:${(CW - d * echoK) / 2}px;top:${tagTop + tagH + gap * 0.6}px">` : "";
+  const title = slide.title.map((t, i) => `<span class="${i === slide.accent ? "acc" : ""}">${esc(t)}</span>`).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    @font-face{font-family:"Baloo 2";font-weight:400 800;src:url(/public/fonts/baloo2.woff2) format("woff2");}
+    @font-face{font-family:"Nunito";font-weight:400 900;src:url(/public/fonts/nunito.woff2) format("woff2");}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{width:${CW}px;height:${CH}px;overflow:hidden;}
+    body{position:relative;background:linear-gradient(180deg,${slide.bg[0]} 0%,${slide.bg[1]} 100%);-webkit-font-smoothing:antialiased;}
+    ${slide.bgImage ? `.paint{position:absolute;z-index:0;left:-4%;top:-4%;width:108%;height:108%;
+      background:url(/bg/${slide.bgImage}) center/cover no-repeat;opacity:${PAINT_FADE};filter:blur(${CW * PAINT_BLUR}px) saturate(.85);}
+    body::after{content:"";position:absolute;left:0;right:0;top:0;height:${L.top + L.h1 * 3.6}px;background:linear-gradient(180deg,rgba(255,250,240,.82),rgba(255,250,240,.55) 70%,rgba(255,250,240,0));z-index:0;}` : ""}
+    body::before{content:"";position:absolute;z-index:1;left:50%;top:${top + d / 2}px;width:${d * 1.7}px;height:${d * 1.5}px;transform:translate(-50%,-50%);
+      background:radial-gradient(closest-side,rgba(255,255,255,.8),rgba(255,255,255,0));pointer-events:none;}
+    .copy{position:absolute;z-index:2;left:${CW * 0.09}px;right:${CW * 0.09}px;top:${L.top}px;text-align:center;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:${L.h1}px;line-height:1.02;color:${INK};letter-spacing:-0.01em;}
+    h1 span{display:block;white-space:nowrap;} h1 .acc{color:${ACCENT};}
+    p.sub{margin-top:${L.gap}px;font-family:"Nunito";font-weight:700;font-size:${L.sub}px;line-height:1.3;color:${SUBINK};}
+    .portrait{position:absolute;z-index:2;left:${(CW - d) / 2}px;top:${top}px;width:${d}px;height:${d}px;border-radius:50%;
+      padding:${ring}px;background:linear-gradient(145deg,#ffffff,#fff3e3);
+      box-shadow:0 ${CW * 0.03}px ${CW * 0.06}px rgba(70,40,15,.22),0 ${CW * 0.006}px ${CW * 0.012}px rgba(70,40,15,.16);}
+    .portrait img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;}
+    .echo{position:absolute;z-index:3;filter:drop-shadow(0 ${CW * 0.008}px ${CW * 0.014}px rgba(60,40,20,.25));}
+    .tag{position:absolute;z-index:2;left:50%;top:${tagTop}px;transform:translateX(-50%);height:${tagH}px;padding:0 ${tagH * 0.55}px;border-radius:${tagH}px;
+      display:flex;align-items:center;white-space:nowrap;background:#fffaf2;border:${CW * 0.003}px solid rgba(40,40,92,.12);
+      font-family:"Nunito";font-weight:800;font-size:${tagH * 0.44}px;color:${INK};box-shadow:0 ${CW * 0.006}px ${CW * 0.016}px rgba(70,40,15,.12);}
+  </style></head><body>
+    ${slide.bgImage ? '<div class="paint"></div>' : ""}
+    <header class="copy"><h1>${title}</h1><p class="sub">${esc(slide.sub)}</p></header>
+    <div class="portrait phone"><img src="/public/${P.src}" alt=""></div>
+    ${echo}
+    ${P.tag ? `<div class="tag">${esc(P.tag)}</div>` : ""}
+  </body></html>`;
+}
+// the shorter side of a JPEG or PNG in public/, read from its header
+function pngOrJpgSide(file) {
+  const b = readFileSync(file);
+  if (b.readUInt32BE(0) === 0x89504e47) return Math.min(b.readUInt32BE(16), b.readUInt32BE(20));
+  for (let i = 2; i < b.length - 9;) {
+    if (b[i] !== 0xff) { i++; continue; }
+    const m = b[i + 1], len = b.readUInt16BE(i + 2);
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return Math.min(b.readUInt16BE(i + 5), b.readUInt16BE(i + 7));
+    i += 2 + len;
+  }
+  throw new Error("Cannot read the size of " + file);
+}
+
 function slideHTML(slide, dev, copyBottom) {
+  if (slide.portrait) return portraitHTML(slide, dev, copyBottom);
   const [CW, CH] = CFG.sizes[dev].canvas, L = LAYOUT[dev];
   // A cropped detail keeps the captured pixels' aspect, without pretending
   // the excerpt includes a whole device or adding a status bar over it.
@@ -82,10 +153,12 @@ function slideHTML(slide, dev, copyBottom) {
   const [pw, ph] = F.pt;
   // screen width from the height we have, capped by the canvas width
   let sw = availH / (ph / pw + 2 * F.bezel + 2 * F.rim);
-  sw = Math.min(sw, (CW * L.maxW) / (1 + 2 * F.bezel + 2 * F.rim));
+  // a detail card is a short excerpt: it may take more of the width, and it
+  // sits a little under the headline rather than floating in the middle
+  sw = Math.min(sw, (CW * (slide.detail ? DETAIL_W : L.maxW)) / (1 + 2 * F.bezel + 2 * F.rim));
   const sh = sw * ph / pw, k = sw / pw;
   const bez = sw * F.bezel, rim = sw * F.rim, fw = sw + 2 * (bez + rim), fh = sh + 2 * (bez + rim);
-  const fx = (CW - fw) / 2, fy = phoneTop + (availH - fh) / 2;
+  const fx = (CW - fw) / 2, fy = phoneTop + (slide.detail ? Math.min((availH - fh) / 2, CW * 0.12) : (availH - fh) / 2);
   const R = sw * F.radius;
   const shotURL = `/raw/${dev}/${slide.scene}.png`;
   const decor = (slide.decor || []).map((d) => {
@@ -184,10 +257,30 @@ async function main() {
       const context = await browser.newContext({ viewport: { width: CW, height: CH }, deviceScaleFactor: 1 });
       const page = await context.newPage();
       mkdirSync(path.join(out, dev), { recursive: true });
+      // A size with "from" (the 6.3-inch iPhone) is the bigger set, resized:
+      // the two are within 0.1% of the same shape, so nothing is cropped.
+      const from = CFG.sizes[dev].from;
+      if (from) {
+        for (const slide of CFG.slides) {
+          if (only && !only.includes(slide.id)) continue;
+          const srcFile = path.join(out, from, slide.id + ".png");
+          if (!existsSync(srcFile)) { console.log("FAIL " + dev + "/" + slide.id + ": build " + from + " first"); bad++; continue; }
+          await page.setContent(`<style>*{margin:0}body{background:#fff}</style><img src="data:image/png;base64,${readFileSync(srcFile).toString("base64")}" style="display:block;width:${CW}px;height:${CH}px">`);
+          await page.waitForFunction(() => document.images[0].complete && document.images[0].naturalWidth > 0);
+          const file = path.join(out, dev, slide.id + ".png");
+          const buf = await page.screenshot({ type: "png", clip: { x: 0, y: 0, width: CW, height: CH } });
+          writeFileSync(file, buf);
+          const info = pngInfo(buf), ok = info.w === CW && info.h === CH && info.colour === 2;
+          if (!ok) bad++;
+          console.log((ok ? "PASS " : "FAIL ") + path.relative(REPO, file) + "  " + info.w + "x" + info.h + " (from " + from + ")");
+        }
+        await context.close();
+        continue;
+      }
       for (const slide of CFG.slides) {
         if (only && !only.includes(slide.id)) continue;
         const raw = path.join(RAW, dev, slide.scene + ".png");
-        if (!existsSync(raw)) { console.log("FAIL " + dev + "/" + slide.id + ": no raw screen " + raw + " (run capture.mjs)"); bad++; continue; }
+        if (!slide.portrait && !existsSync(raw)) { console.log("FAIL " + dev + "/" + slide.id + ": no raw screen " + raw + " (run capture.mjs)"); bad++; continue; }
         // Keep the exact Rachel sentence checkable in the copy source even
         // though the headline and its continuation have different sizes.
         if (slide.statement && slide.title.join(" ") + " " + slide.sub !== slide.statement) throw new Error("Credential wording drifted: " + slide.id);
@@ -205,7 +298,8 @@ async function main() {
         const fit = await page.evaluate(() => {
           const copy = document.querySelector(".copy").getBoundingClientRect(), frame = document.querySelector(".phone").getBoundingClientRect();
           const titleFits = [...document.querySelectorAll("h1 span")].every((el) => { const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect(); return b.left >= copy.left && b.right <= copy.right; });
-          return titleFits && copy.bottom < frame.top && frame.left >= 0 && frame.right <= innerWidth && frame.bottom < innerHeight;
+          const tag = document.querySelector(".tag"), t = tag && tag.getBoundingClientRect(), eo = document.querySelector(".echo"), e = eo && eo.getBoundingClientRect();
+          return titleFits && copy.bottom < frame.top && frame.left >= 0 && frame.right <= innerWidth && frame.bottom < innerHeight && (!t || t.bottom < innerHeight && t.left >= 0 && t.right <= innerWidth) && (!e || e.bottom < innerHeight);
         });
         const file = path.join(out, dev, slide.id + ".png");
         const buf = await page.screenshot({ type: "png", clip: { x: 0, y: 0, width: CW, height: CH } });

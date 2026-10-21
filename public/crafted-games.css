@@ -52,6 +52,11 @@ body[data-crafted="practice"] #gpState b{color:#a65325;}
 body[data-crafted="practice"] #turnStatus{font-size:12px;color:#876b4c;}
 body[data-crafted="practice"] #echoBuddy{min-height:0;flex:1;display:flex;align-items:flex-end;justify-content:center;margin:4px 0 0;max-height:none;}
 body[data-crafted="practice"] #leo{width:clamp(160px,56vw,260px);height:100%;max-height:290px;min-height:0;margin:0;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 12px #64422430);}
+/* The ring behind Echo (speaking, listening, checking) is a circle the size of
+   the Echo actually drawn, at his feet. charge.html's inset:8% fits its own
+   square button; here the button fills the column's height, and that inset
+   stretched the ring into a tall egg from the clouds to his feet. */
+body[data-crafted="practice"] #echoBuddy::before{inset:auto;left:0;right:0;bottom:12px;margin:0 auto;width:auto;height:min(84%,clamp(134px,47vw,218px));aspect-ratio:1;}
 body[data-crafted="practice"] #turtleBtn{order:-1;margin:10px 0 0;min-height:38px;background:#fff9ed;border:1.5px solid #a8825d;box-shadow:0 3px 0 #c6aa8340;flex-shrink:0;color:#664326;}
 body[data-crafted="practice"] #bubble{order:-2;}
 body[data-crafted="practice"] #turtleBtn svg{display:none;}
