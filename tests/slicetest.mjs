@@ -165,8 +165,9 @@ function fakePhone(cfg) {
     localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.6 }, cfg.profile || {})));
     // cfg.stage: a level the child has EARNED on the practice page (R: 1 is
     // Syllables cleared, which opens the short word on the cards). Since 22
-    // Oct 2026 nothing else can: the Settings picker is gone, and an old
-    // pick (profile.gameLevel) is dropped by getProfile.
+    // Oct 2026 the game picker is gone, and an old pick (profile.gameLevel)
+    // is dropped by getProfile; "Each day's practice starts with" can also
+    // lift the cards (gameasktest §9).
     if (cfg.stage) localStorage.setItem("sona.progress.v1", JSON.stringify({ ladderV: 2, stage: cfg.stage }));
     if (cfg.best) localStorage.setItem("sona.bests.v1", JSON.stringify({ slice: { n: cfg.best, at: "2026-10-01" } }));
     if (cfg.old) localStorage.setItem("sona.best.slice", cfg.old);

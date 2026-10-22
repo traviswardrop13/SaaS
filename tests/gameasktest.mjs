@@ -11,8 +11,9 @@
 //   - the Settings picker that could set the step by hand is gone (Travis, 22
 //     Oct 2026: "simplify settings ... the minimum viable features"), so a
 //     pick a family saved from it (profile.gameLevel) is dropped by
-//     getProfile and changes nothing, up or down: only the earned level moves
-//     the cards;
+//     getProfile and changes nothing, up or down: the earned level moves
+//     the cards, and so does where "Each day's practice starts with" starts
+//     the day (§9);
 //   - a sound whose syllables nobody has listened to yet stays on the bare
 //     sound, exactly as before (only R ships switched on);
 //   - so does a child aged 2 to 4, and any child while Echo's voice is off

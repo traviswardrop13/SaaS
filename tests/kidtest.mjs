@@ -437,9 +437,9 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
     const k = Sona.kkey("sona.profile.v1"), raw = JSON.parse(localStorage.getItem(k)); raw.gameLevel = "isolation"; localStorage.setItem(k, JSON.stringify(raw));
   });
   await page.reload(); await page.waitForTimeout(700);
-  // Settings no longer loads the syllable lists (gamecontent.js): they were
-  // there only to paint the picker's line. The cards are read the way a
-  // round game reads them, with those lists on the page.
+  // The cards are read the way a round game reads them, with the syllable
+  // lists (gamecontent.js) on the page; Settings loads them for its practice
+  // steps line, and this adds them if it ever stops.
   const read = async () => { if (!(await page.evaluate(() => !!window.SonaContent))) await page.addScriptTag({ url: "/gamecontent.js" }); return page.evaluate(() => {
     const raw = JSON.parse(localStorage.getItem(Sona.kkey("sona.profile.v1")) || "{}");
     return {

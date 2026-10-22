@@ -1992,8 +1992,10 @@
   // where a card steps back to); 1 and 2 are the two cards between rounds.
   // The step asked is min(top, floor + card):
   //   top   — one step past what the child has EARNED on the practice page,
-  //           the practice page's own rule. (A grown-up's pick in Settings
-  //           set it until 22 Oct 2026; getProfile drops an old pick.)
+  //           the practice page's own rule, or past where "Each day's
+  //           practice starts with" starts the day, whichever is higher.
+  //           (A grown-up's game picker set it until 22 Oct 2026;
+  //           getProfile drops an old pick.)
   //   floor — the step the "Say it 5 times" page ended on this sitting
   //           (charge.html hands it over), so a card never asks below what
   //           the child was just asked; its own syllable or word is reused.
@@ -2011,7 +2013,7 @@
   // homework's, or its GAME_SHORT_AT word), as end-of-word homework did.
   // The floor also rises to the step before the day's first step
   // (ladderStart), so a child who starts at words is not handed a syllable
-  // between rounds; a grown-up's pick in the game picker still wins.
+  // between rounds.
   //
   // HONEST LIMITS. A card hears only "a voice of the right kind": it cannot
   // tell "ree" from "rrrr" or "rot", so harder here means what Echo ASKS,

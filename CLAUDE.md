@@ -2382,8 +2382,11 @@ card between rounds said the bare sound. What is built is the first slice:
   card may ask it).
 - **How far a child's cards go:** one step past what they have earned on the
   practice page (so a new child gets a syllable on both cards, and the word
-  after two clean practice rounds). (A grown-up could pick it in Settings
-  until 22 Oct 2026; see "The game-card picker is gone" below.) Never below what the "Say it 5 times" page just asked: that page hands over
+  after two clean practice rounds), or past where "Each day's practice starts
+  with" starts the day, whichever is higher (a day that starts at words asks
+  "rot" on both cards from the first round). (A grown-up could pick the
+  cards' step in Settings until 22 Oct 2026; see "The game-card picker is
+  gone" below.) Never below what the "Say it 5 times" page just asked: that page hands over
   the step it ended on and its item (`sona.boost.level`, `sona.boost.ask`),
   and a card repeats that syllable or word instead of adding a new target.
 - **Two kinds of child never get the harder cards** (`Sona.gameHold` says
@@ -2438,8 +2441,10 @@ card between rounds said the bare sound. What is built is the first slice:
   syllable ("ree") on Fruit Slice's cards at once (a new child's cards start
   one step past what they earned, which is a syllable), and one whose
   grown-up picked the word drops to syllables until the word is earned.
-  Whether a grown-up should set the step by hand is still her open call
-  (below); this build has no control for it.
+  Whether a grown-up should set the cards' step by hand is still her open
+  call (below); this build has no control for the cards alone, but "Each
+  day's practice starts with" (Settings, the same day) lifts them too, and
+  that is hers to know.
 - **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
   Sound Sprint, Flappy Glide, Rise Up: Echo says their cards out loud, but
   they ask only the bare sound; each needs Fruit Slice's one line for the
