@@ -59,6 +59,10 @@
     .bktext span{cursor:pointer;border-radius:8px;padding:0 2px;}
     .bktext span:active{background:#ffe2b3;}
     .bkhint{margin-top:10px;font-weight:800;font-size:11px;letter-spacing:.08em;color:#a17c4a;}
+    /* the say-it turn: one word from the page, said before the page turns */
+    .bksay{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#4a2c14;min-height:24px;}
+    .bksay b{color:#ef6f23;font-size:22px;padding-left:4px;}
+    .bknext.locked{background:linear-gradient(180deg,#ffb27a,#ff9a5a);}
     .pgEcho{position:absolute;left:-12px;bottom:-16px;width:72px;height:72px;transform:rotate(-6deg);filter:drop-shadow(0 5px 7px rgba(120,60,10,.25));}
     .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,8vw,40px);color:#5b2d05;margin-top:18px;}
     .bksub{font-weight:800;color:rgba(91,45,5,.7);margin-top:8px;}
@@ -407,7 +411,8 @@
     var bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead");
 
     function openBook(st) {
-      BOOK = st; page = -1;
+      BOOK = st; page = -1; said = {};
+      try { Sona.bookMic(); } catch (e) {} // ask for the mic on the tap that opened the book
       var bk = document.getElementById("book");
       bk.classList.add("show");
       // tint layers OVER the opaque cream (backgroundImage keeps the base color)
@@ -424,7 +429,57 @@
       return html.replace(/>([^<]+)</g, function(m, txt){
         return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#ef6f23">$1</b>')+"<"; // kid accent, matches the sound chip (1c)
       }); }catch(e){ return html; } }
-    function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
+    function closeBook() { stopSpeech(); listenTok++; document.getElementById("book").classList.remove("show"); BOOK = null; }
+
+    // BOOK1: every page asks for one word from it before it turns (Story Time
+    // always did; these were tap-through). Sona.pageWord picks the word,
+    // Sona.bookTurn listens for real voicing — silence never turns a page.
+    // Two misses in a row and Echo stops re-asking on his own: the Next
+    // button becomes the mic, so a child is never stuck in a nagging loop.
+    var said = {}, listenTok = 0, listening = false, misses = 0;
+    function pageTarget() { return (BOOK && page >= 0 && page < BOOK.pages.length) ? Sona.pageWord(BOOK.pages[page].t, BOOK.sound) : ""; }
+    function sayBox(html) { var el = document.getElementById("bkSay"); if (el) el.innerHTML = html; }
+    function setNext() {
+      var next = document.getElementById("bkNext"), w = pageTarget();
+      var locked = !!w && !said[page];
+      next.classList.toggle("locked", locked);
+      if (page >= 0 && page < BOOK.pages.length) next.textContent = locked ? "🎤 Say it!" : "Next →";
+    }
+    function askWord() {
+      var w = pageTarget(); if (!w || said[page]) return;
+      var tok = ++listenTok;
+      sayBox("Your turn — say<b>" + w + "</b>");
+      say("Now you! Say... " + w + "!").then(function () { if (tok === listenTok) listenFor(w, tok); });
+    }
+    function listenFor(w, tok) {
+      listening = true;
+      var e = document.getElementById("pgEcho"); if (e) e.src = "/coach/echo/echo-listening.svg";
+      sayBox("Listening… say<b>" + w + "</b>");
+      Sona.bookTurn().then(function (r) {
+        if (tok !== listenTok) return;
+        listening = false;
+        if (r.noMic) { try { Sona.micDenied({ back: "/library.html" }); } catch (x) {} return; }
+        if (r.spoke) {
+          said[page] = true; misses = 0;
+          try { Sona.sfx.correct(); } catch (x) {}
+          var e2 = document.getElementById("pgEcho"); if (e2) e2.src = "/coach/echo/echo-celebrate.svg";
+          sayBox("Nice reading!"); setNext();
+          var at = page;
+          (Sona.praiseLine ? say(Sona.praiseLine()) : Promise.resolve()).then(function () {
+            if (tok === listenTok && BOOK && page === at) { page++; showPage(); }
+          });
+          return;
+        }
+        misses++;
+        try { Sona.sfx.tap(); } catch (x) {}
+        if (misses < 2) {
+          sayBox("Try again — say<b>" + w + "</b>");
+          say(w).then(function () { if (tok === listenTok) listenFor(w, tok); });
+        } else {
+          sayBox("Tap 🎤 and say<b>" + w + "</b>");
+        }
+      });
+    }
 
     function tappable(t) {
       return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
@@ -437,7 +492,8 @@
       return say(text).then(function () { var e2 = document.getElementById("pgEcho"); if (e2) e2.src = "/coach/echo/echo-idle.svg"; });
     }
     function showPage() {
-      stopSpeech();
+      stopSpeech(); listenTok++; listening = false;
+      document.getElementById("bkNext").classList.remove("locked");
       var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
       prev.classList.remove("pill"); prev.textContent = "←";
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
@@ -469,25 +525,33 @@
           + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + BOOK.sound + ' SOUND</div>'
           + '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>'
           + '<div class="bkhint">TAP ANY WORD TO HEAR IT</div>'
+          + '<div class="bksay" id="bkSay"></div>'
           + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-listening.svg" alt="Echo" />'
           + '</div></div>';
-        next.textContent = "Next →"; hear.style.visibility = "visible";
+        hear.style.visibility = "visible"; misses = 0; setNext();
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
-          sp.onclick = function () { if (playing) return; readAlong(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
+          sp.onclick = function () { if (playing) return; listenTok++; listening = false; readAlong(sp.textContent.replace(/[^a-zA-Z']/g, "")).then(askWord); };
         });
-        readAlong(pg.t);
+        if (said[page]) sayBox("Nice reading!");
+        var tok = listenTok; readAlong(pg.t).then(function () { if (tok === listenTok) askWord(); });
       }
     }
     document.getElementById("bkNext").onclick = function () {
       if (window.Sona) Sona.sfx.tap();
       if (BOOK && page >= BOOK.pages.length) { closeBook(); return; }
+      // a page that still wants its word: Next is the mic, not a skip
+      if (BOOK && page >= 0 && pageTarget() && !said[page]) {
+        if (listening) return;
+        stopSpeech(); misses = 0; listenFor(pageTarget(), ++listenTok);
+        return;
+      }
       page++; showPage();
     };
     document.getElementById("bkPrev").onclick = function () {
-      if (BOOK && page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
+      if (BOOK && page >= BOOK.pages.length) { page = -1; said = {}; showPage(); return; } // Read again
       if (page > -1) { page--; showPage(); }
     };
-    document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) say(BOOK.pages[page].t); };
+    document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) { listenTok++; listening = false; say(BOOK.pages[page].t).then(askWord); } };
     document.getElementById("bkClose").onclick = closeBook;
 
     /* ---- word box ---- */

@@ -44,6 +44,7 @@
     #text{font-family:"Baloo 2";font-weight:800;font-size:clamp(19px,5.4vw,26px);line-height:1.36;margin-top:18px;
       text-shadow:0 3px 10px rgba(0,0,0,.35);max-width:22ch;}
     #hint{color:var(--dim);font-weight:800;font-size:12.5px;margin-top:14px;}
+    #hint b{color:var(--gold);font-size:20px;padding-left:4px;}
 
     #bottom{flex:none;display:flex;gap:10px;align-items:center;}
     #hear{flex:none;border:none;border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.15);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:pointer;}
@@ -150,7 +151,53 @@
       }catch(e){}
     }
 
+    // BOOK1: every page asks for one word from it before it turns, like the
+    // other books. The chapters are not written around a sound, so the word
+    // is the one on this page nearest the child's practice sound
+    // (Sona.pageWord), and Sona.bookTurn listens for real voicing — silence
+    // never turns a page. Two misses and Echo stops re-asking; Next is the mic.
+    var SOUND="R"; try{ SOUND=(S.rotSound&&S.rotSound())||((profile.focusSounds||[])[0])||"R"; }catch(e){}
+    var said={}, listenTok=0, listening=false, misses=0;
+    function target(){ try{ return S.pageWord(PAGES[i],SOUND); }catch(e){ return ""; } }
+    function locked(){ return !!target() && !said[i]; }
+    function setNext(){
+      var last=(i>=PAGES.length-1);
+      $("next").textContent=locked()?"🎤 Say it!":(last?"Finish the story →":"Next →");
+    }
+    function askWord(){
+      if(!locked()) return;
+      var w=target(), tok=++listenTok;
+      $("hint").innerHTML="Your turn — say<b></b>"; $("hint").lastChild.textContent=w;
+      say("Now you! Say... "+w+"!").then(function(){ if(tok===listenTok) listenFor(w,tok); });
+    }
+    function listenFor(w,tok){
+      listening=true;
+      $("hint").innerHTML="Listening… say<b></b>"; $("hint").lastChild.textContent=w;
+      S.bookTurn().then(function(r){
+        if(tok!==listenTok) return;
+        listening=false;
+        if(r.noMic){ try{ S.micDenied({back:"/today.html"}); }catch(e){} return; }
+        if(r.spoke){
+          said[i]=true; misses=0; setNext();
+          try{ S.sfx.correct(); }catch(e){}
+          $("hint").textContent="Nice reading!";
+          var at=i;
+          (S.praiseLine?say(S.praiseLine()):Promise.resolve()).then(function(){ if(tok===listenTok&&i===at) advance(); });
+          return;
+        }
+        misses++;
+        try{ S.sfx.tap(); }catch(e){}
+        if(misses<2){
+          $("hint").innerHTML="Try again — say<b></b>"; $("hint").lastChild.textContent=w;
+          say(w).then(function(){ if(tok===listenTok) listenFor(w,tok); });
+        } else {
+          $("hint").innerHTML="Tap 🎤 and say<b></b>"; $("hint").lastChild.textContent=w;
+        }
+      });
+    }
+
     function paint(){
+      listenTok++; listening=false; misses=0;
       $("text").textContent=PAGES[i]||"";
       // Echo acts: a different pose per page, cross-faded so the swap is not a
       // hard cut. The live review's finding was that he stood in one neutral
@@ -166,14 +213,20 @@
       }catch(e){}
       var pp=$("pips").children;
       for(var k=0;k<pp.length;k++) pp[k].className=(k<=i)?"on":"";
-      $("next").textContent=(i>=PAGES.length-1)?"Finish the story →":"Next →";
-      $("hint").textContent=(i>=PAGES.length-1)?"Last page!":"Tap to keep reading";
+      setNext();
+      $("hint").textContent=said[i]?"Nice reading!":(i>=PAGES.length-1)?"Last page!":"Listen first…";
       var e=$("echo"); e.classList.add("pop"); setTimeout(function(){ e.classList.remove("pop"); },340);
-      say(PAGES[i]);
+      var tok=listenTok; say(PAGES[i]).then(function(){ if(tok===listenTok) askWord(); });
     }
 
     function advance(){
-      try{ S.sfx&&S.sfx("tap"); }catch(e){}
+      // a page that still wants its word: a tap is the mic, not a skip
+      if(locked()){
+        if(listening) return;
+        misses=0; listenFor(target(),++listenTok);
+        return;
+      }
+      try{ S.sfx.tap(); }catch(e){}
       if(i>=PAGES.length-1){ finish(); return; }
       i++; paint();
     }
@@ -194,11 +247,12 @@
       say("You did it! Three games are unlocked.");
     }
 
-    $("next").onclick=function(){ unlockAudio(); advance(); };
+    $("next").onclick=function(){ unlockAudio(); try{ S.bookMic(); }catch(e){} advance(); };
     $("stage").onclick=function(){ unlockAudio(); advance(); };
     // the button means NOW — it supersedes the auto-read instead of queueing
     // behind it, because a child who taps it wants this page, immediately
-    $("hear").onclick=function(ev){ ev.stopPropagation(); unlockAudio(); try{ S.speakNow(PAGES[i]); }catch(e){} };
+    $("hear").onclick=function(ev){ ev.stopPropagation(); unlockAudio(); listenTok++; listening=false;
+      try{ S.speakNow(PAGES[i]).then(askWord); }catch(e){} };
     $("close").onclick=function(){ location.href="/today.html"; };
     $("doneBtn").onclick=function(){ location.href="/today.html"; };
 

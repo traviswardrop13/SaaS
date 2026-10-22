@@ -21,6 +21,7 @@ const SUITES = [
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
+  "booksaytest.mjs", // BOOK1: every book page asks for one word from it before it turns
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff

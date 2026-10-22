@@ -225,10 +225,15 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.removeItem(Sona.kkey("sona.day.v2"));
   }, 1);
   await pg.goto("http://localhost:8151/chapter.html"); await pg.waitForTimeout(700);
+  // every page now wants a word said before it turns (BOOK1): the child
+  // "speaks" here, and the tap on Next is the mic
+  await pg.evaluate(() => { Sona.bookTurn = () => Promise.resolve({ spoke: true }); });
   const poses = [];
   for (let k = 0; k < 6; k++) {
+    const before = await pg.evaluate(() => document.getElementById("text").textContent);
     poses.push(await pg.evaluate(() => document.getElementById("echo").getAttribute("src")));
     await pg.evaluate(() => document.getElementById("next").click());
+    await pg.waitForFunction((t) => document.getElementById("text").textContent !== t, before, { timeout: 8000 }).catch(() => {});
     await pg.waitForTimeout(340);
   }
   ok("Echo is an actor, not a portrait — his pose changes across a chapter",

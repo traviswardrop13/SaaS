@@ -3396,6 +3396,95 @@
     return webCapture();
   }
 
+  // ── BOOK1: say a word from the page to turn it ─────────────────────────
+  // Every book asks the child to say one word from the page before the page
+  // turns. Story Time always did; the Library books and the daily chapter
+  // were tap-through, so a child could "read" a whole book without a sound.
+  // One copy here so the readers cannot drift apart again.
+  //
+  // pageWord() picks ONE word, said in isolation (never a phrase): a picture
+  // word starting with the book's sound, then any word starting with it, then
+  // any word holding it, then the longest word on the page. Capitalised words
+  // (the character's name) come after real words. Voiced-TH function words
+  // and the little glue words never count.
+  const _PAGE_SKIP = {};
+  ("a an and are as at be but by do for from go has he her him his i if in into is it its me my no not of on or our out she so to up us was we you your " +
+   "the this that them then there they those these their than with").split(" ").forEach((w) => { _PAGE_SKIP[w] = 1; });
+  function pageWord(text, sound) {
+    const s = String(sound || "").toLowerCase();
+    const words = String(text || "").replace(/[^A-Za-z' ]+/g, " ").split(/\s+/)
+      .map((raw) => ({ cap: /^[A-Z]/.test(raw), w: raw.toLowerCase().replace(/'s$/, "").replace(/'/g, "") }))
+      .filter((x) => x.w.length >= 2 && /[aeiouy]/.test(x.w) && !_PAGE_SKIP[x.w]);
+    if (!words.length) return "";
+    // /s/ is not /sh/, /t/ is not /th/, /c/ is not /ch/; a hard C is a /k/
+    const starts = (w) => !!s && ((w.indexOf(s) === 0 && !(s.length === 1 && w.charAt(1) === "h" && "sctwp".indexOf(s) >= 0)) ||
+      (s === "k" && /^c[^hiey]/.test(w)));
+    const tiers = [
+      (x) => !x.cap && starts(x.w) && !!WORD_STICKERS[x.w],
+      (x) => !x.cap && starts(x.w),
+      (x) => starts(x.w),
+      (x) => !!s && x.w.indexOf(s) > 0,
+    ];
+    for (let t = 0; t < tiers.length; t++) {
+      for (let i = 0; i < words.length; i++) if (tiers[t](words[i])) return words[i].w;
+    }
+    return words.slice().sort((a, b) => b.w.length - a.w.length)[0].w;
+  }
+  // The mic for a book, asked for once per page load and released when the
+  // page is backgrounded (iOS shows the orange dot for as long as it is held).
+  let _bookStream = null, _bookCtx = null;
+  function bookMic() {
+    if (_bookStream) return Promise.resolve(_bookStream);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.resolve(null);
+      return navigator.mediaDevices.getUserMedia({ audio: true }).then((st) => {
+        _bookStream = st;
+        onBackground(() => { try { st.getTracks().forEach((t) => t.stop()); } catch (e) {} if (_bookStream === st) _bookStream = null; });
+        return st;
+      }).catch(() => null);
+    } catch (e) { return Promise.resolve(null); }
+  }
+  // bookTurn() → { spoke, noMic }. Listens once; `spoke` is true only for
+  // detected VOICING — silence is never a turn. It decides nothing about the
+  // sound itself and logs nothing: this is a reading turn, not a practice rep,
+  // so it never reaches the SLP's pass rate. opts.onLevel(0..1) drives a meter.
+  function bookTurn(opts) {
+    opts = opts || {};
+    const maxMs = opts.maxMs || 6000;
+    if (hasNativeAudio()) return captureClip({ maxMs }).then((r) => ({ spoke: !!(r && r.native && r.spoke) }), () => ({ spoke: false }));
+    return bookMic().then((stream) => new Promise((resolve) => {
+      if (!stream) { resolve({ spoke: false, noMic: true }); return; }
+      let src = null, an = null;
+      try {
+        const AC = global.AudioContext || global.webkitAudioContext;
+        _bookCtx = _bookCtx || new AC();
+        if (_bookCtx.state === "suspended") _bookCtx.resume();
+        src = _bookCtx.createMediaStreamSource(stream);
+        an = _bookCtx.createAnalyser(); an.fftSize = 512; src.connect(an);
+      } catch (e) { resolve({ spoke: false }); return; }
+      const td = new Uint8Array(an.fftSize), t0 = performance.now();
+      let done = false, spoke = false, run = 0, lastV = 0, nS = 0, nN = 0, thr = 0;
+      const finish = () => { if (done) return; done = true; try { src.disconnect(); } catch (e) {} resolve({ spoke }); };
+      (function tick() {
+        if (done) return;
+        an.getByteTimeDomainData(td);
+        let sum = 0; for (let i = 0; i < td.length; i++) { const d = (td[i] - 128) / 128; sum += d * d; }
+        const rms = Math.sqrt(sum / td.length), now = performance.now();
+        try { opts.onLevel && opts.onLevel(Math.min(1, rms * 8)); } catch (e) {}
+        // the first 300ms is the room: the bar sits above IT, so a fan or a
+        // TV is not a child talking
+        if (now - t0 < 300) { nS += rms; nN++; }
+        else {
+          if (!thr) thr = Math.min(0.1, Math.max(0.014, (nS / Math.max(1, nN)) * 2.6));
+          if (rms > thr) { run++; lastV = now; if (run >= 4) spoke = true; } else if (rms < thr * 0.7) run = 0;
+          if (spoke && now - lastV >= 900) { finish(); return; }
+        }
+        if (now - t0 >= maxMs) { finish(); return; }
+        (global.requestAnimationFrame || ((f) => setTimeout(f, 16)))(tick);
+      })();
+    }));
+  }
+
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
   // The App Store build sells "Sona Yearly" ($79.99/yr, 7-day free trial —
   // ONE offer) through Apple's sheet via the @revenuecat/purchases-capacitor
@@ -3990,5 +4079,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, pageWord, bookMic, bookTurn, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
