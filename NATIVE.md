@@ -104,7 +104,7 @@ on reminders" shows iOS's own Allow box. If they allow it and start the free
 trial, the phone shows one notification a day before the trial ends: "Sona /
 Your free trial ends tomorrow." (Travis: "notify them a day before their
 trial ends"). It comes at the time of day the trial started, and it shows even
-while Sona is open. Each day Sona is opened it checks the trial with
+while Sona is open (as a silent banner then: a game's mic may be listening). Each day Sona is opened it checks the trial with
 RevenueCat: once the parent has cancelled it, or it has become a paid plan
 (a switch to the yearly plan, say), the reminder is taken back.
 

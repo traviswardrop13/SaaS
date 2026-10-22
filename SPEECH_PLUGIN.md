@@ -181,14 +181,18 @@ free trial ends tomorrow.", never a child's name).
 - `notifyCancel({ id })`: the waiting one is not shown.
 - While Sona is open, iOS shows a notification only if the app says so. The
   plugin answers Capacitor's router (`localNotificationHandler`) for Sona's
-  own ids ("sona-…") with a banner, the list and a sound: the reminder comes at
-  the time of day the trial started, which is often when the family plays.
+  own ids ("sona-…") with a banner and the list, and **no sound**: the
+  reminder comes at the time of day the trial started, which is often when
+  the family plays, and a game's mic may be open then (iOS's chime would play
+  into it). With Sona closed it comes with its sound as usual.
 
-When the page sets it: right after a purchase that started a free trial
-(`Sona.buyPlan`), for RevenueCat's trial end minus a day; and once a day on an
-app page (`Sona.trialReminderSync`), which sets it afresh while the trial is
-on and takes it back once no free trial is (a paid plan, ended, or cancelled
-by the parent). Never within the hour, never in the past.
+When the page sets it: at once after a purchase that started a free trial
+(`Sona.buyPlan`), for the trial's end in the purchase's own record (else the
+store's free time from now) minus a day, before the price page leaves; and
+once a day on an app page other than Home (`Sona.trialReminderSync`), which
+sets it afresh while the trial is on and takes it back once no free trial is
+(a paid plan, ended, or cancelled by the parent). Never within the hour,
+never in the past.
 
 **Steps on the Mac** (with the mic's steps above, if not done yet):
 1. Pull this branch's code into the checkout that owns `ios/`.
@@ -286,8 +290,8 @@ to Claude: that line is what shows the reminder while Sona is open.
 - [ ] A real notification, two minutes from now (a test id, so no trial is
       touched): `Capacitor.Plugins.SonaSpeech.notifySchedule({ id:
       "sona-test", at: Date.now() + 120000, title: "Sona", body: "Test" })`.
-      Lock the phone: it arrives. Again with Sona open on Home: it shows as a
-      banner over the app, with the sound. Again, then
+      Lock the phone: it arrives, with its sound. Again with Sona open on
+      Home: it shows as a banner over the app, with NO sound. Again, then
       `Capacitor.Plugins.SonaSpeech.notifyCancel({ id: "sona-test" })` before
       the two minutes: nothing arrives.
 - [ ] A sandbox trial (from setup's price screen): Apple's sandbox makes free
