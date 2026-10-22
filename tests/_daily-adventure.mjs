@@ -34,7 +34,7 @@ export async function dailyHarness(config=8394) {
     // already owns the key "bridge". This host tests the controller alone,
     // through the catalog gate it was verified on, so the served copy holds no
     // story day with this game key (the real list is untouched on disk).
-    const unstoried=clean.replace(/(const STORY_DAYS = \[)([\s\S]*?)(\n  \];)/,(all,open,list,close)=>open+list.replace(new RegExp('\\n    \\{ id: "[a-z]+", game: "'+key+'",[\\s\\S]*?\\},(?=\\n)','g'),'')+close);
+    const unstoried=clean.replace(/(const STORY_DAYS = \[)([\s\S]*?)(\n  \];)/,(all,open,list,close)=>open+list.replace(new RegExp('\\n    \\{ id: "[a-z]+", game: "'+key+'",[\\s\\S]*?\\},(?=\\n|$)','g'),'')+close);
     if(!unstoried.includes('const GAME_ACTS = {'))throw new Error('Daily fixture cannot locate the real game catalog');
     return unstoried.replace('const GAME_ACTS = {','const GAME_ACTS = {\n    '+entry);
   };
