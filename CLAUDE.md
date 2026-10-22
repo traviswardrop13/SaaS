@@ -405,9 +405,7 @@ changing one. What follows from the rule:
     `<style>` is layout only). The price screen's button
     (`.planbuy .btn.go` in `crafted-family.css`) takes the same teal with
     the one-payment change of 22 Oct 2026 (the lifetime work, which owns
-    that file), so the two buttons a parent taps in a row match once both
-    are in; setup's own change leaves `crafted-family.css` untouched, and
-    on its own the price button is still the older, lighter teal.
+    that file), so the two buttons a parent taps in a row match.
   - **A purchase or a restore comes BACK to setup** for the microphone and the
     hand-off: a tab-only marker (`sona.setupafter.v1`, `Sona.setupAfter()`)
     written when setup leaves for the price. **The hand-off's "Let's play!"
@@ -486,17 +484,15 @@ changing one. What follows from the rule:
   today.") and **the billing day** (the store's price starts "unless you
   cancel at least 24 hours before", Apple's own measure), one button, and
   "Not now" in plain sight. See "THE IPHONE SELLS ONE PLAN" for where every
-  word comes from. **No reminder is promised but one line** (since 22 Oct
-  2026: the phone's own notification, shown only where the phone will really
-  set it, and the one place "remind" may appear; "THE TRIAL REMINDER ON THE
-  PRICE SCREEN", NOTIFY1, below)**:** since 16 Oct 2026 Sona sends
-  one ("Your free days end soon", RCHOOK1, below), but only to a parent who
-  gave the app an email, so the price screen still promises none, and the
-  words email, remind and notify may not appear on it (`pricescreentest`,
-  `setupbuytest`, `planwordstest`), **with one exception since 22 Oct 2026**
-  (Travis: setup asks iPhone for its Allow box, so the phone itself reminds,
-  NOTIFY1): one line under the button and its small print, **"We'll remind
-  you the day before it ends."**, only when `Sona.trialReminderOn(picked
+  word comes from. **No email reminder is promised:** since 16 Oct 2026
+  Sona sends one ("Your free days end soon", RCHOOK1, below), but only to a
+  parent who gave the app an email, so the price screen never promises that
+  email, and the words email and notify, and remind outside the one line
+  below, may not appear on it (`pricescreentest`, `setupbuytest`,
+  `planwordstest`). **The one line, since 22 Oct 2026** (Travis: setup asks
+  iPhone for its Allow box, so the phone itself reminds, NOTIFY1; "THE TRIAL
+  REMINDER ON THE PRICE SCREEN", below): under the button and its small
+  print, **"We'll remind you the day before it ends."**, only when `Sona.trialReminderOn(picked
   row)` says this phone will show it AND the picked row is a free trial
   (`planWords`' `headsUp`, painted into `#iapAhead`; the page feature-checks
   the function), and only on a row whose free days are certain (`plan.sure`;

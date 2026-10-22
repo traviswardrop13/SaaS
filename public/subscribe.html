@@ -1613,9 +1613,24 @@
             try { Sona.iapRefresh(true).then(function (active) { if (active && gen === APPLE.gen && !APPLE.busy && !APPLE.done) owned(); }, function () {}); } catch (e) {}
           }, 10000);
         }
-        document.addEventListener("visibilitychange", function () { if (!document.hidden) reask(); });
+        // THE REMINDER LINE FOLLOWS iOS'S OWN ANSWER. trialReminderOn reads
+        // what iOS last told this phone, and the card can paint before iOS
+        // has answered this page (or after the parent changed the setting in
+        // iOS Settings and came back): once iOS answers, the card is painted
+        // again if that line would now say something else. The plan is the
+        // same, so only the line under the button changes.
+        function aheadCheck() {
+          try {
+            if (OLD || typeof Sona.notifyRefresh !== "function") return;
+            Sona.notifyRefresh().then(function () {
+              if (APPLE.busy || APPLE.done || !pricedNow()) return;
+              if ((wordsOf(picked()).headsUp || "") !== (elAhead.textContent || "")) paintApple();
+            }, function () {});
+          } catch (e) {}
+        }
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) { reask(); aheadCheck(); } });
 
-        if (OLD) paintApple(); else ask(false);
+        if (OLD) paintApple(); else { ask(false); aheadCheck(); }
       } catch (e) {}
     })();
 

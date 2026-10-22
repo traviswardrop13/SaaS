@@ -23,15 +23,18 @@
 //      buyPlan never waits; THE RACE: the page leaves 1.2 s after the sale
 //      while the store hangs, and a check still waiting from before the sale
 //      never takes the new reminder back;
+//   4b. the price screen's line follows iOS's own answer once it comes;
+//   4c. setup's reminder screen on the real block: only for a buyer the
+//      store gives free days, on a build that can, whom iOS has not asked;
 //   5. the daily check: arms a trial, cancels once none is on (paid, ended,
 //      cancelled by the parent), once a day, never on a store that did not
-//      answer (asked again at most once an hour), never asks the store for a
+//      answer or hangs (asked again at most once an hour), never asks the store for a
 //      family who did not allow it, and never on Home (Home only reads);
 //   6. the key stays on this phone: never exported, never imported;
 //   7. the source: nothing leaves the phone, nothing reads a child.
 import { readFileSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
-import { serve, open } from "./_phone.mjs";
+import { serve, open, STORES, setupWalk } from "./_phone.mjs";
 import { iosNotify as ios } from "./_notify.mjs";
 import { nativeMic } from "./_nativemic.mjs";
 
@@ -449,6 +452,58 @@ const now = (page) => page.evaluate(() => Date.now());
   await o.context.close();
 }
 
+// ── 4b. the price screen's line follows iOS's own answer (review, 22 Oct
+// 2026): the card can paint before iOS has answered the page, from what iOS
+// said last time; once it answers, the line under the button follows ──
+{
+  const LINE = "We'll remind you the day before it ends.";
+  const ahead = (page) => page.evaluate(() => { const e = document.getElementById("iapAhead"); return e && !e.hidden ? e.textContent : ""; });
+  const priced = (page) => page.waitForFunction(() => { const c = document.getElementById("iapCard"); return c && c.getAttribute("data-state") === "free"; });
+  for (const [label, was, now, before, after] of [
+    ["iOS was allowed last time, and is off now (the parent turned it off in iOS Settings)", "granted", "denied", LINE, ""],
+    ["iOS said no last time, and is allowed now", "denied", "granted", "", LINE],
+  ]) {
+    const o = await phoneWith({ app: "buy", stamp: "post", setUp: true, store: STORES.monthlyFree, local: { "sona.notify.v1": { state: was } } }, { perm: now, status: "hang" });
+    await o.page.goto(base + "/subscribe.html?setup=1");
+    await priced(o.page);
+    await settle(o.page, 300);
+    const b = await ahead(o.page);
+    await o.page.evaluate(() => window.__ios.set({ status: "ok" }));
+    await settle(o.page, 600);
+    const a = await ahead(o.page);
+    ok("THE PRICE SCREEN'S LINE FOLLOWS iOS'S ANSWER: " + label + ": painted from the last answer, then repainted once iOS answers", b === before && a === after, [b, a]);
+    await o.context.close();
+  }
+}
+
+// ── 4c. setup's reminder screen on the real block (22 Oct 2026). setupscreenstest
+// fakes Sona.notify* and storePlan to hold the screen's own rules; here the
+// real NOTIFY1 and storePlan decide, on _phone.mjs's App Store and this file's
+// iOS setting: the screen shows only for a buyer the store gives free days,
+// on a build that can remind, whom iOS has not asked yet ──
+{
+  const walk = async (label, cfg, icfg, want) => {
+    const o = await open(browser, base, Object.assign({ app: "buy", stamp: "post" }, cfg));
+    try {
+      await o.context.addInitScript(ios, icfg);
+      await o.context.route("**/subscribe.html**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>price</p>" }));
+      await o.page.goto(base + "/onboarding.html");
+      const seen = await setupWalk(o.page, "remind", { name: "Mia" });
+      const at = o.page.url();
+      const got = seen[seen.length - 1] === "remind" && /onboarding/.test(at) ? "remind" : new URL(at).pathname;
+      ok("SETUP'S REMINDER SCREEN, ON THE REAL BLOCK: " + label + ": " + (want === "remind" ? "the screen" : "straight to the price"), got === want && o.errors.length === 0, { got, seen, errors: o.errors });
+    } catch (e) { ok("SETUP'S REMINDER SCREEN, ON THE REAL BLOCK: " + label + " completes", false, e.message); }
+    finally { await o.context.close(); }
+  };
+  await walk("a new buyer the store gives free days, iOS never asked", {}, { perm: "prompt" }, "remind");
+  await walk("both plans offered with free days, the yearly picked", { offering: "both" }, { perm: "prompt" }, "remind");
+  await walk("an Apple ID Apple calls ineligible for the free days", { elig: { monthly: 1, annual: 1 } }, { perm: "prompt" }, "/subscribe.html");
+  await walk("a monthly plan with no free days (charged today)", { store: STORES.noFree }, { perm: "prompt" }, "/subscribe.html");
+  await walk("iOS already answered (allowed) before this page", {}, { perm: "granted" }, "/subscribe.html");
+  await walk("a store that never gives the product", { products: "hang" }, { perm: "prompt" }, "/subscribe.html");
+  await walk("a build without the reminder methods", {}, { methods: "none" }, "/subscribe.html");
+}
+
 // ── 5. the daily check ──
 {
   const o = await phoneWith({ app: "buy", stamp: "post", setUp: true }, { perm: "granted" });
@@ -525,6 +580,19 @@ const now = (page) => page.evaluate(() => Date.now());
   await o.page.evaluate(() => window.__ios.set({ rcInfo: "ok" }));
   const back = await sync({ periodType: "TRIAL", expirationDateMillis: T, willRenew: true });
   ok("…and once the store answers, the hour's mark goes and the day's is set", back === "armed" && (await o.key()).tried == null && (await o.key()).sync > 0, [back, await o.key()]);
+  // a store that HANGS (neither answers nor fails) on a page closed before its 8 s wait
+  await ageSync();
+  const ih = (await o.ios()).infos;
+  await o.page.evaluate(() => { window.__ios.set({ rcInfo: "hang" }); Sona.trialReminderSync(false); });
+  await settle(o.page, 600);
+  const hungMark = (await o.key()).tried;
+  await o.page.reload(); await o.page.waitForFunction(() => !!window.Sona);
+  await settle(o.page, 2300);
+  ok("A STORE THAT HANGS ON A SHORT PAGE IS ASKED AT MOST ONCE AN HOUR TOO: the hour's mark is written before the store is asked, so the next page asks nothing",
+    hungMark > Date.now() - 60000 && (await o.ios()).infos === ih + 1, [hungMark, (await o.ios()).infos, ih]);
+  await o.page.evaluate(() => { window.__ios.set({ rcInfo: "ok" }); const k = JSON.parse(localStorage.getItem("sona.notify.v1")); delete k.tried; localStorage.setItem("sona.notify.v1", JSON.stringify(k)); });
+  const unhung = await sync({ periodType: "TRIAL", expirationDateMillis: T, willRenew: true });
+  ok("…and a store that answers again sets the day's mark as before", unhung === "armed" && (await o.key()).tried == null, [unhung, await o.key()]);
 
   // notifications turned off: the store is not asked at all
   await o.page.evaluate(() => window.__ios.perm("denied"));

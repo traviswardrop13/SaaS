@@ -8412,6 +8412,10 @@
     const gen = _notifyBuys, fresh = () => gen === _notifyBuys;
     const p = _notifyRefresh().then((st) => {
       if (st !== "granted") return "off";
+      // marked as tried BEFORE the store is asked: a store that hangs rather
+      // than fails would otherwise be asked again on every page shorter than
+      // its 8 s wait. An answer clears it; a purchase meanwhile already has.
+      if (fresh()) _notifySave({ tried: Date.now() });
       return _trialNow().then((t) => {
         if (!fresh()) return "stale";
         if (!t) { _notifySave({ tried: Date.now() }); return "error"; }
