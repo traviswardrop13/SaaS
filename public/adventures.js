@@ -211,7 +211,7 @@
         { art: "s04", ages: "big", buddy: null,
           line: "Two ducks sit in the empty pond with their towels, ready for a swim. Quack? Where's the water?" },
         // buddy: on the sandy path just right of Gardener Mouse (rest)
-        { art: "s05", ages: "both", buddy: { x: 0.89, y: 0.825, h: 0.18, pose: "rest" },
+        { art: "s05", ages: "both", buddy: { x: 0.858, y: 0.825, h: 0.18, pose: "rest" },
           line: { big: "Gardener Mouse is watering the whole garden with a teeny watering can. One drop for you. One drop for you!",
                   little: "Gardener Mouse has a teeny watering can. Drip, drip!" } },
         // no buddy (on the sandy ground just right of Echo, in front of the heap, not placed)
@@ -325,7 +325,7 @@
           line: { big: "The recipe is all pictures. Pour to the line, stir, then shape round buns, curled buns and berry buns.",
                   little: "The recipe is all pictures. Pour it, stir it, shape the buns!" } },
         // buddy: on the counter top just right of Echo (rest)
-        { art: "s07", ages: "big", buddy: { x: 0.905, y: 0.8, h: 0.17, pose: "rest" },
+        { art: "s07", ages: "big", buddy: { x: 0.872, y: 0.8, h: 0.17, pose: "rest" },
           line: "Sniff, sniff. Grandpa Bear's nose is squished on the window. Not yet, Grandpa Bear. We haven't even started!" },
         // buddy: on the counter top just right of the mixing bowl (rest)
         { art: "s08", ages: "both", buddy: { x: 0.88, y: 0.718, h: 0.155, pose: "rest" },
@@ -392,7 +392,7 @@
           line: { big: "Ding-dong! Tortoise's cart rolls across our new bridge, all the way to his green door.",
                   little: "Ding-dong! Tortoise's cart made it to his green door!" } },
         // buddy: the plain patch of round rug just right of Echo, nothing on it (rest)
-        { art: "e02", ages: "big", buddy: { x: 0.885, y: 0.76, h: 0.19, pose: "rest" },
+        { art: "e02", ages: "big", buddy: { x: 0.853, y: 0.76, h: 0.19, pose: "rest" },
           line: "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!" },
         // buddy: on the stone path just right of Echo (rest)
         { art: "e03", ages: "both", buddy: { x: 0.665, y: 0.815, h: 0.16, pose: "rest" },
