@@ -9,7 +9,6 @@
  * it never judges a child.
  */
 
-import type { RecognitionAlternative } from "./speech";
 
 export type TargetSound =
   | "S"

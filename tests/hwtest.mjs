@@ -207,8 +207,11 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
 // its card calls (Sona.gameAsk). What those cards should ask is Rachel's call.
 {
   const { ctx, pg } = await page();
-  // the grown-up picked the top step, so the word card is open to this child
-  await pg.evaluate(() => Sona.saveProfile({ gameLevel: "word" }));
+  // the child has EARNED the syllable step on the practice page (its own
+  // two-clean-rounds move, given directly), so the word card is open to them.
+  // (A grown-up's pick in Settings could open it until 22 Oct 2026; the
+  // picker is gone and an old pick is dropped.)
+  await pg.evaluate(() => Sona.recordRung("R", 0, 1));
   const asks = async (over) => {
     await pg.evaluate(over ? CACHE(over) : `localStorage.removeItem(Sona.kkey("sona.homework.v1"))`);
     await pg.goto("http://localhost:8191/arcade-slice.html?from=charge");

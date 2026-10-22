@@ -818,15 +818,38 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const onb = strip(readFileSync(ROOT + "/onboarding.html", "utf8"));
   const join = strip(readFileSync(ROOT + "/join.html", "utf8"));
   const pilot = strip(readFileSync(ROOT + "/pilot.html", "utf8"));
+  const slp = strip(readFileSync(ROOT + "/slp.html", "utf8"));
   const GRANT = /no trial, no paywall|makes it free for you|so Sona is free for them|makes Sona free for|gave you free access|Unlock free access|Unlocking your free access|free for their families|it's free!|Free access (via|unlocked)|free during the pilot/i;
-  for (const [name, src] of [["settings.html", settings], ["onboarding.html", onb], ["join.html", join], ["pilot.html", pilot]]) {
+  // slp.html joined this list on 22 Oct 2026: it is now the ONLY place a
+  // clinician gets the family link and the message to send with it.
+  for (const [name, src] of [["settings.html", settings], ["onboarding.html", onb], ["join.html", join], ["pilot.html", pilot], ["slp.html", slp]]) {
     ok(name + " never says a clinician's link grants access", !GRANT.test(src), (src.match(GRANT) || [])[0]);
   }
-  ok("the clinician's share card says what the link does, and what is free for every family",
-    /it connects them to <b>your dashboard<\/b>/.test(settings) && /Daily practice and free games are <b>free for every family<\/b>/.test(settings) &&
-    /with <b>Sona Premium for your caseload<\/b> they get every game/.test(settings));
+  // MOVED 22 Oct 2026 ("simplify settings"). Settings' clinician card held the
+  // code, the family key, a copy of the link and the message to send; the
+  // dashboard had all of it too, and keeps it up to date (a rotated key, a
+  // covered caseload). So the card is now only a door to the dashboard, and
+  // these two pins moved to the dashboard's own "Your caseload link" card and
+  // its two messages, with the same promise: what is free is free for every
+  // family, and every game comes with the caseload plan.
+  ok("the dashboard's caseload-link card says what the link does, and what is free for every family",
+    /Families who join through your link get Sona's free version — daily practice and free games — at no cost\./.test(slp) &&
+    /With <a href="#premium">Premium for your caseload<\/a> they get every game\./.test(slp));
   ok("…and the message a clinician copies to a family says 'free' and what free means",
-    /It\\u2019s free for your family: daily practice and free games\. /.test(settings));
+    /function familyOffer\(\)\{[^}]*"It's free for your family: daily practice and free games\."/.test(slp) &&
+    /function inviteMsg\([^)]*\)\{[^}]*\+familyOffer\(\)\+/.test(slp) && /\$\("snip"\)\.value="[^"]*"\+familyOffer\(\)\+/.test(slp));
+  // …and Settings' card is the door and nothing more: no code, no key, no
+  // link or message to copy, and no call to the clinician API. A second copy
+  // of the message is how the two drifted (the card still said "Sona Premium
+  // for your caseload" beside a dashboard that knew the caseload was covered).
+  {
+    const card = (settings.match(/<div class="card" id="slpCard"[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
+    ok("Settings' clinician card is only the door to the dashboard",
+      /<a class="btn" id="slpDash" href="\/slp\.html">Open dashboard/.test(card) &&
+      !/<input|<textarea|<button|\bcode\b|family key|Copy/i.test(card), card);
+    ok("…and Settings builds no family link and asks the clinician API nothing",
+      !/join\.html|\/api\/slp\//.test(settings), (settings.match(/join\.html|\/api\/slp\/[a-z/]*/) || [])[0]);
+  }
   ok("clinician setup says the code and key connect families to the dashboard",
     /the code and family key that connect families to your dashboard/.test(onb) && /it connects the families you send it to with your dashboard/.test(onb));
 }
@@ -1031,8 +1054,13 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     /api\/slp\/auth\/request/.test(ob2) && !/api\/slp\/register/.test(ob2));
   ok("a child's name is never shipped to the CRM for an SLP signup",
     /isSlp[\s\S]{0,200}role:"slp"/.test(ob2) && /New SLP signup/.test(ob2));
-  ok("SLP share links point at /join.html, never the analytics-loading '/'",
-    /\/join\.html\?slp=/.test(readFileSync(ROOT + "/settings.html", "utf8")));
+  // The share link is built on the dashboard alone since 22 Oct 2026 (Settings'
+  // clinician card is only a door to it), so this pin moved there with it.
+  {
+    const dash = readFileSync(ROOT + "/slp.html", "utf8");
+    ok("SLP share links point at /join.html, never the analytics-loading '/'",
+      /function familyLink\(\)\{[\s\S]{0,400}return location\.origin\+"\/join\.html\?slp="/.test(dash) && !/["'`]\/\?slp=/.test(dash));
+  }
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),

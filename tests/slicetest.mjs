@@ -163,6 +163,11 @@ function fakePhone(cfg) {
     // mutes). What differs is his voice SERVICE: down unless a scenario turns
     // it on (tts.up), so the round scenario below plays with lines that fail.
     localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.6 }, cfg.profile || {})));
+    // cfg.stage: a level the child has EARNED on the practice page (R: 1 is
+    // Syllables cleared, which opens the short word on the cards). Since 22
+    // Oct 2026 nothing else can: the Settings picker is gone, and an old
+    // pick (profile.gameLevel) is dropped by getProfile.
+    if (cfg.stage) localStorage.setItem("sona.progress.v1", JSON.stringify({ ladderV: 2, stage: cfg.stage }));
     if (cfg.best) localStorage.setItem("sona.bests.v1", JSON.stringify({ slice: { n: cfg.best, at: "2026-10-01" } }));
     if (cfg.old) localStorage.setItem("sona.best.slice", cfg.old);
   }
@@ -623,15 +628,16 @@ await scenario("the cards climb", async () => {
 
 await scenario("the short word", async () => {
   tts.up = true; tts.said = []; tts.all = [];
-  // "…then a short word", picked by a grown-up in Settings
-  const { context, page, errors } = await open({ native: true, profile: { gameLevel: "word" } });
+  // syllables earned on the practice page, so the cards reach the short word
+  const { context, page, errors } = await open({ native: true, stage: { R: 1 } });
   try {
+    ok("the earned level opens the word: the reader's card after wave 2 is \u201Crot\u201D", (await page.evaluate(() => Sona.rungOf("R") === 1 && Sona.gameAsk("R", 2).text)) === "rot");
     await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); await listening(page);
     const first = await cardNow(page);
     await heard(page); await page.waitForFunction(() => phase === "wave" && wave === 1);
     await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); await listening(page);
     const c = await cardNow(page);
-    ok("with the short word picked: a syllable after wave 1, then “rot” after wave 2, only its r orange",
+    ok("with the word earned: a syllable after wave 1, then “rot” after wave 2, only its r orange",
       first.rung === 1 && c.title === "Say “rot” for wave 3!" && c.rung === 2 && c.orange.join() === "r" && tts.said[1] === "To keep playing, say... rot.", { first, c, said: tts.said });
     ok("the short word: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); tts.up = false; }
@@ -651,10 +657,10 @@ await scenario("a voice that cannot play", async () => {
 
 await scenario("a card nobody answers", async () => {
   tts.up = true; tts.said = []; tts.all = [];
-  // "…then a short word" is picked, so the card after wave 2 WOULD ask "rot"
-  const { context, page, errors } = await open({ native: true, profile: { gameLevel: "word" } });
+  // the word is earned, so the card after wave 2 WOULD ask "rot"
+  const { context, page, errors } = await open({ native: true, stage: { R: 1 } });
   try {
-    ok("with the short word picked, the reader's card after wave 2 is the word", (await page.evaluate(() => Sona.gameAsk("R", 2).text)) === "rot");
+    ok("with the word earned, the reader's card after wave 2 is the word", (await page.evaluate(() => Sona.gameAsk("R", 2).text)) === "rot");
     ok("a syllable or word card waits about eight seconds before it steps back", (await page.evaluate(() => ASK_WAIT_MS)) === 8000);
     await page.evaluate(() => { ASK_WAIT_MS = 1200; });
     await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); await listening(page);
@@ -695,14 +701,15 @@ await scenario("a card nobody answers", async () => {
 // answers the bare sound and the card never asks his voice service for a line.
 await scenario("Sona muted", async () => {
   tts.up = true; tts.said = []; tts.all = [];
-  const { context, page, errors } = await open({ native: true, profile: { volume: 0, gameLevel: "word" } });
+  // the word is earned too: muted, the cards still keep to the sound
+  const { context, page, errors } = await open({ native: true, stage: { R: 1 }, profile: { volume: 0 } });
   try {
-    ok("the muted profile reads as muted, and the reader holds its cards to the sound", await page.evaluate(() => Sona.getProfile().volume === 0 && Sona.gameHold("R") === "muted" && Sona.gameTop("R") === 0));
+    ok("the muted profile reads as muted, and the reader holds its cards to the sound, whatever was earned", await page.evaluate(() => Sona.getProfile().volume === 0 && Sona.rungOf("R") === 1 && Sona.gameHold("R") === "muted" && Sona.gameTop("R") === 0));
     for (const n of [2, 3]) {
       await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
       await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
       const c = await cardNow(page);
-      ok("muted, the card for wave " + n + " asks the bare sound, all of it orange, whatever Settings says", c.title === "Say “rrrr” for wave " + n + "!" && c.rung === 0 && c.orange.join() === "rrrr", c);
+      ok("muted, the card for wave " + n + " asks the bare sound, all of it orange, whatever was earned", c.title === "Say “rrrr” for wave " + n + "!" && c.rung === 0 && c.orange.join() === "rrrr", c);
       ok("…with no line asked of Echo's voice and nothing played, and the mic open", tts.said.length === 0 && c.media.length === 0 && c.live === 1, { said: tts.said, media: c.media });
       await heard(page); await page.waitForFunction((k) => phase === "wave" && wave === k, n - 1);
     }
@@ -751,7 +758,8 @@ await scenario("a slow line", async () => {
 
 await scenario("a child on another sound", async () => {
   tts.up = true; tts.said = []; tts.all = [];
-  const { context, page, errors } = await open({ native: true, profile: { focusSounds: ["S"], gameLevel: "word" } });
+  // S earned up to the word too: a sound not switched on keeps the bare sound whatever was earned
+  const { context, page, errors } = await open({ native: true, stage: { S: 1 }, profile: { focusSounds: ["S"] } });
   try {
     await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 }); await listening(page);
     const c = await cardNow(page);
@@ -759,7 +767,7 @@ await scenario("a child on another sound", async () => {
       c.title === "Say “sss” for wave 2!" && c.rung === 0 && c.orange.join() === "sss" && tts.said.length === 0 && tts.all.includes("To keep playing, say") && c.media.map((m) => m.src).join() === "voice,/coach/say-echo/S-sound.wav,voice", { c, said: tts.all });
     await heard(page); await page.waitForFunction(() => phase === "wave" && wave === 1);
     await waveOver(page); await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
-    ok("…and again after wave 2, whatever Settings says", (await cardNow(page)).title === "Say “sss” for wave 3!");
+    ok("…and again after wave 2, whatever was earned", (await cardNow(page)).title === "Say “sss” for wave 3!");
     ok("a child on another sound: no runtime errors", errors.length === 0, errors);
   } finally { await context.close(); tts.up = false; }
 });

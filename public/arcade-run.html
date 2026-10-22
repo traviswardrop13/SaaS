@@ -108,7 +108,7 @@
       <button id="close">✕</button>
       <div class="hudpill" id="distPill" hidden><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg> <b id="score">0m</b></div>
       <div id="hudspacer"><span id="gameHearts" class="game-hearts" role="img"></span></div>
-      <div id="coinLbl" class="hudpill" style="color:#9a6a00;font-size:14px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#f0a500"/><circle cx="32" cy="30" r="19" fill="#ffd21c"/><circle cx="32" cy="30" r="12" fill="none" stroke="#f0b400" stroke-width="3"/></svg> <b id="coinN">0</b></div>
+      <div id="coinLbl" class="hudpill" style="color:#9a6a00;font-size:14px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px" aria-hidden="true"><path d="M32 6l7.6 16.4 17.9 2-13.3 12.2 3.7 17.7L32 45.3l-15.9 9 3.7-17.7L6.5 24.4l17.9-2Z" fill="#ffd21c" stroke="#f0a500" stroke-width="3" stroke-linejoin="round"/></svg> <b id="coinN">0</b></div>
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="slowControl" hidden>
@@ -140,7 +140,7 @@
           <svg class="arrow" style="right:6%" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5 17 12l-8.5 7.5" fill="none" stroke="#fff9ea" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span id="tipBuddy" class="fox"></span></span>Tap a lane</div>
         <div class="tip"><span class="tipPic"><img class="rock" src="/assets/crafted/run-rock-v2.webp" alt="" /><img class="cactus" src="/assets/crafted/run-cactus-v2.webp" alt="" /></span>Dodge</div>
-        <div class="tip"><span class="tipPic"><img class="coin" src="/assets/crafted/run-coin-v2.webp" alt="" /></span>Grab coins</div>
+        <div class="tip"><span class="tipPic"><img class="coin" src="/assets/crafted/run-coin-v2.webp" alt="" /></span>Grab stars</div>
       </div>
       <div id="startAct"><button class="btn" id="startGo" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>Let's run!</button></div>
     </div>
@@ -569,7 +569,7 @@
         // collide near player row
         if(step>0&&!falling.on && Math.abs(t.y-py)<40 && t.lane===Math.round(laneX)){
           if(t.t==="c"){ things.splice(i,1); coins++; $("coinN").textContent=coins; sfx("coin");
-            if(t.gold){ magnetUntil=now+6000; flash("COIN MAGNET!"); echoT=now; } continue; }
+            if(t.gold){ magnetUntil=now+6000; flash("STAR MAGNET!"); echoT=now; } continue; }
           if(now-hurtT<1200) continue; // brief mercy window
           things.splice(i,1); startFall(); continue;
         }
@@ -612,11 +612,14 @@
       playing=true; startClocks(); startStretch(0);
     }
     // What Echo says, true to the race: the things to dodge are a rock, a
-    // cactus, a cone and a log, a golden coin is the coin magnet, and there is
-    // no gold star. An iPhone plays nothing on a new page until a tap, so the
+    // cactus, a cone and a log, and the gold stars to grab (a big one is the
+    // star magnet). They were "coins" until 22 Oct 2026, but they are only the
+    // race's: a child who grabbed forty "coins" and found none in the Buddy
+    // Shop learned that coins don't mean anything. Real coins come from the
+    // daily chest and the Trophy Road only. An iPhone plays nothing on a new page until a tap, so the
     // tap is "Let's run!": Echo says the line while the card stays, and the
     // race starts the moment he stops.
-    var START_LINE="Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins!";
+    var START_LINE="Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold stars!";
     // Never a dead end, never a long silence. Echo has START_WAIT_MS to
     // begin: the voice service gets that long to answer from when the card
     // shows, and the race never waits longer than that after the tap. A line
