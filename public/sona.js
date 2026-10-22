@@ -5368,7 +5368,7 @@
       line: "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!" },
     { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery",
       title: "Breakfast at the Moonberry Bakery",
-      line: "Pour, stir, shape and bake breakfast buns for the bakery's morning visitors." },
+      line: "Baker Badger's new bakery opens today, and every tray is empty. Let's bake breakfast!" },
     { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor",
       title: "Tortoise's New Front Door",
       line: "Use a crane to finish a footbridge and help Tortoise move into his new house." },

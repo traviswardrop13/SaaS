@@ -296,6 +296,59 @@
         { art: "e04", ages: "both", buddy: null,
           line: "Five gold stars on our helper map! You and the little postboat did it!" }
       ]
+    },
+
+    // Day 6: Breakfast at the Moonberry Bakery.
+    bakery: {
+      wash: "#cc8b43",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly is here with a letter. Oops. That's a pinecone! What a prickly letter, Pelly." },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Baker Badger. His new bakery opens this morning, and he needs more paws!",
+                  little: "It's from Baker Badger. He needs our help at his bakery!" } },
+        // no buddy (on the cobbles just left of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear brought a very big basket!",
+                  little: "Everyone is hungry, but there are no buns yet. Rumble, rumble go their tummies!" } },
+        // no buddy (on the counter top just right of Echo, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Inside, every tray is empty. Badger is so excited about his new bakery, his paws won't stop wiggling!" },
+        // no buddy
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Wobble, wobble, poof! The flour goes everywhere. Where did Badger's stripes go?",
+                  little: "Poof! Flour everywhere. Where did Badger's stripes go?" } },
+        // no buddy
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "The recipe is all pictures. Pour to the line, stir, then shape round buns, curled buns and berry buns.",
+                  little: "The recipe is all pictures. Pour it, stir it, shape the buns!" } },
+        // no buddy (on the counter top just right of Echo, not placed)
+        { art: "s07", ages: "big", buddy: null,
+          line: "Sniff, sniff. Grandpa Bear's nose is squished on the window. Not yet, Grandpa Bear. We haven't even started!" },
+        // no buddy (on the counter top just right of the mixing bowl, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's mix the dough, shape the buns and bake them golden for the whole street. Ready?",
+                  little: "Let's bake breakfast for everyone. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Ta-da! Round buns, curled buns and berry buns, each in its own basket. Breakfast is ready!",
+                  little: "Ta-da! Breakfast is ready. Warm buns for everyone!" } },
+        // no buddy (on the counter top just right of Echo, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!" },
+        // no buddy (on the wooden floor just left of Echo, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly flies in for breakfast too. She tucks a bun in her pouch, and out pops another pinecone. Bonk!",
+                  little: "Pelly puts a bun in her pouch. Out pops another pinecone!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Six gold stars on our helper map! And Badger gave us the very last curled bun to take home." }
+      ]
     }
   };
 })(window);

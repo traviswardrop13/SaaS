@@ -507,6 +507,112 @@
           "prompt": "Beaver, full body, standing upright, facing forward, grinning: a chubby, cheerful honey-brown clay beaver with two big white front teeth, a round tummy, small round ears, little paws, a big flat dark-brown paddle tail with a criss-cross pattern showing beside him, and a little green-and-white checked neckerchief."
         }
       ]
+    },
+    {
+      "id": "bakery",
+      "light": "indoor",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. BADGER: Baker Badger, a friendly, round clay badger standing upright on two legs (a real badger, not a raccoon, no mask ring and no striped tail): a white face with one broad black stripe running back over each eye, a shiny black nose, small round white-tipped ears, a soft grey back, black arms and legs, a soft puffy white chef's cap, a muted teal shirt with a collar and its sleeves rolled up, and a long cream apron with a bib and two small wooden buttons; about twice Echo's height. MICE: three little grey clay mice with round pink ears, pink noses, little pink tails and small pink cheeks, all three the same size, no clothes; each about half Echo's height. GRANDPA BEAR: Grandpa Bear, a big cuddly brown clay bear with a round tummy, a soft white mustache, a mustard-yellow knitted cardigan with big wooden buttons over a cream shirt, and a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band); about three times Echo's height, the biggest character. The bakery in this story is the Moonberry Bakery, a small round clay bakery on a cobbled lane in the town: cream walls, a rounded honey-wood front door, a big front window with a round arched top and boxes of white daisies under it, a little blue-and-white striped awning, a small chimney, and a hanging sign that shows only a painted golden bun (no writing on it). Inside: a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars, a big sunny window with a round arched top, a teal cupboard, and at the back a big round clay oven with a small round door and a brass heat handle. The baking things in this story: a big round cream mixing bowl with a teal rim, a cream milk jug with two teal stripes, a little wooden cup of flour and a plain wooden spoon. The buns in this story are round buns (soft golden round buns with a cross cut into the top), curled buns (golden buns rolled into a spiral like a snail shell) and berry buns (golden buns with a round well in the middle full of blueberries).",
+      "who": {
+        "BADGER": {
+          "re": "Badger",
+          "label": "Baker Badger"
+        },
+        "MICE": {
+          "re": "\\b[Mm]ice\\b",
+          "label": "the three little mice"
+        },
+        "GRANDPA BEAR": {
+          "re": "Grandpa Bear",
+          "label": "Grandpa Bear"
+        }
+      },
+      "lineups": [
+        "bakery"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright, sunny early morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one big brown pinecone out of her beak pouch, holding it up in the tip of her bill as if it were a letter. Echo stands just right of the middle on the wide doorstep, laughing, both wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a black-and-white badger in a tall white chef's hat juggling lots of round buns at once, beside a little round bakery with an arched window and a smiling sun: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "day",
+          "picture": "A sunny early morning on a cobbled lane in the town. In the upper middle stands the Moonberry Bakery (as in the character list): its honey-wood front door still shut, and no smoke from its chimney yet. A short line of hungry neighbors waits at the door, all turned toward it: the three little mice at the front by the door, each holding a tiny empty basket, and behind them, right of the middle (well inside the picture, not at its edge), Grandpa Bear in his mustard cardigan, holding an enormous empty wicker basket that is much too big, with a hopeful smile and one paw on his round tummy. Echo stands on the cobbles in the lower middle, just left of the middle, looking at the line in surprise. No writing on any sign.",
+          "buddy": "on the cobbles just left of Echo: a patch of plain cobbles, nothing on it"
+        },
+        "s04": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard). The counter's flat wooden top runs straight across the lower part of the picture. Baker Badger stands behind the counter on the left of the middle, grinning with excitement, up on his tiptoes, both paws wiggling in the air with a few small curved motion lines beside them. On the left half of the counter, in front of him, lie three empty metal baking trays and three empty wicker baskets, not a single bun anywhere, and a big closed paper flour bag. Echo stands on the counter top just right of the middle, looking at the empty trays with wide eyes. The counter top to the right of Echo is bare.",
+          "buddy": "on the counter top just right of Echo: plain wooden counter, nothing on it"
+        },
+        "s05": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard). A giant soft white puff of flour has just burst out of an open paper flour bag on the counter. Baker Badger, in the middle of the picture behind the counter, is dusted white with flour from his ears to his apron, so his black stripes are hidden and his whole face is white: only his two blinking eyes and the shiny tip of his nose show. He is laughing, not upset. Soft flour drifts down like snowflakes and dusts the counter. Echo stands on the counter top on the right of the middle, with a little flour on his head feathers, giggling behind one wing. Funny, never messy or upsetting.",
+          "buddy": null
+        },
+        "s06": {
+          "picture": "A big sheet of cream paper pinned to the pale plaster wall of the bakery, filling the middle of the picture, with simple crayon drawings and no words at all, in four rows from top to bottom: at the top, a cup tipping flour and a jug tipping milk into a round mixing bowl that has a dashed line across its inside; next, a wooden spoon going round and round in the bowl, with a curly arrow; next, three buns side by side: a round bun with a cross on top, a spiral bun like a snail shell, and a bun with blueberries in its middle; at the bottom, a round oven with golden buns inside. No letters, no numbers. Two small floury paw prints on the paper's bottom corner. Nothing stands in front of the paper: no characters anywhere in the picture. Keep the paper in the top 85% of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s07": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard), looking toward the big sunny window with the round arched top. Outside, Grandpa Bear has pressed his big brown face right up against the window glass, his nose squished flat and round on it, his eyes wide and hopeful, both paws on the glass. Below his chin, the three little mice stand on the outside windowsill, peering in too, their noses on the glass. Inside, the counter still holds only the three empty trays. Echo stands on the honey-wood counter top in the lower middle, turned three-quarters toward the window, giggling behind one wing. The counter top to the right of Echo is bare.",
+          "buddy": "on the counter top just right of Echo: plain wooden counter, nothing on it"
+        },
+        "s08": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard). The honey-wood counter's flat top runs straight across the lower part of the picture. In the middle of the counter top stands the big round cream mixing bowl with a teal rim, a wooden spoon in it; just behind the bowl, toward the back of the counter, wait a little wooden cup of flour, the cream milk jug with two teal stripes and a little bowl of blueberries, all ready. Echo stands on the counter top just left of the bowl, wings out, ready and smiling, facing the viewer. Behind the counter, in the upper left of the middle, Baker Badger, brushed clean now with only a little white flour left on his nose, gives a big paws-up and smiles. At the back on the right, the big round clay oven waits with its small round door open, cold and dark inside. The front of the counter top just right of the bowl is bare.",
+          "buddy": "on the counter top just right of the mixing bowl: plain wooden counter, nothing on it"
+        },
+        "e01": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard), warm and golden. Across the honey-wood counter stand three wicker baskets lined with blue-and-white cloth, side by side, each full to the top with warm golden buns of one kind: the left basket only round buns with a cross cut on top, the middle one only curled buns rolled into a spiral like a snail shell, the right one only berry buns with a round well of blueberries in the middle. Behind them, a wooden cooling rack holds three empty baking trays, and the big round clay oven at the back right glows warmly, its little door open, a soft curl of steam rising. No characters in this picture: Echo is not in this picture, and nobody else either.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "Morning inside the Moonberry Bakery (a long honey-wood counter, pale cream plaster walls, high wooden shelves with teal jars and little potted plants, a big sunny window with a round arched top and a jug of white daisies on its sill, and a teal cupboard). The rounded honey-wood front door in the upper right is wide open and sunlight pours in. Just inside the door, right of the middle, Grandpa Bear in his mustard cardigan hugs his enormous wicker basket, now piled high with round, curled and berry buns, his eyes shut in delight, a smudge of blueberry on his mustache. The three little mice sit on the rim of his basket, each hugging one golden bun. Baker Badger stands behind the counter on the left of the middle, holding out one curled bun on a plate, proud and smiling, a little flour still on his nose. The counter's flat top runs across the lower part of the picture, with the three baskets of round, curled and berry buns on its left end. Echo stands on the counter top just left of the middle, waving at the friends. The counter top just right of Echo is bare.",
+          "buddy": "on the counter top just right of Echo: plain wooden counter, nothing on it"
+        },
+        "e03": {
+          "picture": "Inside the Moonberry Bakery, beside its open rounded honey-wood front door, a sunny morning outside. Pelly the pelican (drawn exactly like the Pelly in the attached earlier picture; this place is the bakery, not Echo's cottage) stands in the doorway just right of the middle and tucks one golden curled bun into her big peach beak pouch with one wing, while one big brown pinecone pops out of the pouch and tumbles toward the floor; Pelly blinks at it in surprise. Echo stands on the wooden floor just left of the middle, laughing, both wings up.",
+          "buddy": "on the wooden floor just left of Echo: plain floor, nothing on it",
+          "also": [
+            "file:public/assets/adventure/windup/s01.webp"
+          ]
+        },
+        "e04": {
+          "light": "indoor",
+          "picture": "Inside Echo's cozy round cottage, a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the stone wall, filling the upper middle of the picture, with no writing anywhere on it. A soft white puffy cloud has just drifted off the map to one side, uncovering a new place in the little town: a tiny round bakery with a round-topped window, a blue-and-white striped awning and a curl of warm steam from its chimney. The gold stars already on the map stay exactly as in the attached picture. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny bakery with one wing, beaming. A small plate with one golden curled bun sits at the far left end of the bench.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. Inside a warm honey-wood bakery on a sunny morning, Echo stands on the counter beside a big round cream mixing bowl with a teal rim, holding a wooden spoon with both wings, ready to stir, a small puff of flour floating up from the bowl. Right of the middle, behind the counter, Baker Badger in his white chef's cap and cream apron laughs, his face dusted white with flour, holding up an empty baking tray. Empty wicker baskets on the counter; a sunny window with a round arched top and shelves with teal jars behind. Echo, the bowl and Baker Badger are all in the middle band of the picture (their tops below 25% from the top and their bottoms above 75% from the top), Echo left of the middle and Baker Badger right of it. Only Echo and Baker Badger appear: no other characters, and no buns anywhere yet.",
+      "chars": [
+        {
+          "key": "badger",
+          "h": 2.0,
+          "prompt": "Baker Badger, full body, standing, facing forward, smiling: Baker Badger, a friendly, round clay badger standing upright on two legs (a real badger, not a raccoon, no mask ring and no striped tail): a white face with one broad black stripe running back over each eye, a shiny black nose, small round white-tipped ears, a soft grey back, black arms and legs, a soft puffy white chef's cap, a muted teal shirt with a collar and its sleeves rolled up, and a long cream apron with a bib and two small wooden buttons; little black paws and feet."
+        },
+        {
+          "key": "mice",
+          "h": 0.62,
+          "prompt": "Three little grey clay mice standing side by side, full body, facing forward and smiling: round pink ears, pink noses, little pink tails, small pink cheeks; all three the same size."
+        },
+        {
+          "key": "grandpa",
+          "h": 3.0,
+          "prompt": "Grandpa Bear, full body, standing, facing forward, smiling: Grandpa Bear, a big cuddly brown clay bear with a round tummy, a soft white mustache, a mustard-yellow knitted cardigan with big wooden buttons over a cream shirt, and a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band)."
+        }
+      ]
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",
