@@ -2190,6 +2190,8 @@
   // whose mic listens and how loud it hears; on another family's phone it
   // would change what counts as heard. It is refused by importData too.
   const NO_EXPORT = ["sona.setupasks.v1", "sona.obdraft.v1", "sona.board.v1", "sona.boardcache.v1", "sona.boardpend.v1", "sona.boardleave.v1", "sona.boardask.v1", "sona.nativemic",
+    // the trial reminder (NOTIFY1): this phone's iOS answer and what iOS holds for it
+    "sona.notify.v1",
     // what this phone showed (the offer from Home, 13 Oct 2026), like freever
     "sona.offerseen.v1",
     // the weekly report's device id and last send (REPORT1): this phone's own
@@ -2252,6 +2254,9 @@
     // the native mic's measurement setting (NATIVE MIC): true of one test
     // phone only, and it changes what counts as heard, so it never moves to another
     "sona.nativemic",
+    // the trial reminder (NOTIFY1): a backup never brings another phone's
+    // iOS answer, or a reminder iOS does not hold here
+    "sona.notify.v1",
     // the offer from Home was shown on THIS phone (13 Oct 2026): a backup
     // never brings the mark, so it can never take that one showing away
     "sona.offerseen.v1",
@@ -8060,7 +8065,7 @@
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}
     if (!p) return Promise.reject(_buyError("no-plan"));
-    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); return { ok: true }; }, (e) => {
+    return _soon(() => iapPurchase(plan.kind, p)).then((r) => { _tellPlan(r && r.period, plan); _trialRemindBought(r && r.period, plan); return { ok: true }; }, (e) => {
       if (e && !e.cancelled && String(e.code) === "6") {
         // "already purchased": the sale is Apple's news that they own it
         return _soon(() => iapRestore()).then((active) => {
@@ -8094,6 +8099,223 @@
       _iapOwned(false).then(end, end);
     });
   }
+
+  // ── NOTIFY1: one reminder the day before the free trial ends ──────────────
+  // Travis, 22 Oct 2026: "can we add push notifications and have that be a
+  // step in the onboarding where we ask them to turn it on to notify them a
+  // day before their trial ends". It is a LOCAL notification: this phone asks
+  // iOS to show it at a moment, through Sona's own plugin (SonaSpeech's
+  // notifyStatus, notifyAsk, notifySchedule, notifyCancel, iOS 1.0.9 and
+  // later). No server sends it and nothing leaves the phone for it: no device
+  // token, no address, no account, no event. The words are fixed here and
+  // name nobody (never a child's name, never a price); they are Travis's and
+  // Rachel's to change.
+  //   - Asked once, by setup's reminder screen (notifyAsk: iOS's own Allow
+  //     box), only while iOS has never been asked (notifyState() "prompt").
+  //   - Set only once a free trial has really started: right after a trial
+  //     purchase (buyPlan), at the trial's end as RevenueCat reports it minus
+  //     a day, and only when that moment is more than an hour away.
+  //   - Checked again once a day on an app page (trialReminderSync): set
+  //     afresh while the trial is on (so a longer or moved trial follows), and
+  //     taken back once no free trial is on any more (it became a paid plan,
+  //     ended, or the parent already cancelled it: then the reminder has
+  //     nothing left to tell).
+  // Optional like every new native call: a build without the four methods, a
+  // browser, or a bridge that throws or hangs changes nothing anywhere, and
+  // nothing waits on it but the reminder screen's own tap. sona.notify.v1
+  // ({ state, asked, arm, end, sync }) is true of this phone's iOS setting
+  // and of what iOS holds for it, so it is on NO_EXPORT and NO_IMPORT.
+  const NOTIFYKEY = "sona.notify.v1";
+  const TRIAL_REMIND_ID = "sona-trial-end";
+  const TRIAL_REMIND = { title: "Sona", body: "Your free trial ends tomorrow." };   // Travis's and Rachel's words to change; never a name
+  const NOTIFY_DAY_MS = 24 * 60 * 60 * 1000;
+  const TRIAL_REMIND_LEAD_MS = NOTIFY_DAY_MS;         // the day before
+  const TRIAL_REMIND_MIN_MS = 60 * 60 * 1000;         // a reminder less than an hour away is not set
+  const NOTIFY_SYNC_MS = NOTIFY_DAY_MS;               // trialReminderSync asks the store at most once a day
+  const NOTIFY_ASK_MS = 60000;                        // a bridge that never answers iOS's box does not hold setup for good
+  const NOTIFY_STATUS_MS = 3000, NOTIFY_INFO_MS = 8000;
+  function _notifyPlugin() {
+    const P = speechPlugin();
+    return (P && typeof P.notifyStatus === "function" && typeof P.notifyAsk === "function"
+      && typeof P.notifySchedule === "function" && typeof P.notifyCancel === "function") ? P : null;
+  }
+  // True only inside an app build whose plugin carries all four methods.
+  function notifyAvailable() { try { return !!_notifyPlugin(); } catch (e) { return false; } }
+  function _notifyLoad() { try { const v = JSON.parse(localStorage.getItem(NOTIFYKEY) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; } }
+  function _notifySave(patch) {
+    try {
+      const v = _notifyLoad(), keep = {};
+      Object.keys(patch).forEach((k) => { if (patch[k] == null) delete v[k]; else v[k] = patch[k]; });
+      ["state", "asked", "arm", "end", "sync"].forEach((k) => { if (v[k] != null) keep[k] = v[k]; });
+      localStorage.setItem(NOTIFYKEY, JSON.stringify(keep));
+    } catch (e) {}
+  }
+  function _notifyWithin(p, ms, dflt) {
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(dflt), ms);
+      p.then((v) => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(dflt); });
+    });
+  }
+  // iOS's word, in this file's: "provisional" (quiet delivery, which nothing
+  // in Sona asks for) is still "prompt", because a real ask still shows the box
+  function _notifyWord(raw) { return raw === "granted" ? "granted" : raw === "denied" ? "denied" : (raw === "prompt" || raw === "provisional") ? "prompt" : ""; }
+  let _notifyBusy = null, _notifyLooked = false;
+  function _notifyRefresh() {          // → Promise<state>, never rejects
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    if (_notifyBusy) return _notifyBusy;
+    _notifyLooked = true;
+    _notifyBusy = _notifyWithin(_soon(() => P.notifyStatus()), NOTIFY_STATUS_MS, null).then((r) => {
+      _notifyBusy = null;
+      const st = _notifyWord(r && r.status);
+      if (st) _notifySave({ state: st });
+      return notifyState();
+    });
+    return _notifyBusy;
+  }
+  // "granted" | "denied" | "prompt" | "unavailable", from what iOS last said
+  // (read again in the background on a page's first ask). A phone that never
+  // told this page anything is "prompt": a fresh install, which is the only
+  // way an app has no notification answer yet.
+  function notifyState() {
+    if (!notifyAvailable()) return "unavailable";
+    if (!_notifyLooked) _notifyRefresh();
+    const st = _notifyLoad().state;
+    return st === "granted" || st === "denied" ? st : "prompt";
+  }
+  // iOS's own Allow box (once: an answered setting resolves at once). → a
+  // Promise of "granted" | "denied" | "unavailable"; never rejects. A bridge
+  // that refuses is asked what iOS now says; one that never answers lets the
+  // screen go on after NOTIFY_ASK_MS, and its late answer is still kept.
+  function notifyAsk() {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve("unavailable");
+    _notifySave({ asked: Date.now() });
+    const ask = _soon(() => P.notifyAsk()).then((r) => {
+      const st = r && r.granted === true ? "granted" : "denied";
+      _notifySave({ state: st });
+      return st;
+    }, () => _notifyRefresh().then((st) => st === "granted" || st === "denied" ? st : "unavailable"));
+    return _notifyWithin(ask, NOTIFY_ASK_MS, "unavailable");
+  }
+  // Will Sona really remind this family? With no plan: notifications are
+  // allowed on a build that can set one. With a plan (a price screen's
+  // picked row): also, that row is a free trial whose reminder can be set,
+  // its end more than a day and an hour away.
+  function trialReminderOn(plan) {
+    try {
+      if (!notifyAvailable() || notifyState() !== "granted") return false;
+      if (plan === undefined) return true;
+      if (!plan || plan.state !== "free") return false;
+      const d = planBillDate(plan);
+      return !!d && d.getTime() - TRIAL_REMIND_LEAD_MS > Date.now() + TRIAL_REMIND_MIN_MS;
+    } catch (e) { return false; }
+  }
+  // Set the reminder for a trial that ends at endMs: a day before, if that is
+  // more than an hour away. → Promise<boolean> (set), never rejects. Arming
+  // again replaces the one iOS holds (one id), so it is never sent twice.
+  function trialReminderArm(endMs) {
+    const P = _notifyPlugin(), end = Number(endMs), now = Date.now();
+    if (!P || !isFinite(end) || !(end > 0) || !trialReminderOn()) return Promise.resolve(false);
+    const at = Math.round(end - TRIAL_REMIND_LEAD_MS);
+    if (!(at > now + TRIAL_REMIND_MIN_MS) || at > now + 400 * NOTIFY_DAY_MS) return Promise.resolve(false);   // the plugin refuses past 400 days too
+    return _notifyWithin(_soon(() => P.notifySchedule({ id: TRIAL_REMIND_ID, at: at, title: TRIAL_REMIND.title, body: TRIAL_REMIND.body }))
+      .then((r) => !(r && r.scheduled === false)), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok) _notifySave({ arm: at, end: Math.round(end) }); return ok; });
+  }
+  function _trialReminderCancel() {
+    const P = _notifyPlugin();
+    if (!P) return Promise.resolve(false);
+    return _notifyWithin(_soon(() => P.notifyCancel({ id: TRIAL_REMIND_ID })).then(() => true), NOTIFY_STATUS_MS, false)
+      .then((ok) => { if (ok) _notifySave({ arm: null, end: null }); return ok; });
+  }
+  // What RevenueCat says of the free trial, from the plain fields of its own
+  // entitlement record (periodType, willRenew, expirationDateMillis or
+  // expirationDate): { on, end } a free trial that will renew (end 0 when it
+  // gives none); { off } no trial: no Premium, a paid period (paid), or a
+  // trial the parent already cancelled (cancelled); { unsure } Premium whose
+  // period it does not name. null: the store did not answer.
+  function _trialOf(info) {
+    try {
+      const c = info && (info.customerInfo || info);
+      const f = c && c.entitlements && c.entitlements.active && c.entitlements.active[IAP_ENTITLEMENT];
+      if (!f) return { off: true };
+      const period = String(f.periodType || "").toUpperCase();
+      if (!period) return { unsure: true };
+      if (period !== "TRIAL") return { off: true, paid: true };
+      if (f.willRenew === false) return { off: true, cancelled: true };
+      let end = Number(f.expirationDateMillis);
+      if (!(end > 0)) end = Date.parse(String(f.expirationDate || ""));
+      return { on: true, end: end > 0 ? end : 0 };
+    } catch (e) { return null; }
+  }
+  function _trialNow() {               // → Promise<_trialOf answer, or null when the store did not answer>
+    if (!iapAvailable()) return Promise.resolve(null);
+    return _notifyWithin(iapConfigure().then((P) => P.getCustomerInfo()).then(_trialOf), NOTIFY_INFO_MS, null);
+  }
+  // Once a day on an app page (forced: now). → Promise of "armed", "near"
+  // (a trial whose reminder moment has gone), "kept" (a trial with no end
+  // given, or Premium whose period RevenueCat does not name: what is set
+  // stays), "cancelled", "off" (notifications not allowed: the store is not
+  // asked), "later" (asked today already), "error" (no answer: asked again on
+  // the next page) or "unavailable".
+  let _notifySyncP = null;
+  function trialReminderSync(force) {
+    if (!notifyAvailable() || !iapAvailable()) return Promise.resolve("unavailable");
+    const last = Number(_notifyLoad().sync) || 0, now = Date.now();
+    if (!force && last > 0 && last <= now && now - last < NOTIFY_SYNC_MS) return Promise.resolve("later");
+    if (_notifySyncP) return _notifySyncP;
+    _notifySyncP = _notifyRefresh().then((st) => {
+      if (st !== "granted") return "off";
+      return _trialNow().then((t) => {
+        if (!t) return "error";
+        _notifySave({ sync: Date.now() });
+        if (t.off) return _trialReminderCancel().then(() => "cancelled");
+        if (!t.on || !t.end) return "kept";
+        return trialReminderArm(t.end).then((ok) => {
+          if (ok) return "armed";
+          // too late to remind for this end. One set for an end more than an
+          // hour away from it (a trial that moved) would speak of the wrong
+          // day, so it goes; one set at purchase from the store's own free
+          // time (seconds off RevenueCat's) stays, to be shown as planned.
+          const was = Number(_notifyLoad().end) || 0;
+          if (was && Math.abs(was - t.end) > TRIAL_REMIND_MIN_MS) return _trialReminderCancel().then(() => "near");
+          return "near";
+        });
+      });
+    }).catch(() => "error").then((r) => { _notifySyncP = null; return r; });
+    return _notifySyncP;
+  }
+  // The one hook in buyPlan: a purchase that started a free trial, decided
+  // the way the list's plan post decides "trial" (_tellPlan: Apple's period
+  // first, else what the card sold). The end is RevenueCat's; when it gives
+  // none, the store's own free time from now (planBillDate). Never waited
+  // on, never throws.
+  function _trialRemindBought(period, plan) {
+    try {
+      let trial = period === "TRIAL" ? true : (period === "NORMAL" || period === "INTRO" || period === "PREPAID") ? false : null;
+      if (trial === null) trial = !!(plan && plan.state === "free");
+      if (!trial || !trialReminderOn()) return;
+      const guess = planBillDate(plan), g = guess ? guess.getTime() : 0;
+      // RevenueCat's end when it gives one; nothing when it says this is a
+      // paid period or an already-cancelled trial; otherwise (no answer, no
+      // end, a period it does not name, or an answer that has not caught up
+      // with the purchase) the store's own free time from now
+      _trialNow().then((t) => (t && t.on && t.end) ? t.end : (t && (t.paid || t.cancelled)) ? 0 : g).then((end) => { if (end) trialReminderArm(end); });
+    } catch (e) {}
+  }
+  // On an app page that can set one: iOS's answer is read as the page opens
+  // (setup decides whether to ask from it), and the trial is checked a moment
+  // later, and again whenever the app comes back to the front (a parent who
+  // changed the setting in iOS Settings, a trial that ended while Sona sat in
+  // the background); the store is asked at most once a day.
+  try {
+    if (notifyAvailable()) {
+      _notifyRefresh();
+      setTimeout(() => { trialReminderSync(false); }, 1500);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) { _notifyRefresh(); trialReminderSync(false); } });
+    }
+  } catch (e) {}
 
   // PLAN-WORDS-BEGIN
   // EVERY SENTENCE APPLE'S CARD MAY SHOW LIVES BETWEEN THESE TWO MARKERS.
@@ -8466,5 +8688,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);
