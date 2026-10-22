@@ -613,6 +613,210 @@
           "prompt": "Grandpa Bear, full body, standing, facing forward, smiling: Grandpa Bear, a big cuddly brown clay bear with a round tummy, a soft white mustache, a mustard-yellow knitted cardigan with big wooden buttons over a cream shirt, and a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band)."
         }
       ]
+    },
+    {
+      "id": "kite",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GOAT: Goat, a small, friendly cream-white clay goat who always stands upright on his two back hooves, with soft floppy ears, two small rounded tan horns, a little tufty cream beard, kind eyes, small grey hooves and a plain sage-green waistcoat with two little wooden buttons; no hat; about one and a half times Echo's height. LAMB: Lamb, a small, round, fluffy clay lamb (a girl) who stands upright on her two back hooves, with a curly snow-white woolly coat, a soft black face with big friendly eyes and pink cheeks, black ears that stick out sideways, little black hooves, a lemon-yellow painter's smock with a few dabs of paint on it and a little round blue beret; about as tall as Echo; she is not a goat: no horns, no beard, no waistcoat. BEETLE: a tiny, round, shiny red clay beetle (a girl) with big black spots on her back, a small black head with two short curly feelers, big friendly glossy eyes, pink cheeks and six tiny black legs; about half Echo's height; she looks just like the beetle painted on the beetle picture. THE KITE: Goat's giant patchwork kite, a big diamond of pale cream woven cloth on two thin crossed honey-wood sticks, about as tall as Pelly, with four square spaces in its middle, two by two, marked only by faint pale lines, and little round eyelet holes along its two lower edges. Its four cloth pictures are four soft squares of cream cloth with frayed edges, each with one painted picture: a red-and-yellow flower with two green leaves, a little brown boat with a coral sail on blue ripples, a round red beetle with black spots, and a bright blue crescent moon with no face. Until it is finished the kite is plain, with no pictures sewn on it and no tail. When it is finished the four pictures are sewn on, two by two (the flower top left, the boat top right, the beetle bottom left, the moon bottom right), with neat little stitches, and a tail of four bright ribbons, red, golden yellow, blue and green, hangs from its bottom point, with small cloth bows tied along it. The hill in this story is Breezy Hill, a wide, soft green grassy hilltop with a few daisies and clover, one big round grey rock, a big open blue sky with a few puffy white clouds, and gentle rolling green hills far below.",
+      "who": {
+        "GOAT": {
+          "re": "\\bGoat\\b",
+          "label": "Goat"
+        },
+        "LAMB": {
+          "re": "\\bLamb\\b",
+          "label": "Lamb"
+        },
+        "BEETLE": {
+          "re": "\\bBeetle\\b",
+          "label": "Beetle, the real little red beetle character (a beetle painted on a cloth picture may still show)"
+        },
+        "THE KITE": {
+          "re": "THE KITE|\\b(giant|patchwork) kite\\b",
+          "label": "Goat's giant patchwork kite"
+        }
+      },
+      "lineups": [
+        "kite"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright, breezy morning under a clear blue sky at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture), with not one rain cloud anywhere. Pelly the pelican stands on the left of the door and pulls a closed sunny-yellow umbrella with white polka dots out of her beak pouch by its curved wooden handle, blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a bright, breezy morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little cream goat on a green hill beside a big diamond-shaped kite with four little square pictures on it and a long wiggly ribbon tail: only crayon lines, no numbers, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "The grassy top of Breezy Hill on a bright, breezy morning: soft green grass fills the lower half of the picture, with a big open blue sky above and rolling green hills far below. In the middle of the picture, a little way back, Goat's giant kite (THE KITE) stands leaning upright against the big round grey rock, still plain: pale cream cloth on its two crossed wooden sticks, with four empty square spaces in its middle, no pictures sewn on and no tail. At the foot of the rock sits a round wicker basket holding the four soft square cloth pictures, the flower and the boat pictures peeking up over its rim. Goat stands just right of the kite, waving hello with one hoof, his ears blowing in the breeze. Echo stands on the grass in the lower middle, just left of the middle, looking up at the kite, beak open in amazement.",
+          "buddy": "on the grass just right of Echo, nearer the front than Goat and apart from him: a patch of plain grass, nothing on it"
+        },
+        "s04": {
+          "picture": "The grassy top of Breezy Hill on a bright, breezy morning: soft green grass fills the lower half of the picture, with a big open blue sky above and rolling green hills far below. In the middle of the picture, a little way back, three soft square cloth pictures stand propped up side by side against the big round grey rock, like paintings at a show: a little brown boat with a coral sail on blue ripples, a round red beetle with black spots, and a bright blue crescent moon. Beetle stands on the grass right in front of the beetle picture, posing proudly beside it, and the painting looks exactly like her. On the left of the middle, Lamb stands and proudly holds up the fourth cloth picture, the red-and-yellow flower, with both hooves, a dab of red paint on her nose. Echo stands on the grass in the lower middle, just left of the middle, laughing with one wing on his tummy.",
+          "buddy": "on the grass just right of Echo, nearer the front than the rock: a patch of plain grass, nothing on it"
+        },
+        "s05": {
+          "picture": "The grassy top of Breezy Hill on a bright, very breezy morning: soft green grass fills the lower half of the picture, blue sky above. Goat's giant kite (THE KITE) leans upright against the big round grey rock in the middle of the picture, still plain, with no pictures sewn on and no tail. A gust of wind has lifted the four soft square cloth pictures (the flower, the boat, the beetle and the blue moon) that were laid on the kite, and they flip and flutter in the air just above it like big leaves. Goat, on the left of the kite, reaches up with both hooves to catch one, his ears flying. Echo, on the right of the kite, hops up with his wings out to catch another, giggling. A round wicker basket of rolled-up bright ribbons sits on the grass in front of the rock. Funny and breezy, never worrying.",
+          "buddy": null
+        },
+        "s06": {
+          "picture": "On the grassy top of Breezy Hill on a bright, breezy morning: soft green grass fills the lower half of the picture, blue sky above. Goat sits on the grass in the middle of the picture, a little way back, wrapped round and round in loose cream sewing thread like a funny parcel, only his face, horns, beard and one hoof poking out, a big, chunky, blunt wooden sewing needle dangling on the thread from that hoof, and an empty wooden spool lying on the grass beside him. He has a sheepish, giggly smile. Behind him, Goat's giant kite (THE KITE) leans against the big round grey rock, still plain, with the flower cloth picture resting on it, not sewn on. Echo stands on the grass in the lower left of the middle, laughing behind one wing.",
+          "buddy": "on the grass just right of Echo, nearer the front than Goat and apart from him: a patch of plain grass, nothing on it"
+        },
+        "s07": {
+          "picture": "A big sheet of cream paper clipped to a wooden painting easel that stands on the grass of Breezy Hill, filling the middle of the picture, with two simple crayon drawings stacked from top to bottom and no words at all: at the top, a diamond kite tipping over sideways, with all the little bows on its tail bunched up on one side; at the bottom, the same diamond kite flying straight and steady, with the little bows on its tail spread out evenly, next to a big gold star. No letters, no numbers, no arrows. Nothing stands in front of the paper: no characters anywhere in the picture. Keep the paper in the top 85% of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "The grassy top of Breezy Hill on a bright, breezy morning: soft green grass fills the lower half of the picture, with a big open blue sky above and rolling green hills far below. In the middle of the picture, a little way back, Goat's giant kite (THE KITE) leans upright against the big round grey rock, plain and ready, no pictures sewn on yet and no tail. On the grass on the left, in front of the rock, sits a round wicker basket holding the four soft square cloth pictures, a coil of bright ribbons, and a big, chunky, blunt wooden sewing needle on a spool of cream thread. Echo stands on the grass just left of the middle, right of the basket, wings out, facing the viewer, ready to help. Goat, untangled now, stands on the right of the kite and gives a big hoof thumbs-up.",
+          "buddy": "on the grass just right of Echo, nearer the front than Goat and apart from him: a patch of plain grass, nothing on it"
+        },
+        "e01": {
+          "picture": "The finished giant kite (THE KITE) flies high and steady in the bright blue sky in the upper middle of the picture: its four cloth pictures sewn on two by two with neat little stitches (the flower top left, the boat top right, the beetle bottom left, the blue moon bottom right), and its tail of red, golden yellow, blue and green ribbons with little cloth bows hanging down straight and even. A thin kite string runs down from it to a wooden spool that Goat holds in both hooves on the grassy hilltop, on the left of the middle, smiling up at it. Echo stands on the grass in the lower middle, cheering, wings up. Soft rolling green hills far below.",
+          "buddy": "on the grass just right of Echo: a patch of plain grass, nothing on it"
+        },
+        "e02": {
+          "picture": "The grassy top of Breezy Hill on a bright, breezy day: soft green grass fills the lower third of the picture, blue sky above. High in the blue sky in the upper middle flies the finished giant kite (THE KITE), big enough that its four sewn pictures (the flower, the boat, the beetle and the blue moon) and its ribbon tail are easy to see, its thin string running down out of the picture at the left edge. On the grass below, on the left of the middle, Lamb waves up at the flower picture on the kite with one hoof, beaming. Beside her, Beetle sits on top of the big round grey rock and waves up at the beetle picture with two of her little legs, giggling. Echo stands on the grass in the lower middle, laughing.",
+          "buddy": "on the grass just right of Echo, apart from the rock: a patch of plain grass, nothing on it"
+        },
+        "e03": {
+          "picture": "The grassy top of Breezy Hill on a bright, breezy day: soft green grass fills the lower third of the picture, blue sky above. High in the sky in the upper middle of the picture, Pelly the pelican floats up into the blue sky, holding the curved handle of her open sunny-yellow umbrella with white polka dots in one wing, her orange feet dangling, delighted and a little surprised. Just right of her flies the finished giant kite (THE KITE) with its four sewn pictures and its ribbon tail. Its thin string runs down to a wooden spool that Goat holds on the grass on the left of the middle, laughing. Echo stands on the grass in the lower middle, laughing with both wings on his tummy.",
+          "buddy": "on the grass just right of Echo, far below Pelly and the kite: a patch of plain grass, nothing on it"
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it, and with its earlier gold stars still on it, all on other places. Near one edge of the map, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a little round green hill with a few tiny daisies, and a tiny diamond kite with a ribbon tail flying above it. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little green hill with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On the grassy top of a hill on a bright, breezy day under a big blue sky, Goat's giant kite (THE KITE) leans upright against a big round grey rock, still plain: pale cream cloth on two crossed wooden sticks, with four empty square spaces in its middle and no tail. Its four soft square cloth pictures (a red-and-yellow flower, a little brown boat with a coral sail, a round red beetle with black spots and a bright blue crescent moon) flip and flutter up in the breeze beside it. Echo stands on the grass left of the middle, wings out, reaching up to catch the flower picture, delighted. Goat stands right of the middle, holding a big chunky wooden sewing needle and a spool of cream thread, smiling hopefully. Bright and cheerful. Echo, the kite, the cloth pictures and Goat are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo left of the middle and Goat right of it. Only Echo and Goat appear: no other characters.",
+      "chars": [
+        {
+          "key": "goat",
+          "h": 1.5,
+          "prompt": "Goat, full body, standing upright on his two back hooves, facing forward, smiling: a small, friendly cream-white clay goat with soft floppy ears, two small rounded tan horns, a little tufty cream beard, kind eyes, small grey hooves and a plain sage-green waistcoat with two little wooden buttons; one front hoof raised in a wave."
+        },
+        {
+          "key": "lamb",
+          "h": 0.95,
+          "prompt": "Lamb, full body, standing upright on her two back hooves, facing forward, smiling: a small, round, fluffy clay lamb (a girl) with a curly snow-white woolly coat, a soft black face with big friendly eyes and pink cheeks, black ears that stick out sideways, little black hooves, a lemon-yellow painter's smock with a few dabs of paint on it and a little round blue beret; no horns, no beard."
+        },
+        {
+          "key": "beetle",
+          "h": 0.45,
+          "prompt": "Beetle, full body, standing on her six tiny legs, three-quarter view, smiling: a tiny, round, shiny red clay beetle (a girl) with big black spots on her back, a small black head with two short curly feelers, big friendly glossy eyes, pink cheeks and six tiny black legs."
+        }
+      ]
+    },
+    {
+      "id": "rooftops",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GARDENER BIRD: Gardener Bird, a small, plump, friendly clay garden bird like a robin, a different bird from Echo (not blue, and not a round ball like Echo: she has a clear head, a neck and a long tail): a soft warm brown head and back, muted sage-teal wings, a cream belly with a little warm rust-orange patch on her chest, a short, neat, dark grey beak, kind dark eyes, a rounded brown tail and thin orange legs; no hat, no clothes; she carries one small teal tin watering can with a round brass sprinkler head; about one and a half times Echo's height. THE SPRINGBOARD: the seed springboard, a little wooden garden toy for sending seed pods up to the rooftops (not a weapon: no bow, no string, no arrows): a low honey-wood stand, a gently curved wooden arm with a small round wooden cup at its tip, just big enough for one seed pod, and a coiled teal spring with a round wooden pull-handle at its back; a little taller than Echo. The seed pods in this story are plump, smooth, cream-colored, egg-shaped pods, each about half as tall as Echo, each with a little green leaf mark on its side; the climbing seed pods have a curly green swirl mark instead. Gardener Bird's seed cart is a small honey-wood garden cart with two round wooden wheels and a long wooden handle, about twice as wide as Echo. The town in this story is a sunny little hilltop town of rounded clay houses with cream, peach and lavender walls, little blue arched doors and windows and terracotta tiled edges, each house with a broad, flat rooftop terrace at a different height, stepping up the hill from low on the left to high on the right, joined by narrow stone stairs only as wide as Echo; a cobbled lane runs along the foot of the town. On every rooftop sits one terracotta planter of fresh dark soil. One planter is tucked under a little slanted tiled roof, with a springy fabric awning of exactly three broad stripes, cream, rust, cream, sticking out from the wall below it on two thin wooden poles. On the highest roof stands the old rooftop arch, a tall curved wooden garden arch of thin crossed slats with a wide planter at its foot.",
+      "who": {
+        "GARDENER BIRD": {
+          "re": "Gardener Bird",
+          "label": "Gardener Bird"
+        },
+        "THE SPRINGBOARD": {
+          "re": "[Ss]pringboard",
+          "label": "the seed springboard"
+        }
+      },
+      "lineups": [
+        "rooftops"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a round, golden, fluffy pancake out of her beak pouch, a little pat of butter on top, holding it up like a letter and blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of little houses with flat rooftops, an empty flowerpot on every roof, a little brown bird holding a watering can, and a small cart full of seeds at the bottom: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "Looking up at the little hilltop town from the cobbled lane at its foot on a sunny morning: rounded clay houses with cream, peach and lavender walls step up the hill, from a low roof on the left to the highest roof in the upper right of the middle, joined by narrow stone stairs. On every flat rooftop sits one terracotta planter full of fresh dark soil, with nothing growing in it at all. On the highest roof stands the old wooden arch, bare, with no leaves or flowers on it. Echo stands on the cobbled lane in the lower middle, just left of the middle, looking up at the empty planters with a puzzled face, one wing on his cheek. The cobbled lane runs across the lower third of the picture.",
+          "buddy": "on the cobbled lane just right of Echo: plain cobbles, nothing on it"
+        },
+        "s04": {
+          "picture": "At the foot of the town on a sunny morning: a narrow stone staircase, only as wide as Echo, climbs from just left of the middle of the picture up between a cream house and a peach house toward the rooftops. Gardener Bird's seed cart, heaped with cream seed pods, sits just left of the middle with its front wheels bumped against the bottom step, far too wide to fit between the two walls. Gardener Bird pushes the cart's long handle from the left with both wings, cheeks puffed out, a funny determined face, her teal watering can hanging from the handle; silly, not worried. Echo stands on the cobbles just right of the middle, beside the bottom step, giggling behind one wing. The cobbled lane runs across the lower third of the picture.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "s05": {
+          "picture": "On the cobbled lane at the foot of the narrow stone stairs on a sunny morning, Gardener Bird's seed cart, heaped with seed pods, parked at the bottom step behind. Gardener Bird stands left of the middle, facing right, happily tipping her little teal watering can with a big proud smile, sprinkling a gentle shower of water drops over the bottom stair, the cart's wheel and Echo's head. Echo stands on the cobbles just right of the middle, eyes squeezed shut, laughing, water drops bouncing off his head feathers. Sunny and funny. The cobbled lane runs across the lower third of the picture.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "s06": {
+          "picture": "On the cobbled lane at the foot of the town on a sunny morning. The seed springboard (THE SPRINGBOARD) stands in the middle of the picture, its little cup empty, with the seed cart, heaped with seed pods, just left of it. Echo stands beside the springboard, just right of the middle, holding up one cream seed pod with both wings, about to pop it into the springboard's little cup, smiling. Behind and above, the town's rooftops step up the hill, each with an empty terracotta planter of soil. The cobbled lane runs across the lower third of the picture.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "s07": {
+          "picture": "A close-up high in the town on a sunny morning: on a flat rooftop terrace in the upper middle of the picture, a terracotta planter of fresh dark soil is tucked under a little slanted tiled roof on two wooden posts, so nothing can drop straight in from above. Just below it, a springy fabric awning with exactly three broad stripes, cream, rust, cream, sticks out from the house's peach wall on two thin wooden poles. One cream seed pod with a little green leaf mark has just bounced up off the awning and hangs in the air just above it, heading for the sheltered planter. Pale blue sky behind. The plain peach wall fills the bottom of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "On the cobbled lane at the foot of the town on a sunny morning. The seed springboard (THE SPRINGBOARD) stands just left of the middle of the picture, its little cup empty and ready, with Gardener Bird's seed cart, heaped with seed pods, on its left. Gardener Bird stands behind the cart on the left, waving one wing, hopeful, her teal watering can in the other. Echo stands proudly beside the springboard, just right of the middle, wings out, facing the viewer, ready to help. Above and behind them, the town's rooftops step up the hill, each with an empty terracotta planter of soil, the striped awning on a peach wall, and the bare wooden arch on the highest roof in the upper right of the middle. The cobbled lane runs across the lower third of the picture.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "e01": {
+          "picture": "The whole little hilltop town on a bright sunny day, seen from the cobbled lane at its foot: every rooftop terrace, from the low roof on the left to the highest roof in the upper right of the middle, now has its terracotta planter full of fresh green leafy plants with a few small flowers, and the sheltered planter under its little tiled roof, above the striped awning (cream, rust, cream), is green too. On the highest roof, the old wooden arch is covered from end to end in climbing green stems and small cream, pink and golden flowers, the brightest thing in the picture. Down on the cobbled lane in the lower middle, the seed springboard rests beside the empty seed cart, and Echo stands beside them, cheering with both wings up. The cobbled lane runs across the lower third of the picture.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "The highest rooftop terrace on a sunny morning, under the old wooden arch, now covered in climbing green stems and small cream, pink and golden flowers; planters full of green leaves step down the hill behind. Gardener Bird flies in a happy loop through the middle of the arch, in the upper middle of the picture, wings spread, tipping her teal watering can so a gentle sprinkle of water drops falls on the flowers. Echo stands on the terrace in the lower left of the middle, holding a big green leaf over his head like an umbrella, laughing. The broad, flat terrace runs across the lower third of the picture, with a low rounded wall along its far edge.",
+          "buddy": "on the terrace just right of Echo: plain terrace, nothing on it"
+        },
+        "e03": {
+          "picture": "A sunny picnic on the highest rooftop terrace, under the old wooden arch, now covered in climbing green stems and small cream, pink and golden flowers; planters full of green leaves step down the hill behind, and a low rounded wall runs along the terrace's far edge. A little round table with a checked cloth stands in the upper middle. Pelly the pelican, on the left of the table, proudly pulls a tall stack of round golden pancakes out of her beak pouch, beaming. Gardener Bird, on the right of the table, holds up a little plate, delighted, her teal watering can set down beside her. Echo stands on the terrace in front of the table, just left of the middle, holding a round pancake with both wings, laughing. The broad, flat terrace runs across the lower third of the picture.",
+          "buddy": "on the terrace just right of Echo, in front of the table: plain terrace, nothing on it"
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with its earlier gold stars still on it and no writing anywhere on it. Just above the middle of the map, on a hillside that slopes down to the blue sea, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a tiny crayon town of little cream and peach houses with flat rooftops stepping up the hill, a dot of green plants on every roof and a tiny flowery arch on the highest one. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little rooftop town with one wing, beaming.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On the cobbled lane at the foot of a sunny little hilltop town, Echo stands beside the wooden seed springboard (THE SPRINGBOARD), holding up one cream seed pod with both wings, ready to pop it into the springboard's little cup; just right of them, Gardener Bird stands beside her wooden cart heaped with seed pods, at the foot of a narrow stone staircase much too narrow for the cart, holding her teal watering can. Behind them, low rounded cream, peach and lavender houses step up the hill from left to right, each flat rooftop with an empty terracotta planter of dark soil, and a bare wooden arch stands on the highest roof, right of the middle. Bright and cheerful. Everything is in the middle band of the picture: Echo, the springboard, Gardener Bird and the cart stand low in it, their bottoms above 75% from the top, and the houses are low enough that the highest roof and the top of its bare arch stay below 25% from the top. Echo and the springboard left of the middle and Gardener Bird and the cart right of it. Only Echo and Gardener Bird appear: no other characters.",
+      "chars": [
+        {
+          "key": "gardener-bird",
+          "h": 1.5,
+          "prompt": "Gardener Bird, full body, standing, facing forward, smiling: a small, plump, friendly clay garden bird like a robin (not blue, and not a round ball: a clear head, a neck and a long rounded tail) with a soft warm brown head and back, muted sage-teal wings, a cream belly with a little warm rust-orange patch on her chest, a short, neat, dark grey beak, kind dark eyes, a rounded brown tail and thin orange legs; no hat, no clothes; she holds one small teal tin watering can with a round brass sprinkler head low in one wing."
+        },
+        {
+          "key": "springboard",
+          "h": 1.2,
+          "prompt": "The seed springboard, the whole of it, side three-quarter view: a little wooden garden toy on a low honey-wood stand, a gently curved wooden arm rising from it with a small round wooden cup at its tip, just big enough for one egg-shaped seed pod, and a coiled teal spring with a round wooden pull-handle at its back; friendly and simple, a toy, not a weapon: no bow, no string, no arrows."
+        },
+        {
+          "key": "cart",
+          "h": 1.0,
+          "prompt": "Gardener Bird's seed cart, the whole of it, side three-quarter view: a small honey-wood garden cart with two round wooden wheels and a long wooden handle, heaped high with plump, smooth, cream-colored egg-shaped seed pods, each with a little green leaf mark on its side, and a few climbing seed pods with a curly green swirl mark instead."
+        }
+      ]
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",

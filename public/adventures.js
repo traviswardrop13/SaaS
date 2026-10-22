@@ -349,6 +349,112 @@
         { art: "e04", ages: "both", buddy: null,
           line: "Six gold stars on our helper map! And Badger gave us the very last curled bun to take home." }
       ]
+    },
+
+    // Day 10: The Hilltop Patchwork Kite.
+    kite: {
+      wash: "#8cc3e3",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly is back with a letter. Oops. That's an umbrella! There isn't a cloud in the sky, Pelly." },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Goat on Breezy Hill. His giant kite needs our help!",
+                  little: "Here's the real letter. Goat's giant kite needs our help!" } },
+        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Up on windy Breezy Hill, Goat shows us his giant kite. All his friends painted pictures for it!",
+                  little: "Goat shows us his giant kite. His friends painted pictures for it!" } },
+        // no buddy (on the grass just right of Echo, nearer the front than the rock, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Lamb painted a flower for the kite. And Beetle painted a picture of herself!" },
+        // no buddy
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "But the pictures aren't sewn on yet. Whoosh! Every time the wind blows, up they flip and flap.",
+                  little: "The pictures aren't sewn on. Whoosh! Up they flap!" } },
+        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "Goat tried to sew them on himself. But needles are tricky with hooves. Now he's all tangled up!",
+                  little: "Goat tried to sew. Now he's all tangled up! Silly Goat." } },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "A kite needs a ribbon tail that hangs just right. Too heavy on one side, it tips over. Even, and up it flies!" },
+        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's sew every picture in its place, thread the ribbons, balance the tail and fly the kite. Ready?",
+                  little: "Let's sew on the pictures, add the ribbon tail and fly! Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy (on the grass just right of Echo, not placed)
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Whoosh! Up goes the patchwork kite, straight and steady, with every picture flying high!",
+                  little: "Up goes the kite! Every picture is flying!" } },
+        // no buddy (on the grass just right of Echo, apart from the rock, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Lamb waves up at her flower. And Beetle waves up at herself, flying high!" },
+        // no buddy (on the grass just right of Echo, far below Pelly and the kite, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly came to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Silly Pelly!",
+                  little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Ten gold stars on our helper map! You made every picture fly." }
+      ]
+    },
+
+    // Day 13: Seeds Across the Rooftops.
+    rooftops: {
+      wash: "#8cc0dc",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Knock, knock! It's Pelly with a letter. Oops. That's a pancake, with butter on top! Silly Pelly." },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Gardener Bird. Her rooftop gardens need seeds, and she needs our help!",
+                  little: "Here's the real letter. Gardener Bird needs help planting seeds!" } },
+        // no buddy (on the cobbled lane just right of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Off we go to the hilltop town! Every rooftop has a planter full of soil. But nothing is growing.",
+                  little: "Look at all the rooftop pots. Lots of soil, but no plants!" } },
+        // no buddy (on the cobbles just right of Echo, not placed)
+        { art: "s04", ages: "both", buddy: null,
+          line: { big: "The seed pods are too heavy for Gardener Bird to fly up. And her cart won't fit up the narrow stairs. Bump!",
+                  little: "The seed cart won't fit up the skinny stairs. Bump!" } },
+        // no buddy (on the cobbles just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Gardener Bird loves watering so much, she waters everything. The stairs, the cart, and us! Sprinkle!",
+                  little: "Gardener Bird waters everything. Even us! Sprinkle, sprinkle!" } },
+        // no buddy (on the cobbles just right of Echo, not placed)
+        { art: "s06", ages: "big", buddy: null,
+          line: "Beside the cart stands a springboard for seed pods. Pop one in the cup, pull the spring, and boing! Up it flies." },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "One planter hides under a little roof. So we bounce a pod off the striped awning. Boing, plop!" },
+        // no buddy (on the cobbles just right of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's aim the springboard, send a seed pod to every rooftop planter, and make the old arch bloom. Ready?",
+                  little: "Boing! This springboard sends seeds up high. Let's fill every rooftop pot. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Plop! The last seed lands. Green leaves on every rooftop, and flowers all over the old arch!",
+                  little: "Plop! Now every rooftop has a little garden. Hooray!" } },
+        // no buddy (on the terrace just right of Echo, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Gardener Bird does a happy loop under the flowery arch. Then she waters every new plant. Not us, this time!" },
+        // no buddy (on the terrace just right of Echo, in front of the table, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly flies in with more pancakes. A whole stack! A rooftop picnic for everyone. Yum!",
+                  little: "Pelly brought pancakes for everyone. Yum!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Thirteen gold stars on our helper map! And a little garden on every rooftop." }
+      ]
     }
   };
 })(window);

@@ -170,6 +170,8 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .quest-art[data-story="waterwheel"]{background:#8fbf68;}
 .quest-art[data-story="postboat"]{background:#3f9fc0;}
 .quest-art[data-story="bakery"]{background:#cc8b43;}
+.quest-art[data-story="kite"]{background:#8cc3e3;}
+.quest-art[data-story="rooftops"]{background:#8cc0dc;}
 .quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
 .quest-pic svg{width:46%;height:auto;max-height:86%;}
