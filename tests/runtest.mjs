@@ -142,8 +142,9 @@ async function tapAt(page, x, y, x2) {
 }
 
 // ── the start card ──
-const LINE = "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins!";
-ok("Echo's line is true to the race: lanes, rocks and a cactus to dodge, gold coins to grab (no gold star)", code.includes('var START_LINE="' + LINE + '";') && !/gold star/i.test(LINE));
+const LINE = "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold stars!";
+ok("Echo's line is true to the race: lanes, rocks and a cactus to dodge, gold stars to grab (never \"coins\": real coins come from the chest and the road)", code.includes('var START_LINE="' + LINE + '";') && !/coin/i.test(LINE));
+ok("the race never calls its pickups coins where a child sees or hears it", !/Grab coins|COIN MAGNET|collect coins/i.test(code) && !/collect coins/i.test(readFileSync(ROOT + "/sona.js", "utf8")));
 ok("Echo has seven seconds to begin, and a line that plays gets its own length", /START_WAIT_MS=7000,/.test(code) && /startCap\(my,START_WAIT_MS\)/.test(code) && /startCap\(my,Math\.max\(4000,ms\+START_TAIL_MS\)\+500\)/.test(code));
 ok("the count of races is the child's own", /S\.kkey\("sona\.sprintintro\.v1"\)/.test(code) && /"sona\.sprintintro\.v1",/.test(strip(readFileSync(ROOT + "/sona.js", "utf8")).match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/)[1]));
 const card = (page) => page.evaluate(() => ({ shown: document.getElementById("startOvl").classList.contains("show"), held: raceHeld, playing, saying: sc.saying,
@@ -203,7 +204,7 @@ await scenario("the start card", async () => {
       pics: [...document.querySelectorAll("#startTips img")].map((i) => i.getAttribute("src").split("/").pop() + (i.naturalWidth ? "" : " (missing)")), runner: getComputedStyle(document.getElementById("tipBuddy")).backgroundImage }));
     ok("a child's first race opens on the start card: Echo waving, and one button, “Let's run!”", c.shown && c.held && !c.playing && c.btn === "Let's run!" && /echo-wave\.webp$/.test(c.echo) && look.buttons === 1, { c, look });
     ok("…with three pictures from the race itself: the runner in the lanes, a rock and a cactus, a gold coin",
-      JSON.stringify(look.tips) === JSON.stringify(["Tap a lane", "Dodge", "Grab coins"]) && JSON.stringify(look.pics) === JSON.stringify(["run-rock-v2.webp", "run-cactus-v2.webp", "run-coin-v2.webp"]) && /fox-runner\.webp/.test(look.runner), look);
+      JSON.stringify(look.tips) === JSON.stringify(["Tap a lane", "Dodge", "Grab stars"]) && JSON.stringify(look.pics) === JSON.stringify(["run-rock-v2.webp", "run-cactus-v2.webp", "run-coin-v2.webp"]) && /fox-runner\.webp/.test(look.runner), look);
     ok("Echo's line is asked for as the card shows: once, word for word", TTS.asks.length === 1 && TTS.asks[0] === LINE, TTS.asks);
     ok("…and nothing is said before a tap", c.voice === 0 && c.pcm === 0 && c.synth.length === 0, c);
     const before = await stored(page);
@@ -414,7 +415,7 @@ await scenario("a whole race", async () => {
     await page.waitForFunction(() => Math.abs(laneX - lane) < 0.05);
     await page.evaluate(() => { things.push({ t: "c", e: "🪙", lane: lane, y: PLAYY() - 10, gold: true }); });
     await page.waitForFunction(() => performance.now() < magnetUntil, null, { timeout: 3000 });
-    ok("a golden coin turns on the coin magnet", true);
+    ok("a big gold star turns on the star magnet", true);
     // the checkpoint
     await nearEnd(page);
     await page.locator("#revOvl.show").waitFor({ timeout: 12000 });

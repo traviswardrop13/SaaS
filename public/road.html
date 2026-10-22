@@ -35,6 +35,23 @@
         <span class="rd-chip" id="chipCoin" role="img" aria-label="0 coins"><span class="rd-ic" data-ic="coin" aria-hidden="true"></span><b id="coinN" aria-hidden="true">0</b></span>
       </span>
     </header>
+    <!-- HOW IT WORKS (Travis, 22 Oct 2026: "how I actually earn coins" was
+         confusing). One row of pictures, read left to right: talk, and the
+         words fill trophies; trophies reach the goal and open the chest; the
+         chest gives coins; coins buy buddies in the shop. Pictures lead (most
+         of these children can't read yet); the one-word labels are for the
+         grown-up reading it out, and the whole sentence is the row's label. -->
+    <div class="rd-how" id="howRow" role="img" aria-label="Talk to earn trophies. Reach your goal to open today's chest. The chest gives coins. Spend coins in the Buddy Shop.">
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="mic"></span><b>Talk</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="trophy"></span><b>Trophies</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="chest"></span><b>Chest</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="coin"></span><b>Coins</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" id="howShop"></span><b>Shop</b></span>
+    </div>
     <p class="rd-note" id="rolledNote" role="status" hidden><span id="rolledText"></span><button id="rolledOk" type="button" aria-label="OK">✕</button></p>
 
     <section class="rd-hero" id="hero" aria-labelledby="landName">
@@ -416,6 +433,8 @@
       try{var bp=S.boardFlush?S.boardFlush():null;if(bp&&bp.then)bp.then(paintLinks,function(){});}catch(e){}
       paintIcons();
       var face=$("shopFace");if(face&&BUD)face.innerHTML=BUD.markup(BID,30);
+      // the strip's last step is the child's own buddy: what the coins are for
+      var hs=$("howShop");if(hs){if(BUD)hs.innerHTML=BUD.markup(BID,34);else hs.innerHTML=ic("gift",34);}
       if(BUD&&BUD.stand)BUD.stand($("heroBuddy"),BID);
       else{var hb=$("heroBuddy");try{hb.src=S.buddySprite(BID,"portrait");hb.className="rd-buddy badge";}catch(e){hb.hidden=true;}}
       $("road").hidden=false;
