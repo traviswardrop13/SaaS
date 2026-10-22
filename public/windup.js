@@ -196,7 +196,7 @@
   var little = false, steps = 8, stage = 0, cur = BIG[0];
   var active = false, paused = false, away = false, won = false, keyOut = false, keyAt = -9;
   var turns = 0, sweepTurns = 0, quarters = 0, clicks = 0, dialAngle = 0, keyAngle = 0;
-  var owner = null, surface = null, held = false, keyHeld = false, prev = null, prevA = null, sweep = 0, origin = 0, credit = 0, downAt = null;
+  var owner = null, ownerMoved = -9, surface = null, held = false, keyHeld = false, prev = null, prevA = null, sweep = 0, origin = 0, credit = 0, downAt = null;
   var misses = 0, effort = 0, lastWork = -9, lastGain = -9, shownCircle = 0, tries = 0, lastTry = "none";
   var power = 0, react = null, doneAt = 0, dones = 0, sparks = [], pending = [];
   var scene = "bench", pan = null, cuckoo = false, cuckooAt = -9, doorsAt = -9, marchOut = -9;
@@ -806,10 +806,21 @@
   function inRing(p) { var q = rel(p); return q.d >= dial.r * 0.15 && q.d <= dial.r * 1.4; }
   function onDial(p) { return rel(p).d <= dial.r * 1.4; }
   function wrap(d) { while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; }
+  // One finger owns the dial. A finger circling it keeps it, but a touch
+  // that has not moved for 0.3 s gives way to a new one (22 Oct 2026: a
+  // resting thumb or a grown-up's pointing finger, down first anywhere on
+  // the shop, used to own the dial for as long as it stayed down, and the
+  // child's circles did nothing). Giving way is no try: that touch never
+  // let go. A finger also takes over from the arrow keys.
   function down(e) {
-    if (!canPlay() || owner !== null || keyHeld || reacting() || (e.button !== undefined && e.button !== 0)) return;
+    if (!canPlay() || reacting() || (e.button !== undefined && e.button !== 0)) return;
+    if (owner !== null) {
+      if (e.pointerId === owner || clock - ownerMoved < 0.3) return;
+      detach();
+    }
     e.preventDefault();
-    owner = e.pointerId; surface = e.currentTarget; held = true;
+    keyHeld = false;
+    owner = e.pointerId; surface = e.currentTarget; held = true; ownerMoved = -9;
     var p = point(e); prev = p; downAt = p; prevA = inRing(p) ? rel(p).a : null; sweep = 0; origin = 0; credit = 0;
     try { surface.setPointerCapture(owner); } catch (err) {}
     hud();
@@ -819,7 +830,7 @@
     e.preventDefault();
     var p = point(e), dx = p.x - prev.x, dy = p.y - prev.y, d = Math.sqrt(dx * dx + dy * dy);
     if (d < 0.5) return;
-    lastWork = clock;
+    lastWork = clock; ownerMoved = clock;
     windBy(prev, p, d);
     prev = p; hud(); draw();
   }
@@ -942,7 +953,10 @@
     $("windupDial").addEventListener("keyup", function (e) { if (e.key === " " || e.key === "Enter") e.preventDefault(); });
     $("windupHelp").onclick = askHelp; $("windupHearStep").onclick = hearStep;
     window.addEventListener("resize", fit);
-    window.addEventListener("blur", function () { detach(); hud(); });
+    // losing focus drops a key hold too (it locked out the Oil can until a
+    // Space on the dial), as Light the Way and Puzzle Bridge do; never a try
+    window.addEventListener("blur", function () { detach(); keyHeld = false; hud(); });
+    $("windupDial").addEventListener("blur", function () { if (keyHeld) { keyHeld = false; hud(); } });
     document.addEventListener("visibilitychange", function () { if (document.hidden) { detach(); keyHeld = false; hud(); } });
     window.addEventListener("pagehide", function () { away = true; detach(); cancelAnimationFrame(raf); raf = 0; });
     window.addEventListener("pageshow", function () { away = false; if (!raf) { last = 0; raf = requestAnimationFrame(frame); } hud(); });

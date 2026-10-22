@@ -356,7 +356,37 @@ try{
   ok('…and the step counts',await stepped(page,0));
   await sayWord(page);ok('the dial keeps the keyboard for the next toy',await page.evaluate(()=>document.activeElement.id==='windupDial'));
   for(let n=0;n<20;n++)await page.keyboard.press('ArrowDown');await page.keyboard.press(' ');ok('…and winds it',await stepped(page,1));
+  // one arrow press, then the focus goes elsewhere (22 Oct 2026: the key hold
+  // stayed on, the Oil can stayed greyed and no finger could wind)
+  await sayWord(page);await page.keyboard.press('ArrowRight');s=await st(page);const k0=s.w.turns;
+  await page.evaluate(()=>document.getElementById('windupDial').blur());await advance(page,100);s=await st(page);
+  ok('the dial losing focus drops the key hold: the Oil can is back, nothing let go, the winding kept',!s.w.keyHeld&&s.w.tries===0&&Math.abs(s.w.turns-k0)<1e-9&&await page.locator('#windupHelp').isEnabled(),s.w);
+  await page.locator('#windupDial').focus();await page.keyboard.press('ArrowRight');
+  await circle(page,0.5,{lift:false});s=await st(page);ok('a finger takes the dial over from the arrow keys and winds',!s.w.keyHeld&&s.w.turns>k0+0.2,s.w);
+  await page.mouse.up();await advance(page,40);
   ok('no runtime errors (keyboard)',errors.length===0,errors);await context.close();
+ }
+
+ // ── touches: a resting thumb never owns the dial (22 Oct 2026: the first
+ // touch anywhere did, for as long as it stayed down, and the child's circles
+ // did nothing), but a finger that is circling keeps it ──
+ if(!part||part==='touches'){
+  const {page,context,errors}=await fresh();await begin(page);await sayWord(page);
+  const w=await W(page),b=await cbox(page),cx=b.x+w.dial.x,cy=b.y+w.dial.y,r=w.dial.r*0.8;
+  const ev=(t,id,x,y)=>page.evaluate(([t,id,x,y])=>document.getElementById('windupCanvas').dispatchEvent(new PointerEvent(t,{pointerId:id,pointerType:'touch',isPrimary:id===31,clientX:x,clientY:y,bubbles:true,cancelable:true})),[t,id,x,y]);
+  const at=a=>[cx+Math.cos(a)*r,cy+Math.sin(a)*r];
+  // a thumb rests on the screen's edge, then the child circles the dial
+  await ev('pointerdown',31,b.x+6,b.y+b.height*0.55);await advance(page,500);
+  let a=-Math.PI/2;await ev('pointerdown',32,...at(a));for(let i=1;i<=12;i++){a=-Math.PI/2+i*2*Math.PI/24;await ev('pointermove',32,...at(a));await advance(page,20);}
+  let s=await st(page);ok('a resting thumb gives the dial to the finger that circles it: half a turn wound',s.w.turns>0.3&&s.w.tries===0,s.w);
+  await ev('pointerup',31,b.x+6,b.y+b.height*0.55);s=await st(page);ok('…and the thumb lifting is no try and stops nothing',s.w.tries===0&&s.w.held,s.w);
+  // while that finger circles, a second touch lands: the circling finger keeps it
+  await advance(page,20);await ev('pointerdown',33,b.x+b.width*0.5,b.y+b.height*0.2);const t0=(await st(page)).w.turns;
+  for(let i=13;i<=18;i++){a=-Math.PI/2+i*2*Math.PI/24;await ev('pointermove',32,...at(a));await advance(page,20);}
+  s=await st(page);ok('a touch landing while a finger circles never takes the dial from it',s.w.turns>t0+0.15,{t0,w:s.w});
+  await ev('pointerup',33,b.x+b.width*0.5,b.y+b.height*0.2);await ev('pointerup',32,...at(a));await advance(page,1500);s=await st(page);
+  ok('the circling finger lifting lets the dial go',!s.w.held&&s.w.tries<=1,s.w);
+  ok('no runtime errors (touches)',errors.length===0,errors);await context.close();
  }
 
  // ── motion: a dizzy toy spins, but not under Reduce Motion (a pose change) ──
