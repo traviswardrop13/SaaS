@@ -358,16 +358,16 @@
         // buddy: on the doorstep to the right of Echo, right of the door (rest)
         { art: "s01", ages: "both", buddy: { x: 0.445, y: 0.685, h: 0.18, pose: "rest" },
           line: "Pelly flew in with a letter. Oops. That's a toothbrush! Whose is it?" },
-        // no buddy (PEEK, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: peeking over the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there (peek)
+        { art: "s02", ages: "both", buddy: { x: 0.405, y: 0.625, h: 0.14, pose: "peek" },
           line: { big: "Here's the real letter. It's from Tortoise. He's moving to a new house today, and he needs our help!",
                   little: "Here's the real letter. Tortoise has a new house, and he needs our help!" } },
-        // no buddy (on the sandy path just left of Echo, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the sandy path just left of Echo (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.43, y: 0.6, h: 0.16, pose: "rest" },
           line: { big: "Meet Tortoise and his moving cart. His new house is just over the stream. See the green door?",
                   little: "This is Tortoise and his cart. His new house is over the stream, but there's no bridge!" } },
-        // no buddy (on the plain grass just right of Echo, in front of the cart, not placed)
-        { art: "s04", ages: "big", buddy: null,
+        // buddy: on the plain grass just right of Echo, in front of the cart (rest)
+        { art: "s04", ages: "big", buddy: { x: 0.565, y: 0.785, h: 0.165, pose: "rest" },
           line: "Tortoise packed his chair, his books and his cozy blanket. But where is his toothbrush?" },
         // no buddy
         { art: "s05", ages: "big", buddy: null,
@@ -394,8 +394,8 @@
         // buddy: the plain patch of round rug just right of Echo, nothing on it (rest)
         { art: "e02", ages: "big", buddy: { x: 0.885, y: 0.76, h: 0.19, pose: "rest" },
           line: "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!" },
-        // no buddy (on the stone path just right of Echo, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the stone path just right of Echo (rest)
+        { art: "e03", ages: "both", buddy: { x: 0.665, y: 0.815, h: 0.16, pose: "rest" },
           line: { big: "Pelly is back, and look! That toothbrush is Tortoise's. He sent it with his letter by mistake!",
                   little: "Pelly brings the toothbrush. It's Tortoise's! Brush, brush!" } },
         // buddy: the right half of the bench, just right of Echo (cheer)
