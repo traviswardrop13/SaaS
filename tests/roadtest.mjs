@@ -611,7 +611,7 @@ await section("the road page: game levels, fit, and what never happens", async (
     ok("…and stop 3 shows its level gift beside its coins", s3.level && /^At 150 trophies: Level 2 in every game and 20 coins\. Open!$/.test(s3.label), s3);
     await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
     const l3 = await line(f.page); await yay(f.page); const l3b = await line(f.page); await yay(f.page);
-    ok("…and opening it says \"Level 2 is open in every game!\", then \"+20 coins!\"", l3 === "Level 2 is open in every game!" && l3b === "+20 coins!", [l3, l3b]);
+    ok("…and opening it says \"Level 2 is open!\", then \"+20 coins!\"", l3 === "Level 2 is open!" && l3b === "+20 coins!", [l3, l3b]);
     ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
   } finally { await f.context.close(); }
   f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
