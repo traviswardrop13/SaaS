@@ -595,6 +595,10 @@
     // sync mid-round cannot change the place under the child. The syllables,
     // words and sentences are that place's, and so is the climb (RUNG).
     var POS=(S&&S.soundPos)?S.soundPos(SOUND):"i";
+    // The day's adventure keeps the place it started at for all its rounds,
+    // as it keeps its sound: a homework sync or a Settings change between
+    // two rounds must not move the child from the end of words to the start.
+    if(isDaily&&run&&run.active){ if(run.pos&&(!S||!S.FAMILY_POSITIONS||S.FAMILY_POSITIONS.indexOf(run.pos)>=0))POS=run.pos; else{ run.pos=POS; runSave(run); } }
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND,POS):0;
     // START: the step the day's first round asks ("Each day's practice starts
     // with" in Settings; 0, the sound, unless a grown-up picked a later one).
@@ -649,10 +653,10 @@
       var ask;
       if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
       // What the VOICE is given (ITEM.say), which can be respelled from what
-      // the card shows: "ah-rah" is said "ahrah", one smooth middle-of-word
-      // R, never "ah", a pause, and a start-of-word "rah"; and a sentence is
-      // said without its full stop ("Say I see a car., five times" was what
-      // the card's text made of it).
+      // the card shows: vocalic "ar" is given as "are", so a voice cannot
+      // swallow it or spell it out; and a sentence is said without its full
+      // stop ("Say I see a car., five times" was what the card's text made
+      // of it).
       else ask="say "+(ITEM.say||ITEM.display||ITEM.t);
       // first prompt carries the mouth cue inline; repeats stay minimal.
       // CALM, NOT HYPED (24 Sep 2026). The voice reads "!" and "… Go!" as a

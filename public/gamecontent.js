@@ -70,16 +70,20 @@
   //   SYL_BLEND the r-, s- and l-blends the picker names ("tr, st, bl"). Each
   //             said WITHOUT its sound is still fine to hear ("spee" would be
   //             "pee", so S has "spa").
+  // Left out on purpose: oss, ohss and ahz (each can sound like "ass"), and
+  // every end with no clean English spelling (ohsh, ohj, ohg, ohv; "eeg" is
+  // read as the letters EEG).
   // `t` is what the card shows; `say` is what Echo's voice is given.
   //
   // SYL_POS_ON IS THE LISTENING SWITCH, like GAME_SYL_ON for the games: a
   // place's syllables are asked only once someone has LISTENED to Echo say
   // them on a phone (/listen.html plays every one). A computer voice that
   // misreads a syllable models the wrong sound to a child copying it, which
-  // is exactly what an SLP would have to undo. Vocalic R ships on (its say
-  // words are real words: are, ore, air, ear, ire); every other place ships
-  // off, and its sound's climb skips the syllable step there, from the sound
-  // straight to words (Sona.ladderSteps). Add a sound to a place to turn it on.
+  // is exactly what an SLP would have to undo. EVERY PLACE SHIPS OFF, and its
+  // sound's climb skips the syllable step there, from the sound straight to
+  // words (Sona.ladderSteps). Add a sound to a place to turn it on, once it
+  // has been heard ("f" also covers R at the end of a word, whose syllables
+  // are vocalic R's; "v" covers vocalic R).
   var SYL_MID = {
     P: ["ah-pah", "oh-poh", "ay-pay"], B: ["ah-bah", "ee-bee", "oo-boo", "oh-boh", "ay-bay"],
     M: ["ah-mah", "ee-mee", "oo-moo", "oh-moh", "ay-may"], N: ["ah-nah", "ee-nee", "oo-noo", "ay-nay"],
@@ -93,20 +97,20 @@
     THV: ["ah-thuh", "oo-thuh", "oh-thuh"],
   };
   var SYL_END = {
-    P: ["ahp", "eep", "oop", "ope"], B: ["ahb", "eeb", "oob", "obe"], M: ["ahm", "eem", "oom", "ohm"],
-    N: ["ahn", "een", "oon", "own"], T: ["aht", "eet", "oot", "oat"], D: ["ahd", "eed", "ood", "ode"],
-    K: ["ahk", "eek", "ook", "oak"], G: ["ahg", "oog", "ogue"], F: ["ahf", "eef", "oof", "oaf"],
-    V: ["ahv", "eve", "oove"], S: ["ace", "ice", "oss"], Z: ["ease", "ooze", "oze"],
-    SH: ["ash", "eesh", "oosh"], CH: ["atch", "each", "ooch", "oach"], J: ["age", "edge", "odge"],
-    L: ["ahl", "eel", "ool", "ole"], TH: ["eeth", "ooth", "oath"], THV: ["eethe", "oothe", "oathe", "athe"],
+    P: ["ahp", "eep", "oop", "ope", "ape"], B: ["ahb", "eeb", "oob", "obe"], M: ["ahm", "eem", "oom", "ohm", "aim"],
+    N: ["ahn", "een", "oon", "own"], T: ["aht", "eet", "oot", "oat", "ate"], D: ["ahd", "eed", "ood", "ode", "aid"],
+    K: ["ahk", "eek", "ook", "oak", "ache"], G: ["ahg", "oog", "ogue"], F: ["ahf", "eef", "oof", "oaf"],
+    V: ["ahv", "eve", "oove"], S: ["oose", "ace", "ice"], Z: ["ease", "ooze", "oze"],
+    SH: ["ash", "eesh", "oosh"], CH: ["atch", "each", "ooch", "oach"], J: ["odge", "age", "edge"],
+    L: ["ahl", "eel", "ool", "ole", "ail"], TH: ["eeth", "ooth", "oath"], THV: ["eethe", "oothe", "oathe", "athe"],
   };
   var SYL_VOC = [["ar", "are"], ["or", "ore"], ["air", "air"], ["ear", "ear"], ["ire", "ire"]];
   var SYL_BLEND = {
-    R: ["trah", "bree", "grew", "droh", "kray"],
-    S: ["stah", "spa", "snoo", "smoh", "slay"],
+    R: ["trah", "free", "grew", "droh", "kray"],
+    S: ["spa", "ski", "snoo", "smoh", "stay"],
     L: ["blah", "flee", "clue", "glow", "play"],
   };
-  var SYL_POS_ON = { m: [], f: ["R"], v: ["R"], b: [] };
+  var SYL_POS_ON = { m: [], f: [], v: [], b: [] };
   function _items(list, pos) {
     return (list || []).map(function (x) {
       var t = typeof x === "string" ? x : x[0], say = typeof x === "string" ? x : x[1];
@@ -225,7 +229,7 @@
   var SENT_FORM = {
     angel: "an", apple: "an", arm: "an", arrow: "an", baby: "a", badge: "a", bag: "a", ball: "a", balloon: "a",
     banana: "a", bath: "a", bathe: "x", bathtub: "a", beach: "a", bear: "a", bed: "a", bee: "a", bees: "pl",
-    bell: "a", bicycle: "a", bird: "a", birthday: "a", blocks: "pl", boat: "a", bone: "a", book: "a",
+    bell: "a", bicycle: "a", bird: "a", birthday: "x", blocks: "pl", boat: "a", bone: "a", book: "a",
     branch: "a", breathe: "x", bridge: "a", broom: "a", brother: "my", brush: "a", bucket: "a", bug: "a",
     bulldozer: "a", bus: "a", button: "a", cab: "a", cage: "a", cake: "a", camel: "a", can: "a", car: "a",
     carrot: "a", castle: "a", cat: "a", cave: "a", chair: "a", cheese: "none", cherry: "a", chicken: "a",
@@ -258,7 +262,7 @@
     trash: "none", tree: "a", truck: "a", tub: "a", turtle: "a", van: "a", vase: "a", vegetable: "a",
     vest: "a", video: "a", violin: "a", volcano: "a", wagon: "a", wash: "x", washing: "x", watch: "a",
     water: "none", wave: "a", weather: "x", web: "a", whale: "a", wolf: "a", yellow: "x", zebra: "a",
-    zero: "x", zigzag: "a", zip: "a", zipper: "a", zoo: "a",
+    zero: "x", zigzag: "a", zip: "x", zipper: "a", zoo: "a",
   };
   // The words each form puts in a frame's slots: {a} before the word, {the}
   // where a frame says "the", {my} where it says "my", {is} for "Here is".
@@ -276,8 +280,12 @@
   // "Look at the ___.", "Here is a ___.", "I like my ___."
   var SENT_FRAMES = ["I see {a}___.", "I have {a}___.", "Look at {the}___.", "Here {is} {a}___.", "I like {my}___."];
   function sentenceFor(word, i) {
-    if (sentForm(word) === "x") return null;
-    var t = _fill(SENT_FRAMES[(i | 0) % SENT_FRAMES.length], word).replace(/ {2,}/g, " ");
+    var form = sentForm(word);
+    if (form === "x") return null;
+    // nobody "has" their mom, or the sun: those take "I like" instead
+    i = (i | 0) % SENT_FRAMES.length;
+    if (i === 1 && (form === "my" || form === "the")) i = 4;
+    var t = _fill(SENT_FRAMES[i], word).replace(/ {2,}/g, " ");
     return { t: t, say: t.replace(/[.]/g, ""), word: word };
   }
   function sentences(sound, pos) {

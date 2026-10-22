@@ -19,8 +19,8 @@
 //   - an SLP's homework wins: its words, and no start-of-word syllable when
 //     the target is the end of a word;
 //   - every place in a word has its own cards (22 Oct 2026): a place's
-//     syllables only once someone has listened to them (GAME_POS_ON lists
-//     none of R's new ones yet), and its own short word (GAME_SHORT_AT, "car"
+//     syllables only once someone has listened to them (GAME_POS_ON, and the
+//     practice page's SYL_POS_ON, list none yet), and its own short word (GAME_SHORT_AT, "car"
 //     at the end of a word), for a family's pick as for homework;
 //   - it only READS. Nothing it does touches a practice record or a game rep.
 // What a card HEARS is not here: it hears "a voice of the right kind" and
@@ -261,18 +261,18 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
     JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((x) => SC.gameSyllables("R", x).length === 0));
   ok("…while Mixed asks the start-of-word syllables and word, which were listened to", SC.gameSyllables("R", "mix").map((x) => x.t).join() === SC.gameSyllables("R").map((x) => x.t).join() && SC.gameWord("R", "mix") === "rot");
   // switched on (as when someone has listened): the place's own syllables, never "ree"
-  SC.GAME_POS_ON.R = ["f"];
+  SC.GAME_POS_ON.R = ["f"]; SC.SYL_POS_ON.f.push("R");
   const t = texts(S, "R"), syl = SC.gameSyllables("R", "f").map((x) => x.t);
   ok("once End is switched on, its cards ask End's own syllable, then car",
     S.gameHold("R") === "" && t[0] === "rrrr" && syl.includes(t[1]) && !/^r/.test(t[1]) && t[2] === "car" && S.gameAsk("R", 1, { first: true }).rung === 1, t);
-  const h = at("f"); h.SC.GAME_POS_ON.R = ["f"];
+  const h = at("f"); h.SC.GAME_POS_ON.R = ["f"]; h.SC.SYL_POS_ON.f.push("R");
   hand(h, "R", "syllable", "air");
   ok("…and a syllable the practice page asked at this place is repeated", h.S.gameAsk("R", 1).text === "air" && h.S.gameAsk("R", 2).text === "air" && h.S.gameAsk("R", 1).html === 'ai<b class="snd">r</b>', h.S.gameAsk("R", 1));
   h.session["sona.boost.pos"] = "i";
   ok("…but not one handed over before the place was changed", h.S.gameAsk("R", 1).text !== "air" || h.SC.gameSyllables("R", "f")[(h.S.dayNum()) % 3].t === "air", texts(h.S, "R"));
   delete h.session["sona.boost.pos"];
   for (const pos of ["m", "v", "b"]) {
-    const q = at(pos, { gameLevel: "word" }); q.SC.GAME_POS_ON.R = [pos]; ["m", "b"].forEach((x) => { if (q.SC.SYL_POS_ON[x].indexOf("R") < 0) q.SC.SYL_POS_ON[x].push("R"); });
+    const q = at(pos, { gameLevel: "word" }); q.SC.GAME_POS_ON.R = [pos]; ["m", "v", "b"].forEach((x) => { if (q.SC.SYL_POS_ON[x].indexOf("R") < 0) q.SC.SYL_POS_ON[x].push("R"); });
     const own = q.SC.gameSyllables("R", pos).map((x) => x.t), w = q.SC.GAME_SHORT_AT.R[pos];
     ok("R " + pos + ": its own syllables (" + own.join(", ") + ") and its own short word (" + w + "), a bank word at that place",
       own.length === 3 && own.every((x) => !/^r[aeiou]/.test(x)) && q.S.gameAsk("R", 2).text === w && (q.S.WORDS.R || []).some((x) => x.w === w && (x.pos === pos || (pos === "v" && x.pos === "v"))), own);

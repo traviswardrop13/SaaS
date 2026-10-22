@@ -304,7 +304,7 @@ ok("it says the settings below belong to the selected child", /belongs to whoeve
 // profile.wordPosition; the old practicePosition is never read again, so a
 // pick saved before 1 Oct cannot come back on its own. ──
 {
-  const before = await page.evaluate(() => { const p = Sona.getProfile(), was = { practicePosition: p.practicePosition, wordPosition: p.wordPosition, ladderStart: p.ladderStart, focusSounds: p.focusSounds }; Sona.saveProfile({ practicePosition: "f", focusSounds: ["R", "S"] }); delete p.wordPosition; const q = Sona.getProfile(); delete q.wordPosition; delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); return was; });
+  const before = await page.evaluate(() => { const p = Sona.getProfile(), was = { practicePosition: p.practicePosition, wordPosition: p.wordPosition, ladderStart: p.ladderStart, focusSounds: p.focusSounds, childAge: p.childAge }; Sona.saveProfile({ practicePosition: "f", focusSounds: ["R", "S"] }); delete p.wordPosition; const q = Sona.getProfile(); delete q.wordPosition; delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); return was; });
   await page.reload(); await page.waitForTimeout(700);
   const read = () => page.evaluate(() => {
     const el = document.getElementById("practicePos"), st = document.getElementById("ladderStart"), note = document.getElementById("posNote"), ln = document.getElementById("ladderNote");
@@ -338,17 +338,27 @@ ok("it says the settings below belong to the selected child", /belongs to whoeve
   ok("for a child on K only, vocalic R and blends are greyed out and say whose they are",
     pos.opts.filter((o) => o.off).map((o) => o.text).join("|") === "Vocalic R (er, ar, or…) · R only|Blends (tr, st, bl…) · R, S, L only", JSON.stringify(pos.opts));
   ok("…while the saved pick stays as it was, and K practices the start of words", pos.saved === "v" && (await page.evaluate(() => Sona.soundPos("K"))) === "i" && /K practices the start of words/.test(pos.note), JSON.stringify({ saved: pos.saved, note: pos.note }));
-  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R", "S"], wordPosition: "f" }));
+  // a four-year-old: vocalic R and blends are not given from a grown-up's pick
+  // (Sona.soundPos; Rachel's call), and Settings says so
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R"], childAge: "4" }));
+  await page.reload(); await page.waitForTimeout(700);
+  pos = await read();
+  ok("for a four-year-old, vocalic R and blends are greyed out for their age, and the line says the start of words instead",
+    pos.opts.filter((o) => o.off).map((o) => o.text).join("|") === "Vocalic R (er, ar, or…) · not for ages 2–4|Blends (tr, st, bl…) · not for ages 2–4"
+    && /^Blends and vocalic R usually come later, so .+ practices the start of words\.$/.test(pos.note) && pos.soundPos === "i" && pos.saved === "v", JSON.stringify(pos));
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R", "S"], wordPosition: "f", childAge: "7" }));
   await page.reload(); await page.waitForTimeout(700);
   // "Each day's practice starts with"
   pos = await read();
   ok("a second picker sits under Word position and above the game picker: Each day's practice starts with",
     pos.order && pos.startLabel === "Each day’s practice starts with" && pos.startOpts === "=The sound|syllable=Syllables|word=Words|sentence=Sentences" && pos.start === "" && !pos.startSaved, JSON.stringify(pos));
-  ok("its line shows the steps the practice page will really ask, at the place picked", /^R at the end of words: “rrrr”, then “(ar|or|air|ear|ire)”, one step each game\. Harder steps open as /.test(pos.ladderNote), pos.ladderNote);
+  // End's syllables ship switched off until someone has listened, so the day
+  // goes from the sound straight to end words
+  ok("its line shows the steps the practice page will really ask, at the place picked", /^R at the end of words: “rrrr”, then “(car|star|door|four|bear)”, one step each game\. Harder steps open as /.test(pos.ladderNote), pos.ladderNote);
   await page.selectOption("#ladderStart", "word"); await page.waitForTimeout(250);
   pos = await read();
   ok("picking Words saves it, and the day's practice starts at words", pos.startSaved === "word" && (await page.evaluate(() => Sona.ladderStart())) === 2
-    && /^R at the end of words: “(car|star|door|four|bear)”, then “I see a (car|star|door|four|bear)”, one step each game\. A word that’s too hard steps back to “(ar|or|air|ear|ire)”\.$/.test(pos.ladderNote), pos.ladderNote);
+    && /^R at the end of words: “(car|star|door|four|bear)”, then “I see a (car|star|door|four|bear)”, one step each game\. A word that’s too hard steps back to “rrrr”\.$/.test(pos.ladderNote), pos.ladderNote);
   // 320 px: every choice of both pickers reads in full while closed
   await page.setViewportSize({ width: 320, height: 700 });
   const fit = await page.evaluate(() => ["practicePos", "ladderStart"].map((id) => { const el = document.getElementById(id), cs = getComputedStyle(el), c = document.createElement("canvas").getContext("2d");
@@ -367,7 +377,7 @@ ok("it says the settings below belong to the selected child", /belongs to whoeve
   ok("…and changing a sound under homework keeps the family's own position and start", (await page.evaluate(() => [Sona.getProfile().wordPosition, Sona.getProfile().ladderStart].join())) === "f,word");
   await page.click('#sounds [data-s="L"]'); await page.waitForTimeout(250);
   await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.homework.v1")));
-  await page.evaluate((was) => { Sona.saveProfile({ focusSounds: was.focusSounds || ["R"], practicePosition: was.practicePosition }); const q = Sona.getProfile(); if (was.wordPosition) q.wordPosition = was.wordPosition; else delete q.wordPosition; if (was.ladderStart) q.ladderStart = was.ladderStart; else delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); }, before);
+  await page.evaluate((was) => { Sona.saveProfile({ focusSounds: was.focusSounds || ["R"], practicePosition: was.practicePosition, childAge: was.childAge || "" }); const q = Sona.getProfile(); if (was.wordPosition) q.wordPosition = was.wordPosition; else delete q.wordPosition; if (was.ladderStart) q.ladderStart = was.ladderStart; else delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); }, before);
   await page.reload(); await page.waitForTimeout(700);
 }
 

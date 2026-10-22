@@ -17,7 +17,8 @@
 //     rest;
 //   - every step is that place's: syllables from its own table (asked only
 //     once someone has listened: SYL_POS_ON), its words, sentences built on
-//     them; a step with nothing in it is skipped, never asked or earned;
+//     them; a step with nothing in it is skipped, never asked or earned
+//     (every new place ships off: sound → words until someone listens);
 //   - "Each day's practice starts with" (profile.ladderStart), and the
 //     practice page's own climb, run from its source;
 //   - a step down stays at the place and on the same target;
@@ -86,6 +87,17 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("…and its syllables are those of the place its words sit (car, star: the end of a word)", p.S.ladderContent("R", 1).every((x) => x.pos === "f"));
 }
 
+// ── 2b. ages 2 to 4: never vocalic R or blends from a grown-up's pick ──
+{
+  const at = (pos) => boot({ profile: { wordPosition: pos, childAge: "4" } });
+  ok("a four-year-old's vocalic R or blends pick practises the start of a word", at("v").S.soundPos("R") === "i" && at("b").S.soundPos("S") === "i");
+  ok("…the middle and end of a word still apply", at("f").S.soundPos("R") === "f" && at("m").S.soundPos("R") === "m");
+  const mx = at("mix").S;
+  ok("…and their Mixed leaves out vocalic R and blend words", mx.playWords("R").length > 0 && mx.playWords("R").every((w) => w.pos !== "v" && w.pos !== "b") && mx.ladderContent("R", 2).every((x) => x.pos !== "v" && x.pos !== "b"));
+  const hw = at("i"); homework(hw, { pos: "v" });
+  ok("…while their speech therapist's homework keeps its own place", hw.S.soundPos("R") === "v");
+}
+
 // ── 3. one climb per place ──
 {
   const p = boot({ profile: { wordPosition: "f" } }), { S } = p;
@@ -112,9 +124,11 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
 
 // ── 4. every step is the place's own ──
 {
-  const at = (pos, sound) => { const { S } = boot({ profile: { wordPosition: pos } }); return (r) => S.ladderContent(sound, r); };
-  const f = at("f", "R");
-  ok("End of word, R: the sound alone, then vocalic syllables, end words, sentences on end words",
+  const at = (pos, sound, on) => { const { S, SC } = boot({ profile: { wordPosition: pos } }); (on || []).forEach((p) => SC.SYL_POS_ON[p].push(sound)); return (r) => S.ladderContent(sound, r); };
+  const off = boot({ profile: { wordPosition: "f" } });
+  ok("every new place ships switched off: End of word, R climbs the sound, then end words (no syllable step)", off.S.ladderSteps("R").join() === "0,2,3" && off.S.ladderContent("R", 1).length === 0 && JSON.stringify(off.SC.SYL_POS_ON) === '{"m":[],"f":[],"v":[],"b":[]}');
+  const f = at("f", "R", ["f"]);
+  ok("switched on, End of word, R: the sound alone, then vocalic syllables, end words, sentences on end words",
     f(0)[0].t === "rrrr" && f(0)[0].pos === "" && f(1).map((x) => x.t).join() === "ar,or,air,ear,ire" && f(2).every((x) => x.pos === "f") && f(3).every((x) => x.pos === "f" && x.t.indexOf(x.word) > 0),
     [f(1).map((x) => x.t), f(2).map((x) => x.t)]);
   ok("…and Echo is given real words for the vocalic syllables (\"Say are\", never a bare \"ar\")", f(1).map((x) => x.say).join() === "are,ore,air,ear,ire");
@@ -164,11 +178,16 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
 
 // ── 7. a step down stays at the place, on the same target ──
 {
-  const { S } = boot({ profile: { wordPosition: "f" } });
+  const { S, SC } = boot({ profile: { wordPosition: "f" } }); SC.SYL_POS_ON.f.push("R");
   const sent = S.ladderContent("R", 3).find((x) => x.word === "bear") || S.ladderContent("R", 3)[0];
   ok("a sentence steps down to its own word", S.stepDown(sent, "R", "f").word === sent.word && S.stepDown(sent, "R", "f").level === "word");
   const car = S.ladderContent("R", 2).find((x) => x.word === "car");
-  ok("a word steps down to the syllable closest to it (car → ar)", S.stepDown(car, "R", "f").t === "ar" && S.stepDown(car, "R", "f").level === "syllable");
+  ok("a word steps down to the syllable with its own vowel (car → ar, bear → air, four → or)", S.stepDown(car, "R", "f").t === "ar" && S.stepDown(car, "R", "f").level === "syllable"
+    && S.stepDown(S.ladderContent("R", 2).find((x) => x.word === "bear"), "R", "f").t === "air" && S.stepDown(S.ladderContent("R", 2).find((x) => x.word === "four"), "R", "f").t === "or");
+  const v = boot({ profile: { wordPosition: "v" } }); v.SC.SYL_POS_ON.v.push("R");
+  ok("…and an \"er\" word (bird, water) steps down to the sound alone, which already is that vowel", v.S.stepDown(v.S.ladderContent("R", 2).find((x) => x.word === "bird"), "R", "v").level === "isolation");
+  const ri = boot({ profile: { wordPosition: "i" } }).S;
+  ok("at the start of a word, the syllable that shares the most of it (rabbit → rah)", ri.stepDown(ri.ladderContent("R", 2).find((x) => x.word === "rabbit"), "R", "i").t === "rah");
   ok("a syllable steps down to the sound alone", S.stepDown(S.ladderContent("R", 1)[0], "R", "f").level === "isolation");
   const s = boot({ profile: { wordPosition: "f", focusSounds: ["S"] } }).S;
   ok("where the syllables are off, a word steps down to the sound alone", s.stepDown(s.ladderContent("S", 2)[0], "S", "f").level === "isolation");
@@ -191,6 +210,7 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("no sentence says \"a ear\", builds on a word that is not a thing, or gives Echo a full stop (" + all.length + " built)", bad.length === 0, bad.slice(0, 5).map((x) => x.t));
   ok("\"I see an egg.\", \"Here is milk.\", \"Here are grapes.\", \"I see the sun.\", \"I see my mom.\", and no sentence for \"think\"",
     SC.sentenceFor("egg", 0).t === "I see an egg." && SC.sentenceFor("milk", 3).t === "Here is milk." && SC.sentenceFor("grapes", 3).t === "Here are grapes." && SC.sentenceFor("sun", 0).t === "I see the sun." && SC.sentenceFor("mom", 0).t === "I see my mom." && SC.sentenceFor("think", 0) === null);
+  ok("nobody \"has\" their mom or the sun: those take \"I like\" instead", SC.sentenceFor("mom", 1).t === "I like my mom." && SC.sentenceFor("sun", 1).t === "I like the sun.");
   ok("a word you count keeps the five frames exactly as they were", [0, 1, 2, 3, 4].map((i) => SC.sentenceFor("rabbit", i).t).join("|") === "I see a rabbit.|I have a rabbit.|Look at the rabbit.|Here is a rabbit.|I like my rabbit.");
   ok("\"sandwich\" is an end-of-word CH (its ch is at the end)", S.WORDS.CH.find((w) => w.w === "sandwich").pos === "f");
 }
@@ -228,8 +248,10 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("past the last step: \"All steps done\", never \"Talking\" or \"Mastered\"", S.stepLabel("R", "i") === "All steps done" && S.stepLabel("R", "f") === "All steps done");
   ok("ladderWhere lists each place climbed, named as practised (R at the end of a word)", S.ladderWhere("R").map((w) => w.pos + ":" + w.done).join() === "i:true,f:true");
   ok("one set of position names, with how a line says each", S.posPhrase("R", "f") === "R at the end of words" && S.posPhrase("R", "v") === "Vocalic R" && S.posPhrase("S", "b") === "S in blends" && S.posInfo("v").only.join() === "R");
-  const plan = boot({ profile: { wordPosition: "f" } }).S.ladderPlan("R");
-  ok("ladderPlan gives Settings the steps the practice page will ask, with a fixed example each", plan.pos === "f" && plan.have.join() === "0,1,2,3" && plan.steps[0].sample === "rrrr" && plan.steps[1].sample === "ar" && plan.steps[3].sample === "I see a car.", plan);
+  const pl = boot({ profile: { wordPosition: "f" } }), plan = pl.S.ladderPlan("R");
+  ok("ladderPlan gives Settings the steps the practice page will ask, with a fixed example each", plan.pos === "f" && plan.have.join() === "0,2,3" && plan.steps[0].sample === "rrrr" && plan.steps[2].sample === "car" && plan.steps[3].sample === "I see a car.", plan);
+  pl.SC.SYL_POS_ON.f.push("R");
+  ok("…and the syllable step once it is switched on", pl.S.ladderPlan("R").have.join() === "0,1,2,3" && pl.S.ladderPlan("R").steps[1].sample === "ar");
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

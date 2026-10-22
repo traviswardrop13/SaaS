@@ -727,10 +727,11 @@ ok("proof strip: named SLP credential above the plan",
   ok("a Middle saved in the old practicePosition is never read: start-of-word words", pw.old.pos === "i" && pw.old.words === pw.iR, JSON.stringify(pw.old));
   ok("a position with no words for the sound falls back to start-of-word words", pw.noneForK === pw.iK, pw.noneForK);
 
-  // …and on the real page: round 3 of a child with words earned, homework at End
+  // …and on the real page: round 2 of a child with the sound earned, homework
+  // at End (End's syllables are not switched on yet, so round 2 is words)
   await page.evaluate((hw) => {
     eval(hw);
-    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 2 }));
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 1 }));
     const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;
     localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
   }, HW("f"));

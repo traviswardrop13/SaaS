@@ -220,9 +220,12 @@ ok("the consent copy states it plainly",
   for (const t of tables) {
     if (t.items.length < 3) thin.push(t.pos + " " + t.sound);
     for (const it of t.items) {
-      const forms = [it.t, it.say].concat(it.t.split("-"));
-      if (t.pos === "b") forms.push(it.t.replace(new RegExp(SPELL[t.sound]), ""));
-      forms.forEach((f) => { const w = String(f).toLowerCase().replace(/[^a-z]/g, ""); if (NEVER.includes(w)) bad.push(`${t.pos} ${t.sound}: ${it.t} (${f})`); });
+      const forms = [it.t, it.say].concat(it.t.split("-"), it.say.split("-"));
+      if (t.pos === "b") forms.push(it.t.replace(new RegExp(SPELL[t.sound]), ""));   // a blend said without its sound
+      if (t.sound === "Z" && t.pos === "f") forms.push(it.t.replace(/z|s(?=e)/, "s"));  // a final z said as s
+      // as heard: letters only, a doubled letter once, a vowel's h dropped ("ahss" is "as")
+      const norm = (f) => String(f).toLowerCase().replace(/[^a-z]/g, "").replace(/(.)\1+/g, "$1").replace(/([aeiou])h(?![aeiou])/g, "$1");
+      forms.forEach((f) => { const w = String(f).toLowerCase().replace(/[^a-z]/g, ""); if (NEVER.includes(w) || NEVER.includes(norm(f)) || norm(f) === "as") bad.push(`${t.pos} ${t.sound}: ${it.t} (${f})`); });
       if (!new RegExp(SPELL[t.sound]).test(it.t)) bad.push(`${t.pos} ${t.sound}: ${it.t} does not spell its sound`);
       if (t.pos === "m" && !/^[a-z]+-[a-z]+$/.test(it.t)) bad.push(`m ${t.sound}: ${it.t} is not two beats`);
     }
@@ -231,17 +234,18 @@ ok("the consent copy states it plainly",
   ok("every table has at least three syllables to choose from", thin.length === 0, thin.join(", "));
   ok("a middle syllable keeps its hyphen in what Echo is given (two beats, never \"eerie\"), and leaves out ah-lah, ah-jah, ee-ree and ee-lee",
     tables.filter((t) => t.pos === "m").every((t) => t.items.every((it) => it.say === it.t)) && !tables.some((t) => t.items.some((it) => /^(ah-lah|ah-jah|ee-ree|ee-lee)$/.test(it.t))));
+  const voc = tables.filter((t) => t.pos === "v")[0];
   ok("vocalic R has no \"er\" (a voice reads it as a hesitation), and gives Echo real words to say (are, ore)",
-    !SC.syllables("R", "v").some((x) => x.t === "er") && SC.syllables("R", "v").map((x) => x.say).join() === "are,ore,air,ear,ire");
+    !!voc && !voc.items.some((x) => x.t === "er") && voc.items.map((x) => x.say).join() === "are,ore,air,ear,ire");
   // the listening rule
-  ok("only vocalic R's syllables ship switched on for the practice page (R at the end of a word uses them too)",
-    JSON.stringify(SC.SYL_POS_ON) === JSON.stringify({ m: [], f: ["R"], v: ["R"], b: [] }), JSON.stringify(SC.SYL_POS_ON));
+  ok("every new place ships switched off for the practice page, until someone has listened (/listen.html)",
+    JSON.stringify(SC.SYL_POS_ON) === JSON.stringify({ m: [], f: [], v: [], b: [] }), JSON.stringify(SC.SYL_POS_ON));
   ok("a place that is not switched on has no syllables to ask (the climb skips the step); one with no table uses the start of a word",
     SC.syllables("S", "f").length === 0 && SC.syllables("R", "m").length === 0 && SC.syllables("S", "v").map((x) => x.t).join() === SC.syllables("S").map((x) => x.t).join());
   ok("no game card asks a new place's syllables until it is listed in GAME_POS_ON (none yet)",
     JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((p) => SC.gameSyllables("R", p).length === 0));
   // …and what each place would ask the day it is switched on
-  ALL.forEach((x) => ["m", "f", "b"].forEach((p) => { if (!SC.SYL_POS_ON[p].includes(x)) SC.SYL_POS_ON[p].push(x); }));
+  ALL.forEach((x) => ["m", "f", "v", "b"].forEach((p) => { if (!SC.SYL_POS_ON[p].includes(x)) SC.SYL_POS_ON[p].push(x); }));
   const on = [];
   for (const t of tables) { const got = SC.syllables(t.sound, t.pos).map((x) => x.t).join(); if (got !== t.items.map((x) => x.t).join()) on.push(t.pos + " " + t.sound + ": " + got); }
   ok("switched on, every place asks exactly its own table", on.length === 0, on.join("; "));

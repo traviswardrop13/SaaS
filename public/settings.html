@@ -607,9 +607,13 @@
     function paintPractice() {
       var hw = Sona.homework(), sounds = Sona.rotSounds(), nm = (childEl.value || "").trim() || "your child";
       var label = function (x) { return Sona.soundLabel ? Sona.soundLabel(x) : x; };
+      // a child aged 2 to 4 is never given vocalic R or blends from a pick here
+      // (Sona.soundPos; Rachel's call): greyed, and the saved pick is kept
+      var little = Sona.playStyle() === "simple";
       Array.prototype.forEach.call(posEl.options, function (o) {
         var info = Sona.posInfo(o.value), txt = posLabels[o.value], off = false;
         if (openPos.indexOf(o.value) < 0) { off = true; txt += " · coming soon"; }
+        else if (little && info.only) { off = true; txt += " · not for ages 2–4"; }
         // vocalic R is R's; blends here are R's, S's and L's: a choice none of
         // this child's sounds has would be a choice the app half kept
         else if (info.only && !sounds.some(function (x) { return info.only.indexOf(x) >= 0; })) { off = true; txt += " · " + info.only.map(label).join(", ") + " only"; }
@@ -622,12 +626,15 @@
       // the position line: only when something needs saying
       var pick = Sona.practicePos(), lines = [];
       if (hw) lines.push("Set by the speech therapist\u2019s homework: " + (posLabels[pick] || posLabels.mix) + ".");
-      var toStart = sounds.filter(function (x) { return pick !== "mix" && pick !== "i" && Sona.soundPos(x) === "i"; });
+      var held = !hw && little && (pick === "v" || pick === "b");
+      if (held) lines.push("Blends and vocalic R usually come later, so " + nm + " practices the start of words.");
+      else if (!hw && little && pick === "mix") lines.push("Blends and vocalic R usually come later, so " + nm + "\u2019s Mixed practice leaves them out.");
+      var toStart = held ? [] : sounds.filter(function (x) { return pick !== "mix" && pick !== "i" && Sona.soundPos(x) === "i"; });
       var toAny = sounds.filter(function (x) { return pick !== "mix" && Sona.soundPos(x) === "mix"; });
       var who = function (list) { return list.length > 3 ? nm + "\u2019s other sounds practice" : list.map(label).join(", ") + (list.length === 1 ? " practices" : " practice"); };
       if (toStart.length) lines.push((pick === "v" ? "Only R has vocalic R. " : pick === "b" ? "Only R, S and L have blends here. " : "") + who(toStart) + " the start of words.");
       if (toAny.length) lines.push("TH (v) has no words that start with it, so it uses words like mother and feather.");
-      if (pick !== "i" && Sona.GAMES_FOLLOW_POS) lines.push("Games with pictures use these words too.");
+      if (pick !== "i" && !held && Sona.GAMES_FOLLOW_POS) lines.push("Games with pictures use these words too.");
       var pn = document.getElementById("posNote");
       pn.textContent = lines.join(" "); pn.hidden = !lines.length;
       // the steps line: what the day's rounds will ask, for the sound the

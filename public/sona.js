@@ -986,6 +986,7 @@
   function _famPos() {
     try { const p = getProfile().wordPosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
   }
+  function _littleOne() { try { return playStyle() === "simple"; } catch (e) { return false; } }
   // Does this sound have bank words at this place?
   function posHas(sound, pos) {
     return (WORDS[String(sound || "").toUpperCase()] || []).some((w) => (w.pos || "i") === pos);
@@ -1002,9 +1003,15 @@
   function soundPos(sound) {
     sound = String(sound || "").toUpperCase();
     // an assignment's position belongs to the assignment's sounds
-    const hw = homework();
-    const p = hw && hw.pos && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) < 0 ? _famPos() : practicePos();
+    const hw = homework(), mine = !!(hw && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) >= 0);
+    let p = hw && hw.pos && !mine ? _famPos() : practicePos();
     if (homeworkWords(sound).length) return p;
+    // A child aged 2 to 4 is never given vocalic R or blends because a grown-up
+    // picked them (CLAUDE.md: "Developmental order is real"; cluster
+    // reduction is typical to about 4, vocalic R comes around 7): the start of
+    // a word instead, and Settings says so. Their speech therapist's homework
+    // still names its own place. Rachel's call.
+    if (!mine && _littleOne() && (p === "v" || p === "b")) p = "i";
     if (p === "mix" || posHas(sound, p)) return p;
     return posHas(sound, "i") ? "i" : "mix";
   }
@@ -1804,7 +1811,7 @@
     const hww = homeworkWords(sound);
     if (hww.length) { const ps = {}; hww.forEach((w) => { ps[w.pos || "i"] = 1; }); const k = Object.keys(ps); SP = k.length === 1 ? k[0] : "mix"; }
     if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme", pos: "" }];
-    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).filter((s) => !(SP === "mix" && _littleOne() && (s.pos === "v" || s.pos === "b"))).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
     // once each: "cake" is filed at the start and the end of K
     if (lvl === "word") { const seen = {}; return ws().filter((w) => !seen[w.w] && (seen[w.w] = 1)).map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full", pos: w.pos || "i" })); }
     if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound, P) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w, pos: w.pos }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full", pos: s.pos || P }));
@@ -1848,6 +1855,15 @@
     }
     if (item.level === "word" && lower[0].level === "syllable") {
       const w = String(item.word || item.t || "").toLowerCase();
+      // R's vowel + R words: the syllable with THEIR vowel (bear → air, not
+      // "ear"), and an "er" word (bird, water) to the sound alone, since the
+      // sound alone already is that vowel
+      if (String(sound).toUpperCase() === "R" && (P === "f" || P === "v")) {
+        const want = STEP_SYL[w];
+        const hit = want ? lower.filter((it) => it.t === want)[0] : null;
+        if (hit) return hit;
+        return ladderContent(sound, 0, P)[0];
+      }
       let best = lower[0], score = -1;
       lower.forEach((it) => { const n = _shared(String(it.t).toLowerCase().replace(/[^a-z]/g, ""), w); if (n > score) { score = n; best = it; } });
       return best;
@@ -1899,6 +1915,8 @@
     }
     return { sound: sound, pos: pos, picked: picked, fellBack: pos !== picked, start: Math.min(ladderStart(), top), top: top, have: have, homework: !!homework(), steps: steps };
   }
+  // R's vowel + R words, and the vocalic syllable each steps down to
+  const STEP_SYL = { car: "ar", star: "ar", shark: "ar", door: "or", four: "or", fork: "or", corn: "or", bear: "air", chair: "air", ear: "ear" };
   // the longest run of letters a and b share ("ar" and "car": 2)
   function _shared(a, b) {
     let best = 0;
@@ -2269,6 +2287,8 @@
     const pick = homeworkWords(sound);
     if (pick.length) return pick;
     const list = (WORDS[sound] || []).slice();
+    // a little one's Mixed leaves out vocalic R and blends (soundPos)
+    if (pos === "mix" && _littleOne()) return list.filter(function (w) { return w.pos !== "v" && w.pos !== "b"; });
     if (pos === "mix" || pos === "all") return list;
     pos = pos || "i"; // no selection → initial position (preserves prior behavior; SLPs opt into others)
     const sel = list.filter(function (w) { return (w.pos || "i") === pos; });
@@ -7303,7 +7323,7 @@
   const HEAR_ALIKE = {
     rah: ["raw"], ree: ["re", "rhee"], roo: ["rue", "roux", "ru"], roh: ["row", "roe", "rho"], ray: ["re"],
     ar: ["are", "r"], or: ["ore", "oar"], air: ["heir", "err"], ear: ["ere"],
-    slay: ["sleigh"], kray: ["cray"], grew: ["grue"], clue: ["klue"],
+    kray: ["cray"], grew: ["grue"], clue: ["klue"], flee: ["flea"], ski: ["skee"],
   };
   function _hearSyllable(tokens, content, word, S2, dropped) {
     const flat = (x) => String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1");
