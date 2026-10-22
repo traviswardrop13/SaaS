@@ -557,8 +557,8 @@
         { art: "e03", ages: "both", buddy: { x: 0.775, y: 0.79, h: 0.18, pose: "cheer" },
           line: { big: "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Hold on, Pelly!",
                   little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.765, y: 0.71, h: 0.19, pose: "cheer" },
           line: "Hooray for Goat's kite, and for ten gold stars on our helper map!" }
       ]
     },
