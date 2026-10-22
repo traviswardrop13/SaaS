@@ -136,7 +136,7 @@ globalThis.fetch = async (url, init = {}) => {
 const reset = () => { KV.K.clear(); KV.T.clear(); KV.H.clear(); KV.Z.clear(); KV.S.clear(); KV.L.clear(); KV.log.length = 0; KV.down = false; KV.failOn = null; SENT.length = 0; resendStatus = 200; resendQueue = []; };
 
 const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "RESEND_API_KEY", "UNSUB_SECRET",
-  "EMAIL_POSTAL", "NURTURE_FROM", "NURTURE_REPLY_TO", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_WEBHOOK_AUTH_PREV", "REVENUECAT_SANDBOX"];
+  "EMAIL_POSTAL", "NURTURE_FROM", "NURTURE_REPLY_TO", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_WEBHOOK_AUTH_PREV", "REVENUECAT_SANDBOX", "SALE_ALERT_TO", "RESEND_FROM"];
 const AUTH = "Bearer rc-test-secret-0123456789";
 function env(over = {}) {
   for (const k of ENV_KEYS) delete process.env[k];
@@ -271,7 +271,11 @@ await scenario("states", async () => {
   {
     const fresh = ev({ event_timestamp_ms: t0 + 6, expiration_at_ms: exp }), from = KV.log.length;
     await hook(fresh);
-    const cmds = KV.log.slice(from);
+    // the welcome (WELCOME1) runs after the message is marked done; it is not part of it
+    const all = KV.log.slice(from), done = all.findLastIndex((c) => c[0] === "SET" && c[1] === R.evtKey(fresh.id));
+    const cmds = all.slice(0, done + 1);
+    ok("…and the welcome's own steps, after it, write nothing but its sent mark",
+      all.slice(done + 1).every((c) => ["EXISTS", "HGET", "SISMEMBER", "GET"].includes(c[0]) || (c[0] === "SET" && String(c[1]).startsWith("rc:sent:welcome:"))), all.slice(done + 1).map((c) => c.slice(0, 2)));
     ok("…and the mark that a message is done is the last thing written, after a look that writes nothing",
       cmds[0][0] === "EXISTS" && cmds[0][1] === R.evtKey(fresh.id) && cmds.at(-1)[0] === "SET" && cmds.at(-1)[1] === R.evtKey(fresh.id) && !cmds.at(-1).includes("NX") &&
       cmds.filter((c) => String(c[1]) === R.evtKey(fresh.id)).length === 2, cmds.map((c) => c.slice(0, 2)));
@@ -560,7 +564,7 @@ await scenario("transfer", async () => {
   r = await hook(t);
   ok("RevenueCat moves the subscription to the iPad's customer (no email): 200, the address is marked \"moved\"", r.status === 200 && r.json.applied === true && plan().s === "moved", [r, plan()]);
   ok("…its reminder is dropped", !zscore(R.REMIND_KEY));
-  ok("…and the run sends nothing, though the free days are still on", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.length === 0);
+  ok("…and the run sends nothing, though the free days are still on", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.every((m) => m.body.subject === R.MAILS.welcome.subject));
   r = await hook(t);
   ok("the same TRANSFER again: nothing more", r.status === 200 && r.json.ignored === "dup", r);
   r = await hook(move({ transferred_from: ["$RCAnonymousID:cccccccccccccccccccccccccccccccc"] }));
@@ -596,7 +600,7 @@ await scenario("transfer", async () => {
     r.status === 200 && plan().s === "moved" && plan().ts === S + HOUR && !zscore(R.REMIND_KEY), [r, plan(), zscore(R.REMIND_KEY)]);
   ok("…while still stopping the welcome series and linking the address to the customer",
     KV.K.get(N.stopKey("mom@example.com")) === "1" && KV.K.get(R.uidKey(A)) === "mom@example.com");
-  ok("…so the run sends no reminder", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.length === 0);
+  ok("…so no welcome (the plan had already moved), and the run sends no reminder", (await R.runRc(kv, fetch, run1, quiet)).reminded === 0 && SENT.length === 0, SENT.map((m) => m.body.subject));
   await hook(move({ event_timestamp_ms: S + 30 * 60e3 }));
   ok("an older TRANSFER arriving later never moves the kept time back", KV.K.get(R.movedKey(A)) === String(S + HOUR));
   r = await hook(ev({ type: "INITIAL_PURCHASE", event_timestamp_ms: S + 2 * HOUR, expiration_at_ms: E + 2 * HOUR, app_user_id: A, original_app_user_id: A }));
@@ -689,6 +693,64 @@ await scenario("wiring", async () => {
   ok("…and that a phone test takes both the sandbox switch in Vercel and the webhook's environment in RevenueCat",
     /`REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment\s+to Sandbox/.test(native));
   ok("…and the App Privacy answers it owes", /RevenueCat webhook/.test(native) && /Purchase History/.test(native));
+});
+
+// ── WELCOME1: the parent hears from Rachel the day the free days start ──
+await scenario("welcome", async () => {
+  const W = R.MAILS.welcome.subject, mine = (to = "mom@example.com") => SENT.filter((m) => m.body.subject === W && m.body.to[0] === to);
+  reset(); env(); joinList();
+  let r = await hook(ev({ expiration_at_ms: Date.UTC(2026, 9, 25, 18, 0) }));
+  const w = mine()[0];
+  ok("free days start for an address on Sona's list: one welcome, from Rachel, with the day they end",
+    r.status === 200 && r.json.applied === true && mine().length === 1 && /Every game in Sona is open/.test(w.body.text) && /Your free days end on Sunday, October 25\./.test(w.body.text) && /Rachel, MS, CF-SLP/.test(w.body.text), w && w.body.text);
+  ok("…with the unsubscribe link and header, and nothing about a child", /api\/email\/unsub\?e=/.test(w.body.text) && w.body.headers["List-Unsubscribe"] && !/\bMia\b/.test(w.body.text + w.body.html));
+  r = await hook(ev({ expiration_at_ms: Date.now() + 3 * DAY }));
+  ok("a second trial start the same year: no second welcome", r.status === 200 && mine().length === 1, mine().length);
+  reset(); env();
+  r = await hook(ev());
+  ok("an address that never joined Sona's list gets none", r.status === 200 && r.json.applied === true && SENT.length === 0);
+  reset(); env(); joinList(); KV.S.set("email:unsub", new Set(["mom@example.com"]));
+  r = await hook(ev());
+  ok("…nor one that unsubscribed", r.status === 200 && SENT.length === 0);
+  reset(); env(); joinList();
+  r = await hook(ev({ period_type: "NORMAL" }));
+  ok("a plan charged today (no free days) gets no free-days welcome", r.status === 200 && SENT.length === 0);
+  for (const type of ["RENEWAL", "UNCANCELLATION", "EXPIRATION"]) await hook(ev({ type, period_type: "TRIAL" }));
+  ok("…nor does any other message", SENT.length === 0, SENT.map((m) => m.body.subject));
+  reset(); env(); joinList(); resendStatus = 500;
+  r = await hook(ev());
+  ok("Resend failing on the welcome: the webhook still answers 200, and the mark is released", r.status === 200 && r.json.applied === true && !KV.K.has(R.sentKey("welcome", "mom@example.com", 0)), r);
+  resendStatus = 200;
+  ok("the privacy page names the welcome note", /a welcome note when Premium&rsquo;s free days start/.test(read("public/privacy.html")));
+});
+
+// ── SALEALERT1: Travis hears about each new trial or purchase ──
+await scenario("sale alert", async () => {
+  reset(); env();
+  let r = await hook(ev());
+  ok("with SALE_ALERT_TO unset, no note to Travis (only the store's own work)", r.status === 200 && SENT.length === 0 && !KV.log.some((c) => String(c[1]).startsWith("rc:alert:")), r);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  const first = ev({ expiration_at_ms: Date.UTC(2026, 9, 25, 18, 0) });
+  r = await hook(first);
+  const a = SENT.find((m) => m.body.to[0] === "travis@example.com");
+  ok("a new trial emails Travis once: trial, plan, the parent's email and when the free days end",
+    r.status === 200 && r.json.applied === true && a && a.body.subject === "New free trial on Sona" && /Plan: Monthly/.test(a.body.text) && /Parent email: mom@example\.com/.test(a.body.text) && /Free days end: Oct 25, 2026/.test(a.body.text), a && a.body);
+  ok("…with nothing about a child in it", a && !/Mia/.test(a.body.text + a.body.html + a.body.subject), a && a.body.text);
+  r = await hook(first);
+  ok("the same message again (a RevenueCat retry) sends nothing more", r.status === 200 && SENT.filter((m) => m.body.to[0] === "travis@example.com").length === 1, SENT.length);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  r = await hook(ev({ period_type: "NORMAL", product_id: "com.speaksona.app.annual", subscriber_attributes: {} }));
+  const b = SENT[0];
+  ok("a plan charged today, from a family who gave no email, still reaches Travis, said as a purchase",
+    r.status === 200 && r.json.ignored === "no email" && SENT.length === 1 && b.body.subject === "New Premium purchase on Sona" && /Plan: Yearly/.test(b.body.text) && /none given in the app/.test(b.body.text) && !/Free days end/.test(b.body.text), b && b.body);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  for (const type of ["RENEWAL", "CANCELLATION", "EXPIRATION"]) await hook(ev({ type, period_type: "NORMAL" }));
+  await hook(ev({ environment: "SANDBOX" }));
+  ok("renewals, cancellations, endings and Apple's sandbox never email Travis", SENT.length === 0, SENT.map((m) => m.body.subject));
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" }); resendStatus = 500;
+  r = await hook(ev());
+  ok("Resend failing on Travis's note never fails the webhook (no retry for a purchase over it)", r.status === 200 && r.json.applied === true && plan() && plan().s === "trial", r);
+  resendStatus = 200; env();
 });
 
 console.log(`\n${passes} passed, ${fails} failed`);

@@ -76,8 +76,9 @@ export const PLANS_KEY = "rc:plans";
 export const REMIND_KEY = "rc:remind";
 export const MISS_KEY = "rc:miss";
 export const evtKey = (id: string) => "rc:evt:" + id;
-export const sentKey = (kind: "remind" | "miss", email: string, exp: number) =>
-  kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:miss:" + email;
+export const sentKey = (kind: "welcome" | "remind" | "miss", email: string, exp: number) =>
+  kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:" + kind + ":" + email;
+export const WELCOME_SENT_SEC = 365 * 24 * 60 * 60; // once a year an address, however many trials
 export const uidKey = (id: string) => "rc:uid:" + id;
 /** When the subscription last left this RevenueCat customer (a TRANSFER's time), for a message about it that arrives late. */
 export const movedKey = (id: string) => "rc:moved:" + id;
@@ -95,7 +96,7 @@ export const SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export type RcState = "trial" | "paid" | "cancelled" | "billing" | "ended" | "moved";
 /** `uids`: the customer ids this message is about; `from`: on a TRANSFER, the ones it moved away from. */
-export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null; uids: string[]; from: string[] };
+export type RcEvent = { id: string; type: string; ts: number; sandbox: boolean; email: string; exp: number; state: RcState | null; uids: string[]; from: string[]; product?: string; period?: string };
 export type Plan = { s: RcState; exp: number; ts: number; at: string };
 
 const STATES: readonly string[] = ["trial", "paid", "cancelled", "billing", "ended", "moved"];
@@ -183,6 +184,8 @@ export function readEvent(body: unknown): RcEvent | null {
     exp: ms(ev.expiration_at_ms),
     state: stateFor(type, period, reason),
     uids, from,
+    // for Travis's own "new trial" email only (alertNew); never kept
+    product: str(ev.product_id, 100), period,
   };
 }
 
@@ -320,7 +323,22 @@ type Mail = { subject: string; preview: string; paras: string[]; button: string;
  * price is Apple's and depends on the country), and no number of free days
  * (that is the App Store's too).
  */
-export const MAILS: Record<"remind" | "miss", Mail> = {
+export const MAILS: Record<"welcome" | "remind" | "miss", Mail> = {
+  // WELCOME1 (Travis, 22 Oct 2026: "build the welcome email too"): the day
+  // the free days start, so a family that just said yes hears from Rachel
+  // instead of nothing. renderMail adds the line with the free days' end date.
+  welcome: {
+    subject: "Welcome to Sona Premium",
+    preview: "Every game in Sona is open now",
+    paras: [
+      "Hi there,",
+      "Welcome to Sona Premium! Every game in Sona is open for your child now.",
+      "The best way to spend your free days: a few minutes of practice each day, then a game as the reward. Short and often beats long and rare.",
+    ],
+    button: "Open Sona",
+    link: APP_URL,
+    ps: "Questions? Just reply to this email.",
+  },
   remind: {
     subject: "Your free days end soon",
     preview: "Nothing to do if you’re keeping Sona",
@@ -349,8 +367,16 @@ export const MAILS: Record<"remind" | "miss", Mail> = {
   },
 };
 
-export function renderMail(kind: "remind" | "miss", unsubUrl: string, postal: string): { subject: string; html: string; text: string } {
-  const c = MAILS[kind];
+/** The day the free days end, as a parent reads it ("Saturday, October 25"), or "" with no end. */
+export function endDay(exp: number): string {
+  return exp ? new Date(exp).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric" }) : "";
+}
+
+export function renderMail(kind: "welcome" | "remind" | "miss", unsubUrl: string, postal: string, exp = 0): { subject: string; html: string; text: string } {
+  const base = MAILS[kind];
+  const day = kind === "welcome" ? endDay(exp) : "";
+  // the welcome's end date is the one line not fixed in MAILS
+  const c = day ? { ...base, paras: [...base.paras, `Your free days end on ${day}. We’ll send you a reminder before then, so nothing comes as a surprise.`] } : base;
   const P = 'style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;"';
   const html =
     `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">` +
@@ -373,9 +399,9 @@ export function renderMail(kind: "remind" | "miss", unsubUrl: string, postal: st
 /** A Resend Idempotency-Key with no address in it (a header carries ASCII only). */
 const keyFor = (kind: string, email: string, exp: number) => `rc-${kind}-${createHash("sha256").update(email + " " + exp).digest("hex").slice(0, 32)}`;
 
-async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
+async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "welcome" | "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
-  const m = renderMail(kind, unsubUrl, cfg.postal);
+  const m = renderMail(kind, unsubUrl, cfg.postal, exp);
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
   try {
     const r = await f("https://api.resend.com/emails", {
@@ -464,4 +490,90 @@ export async function runRc(kv: Kv = kvCmd, f: Fetch = fetch, now: number = Date
     }
   }
   return res;
+}
+
+// ── Travis's own note: a new trial or purchase (SALEALERT1) ─────────────
+
+/**
+ * A NEW FAMILY, TO TRAVIS (Travis, 22 Oct 2026: "add the new trial email to
+ * me"). Each INITIAL_PURCHASE from the App Store (free days starting, or a
+ * plan charged today) emails SALE_ALERT_TO, once per message: the mark
+ * `rc:alert:<id>` is claimed before the send, so RevenueCat's retries and a
+ * redelivery never send it twice. It goes out whether or not the parent
+ * gave the app an email (a family who did not is still a trial), and it is
+ * best-effort: a failed send is logged and the webhook carries on, because
+ * a missed note to the founder must never make RevenueCat retry a purchase.
+ * With SALE_ALERT_TO unset, nothing is sent and the store is never asked.
+ * What it says: trial or purchase, which plan, when the free days end, and
+ * the parent's email if the app had one. Never anything about a child.
+ */
+export const alertKey = (id: string) => "rc:alert:" + id;
+
+export function alertMail(ev: RcEvent): { subject: string; text: string } {
+  const trial = ev.period === "TRIAL";
+  const p = (ev.product || "").toLowerCase();
+  const plan = /month/.test(p) ? "Monthly" : /year|annual/.test(p) ? "Yearly" : ev.product || "unknown plan";
+  const end = ev.exp ? new Date(ev.exp).toLocaleString("en-US", { timeZone: "America/Denver", dateStyle: "medium", timeStyle: "short" }) + " (Mountain)" : "";
+  const lines = [
+    trial ? "A family just started a free trial of Sona Premium in the iPhone app." : "A family just bought Sona Premium in the iPhone app.",
+    "",
+    "Plan: " + plan,
+    "Parent email: " + (ev.email || "none given in the app"),
+    ...(trial && end ? ["Free days end: " + end] : []),
+    "",
+    "Every family's plan is on https://www.speaksona.com/leads.html",
+  ];
+  return { subject: trial ? "New free trial on Sona" : "New Premium purchase on Sona", text: lines.join("\n") };
+}
+
+export async function alertNew(ev: RcEvent, kv: Kv = kvCmd, f: Fetch = fetch): Promise<"sent" | "off" | "dup" | "failed"> {
+  if (ev.type !== "INITIAL_PURCHASE") return "off";
+  const to = addressOk((process.env.SALE_ALERT_TO || "").trim());
+  const key = process.env.RESEND_API_KEY || "";
+  if (!to || !key) return "off";
+  const mark = await kv(["SET", alertKey(ev.id), "1", "NX", "EX", EVT_KEEP_SEC]);
+  if (mark === null) return "dup";
+  if (mark !== "OK") return "failed"; // no store, no way to send it only once
+  const m = alertMail(ev);
+  try {
+    const r = await f("https://api.resend.com/emails", {
+      method: "POST", signal: AbortSignal.timeout(5000),
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": "rc-alert-" + createHash("sha256").update(ev.id).digest("hex").slice(0, 32) },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM || "Sona <login@speaksona.com>", to: [to], subject: m.subject, text: m.text,
+        html: `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;white-space:pre-wrap;">${esc(m.text)}</div>`,
+      }),
+    });
+    if (r.ok) return "sent";
+    console.error("[revenuecat] Resend refused the sale alert", r.status);
+  } catch (e) {
+    console.error("[revenuecat] sale alert threw:", e instanceof Error ? e.message : String(e));
+  }
+  await kv(["DEL", alertKey(ev.id)]); // a later retry of this message may try again
+  return "failed";
+}
+
+/**
+ * THE WELCOME, TO THE PARENT (WELCOME1). Sent from the webhook itself, the
+ * moment RevenueCat says a family's free days started (an INITIAL_PURCHASE
+ * in its TRIAL period that `apply` acted on), under the same rules as the
+ * other two notes: only an address that joined Sona's list and never left
+ * it, once a year an address (the sent mark is the claim). Best-effort: a
+ * send that fails releases the mark and the webhook still answers 200.
+ */
+export async function welcome(ev: RcEvent, kv: Kv = kvCmd, f: Fetch = fetch): Promise<"sent" | "skip" | "failed"> {
+  if (ev.type !== "INITIAL_PURCHASE" || ev.state !== "trial" || !ev.email) return "skip";
+  const cfg = config();
+  if (!cfg) return "skip";
+  // still on the free days as Sona now holds it (a late message about a plan that already moved is not)
+  const now = parsePlan(await kv(["HGET", PLANS_KEY, ev.email]));
+  if (!now || now.s !== "trial") return "skip";
+  if (Number(await kv(["EXISTS", "nurture:0:" + ev.email])) !== 1) return "skip";
+  if ((await suppressed(ev.email, kv)) !== false) return "skip";
+  const mark = await kv(["SET", sentKey("welcome", ev.email, 0), String(Date.now()), "NX", "EX", WELCOME_SENT_SEC]);
+  if (mark !== "OK") return "skip";
+  const r = await send(f, cfg, "welcome", ev.email, ev.exp);
+  if (r.ok) return "sent";
+  await kv(["DEL", sentKey("welcome", ev.email, 0)]);
+  return "failed";
 }
