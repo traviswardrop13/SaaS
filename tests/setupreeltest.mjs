@@ -8,14 +8,19 @@
 //     among them (Fruit Slice, Piano Tiles, Hoops, Soccer Goal, Bubble Pop,
 //     Feed Echo), and every one is a game a child can open: never a Coming
 //     soon game;
-//   - a clip is H.264 (avc1, High profile) at 540 x 720, 3 to 4.5 seconds,
+//   - a clip is H.264 (avc1, High profile) at 540 x 720, 3 to 4 seconds,
 //     with one track and it is video: no audio track, so a clip can never
 //     make a sound or touch the phone's audio session;
+//   - its colours are tagged BT.709 (a colr box: primaries, transfer and
+//     matrix 1, limited range), the matrix the recorder converts with: an
+//     untagged clip is read as BT.709 by some players and BT.601 by others,
+//     and its greens shift against the poster it follows;
 //   - its moov comes before its mdat (faststart), so it starts playing
 //     before it has finished downloading;
 //   - each is at most 300 KB, and its poster a 540 x 720 WebP of at most
 //     60 KB (eleven clips are a couple of megabytes on a phone's data);
-//   - the folder holds nothing else, and the recorder films exactly this list.
+//   - the folder holds nothing else (a dotfile such as Finder's .DS_Store
+//     aside: git ignores it), and the recorder films exactly this list.
 // Node only: it reads the files' own boxes and chunks.
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
@@ -24,8 +29,10 @@ import { fileURLToPath } from "url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // (SETUPREEL_DIR: another folder, to check this test fails on a bad clip)
 const DIR = process.env.SETUPREEL_DIR || path.join(ROOT, "public/assets/setup/reel");
-// the recorder's list, in setup's demo order; the first six are required
+// the recorder's list (KEYS in tools/setupreel/record.mjs), in its order. The
+// order the reel plays them in is setup's own (onboarding.html), not this.
 const REEL = ["slice", "tiles", "hoops", "soccer", "dino", "stack", "run", "glide", "rise", "feed", "bubbles"];
+// the six the spec says setup cannot do without (22 Oct 2026)
 const REQUIRED = ["slice", "tiles", "hoops", "soccer", "bubbles", "feed"];
 const BUDGET = { mp4: 300000, webp: 60000 };
 
@@ -68,6 +75,14 @@ function mp4(file) {
   if (avc) { r.w = buf.readUInt16BE(avc.at + avc.head + 24); r.h = buf.readUInt16BE(avc.at + avc.head + 26); }
   const avcC = (f.avcC || [])[0];
   if (avcC) r.profile = buf[avcC.at + avcC.head + 1];
+  // the sample entry's colour box: "nclx", primaries, transfer, matrix, and
+  // the full-range bit
+  const colr = (f.colr || [])[0];
+  if (colr) {
+    const o = colr.at + colr.head;
+    r.colr = { kind: buf.toString("latin1", o, o + 4) };
+    if (r.colr.kind === "nclx") Object.assign(r.colr, { primaries: buf.readUInt16BE(o + 4), transfer: buf.readUInt16BE(o + 6), matrix: buf.readUInt16BE(o + 8), full: (buf[o + 10] & 0x80) !== 0 });
+  }
   const mvhd = (f.mvhd || [])[0];
   if (mvhd) {
     const v = buf[mvhd.at + mvhd.head], o = mvhd.at + mvhd.head + (v === 1 ? 20 : 12);
@@ -92,8 +107,12 @@ function webp(file) {
 }
 
 // ── the list ──
+// the catalog, from "const GAME_ACTS = {" to its own closing "  };" (a game
+// line found anywhere else in sona.js is not the catalog's)
 const sona = readFileSync(path.join(ROOT, "public/sona.js"), "utf8");
-const acts = sona.slice(sona.indexOf("const GAME_ACTS = {"), sona.indexOf("function gameMeta", sona.indexOf("const GAME_ACTS = {")) > 0 ? sona.indexOf("function gameMeta", sona.indexOf("const GAME_ACTS = {")) : undefined);
+const actsAt = sona.indexOf("const GAME_ACTS = {"), actsEnd = actsAt < 0 ? -1 : sona.indexOf("\n  };", actsAt);
+ok("sona.js: the catalog (GAME_ACTS) and its closing line are where this test reads them", actsAt >= 0 && actsEnd > actsAt, "start " + actsAt + ", end " + actsEnd);
+const acts = actsAt >= 0 && actsEnd > actsAt ? sona.slice(actsAt, actsEnd) : "";
 for (const k of REEL) {
   const line = (acts.match(new RegExp("^\\s*" + k + ":\\s*\\{[^\\n]*", "m")) || [""])[0];
   ok(k + ": a game in the catalog, open on Home (never Coming soon)", !!line && !/comingSoon:\s*true/.test(line), line || "not in GAME_ACTS");
@@ -107,7 +126,7 @@ ok("the recorder is a manual tool, not part of the battery", !/setupreel\/record
 
 // ── the files ──
 ok("the reel folder exists", existsSync(DIR));
-const files = existsSync(DIR) ? readdirSync(DIR).sort() : [];
+const files = existsSync(DIR) ? readdirSync(DIR).filter((f) => !f.startsWith(".")).sort() : []; // .DS_Store is Finder's, not a clip
 const want = REEL.flatMap((k) => [k + ".mp4", k + ".webp"]).sort();
 ok("the folder holds a clip and a poster for each game, and nothing else", JSON.stringify(files) === JSON.stringify(want), files.join(" "));
 let total = 0;
@@ -123,7 +142,8 @@ for (const k of REEL) {
   ok(k + ": H.264 (avc1), High profile", JSON.stringify(v.entries) === '["avc1"]' && v.profile === 100, JSON.stringify({ entries: v.entries, profile: v.profile }));
   ok(k + ": no audio track (no mp4a), so it can never make a sound", !v.audio);
   ok(k + ": 540 x 720", v.w === 540 && v.h === 720, v.w + "x" + v.h);
-  ok(k + ": 3 to 4.5 seconds", v.seconds >= 3 && v.seconds <= 4.5, v.seconds);
+  ok(k + ": 3 to 4 seconds", v.seconds >= 3 && v.seconds <= 4.05, v.seconds);
+  ok(k + ": tagged BT.709 (colr nclx 1/1/1), limited range", !!v.colr && v.colr.kind === "nclx" && v.colr.primaries === 1 && v.colr.transfer === 1 && v.colr.matrix === 1 && v.colr.full === false, JSON.stringify(v.colr || null));
   ok(k + ": the poster is a 540 x 720 WebP of at most 60 KB", p.ok && p.w === 540 && p.h === 720 && ps <= BUDGET.webp, JSON.stringify({ chunk: p.chunk, w: p.w, h: p.h, bytes: ps }));
 }
 console.log("reel: " + REEL.length + " clips, " + (total / 1e6).toFixed(2) + " MB with posters");
