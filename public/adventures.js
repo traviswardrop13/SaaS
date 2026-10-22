@@ -419,8 +419,8 @@
         { art: "s03", ages: "both", buddy: { x: 0.69, y: 0.72, h: 0.18, pose: "rest" },
           line: { big: "Into the Mushroom Woods we go. Hello, Glowworm! Rabbit and Hedgehog are here for the lantern walk too.",
                   little: "Hello, Glowworm! Hello, Rabbit and Hedgehog!" } },
-        // no buddy (on the sandy path just right of Echo, not placed)
-        { art: "s04", ages: "big", buddy: null,
+        // buddy: on the sandy path just right of Echo (rest)
+        { art: "s04", ages: "big", buddy: { x: 0.195, y: 0.84, h: 0.17, pose: "rest" },
           line: "Every evening, Glowworm leads a walk down the lamp path to the big lantern, to hear the crickets sing." },
         // buddy: on the near sandy path just right of Echo (rest)
         { art: "s05", ages: "both", buddy: { x: 0.695, y: 0.68, h: 0.165, pose: "rest" },

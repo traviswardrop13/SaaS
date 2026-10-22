@@ -99,6 +99,10 @@ def raw_game(name):
 
 def card(src, dst):
     out = os.path.join(CARDS, dst + ".webp")
+    fix = TOUCH.get(dst[len("home-"):] + "/home") if dst.startswith("home-") else None
+    if fix:
+        os.makedirs(EDIT, exist_ok=True)
+        src = touch(src, fix, os.path.join(EDIT, dst + "-touched.png"))
     im(src, "-alpha", "off", "-crop", "1536x864+0+80", "+repage", "-filter", "Lanczos", "-resize", "768x432!", *webp(82), out)
     return out
 
@@ -331,6 +335,10 @@ TOUCH = {
     "observatory/e04": [("fill", (0.785, 0.125, 0.009, 0.007)), ("fill", (0.875, 0.123, 0.009, 0.007)),
                         ("fill", (0.844, 0.426, 0.009, 0.007)), ("fill", (0.890, 0.440, 0.009, 0.007))],
     "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
+    "lantern/home": [("unlight", [(0.827, 0.352, 0.018)])],   # the big lantern's candle, before the game
+    "lantern/s04": [("unlight", [(0.192, 0.519, 0.045), (0.335, 0.452, 0.028), (0.413, 0.410, 0.022), (0.460, 0.385, 0.020),
+                                 (0.515, 0.374, 0.016), (0.553, 0.346, 0.016), (0.592, 0.347, 0.016), (0.646, 0.356, 0.016),
+                                 (0.690, 0.410, 0.022), (0.884, 0.486, 0.040), (0.800, 0.293, 0.050)])],
     "lantern/s05": [("unlight", [(0.095, 0.655, 0.050), (0.472, 0.409, 0.020), (0.746, 0.390, 0.020), (0.105, 0.488, 0.025)]),
                     ("fill", (0.437, 0.121, 0.021, 0.023))],    # a wing on Glowworm, who has none
     "lantern/s06": [("unlight", [(0.210, 0.413, 0.040), (0.390, 0.349, 0.025), (0.531, 0.326, 0.018), (0.461, 0.307, 0.012),
