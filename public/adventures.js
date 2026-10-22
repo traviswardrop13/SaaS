@@ -638,8 +638,8 @@
         { art: "s05", ages: "both", buddy: { x: 0.46, y: 0.8, h: 0.17, pose: "rest" },
           line: { big: "Nobody knows who goes first, so they all play at once. Boom, plink, ding! A bunny and a mouse cover their ears.",
                   little: "They all play at once. Boom, plink, ding! Oh dear, what a mix-up!" } },
-        // no buddy (on the front of the lily pad just right of Echo, not placed)
-        { art: "s06", ages: "both", buddy: null,
+        // buddy: on the front of the lily pad just right of Echo (rest)
+        { art: "s06", ages: "both", buddy: { x: 0.45, y: 0.65, h: 0.16, pose: "rest" },
           line: { big: "And Newt's curly tail keeps plucking the reeds all by itself. Plink, plonk! Oops, silly tail!",
                   little: "And Newt's silly tail keeps plucking her harp. Plink, plink!" } },
         // no buddy
