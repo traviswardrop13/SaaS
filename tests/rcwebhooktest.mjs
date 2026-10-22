@@ -136,7 +136,7 @@ globalThis.fetch = async (url, init = {}) => {
 const reset = () => { KV.K.clear(); KV.T.clear(); KV.H.clear(); KV.Z.clear(); KV.S.clear(); KV.L.clear(); KV.log.length = 0; KV.down = false; KV.failOn = null; SENT.length = 0; resendStatus = 200; resendQueue = []; };
 
 const ENV_KEYS = ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "RESEND_API_KEY", "UNSUB_SECRET",
-  "EMAIL_POSTAL", "NURTURE_FROM", "NURTURE_REPLY_TO", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_WEBHOOK_AUTH_PREV", "REVENUECAT_SANDBOX"];
+  "EMAIL_POSTAL", "NURTURE_FROM", "NURTURE_REPLY_TO", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_WEBHOOK_AUTH_PREV", "REVENUECAT_SANDBOX", "SALE_ALERT_TO", "RESEND_FROM"];
 const AUTH = "Bearer rc-test-secret-0123456789";
 function env(over = {}) {
   for (const k of ENV_KEYS) delete process.env[k];
@@ -660,6 +660,35 @@ await scenario("wiring", async () => {
   ok("…and that a phone test takes both the sandbox switch in Vercel and the webhook's environment in RevenueCat",
     /`REVENUECAT_SANDBOX=1` in Vercel AND switch this webhook's environment\s+to Sandbox/.test(native));
   ok("…and the App Privacy answers it owes", /RevenueCat webhook/.test(native) && /Purchase History/.test(native));
+});
+
+// ── SALEALERT1: Travis hears about each new trial or purchase ──
+await scenario("sale alert", async () => {
+  reset(); env();
+  let r = await hook(ev());
+  ok("with SALE_ALERT_TO unset, no note to Travis (only the store's own work)", r.status === 200 && SENT.length === 0 && !KV.log.some((c) => String(c[1]).startsWith("rc:alert:")), r);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  const first = ev({ expiration_at_ms: Date.UTC(2026, 9, 25, 18, 0) });
+  r = await hook(first);
+  const a = SENT.find((m) => m.body.to[0] === "travis@example.com");
+  ok("a new trial emails Travis once: trial, plan, the parent's email and when the free days end",
+    r.status === 200 && r.json.applied === true && a && a.body.subject === "New free trial on Sona" && /Plan: Monthly/.test(a.body.text) && /Parent email: mom@example\.com/.test(a.body.text) && /Free days end: Oct 25, 2026/.test(a.body.text), a && a.body);
+  ok("…with nothing about a child in it", a && !/Mia/.test(a.body.text + a.body.html + a.body.subject), a && a.body.text);
+  r = await hook(first);
+  ok("the same message again (a RevenueCat retry) sends nothing more", r.status === 200 && SENT.filter((m) => m.body.to[0] === "travis@example.com").length === 1, SENT.length);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  r = await hook(ev({ period_type: "NORMAL", product_id: "com.speaksona.app.annual", subscriber_attributes: {} }));
+  const b = SENT[0];
+  ok("a plan charged today, from a family who gave no email, still reaches Travis, said as a purchase",
+    r.status === 200 && r.json.ignored === "no email" && SENT.length === 1 && b.body.subject === "New Premium purchase on Sona" && /Plan: Yearly/.test(b.body.text) && /none given in the app/.test(b.body.text) && !/Free days end/.test(b.body.text), b && b.body);
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" });
+  for (const type of ["RENEWAL", "CANCELLATION", "EXPIRATION"]) await hook(ev({ type, period_type: "NORMAL" }));
+  await hook(ev({ environment: "SANDBOX" }));
+  ok("renewals, cancellations, endings and Apple's sandbox never email Travis", SENT.length === 0, SENT.map((m) => m.body.subject));
+  reset(); env({ SALE_ALERT_TO: "travis@example.com" }); resendStatus = 500;
+  r = await hook(ev());
+  ok("Resend failing on Travis's note never fails the webhook (no retry for a purchase over it)", r.status === 200 && r.json.applied === true && plan() && plan().s === "trial", r);
+  resendStatus = 200; env();
 });
 
 console.log(`\n${passes} passed, ${fails} failed`);

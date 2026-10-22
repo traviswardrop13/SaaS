@@ -465,7 +465,13 @@ To switch it on (Travis, once; nothing to build in Xcode):
    to Sandbox (or both) in RevenueCat; put both back afterwards.
 3. **Send test event** in RevenueCat: it should show 200. (A test changes
    nothing at Sona.)
-4. To change the secret later without a gap: copy the old value to
+4. **Travis's own "new trial" email** (SALEALERT1, 22 Oct 2026): add
+   `SALE_ALERT_TO` in Vercel (the address to tell) and redeploy. Each new
+   free trial or plan bought in the iPhone app then emails it once: "New
+   free trial on Sona" or "New Premium purchase on Sona", with the plan, the
+   parent's email if the app had one, and when the free days end. Nothing
+   about a child. Unset: no email.
+5. To change the secret later without a gap: copy the old value to
    `REVENUECAT_WEBHOOK_AUTH_PREV`, set the new one in both places, then
    delete the old one.
 
