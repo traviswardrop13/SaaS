@@ -3431,7 +3431,7 @@
     // Home, point its sticker at one that does not exist, and take it out of
     // the little kids' adventure deck. Its page keeps that adventure's hand-off.
     bubbles: { name: "Bubble Pop", sub: "Say it, and Echo blows bubbles", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Say the word. Echo blows bubbles, and you pop them all." },
-    peekaboo: { name: "Peekaboo", sub: "Say it, then find the picture", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Say the word to hide a picture behind a door. Watch the doors move, then tap the right one." },
+    peekaboo: { name: "Peekaboo", sub: "Say it, then find the picture", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Say the word to hide a picture behind a door. Watch the doors move, then tap the right one." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
     // word the child says moves the game one step, so each opens straight to
@@ -3457,18 +3457,18 @@
     // bounce note say "coming Nov 6" until that day, then "coming soon"
     // again. It is a LABEL, never a switch: only taking comingSoon off opens
     // a game.
-    balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
-    flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
-    rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },
-    snowman: { name: "Build a Snowman", sub: "Say it, then roll and stack", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a snowball. Roll it big, stack it and dress your snowman." },
-    train: { name: "Choo-Choo Train", sub: "Say it, then drive and stop", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to start the train. Drive to the station, stop, and help a friend aboard." },
-    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
-    stars: { name: "Bedtime Stars", sub: "Say it, then draw in the stars", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to start a picture. Slide from star to star to draw it in the sky." },
-    cake: { name: "Birthday Cake", sub: "Say it, then bake a cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to start each step. Stir, pour, ice and decorate your own birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
-    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
-    racecar: { name: "Race Car", sub: "Say it, then steer and race", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to drive the next stretch. Steer around cones and into the glowing ring." },
-    treasure: { name: "Treasure Map", sub: "Say it, then draw a route", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to set sail. Draw your boat a path around the islands to the next harbour." },
+    balloon: { name: "Balloon Party", sub: "Say it, then pump and float", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a balloon. Pump it up and pull it into the party ring." },
+    flower: { name: "Grow a Flower", sub: "Say it, then water the flower", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to fill the watering can. Hold it over the glowing soil to help the flower grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it, then blast off", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a rocket. Pull it back and let go to fly to a planet." },
+    snowman: { name: "Build a Snowman", sub: "Say it, then roll and stack", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a snowball. Roll it big, stack it and dress your snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it, then drive and stop", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start the train. Drive to the station, stop, and help a friend aboard." },
+    puppy: { name: "Puppy Bath", sub: "Say it, then wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to find a muddy spot. Aim the water and wash it clean." },
+    stars: { name: "Bedtime Stars", sub: "Say it, then draw in the stars", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start a picture. Slide from star to star to draw it in the sky." },
+    cake: { name: "Birthday Cake", sub: "Say it, then bake a cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to start each step. Stir, pour, ice and decorate your own birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it, then open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get a present. Pull, peel and lift to open it." },
+    fishtank: { name: "Fish Tank", sub: "Say it, then feed a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, playDescription: "Say the word to get fish food. Drop it above a hungry fish and watch it eat." },
+    racecar: { name: "Race Car", sub: "Say it, then steer and race", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to drive the next stretch. Steer around cones and into the glowing ring." },
+    treasure: { name: "Treasure Map", sub: "Say it, then draw a route", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to set sail. Draw your boat a path around the islands to the next harbour." },
     // REBUILT (Travis, 1 Oct 2026: "go finish soccer"): the word earns the
     // ball and the child swipes it past a goalie who slides along the goal
     // line (public/soccer.js).
@@ -3476,27 +3476,29 @@
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
-    robot: { name: "Robot Builder", sub: "Say it, then connect the wires", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to open a circuit. Turn the wires to power each robot part." },
-    castle: { name: "Castle Builder", sub: "Say it, then hoist a piece", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get a castle piece. Slide the crane over the glow and lower it in." },
+    robot: { name: "Robot Builder", sub: "Say it, then connect the wires", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to open a circuit. Turn the wires to power each robot part." },
+    castle: { name: "Castle Builder", sub: "Say it, then hoist a piece", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a castle piece. Slide the crane over the glow and lower it in." },
     // REBUILT (Travis, 1 Oct 2026: "go to the next game"): the word earns a
     // brush and the child rubs the sand off a bone (public/dino.js).
     dino: { name: "Dino Dig", sub: "Say it, then dig!", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get a brush, then rub the sand to dig up a dinosaur bone." },
-    space: { name: "Space Trip", sub: "Say it, then fly and land", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to start a flight. Steer the rocket and land softly on the glowing pad." },
-    pizza: { name: "Pizza Chef", sub: "Say it, then cook the pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to start each step. Roll, spread, top, bake and slice your own pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
+    space: { name: "Space Trip", sub: "Say it, then fly and land", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start a flight. Steer the rocket and land softly on the glowing pad." },
+    pizza: { name: "Pizza Chef", sub: "Say it, then cook the pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to start each step. Roll, spread, top, bake and slice your own pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it, then style the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the next salon tool. Wash, brush and style a friendly monster." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
-  // The Say & Play games list themselves (say: true), in catalog order. A
-  // playable one comes before every parked one (Home draws only the playable
-  // ones since 19 Oct 2026: each shelf is those, in this order).
+  // The Say & Play games list themselves (say: true), in catalog order.
+  // Bubble Pop and Peekaboo come before them, so the little kids' second free
+  // game (Bubble Pop) is not below ten Premium cards now that all eighteen
+  // are open (22 Oct 2026). A playable game comes before every parked one
+  // (Home draws only the playable ones since 19 Oct 2026: each shelf is
+  // those, in this order).
   const SAY_KEYS = Object.keys(GAME_ACTS).filter(function (key) { return GAME_ACTS[key].say; });
-  const ACTIVITY_KEYS = GAME_KEYS.concat(
-    SAY_KEYS.filter(function (key) { return !GAME_ACTS[key].comingSoon; }),
-    SAY_KEYS.filter(function (key) { return GAME_ACTS[key].comingSoon; }),
-    ["bubbles", "peekaboo", "rise"]);
+  const ACTIVITY_ORDER = GAME_KEYS.concat(["bubbles", "peekaboo"], SAY_KEYS, ["rise"]);
+  const ACTIVITY_KEYS = ACTIVITY_ORDER.filter(function (key) { return !GAME_ACTS[key].comingSoon; })
+    .concat(ACTIVITY_ORDER.filter(function (key) { return GAME_ACTS[key].comingSoon; }));
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";

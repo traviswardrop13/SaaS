@@ -6,6 +6,9 @@ import {createServer} from 'node:http';
 import {readFileSync,existsSync,statSync} from 'node:fs';
 import path from 'node:path';
 import {chromium,ROOT as SOURCE_ROOT,OUT,launchOpts} from './_env.mjs';
+// Race Car is open since 22 Oct 2026; fresh({unpark:false}) parks it again
+// for the bounce check (tests/_parked.mjs).
+import {parkedSona} from './_parked.mjs';
 import {fakeDevice} from './_sayplaydevice.mjs';
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||SOURCE_ROOT,PORT=8346,BASE='http://127.0.0.1:'+PORT;
 const mime={html:'text/html',js:'text/javascript',css:'text/css',webp:'image/webp',svg:'image/svg+xml',woff2:'font/woff2',json:'application/json'};
@@ -17,7 +20,7 @@ function ok(n,p,d){checks++;if(!p)failures++;console.log((p?'PASS ':'FAIL ')+n+(
 async function fresh(options={}){
  const context=await browser.newContext({viewport:options.viewport||{width:390,height:844},reducedMotion:'reduce'});
  await context.addInitScript(fakeDevice,{age:'7',micok:true,permission:'granted',speechMs:100,...options.device});
- await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(BASE+'/'))return r.abort();if(options.unpark!==false&&u===BASE+'/sona.js')return r.fulfill({contentType:'text/javascript',body:readFileSync(ROOT+'/sona.js','utf8').replace(/(racecar: \{[^\n]*)comingSoon: true, /,'$1')});return r.continue();});
+ await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(BASE+'/'))return r.abort();if(options.unpark===false&&u===BASE+'/sona.js')return r.fulfill({contentType:'text/javascript',body:parkedSona(readFileSync(ROOT+'/sona.js','utf8'),['racecar'])});return r.continue();});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.clock.install();await page.goto(BASE+'/arcade-racecar.html');return{context,page,errors};
 }
 async function advance(p,ms){await p.clock.runFor(ms);}

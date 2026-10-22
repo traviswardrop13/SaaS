@@ -7,8 +7,10 @@ import { readFileSync, existsSync, statSync } from 'fs';
 import path from 'path';
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||SOURCE_ROOT, BASE='http://127.0.0.1:8198';
-// Coming soon: Peekaboo and every Say & Play game until it is rebuilt (Travis, 26 Sep 2026; Bubble Pop came back 30 Sep).
-const PARKED=['peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
+// Coming soon: whatever the catalog parks. None since 22 Oct 2026, when Travis
+// opened Peekaboo and the seventeen rebuilt Say & Play games (Bubble Pop came
+// back 30 Sep); activitytest and day1 park some again to pin what parking does.
+const PARKED=[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b/gm)].map(m=>m[1]).sort();
 const MIME={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 const server=createServer((req,res)=>{const u=new URL(req.url,BASE),f=path.join(ROOT,u.pathname);if(u.pathname.startsWith('/api/')){res.writeHead(503);res.end('{}');return;}if(!existsSync(f)||!statSync(f).isFile()){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':MIME[f.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(f));});
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
@@ -50,7 +52,7 @@ for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age 
   await page.waitForTimeout(200);const st=await state(page);
   ok('age '+age+': Home itself presents every catalog card but the parked ones',JSON.stringify(st.keys)===JSON.stringify(HOME),st.keys);
   const parked=await page.evaluate(keys=>({cards:keys.filter(k=>document.querySelector('#libraryApp [data-game="'+k+'"]')),disabled:document.querySelectorAll('#libraryApp button[data-game]:disabled').length,coming:/coming soon/i.test(document.getElementById('libraryApp').innerText)}),PARKED);
-  ok('age '+age+': Peekaboo and the parked Say & Play games have no card on Home, and nothing says Coming soon',PARKED.includes('peekaboo')&&parked.cards.length===0&&parked.disabled===0&&!parked.coming,parked);
+  ok('age '+age+': no parked game has a card on Home, and nothing says Coming soon',parked.cards.length===0&&parked.disabled===0&&!parked.coming,parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);
   ok('age '+age+': no adventure hero or auto-start replaces the choice',await page.locator('#goBtn,#heroCard,#jarRow').count()===0&&new URL(page.url()).pathname==='/today.html');
   const recommended=['2','3','4'].includes(age)?'simple':['5','8'].includes(age)?'arcade':null;

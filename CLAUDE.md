@@ -187,7 +187,9 @@ changing one. What follows from the rule:
     child says it, the game moves; with the painted Home card of the game
     setup hands the child), and **"Games <Name> will play"** (a grid of the
     age group's playable games from the catalog, never a Coming soon one;
-    where no price follows, only the games that phone opens). Statements
+    where no price follows, only the games that phone opens; since 22 Oct
+    2026 a peek: Home's first nine, or three little-kid and six big-kid
+    games with no age, each group's rest counted as "and 7 more"). Statements
     with Continue and Back: nothing asked or stored (Travis took out two
     question screens on 5 Oct), no progress segment, only on a family's
     first setup (never a clinician's, a second child or a re-walk). The
@@ -2060,13 +2062,13 @@ talked and watched; nothing let them *play*. Each comes back **one at a
 time**, rebuilt as a real game — what the child sees, what their finger does
 and what saying the word does, agreed with Travis in plain words first, then
 played by him on his phone — by taking `comingSoon` off its own line in
-`GAME_ACTS`. Hoops, Soccer Goal and Dino Dig are back; seventeen are still
-parked, and with Peekaboo that is the eighteen in the queue below. Home lists
+`GAME_ACTS`. Hoops, Soccer Goal and Dino Dig came back first; the other
+seventeen, with Peekaboo, are the eighteen below, all open since 22 Oct 2026. Home lists
 playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
-**The eighteen rebuilt by Codex, still parked** (Travis, 16 Oct 2026, to
+**The eighteen rebuilt by Codex, open since 22 Oct 2026** (Travis, 16 Oct 2026, to
 Codex: build the Coming soon games one at a time, each with its own finger
 play and a real reason to talk; then, to Claude: "i jsut want you to finihs
 rhe job"). Race Car, Treasure Map, Robot Builder, Castle Builder, Space Trip,
@@ -2074,8 +2076,11 @@ Pizza Chef and Monster Makeover (5-8), and Balloon Party, Grow a Flower,
 Rocket Blast, Build a Snowman, Choo-Choo Train, Puppy Bath, Bedtime Stars,
 Birthday Cake, Surprise Boxes, Fish Tank and Peekaboo (3-4) are each a real
 played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
-`arcade-<key>.html`, its own suite `tests/<game>test.mjs`). All eighteen keep
-`comingSoon: true` until Travis plays each on his phone. What every one holds:
+`arcade-<key>.html`, its own suite `tests/<game>test.mjs`). **All eighteen
+opened at once** (Travis, 22 Oct 2026: "turn on all 18 games and email about
+them at 8am"), all Premium, on Home and on `parents.html`'s strip (29 games),
+instead of one at a time after he played each. No game is parked now; the
+parking still works (`freetest` parks one in the page to prove it). What every one holds:
 - **The word (said two times) earns each step; the finger makes it.** No
   progress before the word, silence earns nothing, `api.done()` once a step.
 - **Every round ends without speaking again** (the Hoops rule). Misses make
@@ -2269,10 +2274,11 @@ rep. `sayplaytest` pins which game asks how many times. With two:
   says "1 more time! Tap the mic". Silence never earns the move.
 - **Each saying heard is one rep** on the week's count (two a word); still
   never practice data. Whether two is right, whether the littles should say it
-  twice too (Bubble Pop asks once; the ten parked games for ages 3-4 would ask
-  twice as built, so settle it before one comes back), whether Echo should
-  model the word again before the second, and whether both count as reps are
-  Rachel's calls.
+  twice too (Bubble Pop asks once; the other ten ages 3-4 games and Peekaboo
+  ask twice as built), whether Echo should model the word again before the
+  second, and whether both count as reps are Rachel's calls. **They opened
+  asking twice on 22 Oct 2026, before she answered** (Travis: "turn on all 18
+  games"); her answer is one setting a game (`sayTimes: 1`, as Bubble Pop's).
 - **The wait a child feels is before the mic can hear, not after the word**
   (Echo's word, 250 ms of quiet, the mic opening, and on a game's first word
   450 ms to measure the room). Each is a guard: do not shorten them.
@@ -2547,7 +2553,8 @@ every ask that hands a child the turn: the practice page's prompt, a tap on
 Echo, the turtle and its two retry lines ("… five times. Go!", joined on as
 one clip after the words, so the quiet before the mic still starts at its
 end), every Say & Play word (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
-Feed Echo's ask. Not the books (their ask is pinned) and not parked Peekaboo.
+Feed Echo's ask. Not the books (their ask is pinned); Peekaboo, open since 22
+Oct 2026, asks through `sayplay.js` like the other Say & Play games.
 "Go!" is ONE clip, `Sona.goClip`: this page's copy or the phone's saved one,
 asked for on its own so every saved ask stays valid, never a wait on the
 network after a visit's first ask (that one waits `GO_WAIT_MS`, 1.5 s, at
@@ -3317,10 +3324,10 @@ the tests first. Whether to switch it on is Travis's, after that.
 Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
 Settings card and `board.html`.
 
-Peekaboo has no card on Home (19 Oct 2026), no New
-shelf promotion and no direct-link, paid or earned bypass; since 16 Oct 2026
-it is a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"),
-and `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
+Peekaboo is open since 22 Oct 2026, a Premium game on Home with the other
+seventeen rebuilt games (it had no card from 19 Oct); since 16 Oct 2026 it is
+a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"), and
+`simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
 2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
 Feed Echo's

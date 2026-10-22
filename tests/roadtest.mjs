@@ -34,6 +34,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { chromium, ROOT, launchOpts, OUT } from "./_env.mjs";
+import { servePark } from "./_parked.mjs";
 
 let fails = 0;
 function ok(label, pass, detail = "") { if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
@@ -212,6 +213,8 @@ await section("who never sees the sheet", async () => {
 
   f = await fresh({ trophies: 800 });
   try {
+    // none is parked since 22 Oct 2026; Peekaboo is parked again here
+    await servePark(f.context, ROOT);
     await home(f.page);
     const grey = card(f.page, "stack");
     ok("a Premium game this family has not opened is greyed", (await grey.getAttribute("data-locked")) === "true");
@@ -506,7 +509,7 @@ await section("the road page: stops and the month", async () => {
     await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
     const l3 = await line(f.page); await yay(f.page); const l3b = await line(f.page);
-    ok("stop 3: \"Level 2 is open in every game!\", then \"+20 coins!\"", l3 === "Level 2 is open in every game!" && l3b === "+20 coins!", [l3, l3b]);
+    ok("stop 3: \"Level 2 is open!\" (not \"in every game\": since 22 Oct 2026 most games have no levels), then \"+20 coins!\"", l3 === "Level 2 is open!" && l3b === "+20 coins!", [l3, l3b]);
     await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="4"]'); await f.page.waitForTimeout(500); await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="5"]'); await f.page.waitForTimeout(300);

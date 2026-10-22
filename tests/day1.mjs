@@ -4,6 +4,7 @@
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { servePark } from "./_parked.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp", mp3: "audio/mpeg" };
 const srv = createServer((req, res) => {
@@ -30,8 +31,11 @@ const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeer
 
 // The game library is Home's Arcade since 22 Oct 2026 (STORY1): Home itself
 // leads with today's story, and every game is one tap away, at ?view=arcade.
-async function home(age, premium, path = "/today.html?view=arcade") {
+// park: serve the sona.js with four games parked again (tests/_parked.mjs);
+// none is parked since 22 Oct 2026, and these checks pin what parking does
+async function home(age, premium, park, path = "/today.html?view=arcade") {
   const ctx = await browser.newContext();
+  if (park) await servePark(ctx, ROOT);
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8178/today.html");
   await pg.evaluate(seed(age || "7", premium));
@@ -43,7 +47,7 @@ async function home(age, premium, path = "/today.html?view=arcade") {
 // ── Home starts with real choices, across both age groups. ──
 const shownH1 = () => [...document.querySelectorAll("h1")].filter((h) => h.offsetParent).map((h) => h.textContent).join("|");
 for (const age of ["3", "4", "5", "8"]) {
-  const { ctx, pg } = await home(age, true, "/today.html");
+  const { ctx, pg } = await home(age, true, true, "/today.html");
   const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent }), shownH1.toString());
   ok("age " + age + ": Home opens on today's adventure, with the story card", front.first === "Today's adventure" && front.shown === "Today's adventure" && front.story, JSON.stringify(front));
   await pg.goto("http://localhost:8178/today.html?view=arcade"); await pg.waitForTimeout(400);
@@ -68,7 +72,7 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": every catalog game but the parked ones appears once in the age shelves", st.keys.length === 29 - st.catalogParked.length && new Set(st.keys).size === st.keys.length, JSON.stringify(st.keys));
   ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
     ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
-  ok("age " + age + ": Peekaboo and the parked Say & Play games have no card on Home, and none opens", st.parked.length === 0 && !st.coming && st.playable.length === st.keys.length && ["peekaboo"].every(k => st.catalogParked.some(e => e.key === k)) && !st.catalogParked.some(e => e.key === "bubbles") &&
+  ok("age " + age + ": Peekaboo and the other parked games have no card on Home, and none opens", st.parked.length === 0 && !st.coming && st.playable.length === st.keys.length && ["peekaboo"].every(k => st.catalogParked.some(e => e.key === k)) && !st.catalogParked.some(e => e.key === "bubbles") &&
     st.catalogParked.every(e => e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify([st.parked, st.catalogParked]));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
@@ -80,7 +84,7 @@ for (const age of ["3", "4", "5", "8"]) {
 // The retained paid-state seam still distinguishes released free games from
 // Premium games. Coming soon remains separate and unavailable to both cohorts.
 {
-  const {ctx, pg} = await home("7");
+  const {ctx, pg} = await home("7", false, true);
   await pg.evaluate(() => sessionStorage.setItem("sona.paidui", "1"));
   await pg.reload();
   const st = await pg.evaluate((f) => ({
@@ -510,9 +514,10 @@ for (const key of ["feed", "slice", "tiles", "stack", "run", "glide", "rise"]) {
 // A parked game is unavailable even on a previously earned or paid return.
 // Since 19 Oct 2026 it has no place in the library at all, so there is no
 // card to become a hidden launch door.
-// (Bubble Pop came back on 30 Sep 2026; Peekaboo is still parked.)
+// (Bubble Pop came back on 30 Sep 2026, Peekaboo on 22 Oct; it is parked
+// again here.)
 for (const key of ["peekaboo"]) {
-  const {ctx, pg} = await home("4");
+  const {ctx, pg} = await home("4", false, true);
   ok(key + ": the library has no card for it, so nothing to tap", await pg.locator('#libraryApp [data-game="' + key + '"]').count() === 0 && await pg.locator("#activityGroups .game-card").count() > 0);
   await pg.evaluate(key => {
     Sona.saveSub({active:true,source:"stripe"});

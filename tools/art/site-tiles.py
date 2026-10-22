@@ -36,6 +36,25 @@ TILES = [
     ("rise", "rise", 0.5),
     ("feed", "feed", 0.5),
     ("bubbles", "bubbles", 0.45),
+    # the eighteen rebuilt games, opened 22 Oct 2026
+    ("peekaboo", "peekaboo", 0.5),
+    ("balloon", "balloon", 0.5),
+    ("flower", "flower", 0.5),
+    ("rocket", "rocket", 0.5),
+    ("snowman", "snowman", 0.5),
+    ("train", "train", 0.5),
+    ("puppy", "puppy", 0.5),
+    ("stars", "stars", 0.5),
+    ("cake", "cake", 0.5),
+    ("gifts", "gifts", 0.5),
+    ("fishtank", "fishtank", 0.5),
+    ("racecar", "racecar", 0.5),
+    ("treasure", "treasure", 0.5),
+    ("robot", "robot", 0.5),
+    ("castle", "castle", 0.5),
+    ("space", "space", 0.5),
+    ("pizza", "pizza", 0.5),
+    ("monster", "monster", 0.5),
 ]
 
 def cut(name, cx):

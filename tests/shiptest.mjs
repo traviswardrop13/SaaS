@@ -216,7 +216,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and its game strip shows every one of them", (parents.match(/<li class="tile g">/g) || []).length === games.length &&
     games.every((g) => parents.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>")), games.map((g) => g[2]).filter((n) => !parents.includes("<span>" + n + "</span>")).join(", "));
   const gameTiles = (parents.match(/<li class="tile g">[\s\S]*?<\/li>/g) || []).join("");
-  ok("…and not one game it shows as Coming soon", parkedGames.length > 0 && parkedGames.every((g) => !gameTiles.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>") && !gameTiles.includes("/assets/games/" + g[1] + ".svg")),
+  ok("…and not one game it shows as Coming soon", parkedGames.every((g) => !gameTiles.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>") && !gameTiles.includes("/assets/games/" + g[1] + ".svg")),
     parkedGames.filter((g) => gameTiles.includes("<span>" + g[2] + "</span>")).map((g) => g[2]).join(", "));
   // THE BOOKS OPEN ON A DATE (27 Sep 2026; every queued one on Fri 9 Oct,
   // 1 Oct 2026). The strip holds every twelve-page book, each tile carrying
