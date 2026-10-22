@@ -2343,11 +2343,13 @@ card between rounds said the bare sound. What is built is the first slice:
   `profile.gameLevel`, a ceiling for the cards. Now every child's cards
   follow what they earned, and `getProfile()` drops a saved pick (the parent
   code's way), because a pick nobody can change would hold that child's
-  cards at that step for good. **For Rachel:** a child whose grown-up had
-  picked "Just the sound" is now asked syllables in Fruit Slice once they
-  have earned them, and one whose grown-up picked the word drops to
-  syllables until the word is earned; whether a grown-up should set the step
-  by hand is still her call (below), and the answer today is no.
+  cards at that step for good. **For Rachel:** a child
+  aged 5 or more on R whose grown-up had picked "Just the sound" is asked a
+  syllable ("ree") on Fruit Slice's cards at once (a new child's cards start
+  one step past what they earned, which is a syllable), and one whose
+  grown-up picked the word drops to syllables until the word is earned.
+  Whether a grown-up should set the step by hand is still her open call
+  (below); this build has no control for it.
 - **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
   Sound Sprint, Flappy Glide, Rise Up: Echo says their cards out loud, but
   they ask only the bare sound; each needs Fruit Slice's one line for the
@@ -2361,12 +2363,14 @@ card between rounds said the bare sound. What is built is the first slice:
   repeat the same ask, as built, or go lower); Echo's computer voice
   modelling "ree" and "rot" rather than her own recordings; that a card asks
   for "rot" but cannot check it; whether a grown-up may set the step by hand
-  (since 22 Oct 2026, no: the picker went with the Settings simplification);
+  (the picker went on 22 Oct 2026 with the Settings simplification; the
+  question is still hers);
   what the cards ask under end-of-word homework; and whether a child aged 2
   to 4 should ever be asked a syllable (today: never).
 `tests/gameasktest.mjs` holds the reader to these rules; `slicetest`,
 `micquietgamestest` and `iphonepolishtest` play the card; `soundmap` pins the
-three lists and `kidtest` the picker.
+three lists and `kidtest` that Settings has no picker and an old pick is
+dropped.
 
 **The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal, and a
 tap on it opens the grown-ups check, then Progress; Progress keeps sound practice apart from play. (Settings
@@ -2389,7 +2393,7 @@ silence never does. **Progress keeps practice apart:** its "tries" and
 everything it hands a clinician (the summary, the card, "Free-play games are
 not included") are the practice page's alone (`weekReps(offset, sound,
 true)`), with a "Plus N said out loud in games and books" line so the week still adds
-up to the count Home shows. `tests/repweektest.mjs` pins it.
+up to the week's whole count (`Sona.weekReps(0)`). `tests/repweektest.mjs` pins it.
 
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the

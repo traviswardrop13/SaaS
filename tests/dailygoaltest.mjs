@@ -82,6 +82,19 @@ try{
  await picker.page.selectOption('#dailyGoalPick','70');
  state=await pick();
  ok('a pick on Progress becomes the child\'s daily goal',state.saved===70&&state.goal===70&&state.value==='70',state);
+ // Progress belongs to the child it was painted for (Settings' rule, moved in
+ // with the daily goal): once another child is the active one, a goal tapped
+ // on this stale page reloads it instead of saving, for either child.
+ await picker.page.evaluate(()=>Sona.addKid('Ana','6'));
+ const reloadOn=(act)=>Promise.all([picker.page.waitForEvent('load',{timeout:5000}).then(()=>true,()=>false),act()]).then(r=>r[0]);
+ let reloaded=await reloadOn(()=>picker.page.selectOption('#dailyGoalPick','100'));
+ await picker.page.waitForFunction(()=>!!window.Sona&&!!document.getElementById('dailyGoalPick')?.options.length);
+ const after=await picker.page.evaluate(()=>{const ana={slot:Sona.activeKid().slot,goal:Sona.getProfile().dailyGoal,title:document.getElementById('title').textContent};Sona.switchKid('');return {ana,first:Sona.getProfile().dailyGoal};});
+ ok('a stale Progress reloads for the child now picked instead of saving their goal',reloaded&&after.ana.slot!==''&&after.ana.goal!==100&&after.first===70&&/Ana/.test(after.ana.title),{reloaded,...after});
+ reloaded=await reloadOn(()=>picker.page.click('#wkGoalPick .gbtn[data-g="5"]'));
+ await picker.page.waitForFunction(()=>!!window.Sona&&!!document.getElementById('wkGoalPick'));
+ const weeks=await picker.page.evaluate(()=>{const first=Sona.getProfile().weeklyGoal;const ana=(Sona.switchKid(Sona.kids().find(k=>k.slot!=='').slot),Sona.getProfile().weeklyGoal);Sona.switchKid('');return {first,ana};});
+ ok('so does a days-a-week tap on a stale Progress',reloaded&&weeks.first!==5&&weeks.ana!==5,{reloaded,...weeks});
  ok('no page errors on Progress',picker.errors.length===0,picker.errors);
  await picker.context.close();
  const late=await fresh('4',Date.UTC(2026,10,1,5,59));

@@ -417,7 +417,10 @@
       var name = childEl.value.trim();
       Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
         focusArea: "articulation",
-        practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
+        practicePosition: posEl.value,
+        // a play family keeps the full rotation in its easiest-first order:
+        // a chip ticked off and on again would otherwise go to the end
+        focusSounds: pickedMode === "play" ? Sona.PLAY_ORDER.slice() : [].concat(Array.from(sel)) });
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();

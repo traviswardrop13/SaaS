@@ -491,6 +491,16 @@ await page.evaluate(() => { try { Sona.gateVerify(); } catch (e) {} });
 await page.goto("http://localhost:8129/settings.html"); await page.waitForTimeout(700);
 const playSettings = await page.evaluate(() => ({ mode: Sona.getProfile().mode, note: !!document.getElementById("playNote") || !!document.getElementById("playKeep"), words: /play mode|focus mode/i.test(document.body.innerText) }));
 ok("a play family's Settings has no play-mode note any more", playSettings.mode === "play" && !playSettings.note && !playSettings.words, JSON.stringify(playSettings));
+// …and with the note's "Stay in play mode" gone, ticking a chip off and on
+// again is the way back: play mode, and the rotation still easiest first
+// (the chip ticked again does not go to the end of the list).
+const reticked = await page.evaluate(() => {
+  const p = [...document.querySelectorAll("#sounds .sound")].find((b) => b.dataset.s === "P");
+  p.click(); p.click();
+  const prof = JSON.parse(localStorage.getItem("sona.profile.v1") || "{}");
+  return { mode: prof.mode, order: (prof.focusSounds || []).join(","), want: Sona.PLAY_ORDER.join(",") };
+});
+ok("ticking a sound off and on keeps play mode, easiest first", reticked.mode === "play" && reticked.order === reticked.want, JSON.stringify(reticked));
 await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#sounds .sound")];
   chips.filter((b) => !/^R\b/.test(b.textContent.trim())).slice(0, 18).forEach((b) => b.click()); // deselect all but one
