@@ -85,8 +85,14 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   const extra = R.validate({ email: "a@b.co", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [Object.assign(kid({ i: "Milo" }), { name: "Milo", childName: "Milo", age: 6, words: ["rabbit"] })] }] }, THU);
   ok("…each child is built field by field: a name, an age or a word in the body is never kept (nor a \"child id\" that is not a random one)", extra && JSON.stringify(Object.keys(extra.weeks[0].kids[0]).sort()) === JSON.stringify(["d", "g", "gw", "p", "r", "s"]) && !/Milo|rabbit/.test(JSON.stringify(extra)), extra);
   const clamp = R.validate({ email: "a@b.co", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [{ d: 9, g: -2, gw: 6, r: 50, p: 80, s: ["R", "Q", "S", "R", "<b>"] }] }] }, THU);
-  ok("…numbers are clamped (days 0-7, practice never above reps, a plan of 3, 4, 5 or 7) and only real sounds kept, in order",
-    clamp && JSON.stringify(clamp.weeks[0].kids[0]) === JSON.stringify({ d: 7, g: 0, gw: 4, r: 50, p: 50, s: ["S", "R"] }), clamp);
+  ok("…numbers are clamped (days 0-7, practice never above reps) and only real sounds kept, in order; a plan that is not 3, 4, 5 or 7 is no plan, never a made-up 4",
+    clamp && JSON.stringify(clamp.weeks[0].kids[0]) === JSON.stringify({ d: 7, g: 0, r: 50, p: 50, s: ["S", "R"] }), clamp);
+  // THE PLAN ONLY WHEN A GROWN-UP PICKED ONE (22 Oct 2026): setup no longer
+  // asks the days a week, so a phone sends gw only for a child whose profile
+  // holds a picked number, and the server keeps exactly what came
+  const plans = R.validate({ email: "a@b.co", dev: DEV, weeks: [{ wk: "2026-10-12", kids: [{ d: 2, g: 1, r: 9, p: 3, s: ["R"] }, { d: 2, g: 1, gw: 4, r: 9, p: 3, s: ["R"] }, { d: 2, g: 1, gw: 7, r: 9, p: 3, s: ["R"] }] }] }, THU);
+  ok("…a child sent with no plan is kept with none; a picked 4 or 7 is kept as it came",
+    plans && !("gw" in plans.weeks[0].kids[0]) && plans.weeks[0].kids[1].gw === 4 && plans.weeks[0].kids[2].gw === 7, plans);
   const bad = {
     "no address": { dev: DEV, weeks: good.weeks },
     "a bad address": { email: "not an email", dev: DEV, weeks: good.weeks },
@@ -275,6 +281,10 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   const solo1 = R.render("2026-10-12", [kid({ d: 1, g: 1, r: 1, p: 1, s: ["THV"] })], u, P);
   const kept = R.render("2026-10-12", [kid({ g: 5, gw: 5 })], u, P);
   const keptButQuiet = R.render("2026-10-12", [kid({ g: 5, gw: 5 }), kid({ r: 0, p: 0, d: 0, g: 0, s: [] })], u, P);
+  // a child whose days a week nobody picked (setup stopped asking on 22 Oct 2026)
+  const noPlan = (o = {}) => { const k = kid(o); delete k.gw; return k; };
+  const unplanned = R.render("2026-10-12", [noPlan({ d: 6, g: 6 })], u, P);
+  const halfPlanned = R.render("2026-10-12", [kid({ g: 5, gw: 5 }), noPlan({ d: 6, g: 6 })], u, P);
   const ask = R.renderConfirm("https://speaksona.com/api/report/confirm?e=x&d=y&k=z", u, P);
   const all = [many, solo1, kept, keptButQuiet, ask].map((m) => m.subject + "\n" + m.html + "\n" + m.text).join("\n");
   ok("one rep is \"1 rep\", one day \"1 day\", all practice \"all in practice\", the voiced th \"TH (v)\"",
@@ -282,6 +292,10 @@ const kid = (o = {}) => Object.assign({ d: 3, g: 2, gw: 5, r: 40, p: 25, s: ["R"
   ok("more than five sounds: the first five, then how many more", many.text.includes("P, B, M, N, S and 2 more"), many.text);
   ok("a child with no reps that week: \"No practice last week.\"", many.text.includes("Child 2\n- No practice last week."), many.text);
   ok("\"Nice work keeping it going\" only when every child kept the plan, never under \"No practice last week.\"", kept.text.includes("That’s the plan you set.") && !keptButQuiet.text.includes("That’s the plan you set.") && keptButQuiet.text.includes("Every rep counts."));
+  ok("a child whose days a week nobody picked: the goal days, with no \"(your plan: …)\", and never \"That’s the plan you set.\", however many days they kept",
+    unplanned.text.includes("- Reached the daily goal on 6 days\n") && !/your plan|plan you set/.test(unplanned.text + unplanned.html) && unplanned.text.includes("Every rep counts."), unplanned.text);
+  ok("…and beside a brother who kept his picked plan, his line names it and the cheer still waits for every child to have one",
+    halfPlanned.text.includes("(your plan: 5 days a week)") && halfPlanned.text.includes("- Reached the daily goal on 6 days\n") && !halfPlanned.text.includes("That’s the plan you set."), halfPlanned.text);
   ok("signed \"Rachel, MS, CF-SLP\", with the practice-snapshot hedge and what a rep is", /Rachel, MS, CF-SLP<br>Sona co-founder/.test(many.html) && many.text.includes("A practice snapshot from your phone, not an evaluation.") && many.text.includes("Silence never counts."));
   ok("no clinical words, no grade, no promise, no price, no credential claim (the report and the confirm email)", !/therapy|treatment|diagnos|score|correctly|forever|accura|\bCCC\b|certified|\$\d/i.test(all), all.match(/therapy|treatment|diagnos|score|correctly|forever|accura|\bCCC\b|certified|\$\d/i));
   ok("no emoji (one sent the first test into spam)", !/\p{Extended_Pictographic}/u.test(all));
@@ -382,7 +396,8 @@ const browser = await chromium.launch(launchOpts());
 // Thursday 15 Oct 2026, 10:00 in Idaho: this week is Mon 12, last week Mon 5.
 const AT = Date.UTC(2026, 9, 15, 16, 0, 0);
 const MILO = { childName: "Milo", childAge: "6", focusSounds: ["R", "S"], onboarded: true, weeklyGoal: 3, email: "Parent@Example.com", weeklyEmail: true, weeklyReport: true, volume: 0, voiceOn: false, soundOn: false };
-const AVA = { childName: "Ava", childAge: "4", focusSounds: ["L"], onboarded: true, weeklyGoal: 5, email: "", volume: 0, voiceOn: false, soundOn: false };
+// Ava's days a week were never picked (set up after 22 Oct 2026: setup no longer asks them)
+const AVA = { childName: "Ava", childAge: "4", focusSounds: ["L"], onboarded: true, email: "", volume: 0, voiceOn: false, soundOn: false };
 const SEED = {
   "sona.kids.v1": { active: "", list: [{ slot: "", name: "Milo" }, { slot: "k2", name: "Ava" }, { slot: "k3", name: "Zed" }, { slot: "k4", name: "Clin" }] },
   "sona.profile.v1": MILO,
@@ -428,9 +443,9 @@ await scenario("the phone sends a few numbers, only when asked", async () => {
   ok("…the address, a random device id, and last week then this week (local Mondays)", p.email === "parent@example.com" && /^[a-f0-9]{32}$/.test(p.dev) && JSON.stringify((p.weeks || []).map((w) => w.wk)) === '["2026-10-05","2026-10-12"]', p);
   const last = (p.weeks || [])[0] || {}, cur = (p.weeks || [])[1] || {};
   const noId = (kids) => JSON.stringify((kids || []).map(({ i, ...k }) => k));
-  ok("…last week, child by child: days with a rep, goal days, the plan, reps, practice tries, the sounds",
-    noId(last.kids) === JSON.stringify([{ d: 2, g: 1, gw: 3, r: 18, p: 15, s: ["R"] }, { d: 1, g: 0, gw: 5, r: 6, p: 0, s: ["L"] }]), last.kids);
-  ok("…this week so far, today's rep in it", noId(cur.kids) === JSON.stringify([{ d: 3, g: 0, gw: 3, r: 7, p: 4, s: ["S", "R"] }, { d: 0, g: 0, gw: 5, r: 0, p: 0, s: [] }]), cur.kids);
+  ok("…last week, child by child: days with a rep, goal days, the plan (only Milo's, the one a grown-up picked: never the default 4 for Ava), reps, practice tries, the sounds",
+    noId(last.kids) === JSON.stringify([{ d: 2, g: 1, r: 18, p: 15, s: ["R"], gw: 3 }, { d: 1, g: 0, r: 6, p: 0, s: ["L"] }]), last.kids);
+  ok("…this week so far, today's rep in it", noId(cur.kids) === JSON.stringify([{ d: 3, g: 0, r: 7, p: 4, s: ["S", "R"], gw: 3 }, { d: 0, g: 0, r: 0, p: 0, s: [] }]), cur.kids);
   const ids = await page.evaluate(() => [JSON.parse(localStorage.getItem("sona.profile.v1")).reportId, JSON.parse(localStorage.getItem("sona.profile.v1@k2")).reportId]);
   ok("…each child with its own random id, kept on its profile (so a backup carries it) and the same in both weeks",
     (last.kids || []).every((k) => /^[a-f0-9]{16}$/.test(k.i)) && last.kids[0].i === ids[0] && last.kids[1].i === ids[1] && ids[0] !== ids[1] && cur.kids[0].i === ids[0], [ids, last.kids]);
