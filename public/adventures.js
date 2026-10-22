@@ -309,8 +309,8 @@
         { art: "s02", ages: "both", buddy: { x: 0.372, y: 0.597, h: 0.12, pose: "peek" },
           line: { big: "Here's the real letter. It's from Baker Badger. His new bakery opens this morning, and he needs more paws!",
                   little: "Here's the real letter. Baker Badger's new bakery opens today!" } },
-        // no buddy (on the cobbles just left of Echo, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the cobbles just left of Echo (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.5, y: 0.755, h: 0.19, pose: "rest" },
           line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear brought a very big basket!",
                   little: "Everyone is hungry, but there are no buns yet. Rumble, rumble go their tummies!" } },
         // buddy: on the counter top just right of Echo (rest)
@@ -338,15 +338,15 @@
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Ta-da! Round buns, curled buns and berry buns, each in its own basket. Breakfast is ready!",
                   little: "Ta-da! Breakfast is ready. Warm buns, fresh from the oven!" } },
-        // no buddy (on the counter top just right of Echo, not placed)
-        { art: "e02", ages: "big", buddy: null,
+        // buddy: on the counter top just right of Echo (cheer)
+        { art: "e02", ages: "big", buddy: { x: 0.625, y: 0.66, h: 0.15, pose: "cheer" },
           line: "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!" },
         // buddy: on the wooden floor just left of Echo (cheer)
         { art: "e03", ages: "both", buddy: { x: 0.555, y: 0.765, h: 0.19, pose: "cheer" },
           line: { big: "Pelly flies in for breakfast too. She tucks a bun in her pouch, and out pops another pinecone. Bonk!",
                   little: "Pelly puts a bun in her pouch. Out pops another pinecone!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.82, y: 0.666, h: 0.19, pose: "cheer" },
           line: "Six gold stars on our helper map! Badger even gave us the very last curled bun." }
       ]
     },
@@ -411,8 +411,8 @@
         // buddy: on the doorstep to the right of Echo, right of the door (rest)
         { art: "s01", ages: "both", buddy: { x: 0.465, y: 0.665, h: 0.19, pose: "rest" },
           line: "Pelly swoops down with a letter! Oops. That's a carrot! Somebody is going to love that." },
-        // no buddy (PEEK, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: peeking over the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there (peek)
+        { art: "s02", ages: "both", buddy: { x: 0.42, y: 0.62, h: 0.1, pose: "peek" },
           line: { big: "Here's the real letter. It's from Glowworm in the Mushroom Woods. He needs our help with his lamps tonight!",
                   little: "Here's the real letter. Glowworm needs our help with his lamps!" } },
         // buddy: on the near sandy path just right of Echo (rest)
@@ -422,19 +422,19 @@
         // no buddy (on the sandy path just right of Echo, not placed)
         { art: "s04", ages: "big", buddy: null,
           line: "Every evening, Glowworm leads a walk down the lamp path to the big lantern, to hear the crickets sing." },
-        // no buddy (on the near sandy path just right of Echo, not placed)
-        { art: "s05", ages: "both", buddy: null,
+        // buddy: on the near sandy path just right of Echo (rest)
+        { art: "s05", ages: "both", buddy: { x: 0.695, y: 0.68, h: 0.165, pose: "rest" },
           line: { big: "Oh dear, Glowworm has the hiccups. And every hiccup makes him hop! Hic, hop! Hic, hop!",
                   little: "Glowworm has the hiccups! Hic, hop! Hic, hop!" } },
-        // no buddy (on the near sandy path in the lower right of the middle, just right of Echo and apart from the heap of cords, not placed)
-        { art: "s06", ages: "both", buddy: null,
+        // buddy: on the near sandy path in the lower right of the middle, just right of Echo and apart from the heap of cords (rest)
+        { art: "s06", ages: "both", buddy: { x: 0.52, y: 0.79, h: 0.19, pose: "rest" },
           line: { big: "He hopped right into the lamp cords. Pop, pop, pop! Now every plug is out, and the lamps won't light.",
                   little: "He hopped on the cords. Pop, pop, pop! Out came the plugs. The lamps won't light!" } },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
           line: "Every light needs two cords. One takes the power in, one brings it back. Then flip the switch. Click!" },
-        // no buddy (on the near sandy path just right of Echo, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the near sandy path just right of Echo (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.385, y: 0.8, h: 0.17, pose: "rest" },
           line: { big: "Let's plug in every cord and flip every switch, lamp by lamp, right up to the big lantern. Ready?",
                   little: "Let's plug in the cords and switch on the lamps. Ready?" } }
       ],
@@ -504,8 +504,8 @@
         { art: "e03", ages: "both", buddy: null,
           line: { big: "Hot cocoa and cookies at the station! And here comes Pelly, wearing that red mitten as a cozy hat.",
                   little: "Look! Pelly is wearing the mitten as a hat!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.72, y: 0.7, h: 0.21, pose: "cheer" },
           line: "The whole valley can ride the train now. Nine gold stars on our helper map!" }
       ]
     },

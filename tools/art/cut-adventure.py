@@ -308,10 +308,82 @@ COMPOSE = {"lighthouse/e01": [
 # Days 1-3's maps), each with a soft shadow, as Days 1-3's were put on.
 # Placed with `--stars` (below) and looked at; design/adventure/art-notes.md
 # lists them.
+# Pages fixed by hand after drawing, where a redraw kept bringing the fault
+# back (each listed in design/adventure/art-notes.md):
+#   ("unlight", [(x, y, r), ...]): lamp light the model kept drawing on a page
+#     whose line says the lamps are dark. Inside each circle (centre x, y and
+#     radius r, fractions of the page width; a soft edge out to 1.35 r) only
+#     bright warm pixels are turned to dull dusk-grey glass, by how warm and
+#     bright they are, so the lamp's shape and the shade around it stay.
+#   ("fill", (x, y, rx, ry)): a small thing that must not be there (a wing on
+#     the wingless glowworm), filled in from the sky around it: the ellipse is
+#     smoothed in from its edge, then given the grain of the ring around it.
+TOUCH = {
+    # Day 8: the mushroom lamps glowed on every "before" page in three drawings
+    # each, though the lines say they will not light until the game. Echo's own
+    # porch lamp (s01, s02) is his cottage's and stays lit.
+    "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
+    "lantern/s05": [("unlight", [(0.095, 0.655, 0.050), (0.472, 0.409, 0.020), (0.746, 0.390, 0.020), (0.105, 0.488, 0.025)]),
+                    ("fill", (0.437, 0.121, 0.021, 0.023))],    # a wing on Glowworm, who has none
+    "lantern/s06": [("unlight", [(0.210, 0.413, 0.040), (0.390, 0.349, 0.025), (0.531, 0.326, 0.018), (0.461, 0.307, 0.012),
+                                 (0.605, 0.303, 0.012), (0.691, 0.308, 0.014), (0.752, 0.303, 0.015), (0.828, 0.317, 0.020)])],
+    "lantern/s07": [("unlight", [(0.861, 0.758, 0.045), (0.044, 0.494, 0.020), (0.083, 0.438, 0.020), (0.107, 0.428, 0.020),
+                                 (0.947, 0.442, 0.020)])],    # the chart's lit lamp is the drawing of the fix: it stays
+    "lantern/s08": [("unlight", [(0.100, 0.490, 0.035), (0.483, 0.380, 0.018), (0.905, 0.396, 0.020), (0.705, 0.338, 0.012),
+                                 (0.661, 0.322, 0.010), (0.822, 0.282, 0.040)])],
+}
+
+
+def touch(src, ops, out):
+    # numpy and PIL here only, like add_stars
+    import numpy as np
+    from PIL import Image, ImageFilter
+    im = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
+    H, W, _ = im.shape
+    yy, xx = np.mgrid[0:H, 0:W]
+    for kind, arg in ops:
+        if kind == "unlight":
+            r, g, b = im[..., 0], im[..., 1], im[..., 2]
+            L = 0.299 * r + 0.587 * g + 0.114 * b
+            warm = np.clip((r - b) / 120.0, 0, 1) * np.clip((L - 90) / 110.0, 0, 1)
+            dusk = np.stack([L * 0.30 + 30, L * 0.32 + 34, L * 0.38 + 46], -1)
+            w = np.zeros((H, W), np.float32)
+            for cx, cy, cr in arg:
+                d = np.hypot(xx - cx * W, yy - cy * H) / (cr * W * 1.35)
+                w = np.maximum(w, np.clip(1.25 - d * 1.25, 0, 1))
+            a = (w * warm)[..., None]
+            im = im * (1 - a) + dusk * a
+        elif kind == "fill":
+            cx, cy, rx, ry = arg
+            hole = (((xx - cx * W) / (rx * W)) ** 2 + ((yy - cy * H) / (ry * H)) ** 2) <= 1.0
+            x0, x1 = max(0, int((cx - rx) * W) - 30), min(W, int((cx + rx) * W) + 30)
+            y0, y1 = max(0, int((cy - ry) * H) - 30), min(H, int((cy + ry) * H) + 30)
+            sub = im[y0:y1, x0:x1].copy()
+            h = hole[y0:y1, x0:x1]
+            f = sub.copy()
+            f[h] = sub[~h].mean(0)
+            for _ in range(1500):
+                pd = np.pad(f, ((1, 1), (1, 1), (0, 0)), mode="edge")
+                f[h] = ((pd[:-2, 1:-1] + pd[2:, 1:-1] + pd[1:-1, :-2] + pd[1:-1, 2:]) / 4)[h]
+            blur = np.asarray(Image.fromarray(sub.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2))).astype(np.float32)
+            ring = np.argwhere(~h)
+            pick = ring[np.random.default_rng(1).integers(0, len(ring), int(h.sum()))]
+            f[h] += (sub - blur)[pick[:, 0], pick[:, 1]]
+            m = Image.fromarray((h * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.5))
+            a = (np.asarray(m).astype(np.float32) / 255)[..., None]
+            im[y0:y1, x0:x1] = sub * (1 - a) + f * a
+        else:
+            raise ValueError("unknown touch " + kind)
+    Image.fromarray(np.clip(im, 0, 255).astype(np.uint8)).save(out)
+    return out
+
+
 STAR = os.path.join(ROOT, "public", "assets", "crafted", "game", "star.webp")
 STARS = {
     # Day 5: 1 drawn, 4 laid on (the red-and-white lighthouse (Day 1), at its top-left; the red-roofed house beside the lighthouse (Day 2), above its roof; the stone steps and curved causeway below them (Day 3's bridge stand-in), at the top of the steps; the grassy tip of the coast, top left of the map (Day 4: no garden or waterwheel is drawn))
     "postboat/e04": [(0.723, 0.098, 0.050), (0.848, 0.098, 0.050), (0.815, 0.174, 0.050), (0.586, 0.091, 0.050)],
+    # Day 6: 1 drawn, 5 laid on (the big red-and-white lighthouse on the rock, top left, on its striped tower (Day 1's place); the blue-roofed house right of the middle, on its roof (Day 2's place: no toy shop is drawn); the stone bridge over the river, on its arch (Day 3's place); the pink blossom tree by the river, on its crown (Day 4: no garden or waterwheel is drawn); the red-roofed farmhouse under the pine trees, top right (Day 5: no harbour or postboat is drawn))
+    "bakery/e04": [(0.401, 0.150, 0.050), (0.793, 0.300, 0.050), (0.532, 0.393, 0.050), (0.425, 0.355, 0.050), (0.776, 0.178, 0.050)],
     # Day 7: 1 drawn, 6 laid on (the little pine-tree island left of the river; the twin red-roofed house, on its roof (the house shows under the star); the top of the stone tower; the small red-roofed house right of the tower, on its roof; the green point with a pine tree, in the bend of the river; the pine trees on the rocky point below the town)
     "frontdoor/e04": [(0.561, 0.166, 0.045), (0.754, 0.120, 0.045), (0.816, 0.099, 0.045), (0.871, 0.129, 0.045), (0.731, 0.174, 0.045), (0.810, 0.190, 0.045)],
     # Day 8: 1 drawn, 7 laid on (the striped toy shop's roof (Day 2's place); the stone bridge's arch (Day 3's place); the pine forest left of the toy shop; the little brown hills on the sandy shore, top left of the map; the small red-roofed house right of the toy shop, at the map's right edge; the autumn tree clump on the map's right edge; the pink blossom trees on the map's right edge)
@@ -355,6 +427,10 @@ def page(story, part):
         x, y, w, h = crop
         im(src, "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", made)
         src = made
+    fix = TOUCH.get(story + "/" + part)
+    if fix:
+        os.makedirs(EDIT, exist_ok=True)
+        src = touch(src, fix, os.path.join(EDIT, "%s-%s-touched.png" % (story, part)))
     lay = COMPOSE.get(story + "/" + part)
     if lay:
         made = os.path.join(EDIT, "%s-%s-composed.png" % (story, part))
@@ -418,6 +494,10 @@ JOBS.append(("lighthouse-rocks-front", rocks, os.path.join(EDIT, "lighthouse-sea
 
 def main():
     args = sys.argv[1:]
+    if args[:1] == ["--touch"]:
+        # a proof: python3 tools/art/cut-adventure.py --touch <page.png> '[["unlight", [[x, y, r]]], ["fill", [x, y, rx, ry]]]' <out.png>
+        print(touch(args[1], json.loads(args[2]), args[3]))
+        return
     if args[:1] == ["--stars"]:
         # a proof: python3 tools/art/cut-adventure.py --stars <page.png> '[[cx, cy, w], ...]' <out.png>
         print(add_stars(args[1], json.loads(args[2]), args[3]))
