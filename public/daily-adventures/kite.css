@@ -1,0 +1,21 @@
+.daily-kite-canvas { touch-action:none; }
+.kite-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; color:#597f70; font-family:inherit; }
+.kite-controls [hidden] { display:none !important; }
+.kite-controls button { box-sizing:border-box; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; transition:none !important; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; line-height:1.05; }
+.kite-controls button:disabled { opacity:.42; cursor:default; }
+.kite-controls button:focus-visible { outline:3px solid #fff1b8; outline-offset:2px; box-shadow:0 0 0 5px #568977; }
+.kite-handle,.kite-patch { position:absolute; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; border:0; border-radius:50%; background:transparent; color:transparent; transform:translate(-50%,-50%); }
+.kite-patch { width:52px; height:52px; border-radius:8px; background:#ede2bd; border:1px solid #acb293; z-index:4; }
+.kite-patch img { width:100%; height:100%; object-fit:contain; pointer-events:none; }
+.kite-needle,.kite-ribbon { z-index:4; }
+.kite-weight { z-index:3; width:48px; height:48px; }
+.kite-flight { width:56px; height:56px; z-index:3; }
+.kite-action,.kite-direction { position:absolute; min-width:44px; min-height:44px; height:44px; padding:5px; border:1px solid rgba(88,123,111,.3); border-radius:12px; background:var(--act-cream,#f5edcf); color:#547b70; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 0 rgba(65,88,63,.15); }
+.kite-controls svg { width:22px; height:22px; flex:0 0 22px; }
+.kite-direction { bottom:60px; width:44px; }
+.kite-action { left:10px; bottom:10px; width:136px; background:var(--act-teal,#3c8585); color:#faf4d9; }
+.kite-help { position:absolute !important; left:auto !important; right:10px !important; bottom:10px !important; transform:none !important; width:144px !important; min-width:0 !important; height:44px !important; min-height:44px !important; padding:5px 6px !important; font-size:14px !important; line-height:1.05 !important; }
+.kite-help img { width:28px !important; height:28px !important; object-fit:contain; }
+.kite-help.powered { box-shadow:0 0 0 3px rgba(206,213,157,.75),0 3px 0 rgba(54,84,63,.18); }
+.kite-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(prefers-reduced-motion:reduce) { .kite-controls *,.kite-help { animation:none !important; transition:none !important; } }

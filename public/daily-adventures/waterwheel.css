@@ -1,0 +1,33 @@
+/* Day 4 owns only its canvas controls; the story player owns page layout. */
+.daily-waterwheel-canvas { touch-action:none; }
+.waterwheel-controls { position:absolute; inset:0; pointer-events:none; font-family:inherit; color:#4e654c; touch-action:none; }
+.waterwheel-controls [hidden] { display:none !important; }
+.waterwheel-controls button { box-sizing:border-box; pointer-events:auto; -webkit-tap-highlight-color:transparent; touch-action:none; font-family:inherit; font-size:13px; font-weight:700; line-height:1.1; cursor:pointer; }
+.waterwheel-piece { position:absolute; min-width:44px; min-height:44px; padding:0; border:0; border-radius:10px; background:transparent; color:transparent; outline:none; }
+.waterwheel-piece:focus-visible { outline:3px solid #fff9d7; box-shadow:0 0 0 6px #387f81; }
+.waterwheel-piece:disabled { cursor:default; }
+.waterwheel-toolbar { position:absolute; left:12px; right:12px; height:46px; display:flex; justify-content:center; gap:7px; pointer-events:none; }
+.waterwheel-tool { border:1px solid rgba(92,98,67,.28); border-radius:14px; min-height:44px; min-width:44px; padding:6px 11px; color:#f9f6df; background:var(--act-teal,#3c8585); box-shadow:0 3px 0 rgba(50,80,66,.18); transition:none !important; }
+.waterwheel-tool:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(50,80,66,.18); }
+.waterwheel-tool:focus-visible { outline:3px solid #fff9d7; outline-offset:2px; }
+.waterwheel-tool:disabled { opacity:.45; cursor:default; }
+.waterwheel-turn { font-family:Arial,sans-serif !important; font-size:30px !important; line-height:1; padding:1px 8px 4px; color:#4c6e60; background:var(--act-cream,#f5edcf); }
+.waterwheel-gate { min-width:108px; }
+.waterwheel-share { min-width:96px; background:var(--act-teal,#3c8585); }
+.waterwheel-gate,.waterwheel-share { display:flex; align-items:center; justify-content:center; gap:4px; padding-left:7px; padding-right:7px; font-family:inherit; font-weight:700; font-size:12px; line-height:1.1; }
+.waterwheel-glyph { width:18px; height:22px; flex:none; }
+.waterwheel-gate[aria-pressed="true"],.waterwheel-share[aria-pressed="true"] { box-shadow:inset 0 2px 4px rgba(32,62,49,.25),0 2px 0 rgba(50,80,66,.15); background:var(--act-teal,#3c8585); }
+.waterwheel-selected { position:absolute; left:8px; right:8px; min-height:18px; text-align:center; font-size:11px; line-height:16px; font-weight:700; white-space:nowrap; pointer-events:none; color:#607358; }
+.waterwheel-help.powered { box-shadow:0 0 0 3px rgba(162,190,116,.55); }
+.waterwheel-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(max-width:350px) {
+  .waterwheel-toolbar { left:9px; right:9px; gap:5px; }
+  .waterwheel-tool { padding-left:8px; padding-right:8px; font-size:12px !important; }
+  .waterwheel-turn { font-size:29px !important; }
+  .waterwheel-gate { min-width:100px; }
+  .waterwheel-share { min-width:89px; }
+  .waterwheel-selected { font-size:10px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .waterwheel-controls *, .waterwheel-banner, .waterwheel-help { animation:none !important; transition:none !important; }
+}

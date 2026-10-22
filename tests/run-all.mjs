@@ -64,6 +64,16 @@ const SUITES = [
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and in Settings: one tap still plays, "Pick a level" once per game when a level opens, the level badge, "Level 1 only"; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own
+  "daily-waterwheeltest.mjs", // Day 4: real water routes, gates and split flow; speech widens joins, with honest progress and safe interruptions
+  "daily-postboattest.mjs", // Day 5: steer, dock, transfer parcels and tow a separate raft; speech calms water without delivering for the child
+  "daily-bakerytest.mjs", // Day 6: catch ingredients, stir, shape, bake and sort real batches; speech steadies pours and widens useful heat
+  "daily-bridgetest.mjs", // Day 7: winch, rotate and lower supported bridge pieces, then steer both carts to the real door; speech steadies loads
+  "daily-lanterntest.mjs", // Day 8: true supply/bulb/return circuits, manual switches and short repair; speech traces live paths and widens real catches
+  "daily-trainlinetest.mjs", // Day 9: join rail ends, route and stop a real train, transfer pictured passengers and return the crew; speech widens joins and slows travel
+  "daily-kitetest.mjs", // Day 10: fit pictures, continuously sew, thread front/back, swap real tail weights and steer balanced flight; speech steadies cloth and calms gusts
+  "daily-nestlifttest.mjs", // Day 11: choose real counterweight sums, wind and brake the loaded lift, hand over each bundle and slide the quilt into its room; speech damps actual sway
+  "daily-narrationtest.mjs", // Three spoken story acts and an ending earned through actual play, using the existing quiet audio owner
+  "daily-previewtest.mjs", // Local review serves the real speech/story game, returns safely, stays loopback-only and leaves production access untouched
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
