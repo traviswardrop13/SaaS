@@ -517,8 +517,8 @@
         // buddy: on the doorstep to the right of Echo, right of the door (rest)
         { art: "s01", ages: "both", buddy: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },
           line: "Pelly sails in on the breeze with a letter. Oops. That's an umbrella! How did it ever fit in her pouch?" },
-        // no buddy (PEEK, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: peeking over the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there (peek)
+        { art: "s02", ages: "both", buddy: { x: 0.385, y: 0.6, h: 0.14, pose: "peek" },
           line: { big: "Here's the real letter. It's from Goat on Breezy Hill. His giant kite needs our help!",
                   little: "Here's the real letter. Goat's giant kite needs our help!" } },
         // buddy: on the grass just right of Echo, nearer the front than Goat and apart from him (rest)
@@ -553,8 +553,8 @@
         // no buddy (on the grass just right of Echo, apart from the rock, not placed)
         { art: "e02", ages: "big", buddy: null,
           line: "Lamb waves up at her flower. And Beetle waves up at herself, flying high!" },
-        // no buddy (on the grass just right of Echo, far below Pelly and the kite, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the grass just right of Echo, far below Pelly and the kite (cheer)
+        { art: "e03", ages: "both", buddy: { x: 0.775, y: 0.79, h: 0.18, pose: "cheer" },
           line: { big: "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Hold on, Pelly!",
                   little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)

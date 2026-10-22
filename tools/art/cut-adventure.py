@@ -8,6 +8,8 @@ tools/art/out/game/. This cuts them:
 
     python3 tools/art/cut-adventure.py               # everything drawn
     python3 tools/art/cut-adventure.py lighthouse    # names starting with this
+    python3 tools/art/cut-adventure.py --stars page.png '[[0.5, 0.3, 0.06]]' out.png
+                                                     # a proof of STARS on one page
 
 The recipes are cut-rise.py's three, done with ImageMagick (`convert`),
 because this container's Python has no PIL:
@@ -297,58 +299,17 @@ COMPOSE = {"lighthouse/e01": [
     ("lighthouse-boat-row", 0.25, 0.81, 0.22), ("lighthouse-boat-teacup", 0.50, 0.815, 0.17), ("lighthouse-boat-bathtub", 0.75, 0.815, 0.21),
 ]}
 
-
-def page(story, part):
-    src = os.path.join(RAW_ADV, story, part + ".png")
-    os.makedirs(os.path.join(ADV, story), exist_ok=True)
-    crop = CROPS.get(story + "/" + part)
-    if crop:
-        made = os.path.join(EDIT, "%s-%s.png" % (story, part))
-        os.makedirs(EDIT, exist_ok=True)
-        x, y, w, h = crop
-        im(src, "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", made)
-        src = made
-    lay = COMPOSE.get(story + "/" + part)
-    if lay:
-        made = os.path.join(EDIT, "%s-%s-composed.png" % (story, part))
-        os.makedirs(EDIT, exist_ok=True)
-        W, H = im_size(src)
-        args = [src, "-alpha", "off"]
-        for name, cx, by, fw in lay:
-            w, h, x, y = bbox(raw_game(name))
-            dw = round(fw * W); dh = round(h * dw / float(w))
-            args += ["(", raw_game(name), "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", "-filter", "Lanczos", "-resize", "%dx%d!" % (dw, dh),
-                     ")", "-geometry", "+%d+%d" % (round(cx * W - dw / 2.0), round(by * H - dh)), "-compose", "over", "-composite"]
-        im(*args, made)
-        src = made
-    return bg(src, os.path.join(ADV, story, part + ".webp"), q=84)
-
-
-def lineup(story):
-    os.makedirs(DESIGN, exist_ok=True)
-    out = os.path.join(DESIGN, "cast-%s.webp" % story)
-    im(os.path.join(RAW_ADV, story, "cast.png"), "-alpha", "off", "-filter", "Lanczos", "-resize", "1600x>", *webp(84), out)
-    return out
-
-
-JOBS = []
-for s in STORIES:
-    JOBS += [("%s-%s" % (s, p), (lambda s=s, p=p: page(s, p)), os.path.join(RAW_ADV, s, p + ".png")) for p in PAGES]
-    JOBS.append(("%s-cast" % s, (lambda s=s: lineup(s)), os.path.join(RAW_ADV, s, "cast.png")))
-    JOBS.append(("home-%s" % s, (lambda s=s: card(os.path.join(RAW_ADV, s, "home.png"), "home-" + s)), os.path.join(RAW_ADV, s, "home.png")))
-JOBS.append(("home-arcade", lambda: card(os.path.join(RAW_ADV, "arcade", "arcade.png"), "home-arcade"), os.path.join(RAW_ADV, "arcade", "arcade.png")))
-# the games' pieces: (name, recipe, width it is shrunk to)
-SPRITES = {
-    "lighthouse-ledge": 1200, "lighthouse-lamp-off": 360, "lighthouse-lamp-on": 360, "lighthouse-moon": 256, "lighthouse-cloud": 512,
-    "lighthouse-boat-tug": 320, "lighthouse-boat-row": 320, "lighthouse-boat-sail": 320, "lighthouse-boat-banana": 320,
-    "lighthouse-boat-teacup": 256, "lighthouse-boat-bathtub": 320, "lighthouse-boat-ferry": 440,
-    "lighthouse-whale": 400, "lighthouse-whale-wink": 400, "lighthouse-barrel": 200, "lighthouse-buoy": 200, "lighthouse-duckie": 256,
-    "lighthouse-wally": 256,
-    "windup-bunny": 560, "windup-frog": 560, "windup-top": 560, "windup-croc": 600, "windup-elephant": 560, "windup-hippo": 560,
-    "windup-jack-closed": 560, "windup-jack-open": 560, "windup-nightcap": 240, "windup-dial": 640, "windup-key": 256,
-    "windup-gauge": 720, "windup-musicbox": 600, "windup-crank": 400, "windup-grandpa": 360, "windup-cuckoo": 280, "windup-oilcan": 200,
-    "bridge-spiral": 256, "bridge-moss": 256, "bridge-blossom": 200, "bridge-grandma": 256, "bridge-crowd": 560, "bridge-ducks": 360,
-}
+# The helper map's earlier gold stars (Days 4-14's e04), laid on the map's
+# little places: (centre x, centre y, width), fractions of the page. Asked to
+# draw a close-up with only the new star, or the whole map with N stars, the
+# model drew the whole map with one star every time; so it draws the map with
+# the one star Echo presses, and the stars of the days before are the game's
+# own star (public/assets/crafted/game/star.webp, the same glossy star as
+# Days 1-3's maps), each with a soft shadow, as Days 1-3's were put on.
+# Placed with `--stars` (below) and looked at; design/adventure/art-notes.md
+# lists them.
+STAR = os.path.join(ROOT, "public", "assets", "crafted", "game", "star.webp")
+STARS = {}
 PAIRED = set(n for ab in PAIRS for n in ab)
 for n, w in SPRITES.items():
     if n not in PAIRED:
@@ -367,6 +328,10 @@ JOBS.append(("lighthouse-rocks-front", rocks, os.path.join(EDIT, "lighthouse-sea
 
 def main():
     args = sys.argv[1:]
+    if args[:1] == ["--stars"]:
+        # a proof: python3 tools/art/cut-adventure.py --stars <page.png> '[[cx, cy, w], ...]' <out.png>
+        print(add_stars(args[1], json.loads(args[2]), args[3]))
+        return
     for name, job, src in JOBS:
         if args and not any(name.startswith(a) for a in args):
             continue
