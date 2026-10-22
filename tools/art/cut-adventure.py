@@ -323,6 +323,8 @@ COMPOSE = {"lighthouse/e01": [
 #     the wingless glowworm), filled in from the sky around it: the ellipse is
 #     smoothed in from its edge, then given the grain of the ring around it.
 #   ("teeth", (x, top, w, h)): a beaver's two front teeth the model left out.
+#   ("recolor", (box, ellipse, rgb)): one of Echo's feathers drawn the wrong
+#     colour, turned to the right one (see "kite/e04").
 TOUCH = {
     # Day 8: the mushroom lamps glowed on every "before" page in three drawings
     # each, though the lines say they will not light until the game. Echo's own
@@ -335,6 +337,9 @@ TOUCH = {
     "observatory/e04": [("fill", (0.785, 0.125, 0.009, 0.007)), ("fill", (0.875, 0.123, 0.009, 0.007)),
                         ("fill", (0.844, 0.426, 0.009, 0.007)), ("fill", (0.890, 0.440, 0.009, 0.007))],
     "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
+    # Day 10: drawn five times, Echo came out with three feathers, then with
+    # both coral; the back one is his yellow
+    "kite/e04": [("recolor", ((0.369, 0.470, 0.451, 0.525), (0.377, 0.521, 0.045, 0.027, 15), (252, 192, 42)))],
     "lantern/home": [("unlight", [(0.827, 0.352, 0.018)])],   # the big lantern's candle, before the game
     "lantern/s04": [("unlight", [(0.192, 0.519, 0.045), (0.335, 0.452, 0.028), (0.413, 0.410, 0.022), (0.460, 0.385, 0.020),
                                  (0.515, 0.374, 0.016), (0.553, 0.346, 0.016), (0.592, 0.347, 0.016), (0.646, 0.356, 0.016),
@@ -388,6 +393,26 @@ def touch(src, ops, out):
             m = Image.fromarray((h * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.5))
             a = (np.asarray(m).astype(np.float32) / 255)[..., None]
             im[y0:y1, x0:x1] = sub * (1 - a) + f * a
+        elif kind == "recolor":
+            # one of Echo's head feathers drawn coral twice over: the coral
+            # pixels in a box, minus the front feather's ellipse (cx, cy, a, b
+            # as fractions of the width, its tilt in degrees), turned to his
+            # yellow with their own light and shade kept
+            import math
+            (bx0, by0, bx1, by1), (cx, cy, ea, eb, ang), to = arg
+            r, g, b = im[..., 0], im[..., 1], im[..., 2]
+            coral = (r > 150) & (r - g > 60) & (r - b > 70)
+            t = math.radians(ang)
+            dx, dy = xx - cx * W, yy - cy * H
+            u = dx * math.cos(t) + dy * math.sin(t)
+            v = -dx * math.sin(t) + dy * math.cos(t)
+            front = (u / (ea * W)) ** 2 + (v / (eb * W)) ** 2 <= 1.0
+            m = coral & ~front & (xx >= bx0 * W) & (xx < bx1 * W) & (yy >= by0 * H) & (yy < by1 * H)
+            L = 0.299 * r + 0.587 * g + 0.114 * b
+            k = np.clip(L / np.median(L[m]), 0.55, 1.35)[..., None]
+            new = np.clip(np.array(to, np.float32) * k, 0, 255)
+            soft = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))).astype(np.float32)[..., None] / 255
+            im = im * (1 - soft) + new * soft
         elif kind == "teeth":
             # Beaver's two front teeth under his lip (cx, top, width of both,
             # height), drawn 8x large and shrunk, with a soft shadow on the mouth

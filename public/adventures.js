@@ -380,8 +380,8 @@
         { art: "s07", ages: "both", buddy: null,
           line: { big: "Here's a crane to help! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
                   little: "Here's a crane! It lifts the wood. Turn it to fit, then down it goes. Clunk!" } },
-        // no buddy (on the wooden landing's planks just right of Echo, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the wooden landing's planks just right of Echo (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.672, y: 0.69, h: 0.15, pose: "rest" },
           line: { big: "Let's put the bridge together, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
                   little: "Let's build a bridge, then roll Tortoise's cart to his door. Ready?" } }
       ],
