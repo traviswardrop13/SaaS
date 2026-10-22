@@ -49,8 +49,7 @@
      is sent by sona.js. A household already on Sona kept everything it could
      pick (the OWN1 sweep), so it sees nothing to get. No dialogs, no voice
      (the tap and reward chimes only), no confetti under Reduce Motion, and no
-     "buy" or price sign in a child's words. Opened from Settings
-     (?from=settings), ✕ and Done lead back there. -->
+     "buy" or price sign in a child's words. -->
 <body class="crafted-family family-customize">
   <div class="wrap" id="shop">
     <header class="app">
@@ -106,14 +105,6 @@
     (function () {
     var S = window.Sona;
     var $ = function (id) { return document.getElementById(id); };
-    // Opened from grown-ups Settings (?from=settings): ✕ and Done lead back to
-    // Settings, not into the games. Navigation only — nothing else is read
-    // from the URL, and any other value keeps the child's way home as it was.
-    if (/[?&]from=settings(&|$)/.test(location.search)) (function () {
-      var x = document.querySelector("header .iconbtn"), d = $("done");
-      if (x) { x.href = "/settings.html"; x.title = "Settings"; x.setAttribute("aria-label", "Back to Settings"); }
-      if (d) d.href = "/settings.html";
-    })();
     if (!S || !S.getProfile) return;
     // An older cached sona.js has no shop: everything is the child's, as it was then.
     var SHOP = !!(S.shopItem && S.buyItem && S.equip);

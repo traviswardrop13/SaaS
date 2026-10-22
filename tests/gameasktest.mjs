@@ -5,15 +5,18 @@
 //
 // The card between rounds always said the bare sound. It now climbs: the sound
 // alone, then ONE syllable a card, then a short word. Sona.gameAsk(sound, card)
-// is the one reader the games and the Settings picker both call; this holds it
-// to its rules:
-//   - a fresh child's cards stop at syllables; an EARNED level opens the word;
-//   - a grown-up's pick in Settings wins, up and down, and never past a word;
+// is the one reader every round game's card calls; this holds it to its rules:
+//   - a fresh child's cards stop at syllables; an EARNED level opens the word,
+//     and nothing goes past a word;
+//   - the Settings picker that could set the step by hand is gone (Travis, 22
+//     Oct 2026: "simplify settings ... the minimum viable features"), so a
+//     pick a family saved from it (profile.gameLevel) is dropped by
+//     getProfile and changes nothing, up or down: only the earned level moves
+//     the cards;
 //   - a sound whose syllables nobody has listened to yet stays on the bare
 //     sound, exactly as before (only R ships switched on);
-//   - so does a child aged 2 to 4 (Settings hides the picker for them), and
-//     any child while Echo's voice is off (only his voice models a syllable);
-//     Sona.gameHold names the reason, for the Settings line;
+//   - so does a child aged 2 to 4, and any child while Echo's voice is off
+//     (only his voice models a syllable); Sona.gameHold names the reason;
 //   - a card never asks below what the "Say it 5 times" page just asked, and
 //     reuses that page's own syllable or word;
 //   - an SLP's homework wins: its words, and no start-of-word syllable when
@@ -94,58 +97,70 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   ok("a child who has earned sentences still gets a word at most: cards never go past a word", S.rungOf("R") === 4 && S.gameTop("R") === 2 && S.gameAsk("R", 2).text === "rot", { rung: S.rungOf("R"), top: S.gameTop("R") });
 }
 
-// ── 3. the grown-up's pick in Settings wins, up and down ──
+// ── 3. an old pick from the Settings picker is ignored, up and down ──
+// The picker ("Between rounds in a game, Echo asks for") went on 22 Oct 2026.
+// A pick saved from it would hold a child's cards at that step for good with
+// nothing left on screen to change it, so getProfile drops it, the parent
+// code's way, and the cards follow what the child has EARNED. Each case below
+// is a phone still carrying an old pick in its saved profile.
 {
   const up = boot({ profile: { gameLevel: "word" } });
-  ok("\"…then a short word\" on a child who has earned nothing: a syllable, then rot", up.S.rungOf("R") === 0 && up.S.gameTop("R") === 2 && /^r(ee|ah|oh)$/.test(up.S.gameAsk("R", 1).text) && up.S.gameAsk("R", 2).text === "rot", texts(up.S, "R"));
+  ok("an old \"…then a short word\" pick on a child who has earned nothing: the cards stop at syllables, never rot, and nothing was earned for them",
+    up.S.rungOf("R") === 0 && JSON.stringify(up.S.getProgress().stage) === "{}" && up.S.gameTop("R") === 1 && [1, 2].every((c) => up.S.gameAsk("R", c).rung === 1) && !texts(up.S, "R").includes("rot"), texts(up.S, "R"));
+  up.S.recordRung("R", 0, 1);
+  ok("…and the word comes only once the child has earned it", up.S.gameTop("R") === 2 && up.S.gameAsk("R", 2).text === "rot", texts(up.S, "R"));
   const down = boot({ profile: { gameLevel: "isolation" } });
   down.S.recordRung("R", 0, 1); down.S.recordRung("R", 1, 1);
-  ok("\"Just the sound\" on a child who has earned words: every card is the bare sound", down.S.gameTop("R") === 0 && texts(down.S, "R").join() === "rrrr,rrrr,rrrr", texts(down.S, "R"));
+  ok("an old \"Just the sound\" pick on a child who has earned words: the cards climb anyway, the sound, a syllable, then rot",
+    down.S.gameTop("R") === 2 && /^rrrr,r(ee|ah|oh),rot$/.test(texts(down.S, "R").join()), texts(down.S, "R"));
   hand(down, "R", "word", "rabbit");
-  ok("…even when the practice page just asked a word: the pick is a ceiling", texts(down.S, "R").join() === "rrrr,rrrr,rrrr", texts(down.S, "R"));
+  ok("…and the practice page's own word is repeated, as for any child who earned it: the old pick is no ceiling", texts(down.S, "R").join() === "rrrr,rabbit,rabbit", texts(down.S, "R"));
   const mid = boot({ profile: { gameLevel: "syllable" } });
   mid.S.recordRung("R", 0, 1); mid.S.recordRung("R", 1, 1);
-  ok("\"The sound, then syllables\" stops at syllables whatever was earned", mid.S.gameTop("R") === 1 && mid.S.gameAsk("R", 2).rung === 1, texts(mid.S, "R"));
+  ok("an old \"The sound, then syllables\" pick does not stop the word a child has earned", mid.S.gameTop("R") === 2 && mid.S.gameAsk("R", 2).text === "rot", texts(mid.S, "R"));
   const odd = boot({ profile: { gameLevel: "sentence" } });
-  ok("a pick this build does not know reads as \"Sona decides\"", odd.S.gameTop("R") === 1, odd.S.gameTop("R"));
-  ok("the pick is the child's own, kept on their profile, and never the earned level", up.S.getProfile().gameLevel === "word" && up.S.rungOf("R") === 0 && JSON.stringify(up.S.getProgress().stage) === "{}");
+  ok("a value the picker never offered reads as nothing at all", odd.S.gameTop("R") === 1, odd.S.gameTop("R"));
+  ok("getProfile drops the old pick, so nothing reads it", [up, down, mid, odd].every((p) => !("gameLevel" in p.S.getProfile())), [up, down, mid, odd].map((p) => p.S.getProfile().gameLevel));
+  // …and the next save of any setting stops carrying it, in the profile and so in backups
+  const before = JSON.parse(mid.local["sona.profile.v1"]).gameLevel;
+  mid.S.saveProfile({ childName: "Mia" });
+  ok("…and the next save of any setting takes it out of the stored profile", before === "syllable" && !("gameLevel" in JSON.parse(mid.local["sona.profile.v1"])), mid.local["sona.profile.v1"]);
 }
 
 // ── 4. a sound that is not switched on keeps the bare sound, exactly as before ──
 {
-  const p = boot({ profile: { focusSounds: ["S"], gameLevel: "word" } }), { S, SC } = p;
+  const p = boot({ profile: { focusSounds: ["S"] } }), { S, SC } = p;
   S.recordRung("S", 0, 1); hand(p, "S", "word", "sun");
   const all = [0, 1, 2].map((c) => S.gameAsk("S", c));
-  ok("S is not switched on: every card is \"sss\" and its recording, whatever was earned, picked or just practised",
+  ok("S is not switched on: every card is \"sss\" and its recording, whatever was earned or just practised",
     S.gameTop("S") === 0 && all.every((a) => a.rung === 0 && a.text === "sss" && a.html === '<b class="snd">sss</b>' && a.clip === "/coach/say-echo/S-sound.wav" && a.say === ""), all);
   const others = S.ALL_SOUNDS.filter((x) => SC.GAME_SYL_ON.indexOf(x) < 0).filter((x) => [1, 2].some((c) => S.gameAsk(x, c).text !== S.soundSay(x)));
   ok("…and so is every other sound but R", others.length === 0, others);
-  const bare = boot({ content: false, profile: { gameLevel: "word" } });
-  ok("a page without gamecontent.js (no syllable maker) asks the bare sound", bare.S.gameTop("R") === 0 && texts(bare.S, "R").join() === "rrrr,rrrr,rrrr", texts(bare.S, "R"));
+  const bare = boot({ content: false });
+  bare.S.recordRung("R", 0, 1);   // earned up to the word: still nothing to make a syllable with
+  ok("a page without gamecontent.js (no syllable maker) asks the bare sound, whatever was earned", bare.S.gameTop("R") === 0 && texts(bare.S, "R").join() === "rrrr,rrrr,rrrr", texts(bare.S, "R"));
 }
 
 // ── 4b. a child aged 2 to 4, and Echo's voice off: the bare sound, with the reason ──
 // Home shows a four-year-old the round games too (Fruit Slice is free and
-// open), and Settings hides the picker for that age. So the cards must not
-// climb for them, whatever was earned, handed over, or saved in a pick made
-// when the age read older. Whether little ones should ever be asked a
-// syllable is Rachel's call.
+// open), so the cards must not climb for them, whatever was earned, handed
+// over, or left in their profile by the old Settings picker. Whether little
+// ones should ever be asked a syllable is Rachel's call.
 {
   for (const age of ["2", "3", "4"]) for (const pick of ["", "word"]) {
-    const p = boot({ profile: { childAge: age, gameLevel: pick } }), { S } = p;
+    const p = boot({ profile: pick ? { childAge: age, gameLevel: pick } : { childAge: age } }), { S } = p;
     S.recordRung("R", 0, 1); hand(p, "R", "word", "rabbit");
-    ok("age " + age + (pick ? ", with \"short word\" still saved" : "") + ": every card is the bare sound and its recording",
+    ok("age " + age + (pick ? ", with an old \"short word\" pick still in storage" : "") + ": every card is the bare sound and its recording",
       S.playStyle() === "simple" && S.gameTop("R") === 0 && S.gameHold("R") === "little" && [0, 1, 2].every((c) => { const a = S.gameAsk("R", c); return a.rung === 0 && a.text === "rrrr" && a.say === "" && a.clip === "/coach/say-echo/R-sound.wav"; })
       && texts(S, "R", { first: true }).join() === "rrrr,rrrr,rrrr", { style: S.playStyle(), hold: S.gameHold("R"), t: texts(S, "R") });
   }
   const five = boot({ profile: { childAge: "5" } });
   ok("a five-year-old is not held: the cards climb", five.S.playStyle() === "arcade" && five.S.gameHold("R") === "" && five.S.gameAsk("R", 1).rung === 1, texts(five.S, "R"));
   // Only Echo's voice can model a syllable or a word. With Sona muted the
-  // reader itself answers the bare sound, so the card and the Settings line
-  // (both read it) cannot disagree.
-  const mute = boot({ profile: { volume: 0, gameLevel: "word" } });
+  // reader itself answers the bare sound, so no card can ask past it.
+  const mute = boot({ profile: { volume: 0 } });
   mute.S.recordRung("R", 0, 1); hand(mute, "R", "word", "rabbit");
-  ok("Sona muted (volume 0): every card is the bare sound, whatever was earned, picked or just practised, and the reader says why",
+  ok("Sona muted (volume 0): every card is the bare sound, whatever was earned or just practised, and the reader says why",
     mute.S.gameTop("R") === 0 && mute.S.gameHold("R") === "muted" && texts(mute.S, "R").join() === "rrrr,rrrr,rrrr" && texts(mute.S, "R", { first: true }).join() === "rrrr,rrrr,rrrr", { hold: mute.S.gameHold("R"), t: texts(mute.S, "R") });
   // an old voiceOn:false with an audible volume is healed by getProfile (there is no control left to undo it), so that child's voice is ON
   const healed = boot({ profile: { voiceOn: false, volume: 0.6 } });
@@ -165,7 +180,7 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   hand(p, "R", "syllable", "roo");
   ok("the page just asked \"roo\": a syllable card repeats that same one, not a second target", S.gameAsk("R", 1).text === "roo" && S.gameAsk("R", 2).text === "roo", texts(S, "R"));
   ok("card 0 is still the bare sound: it is where a card steps back to", S.gameAsk("R", 0).text === "rrrr" && S.gameAsk("R", 0).rung === 0);
-  ok("Settings paints its line as on the first game of a day, ignoring the hand-over", S.gameAsk("R", 1, { first: true }).text !== "roo");
+  ok("{ first: true } reads as on the first game of a day, ignoring the hand-over", S.gameAsk("R", 1, { first: true }).text !== "roo");
   S.recordRung("R", 0, 1);
   ok("…and once the word is earned, the card after \"roo\" is the short word", S.gameAsk("R", 1).text === "rot" && S.gameAsk("R", 2).text === "rot", texts(S, "R"));
   hand(p, "R", "word", "rabbit");
@@ -185,7 +200,8 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
 // as the loud th; "pee" is a potty word). Latent while only R is on, so each
 // is switched on here.
 {
-  const p = boot({ profile: { focusSounds: ["P"], gameLevel: "syllable" } }), { S, SC } = p;
+  // nothing earned: one step past it is the syllable step, for every sound
+  const p = boot({ profile: { focusSounds: ["P"] } }), { S, SC } = p;
   for (const [snd, bad] of [["P", "pee"], ["G", "gee"], ["TH", "thee"]]) {
     SC.GAME_SYL_ON.push(snd);
     ok("the practice page really does ask \"" + bad + "\" (so the hand-over can carry it)", SC.syllables(snd).some((x) => x.t === bad));
@@ -201,7 +217,8 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
 
 // ── 6. an SLP's homework ──
 {
-  const p = boot({ profile: { gameLevel: "word" } }), { S } = p;
+  const p = boot(), { S } = p;
+  S.recordRung("R", 0, 1);   // earned up to the word, so the word card is open
   homework(p, { words: ["rain", "rose"] });
   ok("homework that names its words: the word card asks one of them, not rot", /^r(ee|ah|oh)$/.test(S.gameAsk("R", 1).text) && ["rain", "rose"].includes(S.gameAsk("R", 2).text), texts(S, "R"));
   homework(p, { pos: "f", words: ["car", "star"] });
@@ -215,15 +232,15 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   hand(p, "R", "syllable", "ree");
   ok("…and a syllable the practice page asked is not carried into the cards under that homework", texts(S, "R").join() === "rrrr,rrrr,rrrr", texts(S, "R"));
   const q = boot(); homework(q, { pos: "f", words: ["car"] });
-  ok("with \"Sona decides\", the homework's word still waits for the earned level", texts(q.S, "R").join() === "rrrr,rrrr,rrrr", texts(q.S, "R"));
+  ok("with nothing earned, the homework's word still waits for the earned level", texts(q.S, "R").join() === "rrrr,rrrr,rrrr", texts(q.S, "R"));
   q.S.recordRung("R", 0, 1);
   ok("…and comes once it is earned", texts(q.S, "R").join() === "rrrr,rrrr,car", texts(q.S, "R"));
 }
 
 // ── 7. it only reads ──
 {
-  const p = boot({ profile: { gameLevel: "word" } }), { S } = p;
-  S.getProgress();   // a brand-new child's first read saves the ladder migration once; that is not this reader's write
+  const p = boot(), { S } = p;
+  S.recordRung("R", 0, 1);   // earned up to the word, so every step is read below; that write is the practice page's, not this reader's
   hand(p, "R", "syllable", "rah");
   const snap = () => JSON.stringify([p.local, p.session]);
   const before = snap(), stage = JSON.stringify(S.getProgress().stage), reps = S.weekReps(0);

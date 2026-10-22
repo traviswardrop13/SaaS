@@ -12,13 +12,14 @@
 //     on its picture (top right, clear of the best tag and the Free/Included
 //     label), and its label says the level;
 //   - a grey Premium card, a book and Feed Echo never open the sheet, and a
-//     Coming soon game has no card to tap (19 Oct 2026); a grown-up's
-//     "Level 1 only" turns it all off;
+//     Coming soon game has no card to tap (19 Oct 2026);
 //   - Home stays the silent library: no voice, no event, nothing written on
 //     load or on coming back to the front, only the "seen" mark and the pick
 //     on a child's tap; nothing fits off the screen at 320 px;
-//   - Settings' "Game levels" picker starts on "Open as earned", fits a
-//     closed picker at 320 px and saves "Level 1 only" for the selected child.
+//   - Settings has no "Game levels" picker since 22 Oct 2026 (Travis:
+//     "simplify settings"), and a "Level 1 only" an older build saved (cap 1
+//     in the levels record) changes nothing: the badges, the sheet, the road's
+//     Game levels and its level gifts all follow the trophies, as earned.
 // The Trophy Road (step 6, 11 Oct 2026) joined in sections 7 to 10:
 //   - Home's one card under "Pick a game!": the next gift's picture (or the
 //     waiting one, or the chest when it is ready) and a bar filling toward
@@ -196,15 +197,20 @@ await section("levels on Home", async () => {
   } finally { await f.context.close(); }
 });
 
-// ── 2. a grown-up's "Level 1 only", and the cards that never ask ─────────
-await section("who never sees the sheet", async () => {
+// ── 2. an old "Level 1 only", and the cards that never ask ──────────────
+await section("an old cap, and who never sees the sheet", async () => {
+  // Settings' "Level 1 only" went on 22 Oct 2026, and nothing is left to
+  // lift a cap an older build saved: it is ignored, so Home is as earned.
   let f = await fresh({ trophies: 800, levels: { cap: 1, pick: { slice: 3, tiles: 2 } }, premium: true });
   try {
     await home(f.page);
-    const badges = await f.page.evaluate(() => document.querySelectorAll(".game-level").length);
-    ok("with \"Level 1 only\" no card carries a badge, whatever was picked", badges === 0, badges);
-    const to = await tapAway(f.page, card(f.page, "slice"));
-    ok("…and a tap goes straight to the game, with no sheet", to && new URL(to).searchParams.get("game") === "arcade-slice.html" && !(await levels(f.page)).seen, await levels(f.page));
+    const slice = await geometry(f.page, "slice"), tiles = await geometry(f.page, "tiles");
+    ok("a stored cap 1 from an older build changes nothing: each card carries the level picked (3 and 2)", slice && slice.text === "3" && slice.pips === "111" && /Level 3\.$/.test(slice.label) && tiles && tiles.text === "2" && tiles.pips === "110", { slice, tiles });
+    await card(f.page, "slice").click(); await f.page.waitForTimeout(600);
+    const s = await f.page.evaluate(() => [...document.querySelectorAll("#levelList .level-tile")].map((b) => [b.getAttribute("aria-disabled"), b.getAttribute("aria-pressed")]));
+    ok("…and the first tap since Level 3 opened still asks: all three open, Level 3 picked", (await sheetOpen(f.page)) && JSON.stringify(s) === JSON.stringify([[null, "false"], [null, "false"], [null, "true"]]) && (await levels(f.page)).seen.slice === 3, s);
+    ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
+    ok("no page errors", f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 800 });
@@ -294,32 +300,30 @@ for (const vp of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { wi
   });
 }
 
-// ── 5. Settings: a grown-up can keep a child on Level 1 ─────────────────
-await section("Settings' Game levels", async () => {
-  const f = await fresh({ trophies: 800, levels: { pick: { slice: 3 } } });
+// ── 5. Settings: no Game levels picker, and an old cap changes nothing ──
+// Settings' Buddy & world card and its "Game levels" picker ("Open as
+// earned" / "Level 1 only") went on 22 Oct 2026 (Travis: "simplify settings
+// ... the minimum viable features"). A child an older build held at Level 1
+// still has cap 1 in their levels record, and in their backups; with no
+// picker left to lift it, it is ignored on read, never swept.
+await section("Settings has no Game levels", async () => {
+  const f = await fresh({ trophies: 800, levels: { cap: 1, pick: { slice: 3 } } });
   try {
-    // a second child, active: the picker belongs to the child the page was painted for
     await f.page.goto(origin + "/__sona");
-    await f.page.waitForFunction(() => window.Sona && Sona.addKid);
-    await f.page.evaluate(() => { Sona.addKid("Ben", "6"); Sona.gateVerify(); });
-    const slot = await f.page.evaluate(() => Sona.activeKid().slot);
-    await f.page.goto(origin + "/settings.html"); await f.page.waitForSelector("#playLevelCap");
-    const g = await f.page.evaluate(() => { const el = document.getElementById("playLevelCap"); return { label: (document.querySelector('label[for="playLevelCap"]') || {}).textContent, value: el.value, opts: [...el.options].map((o) => [o.value, o.textContent.trim()]), note: document.getElementById("playLevelNote").textContent, inBuddy: !!el.closest("#buddyCard"), shown: el.getBoundingClientRect().height > 0 }; });
-    ok("Settings has a \"Game levels\" picker in the Buddy & world card, starting on \"Open as earned\"", g.label === "Game levels" && g.inBuddy && g.shown && g.value === "" && JSON.stringify(g.opts) === JSON.stringify([["", "Open as earned"], ["1", "Level 1 only"]]), g);
-    ok("its grey line says what a level changes, with the child's name", g.note === "Harder levels change only how fast or busy a game is, never what Ben says.", g.note);
+    await f.page.waitForFunction(() => window.Sona && Sona.gateVerify);
+    await f.page.evaluate(() => Sona.gateVerify());
+    const before = await levels(f.page);
+    await f.page.goto(origin + "/settings.html");
+    await f.page.waitForFunction(() => window.Sona && document.getElementById("aboutCard") && document.getElementById("childName"));
+    await f.page.waitForTimeout(250);
+    const g = await f.page.evaluate(() => ({ picker: !!document.getElementById("playLevelCap"), note: !!document.getElementById("playLevelNote"), buddy: !!document.getElementById("buddyCard"),
+      words: (document.body.innerText.match(/Game levels|Level 1 only|Open as earned|Harder levels/g) || []) }));
+    ok("Settings has no \"Game levels\" picker, no Buddy & world card, and says nothing of \"Level 1 only\"", !g.picker && !g.note && !g.buddy && g.words.length === 0, g);
+    ok("…and opening it leaves the levels record exactly as it was (an old cap is not swept, only never read)", JSON.stringify(await levels(f.page)) === JSON.stringify(before) && before.cap === 1, await levels(f.page));
+    const lv = await f.page.evaluate(() => ({ open: Sona.playLevelsOpen(), slice: Sona.playLevel("slice"), info: Sona.playLevelInfo("slice") }));
+    ok("the stored cap 1 is ignored: at 800 trophies all three levels are open, Fruit Slice plays the Level 3 picked, and the info carries no cap", lv.open === 3 && lv.slice === 3 && !("cap" in lv.info) && lv.info.levels.every((l) => l.open), lv);
     await f.page.setViewportSize({ width: 320, height: 700 });
-    const fit = await f.page.evaluate(() => { const el = document.getElementById("playLevelCap"), cs = getComputedStyle(el), c = document.createElement("canvas").getContext("2d");
-      c.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-      return { room: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 28, widths: [...el.options].map((o) => Math.ceil(c.measureText(o.textContent.trim()).width)), overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
-    ok("every choice can be read in full while the picker is closed, on a 320 px phone", fit.room > 100 && fit.widths.every((w) => w > 20 && w <= fit.room) && fit.overflow <= 1, fit);
-    await f.page.setViewportSize({ width: 390, height: 844 });
-    await f.page.selectOption("#playLevelCap", "1"); await f.page.waitForTimeout(250);
-    const saved = await f.page.evaluate((slot) => ({ mine: JSON.parse(localStorage.getItem("sona.playlevel.v1@" + slot) || "null"), first: JSON.parse(localStorage.getItem("sona.playlevel.v1") || "null"), open: Sona.playLevelsOpen() }), slot);
-    ok("\"Level 1 only\" saves cap 1 for the selected child, and only that child", saved.mine && saved.mine.cap === 1 && saved.open === 1 && saved.first && !saved.first.cap && saved.first.pick.slice === 3, saved);
-    await f.page.reload(); await f.page.waitForSelector("#playLevelCap");
-    ok("…and it shows again on the next visit", (await f.page.inputValue("#playLevelCap")) === "1");
-    await f.page.selectOption("#playLevelCap", ""); await f.page.waitForTimeout(250);
-    ok("\"Open as earned\" lifts it", await f.page.evaluate((slot) => !("cap" in (JSON.parse(localStorage.getItem("sona.playlevel.v1@" + slot)) || {})), slot));
+    ok("the shorter Settings has no sideways scroll on a 320 px phone", (await overflow(f.page)) <= 1, await overflow(f.page));
     ok("no page errors", f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 });
@@ -596,21 +600,22 @@ await section("the road page: game levels, fit, and what never happens", async (
     ok("…sending nothing (the game page says \"level played\")", (await beacons(f.page)).length === 0);
   } finally { await f.context.close(); }
 
+  // a "Level 1 only" an older build saved (Settings' picker went on 22 Oct
+  // 2026) is ignored here too: the road says what the trophies opened
   f = await fresh({ trophies: 800, levels: { cap: 1 }, premium: true });
   try {
     await road(f.page);
-    ok("under a grown-up's \"Level 1 only\" there is no Game levels panel", await f.page.locator("#levelsCard").isHidden());
+    const panel = await f.page.evaluate(() => ({ shown: !document.getElementById("levelsCard").hidden, slice: [...document.querySelectorAll('.rd-lvbtn[data-game="slice"]')].map((b) => [b.getAttribute("aria-disabled"), b.getAttribute("aria-label")]) }));
+    ok("with an old cap 1 stored, the Game levels panel still shows, Fruit Slice's three levels all open at 800 trophies", panel.shown && JSON.stringify(panel.slice) === JSON.stringify([[null, "Level 1. The fruit stand"], [null, "Level 2. Faster fruit!"], [null, "Level 3. Fruit party!"]]), panel);
     const s3 = await f.page.evaluate(() => { const r = document.querySelector('#roadList .rd-stop[data-stop="3"]'); return { level: !!r.querySelector(".ga-lv"), label: r.getAttribute("aria-label") }; });
-    ok("…and the road never says a level opened for that child: stop 3 shows only its coins", !s3.level && s3.label === "At 150 trophies: 20 coins. Open!", s3);
+    ok("…and stop 3 shows its level gift beside its coins", s3.level && /^At 150 trophies: Level 2 in every game and 20 coins\. Open!$/.test(s3.label), s3);
     await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
-    const l = await line(f.page); await yay(f.page);
-    ok("…and opening it shows \"+20 coins!\" alone", l === "+20 coins!" && (await f.page.locator("#giftOvl").isHidden()), l);
-    await home(f.page);
-    const c = await cardOf(f.page);
-    ok("Home's card says the same: no level, only gifts", !/Level/.test(c.label), c.label);
+    const l3 = await line(f.page); await yay(f.page); const l3b = await line(f.page); await yay(f.page);
+    ok("…and opening it says \"Level 2 is open!\", then \"+20 coins!\"", l3 === "Level 2 is open!" && l3b === "+20 coins!", [l3, l3b]);
+    ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
   } finally { await f.context.close(); }
   f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
-  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows its coins and \"Next gift at 150 trophies.\"", c.pic === "coins" && /Next gift at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
+  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.pic === "level" && c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
   f = await fresh({ trophies: 120 });
   try { await road(f.page); ok("before Level 2 opens there is no Game levels panel", await f.page.locator("#levelsCard").isHidden()); } finally { await f.context.close(); }
 

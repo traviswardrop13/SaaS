@@ -151,7 +151,9 @@ ok("a syllable marks its onset (rah, shoo)", markOf(S.soundMark("rah", "R"))[0] 
   vm.runInContext(readFileSync(ROOT + "/gamecontent.js", "utf8"), ctx, { filename: "gamecontent.js" });
   const SC = ctx.SonaContent, shipped = [...SC.GAME_SYL_ON];
   S.ALL_SOUNDS.forEach((x) => { if (!SC.GAME_SYL_ON.includes(x)) SC.GAME_SYL_ON.push(x); });
-  S.saveProfile({ gameLevel: "word" });
+  // every sound earned up to the word (the practice page's own move), so
+  // cards 1 and 2 reach a syllable and a short word wherever one exists
+  S.ALL_SOUNDS.forEach((x) => S.recordRung(x, 0, 1));
   const bad = []; let n = 0;
   for (const snd of S.ALL_SOUNDS) {
     const bare = S.gameAsk(snd, 0);
@@ -166,7 +168,7 @@ ok("a syllable marks its onset (rah, shoo)", markOf(S.soundMark("rah", "R"))[0] 
   ok("every game ask, all 19 sounds: the bare sound is orange whole; a syllable or word marks only the sound's letters, once (" + n + " asks)", bad.length === 0, bad);
   const r = S.gameAsk("R", 2);
   ok("R's short word marks only its r", r.text === "rot" && r.html === '<b class="snd">r</b>ot', r);
-  SC.GAME_SYL_ON.length = 0; shipped.forEach((x) => SC.GAME_SYL_ON.push(x)); S.saveProfile({ gameLevel: "" });
+  SC.GAME_SYL_ON.length = 0; shipped.forEach((x) => SC.GAME_SYL_ON.push(x)); delete store[S.kkey("sona.progress.v1")];
 }
 
 // ── sentences: only the practice words ──

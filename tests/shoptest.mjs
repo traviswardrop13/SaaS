@@ -18,7 +18,10 @@
 //   - setup's hidden buddy step offers only the buddies a family has;
 //   - no dialog, no price sign, no "buy" in a child's words, no voice, no
 //     confetti under Reduce Motion, nothing off the side of a 320 px phone,
-//     Done goes Home (or back to Settings from Settings).
+//     Done goes Home. (Settings' Buddy & world card, the shop's way back to
+//     Settings and its trophies-and-coins note went on 22 Oct 2026, Travis:
+//     "simplify settings"; the shop is reached from Home's buddy and the
+//     Trophy Road, and an old ?from=settings link changes nothing.)
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -233,12 +236,17 @@ await section("3 road", async () => {
   ok("no page error", f.errors.length === 0, f.errors);
   await f.context.close();
 
+  // Settings no longer opens the shop (its Buddy & world card went on 22 Oct
+  // 2026), so ?from=settings is just an old link: it changes nothing, and
+  // Done and ✕ go Home as from anywhere else.
   const g = await fresh({ post: true, coins: 40 });
   await shop(g.page, "?from=settings");
-  await g.page.locator("#done").click(); await g.page.waitForURL(/\/settings\.html/);
-  ok("opened from Settings, Done goes back to Settings", new URL(g.page.url()).pathname === "/settings.html");
-  await g.page.goto(origin + "/customize.html?from=settings");
-  ok("…and so does ✕", await g.page.locator("header .iconbtn").getAttribute("href") === "/settings.html" && await g.page.locator("header .iconbtn").getAttribute("aria-label") === "Back to Settings");
+  const x = await g.page.evaluate(() => { const a = document.querySelector("header .iconbtn"); return { href: a.getAttribute("href"), aria: a.getAttribute("aria-label"), done: document.getElementById("done").getAttribute("href") }; });
+  ok("an old ?from=settings link changes nothing: ✕ is \"Back to games\" to Home, and Done goes Home", x.href === "/today.html" && x.aria === "Back to games" && x.done === "/today.html", x);
+  await g.page.locator("#done").click(); await g.page.waitForURL(/\/today\.html/);
+  ok("…and a tap on Done lands on Home, not Settings", new URL(g.page.url()).pathname === "/today.html");
+  ok("…and the page's code no longer looks for from=settings in its address", !/from=settings/.test(readFileSync(path.join(ROOT, "customize.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1")));
+  ok("no page error", g.errors.length === 0, g.errors);
   await g.context.close();
 });
 
@@ -304,8 +312,17 @@ await section("6 fit and words", async () => {
     await f.context.close();
   }
   const set = readFileSync(path.join(ROOT, "settings.html"), "utf8");
-  ok("Settings' Buddy & world row: \"Choose a buddy, a hat and a place. Coins open new ones.\"", set.includes("Choose a buddy, a hat and a place. Coins open new ones."));
-  ok("…with where trophies and coins come from, under it", set.includes("Trophies come from reps: a day at the daily goal is 30 trophies. Coins come from the daily chest and the Trophy Road. Nothing here is ever sold.") && set.indexOf("Coins open new ones.") < set.indexOf("Nothing here is ever sold.") && set.indexOf("Nothing here is ever sold.") < set.indexOf('id="playLevelCap"'));
+  // Settings is the minimum since 22 Oct 2026 (Travis: "simplify settings"):
+  // the Buddy & world card, its row to the shop, its trophies-and-coins note
+  // and its "Game levels" picker are gone. The buddy is Home's (its buddy
+  // button) and the Trophy Road's ("Buddy Shop"), and both still open it.
+  const setCode = set.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("Settings has no Buddy & world card: no row to the shop, no trophies-and-coins note, no Game levels picker",
+    !/id="(?:buddyCard|economyNote|playLevelCap|playLevelNote)"/.test(setCode) && !/customize\.html/.test(setCode) && !setCode.includes("Coins open new ones.") && !setCode.includes("Nothing here is ever sold."),
+    (setCode.match(/[^\n]*(?:buddyCard|economyNote|playLevelCap|customize\.html|Coins open new ones|Nothing here is ever sold)[^\n]*/) || [""])[0]);
+  const home = readFileSync(path.join(ROOT, "today.html"), "utf8"), roadPage = readFileSync(path.join(ROOT, "road.html"), "utf8");
+  ok("…and the shop is still one tap away: Home's buddy and the Trophy Road's \"Buddy Shop\" open it",
+    /<a id="buddyBtn" href="\/customize\.html"/.test(home) && /<a id="shopLink"[^>]*href="\/customize\.html"/.test(roadPage));
   ok("Reset says what it resets and what stays", set.includes('" practice steps and coins on this device? Trophies, buddies and stickers stay. This cannot be undone."') && !/progress on this device\? This cannot be undone/.test(set));
 });
 
