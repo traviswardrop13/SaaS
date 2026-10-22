@@ -199,10 +199,11 @@
 
     var micStream=null;
     function recordTurn(maxMs){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:(maxMs||6000)}); maxMs=maxMs||8000; return new Promise(function(resolve){
-      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null,bars=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
-      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
+      // NO SpeechRecognition (22 Oct 2026): in a browser it sends the audio
+      // to the browser maker's servers. Voicing heard on the phone only.
+      var done=false,chunks=[],rec=null,transcript="",spoke=false,lastV=0,raf=null,src=null,bars=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
+      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
       try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
-      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; finish();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
       micBtn.classList.add("rec"); micBtn.onclick=finish;
       try{ if(micStream){ var ctx=getCtx();src=ctx.createMediaStreamSource(micStream);var an=ctx.createAnalyser();an.fftSize=512;src.connect(an);
         var fd=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize);bars=document.createElement("div");bars.className="wavebars";for(var b=0;b<7;b++)bars.appendChild(document.createElement("i"));if(ico)ico.style.display="none";micBtn.appendChild(bars);
@@ -215,11 +216,11 @@
       setTimeout(function(){ if(!done)finish(); }, maxMs);
     }); }
     async function scoreUtterance(res,text){
-      if(!res.spoke && !res.transcript && !res.blob) return {pass:false};
+      if(!res.spoke && !res.blob) return {pass:false};
       // Cloud scoring is gone — nothing is uploaded. The turn is judged from
-      // what the browser could hear locally (transcript when available, voicing
-      // otherwise), which is a narrower claim honestly made.
-      if(res.transcript) return {pass:true};
+      // voicing heard on the phone (the browser's speech-to-text, which this
+      // used to read, uploads the audio, so it is gone too), which is a
+      // narrower claim honestly made.
       return {pass:!!res.spoke};
     }
 

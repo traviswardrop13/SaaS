@@ -120,6 +120,21 @@ async function page(mic) {
   const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
   const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));
   ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
+  // …NOR HANDS THE VOICE TO THE BROWSER'S OWN TRANSCRIBER (22 Oct 2026). The
+  // Web Speech API's SpeechRecognition looks local and is not: Chrome sends
+  // the audio to Google, Safari to Apple. The Speech Check and the parked
+  // story reader used it until then, so in a browser a child's words left
+  // the phone. The iPhone app's on-device check is SonaSpeech, a different
+  // name, and stays. lib/speech.ts, the one helper for it, went with them.
+  // Every page and every Next source: public/ (but its vendored PostHog),
+  // app/, components/ and lib/. The Next pages are pages too.
+  const SRC = [];
+  const walk = (d, re) => { if (!existsSync(d)) return; for (const n of readdirSync(d)) { const p = d + "/" + n; if (n === "vendor" || n === "node_modules") continue; if (statSync(p).isDirectory()) walk(p, re); else if (re.test(n)) SRC.push(p); } };
+  walk(ROOT, /\.(html|js)$/);
+  for (const dir of ["app", "components", "lib"]) walk(ROOT + "/../" + dir, /\.(ts|tsx|js|mjs)$/);
+  const listeners = SRC.filter((p) => /SpeechRecognition/.test(noComments(readFileSync(p, "utf8")))).map((p) => p.slice(ROOT.length - "public".length));
+  ok("no page or source uses the browser's speech-to-text, which uploads the audio", SRC.length > 100 && listeners.length === 0, listeners.join(", "));
+  ok("…and the helper for it is gone", !existsSync(ROOT + "/../lib/speech.ts"));
 }
 
 // ── 1b. …nor any way out of Sona's own microphone (12 Oct 2026) ──
