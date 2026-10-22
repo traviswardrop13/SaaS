@@ -7365,37 +7365,62 @@
   // A SYLLABLE AT ANOTHER PLACE IN A WORD (22 Oct 2026: "ah-rah", "ar",
   // "trah"). A start-of-word syllable is judged exactly as before. These have
   // their own rule, because Apple writes a made-up syllable as whatever words
-  // it can ("Ah rah", "Ara", "Are", "Oh row", "Op"), and the word rule's
-  // "close to" would pass a grown-up's "the" for athe or "er" for ar:
-  // - pass: some run of the words heard, joined with a vowel's h dropped, is
-  //   EXACTLY the target, a usual-error form ("Ah wah"), or a word HEAR_ALIKE
-  //   lists ("Are" for ar). Every run is looked at, so five tries in one
-  //   listen ("ah rah ah rah") count as they do at the start of a word;
-  // - fail: a run that is exactly ANOTHER syllable of that place ("or" for
-  //   ar, "free" for trah, the "er" vocalic R leaves out), or nothing near
-  //   the target that carries its sound ("ah ah", "top" for stop, "taco");
-  // - unknown: a word near the target that carries its sound or its usual
-  //   error ("Oh row" for oh-roh, "Op" for ahp, "the" for athe): Apple had no
-  //   word for it, so the sound-shape check decides, never "fail".
-  // Which words are alike is Rachel's to change.
+  // it can ("Ah rah", "Ara", "Are", "Oh row", "Op"), so its spelling is weak
+  // evidence either way. Apple's words decide only when they are clear:
+  // - pass: EVERY word heard (filler aside) is part of a try that is exactly
+  //   the target, its usual-error form ("ah wah") or a word HEAR_ALIKE lists
+  //   ("are" for ar), joined with a vowel's h dropped: "Ah rah", "Ara", five
+  //   tries in one listen. Never a run picked out of a longer phrase, or "is
+  //   he" would spell "ice" and "at a" "ah-tah" inside a grown-up's sentence;
+  // - fail: every word is exactly ANOTHER syllable of that place ("or" or the
+  //   "er" vocalic R leaves out, for ar; "free" for trah), or no word carries
+  //   the sound or its usual error at all ("taco", "is a" for ar; "way" for
+  //   play, which a blend's other letter must be in too);
+  // - unknown, so the sound-shape check decides: anything else, such as a
+  //   word that sounds near the target ("Oh row" for oh-roh, "Itchy" for
+  //   ee-chee, a grown-up's "the" for athe). Near is judged on how the word
+  //   sounds, its consonants, not on its letters (_hearKey).
+  // A try with its sound missing is never a pass here: "ah" for ar is a
+  // vowel. Which words are alike is Rachel's to change.
   const HEAR_ALIKE = {
-    ar: ["are", "r"], or: ["ore", "oar"], air: ["heir"], ear: ["ere"],
-    kray: ["cray"], grew: ["grue"], clue: ["klue"], flee: ["flea"], ski: ["skee"],
+    ar: ["are", "r"], or: ["ore", "oar"], air: ["heir", "ere", "eyre"],
+    ate: ["eight"], kray: ["cray"], grew: ["grue"], clue: ["klue"], flee: ["flea"], ski: ["skee"],
   };
   // R's vowel + R syllables leave out the "er" of bird on purpose; said for
   // ar or ear, it is a try at a different target
   const HEAR_ELSE = { R: ["er", "err", "ur"] };
   function _hearFlat(x) { return String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1"); }
+  // A word's consonants as they sound: "Itchy" and "ee-chee" are both "C",
+  // "dough" and "doh" both "d", "Hurrah" and "ah-rah" both "r"
+  function _hearKey(x) {
+    return String(x).toLowerCase().replace(/[^a-z]/g, "")
+      .replace(/tch/g, "ch").replace(/dge/g, "j").replace(/gh/g, "").replace(/ph/g, "f").replace(/who/g, "hoo").replace(/wh/g, "w")
+      .replace(/sh/g, "S").replace(/ch/g, "C").replace(/th/g, "T")
+      .replace(/ck|q/g, "k").replace(/c(?=[eiy])/g, "s").replace(/c/g, "k").replace(/x/g, "ks").replace(/z/g, "s").replace(/h/g, "")
+      .replace(/([aeiou])[wy]/g, "$1").replace(/[wy](?![aeiou])/g, "").replace(/[aeiou]/g, "").replace(/(.)\1+/g, "$1");
+  }
   function _hearPlace(tokens, content, word, S2, dropped, pos) {
     const w = word.replace(/[^a-z]/g, ""), wf = _hearFlat(w);
-    const forms = _hearVariants(w, S2).map(_hearFlat).concat((HEAR_ALIKE[w] || []).map(_hearFlat)).filter(Boolean);
+    // a form with no consonant left ("a" for ar) is no try at the sound
+    const forms = _hearVariants(w, S2).map(_hearFlat).concat((HEAR_ALIKE[w] || []).map(_hearFlat))
+      .filter((f) => /[b-df-gj-np-tv-z]/.test(f));
     const gone = dropped.map(_hearFlat);
     const parts = Math.max(1, word.split(/[-\s]+/).filter(Boolean).length);
-    const runs = [];
-    for (let i = 0; i < tokens.length; i++) {
-      for (let n = 1; n <= parts + 1 && i + n <= tokens.length; n++) runs.push(_hearFlat(tokens.slice(i, i + n).join("")));
-    }
-    if (runs.some((r) => r && gone.indexOf(r) < 0 && forms.indexOf(r) >= 0)) return "pass";
+    const said = (t) => content.indexOf(t) >= 0;
+    // Can the words heard be covered, in order, by tries of one to parts+1
+    // words that each pass ok()? Filler on its own may be left over.
+    const covered = (ok) => {
+      const reach = [1];
+      for (let i = 0; i < tokens.length; i++) {
+        if (!reach[i]) continue;
+        if (!said(tokens[i])) reach[i + 1] = Math.max(reach[i + 1] || 0, reach[i]);
+        for (let n = 1; n <= parts + 1 && i + n <= tokens.length; n++) {
+          if (ok(_hearFlat(tokens.slice(i, i + n).join("")))) reach[i + n] = 2;
+        }
+      }
+      return reach[tokens.length] === 2;
+    };
+    if (covered((r) => forms.indexOf(r) >= 0 && gone.indexOf(r) < 0)) return "pass";
     const SC = _gameContent(), table = [];
     try {
       (SC && SC.syllableTables ? SC.syllableTables() : []).forEach((tb) => {
@@ -7403,25 +7428,27 @@
       });
     } catch (e) {}
     if (S2 === "R" && (pos === "v" || pos === "f")) table.push.apply(table, HEAR_ELSE.R);
-    const others = [];
+    const others = gone.slice();
     table.forEach((t) => {
       const tw = String(t || "").toLowerCase().replace(/[^a-z]/g, "");
       [tw].concat(HEAR_ALIKE[tw] || []).forEach((x) => { const f = _hearFlat(x); if (f && forms.indexOf(f) < 0 && f !== wf && others.indexOf(f) < 0) others.push(f); });
     });
-    if (runs.some((r) => others.indexOf(r) >= 0)) return "fail";
-    const subs = HEAR_SUBS[S2] || [], near = Math.max(2, Math.ceil(wf.length / 2));
+    if (covered((r) => others.indexOf(r) >= 0)) return "fail";
+    const subs = HEAR_SUBS[S2] || [];
     // a blend keeps its other letter too: "way" for play and "too" for snoo
     // are not a try at the blend (c and k are one sound: "klue" for clue)
     const kk = (x) => x.replace(/c/g, "k");
     const partner = pos === "b" ? kk((w.match(/^[^aeiouy]+/) || [""])[0].replace(new RegExp(HEAR_SPELL[S2] || "$^", "g"), "")) : "";
+    const keys = forms.map(_hearKey).filter(Boolean);
     for (let i = 0; i < tokens.length; i++) {
-      for (let n = 1; n <= parts + 1 && i + n <= tokens.length; n++) {
-        const run = tokens.slice(i, i + n).join(""), r = _hearFlat(run);
-        if (!r || gone.indexOf(r) >= 0 || !tokens.slice(i, i + n).some((t) => content.indexOf(t) >= 0)) continue;
+      for (let n = 1; n <= parts && i + n <= tokens.length; n++) {
+        const run = tokens.slice(i, i + n).join("");
+        if (!tokens.slice(i, i + n).some(said) || gone.indexOf(_hearFlat(run)) >= 0) continue;
         if (partner && partner.split("").some((c) => kk(run).indexOf(c) < 0)) continue;
         let carries = Object.keys(_hearSpots(run, S2)).length > 0;
         for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && run.indexOf(subs[k]) >= 0;
-        if (carries && forms.some((f) => _hearNear(r, f, near))) return "unknown";
+        const key = _hearKey(run);
+        if (carries && keys.indexOf(key) >= 0) return "unknown";
       }
     }
     return "fail";
@@ -7460,9 +7487,13 @@
     // "say Ara" one), so a child's own try right after it is kept
     const parts = Math.max(1, String(word || "").split(/[-\s]+/).filter(Boolean).length);
     const wf = _hearFlat(String(word || "").toLowerCase());
+    // "ay-say", a middle syllable, is said with a "say" of its own (the
+    // start of a word keeps its old rule, "say" included)
+    const mine = {};
+    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && opts.pos !== "mix") String(word || "").toLowerCase().split(/[-\s]+/).forEach((x) => { mine[x] = 1; });
     const said = [];
     for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") {
+      if ((tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") && !mine[tokens[i]]) {
         let n = 1;
         if (parts > 1) {
           let got = ""; n = 0;

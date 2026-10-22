@@ -1395,7 +1395,9 @@
       var other=word.replace(own||/$^/," ");
       var soft=/c[eiy]/.test(word)||(SOUND!=="G"&&/dge|ge$/.test(word));
       if(SHAPE.low[SOUND] && cent>1800 && high>0.22 && !soft && !/s|z|x|sh|ch|j|f|ph|th/.test(other)) return "fail";
-      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10 && !(ITEM&&ITEM.pos==="b")) return "fail";
+      // an S blend only when its other letters ARE voiced ("snake", "smile",
+      // "star"): "stop" and "ski" are as hissy as "sock", and judged as ever
+      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10 && !(ITEM&&ITEM.pos==="b"&&/[lmnrwdbgvjz]/.test(other))) return "fail";
       return "pass";
     }
 

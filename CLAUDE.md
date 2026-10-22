@@ -3279,17 +3279,21 @@ selected."
   booked as a word place (the clinician's pass rate by position counts words
   and sentences only). A start-of-word syllable is judged exactly as before.
   At another place a syllable has its own rule (`_hearPlace`), because Apple
-  writes a made-up syllable as whatever words it can: a run of the words
-  heard, joined with a vowel's h dropped, that is EXACTLY the target, its
-  usual-error form ("Ah rah", "Ara", "ah wah" for ah-rah) or a word
-  `HEAR_ALIKE` lists ("are" for ar) passes, and every run is looked at, so
-  five tries in one listen count; exactly ANOTHER syllable of that place
-  fails ("or" or "er" for ar, "free" for trah); a word near the target that
-  carries its sound is unknown and the shape check decides ("Oh row" for
-  oh-roh, "Op" for ahp, and so a grown-up's "the" for athe); nothing near it
-  with its sound fails ("taco", "way" for play: a blend keeps its other
-  letter). Never "close to" a pass. A grown-up's "say" sets aside only the
-  words that spell the target ("say Ara" one, "say ah rah" two). A blend
+  writes a made-up syllable as whatever words it can, so its spelling is weak
+  evidence either way. Pass: EVERY word heard (filler aside) is part of a try
+  that is exactly the target, its usual-error form or a word `HEAR_ALIKE`
+  lists, joined with a vowel's h dropped ("Ah rah", "Ara", "ah wah" for
+  ah-rah; "are" for ar; five tries in one listen); never a run picked out of
+  a longer phrase, or a grown-up's "is he" would spell "ice". Fail: every word
+  is exactly ANOTHER syllable of that place ("or" or "er" for ar, "free" for
+  trah), or no word carries the sound or its usual error ("taco", "is a" for
+  ar; "way" for play: a blend keeps its other letter). Anything else is
+  unknown and the shape check decides, such as a word with the target's
+  consonants as they sound (`_hearKey`: "Oh row" for oh-roh, "Itchy" for
+  ee-chee, "an" for ahn, a grown-up's "the" for athe). A try with its sound
+  missing is never a pass here ("ah" for ar is a vowel). A grown-up's "say"
+  sets aside only the words that spell the target ("say Ara" one, "say ah
+  rah" two), and is never the "say" of "ay-say". A blend
   word said without its sound fails ("top" for stop). Not built yet: a child
   who pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
   (each voiced burst is a try); look at that before switching Middle on. The
@@ -3297,7 +3301,7 @@ selected."
   OTHER letters ("star", "chair"; a sentence by its practice word, never by
   "the" or "see" around it; a soft c or g only where it is surely soft, so
   "tiger", "girl" and "grew" are judged as ever), nor an S blend for its
-  voiced ones.
+  voiced ones ("snake", "smile"; "stop" and "ski" are judged as ever).
 - **Rachel's calls, built on defaults until she answers:** every syllable
   table, and which places are switched on; whether R's end and vocalic R are
   one climb and the sound alone counts everywhere; whether a grown-up may

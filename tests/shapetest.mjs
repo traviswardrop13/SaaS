@@ -109,6 +109,8 @@ const CASES = [
   ["S-demo.mp3", "L", "fail", "S claimed as L on \"clean\" (a hard c)", 1, { t: "clean", level: "word", pos: "b" }],
   ["S-demo.mp3", "R", "fail", "S claimed as R on \"Look at the rabbit.\" (the frame's th is not the word's)", 1, { t: "Look at the rabbit.", word: "rabbit", level: "sentence", pos: "i" }],
   ["S-demo.mp3", "R", "pass", "S claimed as R on \"I see a star.\" (its word hisses)", 1, { t: "I see a star.", word: "star", level: "sentence", pos: "f" }],
+  ["M-demo.mp3", "S", "pass", "M claimed as S on the blend \"smile\" (voiced around its S)", 1, { t: "smile", level: "word", pos: "b" }],
+  ["M-demo.mp3", "S", "fail", "M claimed as S on the blend \"stop\" (nothing voiced around its S)", 1, { t: "stop", level: "word", pos: "b" }],
 ];
 for (const [file, target, want, label, reps, item] of CASES) {
   const r = await classify(file, target, reps || 1, item || null);
