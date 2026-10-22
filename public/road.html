@@ -338,7 +338,7 @@
         else if(it)line="You got "+it.name+"!";
         else if(g.full)line="Your sticker book is full! Here are "+g.coins+" coins!";
         else if(g.sticker)line="You found the "+g.name+" sticker!";
-        else if(g.level)line="Level "+g.level+" is open in every game!";
+        else if(g.level)line="Level "+g.level+" is open!";
         else if(g.land)line=g.land==="champ"?"You reached the Champion Trail!":"Welcome to "+g.name+"!";
         else line="+"+g.coins+" coins!";
         var art=g.alt?coinArt(g.alt.coins):it?itemArt(it.kind,it.id):g.full?coinArt(g.coins):g.sticker?stickerArt(g.sticker):g.level?levelArt(g.level):g.land?landArt(g.land):coinArt(g.coins);

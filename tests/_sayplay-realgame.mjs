@@ -5,6 +5,10 @@ import {readFileSync,existsSync,statSync} from 'node:fs';
 import path from 'node:path';
 import {chromium,ROOT as SOURCE_ROOT,launchOpts} from './_env.mjs';
 import {fakeDevice} from './_sayplaydevice.mjs';
+import {parkedSona} from './_parked.mjs';
+// The game is open (Travis opened all eighteen on 22 Oct 2026), so the page is
+// served as it is. fresh({unpark:false}) is the parked bounce: the same page
+// served a sona.js with this game parked again (tests/_parked.mjs).
 export const advance=(page,ms)=>page.clock.runFor(ms);
 export async function until(page,predicate,max=14000,arg){for(let t=0;t<max;t+=100){if(await page.evaluate(predicate,arg))return true;await advance(page,100);}return !!(await page.evaluate(predicate,arg));}
 export async function sayWord(page){if(!await until(page,()=>window.__sayplay&&__sayplay.listening))return false;await advance(page,150);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);await advance(page,650);await page.evaluate(()=>__quiet.voice=true);await advance(page,280);await page.evaluate(()=>__quiet.voice=false);return until(page,()=>__sayplay.phase==='play');}
@@ -16,7 +20,7 @@ export async function gameHarness(key,port){
  return{async fresh(options={}){
    const context=await browser.newContext({viewport:options.viewport||{width:390,height:844},reducedMotion:'reduce'}),errors=[];
    await context.addInitScript(fakeDevice,{age:'7',micok:true,permission:'granted',speechMs:100,...options.device});
-   await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(base+'/'))return r.abort();if(options.blockAssets&&u.includes('/assets/crafted/game/'+key+'-'))return r.abort();if(options.unpark!==false&&u===base+'/sona.js')return r.fulfill({contentType:'text/javascript',body:readFileSync(root+'/sona.js','utf8').replace(new RegExp('('+key+': \\{[^\\n]*)comingSoon: true, '),'$1')});return r.continue();});
+   await context.route('**/*',r=>{const u=r.request().url();if(!u.startsWith(base+'/'))return r.abort();if(options.blockAssets&&u.includes('/assets/crafted/game/'+key+'-'))return r.abort();if(options.unpark===false&&u===base+'/sona.js')return r.fulfill({contentType:'text/javascript',body:parkedSona(readFileSync(root+'/sona.js','utf8'),[key])});return r.continue();});
    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.clock.install();await page.goto(base+'/arcade-'+key+'.html');return{page,context,errors};
  },async close(){await browser.close();await new Promise(r=>server.close(r));}};
 }

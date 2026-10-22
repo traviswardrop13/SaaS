@@ -1050,6 +1050,7 @@
     // there can open the rest. Premium, a trial or a covered caseload open
     // every game either way (Sona.gameAccess).
     var SELL={problem:1,alone:1,games:1},sellPainted=null;
+    function SELL_CAP(both,id){return both?(id==="simple"?3:6):9;}
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
     function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
@@ -1089,17 +1090,23 @@
       if(leadKey&&cards[leadKey])pic.src="/assets/crafted/home-"+cards[leadKey]+".webp";
       pic.parentNode.hidden=!(leadKey&&cards[leadKey]);
       var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
+      // A peek, not the catalog (22 Oct 2026, when 18 games opened at once
+      // and the grid ran off a phone): Home's first nine of one age group,
+      // or three little-kid and six big-kid games with no age, each group's
+      // rest counted under it ("and 7 more").
       groups.forEach(function(g){
+        var cap=SELL_CAP(groups.length>1,g.id);
         if(groups.length>1){var k=document.createElement("p");k.className="sell-kicker";k.textContent=g.label;grid.appendChild(k);}
         var list=document.createElement("ul");list.className="sell-games"+(g.games.length<=2?" two":"");
         list.setAttribute("aria-label",groups.length>1?g.label:"Games");
-        g.games.forEach(function(game){
+        g.games.slice(0,cap).forEach(function(game){
           var li=document.createElement("li");li.dataset.game=game.key;
           var art=document.createElement("span");art.className="sell-art";art.setAttribute("aria-hidden","true");cardArt(art,game.key);li.appendChild(art);
           var n=document.createElement("span");n.className="sell-name";n.textContent=game.name;li.appendChild(n);
           list.appendChild(li);
         });
         grid.appendChild(list);
+        if(g.games.length>cap){var more=document.createElement("p");more.className="sell-more";more.textContent="and "+(g.games.length-cap)+" more";grid.appendChild(more);}
       });
     }
     // "Does this Apple ID already have Premium?", asked of the store ONCE,

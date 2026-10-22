@@ -249,7 +249,8 @@ let deck=await readLibrary();
 ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
 // The Say & Play games are Coming soon until each is rebuilt (Travis, 26 Sep
 // 2026); the six first games, Feed Echo among them, always play.
-const PARKED=['peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
+// (none since 22 Oct 2026, when Travis opened all eighteen, Peekaboo too)
+const PARKED=[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b/gm)].map(m=>m[1]).sort();
 // Since 19 Oct 2026 a Coming soon game has no card on Home at all.
 ok("Home shows the 29 titles but the parked ones: the six first games, Rise Up and any rebuilt ones, all playable, and no Coming soon card",deck.games.length===29-PARKED.length&&deck.playable.length===deck.games.length&&['feed','slice','tiles','stack','run','glide'].every(k=>deck.playable.includes(k))&&deck.comingSoon.length===0&&!PARKED.some(k=>deck.games.includes(k)),JSON.stringify(deck));
 ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));

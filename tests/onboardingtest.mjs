@@ -929,6 +929,10 @@ const sellShown=(page,key)=>page.evaluate(key=>{const st=document.querySelector(
    names:[...st.querySelectorAll('.ph-name')].map(e=>e.textContent),pic:(st.querySelector('#alonePic')||{}).getAttribute?st.querySelector('#alonePic').getAttribute('src'):null,picAlt:st.querySelector('#alonePic')?st.querySelector('#alonePic').alt:null,
    grid:grid.map(li=>li.dataset.game),gridNames:grid.map(li=>li.querySelector('.sell-name').textContent),gridPics:grid.map(li=>(li.querySelector('img')||{}).getAttribute?li.querySelector('img').getAttribute('src'):''),kickers:[...st.querySelectorAll('.sell-kicker')].map(k=>k.textContent),words:st.innerText.replace(/\s+/g,' ').trim()};},key);
 // the catalog's own answer, read straight from GAME_ACTS: the playable games of a group
+// Home's order of a group's playable games, the order the peek takes its first few from
+const homeOrder=(page,id)=>page.evaluate(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].games.filter(x=>x.kind!=='book'&&!x.comingSoon&&x.available!==false).map(x=>x.key),id);
+// the "and N more" lines under the grid
+const mores=page=>page.evaluate(()=>[...document.querySelectorAll('[data-step="games"] .sell-more')].map(p=>p.textContent));
 const playable=(page,group)=>page.evaluate(g=>Object.keys(Sona.GAME_ACTS).filter(k=>{const a=Sona.GAME_ACTS[k];return (!g||a.group===g)&&!a.comingSoon&&a.available!==false;}),group);
 const sellFit=key=>{const st=document.querySelector('[data-step="'+key+'"]').getBoundingClientRect(),b=document.getElementById('nextBtn').getBoundingClientRect(),f=document.querySelector('.obfoot').getBoundingClientRect(),h=document.querySelector('[data-step="'+key+'"] h1').getBoundingClientRect(),imgs=[...document.querySelectorAll('[data-step="'+key+'"] img')].map(i=>i.getBoundingClientRect());return {cardTop:Math.round(st.top),cardBottom:Math.round(st.bottom),footTop:Math.round(f.top),btnTop:Math.round(b.top),btnBottom:Math.round(b.bottom),headTop:Math.round(h.top),imgs:imgs.length,imgBottom:Math.round(Math.max(0,...imgs.map(r=>r.bottom))),imgSmall:imgs.filter(r=>r.width<40||r.height<20).length,height:innerHeight,sideways:document.documentElement.scrollWidth-innerWidth,obSideways:(()=>{const o=document.querySelector('.ob');return o.scrollWidth-o.clientWidth;})()};};
 async function toSell(page,{name='Milo',age='6',therapy='t_yes'}={}){await toName(page);await page.locator('#obName').fill(name);if(age)await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);await answerTherapy(page,therapy);await page.locator('[data-step="problem"].on').waitFor();}
@@ -963,7 +967,10 @@ await scenario('the three screens that sell: their words, the games, and nothing
   ok('games: the line under the grid is exactly "'+GAMES('Milo').line+'"',s.line===GAMES('Milo').line,s.line);
   ok('games: the name is ph-name, and no other recorded text holds it',JSON.stringify(s.names)==='["Milo"]'&&s.bare.length===0,s);
   const arcade=await playable(page,'arcade');
-  ok('games: exactly the catalog\'s playable Arcade games for a 5–6 year old ('+arcade.join(', ')+'), in Home\'s order',JSON.stringify(s.grid.slice().sort())===JSON.stringify(arcade.slice().sort())&&JSON.stringify(s.grid)===JSON.stringify(await page.evaluate(()=>Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).map(x=>x.key))),{grid:s.grid,arcade});
+  // a peek, not the catalog (22 Oct 2026): Home's first nine, the rest counted
+  const arcadeHome=await homeOrder(page,'arcade');
+  ok('games: Home\'s first nine playable Arcade games for a 5–6 year old ('+s.grid.join(', ')+'), in Home\'s order',arcadeHome.length>9&&JSON.stringify(arcadeHome.slice().sort())===JSON.stringify(arcade.slice().sort())&&JSON.stringify(s.grid)===JSON.stringify(arcadeHome.slice(0,9)),{grid:s.grid,arcade,arcadeHome});
+  ok('games: …and the rest counted under them: "and '+(arcade.length-9)+' more"',JSON.stringify(await mores(page))===JSON.stringify(['and '+(arcade.length-9)+' more']),await mores(page));
   ok('games: never a Coming soon game, and the free and Premium ones alike, unlabelled',s.grid.length>=2&&await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid)&&!/\bfree\b|premium|coming soon|\$/i.test(s.words),s.words);
   ok('games: each with its own name and its painted Home card',JSON.stringify(s.gridNames)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>Sona.GAME_ACTS[k].name),s.grid))&&JSON.stringify(s.gridPics)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>'/assets/crafted/home-'+Sona.CRAFTED_CARDS[k]+'.webp'),s.grid)),s);
   ok('…every picture loads',await page.evaluate(()=>Promise.all([...document.querySelectorAll('#gamesGrid img')].map(i=>i.decode().then(()=>i.naturalWidth>0,()=>false))).then(a=>a.length>0&&a.every(Boolean))));
@@ -983,7 +990,8 @@ await scenario('the three screens that sell: their words, the games, and nothing
   await next(page);await page.locator('[data-step="games"].on').waitFor();
   s=await sellShown(page,'games');
   const simple=await playable(page,'simple');
-  ok('ages 2–4: the grid is exactly the catalog\'s playable Simple play games ('+simple.join(', ')+')',JSON.stringify(s.grid.slice().sort())===JSON.stringify(simple.slice().sort())&&s.grid.length>=2,{grid:s.grid,simple});
+  const simpleHome=await homeOrder(page,'simple');
+  ok('ages 2–4: the grid is Home\'s first nine playable Simple play games ('+s.grid.join(', ')+'), the rest counted',JSON.stringify(simpleHome.slice().sort())===JSON.stringify(simple.slice().sort())&&JSON.stringify(s.grid)===JSON.stringify(simpleHome.slice(0,9))&&JSON.stringify(await mores(page))===JSON.stringify(simple.length>9?['and '+(simple.length-9)+' more']:[]),{grid:s.grid,simple,mores:await mores(page)});
   ok('nothing posted, nothing sent about these screens but the screen\'s key',leadPosts(requests).length===0);
   clean('sell screens',errors);
  }finally{await context.close();}
@@ -997,9 +1005,10 @@ await scenario('the three screens that sell: their words, the games, and nothing
    await next(page);await page.locator('[data-step="games"].on').waitFor();
    const s=await sellShown(page,'games');
    if(!age){
-    const both=(await playable(page,'simple')).concat(await playable(page,'arcade'));
-    ok('no age: the grid is every playable game of both groups, Simple play first, each group under its catalog label',JSON.stringify(s.grid.slice().sort())===JSON.stringify(both.slice().sort())&&s.grid.length===both.length&&JSON.stringify(s.kickers)===JSON.stringify(await page.evaluate(()=>['simple','arcade'].map(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].ageLabel))),{grid:s.grid,both,kickers:s.kickers});
-   }else ok('7+: the Arcade games',JSON.stringify(s.grid.slice().sort())===JSON.stringify((await playable(page,'arcade')).slice().sort()),s.grid);
+    const sh=await homeOrder(page,'simple'),ah=await homeOrder(page,'arcade'),both=sh.slice(0,3).concat(ah.slice(0,6));
+    ok('no age: three Simple play games then six Arcade ones, Home\'s first of each, each group under its catalog label',JSON.stringify(s.grid)===JSON.stringify(both)&&JSON.stringify(s.kickers)===JSON.stringify(await page.evaluate(()=>['simple','arcade'].map(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].ageLabel))),{grid:s.grid,both,kickers:s.kickers});
+    ok('no age: …each group\'s rest counted under it',JSON.stringify(await mores(page))===JSON.stringify([sh,ah].map((g,i)=>g.length-[3,6][i]).filter(n=>n>0).map(n=>'and '+n+' more')),await mores(page));
+   }else ok('7+: Home\'s first nine Arcade games',JSON.stringify(s.grid)===JSON.stringify((await homeOrder(page,'arcade')).slice(0,9)),s.grid);
    ok(label+': still no Coming soon game',await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid));
    clean('sell screens '+label,errors);
   }finally{await context.close();}
@@ -1035,7 +1044,7 @@ await scenario('the three screens that sell fit every screen',async()=>{
  for(const device of [{viewport:{width:320,height:568}},{viewport:{width:375,height:667}},{viewport:{width:390,height:844},safeArea:{top:47,bottom:34}},{viewport:{width:768,height:1024}},{viewport:{width:1024,height:768}}]){
   const {context,page,errors}=await fresh(Object.assign({webSales:true},device)),size=device.viewport.width+'×'+device.viewport.height;try{
    await toSell(page,{name:'Maximiliana',age:''});
-   ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: '+(await playable(page,'')).length+' games)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===(await playable(page,'')).length);
+   ok('(fit at '+size+': a phone that sells, so the grid is the longest it gets: nine games of '+(await playable(page,'')).length+', and two "more" lines)',await page.evaluate(()=>Sona.trialFirst()===true&&document.querySelectorAll('#gamesGrid li').length)===9&&(await mores(page)).length===2);
    for(const key of ['problem','alone','games']){
     await page.locator('[data-step="'+key+'"].on').waitFor();await settled(page);
     for(const age of key==='problem'?['']:['','6','4']){

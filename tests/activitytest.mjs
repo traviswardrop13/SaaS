@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { existsSync, readFileSync } from "fs";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 import { open as phoneOpen } from "./_phone.mjs";
+import { PARK, parkedSona, servePark } from "./_parked.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://localhost:8188";
@@ -46,8 +47,12 @@ const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 const SONA_SRC = readFileSync(ROOT + "/sona.js", "utf8");
 const parkedSay = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1]);
 // Bubble Pop came back on 30 Sep 2026 (Travis: "the two free games for
-// younger kids"); Peekaboo is still parked.
-const comingSoonKeys = ["peekaboo", ...parkedSay].sort();
+// younger kids"), and Peekaboo with the other seventeen on 22 Oct 2026
+// (Travis: "turn on all 18 games"). The parked ones are read from the catalog.
+const comingSoonKeys = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b/gm)].map((m) => m[1]).sort();
+// With none parked, the sections that pin what parking does park these
+// again in the sona.js the browser is served (tests/_parked.mjs).
+const parkKeys = [...PARK].sort();
 // HIDDEN UNTIL IT OPENS (Travis, 19 Oct 2026, from a parent-funnel review:
 // the greyed Coming soon cards cluttered Home). Home draws only these: every
 // catalog game but the parked ones. The catalog itself still lists them all.
@@ -67,16 +72,17 @@ function unparked(source, keys) {
 }
 // Ordinary families use the restored free release. The paid seam rehearses
 // future locks without changing the release or granting a real entitlement.
-async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null, unpark = [] } = {}) {
+async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null, unpark = [], park = [] } = {}) {
   const ctx = await browser.newContext({ viewport });
   await ctx.route("**/*", (route) => {
     const url = new URL(route.request().url());
     if (url.origin !== origin) return route.abort();
-    const patch = url.pathname === "/sona.js" && (catalog || now !== null || unpark.length);
+    const patch = url.pathname === "/sona.js" && (catalog || now !== null || unpark.length || park.length);
     if (origin === BASE && !patch) return route.continue();
     const file = ROOT + url.pathname;
     if (url.pathname.startsWith("/api/") || !existsSync(file)) return route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
     let body = readFileSync(file);
+    if (url.pathname === "/sona.js" && park.length) body = parkedSona(body.toString(), park);
     if (url.pathname === "/sona.js" && unpark.length) body = unparked(body.toString(), unpark);
     if (url.pathname === "/sona.js" && (catalog || now !== null)) body = body.toString() + `
       (function(){
@@ -148,7 +154,8 @@ await section("library prerequisites", async () => {
       playableKeys = games.filter(game => game.available && !game.comingSoon).map(game => game.key).sort();
       freeKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "free").map(game => game.key).sort();
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
-      ok("Coming soon: Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
+      ok("Coming soon: exactly the catalog's parked lines (none since 22 Oct 2026)", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)), comingSoonKeys);
+      ok("…so Peekaboo and every rebuilt Say & Play game is playable", ["peekaboo", ...sayLittle, ...sayBig].every((key) => playableKeys.includes(key)), playableKeys);
       ok("…and the six first games and Rise Up are never Coming soon", ["feed", ...adventureKeys, "rise"].every((key) => playableKeys.includes(key)), playableKeys);
     }
     ok("Home itself presents the game picker, with a card for every game but the parked ones", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === homeKeys.length, await pg.locator("#activityGroups button[data-game]").count());
@@ -284,6 +291,7 @@ if (present && hasContract) {
           Sona.GAME_ACTS.feed.available = false;
           const unavailable = snapshot();
           ["bubbles", "peekaboo"].forEach(key => { Sona.GAME_ACTS[key].releasedOn = "2028-04-30"; Sona.GAME_ACTS[key].season = { startsOn: "2028-04-30", endsOn: "2028-04-30" }; });
+          Sona.GAME_ACTS.peekaboo.comingSoon = true;
           const comingSoon = snapshot();
           return { fresh, seasonal, start, end, expired, unavailable, comingSoon };
         } finally {
@@ -293,7 +301,7 @@ if (present && hasContract) {
       });
       const featuredKeys = (model, id) => sorted((model.featured || []).find((group) => group.id === id)?.games.map((game) => game.key) || []);
       ok("New includes today and day 29 but excludes day 30, future and invalid release dates", same(featuredKeys(samples.fresh, "new"), ["feed", "run"]), samples.fresh.featured);
-      ok("Coming soon titles cannot appear as New or seasonal releases", !samples.comingSoon.featured.flatMap(group => group.games).some(game => comingSoonKeys.includes(game.key)));
+      ok("Coming soon titles cannot appear as New or seasonal releases", samples.comingSoon.featured.flatMap(group => group.games).some(game => game.key === "bubbles") && !samples.comingSoon.featured.flatMap(group => group.games).some(game => game.key === "peekaboo"));
       ok("seasonal shelves include both date boundaries and omit future or expired seasons", same(featuredKeys(samples.seasonal, "seasonal"), ["feed", "run", "tiles"]), samples.seasonal.featured);
       ok("release and season dates use the same whole UTC day", same(samples.start.featured, samples.end.featured), { start: samples.start.featured, end: samples.end.featured });
       ok("an expired seasonal shelf disappears instead of remaining empty", !(samples.expired.featured || []).some((group) => group.id === "seasonal"), samples.expired.featured);
@@ -304,19 +312,20 @@ if (present && hasContract) {
 
   // Parked games carried a Friday each from 9 Oct 2026 (three a week, 16 Oct
   // to 20 Nov). Since 15 Oct 2026 (Travis: "put coming soon") none does, and
-  // since 19 Oct 2026 Home draws no parked game at all. The catalog still lists
-  // all 18 (a typed address to one bounces home with "<Game> is coming soon"),
+  // since 19 Oct 2026 Home draws no parked game at all; since 22 Oct none is
+  // parked, so this section parks four again (tests/_parked.mjs). The catalog
+  // still lists them (a typed address to one bounces home with "<Game> is coming soon"),
   // and the day support stays as a label: a `comingOn` on one line makes that
   // note say "coming Nov 6" until the day. A day never opens anything, nor
   // draws a card: only taking comingSoon off does.
   await section("parked games stay off Home", async () => {
     const parkedLines = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b[^\n]*/gm)].map((m) => ({ key: m[1], line: m[0] }));
-    ok("all 18 parked games are in the catalog, and none carries a day",
-      same(sorted(parkedLines.map((p) => p.key)), comingSoonKeys) && parkedLines.length === 18 && parkedLines.every((p) => !/\bcomingOn\b/.test(p.line)), parkedLines.filter((p) => /\bcomingOn\b/.test(p.line)).map((p) => p.key));
+    ok("no game is parked in the catalog since 22 Oct 2026, and none carries a day",
+      parkedLines.length === 0 && same(comingSoonKeys, []) && !/^\s{4}\w+: \{[^\n]*\bcomingOn\b/m.test(SONA_SRC), parkedLines.map((p) => p.key));
     const rebuilt = [...SONA_SRC.matchAll(/^\s{4}(soccer|dino): \{ name: [^\n]*/gm)].map((m) => m[0]);
     ok("…and Soccer Goal and Dino Dig, rebuilt, carry no day and are not parked", rebuilt.length === 2 && rebuilt.every((line) => !/\bcomingSoon\b|\bcomingOn\b/.test(line)), rebuilt);
     const cardsAt = async (now, opts = {}) => {
-      const { ctx, pg, errors } = await fixture({ now, ...opts });
+      const { ctx, pg, errors } = await fixture({ now, park: PARK, ...opts });
       try {
         const got = await pg.evaluate((parkedKeys) => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled } : null; };
@@ -325,7 +334,7 @@ if (present && hasContract) {
             coming: /coming soon|coming [a-z]{3} \d/i.test(document.getElementById("libraryApp").innerText),
             catalog: lib.groups.flatMap((g) => g.games.filter((y) => y.comingSoon).map((y) => y.key)).sort(),
             soccer: tag("soccer"), dino: tag("dino"), access: Sona.gameAccess("peekaboo") };
-        }, comingSoonKeys);
+        }, parkKeys);
         return { got, errors };
       } finally { await ctx.close(); }
     };
@@ -333,14 +342,14 @@ if (present && hasContract) {
       for (const [who, opts] of [["the free version", {}], ["a family without Premium", { paid: true }], ["a family with Premium", { paid: true, premium: true }]]) {
         const r = await cardsAt(now, opts);
         ok(when + ", " + who + ": no parked game has a card on Home, and nothing says Coming soon", r.got.cards.length === 0 && !r.got.coming, r.got.cards);
-        ok("…while the catalog still lists all 18, and none opens", same(r.got.catalog, comingSoonKeys) && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify([r.got.catalog.length, r.got.access]));
+        ok("…while the catalog still lists the parked ones, and none opens", same(r.got.catalog, parkKeys) && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify([r.got.catalog.length, r.got.access]));
         ok("…and Soccer Goal and Dino Dig, rebuilt, are on Home with no day on them", [r.got.soccer, r.got.dino].every((g) => !!g && !g.disabled && !/Coming/.test(g.label)), JSON.stringify([r.got.soccer, r.got.dino]));
         ok("…with no page errors", r.errors.length === 0, r.errors);
       }
     }
     // a typed address to a parked game still lands on Home with its note
     for (const key of ["peekaboo", "racecar", "balloon"]) {
-      const { ctx, pg } = await fixture({ path: "/arcade-" + key + ".html" });
+      const { ctx, pg } = await fixture({ path: "/arcade-" + key + ".html", park: PARK });
       try {
         await pg.waitForURL(/\/today\.html\?locked=/);
         const name = await pg.evaluate((k) => Sona.GAME_ACTS[k].name, key);
@@ -352,7 +361,7 @@ if (present && hasContract) {
     }
     // the day support still works for a game given one on its own line: the
     // catalog's label, and the bounce note that reads it
-    const { ctx, pg } = await fixture({ now: Date.UTC(2026, 9, 15, 12) });
+    const { ctx, pg } = await fixture({ now: Date.UTC(2026, 9, 15, 12), park: PARK });
     try {
       const d = await pg.evaluate(() => {
         const saved = Sona.GAME_ACTS.puppy.comingOn;
@@ -366,7 +375,7 @@ if (present && hasContract) {
         d.before.label === "Coming Nov 6" && d.before.first === "puppy" && d.after.label === "Coming soon", JSON.stringify(d));
       ok("…and the day never opens it", d.access.allowed === false && d.access.reason === "coming-soon", JSON.stringify(d.access));
     } finally { await ctx.close(); }
-    const dated = await fixture({ path: "/today.html?locked=puppy", catalog: { puppy: { comingOn: "2026-11-06" } }, now: Date.UTC(2026, 9, 15, 12) });
+    const dated = await fixture({ path: "/today.html?locked=puppy", catalog: { puppy: { comingOn: "2026-11-06" } }, now: Date.UTC(2026, 9, 15, 12), park: PARK });
     try {
       const note = dated.pg.locator("#libraryMessage");
       await note.waitFor({ state: "visible" });
@@ -380,7 +389,7 @@ if (present && hasContract) {
   // and a tap plays it (with Premium) or asks for it (without).
   await section("opening a parked game brings its card back", async () => {
     for (const [key, group] of [["racecar", "arcade"], ["balloon", "simple"]]) {
-      const { ctx, pg, errors } = await fixture({ age: group === "simple" ? "4" : "8", premium: true, unpark: [key] });
+      const { ctx, pg, errors } = await fixture({ age: group === "simple" ? "4" : "8", premium: true, park: PARK, unpark: [key] });
       try {
         const got = await pg.evaluate((k) => {
           const b = document.querySelector('#activityGroups button[data-game="' + k + '"]');
@@ -391,7 +400,7 @@ if (present && hasContract) {
             access: Sona.gameAccess(k), coming: /coming soon/i.test(document.getElementById("libraryApp").innerText) };
         }, key);
         ok(key + " opened: its card is back on the " + group + " shelf, tappable, in the catalog's order, labelled like any game", got.here && got.enabled && got.group === group && same(got.order, got.catalog) && got.label === "Included" && got.access.allowed, JSON.stringify(got));
-        ok("…while the other parked games stay off Home", await pg.evaluate((keys) => keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')), comingSoonKeys.filter((k) => k !== key)).then((left) => left.length === 0));
+        ok("…while the other parked games stay off Home", await pg.evaluate((keys) => keys.filter((k) => document.querySelector('#libraryApp [data-game="' + k + '"]')), parkKeys.filter((k) => k !== key)).then((left) => left.length === 0));
         await ctx.route("**/arcade-" + key + ".html*", (route) => route.fulfill({ contentType: "text/html", body: "<p>" + key + "</p>" }));
         await pg.locator('#activityGroups button[data-game="' + key + '"]').click();
         await pg.waitForURL(new RegExp("/arcade-" + key + "\\.html"));
@@ -679,13 +688,15 @@ if (present && hasContract) {
   }
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 768, height: 1024 }]) {
     for (const unpark of [["racecar"], ["balloon"], ["racecar", "treasure"]]) {
+      // treasure is parked too here, so two can open on the big kids' shelf
+      const park = [...PARK, "treasure"];
       await section("library fits " + viewport.width + "px with " + unpark.join(" and ") + " opened", async () => {
-        const { ctx, pg } = await fixture({ age: "8", viewport, unpark });
+        const { ctx, pg } = await fixture({ age: "8", viewport, park, unpark });
         try {
           const shelves = await shelfRows(pg);
           const keys = shelves.flatMap((s) => s.rows.flatMap((r) => r.cards.map((c) => c.key)));
           ok(viewport.width + "px, " + unpark.join(" and ") + " opened: each is on its shelf, and every row is still full",
-            unpark.every((k) => keys.includes(k)) && keys.length === homeKeys.length + unpark.length && fullRows(shelves), JSON.stringify(shelves.map((s) => s.rows.map((r) => [Math.round(r.left), Math.round(r.right), r.cards.map((c) => c.key).join(" ")]))));
+            unpark.every((k) => keys.includes(k)) && keys.length === homeKeys.length - park.length + unpark.length && fullRows(shelves), JSON.stringify(shelves.map((s) => s.rows.map((r) => [Math.round(r.left), Math.round(r.right), r.cards.map((c) => c.key).join(" ")]))));
         } finally { await ctx.close(); }
       });
     }
@@ -701,6 +712,7 @@ if (present && hasContract) {
     const look = async (from) => {
       const f = await phoneOpen(browser, BASE, { app: "buy", stamp: "post", setUp: true });
       try {
+        await servePark(f.context, ROOT);
         await f.page.goto(BASE + "/subscribe.html?from=" + from);
         await f.page.waitForFunction(() => /\$/.test((document.getElementById("iapCard") || {}).innerText || ""), null, { timeout: 8000 });
         return await f.page.evaluate((key) => ({
