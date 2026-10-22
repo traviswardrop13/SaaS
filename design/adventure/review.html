@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Art Review</title>
+<!--
+  The daily stories' pictures, for Travis and Rachel to look at (STORY1,
+  22 Oct 2026). Open this file from the repo (it reads the pictures from
+  ../../public and Echo's lines from ../../public/adventures.js, so a line
+  changed there shows here). Each page shows where the child's own buddy will
+  stand (the dashed box: from adventures.js once its boxes are filled in,
+  else from art-notes.md). Nothing here ships to families.
+-->
+<style>
+  :root { --ink: #23303b; --soft: #5d6b77; --line: #d9d2c4; --card: #fffaf0; --page: #f4eee2; --mark: #c2410c; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink: #ece6da; --soft: #b5ada0; --line: #3b3a36; --card: #24221f; --page: #191816; --mark: #fb923c; } }
+  :root[data-theme="dark"] { --ink: #ece6da; --soft: #b5ada0; --line: #3b3a36; --card: #24221f; --page: #191816; --mark: #fb923c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 20px; margin: 40px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 8px; }
+  p.lead { color: var(--soft); margin: 0 0 12px; max-width: 70ch; }
+  nav a { color: var(--mark); margin-right: 14px; }
+  .pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .page { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .pic { position: relative; aspect-ratio: 2 / 3; background: #333; overflow: hidden; }
+  .pic img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .box { position: absolute; border: 2px dashed #ffd23f; border-radius: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.45); pointer-events: none; }
+  .box span { position: absolute; left: 2px; top: 2px; font-size: 10px; background: rgba(0,0,0,.7); color: #fff; padding: 1px 4px; border-radius: 4px; }
+  .meta { padding: 8px 10px 10px; }
+  .meta b { font-size: 13px; }
+  .ages { font-size: 11px; color: var(--soft); margin-left: 6px; }
+  .line { margin: 4px 0 0; font-size: 13px; }
+  .line.little { color: var(--soft); }
+  .flag { margin-top: 6px; font-size: 12px; color: var(--mark); }
+  .wide { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .wide img { width: 100%; display: block; border-radius: 10px; border: 1px solid var(--line); }
+  .sprites { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .sprite { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px; text-align: center; font-size: 11px; color: var(--soft); }
+  .sprite div { height: 110px; display: flex; align-items: center; justify-content: center; border-radius: 6px;
+    background: repeating-conic-gradient(#cfcfcf 0% 25%, #f2f2f2 0% 50%) 50% / 16px 16px; }
+  .sprite img { max-width: 100%; max-height: 110px; }
+  .note { color: var(--soft); font-size: 13px; }
+  @media (max-width: 480px) { .pages { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Story art review</h1>
+  <p class="lead">Every picture of the three daily stories, with the words Echo reads on it and where the child's own buddy will stand (the yellow dashed box). Ages 3-4 skip the pages marked "5-8". What a picture shows a child is Rachel's call; the look is Travis's. The orange notes are the things worth a second look.</p>
+  <nav><a href="#lighthouse">Day 1</a><a href="#windup">Day 2</a><a href="#bridge">Day 3</a><a href="#home">Home</a><a href="#cast">The cast</a><a href="#games">The games</a></nav>
+  <div id="days"></div>
+
+  <h2 id="home">Home's pictures</h2>
+  <p class="note">The story card shows these 16:9, cropped from the middle on short phones; the Arcade button shows its picture as a square from the middle.</p>
+  <div class="wide">
+    <img src="../../public/assets/crafted/home-lighthouse.webp" alt="Day 1 on Home">
+    <img src="../../public/assets/crafted/home-windup.webp" alt="Day 2 on Home">
+    <img src="../../public/assets/crafted/home-bridge.webp" alt="Day 3 on Home">
+    <img src="../../public/assets/crafted/home-arcade.webp" alt="The Arcade button">
+  </div>
+
+  <h2 id="cast">The cast</h2>
+  <p class="note">Every page was drawn against these lineups (Echo for size).</p>
+  <div class="wide">
+    <img src="cast-lighthouse.webp" alt="Pelly, Captain Wally and the three mice">
+    <img src="cast-windup.webp" alt="Grandpa Bear and the seven wind-up toys">
+    <img src="cast-bridge.webp" alt="Grandma Tortoise">
+  </div>
+
+  <h2 id="games">The games' pictures</h2>
+  <p class="note">The games lay these over each other; transparent parts show the grey checks. Every one has a drawn stand-in in the game in case it does not load.</p>
+  <div id="sprites"></div>
+</main>
+<script src="../../public/adventures.js"></script>
+<script>
+(function () {
+  // Buddy boxes from art-notes.md, used where adventures.js has none yet.
+  var BOXES = {
+    lighthouse: { s01: [0.41, 0.68, 0.22, "rest"], s02: [0.42, 0.60, 0.15, "peek"], s03: [0.44, 0.80, 0.19, "rest"], s04: [0.62, 0.595, 0.15, "rest"],
+      s05: [0.55, 0.78, 0.20, "rest"], s07: [0.80, 0.81, 0.22, "cheer"], s08: [0.80, 0.665, 0.20, "cheer"], e03: [0.24, 0.85, 0.20, "cheer"], e04: [0.75, 0.81, 0.22, "sit"] },
+    windup: { s01: [0.44, 0.68, 0.21, "rest"], s02: [0.70, 0.64, 0.25, "cheer"], s03: [0.74, 0.635, 0.22, "rest"], s04: [0.56, 0.61, 0.17, "peek"],
+      s06: [0.60, 0.81, 0.24, "cheer"], s08: [0.83, 0.74, 0.22, "cheer"], e02: [0.64, 0.79, 0.23, "cheer"], e04: [0.76, 0.69, 0.26, "cheer"] },
+    bridge: { s01: [0.86, 0.69, 0.20, "rest"], s03: [0.74, 0.77, 0.22, "rest"], s04: [0.15, 0.87, 0.13, "rest"], s06: [0.55, 0.585, 0.17, "peek"],
+      s08: [0.17, 0.52, 0.16, "cheer"], e02: [0.76, 0.76, 0.20, "rest"], e04: [0.74, 0.71, 0.27, "cheer"] }
+  };
+  // a buddy's picture is square (rest, cheer, sit; the buddy inside it a little
+  // narrower) or 4:3 (peek), and the player sizes it by its height
+  var ASPECT = { rest: 1, cheer: 1, sit: 1, peek: 4 / 3 };
+  var FLAGS = {
+    "lighthouse/s01": "The buddy stands left of Echo (the spec said right): the model put Echo on the right of the step.",
+    "lighthouse/s03": "Captain Wally's cold: a red nose and a hanky.",
+    "lighthouse/s05": "The sneeze. Silly, not scary? Rachel's call.",
+    "lighthouse/e01": "The seven boats are the game's own pictures, laid on an empty harbor (drawn, the model gave nine or ten).",
+    "lighthouse/e02": "The rowboat's crew reads as bunnies more than mice.",
+    "windup/s07": "Cut to the chart alone: every drawing stood awake toys in front of it.",
+    "windup/e01": "Two bears in checked shirts in the crowd: one could be taken for Grandpa Bear.",
+    "bridge/s04": "The storm-broken bridge: holes and stones in the river.",
+    "bridge/s08": "The bridge with its holes, before the game."
+  };
+  var TITLES = { lighthouse: "Day 1: The Lighthouse Sneeze", windup: "Day 2: Grandpa Bear's Sleepy Toys", bridge: "Day 3: The Puzzle Bridge" };
+  var A = window.SonaAdventures || {}, days = document.getElementById("days");
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  ["lighthouse", "windup", "bridge"].forEach(function (id) {
+    var h = el("h2", null, TITLES[id]); h.id = id; days.appendChild(h);
+    var story = A[id];
+    if (!story) { days.appendChild(el("p", "note", "adventures.js did not load: the pictures only.")); }
+    [["intro", "The story"], ["ending", "The ending"]].forEach(function (part) {
+      days.appendChild(el("h3", null, part[1]));
+      var grid = el("div", "pages"); days.appendChild(grid);
+      var scenes = story ? story[part[0]] : (part[0] === "intro" ? ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08"] : ["e01", "e02", "e03", "e04"]).map(function (a) { return { art: a }; });
+      scenes.forEach(function (sc) {
+        var card = el("div", "page"), pic = el("div", "pic"), img = document.createElement("img");
+        img.src = "../../public/assets/adventure/" + id + "/" + sc.art + ".webp"; img.alt = id + " " + sc.art; img.loading = "lazy";
+        pic.appendChild(img);
+        var b = sc.buddy ? [sc.buddy.x, sc.buddy.y, sc.buddy.h, sc.buddy.pose] : (BOXES[id] || {})[sc.art];
+        if (b) {
+          var bh = b[2], bw = bh * (ASPECT[b[3]] || 1) * 1.5, box = el("div", "box");  // a page is 2:3
+          box.style.left = (b[0] - bw / 2) * 100 + "%"; box.style.top = (b[1] - bh) * 100 + "%";
+          box.style.width = bw * 100 + "%"; box.style.height = bh * 100 + "%";
+          box.appendChild(el("span", null, "buddy (" + b[3] + ")"));
+          pic.appendChild(box);
+        }
+        card.appendChild(pic);
+        var meta = el("div", "meta"), head = el("b", null, sc.art);
+        meta.appendChild(head);
+        if (sc.ages) head.appendChild(el("span", "ages", sc.ages === "big" ? "5-8 only" : "both ages"));
+        var line = sc.line;
+        if (typeof line === "string") meta.appendChild(el("p", "line", line));
+        else if (line) { meta.appendChild(el("p", "line", "5-8: " + line.big)); meta.appendChild(el("p", "line little", "3-4: " + line.little)); }
+        if (FLAGS[id + "/" + sc.art]) meta.appendChild(el("div", "flag", FLAGS[id + "/" + sc.art]));
+        card.appendChild(meta); grid.appendChild(card);
+      });
+    });
+  });
+  var SPRITES = {
+    "Light the Way": ["sea", "town-lit", "rocks-front", "ledge", "lamp-off", "lamp-on", "moon", "cloud", "boat-tug", "boat-row", "boat-sail", "boat-banana", "boat-teacup", "boat-bathtub", "boat-ferry", "whale", "whale-wink", "barrel", "buoy", "duckie", "wally"].map(function (n) { return "lighthouse-" + n; }),
+    "Wind-Up Toys": ["shop", "shelf", "bunny", "frog", "top", "croc", "elephant", "hippo", "jack-closed", "jack-open", "musicbox", "crank", "dial", "key", "gauge", "nightcap", "grandpa", "cuckoo", "oilcan"].map(function (n) { return "windup-" + n; }),
+    "Puzzle Bridge": ["canyon", "canyon-wide", "stone", "spiral", "moss", "blossom", "grandma", "crowd", "ducks"].map(function (n) { return "bridge-" + n; })
+  };
+  var host = document.getElementById("sprites");
+  Object.keys(SPRITES).forEach(function (game) {
+    host.appendChild(el("h3", null, game));
+    var grid = el("div", "sprites"); host.appendChild(grid);
+    SPRITES[game].forEach(function (n) {
+      var c = el("div", "sprite"), w = el("div"), img = document.createElement("img");
+      img.src = "../../public/assets/crafted/game/" + n + ".webp"; img.alt = n; img.loading = "lazy";
+      w.appendChild(img); c.appendChild(w); c.appendChild(el("p", null, n)); grid.appendChild(c);
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+{
+  "_": "The daily stories' pictures (STORY1, spec 22 Oct 2026, sections 1.2-1.5), drawn by gen-adventure.mjs. Each story: a cast lineup first (Echo for scale beside that day's new characters), then s01-s08 and e01-e04 as tall pages, then Home's card. `light` is the story's light line (a scene's own `light` wins); `bible` names every character as NAME: so a page can be told who is NOT in it; `buddy` is the empty spot left for the child's own buddy, laid over the picture later (never painted in). `also` attaches an earlier picture of the same place (story/part), so Echo's cottage and the helper map look the same on every day.",
+  "echo": "ECHO: the hero, a small round clay bird shaped like a ball, sky blue, with a pale-blue belly patch, two small teal wings, a short orange beak, two orange feet, big round glossy eyes and pink cheeks, and two head feathers on top (one coral pink, one yellow), exactly like the attached Echo picture. Echo is small: as tall as a grown-up walrus's knee.",
+  "light": {
+    "day": "warm, rich, sunny colors (bright blue sky, fresh greens, clear water) with gentle even daylight (no harsh golden glare, no sparkles)",
+    "night": "a soft, cozy blue-violet evening lit warmly by lamps; never dark or scary: a deep blue-violet sea and sky, soft lilac cotton-candy fog, one round cream moon, and warm butter-yellow lamplight as the brightest thing, every face clearly and warmly lit (no harsh glare, no sparkles)",
+    "afternoon": "a warm, soft late afternoon: a pale peach-and-butter sky, long gentle shadows, every color warm and clear (no harsh glare, no sparkles)",
+    "sunset": "a soft peach-and-lilac sunset, warm and gentle, every face clearly lit (no harsh glare, no sparkles)",
+    "indoor": "a warm honey-colored morning light pouring in through a big round window, cozy and bright (no harsh glare, no sparkles)",
+    "evening": "a cozy lamp-lit evening indoors, warm and soft, every face clearly lit (no harsh glare, no sparkles)"
+  },
+  "places": {
+    "cottage": "ECHO'S COTTAGE: a small round clay cottage with cream walls, a round sky-blue front door, round windows with soft yellow frames, a domed straw-colored thatched roof, a little wooden porch with two wide steps, and a low white picket fence along a garden path with flowers.",
+    "map": "THE HELPER MAP: a big hand-drawn paper map of a little island pinned to the wall, in soft crayon colors: a red-and-white lighthouse on a rocky point, a little toy shop in a town, a stone bridge over a river to a round island of pink blossom trees, and the other places hidden under soft white puffy clouds. No writing, no labels, no numbers anywhere on it."
+  },
+  "stories": [
+    {
+      "id": "lighthouse",
+      "light": "night",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. WALLY: Captain Wally the walrus, a big, round, chubby grey-brown clay walrus (a sea animal with flippers, not a bird, no beak), with a wide whiskery grey muzzle, two long white tusks pointing down from his mouth, a bushy white mustache, small kind eyes behind round wire glasses, a tiny navy-blue captain's hat with a little gold anchor badge, a red-and-white stripy scarf, and a round, very red nose because he has a cold; he has flippers instead of hands and feet; he is the BIGGEST character: about three times Echo's height and taller than Pelly. MICE: three little grey clay mice with round pink ears, each about half Echo's height.",
+      "scenes": {
+        "s01": {
+          "light": "afternoon",
+          "picture": "Late afternoon in front of Echo's cottage (ECHO'S COTTAGE). Pelly the pelican has just landed on the top of the white picket fence on the left side of the middle of the picture and proudly holds up a wiggly silver fish in her beak as if it were a letter. Echo stands on the lower porch step in the middle of the picture, laughing, wings up. The porch step is wide and runs from the middle to the right.",
+          "buddy": "on the right half of the same wide porch step, just right of Echo: plain step, nothing on it"
+        },
+        "s02": {
+          "light": "afternoon",
+          "picture": "Close up on the porch of Echo's cottage. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a dark lighthouse on a blue sea with three tiny boats: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing in the lower left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there"
+        },
+        "s03": {
+          "light": "sunset",
+          "picture": "Sunset on a rocky point by a calm sea. A chunky red-and-white striped clay lighthouse stands on the rocks in the upper middle, with a round blue door at its foot. At the blue door stands Captain Wally the walrus with his round glasses on his nose, holding a white hanky, his nose very red, sniffly but friendly. A wide stone path climbs to the door from the bottom of the picture. Echo stands on the path in the lower middle, looking up at Wally.",
+          "buddy": "on the stone path just left of Echo: a patch of plain path, nothing on it"
+        },
+        "s04": {
+          "picture": "Inside the lighthouse: a cozy spiral staircase of wide wooden steps curls up past little round windows that show a lilac evening sky; small warm wall lamps glow. Echo flaps up ahead near the top of the stairs in the upper middle. Captain Wally puffs up the stairs behind, lower down on the left, holding the handrail, a little out of breath, a white hanky in his flipper.",
+          "buddy": "one wide plain step in the middle of the picture, between Echo and Wally, with nothing on it"
+        },
+        "s05": {
+          "picture": "The lamp room at the top of the lighthouse in the blue-violet evening: a big round brass lamp with a glass lens stands in the middle, big windows behind it showing the evening sky. Captain Wally, on the left, is in the middle of a giant funny sneeze: eyes squeezed shut, whiskers flying, his tiny captain's hat popping off his head, his round glasses flying up into the air. The big lamp has just been blown OUT: its glass is dark, with no flame and no glow inside at all, and a little curl of grey smoke rises from its top. Echo, on the right of the lamp, has his feathers blown back, with a funny surprised face. A brass railing runs across the front of the room. The room is lit only by the soft blue evening light from the windows. Silly, not scary.",
+          "buddy": "on the floor at the brass railing in the lower right, beside Echo: plain floor, nothing on it"
+        },
+        "s06": {
+          "picture": "Looking out through a big round window of the lamp room (the round window frame around the edge of the picture): a soft blue night sea under drifting lilac fog, the round cream moon peeking out from behind a soft cloud, and seven tiny warm boat lanterns far away on the water. One little red tugboat in the middle distance puffs a small worried cloud of steam. Nobody is in the room: Echo is not in this picture, and no other character either. Calm and cozy, never scary.",
+          "buddy": null
+        },
+        "s07": {
+          "picture": "The lamp room, lit by a small oil lamp on a little round table. The big lighthouse lamp is dark: no flame, no glow. Captain Wally, bent over in the middle, pats his pockets and peeks under the little table, looking for his glasses, but his round glasses are sitting on top of his head the whole time. Echo stands on the left and giggles behind one wing.",
+          "buddy": "on the floor in the lower right, a little apart from Wally: plain floor, nothing on it"
+        },
+        "s08": {
+          "picture": "The lamp room in the blue-violet night: a wide stone ledge runs straight across the lower part of the picture in front of big windows that show the night sea and soft fog. The big brass lamp stands in the exact MIDDLE of the ledge (centered at half the width), cold and dark: grey glass, no flame, no glow at all. Echo stands proudly on the ledge in the LEFT third of the picture, wings out, facing the viewer, ready to help. The RIGHT third of the ledge is empty. In the back left corner, behind Echo, Captain Wally sits in a cozy armchair wrapped in a patchwork blanket, giving a flipper thumbs-up. The room is lit softly by the moonlight and one small wall lantern.",
+          "buddy": "the right third of the ledge, to the RIGHT of the lamp: plain ledge, nothing on it"
+        },
+        "e01": {
+          "picture": "The harbor at night, seen from the water, straight on: across the middle of the picture, a curve of little clay cottages with round windows climbs a gentle hill, every window glowing warm yellow; the red-and-white lighthouse stands small on a rocky point at the far left, its warm beam sweeping across the sky; a soft night sky with a round cream moon. Below the cottages, a long, straight, low wooden dock strung with glowing lantern bulbs runs straight across the picture from the left edge to the right edge, its plank top about 62% down from the top, seen from the front (not going away from the viewer). Below the dock, from 64% down to the bottom, calm dark-blue water with soft warm reflections, completely empty.",
+          "buddy": null,
+          "compose": "the seven boats are the game's own pictures, laid along the dock by cut-adventure.py (COMPOSE): asked to draw them, the model drew nine or ten boats every time, two of some",
+          "nocast": true,
+          "also": [
+            "file:tools/art/out/edit/lighthouse-sea.png"
+          ]
+        },
+        "e02": {
+          "picture": "At the lantern-lit dock at night: a big friendly blue whale, wide awake and smiling, blows a sparkling fountain of water from its blowhole that sprinkles over the dock. On the dock and in their boats, the crews from the attached boats picture (the duck captain, the three mice, the seal, the monkey, the two frogs and the pig in a shower cap) laugh with their paws and wings up, each exactly once. Echo and Wally are not in this picture.",
+          "buddy": null,
+          "also": [
+            "sheet:boats"
+          ]
+        },
+        "e03": {
+          "picture": "Back in the lamp room, the big brass lamp now shines warm and bright. Echo hovers in the middle, gently lifting Captain Wally's round glasses off the top of his head and onto his nose. Wally, on the left, beams happily, his hanky in his flipper.",
+          "buddy": "on the floor in the lower right, beside Wally and Echo: plain floor, nothing on it"
+        },
+        "e04": {
+          "picture": "The cozy lamp room at night, the big brass lamp shining warm. Captain Wally, wrapped in a blanket, and Echo sit by the lamp on cushions with big mugs of cocoa topped with marshmallows. Pelly the pelican peeks in through a round window behind them. On the wall hangs the helper map (THE HELPER MAP), and ONE big shiny gold star sticker is stuck on the map right on top of its lighthouse.",
+          "buddy": "a plain round cushion on the floor just right of Echo, nothing on it, with a third mug of cocoa waiting on the floor beside it"
+        }
+      },
+      "home": "A wide picture for a game card. Echo stands in the lamp room of a lighthouse at night beside a big shining brass lamp; a warm butter-yellow beam shines out through the big window across a foggy blue-violet sea, and in the round pool of light at the end of the beam a little red tugboat with a yellow duck captain is caught, its lantern glowing. Cozy and magical, never scary. Echo, the lamp and the tugboat are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo left of the middle and the tugboat right of it. Only Echo and the duck captain appear: no other characters.",
+      "chars": [
+        {
+          "key": "pelly",
+          "h": 2.0,
+          "prompt": "Pelly the pelican, full body, standing, three-quarter view, smiling: a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it; round friendly eyes and small pink cheeks; a small round light-blue postal cap with a little white envelope badge; a brown leather mail satchel on a strap across her body; orange webbed feet."
+        },
+        {
+          "key": "wally",
+          "h": 3.0,
+          "prompt": "Captain Wally the walrus, full body, standing, facing forward, smiling kindly: a big, round, chubby grey-brown clay walrus (a sea animal with flippers, no beak), with a wide whiskery grey muzzle, two long white tusks pointing down, a bushy white mustache, small kind eyes behind round wire glasses on his nose, a tiny navy-blue captain's hat with a little gold anchor badge, a red-and-white stripy scarf, and a round, very red nose because he has a cold; he holds a white hanky in one flipper and stands on his tail flippers."
+        },
+        {
+          "key": "mice",
+          "h": 0.62,
+          "prompt": "Three little grey clay mice standing side by side, full body, facing forward and smiling: round pink ears, pink noses, little pink tails, small pink cheeks; all three the same size."
+        }
+      ]
+    },
+    {
+      "id": "windup",
+      "light": "indoor",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge, no scarf, and a brown mail satchel; about twice Echo's height. GRANDPA BEAR: a big cuddly brown clay bear with a round tummy, a soft white mustache, a mustard-yellow knitted cardigan with big wooden buttons, and a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band); about three times Echo's height. TOYS: seven chunky tin-and-clay wind-up toys, each about as tall as Echo, each with a big brass wind-up key in its back: the drummer bunny (a white bunny in a cobalt-blue jacket with a cherry-red drum and two drumsticks), the hopping frog (a green tin frog), the spinning top (a twirly top striped buttercup yellow and cobalt with a little smiling face), the crocodile (a friendly green crocodile on four little legs with round clacky teeth), the trumpet elephant (a cobalt-blue elephant with a little gold trumpet), the jack-in-the-box (a cherry-red box with a springy brown puppy popping out on a spring), and the hippo (a lilac hippo in a pink tutu). WALLY: Captain Wally the walrus from the lighthouse lineup, with his round glasses on his nose. MICE: the three little grey mice from the lighthouse lineup.",
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "also": [
+            "lighthouse/s01"
+          ],
+          "picture": "A sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and pulls a yellow rubber duck out of her beak pouch, blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it"
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on Echo's garden path on a sunny morning. Pelly the pelican's big white wing (only her wing, from the left edge) holds up a cream paper letter in the upper middle: on it a child's crayon drawing of little toys marching in a line under small triangle flags, only crayon lines, no writing at all. Echo hops with excitement on the path below the letter, left of the middle, wings up.",
+          "buddy": "on the garden path just right of Echo: plain path, nothing on it"
+        },
+        "s03": {
+          "light": "day",
+          "picture": "The town square on a sunny morning: colorful triangle bunting overhead, cheerful animal families (rabbits, hedgehogs, ducks and mice) holding little flags and balloons, and a small round bandstand. In the upper middle stands the toy shop: a cozy wooden shop with a red-and-white striped awning and a big round window, its wooden door still shut. The wind-up toys are NOT outside: no toy anywhere in the square, and nobody in the crowd is a toy. Echo stands on the cobbles in the lower middle, between 35% and 60% of the width, looking at the shut door. No writing on any sign.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "s04": {
+          "picture": "Inside the toy shop: honey-wood shelves and a long workbench. The wind-up toys from the lineup are fast asleep in heaps on the shelves and the workbench, their party hats crooked, with cake crumbs and paper streamers everywhere and little round empty sleep bubbles over their heads (no letters, no Z). Echo peeks in from the open doorway on the lower left, one wing over his beak: shh! In the front, right of Echo, stands a low wooden crate whose flat top edge runs across the lower third of the picture.",
+          "buddy": "PEEK: the flat top edge of the low wooden crate just right of Echo, with nothing on it and nothing behind it, so a little character can peek over it"
+        },
+        "s05": {
+          "picture": "A close-up on the honey-wood workbench: the drummer bunny wind-up toy lies on its side, fast asleep, eyes closed, its big brass key in its back stopped still, its two drumsticks dropped beside its cherry-red drum, a crooked party hat on its head. A paper streamer and a few cake crumbs nearby. Only the drummer bunny is in this picture: no other toys anywhere. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s06": {
+          "picture": "Grandpa Bear asleep in a wooden rocking chair in the corner of the toy shop, in the upper middle, in his mustard knitted cardigan and red sleeping cap, snoring so hard that his mustache flaps and a paper streamer flutters in front of his nose. NO letters anywhere: no Z, no zzz, no sleep squiggles; the snoring shows only by the flapping mustache and the fluttering streamer. Echo stands on the round rug in the lower left and giggles behind one wing. No toys in this picture.",
+          "buddy": "on the round rug just right of Echo: plain rug, nothing on it"
+        },
+        "s07": {
+          "picture": "A big sheet of paper pinned to the honey-wood wall of the toy shop, filling the middle of the picture, with three simple crayon drawings stacked from top to bottom and no words at all: at the top, a little wind-up toy yawning and sitting down (its mouth a big round yawn); in the middle, a little wind-up toy spinning dizzy with swirly eyes and curved motion lines; at the bottom, a little wind-up toy marching proudly next to a big gold star. NO letters anywhere: no Z, no zzz, no music notes. Nothing stands in front of the paper: no toys, no characters anywhere in the picture. Keep the paper in the top 85% of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "On the long honey-wood workbench in the toy shop: the drummer bunny wind-up toy sits fast asleep in the middle of the bench, a big brass key glinting in its back. Echo stands on the workbench left of the bunny, ready and smiling, one wing pointing at the key. Shelves of sleeping toys behind.",
+          "buddy": "on the workbench right of the bunny: plain wooden bench top, nothing on it"
+        },
+        "e01": {
+          "light": "day",
+          "picture": "The toy shop doors burst open and the Toy Parade marches out into the sunny town square in a long winding line: the drummer bunny first, then the hopping frog, the spinning top, the crocodile, the trumpet elephant tooting, the jack-in-the-box bouncing with its puppy, and the hippo twirling in her tutu. Bunting, flags, and a crowd of animal families cheering. Echo is not in this picture.",
+          "buddy": null
+        },
+        "e02": {
+          "light": "day",
+          "picture": "Grandpa Bear runs out of the toy shop door in the upper middle in striped blue-and-white pajamas, his red sleeping cap on and one slipper missing, looking amazed and delighted. Echo waves at him from the cobbles in the lower left.",
+          "buddy": "on the cobbles just right of Echo: plain cobbles, nothing on it"
+        },
+        "e03": {
+          "light": "day",
+          "picture": "At the back of a cheering crowd in the sunny town square, with bunting overhead: Captain Wally the walrus with his round glasses on his nose and his stripy scarf, and the three little mice sitting on his shoulders and head, waving little flags. Echo is not in this picture.",
+          "buddy": null
+        },
+        "e04": {
+          "light": "evening",
+          "also": [
+            "lighthouse/e04"
+          ],
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit. On the wall in the upper middle hangs the helper map (THE HELPER MAP, the same map as in the attached earlier picture), now with two shiny gold stars: one on the lighthouse and one on the toy shop. Echo stands on the round rug below the map, left of the middle, wings open wide for a hug, leaning toward the empty spot beside him.",
+          "buddy": "the plain patch of round rug just right of Echo, nothing on it"
+        }
+      },
+      "home": "A wide picture for a game card. In a warm honey-wood toy shop, Echo stands on the workbench and turns the big brass key in the back of the drummer bunny wind-up toy (white bunny, cobalt jacket, cherry-red drum); other wind-up toys (the green frog, the blue elephant, the hippo in a tutu) peek out from the shelves behind, curious. Echo and the bunny are all in the middle band of the picture (their tops below 25% from the top and their bottoms above 75% from the top), Echo left of the middle and the bunny right of it.",
+      "chars": [
+        {
+          "key": "grandpa",
+          "h": 3.0,
+          "prompt": "Grandpa Bear, full body, standing, facing forward, smiling: a big cuddly brown clay bear with a round tummy, a soft white mustache, a mustard-yellow knitted cardigan with big wooden buttons over a cream shirt, and a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band)."
+        },
+        {
+          "key": "grandpa-pj",
+          "h": 3.0,
+          "prompt": "Grandpa Bear in his pajamas, full body, standing, facing forward, amazed and delighted: a big cuddly brown clay bear with a round tummy and a soft white mustache, in striped blue-and-white pajamas, a long, soft, floppy red sleeping cap (a thin cloth cone that flops down beside his ear, ending in a small white pompom; NOT a Santa hat: no white fur band), one fluffy slipper on one foot and the other foot bare."
+        },
+        {
+          "key": "bunny",
+          "h": 1.0,
+          "prompt": "A drummer bunny wind-up toy, full body, standing, three-quarter view so the big brass wind-up key in its back shows: a chunky tin-and-clay white bunny in a cobalt-blue jacket with gold buttons, a cherry-red drum on a strap, two drumsticks in its paws, happy face."
+        },
+        {
+          "key": "frog",
+          "h": 0.8,
+          "prompt": "A hopping frog wind-up toy, full body, crouched ready to hop, three-quarter view so the big brass wind-up key in its back shows: a chunky tin-and-clay bright green frog with a yellow tummy and big happy eyes."
+        },
+        {
+          "key": "top",
+          "h": 0.9,
+          "prompt": "A spinning top wind-up toy, full body, standing on its point, three-quarter view: a chunky tin-and-clay spinning top striped buttercup yellow and cobalt blue with a cherry-red handle on top, a little smiling face on its middle, and a big brass wind-up key in its side."
+        },
+        {
+          "key": "croc",
+          "h": 0.75,
+          "prompt": "A clacky crocodile wind-up toy, full body, standing on four little legs, side three-quarter view so the big brass wind-up key in its back shows: a chunky tin-and-clay friendly green crocodile, mouth a little open with round white clacky teeth, big happy eyes."
+        },
+        {
+          "key": "elephant",
+          "h": 1.1,
+          "prompt": "A trumpet elephant wind-up toy, full body, standing, three-quarter view so the big brass wind-up key in its back shows: a chunky tin-and-clay cobalt-blue elephant with big ears and a little gold trumpet held up in its trunk, happy face."
+        },
+        {
+          "key": "jack",
+          "h": 1.2,
+          "prompt": "A jack-in-the-box wind-up toy, full body, three-quarter view: a chunky cherry-red tin box with yellow stars painted on its sides (no letters), its lid open, and a springy brown puppy with floppy ears popped out of it on a coiled spring, happy face, a big brass wind-up key in the box's side."
+        },
+        {
+          "key": "hippo",
+          "h": 1.0,
+          "prompt": "A hippo wind-up toy, full body, standing on tiptoes like a dancer, three-quarter view so the big brass wind-up key in her back shows: a chunky tin-and-clay lilac hippo in a pink tutu, happy face, arms up."
+        }
+      ]
+    },
+    {
+      "id": "bridge",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge, no scarf, and a brown mail satchel; about twice Echo's height. GRANDMA: Grandma Tortoise, a very old, kind clay tortoise with a soft green face and wrinkly smile, a rounded honey-and-brown patterned shell, a crown of little pink and white flowers, round spectacles, and a little flowered hanky; about twice Echo's height. WALLY: Captain Wally the walrus from the lighthouse lineup, with his round glasses on his nose. GRANDPA BEAR: Grandpa Bear from the toy shop lineup, in his mustard cardigan. TOYS: the wind-up toys from the toy shop lineup. THE BRIDGE: an old arched bridge of chunky sandstone puzzle-shaped stones with carved spirals, over a turquoise river with white curls in a canyon of warm peach-and-sandstone cliffs, with a little waterfall, shining puddles and a fading rainbow; on the far side, Blossom Island, a round island covered in pink blossom trees with a paper-lantern arbour.",
+      "scenes": {
+        "s01": {
+          "also": [
+            "lighthouse/s01"
+          ],
+          "picture": "A fresh, sparkling morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture), with shining puddles on the path after last night's storm. Pelly the pelican stands on the left of the door and pulls a bright yellow banana out of her beak pouch, looking puzzled. Echo stands just right of the middle on the wide doorstep, laughing.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it"
+        },
+        "s02": {
+          "picture": "Close up: Pelly the pelican's big white wing (only her wing, from the left edge) holds out a cream paper letter in the middle of the picture: on it a child's crayon drawing of an old tortoise wearing a flower crown, a birthday cake and a round island with pink trees; only crayon lines, no numbers, no writing at all. A sunny garden behind, softly out of focus. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s03": {
+          "picture": "The grassy near bank of a river canyon on a fresh, sparkling morning after a storm, peach sandstone cliffs and a turquoise river behind. No bridge anywhere in this picture (it is around the bend). Captain Wally holds a giant birthday cake with pink frosting; beside him Grandpa Bear stands with the wind-up toys (the drummer bunny with its drum, the trumpet elephant with its trumpet, the hippo in a tutu). Echo stands at the front of the group, in the middle of the picture.",
+          "buddy": "on the grass at the front of the group, just right of Echo: plain grass, nothing on it"
+        },
+        "s04": {
+          "picture": "A close view of the old arched sandstone bridge (THE BRIDGE) over the turquoise river, from the near bank: its arch has three big, clearly EMPTY holes shaped like chunky puzzle pieces, the sky showing through them, and the fallen puzzle-shaped stones lie in the shallow river below the holes. On the near bank in the lower left, the friends look up at it, worried: Echo at the front, Captain Wally holding the cake, and Grandpa Bear.",
+          "buddy": "on the near bank just right of Echo: plain grassy bank, nothing on it"
+        },
+        "s05": {
+          "picture": "Blossom Island across the river: a round island covered in pink blossom trees, with a paper-lantern arbour in the middle; under the arbour Grandma Tortoise stands and waves her little flowered hanky toward the viewer, smiling. The turquoise river in front. NO bridge anywhere in this picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s06": {
+          "picture": "Echo kneels on a flat rock at the river's edge in the lower left, looking down into clear turquoise water. Under the water in the lower middle lies a sleeping sandstone stone with a soft green moss cap, its carved spiral glowing faintly sea-green, little bubbles rising from it. The flat rock's straight front edge runs across the lower third of the picture.",
+          "buddy": "PEEK: the flat rock's top edge just right of Echo, with nothing on it and nothing behind it but water, so a little character can peek over it"
+        },
+        "s07": {
+          "picture": "A close-up of the arched sandstone bridge with one empty hole shaped like a chunky puzzle piece. Beside the hole, one matching sandstone puzzle stone floats in the air, turned sideways (so it does not fit yet), its carved spiral glowing softly, with a big curved white arrow beside it showing it should turn. Turquoise river and sky behind. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "Echo stands at the broken end of the old sandstone bridge on the near bank in the lower middle, wings out, ready to fix it. Ahead of him the arch has big, clearly EMPTY holes shaped like chunky puzzle pieces, the sky showing through them, so nobody can walk across yet; the turquoise river below, Blossom Island with pink trees far away on the right.",
+          "buddy": "on the bridge's first whole stones just right of Echo: plain stone, nothing on it"
+        },
+        "e01": {
+          "picture": "The old sandstone bridge is whole again, arching over the turquoise river to Blossom Island: every stone's carved spiral glows sea-green, little flowers pop out between the stones, and a bright rainbow arcs over the river. No characters.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "A happy parade across the mended sandstone bridge toward Blossom Island: Captain Wally carrying a big birthday cake, Grandpa Bear, the wind-up toys marching and playing the drum and the trumpet, and Echo near the front, all in one line walking from the left to the right across the bridge.",
+          "buddy": "in the line on the bridge, a gap just behind Echo: plain bridge stones, nothing on it"
+        },
+        "e03": {
+          "picture": "On Blossom Island under the paper-lantern arbour: Grandma Tortoise blows out the candles on a big birthday cake covered in tiny candles (no numbers anywhere), puffing her cheeks, while Captain Wally, Grandpa Bear, the wind-up toys and Echo cheer around her. Pink blossom petals in the air.",
+          "buddy": null
+        },
+        "e04": {
+          "light": "sunset",
+          "also": [
+            "windup/e04"
+          ],
+          "picture": "Sunset inside Echo's cozy round cottage, warm light through a round window. On the wall in the upper middle hangs the helper map (THE HELPER MAP, the same map as in the attached earlier picture), now with three shiny gold stars: on the lighthouse, the toy shop and the bridge. Through the round window, Pelly the pelican snoozes on the picket fence outside. Echo stands on the round rug below the map, left of the middle, wings open wide for a hug, leaning toward the empty spot beside him.",
+          "buddy": "the plain patch of round rug just right of Echo, nothing on it"
+        }
+      },
+      "home": "A wide picture for a game card. Echo stands at the broken end of an old arched sandstone bridge over a sparkling turquoise river; below him a chunky sandstone puzzle stone rises out of the water with its carved spiral glowing sea-green and water splashing off it; Blossom Island with pink blossom trees on the far side behind. Echo and the rising stone are all in the middle band of the picture (their tops below 25% from the top and their bottoms above 75% from the top), Echo left of the middle and the stone right of it.",
+      "chars": [
+        {
+          "key": "grandma",
+          "h": 2.0,
+          "prompt": "Grandma Tortoise, full body, standing upright, facing forward, smiling kindly: a very old, kind clay tortoise with a soft green face and a wrinkly smile, a rounded honey-and-brown patterned shell, a crown of little pink and white flowers on her head, round spectacles, and a little flowered hanky in one hand."
+        }
+      ]
+    }
+  ],
+  "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",
+  "_chars": "Each story's lineup is composed, not drawn: every character in `chars` is drawn alone on a transparent background, then gen-adventure.mjs stands them side by side on cream with ImageMagick, Echo first, each scaled to `h` (its height, Echo = 1). One character at a time keeps them from merging (the whole lineup in one picture gave Pelly the walrus's scarf, then lost her into him, 22 Oct 2026).",
+  "sheets": {
+    "boats": {
+      "note": "the seven little boats and their crews from the game: draw each boat and its crew exactly like this (the duck captain's red tugboat, the three mice's wooden rowboat, the seal's sailboat, the monkey's banana boat, the two frogs' teacup, the pig's bathtub, the big ferry of animal families)",
+      "files": [
+        "tools/art/out/game/lighthouse-boat-tug.png",
+        "tools/art/out/game/lighthouse-boat-row.png",
+        "tools/art/out/game/lighthouse-boat-sail.png",
+        "tools/art/out/game/lighthouse-boat-banana.png",
+        "tools/art/out/game/lighthouse-boat-teacup.png",
+        "tools/art/out/game/lighthouse-boat-bathtub.png",
+        "tools/art/out/game/lighthouse-boat-ferry.png"
+      ]
+    }
+  },
+  "files": {
+    "tools/art/out/edit/lighthouse-sea.png": "the game's own night sea and harbor town: match its colors, its night light and its cottages"
+  }
+}

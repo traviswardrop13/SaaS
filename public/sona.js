@@ -167,10 +167,12 @@
   // "sit"   = sitting on Block Stacker's bench (512x512); falls back to rest.
   // "portrait" = the 288px round badge every screen uses.
   // The fox keeps its painted Fruit Slice counter and Block Stacker bench, so
-  // it has no peek or sit. Each line is added by the art step that lands its
-  // files; how each was drawn, cut and checked is design/crafted-world/buddies-v3.md.
+  // it has no sit, and Fruit Slice never asks for its peek: that one is for
+  // the daily stories' peek spots (STORY1). Each line is added by the art step
+  // that lands its files; how each was drawn, cut and checked is
+  // design/crafted-world/buddies-v3.md.
   const BUDDY_ART = {
-    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp" },
+    fox:     { run: ["/assets/crafted/fox-runner.webp", 390, 205, 480, 840], rest: "/assets/crafted/buddy-fox-rest.webp", cheer: "/assets/crafted/buddy-fox-cheer.webp", peek: "/assets/crafted/buddy-fox-peek.webp" },
     bunny:   { run: ["/assets/crafted/buddy-bunny-run.webp"], rest: "/assets/crafted/buddy-bunny-rest.webp", cheer: "/assets/crafted/buddy-bunny-cheer.webp", peek: "/assets/crafted/buddy-bunny-peek.webp", sit: "/assets/crafted/buddy-bunny-sit.webp" },
     dragon:  { run: ["/assets/crafted/buddy-dragon-run.webp"], rest: "/assets/crafted/buddy-dragon-rest.webp", cheer: "/assets/crafted/buddy-dragon-cheer.webp", peek: "/assets/crafted/buddy-dragon-peek.webp", sit: "/assets/crafted/buddy-dragon-sit.webp" },
     cat:     { run: ["/assets/crafted/buddy-cat-run.webp"], rest: "/assets/crafted/buddy-cat-rest.webp", cheer: "/assets/crafted/buddy-cat-cheer.webp", peek: "/assets/crafted/buddy-cat-peek.webp", sit: "/assets/crafted/buddy-cat-sit.webp" },
@@ -287,7 +289,9 @@
     // (Echo's how-to-play, shown for the first three): a sibling gets their own
     "sona.sprintintro.v1",
     // QUEST1: where this child is in the 14-day daily adventure, and the day
-    // they last finished one (a brother or sister has their own adventure)
+    // they last finished one (a brother or sister has their own adventure);
+    // since STORY1, also how many stories they finished and the gift of the
+    // last one
     "sona.quest.v1",
     // each child's own best in each game (BESTS1, Sona.gameBest): a brother
     // or sister starts with none, and it goes when the child is removed. The
@@ -1978,7 +1982,13 @@
   const GAME_WORDS = {
     soccer: { B:["ball","bear"], N:["net"], T:["toe"], F:["foot"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
     hoops: { B:["ball"], N:["net"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
-    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] }
+    dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] },
+    // STORY1's three games (22 Oct 2026; the table is Rachel's to review):
+    // two syllables at most, so a three-year-old is never asked a long word.
+    // "river" is left out on purpose: its second R is a harder target.
+    lighthouse: { B:["boat"], M:["moon","mouse"], N:["net"], F:["fish"], SH:["ship","shell"], S:["seal"], R:["rock","rain"], L:["lamp","ladder"], D:["duck"], T:["turtle"], P:["pig"] },
+    windup: { B:["ball","bear","bus"], M:["monkey","mouse"], F:["fox"], SH:["ship"], R:["robot","rocket"], L:["lion"], D:["doll","duck"], T:["toy","top"], K:["key","kite"], G:["game","gift"], Z:["zebra"], J:["jeep","jet"], V:["van"] },
+    bridge: { B:["boat","bee"], M:["mug"], N:["nest","net"], F:["fish"], SH:["shell","ship"], S:["sand","seal"], R:["rock","rain","rose"], L:["leaf"], D:["duck"], T:["turtle"], K:["cake","cookie"], G:["gift","gate"], P:["pie"], J:["jam","juice"], CH:["cherry","cheese"], V:["vase"] }
   };
   function gameWords(key,sound) {
     sound=String(sound||"").toUpperCase();
@@ -3544,6 +3554,17 @@
     } catch (e) { return null; }
   }
   function gameAccess(key, options) {
+    // STORY1: today's story and its three games are Premium by the books'
+    // rule (storyOpen: never the demonstration window, never an earned turn
+    // or a saved run), and are known by name: they are in no catalog, so
+    // gameKey() below would refuse them. The reasons are the catalog's own,
+    // so Home's tag reads a story exactly as it reads a Premium game.
+    if (_storyKey(key)) {
+      var sp = libraryPreview(), so = storyOpen();
+      return { allowed: so, tier: "premium", preview: sp,
+        reason: so ? (sp ? "trial" : isFree() ? "free-mode" : premium() ? "entitled" : "trial")
+          : (sp && previewPlan().state === "expired" ? "expired" : "premium") };
+    }
     key = gameKey(key);
     var act = key && GAME_ACTS[key], preview = libraryPreview();
     var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
@@ -3591,7 +3612,9 @@
     } catch (e) {}
   }
   function gameBounce(key) {
-    try { location.replace("/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
+    // a story's address goes Home, where today's story card is, never to the
+    // Arcade's "locked" note (which knows only the catalog's games)
+    try { location.replace(_storyKey(key) ? "/today.html" : "/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
   }
 
   // Age suggests a style of play, never access or a speech target. Keep this
@@ -5249,10 +5272,14 @@
   //     game this phone cannot open gives its day to the next one in the list
   //     it can. With nothing open at all it stays as written, and the card's
   //     tap goes where any grey game's tap goes (the price, where Sona sells).
+  //     (A STORY is the exception, on purpose: where Sona can sell, a family
+  //     without Premium sees today's story locked, and its tap opens the
+  //     price. See STORY1 below.)
   //   - Home only reads questToday(). questEnd() is called by a game's end
   //     card and does nothing unless that game is today's open quest.
   // Ages 5-8 get the big-kid games; 3-4 get Feed Echo and Bubble Pop
-  // (playStyle()). After day 14 it starts again at day 1.
+  // (playStyle()). After day 14 it starts again at day 1. Since 22 Oct 2026
+  // the stories (STORY1) come before the game of the day, for both ages.
   const QUESTKEY = "sona.quest.v1", QUEST_LEN = 14;
   const QUEST_DAYS = {
     arcade: [
@@ -5297,11 +5324,78 @@
     rise: "Keep the balloon safe from the falling blocks!",
     feed: "Echo is hungry! Help him eat.", bubbles: "Pop Echo's bubbles!",
   };
+  // ── STORY1: the daily story comes first (22 Oct 2026; Travis chose both
+  // age groups, today's painted clay look, and the story is Premium). A story
+  // day is this same one-a-day scheduler with a story in front of the game:
+  // Pelly's letter and the problem (adventure.html), one round of the story's
+  // own game (arcade-<game>.html, on the Say & Play engine), then the ending
+  // and its sticker. What it keeps, on purpose:
+  //   - The books' rule (storyOpen): Sona free, Premium from any source, or a
+  //     trial; never the three-day demonstration window gated() still
+  //     honours. Where Sona can sell, a family without it still SEES the
+  //     story (storyShown), locked, and a tap opens the price like a grey
+  //     game. A phone that cannot buy keeps the game of the day: a wall
+  //     nobody can pass is a broken app.
+  //   - Every child starts at story 1, whatever day of the 14 they are on,
+  //     and goes back to that day after the last story: a story never moves
+  //     `i`. `s` counts the stories finished, so a story appended here
+  //     reaches every child who finished the others, the next day.
+  //   - Still one item a day: a story finished today is today's finish, and
+  //     a game day finished today keeps the story waiting for tomorrow.
+  //   - The day finishes when the story's game round ends (questEnd, from its
+  //     end card), so its one sticker is given before the ending is watched:
+  //     closing the app in between loses nothing. No coins, and no banner
+  //     (the ending's sticker card shows the gift, read from storyEnding).
+  //   - None of it is in GAME_ACTS or ACTIVITY_KEYS: a story's game is on no
+  //     shelf, in no picks row, in no setup grid and in no game count.
+  //     gameAccess and gameBounce know the story keys by name (_storyKey).
+  // Adding a story is two edits: a line here, its scenes in adventures.js.
+  // Home's picture is /assets/crafted/home-<hero>.webp.
+  const STORY_DAYS = [
+    { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse",
+      title: "The Lighthouse Sneeze",
+      line: "Captain Wally sneezed out the lighthouse lamp! Help the little boats get home." },
+    { id: "windup", game: "windup", page: "/arcade-windup.html", hero: "windup",
+      title: "Grandpa Bear's Sleepy Toys",
+      line: "Grandpa Bear's toys are fast asleep. Wake them up for the Toy Parade!" },
+    { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge",
+      title: "The Puzzle Bridge",
+      line: "The storm broke the bridge to Blossom Island. Build it back for the big party!" },
+  ];
+  // "adventure" is the story card itself (Home's access(), the price's ?from=)
+  const STORY_KEYS = ["adventure"].concat(STORY_DAYS.map((d) => d.game));
+  // try: gameAccess may in principle be asked before this block has run
+  function _storyKey(k) { try { return typeof k === "string" && STORY_KEYS.indexOf(k) >= 0; } catch (e) { return false; } }
+  // the books' rule, and the founders' preview reads its own plan, as
+  // gameAccess does for a Premium game
+  function storyOpen() {
+    try {
+      if (libraryPreview()) return previewPlan().state === "trial";
+      return isFree() || premium() || trialActive();
+    } catch (e) { return false; }
+  }
+  // show a story on Home at all: open, or locked where the price can open it
+  function storyShown() { try { return storyOpen() || offerOnLock(); } catch (e) { return false; } }
+  // a copy, so no page can change the list by changing what it was handed
+  function _storyInfo(n) {
+    const d = STORY_DAYS[n]; if (!d) return null;
+    return { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line, pic: "/assets/crafted/home-" + d.hero + ".webp", day: n + 1 };
+  }
   function _questSt() {
-    const v = load(QUESTKEY, {}) || {};
+    const v = load(QUESTKEY, {}) || {}, SL = STORY_DAYS.length;
     let i = parseInt(v.i, 10); if (!(i >= 0 && i < QUEST_LEN)) i = 0;
     let last = parseInt(v.last, 10); if (!(last >= 0 && last < QUEST_LEN)) last = (i + QUEST_LEN - 1) % QUEST_LEN;
-    return { i, last, done: typeof v.done === "string" ? v.done : "" };
+    // STORY1's fields, each read on its own: a record from before them, or a
+    // broken one, is a child who has finished no story. More stories than
+    // this build knows (a backup from a newer one) is every story finished.
+    let s = parseInt(v.s, 10); if (!(s >= 0)) s = 0; if (s > SL) s = SL;
+    let ls = parseInt(v.ls, 10); if (!(ls >= 0 && ls < SL)) ls = Math.max(0, s - 1);
+    // what was finished last: a story only if that story really is finished
+    // (a record from before stories, done today, is a game day done today)
+    const lk = v.lk === "story" && ls < s ? "story" : "game";
+    const got = Array.isArray(v.got) ? v.got.filter((id) => STICKERS.some((x) => x.id === id)).slice(0, 2) : [];
+    const seen = typeof v.seen === "string" && /^\d{4}-\d{2}-\d{2}\|[a-z]+$/.test(v.seen) ? v.seen : "";
+    return { i, last, done: typeof v.done === "string" ? v.done : "", s, ls, lk, got, seen };
   }
   // The quest on day index n, with its game resolved for THIS phone.
   function _questAt(list, n) {
@@ -5315,24 +5409,62 @@
     return { game: own.game, line: own.line };
   }
   // Read only: what the adventure card shows today.
-  //   state "open": today's quest, not finished yet (day = 1..14)
-  //   state "done": today's was finished; next = tomorrow's, shown dark
+  //   kind  "story": a story day (STORY1); story = its STORY_DAYS entry (a
+  //                  copy, with pic and day); day = 1..STORY_DAYS.length;
+  //                  game = the story's own game; seen (open only): today's
+  //                  intro already reached "Let's go!"
+  //         "game":  the game of the day, exactly as before (day = 1..14)
+  //   state "open": today's item, not finished yet
+  //   state "done": today's was finished; next = tomorrow's, shown dark:
+  //                 { kind: "story", day, game, story } or { kind: "game", day, game }
   function questToday() {
     const list = QUEST_DAYS[playStyle()] || QUEST_DAYS.arcade, st = _questSt();
     const done = st.done === today();
+    // the item after today's finish is a story while one is left to show
+    const storyNext = st.s < STORY_DAYS.length && storyShown();
+    if (done && st.lk === "story") {
+      const d = _storyInfo(st.ls);
+      return { kind: "story", state: "done", day: st.ls + 1, total: STORY_DAYS.length, game: d.game, line: d.line, story: d, next: _questNext(list, st, storyNext) };
+    }
+    if (!done && storyNext) {
+      const d = _storyInfo(st.s);
+      return { kind: "story", state: "open", day: st.s + 1, total: STORY_DAYS.length, game: d.game, line: d.line, story: d, seen: st.seen === today() + "|" + d.id };
+    }
     const n = done ? st.last : st.i, q = _questAt(list, n);
-    const out = { state: done ? "done" : "open", day: n + 1, total: QUEST_LEN, game: q.game, line: q.line };
-    if (done) { const t = _questAt(list, st.i); out.next = { day: st.i + 1, game: t.game }; }
+    const out = { kind: "game", state: done ? "done" : "open", day: n + 1, total: QUEST_LEN, game: q.game, line: q.line };
+    if (done) out.next = _questNext(list, st, storyNext);
     return out;
   }
+  function _questNext(list, st, storyNext) {
+    if (storyNext) { const d = _storyInfo(st.s); return { kind: "story", day: st.s + 1, game: d.game, story: d }; }
+    const t = _questAt(list, st.i); return { kind: "game", day: st.i + 1, game: t.game };
+  }
   // A game's end card: finishes today's quest if this round was today's game.
-  // Answers { day, stickers: [...] } once, or null.
+  // Answers { day, stickers: [...] } once (a story day adds story: its id),
+  // or null. Every save MERGES into the record: a game day's write used to
+  // replace the whole object, and would now wipe the stories finished.
   function questEnd(gameKey) {
     try {
       const q = questToday();
       if (q.state !== "open" || q.game !== gameKey) return null;
+      const raw = load(QUESTKEY, {}) || {};
+      if (q.kind === "story") {
+        // a story shown locked (where the price can open it) is no story
+        // played: a round reached without it finishes nothing
+        if (!storyOpen()) return null;
+        const st = _questSt();
+        // the day first, so a second end card can never give a second sticker
+        const rec = Object.assign({}, raw, { s: st.s + 1, ls: st.s, lk: "story", done: today(), got: [] });
+        save(QUESTKEY, rec);
+        const got = [];
+        const one = awardNextSticker(); if (one) got.push(one);
+        rec.got = got.map((g) => g.id); save(QUESTKEY, rec);
+        track("adventure day done", { game: gameKey });
+        // no banner: the story's ending shows the sticker on its own card
+        return { day: q.day, stickers: got, story: q.story.id };
+      }
       const n = q.day - 1;
-      save(QUESTKEY, { i: (n + 1) % QUEST_LEN, last: n, done: today() });
+      save(QUESTKEY, Object.assign({}, raw, { i: (n + 1) % QUEST_LEN, last: n, done: today(), lk: "game" }));
       const got = [];
       const one = awardNextSticker(); if (one) got.push(one);
       if (q.day === 7 || q.day === QUEST_LEN) { const two = awardNextSticker(); if (two) got.push(two); }
@@ -5340,6 +5472,34 @@
       _questBanner(q.day, got);
       return { day: q.day, stickers: got };
     } catch (e) { return null; }
+  }
+  // The story's ending (adventure.html?part=end): ok once that story is
+  // finished, and got = the stickers its finish gave, only on the day it was
+  // finished ({ id, e, name } each). Read only.
+  function storyEnding(id) {
+    const out = { ok: false, got: [] };
+    try {
+      let n = -1; STORY_DAYS.forEach((d, k) => { if (d.id === id) n = k; });
+      const st = _questSt();
+      if (n < 0 || n >= st.s) return out;
+      out.ok = true;
+      if (st.lk === "story" && st.ls === n && st.done === today()) {
+        out.got = st.got.map((g) => STICKERS.filter((x) => x.id === g)[0]).filter(Boolean).map((x) => ({ id: x.id, e: x.e, name: x.name }));
+      }
+    } catch (e) {}
+    return out;
+  }
+  // Today's intro reached "Let's go!" (adventure.html): the one thing the
+  // story's own page writes, so coming back the same day can offer "Keep
+  // going". Only for today's open story; nothing else in the record moves.
+  function storySeen(id) {
+    try {
+      const q = questToday();
+      if (q.kind !== "story" || q.state !== "open" || !q.story || q.story.id !== id) return false;
+      const raw = load(QUESTKEY, {}) || {};
+      raw.seen = today() + "|" + id; save(QUESTKEY, raw);
+      return true;
+    } catch (e) { return false; }
   }
   // Silent, nonblocking, like the goal note: no audio, no focus change, no
   // tap taken. Below the goal note when both show.
@@ -8903,5 +9063,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY, notifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold };
 })(window);

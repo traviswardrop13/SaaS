@@ -952,7 +952,7 @@ const sellShown=(page,key)=>page.evaluate(key=>{const st=document.querySelector(
    names:[...st.querySelectorAll('.ph-name')].map(e=>e.textContent),
    grid:grid.map(li=>li.dataset.game),loved:grid.filter(li=>li.classList.contains('loved')).map(li=>li.dataset.game),gridNames:grid.map(li=>li.querySelector('.sell-name').textContent),gridPics:grid.map(li=>(li.querySelector('img')||{}).getAttribute?li.querySelector('img').getAttribute('src'):''),kickers:[...st.querySelectorAll('.sell-kicker')].map(k=>k.textContent),words:st.innerText.replace(/\s+/g,' ').trim()};},key);
 // the catalog's own answer, read straight from GAME_ACTS: the playable games of a group
-// Home's order of a group's playable games, the order the peek takes its first few from
+// The Arcade view's order of a group's playable games, the order the peek takes its first few from
 const homeOrder=(page,id)=>page.evaluate(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].games.filter(x=>x.kind!=='book'&&!x.comingSoon&&x.available!==false).map(x=>x.key),id);
 // the "and N more" lines under the grid
 const mores=page=>page.evaluate(()=>[...document.querySelectorAll('[data-step="games"] .sell-more')].map(p=>p.textContent));
@@ -1001,7 +1001,7 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
   ok('games: the name is ph-name, and no other recorded text holds it',JSON.stringify(s.names)==='["Milo"]'&&s.bare.length===0,s);
   const arcade=await homeOrder(page,'arcade'),peek=await peekOf(page,arcade,['dinosaurs','sports'],9);
   // a peek, not the catalog (22 Oct 2026, when 18 games opened): nine, the loved ones first, the rest counted
-  ok('games: nine of the catalog\'s playable Arcade games for a 5–6 year old, the ones sports and dinosaurs fit first ('+peek.fits.join(', ')+'), ringed, then the rest, each part in Home\'s order',arcade.length>9&&JSON.stringify(arcade.slice().sort())===JSON.stringify((await playable(page,'arcade')).slice().sort())&&peek.fits.length>=3&&JSON.stringify(s.grid)===JSON.stringify(peek.grid)&&JSON.stringify(s.loved)===JSON.stringify(peek.fits),{grid:s.grid,loved:s.loved,peek,arcade});
+  ok('games: nine of the catalog\'s playable Arcade games for a 5–6 year old, the ones sports and dinosaurs fit first ('+peek.fits.join(', ')+'), ringed, then the rest, each part in the Arcade view\'s order',arcade.length>9&&JSON.stringify(arcade.slice().sort())===JSON.stringify((await playable(page,'arcade')).slice().sort())&&peek.fits.length>=3&&JSON.stringify(s.grid)===JSON.stringify(peek.grid)&&JSON.stringify(s.loved)===JSON.stringify(peek.fits),{grid:s.grid,loved:s.loved,peek,arcade});
   ok('games: …and the rest counted under them: "and '+(arcade.length-9)+' more"',JSON.stringify(await mores(page))===JSON.stringify(['and '+(arcade.length-9)+' more']),await mores(page));
   ok('games: never a Coming soon game, and the free and Premium ones alike, unlabelled',s.grid.length>=2&&await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid)&&!/\bfree\b|premium|coming soon|\$/i.test(s.words),s.words);
   ok('games: each with its own name and its painted Home card',JSON.stringify(s.gridNames)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>Sona.GAME_ACTS[k].name),s.grid))&&JSON.stringify(s.gridPics)===JSON.stringify(await page.evaluate(keys=>keys.map(k=>'/assets/crafted/home-'+Sona.CRAFTED_CARDS[k]+'.webp'),s.grid)),s);
@@ -1023,7 +1023,7 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
   ok('ages 2–4: the grid is nine of the catalog\'s playable Simple play games, Bubble Pop first for a child who loves space ('+s.grid.join(', ')+'), the rest counted',JSON.stringify(simple.slice().sort())===JSON.stringify((await playable(page,'simple')).slice().sort())&&s.grid[0]==='bubbles'&&JSON.stringify(s.grid)===JSON.stringify(speek.grid)&&JSON.stringify(s.loved)===JSON.stringify(speek.fits)&&JSON.stringify(await mores(page))===JSON.stringify(simple.length>9?['and '+(simple.length-9)+' more']:[]),{grid:s.grid,loved:s.loved,speek,simple,mores:await mores(page)});
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="interests"].on').waitFor();await calm(page);await page.locator('#interestsSkip').click();await page.locator('[data-step="games"].on').waitFor();
   s=await sellShown(page,'games');
-  ok('Skip on what they love clears the picks: Home\'s first nine in its own order, none ringed',JSON.stringify(s.grid)===JSON.stringify(simple.slice(0,9))&&s.loved.length===0&&await page.evaluate(()=>draft.interests.length===0),s.grid);
+  ok('Skip on what they love clears the picks: the Arcade view\'s first nine in its own order, none ringed',JSON.stringify(s.grid)===JSON.stringify(simple.slice(0,9))&&s.loved.length===0&&await page.evaluate(()=>draft.interests.length===0),s.grid);
   ok('nothing posted, nothing sent about these screens but the screen\'s key',leadPosts(requests).length===0);
   clean('sell screens',errors);
  }finally{await context.close();}
@@ -1036,7 +1036,7 @@ await scenario('the screens that sell: their words, the games, and nothing kept'
     const sh=await homeOrder(page,'simple'),ah=await homeOrder(page,'arcade'),both=sh.slice(0,3).concat(ah.slice(0,6));
     ok('no age: three Simple play games then six Arcade ones, Home\'s first of each, each group under its catalog label',JSON.stringify(s.grid)===JSON.stringify(both)&&JSON.stringify(s.kickers)===JSON.stringify(await page.evaluate(()=>['simple','arcade'].map(id=>Sona.activityLibrary().groups.filter(g=>g.id===id)[0].ageLabel))),{grid:s.grid,both,kickers:s.kickers});
     ok('no age: …each group\'s rest counted under it',JSON.stringify(await mores(page))===JSON.stringify([sh,ah].map((g,i)=>g.length-[3,6][i]).filter(n=>n>0).map(n=>'and '+n+' more')),await mores(page));
-   }else ok('7+: Home\'s first nine Arcade games',JSON.stringify(s.grid)===JSON.stringify((await homeOrder(page,'arcade')).slice(0,9)),s.grid);
+   }else ok('7+: the Arcade view\'s first nine Arcade games',JSON.stringify(s.grid)===JSON.stringify((await homeOrder(page,'arcade')).slice(0,9)),s.grid);
    ok(label+': still no Coming soon game',await page.evaluate(keys=>keys.every(k=>!Sona.GAME_ACTS[k].comingSoon),s.grid));
    clean('sell screens '+label,errors);
   }finally{await context.close();}

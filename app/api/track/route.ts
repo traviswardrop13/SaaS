@@ -47,6 +47,10 @@ const EVENTS = new Set([
   // trophy count), no coins, no name.
   "chest opened",
   "adventure day done",   // QUEST1: today's daily-adventure quest finished (game key only)
+  // The daily story (22 Oct 2026, STORY1): sent by adventure.html, the
+  // story's own page, never by Home. Each carries the story's game key only.
+  "adventure opened",          // the story's intro started
+  "adventure ending watched",  // the story's last ending scene showed
   "road gift opened",
   "month gift opened",
   // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a

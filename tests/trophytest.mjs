@@ -626,7 +626,9 @@ sec("14a every painted pose BUDDY_ART names is on disk, in its pose's frame", ()
   }
   ok("every buddy pose picture on disk is the one buddySprite answers for that pose", unreached.length === 0, unreached);
   ok("the fox runs as it always has, from its own picture's crop", JSON.stringify(S.buddySprite("fox", "run")) === JSON.stringify({ src: "/assets/crafted/fox-runner.webp", crop: [390, 205, 480, 840] }), S.buddySprite("fox", "run"));
-  ok("the fox has no peek and no sit of its own: its painted Fruit Slice and Block Stacker scenes stay", S.buddySprite("fox", "peek") === null && (S.buddySprite("fox", "sit") === null || S.buddySprite("fox", "sit").pose === "rest"), [S.buddySprite("fox", "peek"), S.buddySprite("fox", "sit")]);
+  // the fox's peek is the daily stories' (STORY1): Fruit Slice keeps the fox
+  // painted into its counter and never asks (buddyplaytest plays that)
+  ok("the fox has no sit of its own (Block Stacker's painted bench stays) and a peek only for the stories", (S.buddySprite("fox", "sit") === null || S.buddySprite("fox", "sit").pose === "rest") && S.buddySprite("fox", "peek") && S.buddySprite("fox", "peek").src === "/assets/crafted/buddy-fox-peek.webp", [S.buddySprite("fox", "peek"), S.buddySprite("fox", "sit")]);
   const portraits = ids.map((id) => S.buddySprite(id, "portrait"));
   ok("every buddy's round badge is on disk at 288x288", portraits.every((f) => onDisk(f) && String(webpSize(path.join(ROOT, f))) === "288,288"), portraits.filter((f) => !onDisk(f)));
   const notes = readFileSync(path.resolve(ROOT, "..", "design/crafted-world/buddies-v3.md"), "utf8");

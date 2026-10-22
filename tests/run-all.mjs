@@ -67,6 +67,9 @@ const SUITES = [
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and the road: one tap still plays, "Pick a level" once per game when a level opens, the level badge, an old "Level 1 only" ignored; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own
+  "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the three stories come before the game of the day for every child, Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
+  "homestorytest.mjs", // STORY1 on Home: one big story card (open, locked, done, a game day after Day 3), the Arcade and Books doors, Back and Forward, Home only reads, the play button and both doors on the first screen at five sizes
+  "adventuretest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot, nothing written but seen
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
@@ -124,6 +127,17 @@ const SUITES = [
   "treasuretest.mjs", // drawn sailing routes, solid islands, speech-calmed currents and a real treasure finish
   "dinotest.mjs", // DINOS1: Dino Dig's four dinosaurs: each dug to its own finale, in order, per child, round again after the last
   "bubblestest.mjs", // BUBBLES1: Bubble Pop played through: the word blows the bubbles, the finger pops them, the pops are media in the app, every round ends on a win
+  // The three story games (STORY1). lighthousetest and bridgetest are run in
+  // parts (their wrappers set LIGHTHOUSE_PART / BRIDGE_PART), each well under
+  // the five minutes a suite gets: whole, Light the Way took about 260 s and
+  // Puzzle Bridge about 400 s on a busy machine (22 Oct 2026).
+  "lighthouseplaytest.mjs", // LIGHTHOUSE1: Light the Way (Day 1) played through: the word lights the lamp, the finger holds the light on each lost boat, the town's windows last, the end card hands to the story; a locked phone goes Home before any mic
+  "lighthousehelptest.mjs", // LIGHTHOUSE1: Light the Way's help ladder for both ages: seconds searching or decoys lit, never waiting; every boat comes home with no more speaking
+  "lighthousefittest.mjs", // LIGHTHOUSE1: Light the Way at four sizes: no scroll, the light above the finger, every boat and window on the visible sea
+  "winduptest.mjs", // WINDUP1: Wind-Up Toys (Day 2): the word pops the key, the finger winds and lets go at the star (ages 3-4: wind until it rings), every toy wakes, the end hands to the story
+  "bridgeplaytest.mjs", // BRIDGE1: Puzzle Bridge (Day 3) for ages 5-8: the word calls a stone, a tap turns it, a drag slides it, the river rises, every stone fits, the end hands to the story
+  "bridgelittletest.mjs", // BRIDGE1: Puzzle Bridge for ages 3-4 (the same shape, a bounce back from the wrong hole), Calm river, Reduce Motion (nothing slides)
+  "bridgefittest.mjs", // BRIDGE1: Puzzle Bridge's buddy, the fit from 320 px to an iPad, the drawn stand-ins and keyboard play
   "buddyplaytest.mjs", // BUDDY2: the child plays as their own buddy in eight games; a fox child keeps today's Fruit Slice and Block Stacker pictures; the engines cheer the buddy's own pictures, never Echo's
   "levelstest.mjs", // LEVELS1 in the five round games: Level 1 is today's game, a level changes only the finger's part, every help reads Level 1's numbers, each level keeps its own best
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one

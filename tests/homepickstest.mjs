@@ -36,7 +36,8 @@ async function fixture({ age = 8, sounds = ["R"], premium = true, free = false, 
   }, { age, sounds, premium, free, mode, slot, homework });
   const page = await ctx.newPage(); page.setDefaultTimeout(5000); await page.clock.setFixedTime(new Date(date));
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(origin + "/today.html"); await page.waitForFunction(() => !!window.Sona); return { ctx, page, errors };
+  // the picks row is in Home's Arcade since 22 Oct 2026 (STORY1)
+  await page.goto(origin + "/today.html?view=arcade"); await page.waitForFunction(() => !!window.Sona); return { ctx, page, errors };
 }
 const keys = (a) => a.map((x) => x.key);
 try {

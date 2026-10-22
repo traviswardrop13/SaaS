@@ -273,6 +273,15 @@ ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) =>
   ok("Bubble Pop (ages 3-4) asks for the word once", asks("arcade-bubbles.html") === "sayTimes: 1", asks("arcade-bubbles.html"));
   ok("Hoops, Soccer Goal and Dino Dig ask for it two times: their pages leave the engine's number alone", ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].every((f) => asks(f) === ""), ["arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html"].map(asks));
   ok("…and so does every page the generator writes (the parked games)", GAMES.every((g) => asks("arcade-" + g.key + ".html") === "") && !/sayTimes/.test(strip(readFileSync(new URL("../tools/gameart/page.mjs", import.meta.url), "utf8"))));
+  // A STORY'S GAME HANDS BACK TO ITS STORY (STORY1, 22 Oct 2026): the end
+  // card's one button opens the story's ending, only for an address of that
+  // one shape; no Play again; the ✕ during play still goes Home.
+  // (storycoretest plays it on a page; this pins the engine's few lines.)
+  ok("a story's game hands back to its story: one address shape, the end card's teal button, no Play again, and the ✕ still goes Home",
+    eng.includes("function storyExit() { stopAudio(); micStop(); location.href = G.exit.href; }")
+    && eng.includes('if (G.exit && typeof G.exit.href === "string" && /^\\/adventure\\.html\\?part=end&story=[a-z]+$/.test(G.exit.href)) { $("goHome").onclick = storyExit; $("goHome").textContent = G.exit.label || "See what happens!"; $("goHome").className = "btn"; }')
+    && eng.includes('if (G.again === false) $("again").hidden = true;')
+    && eng.includes('$("close").onclick = home; $("goHome").onclick = home;'));
   ok("a game that asks once gets no dots, no \"Say it 2 times\" and never \"1 more time\"",
     /function oneMore\(\) \{ return said > 0 && said < SAY_TIMES; \}/.test(eng) && /function addTwice\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng) && /function paintSaid\(\) \{ if \(SAY_TIMES < 2\) return;/.test(eng)
     && (eng.match(/MORE \+/g) || []).length === 2 && (eng.match(/oneMore\(\) \? MORE \+/g) || []).length === 2);
@@ -421,8 +430,10 @@ await scenario("catalog in the app", async () => {
     clean("catalog", errors);
   } finally { await context.close(); }
   // with some parked again, they sort after the playable ones and have no
-  // card on Home: no greyed-out slot, no Coming soon label
-  const withParked = await fresh("today.html", { age: "4", parked: PARK });
+  // card on Home: no greyed-out slot, no Coming soon label. In the Arcade,
+  // where the shelves show: on plain today.html (the story view) the shelves
+  // are hidden, and innerText would read none of them.
+  const withParked = await fresh("today.html?view=arcade", { age: "4", parked: PARK });
   try {
     await withParked.page.waitForFunction(() => !!window.Sona && document.querySelectorAll("#activityGroups button[data-game]").length > 0);
     const days = await withParked.page.evaluate(() => Sona.activityLibrary().groups.find((g) => g.id === "simple").games.map((x) => ({ k: x.key, parked: !!x.comingSoon })));

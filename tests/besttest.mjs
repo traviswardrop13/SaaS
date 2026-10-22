@@ -66,7 +66,8 @@ async function fresh({ width = 375, height = 812, age = "7", premium = false, be
   return { context, page, errors };
 }
 async function store(page) { await page.goto(origin + "/__sona"); await page.waitForFunction(() => window.Sona && Sona.getProfile); }
-async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(200); }
+// the game cards are Home's Arcade since 22 Oct 2026 (STORY1)
+async function home(page) { await page.goto(origin + "/today.html?view=arcade"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(200); }
 // What Home shows on each card, and where the tag sits against the picture
 // and the Free / Included / Premium badge.
 function cards(page) {

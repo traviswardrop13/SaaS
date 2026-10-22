@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f2d9a6">
+  <title>Sona — Wind-Up Toys</title>
+  <!-- Day 2 of the daily story (STORY1): wake Grandpa Bear's sleepy wind-up
+       toys for the Toy Parade. SayPlay owns every spoken turn; windup.js owns
+       the winding. Written by hand, not by tools/gameart/build.mjs. -->
+  <link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet"><link href="/windup.css" rel="stylesheet">
+</head>
+<body data-phase="boot">
+  <main id="app">
+    <canvas id="windupCanvas" role="img" aria-label="Grandpa Bear's toy shop. Say each word two times to find a toy's key, then wind it by drawing circles on the dial."></canvas>
+    <!-- BUDDY2: the child's own buddy sits on the shelf above the bench. Decoration only. -->
+    <img id="windupBuddy" alt="" aria-hidden="true">
+    <header id="top"><button id="close" type="button" aria-label="Back home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl">Wind-Up Toys</span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span></header>
+    <div id="windupBanner" role="status" aria-live="polite">Say the word to find the key!</div>
+    <button id="windupDial" type="button" aria-disabled="true" aria-label="The winding dial. Draw circles on it to wind the key, then lift your finger to let go. Keyboard: the arrow keys wind, Space lets go."></button>
+    <div id="windupControls">
+      <button id="windupHearStep" class="cream-pill" type="button" disabled aria-label="Hear what to do"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button id="windupHelp" class="act-pill" type="button" disabled aria-label="Extra help: say the word again, and Echo oils the key"><img src="/assets/crafted/game/windup-oilcan.webp" alt="" onerror="if(this.src.indexOf('echo-wave')<0)this.src='/assets/crafted/echo-wave.webp'"><span class="windup-help-label"><span>Oil can</span><span id="windupPower" hidden><i id="windupPowerFill"></i></span></span></button>
+    </div>
+    <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
+  </main>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="windup-intro" src="/assets/crafted/home-windup.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0){this.src='/assets/crafted/echo-welcome.webp';this.className='windup-intro echo';}"><h1 id="startTitle">Wind-Up Toys</h1><p id="startLine1">Say each word two times to find a toy's key.</p><p id="startLine2">Wind it with circles, and let go at the star.</p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's wind</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2>Let Echo hear you!</h2><p>Say each word two times to find the keys!</p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2>A little toy-shop break</h2><p>The toys are waiting right here.</p><button class="btn" id="resume" type="button">Keep playing</button></div></div>
+  <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Play again</button><button class="ghost" id="goHome" type="button">Back home</button></div></div>
+  <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/crafted-buddies.js"></script><script src="/sayplay.js"></script><script src="/windup.js"></script>
+  <script>
+  (function () {
+    var S = window.Sona, W = window.Windup;
+    // One game file serves both ages: ages 3-4 get one big toy at a time, no
+    // star and six words (windup.js says what changes); ages 5-8 get eight.
+    var little = false;
+    try { little = !!(S && S.playStyle && S.playStyle() === "simple"); } catch (e) {}
+    try { if (W && W.setLittle) W.setLittle(little); } catch (e) {}
+    var INTRO = little
+      ? "Say each word two times to find a toy's key. Then draw circles on the key until it rings."
+      : "Say each word two times to find a toy's key. Wind it with circles, and let go at the star. Tap Oil can for extra help.";
+    if (little) { try { document.getElementById("startLine2").textContent = "Then draw circles on the key until it rings."; } catch (e) {} }
+    var STEPS8 = [[], [], [], [], [], [], [], []], STEPS6 = [[], [], [], [], [], []];
+
+    // THE SHOP'S OWN SOUNDS (the click, the ding, a yawn, a dizzy whirr, each
+    // toy's jingle, the cuckoo, the oil can and the music box), made on the
+    // phone and played through the engine, so each waits for a closed mic
+    // like every chime. In the iPhone app they are media, as Bubble Pop's pops
+    // and Piano Tiles' notes are: they come seconds after the mic closes, when
+    // an iPhone plays Web Audio as a quiet phone call. A browser keeps Web
+    // Audio, and a refused element falls back to it, never to silence. How
+    // loud they are on a real phone is MEDIA_PEAK, set without a phone to
+    // listen on, as Bubble Pop's was.
+    var RATE = 24000, MEDIA_PEAK = 0.4, WEB_GAIN = 0.16, waves = {}, bufs = {}, players = {}, mediaBroken = false;
+    // a music-box note: a bell (the note and a quiet overtone) dying away
+    function bell(f, at, dur, gain) { return [{ f0: f, dur: dur, at: at, gain: gain, fall: 2.4 }, { f0: f * 3, dur: dur * 0.5, at: at, gain: gain * 0.18, fall: 3 }]; }
+    function notes(list, gap, dur, gain) { var out = []; list.forEach(function (f, i) { out = out.concat(bell(f, i * gap, dur, gain)); }); return out; }
+    // A sound is a few parts: a tone sliding from f0 to f1 (with a wobble,
+    // vib Hz deep by vd, and overtones, harm), or a puff of noise, each
+    // starting at `at` and dying away over `dur` seconds.
+    function recipe(name) {
+      switch (name) {
+        case "click": return { secs: 0.07, level: 0.7, parts: [{ noise: true, f0: 3000, dur: 0.03, gain: 0.7, fall: 3 }, { f0: 2400, dur: 0.05, gain: 0.6, fall: 3 }] };
+        case "ding": return { secs: 0.5, level: 0.8, parts: [{ f0: 1568, dur: 0.5, gain: 1, fall: 2.2 }, { f0: 2349, dur: 0.35, gain: 0.45, fall: 2.6 }, { f0: 3136, dur: 0.2, gain: 0.2 }] };
+        case "yawn": return { secs: 0.7, level: 0.8, parts: [{ f0: 520, f1: 240, dur: 0.7, gain: 1, vib: 6, vd: 0.04, harm: [1, 0.35, 0.12], fall: 0.9 }] };
+        case "whirr": return { secs: 0.9, level: 0.75, parts: [{ f0: 300, f1: 900, dur: 0.55, gain: 0.8, vib: 18, vd: 0.12 }].concat(notes([1046.5, 1174.7, 1318.5], 0.1, 0.12, 0.45).map(function (p) { p.at += 0.6; return p; })) };
+        case "drum": var d = []; for (var k = 0; k < 6; k++) d.push({ noise: true, f0: 220, dur: 0.06, at: k * 0.08, gain: k === 5 ? 1 : 0.75, fall: 3 }); return { secs: 0.55, level: 0.8, parts: d };
+        case "boing": return { secs: 0.5, level: 0.8, parts: [{ f0: 180, f1: 520, dur: 0.45, gain: 1, vib: 9, vd: 0.1 }] };
+        case "spin": return { secs: 0.7, level: 0.7, parts: [{ f0: 400, f1: 1200, dur: 0.65, gain: 0.8, vib: 22, vd: 0.08 }] };
+        case "clack": return { secs: 0.4, level: 0.85, parts: [{ noise: true, f0: 900, dur: 0.05, gain: 1, fall: 3 }, { f0: 850, dur: 0.06, gain: 0.6, fall: 3 }, { noise: true, f0: 900, dur: 0.05, at: 0.18, gain: 1, fall: 3 }, { f0: 850, dur: 0.06, at: 0.18, gain: 0.6, fall: 3 }] };
+        case "toot": return { secs: 0.6, level: 0.75, parts: [{ f0: 466, dur: 0.55, gain: 1, harm: [1, 0.6, 0.45, 0.3, 0.2], fall: 0.5, vib: 5, vd: 0.01 }] };
+        case "pop": return { secs: 0.4, level: 0.85, parts: [{ f0: 300, f1: 1200, dur: 0.12, gain: 1 }].concat(bell(1568, 0.1, 0.28, 0.5)) };
+        case "twirl": return { secs: 0.7, level: 0.75, parts: notes([784, 987.8, 1174.7, 1568], 0.12, 0.3, 0.8) };
+        case "cuckoo": return { secs: 0.6, level: 0.8, parts: [{ f0: 784, dur: 0.22, gain: 1, harm: [1, 0.3], fall: 1.2 }, { f0: 659.3, dur: 0.3, at: 0.26, gain: 1, harm: [1, 0.3], fall: 1.2 }] };
+        case "squirt": return { secs: 0.3, level: 0.6, parts: [{ noise: true, f0: 2000, f1: 600, dur: 0.25, gain: 0.7, fall: 1.2 }] };
+        // the music box's tune, then the parade's last chord at the finale
+        case "tune": return { secs: 1.15, level: 0.8, parts: notes([1046.5, 1318.5, 1568, 1318.5, 1396.9, 1174.7, 987.8, 1046.5], 0.13, 0.4, 0.8) };
+        default: return { secs: 0.9, level: 0.8, parts: bell(1046.5, 0, 0.85, 0.5).concat(bell(1318.5, 0, 0.85, 0.45), bell(1568, 0, 0.85, 0.45), bell(2093, 0.05, 0.8, 0.35)) };   // complete
+      }
+    }
+    function wave(name) {
+      if (waves[name]) return waves[name];
+      var r = recipe(name), n = Math.round(RATE * r.secs), a = new Float32Array(n), peak = 0, i, p;
+      for (p = 0; p < r.parts.length; p++) {
+        var q = r.parts[p], i0 = Math.round((q.at || 0) * RATE), m = Math.round(q.dur * RATE), ph = 0, seed = 1234567 + p * 7919;
+        for (i = 0; i < m && i0 + i < n; i++) {
+          var t = i / m, f = q.f1 ? q.f0 * Math.pow(q.f1 / q.f0, t) : q.f0, v = 0, h;
+          if (q.vib) f *= 1 + q.vd * Math.sin(6.283185307 * q.vib * i / RATE);
+          ph += 6.283185307 * f / RATE;
+          if (q.noise) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; v = (seed / 0x3fffffff - 1) * 0.6 + Math.sin(ph) * 0.4; }
+          else if (q.harm) { for (h = 0; h < q.harm.length; h++) v += q.harm[h] * Math.sin(ph * (h + 1)); }
+          else v = Math.sin(ph);
+          // no click going in; q.fall shapes how fast it dies away
+          a[i0 + i] += v * q.gain * Math.min(1, i / (RATE * 0.004)) * Math.pow(1 - t, q.fall || 1.6);
+        }
+      }
+      for (i = 0; i < n; i++) if (Math.abs(a[i]) > peak) peak = Math.abs(a[i]);
+      for (i = 0; i < n; i++) a[i] = a[i] / (peak || 1) * r.level;
+      return (waves[name] = a);
+    }
+    function playWeb(name, ctx, vol) {
+      var b = bufs[name];
+      if (!b) { var w = wave(name); b = ctx.createBuffer(1, w.length, RATE); b.getChannelData(0).set(w); bufs[name] = b; }
+      var src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = b; g.gain.value = WEB_GAIN * vol; src.connect(g); g.connect(ctx.destination); src.start(0);
+    }
+    function asMedia() { return !mediaBroken && !!(S && S.pcmWave && S.voiceAsMedia && S.voiceAsMedia()); }
+    function playMedia(name, ctx, vol) {
+      try {
+        var p = players[name];
+        if (!p) {
+          var w = wave(name), bytes = new Uint8Array(w.length * 2), dv = new DataView(bytes.buffer), i;
+          for (i = 0; i < w.length; i++) dv.setInt16(i * 2, Math.round(w[i] * MEDIA_PEAK * 32767), true);
+          p = new Audio(URL.createObjectURL(S.pcmWave(bytes))); p.preload = "auto";
+          p.onerror = function () { mediaBroken = true; };
+          players[name] = p;
+        }
+        try { if (p.currentTime) p.currentTime = 0; } catch (e) {}
+        var r = p.play();
+        if (r && r.then) r.then(null, function () { mediaBroken = true; try { playWeb(name, ctx, vol); } catch (e) {} });
+      } catch (e) { mediaBroken = true; playWeb(name, ctx, vol); }
+    }
+    // (a level of zero is Sona's own mute: the media path has no volume to
+    // turn down, so it must not play at all)
+    function sound(name) { return function (ctx, vol) { if (!vol) return; if (asMedia()) playMedia(name, ctx, vol); else playWeb(name, ctx, vol); }; }
+    var NAMES = ["click", "ding", "yawn", "whirr", "drum", "boing", "spin", "clack", "toot", "pop", "twirl", "cuckoo", "squirt", "tune", "complete"], sounds = {}, soundMs = {};
+    NAMES.forEach(function (n) { sounds[n] = sound(n); soundMs[n] = Math.round(recipe(n).secs * 1000); });
+
+    // PLAY AS YOUR BUDDY (BUDDY2): the child's own buddy sits on the shelf
+    // above the bench (its sit pose; a buddy with none stands), and cheers
+    // each time a toy wakes. Then its round badge, then its sticker, then
+    // nothing: never a gap where a picture failed. windup.js places it.
+    (function () {
+      var el = document.getElementById("windupBuddy"), CB = window.SonaCraftedBuddies;
+      if (!el || !S || !S.buddyId) { if (el) el.hidden = true; return; }
+      var id = S.buddyId(), sit = S.buddySprite ? S.buddySprite(id, "sit") : null, ch = S.buddySprite ? S.buddySprite(id, "cheer") : null;
+      var posed = sit && sit.src ? sit.src : null, pt = CB && CB.source ? CB.source(id) : null, sv = CB && CB.svgSrc ? CB.svgSrc(id) : null;
+      var list = [], at = -1, cheer = ch && ch.src && ch.src !== posed ? ch.src : null, held = null;
+      if (posed) list.push(posed); if (pt && pt !== posed) list.push(pt); if (sv) list.push(sv);
+      function lose() { cheer = null; if (W && W.setBuddy) W.setBuddy(null); }
+      function next() {
+        at++; if (at > 0) lose();
+        if (at >= list.length) { el.removeAttribute("src"); el.hidden = true; return; }
+        if (list[at] === posed) el.classList.remove("badge"); else el.classList.add("badge");
+        el.src = list[at];
+      }
+      el.onerror = function () { if (cheer && el.getAttribute("src") === cheer) { lose(); el.src = list[at]; return; } next(); };
+      next();
+      if (cheer && posed) { held = new Image(); held.onerror = lose; held.src = cheer; if (W && W.setBuddy) W.setBuddy({ rest: posed, cheer: cheer }); }
+      el._held = held;   // held, not thrown away: an unheld preload is collected and loads late
+    })();
+
+    SayPlay.start({
+      key: "windup", title: "Wind-Up Toys", intro: INTRO, steps: little ? STEPS6 : STEPS8, finale: [],
+      done: { title: "The parade is on!", sub: "You woke up every toy." },
+      // the story's ending follows the game (sayplay.js takes only this address's shape)
+      exit: { href: "/adventure.html?part=end&story=windup", label: "See what happens!" },
+      again: false, play: W, sounds: sounds, soundMs: soundMs
+    });
+    // "game opened": the game key only, never the child, once the page is shown
+    if (!document.body.hidden) { try { S.track("game opened", { game: "windup" }); } catch (e) {} }
+  })();
+  </script>
+</body>
+</html>

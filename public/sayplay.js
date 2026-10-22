@@ -622,9 +622,30 @@
     // resume() already reads "step" as "the next word".
     else { setPhase("step"); nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250); }
   }
+  // The help pill and "Back to the game" sit in the same place at the foot
+  // of the screen, so a double tap's second tap landed on the other one (22
+  // Oct 2026: a double tap on the pill asked for the help and cancelled it,
+  // and a double tap on "Back to the game" asked again). So a tap within
+  // half a second of either switch, on the very spot the switching tap
+  // touched, does nothing; a tap anywhere else, a key, and silence or a
+  // pause (which end the ask at any time) are never held back.
+  // (a touch counts only while fresh: a switch made by a key, a script or
+  // silence has no spot, and the second tap must have come after the switch)
+  var downAt = null, helpSwitchAt = -1e9, helpSwitchSpot = null, HELP_SETTLE_MS = 500;
+  try { document.addEventListener("pointerdown", function (e) { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; }, true); } catch (e) {}
+  function helpSwitched(byTap) {
+    var now = performance.now();
+    helpSwitchAt = now;
+    helpSwitchSpot = byTap && downAt && now - downAt.t < HELP_SETTLE_MS ? { x: downAt.x, y: downAt.y } : null;
+  }
+  function helpDoubleTap() {
+    var now = performance.now();
+    return !!helpSwitchSpot && !!downAt && now - helpSwitchAt < HELP_SETTLE_MS && downAt.t >= helpSwitchAt &&
+      Math.abs(downAt.x - helpSwitchSpot.x) < 48 && Math.abs(downAt.y - helpSwitchSpot.y) < 48;
+  }
   function practiceHelp() {
-    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp) return false;
-    helpTurn=true;
+    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp || helpDoubleTap()) return false;
+    helpTurn=true; helpSwitched(true);
     if (G.play.pause) G.play.pause();
     said=0;
     nextTurn(true);
@@ -633,9 +654,9 @@
   }
   // The way out of a help ask, with no speech needed: silence (nudge), a
   // pause, or the "Back to the game" pill. No power and no step credit.
-  function endHelp() {
+  function endHelp(byTap) {
     if (!helpTurn) return;
-    helpTurn = false; turnLive = false; said = 0;
+    helpTurn = false; turnLive = false; said = 0; helpSwitched(byTap === true);
     micStop(); stopVoice(); clearTimeout(nextTurn._t);
     paintSaid(); showHelpBack(false);
     try { $("micBtn").hidden = true; $("micState").textContent = ""; $("cheer").textContent = ""; } catch (e) {}
@@ -649,7 +670,7 @@
     if (!b && on) {
       try {
         b = document.createElement("button"); b.id = "helpBack"; b.type = "button"; b.className = "cream-pill";
-        b.textContent = "Back to the game"; b.onclick = function () { if (helpTurn && !paused) endHelp(); };
+        b.textContent = "Back to the game"; b.onclick = function (e) { if (helpTurn && !paused && !(e && e.detail > 0 && helpDoubleTap())) endHelp(true); };
         $("turnPanel").appendChild(b);
       } catch (e) { return; }
     }
@@ -691,6 +712,11 @@
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
+  // a story's game hands back to its story instead of Home (STORY1): the end
+  // card's one button opens the story's ending. Only an address of that one
+  // shape is taken; anything else in G.exit leaves the card as it was. The ✕
+  // during play still goes Home: a child who leaves mid-game wants out.
+  function storyExit() { stopAudio(); micStop(); location.href = G.exit.href; }
 
   // ── pause: a hidden page stops everything; coming back needs one tap ──
   function pause() {
@@ -750,6 +776,13 @@
       face: face,
     }, G.steps.length);
     $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
+    if (G.exit && typeof G.exit.href === "string" && /^\/adventure\.html\?part=end&story=[a-z]+$/.test(G.exit.href)) {
+      $("goHome").onclick = storyExit; $("goHome").textContent = G.exit.label || "See what happens!";
+      $("goHome").className = "btn";            // teal, the end card's main button
+    }
+    // a story's game has no Play again: the story goes on, and another round
+    // would finish nothing (the day is already done)
+    if (G.again === false) $("again").hidden = true;
     $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
     $("micBtn").onclick = function () {
       if (!turnLive || paused) return;

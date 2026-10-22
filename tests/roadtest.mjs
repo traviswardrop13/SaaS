@@ -21,7 +21,7 @@
 //     in the levels record) changes nothing: the badges, the sheet, the road's
 //     Game levels and its level gifts all follow the trophies, as earned.
 // The Trophy Road (step 6, 11 Oct 2026) joined in sections 7 to 10:
-//   - Home's one card under "Pick a game!": the next gift's picture (or the
+//   - Home's one card under the story's two doors: the next gift's picture (or the
 //     waiting one, or the chest when it is ready) and a bar filling toward
 //     it, the words in its label; it only reads, and sends nothing;
 //   - the road page: today's chest in each state and its three taps, a Big
@@ -101,7 +101,11 @@ async function fresh({ width = 375, height = 812, trophies = 0, levels = null, p
   }, { trophies, levels, premium, bests, extra, TODAY, ledger });
   return { context, page, errors };
 }
-async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
+// The game cards (their levels, badges and the level sheet) are Home's Arcade
+// since 22 Oct 2026 (STORY1); the Trophy Road card is on Home itself, under
+// the story card's two doors.
+async function home(page) { await page.goto(origin + "/today.html?view=arcade"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
+async function homeView(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.querySelector("#activityGroups .game-card")); await page.waitForTimeout(150); }
 const card = (page, key) => page.locator('#activityGroups .game-card[data-game="' + key + '"]').first();
 const sheetOpen = (page) => page.evaluate(() => document.getElementById("levelOvl").classList.contains("show"));
 const levels = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("sona.playlevel.v1") || "null"));
@@ -344,11 +348,11 @@ const roadSeen = { got: {}, items: {}, m: TODAY.slice(0, 7), mgot: {} };
 const opened = (...ns) => JSON.stringify(Object.assign({}, roadSeen, { got: Object.fromEntries(ns.map((n) => [n, 1])) }));
 const cardOf = (page) => page.evaluate(() => {
   const c = document.getElementById("roadCard"); if (!c) return null;
-  const r = c.getBoundingClientRect(), intro = document.querySelector(".library-intro");
+  const r = c.getBoundingClientRect(), doors = document.getElementById("homeDoors");
   return { shown: !c.hidden && r.height > 0, label: c.getAttribute("aria-label"), href: c.getAttribute("href"), dot: !document.getElementById("roadDot").hidden,
     bar: [...document.querySelectorAll("#roadBar i")].map((i) => (i.className === "on" ? 1 : 0)).join(""),
     pic: (() => { const p = document.getElementById("roadPic"), im = p.querySelector("img"); return im ? im.getAttribute("src") : p.querySelector(".road-level") ? "level" : p.querySelector(".road-coins") ? "coins" : p.querySelector(".road-stk") ? "sticker" : p.innerHTML.slice(0, 40); })(),
-    small: document.getElementById("roadSmall").textContent, afterIntro: intro && intro.nextElementSibling === c, h1: document.querySelector("h1") && document.querySelector("h1").textContent,
+    small: document.getElementById("roadSmall").textContent, afterDoors: !!doors && doors.nextElementSibling === c, h1: document.querySelector("h1") && document.querySelector("h1").textContent,
     gameish: c.hasAttribute("data-game") || c.hasAttribute("data-locked") || c.classList.contains("game-card"), h: r.height, w: r.width, l: r.left, rt: r.right };
 });
 await section("Home's road card", async () => {
@@ -357,9 +361,9 @@ await section("Home's road card", async () => {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
     asked.length = 0;
-    await home(f.page);
+    await homeView(f.page);
     const c = await cardOf(f.page);
-    ok("the card sits right under \"Pick a game!\", which stays the page's first heading, and opens the road", c && c.shown && c.afterIntro && c.h1 === "Pick a game!" && c.href === "/road.html", c);
+    ok("the card sits right under Home's two doors (Arcade, Books), Home's first heading is \"Today's adventure\", and it opens the road", c && c.shown && c.afterDoors && c.h1 === "Today's adventure" && c.href === "/road.html", c);
     ok("a new child: the first gift's picture (coins), an empty bar, no dot, and its label says where the next gift is", c.pic === "coins" && c.bar === "00000" && !c.dot && c.label === "Trophy Road. 0 trophies. 0 coins. Next gift at 30 trophies.", c);
     ok("the counts under the bar are small numbers beside the drawn trophy and coin, never a word to read", /^0\s*0$/.test(c.small.trim()) && (await f.page.locator("#roadSmall svg").count()) === 2, c.small);
     ok("it is a link, not a game card: no data-game, data-locked or .game-card", !c.gameish);
@@ -375,7 +379,7 @@ await section("Home's road card", async () => {
 
   f = await fresh({ trophies: 120, extra: { "sona.road.v1": opened(1, 2) } });
   try {
-    await home(f.page);
+    await homeView(f.page);
     const c = await cardOf(f.page);
     ok("the next stop is a level: its picture leads with the numeral, the bar is two-fifths full, and the label says \"Level 2 at 150 trophies.\"",
       c.pic === "level" && c.bar === "11000" && !c.dot && c.label === "Trophy Road. 120 trophies. 0 coins. Level 2 at 150 trophies.", c);
@@ -383,14 +387,14 @@ await section("Home's road card", async () => {
 
   f = await fresh({ trophies: 340, extra: { "sona.road.v1": opened(1, 2, 3, 4, 5) } });
   try {
-    await home(f.page);
+    await homeView(f.page);
     const c = await cardOf(f.page);
     ok("the next stop is the Sun hat: its painted picture, and \"Next gift at 380 trophies.\"", c.pic === "/assets/crafted/hat-sunhat.webp" && !c.dot && c.label === "Trophy Road. 340 trophies. 0 coins. Next gift at 380 trophies.", c);
   } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 50 });
   try {
-    await home(f.page);
+    await homeView(f.page);
     const c = await cardOf(f.page);
     ok("a gift waiting on the road: its picture, a full bar, the teal dot, and \"A gift is waiting.\"", c.pic === "coins" && c.bar === "11111" && c.dot && /A gift is waiting\.$/.test(c.label), c);
     const dot = await f.page.evaluate(() => getComputedStyle(document.getElementById("roadDot")).backgroundColor);
@@ -398,14 +402,14 @@ await section("Home's road card", async () => {
   } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 100 });
-  try { await home(f.page); const c = await cardOf(f.page); ok("two waiting say so in the label", c.dot && /2 gifts are waiting\.$/.test(c.label), c.label); } finally { await f.context.close(); }
+  try { await homeView(f.page); const c = await cardOf(f.page); ok("two waiting say so in the label", c.dot && /2 gifts are waiting\.$/.test(c.label), c.label); } finally { await f.context.close(); }
 
   f = await fresh({ trophies: 30, extra: { "sona.road.v1": opened(1), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
   try {
     await f.page.goto(origin + "/__seed");
     const before = await store(f.page);
     asked.length = 0;
-    await home(f.page);
+    await homeView(f.page);
     const c = await cardOf(f.page);
     ok("today's goal met (a stamp): the painted chest leads, the bar is full, the dot shows, and \"Your chest is ready.\"", /road-chest\.webp$/.test(c.pic) && c.bar === "11111" && c.dot && /Your chest is ready\.$/.test(c.label), c);
     ok("…and Home still writes nothing: it never opens the chest, settles a month or sends an event", (await store(f.page)) === before && asked.filter((a) => a.from === "/today.html" && /^\/api\/(board|track)\b/.test(a.path)).length === 0);
@@ -414,7 +418,7 @@ await section("Home's road card", async () => {
   for (const vp of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 768, height: 1024 }]) {
     f = await fresh({ ...vp, trophies: 1350, extra: { "sona.road.v1": opened(...Array.from({ length: 14 }, (_, i) => i + 1)), "sona.goaldays.v1": JSON.stringify({ [TODAY]: 30 }) } });
     try {
-      await home(f.page);
+      await homeView(f.page);
       const c = await cardOf(f.page), w = vp.width + "px: ";
       const hdr = await f.page.evaluate(() => { const p = document.getElementById("repPill").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect(); return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45 }; });
       ok(w + "the card fits inside the page, at least 60 px tall, with no sideways scroll, and the header still fits", c.shown && c.l >= 0 && c.rt <= vp.width && c.h >= 60 && (await overflow(f.page)) <= 1 && hdr.apart && hdr.inside && hdr.oneLine, { c, hdr });
@@ -619,7 +623,7 @@ await section("the road page: game levels, fit, and what never happens", async (
     ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
   } finally { await f.context.close(); }
   f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
-  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.pic === "level" && c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
+  try { await homeView(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.shown && c.pic === "level" &&c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
   f = await fresh({ trophies: 120 });
   try { await road(f.page); ok("before Level 2 opens there is no Game levels panel", await f.page.locator("#levelsCard").isHidden()); } finally { await f.context.close(); }
 

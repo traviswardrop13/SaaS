@@ -842,6 +842,8 @@
     // parked as Coming soon is no door (19 Oct 2026: Home shows no card for
     // one, and Premium does not open it), so a typed ?from= for one is
     // Settings › Your plan, never "Unlock <a game Premium won't open>".
+    // ?from=adventure (22 Oct 2026, STORY1): a tap on Home's locked story
+    // card. Same as a grey game: no check, the X goes Home, never recorded.
     var OFFER_FIRST = /[?&]first=1(&|$)/.test(location.search), OFFER_FROM = "";
     // ?setup=1: setup's ready screen, for a family who starts with the trial
     // (Sona.trialFirst). The grown-up is still holding the phone: the price
@@ -851,10 +853,10 @@
     var OFFER_SETUP = /[?&]setup=1(&|$)/.test(location.search);
     try {
       var _f = new URLSearchParams(location.search).get("from") || "";
-      OFFER_FROM = (_f === "library" || _f === "home") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
+      OFFER_FROM = (_f === "library" || _f === "home" || _f === "adventure") ? _f : (Sona.gameKey ? Sona.gameKey(_f) : "");
       if (OFFER_FROM && Sona.GAME_ACTS && Sona.GAME_ACTS[OFFER_FROM] && Sona.GAME_ACTS[OFFER_FROM].comingSoon) OFFER_FROM = "";
     } catch (e) {}
-    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM ? "from-game" : "settings";
+    var OFFER_SOURCE = OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "library" ? "from-library" : OFFER_FROM === "home" ? "from-home" : OFFER_FROM === "adventure" ? "from-adventure" : OFFER_FROM ? "from-game" : "settings";
 
     // APPLE'S CARD, ITS WHOLE STATE (5 Oct 2026). Up here because three
     // blocks read it: the native rail that paints the card, fitOffer(), and
@@ -1734,7 +1736,7 @@
         // app, a card that showed a price. Leaving "We couldn't reach the App
         // Store" is not turning a price down.
         // keepalive, because this navigates immediately afterwards
-        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : "from-game" }); } catch (x) {} }
+        if (!inApp || APPLE.counted) { try { if (Sona.track) Sona.track("offer dismissed", { surface: OFFER_SETUP ? "setup" : OFFER_FIRST ? "first-run" : OFFER_FROM === "home" ? "home" : OFFER_FROM === "adventure" ? "adventure" : "from-game" }); } catch (x) {} }
       });
     })();
 
@@ -1945,16 +1947,28 @@
         // what Premium opens TODAY: released games outside the free tier
         // (without the free version, that is every released game)
         var open = Object.keys(acts).filter(function (k) { return (acts[k].tier !== "free" || !FREE_VER) && !acts[k].comingSoon; });
-        var game = OFFER_FROM && OFFER_FROM !== "library" && OFFER_FROM !== "home" ? acts[OFFER_FROM] : null;
+        var game = OFFER_FROM && OFFER_FROM !== "library" && OFFER_FROM !== "home" && OFFER_FROM !== "adventure" ? acts[OFFER_FROM] : null;
+        // A tap on Home's locked story card (?from=adventure, STORY1): today's
+        // story, read from sona.js and never from the address. With no story
+        // today (every one finished) it is the plain offer, so the page never
+        // names a story that is not there.
+        var story = null;
+        if (OFFER_FROM === "adventure") { try { var tq = Sona.questToday ? Sona.questToday() : null; story = tq && tq.kind === "story" && tq.story ? tq.story : null; } catch (e) { story = null; } }
 
         // the games themselves, in Home's art: the tapped one large (on the
         // web card), or the Premium ones fanned like a hand of cards, with
-        // Echo in front
+        // Echo in front. A story: its own Home picture, large, with Echo
+        // waving, on both cards (a picture that fails leaves Echo alone).
         var pics = game && art[OFFER_FROM] && !document.body.classList.contains("onerow") ? [OFFER_FROM] : open.filter(function (k) { return art[k]; }).slice(0, 4);
         var box = document.getElementById("offerArt");
-        if (pics.length === 1) box.className = "offer-art solo";
-        box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
-          '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
+        if (story) {
+          box.className = "offer-art solo";
+          box.innerHTML = '<span class="oc"><img src="' + story.pic + '" alt="" onerror="this.parentNode.style.visibility=\'hidden\'" /></span><img class="echo" src="/assets/crafted/echo-wave.webp" alt="" />';
+        } else {
+          if (pics.length === 1) box.className = "offer-art solo";
+          box.innerHTML = pics.map(function (k) { return '<span class="oc"><img src="/assets/crafted/home-' + art[k] + '.webp" alt="" /></span>'; }).join("") +
+            '<img class="echo" src="/assets/crafted/' + (pics.length === 1 ? "echo-wave" : "echo-cheer") + '.webp" alt="" />';
+        }
 
         // From setup the headline carries on from the screen the parent just
         // left ("<Name>'s practice is ready"). It names no sound: setup
@@ -1970,6 +1984,7 @@
         };
         if (OFFER_SETUP && name) named("", "'s practice is ready");
         else if (OFFER_SETUP) titleEl.textContent = "Practice is ready";
+        else if (story) titleEl.textContent = "Unlock today's story, and every game";
         else if (game) titleEl.textContent = "Unlock " + game.name + ", and every other game";
         else if (name) named("Unlock every game for ", "");
         else titleEl.textContent = "Unlock every game";
