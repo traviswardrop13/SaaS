@@ -2,6 +2,7 @@
 // real purchase rails, and an already-earned game's handoff must survive it.
 import { existsSync, readFileSync } from "fs";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
+import { PARK, parkedSona } from "./_parked.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const appFree = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
@@ -12,8 +13,10 @@ const ALL = ["bubbles", "feed", "glide", "peekaboo", "rise", "run", "slice", "st
   "puppy", "racecar", "robot", "rocket", "snowman", "soccer", "space", "stars", "train", "treasure"].sort();
 // Bubble Pop and Peekaboo, and every Say & Play game until it is rebuilt as a
 // real game (Travis, 26 Sep 2026: "put the 20 games as coming soon"); the
-// catalog says which are still parked.
-const COMING_SOON = ["peekaboo", ...[...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1])].sort();
+// catalog says which are still parked: none since 22 Oct 2026 (Travis: "turn
+// on all 18 games"). The Coming soon sections park PARK again
+// (tests/_parked.mjs) to pin what parking does.
+const COMING_SOON = [...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}(\w+): \{[^\n]*\bcomingSoon: true\b/gm)].map((m) => m[1]).sort();
 let FREE = [], PREMIUM = [], PLAYABLE = [];
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
 const browser = await chromium.launch(launchOpts());
@@ -31,7 +34,7 @@ async function section(name, fn) {
 
 // Fulfil every response locally, including the fake public host: these tests
 // cannot call a payment service, speech service, or a real family API.
-async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=1", gate = false, paid = false, local = {}, session = {} } = {}) {
+async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=1", gate = false, paid = false, local = {}, session = {}, park = [] } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
   const calls = [], errors = [], ungatedPaints = [];
   await ctx.exposeBinding("__premiumPaint", (_source, value) => ungatedPaints.push(value));
@@ -45,6 +48,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
     const file = ROOT + url.pathname;
     if (!existsSync(file)) return route.fulfill({ status: 404, body: "Not found" });
     let body = readFileSync(file);
+    if (url.pathname === "/sona.js" && park.length) body = parkedSona(body.toString(), park);
     if (url.pathname === "/sona.js") body = body.toString() + `
       (function(){
         ['iapPurchase','buyPlan','iapRestore','startTrial','ensureTrial','saveSub'].forEach(function(name){
@@ -128,7 +132,7 @@ await section("preview contract", async () => {
       FREE = sorted(playable.filter(game => game.tier === "free").map(game => game.key));
       PREMIUM = sorted(playable.filter(game => game.tier === "premium").map(game => game.key));
       PLAYABLE = sorted(playable.map(game => game.key));
-      ok("Peekaboo and the parked Say & Play games are explicitly Coming soon", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON));
+      ok("Coming soon is exactly the catalog's parked lines (none since 22 Oct 2026)", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON), COMING_SOON);
       ok("…and the six first games stay playable", ["slice", "tiles", "stack", "run", "glide", "feed"].every((key) => PLAYABLE.includes(key)), PLAYABLE);
       ok("ordinary visits do not enable the preview", await pg.evaluate(() => Sona.libraryPreview()) === false);
       ok("an ordinary family receives the configured release without an entitlement", await pg.evaluate(() => ({free:Sona.isFree(),premium:Sona.premium()})).then(state => state.free === appFree && !state.premium));
@@ -300,8 +304,8 @@ if (hasContract) {
     } finally { await ctx.close(); }
   });
 
-  for (const key of COMING_SOON) for (const mode of ["free", "paid", "trial"]) await section(key + " stays Coming soon for " + mode, async () => {
-    const { ctx, pg, calls, errors } = await fixture({ gate: true, paid: mode === "paid", path: "/activities.html" + (mode === "trial" ? "?libraryPreview=1" : ""), local: mode === "paid" ? {"sona.sub.v1":{active:true,since:1}} : {} });
+  for (const key of ["peekaboo", "racecar"]) for (const mode of ["free", "paid", "trial"]) await section(key + " stays Coming soon for " + mode, async () => {
+    const { ctx, pg, calls, errors } = await fixture({ park: PARK, gate: true, paid: mode === "paid", path: "/activities.html" + (mode === "trial" ? "?libraryPreview=1" : ""), local: mode === "paid" ? {"sona.sub.v1":{active:true,since:1}} : {} });
     try {
       const before = await realState(pg);
       await pg.evaluate(({key,mode}) => {
@@ -313,7 +317,7 @@ if (hasContract) {
       const access = await pg.evaluate(key => Sona.gameAccess(key,{run:true,earned:true}), key);
       ok(key + " " + mode + ": entitlement and an earned checkpoint cannot open Coming soon", access.allowed === false && access.reason === "coming-soon", access);
       const choices = await pg.evaluate(() => { const run=sessionStorage.getItem("sona.run.v1");sessionStorage.removeItem("sona.run.v1");try{return {daily:Sona.dailyGames(),adventure:Sona.adventureGames()};}finally{sessionStorage.setItem("sona.run.v1",run);} });
-      ok(key + " " + mode + ": new daily and adventure choices omit parked titles", choices.daily.length > 0 && choices.adventure.length > 0 && [...choices.daily,...choices.adventure].every(game => !COMING_SOON.includes(game)), choices);
+      ok(key + " " + mode + ": new daily and adventure choices omit parked titles", choices.daily.length > 0 && choices.adventure.length > 0 && [...choices.daily,...choices.adventure].every(game => !PARK.includes(game)), choices);
       for (const path of ["/arcade-" + key + ".html?daily=1&from=charge", "/charge.html?game=arcade-" + key + ".html", "/premium.html?game=" + key]) {
         await pg.goto(BASE + path); await pg.waitForTimeout(100);
         ok(key + " " + mode + ": " + path + " returns to Home", new URL(pg.url()).pathname === "/today.html", pg.url());

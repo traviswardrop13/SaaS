@@ -276,6 +276,7 @@ body[data-setup-screen="alone"] .ob .mascot, body[data-setup-screen="games"] .ob
 .sell-grid:not(.both) .sell-games.two .sell-name { font-size: 15px; }
 /* both age groups (no age given): the little kids' two games take the big
    kids' size, centred, so all eleven fit a 4-inch phone with no scroll */
+.sell-more { margin: 6px 0 0; text-align: center; color: #5b3a20; font: 800 13px/1.15 'Baloo 2', sans-serif; }
 .sell-grid.both .sell-games.two { display: flex; justify-content: center; gap: 8px; }
 .sell-grid.both .sell-games.two li { width: calc((100% - 16px) / 3); }
 @media (max-height: 700px) {
