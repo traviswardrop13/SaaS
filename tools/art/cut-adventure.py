@@ -318,10 +318,14 @@ COMPOSE = {"lighthouse/e01": [
 #   ("fill", (x, y, rx, ry)): a small thing that must not be there (a wing on
 #     the wingless glowworm), filled in from the sky around it: the ellipse is
 #     smoothed in from its edge, then given the grain of the ring around it.
+#   ("teeth", (x, top, w, h)): a beaver's two front teeth the model left out.
 TOUCH = {
     # Day 8: the mushroom lamps glowed on every "before" page in three drawings
     # each, though the lines say they will not light until the game. Echo's own
     # porch lamp (s01, s02) is his cottage's and stays lit.
+    # Day 5: drawn five times, Beaver came out once with a tail on Echo and
+    # once with no teeth, the day's joke (he nibbled his own door)
+    "postboat/e01": [("teeth", (0.397, 0.290, 0.017, 0.010))],
     "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
     "lantern/s05": [("unlight", [(0.095, 0.655, 0.050), (0.472, 0.409, 0.020), (0.746, 0.390, 0.020), (0.105, 0.488, 0.025)]),
                     ("fill", (0.437, 0.121, 0.021, 0.023))],    # a wing on Glowworm, who has none
@@ -372,6 +376,28 @@ def touch(src, ops, out):
             m = Image.fromarray((h * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.5))
             a = (np.asarray(m).astype(np.float32) / 255)[..., None]
             im[y0:y1, x0:x1] = sub * (1 - a) + f * a
+        elif kind == "teeth":
+            # Beaver's two front teeth under his lip (cx, top, width of both,
+            # height), drawn 8x large and shrunk, with a soft shadow on the mouth
+            from PIL import ImageDraw
+            cx, top, tw, th = arg
+            w, h, S = tw * W, th * H, 8
+            layer = Image.new("RGBA", (int(w * S) + 4 * S, int(h * S) + 4 * S), (0, 0, 0, 0))
+            dr = ImageDraw.Draw(layer)
+            gap = max(1, int(0.06 * w * S)); one = (w * S - gap) / 2; inset = max(1, int(one * 0.08))
+            for i in range(2):
+                x0 = 2 * S + i * (one + gap); x1 = x0 + one; y0 = 2 * S; y1 = y0 + h * S; r = int(one * 0.35)
+                dr.rounded_rectangle([x0, y0 - r, x1, y1], radius=r, fill=(120, 84, 60, 255))
+                dr.rounded_rectangle([x0 + inset, y0 - r, x1 - inset, y1 - inset], radius=max(1, r - inset), fill=(247, 241, 228, 255))
+                dr.rectangle([x0 + inset, y0 + (y1 - y0) * 0.62, x1 - inset, y1 - inset * 1.6], fill=(232, 222, 203, 255))
+            layer = layer.resize((layer.width // S, layer.height // S), Image.LANCZOS)
+            pic = Image.fromarray(np.clip(im, 0, 255).astype(np.uint8))
+            x, y = round(cx * W - layer.width / 2), round(top * H - 2)
+            sh = Image.new("RGBA", layer.size, (60, 20, 20, 0))
+            sh.putalpha(layer.split()[3].filter(ImageFilter.GaussianBlur(1.2)).point(lambda v: int(v * 0.35)))
+            pic.paste(sh, (x + 1, y + 2), sh)
+            pic.paste(layer, (x, y), layer)
+            im = np.asarray(pic).astype(np.float32)
         else:
             raise ValueError("unknown touch " + kind)
     Image.fromarray(np.clip(im, 0, 255).astype(np.uint8)).save(out)

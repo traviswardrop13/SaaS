@@ -912,7 +912,10 @@
         },
         "e03": {
           "picture": "A happy little party on the snowy wooden platform in front of the honey-wood station, the valley train (THE TRAIN) resting behind on its finished track. At the back of the platform, upper left of the middle, Stationmaster Hare pours hot cocoa from a big pot into little cups on a small table, and Frog beside her holds up a plate of round cookies. At the back of the platform, upper right of the middle, Pelly the pelican has just landed, wearing the fuzzy red mitten pulled over her postal cap like a cozy little hat, its thumb sticking up, looking very proud. Echo stands at the front of the platform, left of the middle, holding a little cup of cocoa and laughing. The platform's front edge runs straight across the lower third of the picture, with plain snow below it.",
-          "buddy": "on the front of the platform just right of Echo: plain wooden boards, nothing on them"
+          "buddy": "on the front of the platform just right of Echo: plain wooden boards, nothing on them",
+          "also": [
+            "file:tools/art/out/adventure/trainline/ref-pelly-s01.png"
+          ]
         },
         "e04": {
           "light": "evening",
@@ -1509,6 +1512,7 @@
     "public/assets/adventure/bridge/e04.webp": "an earlier page of this story world: Echo's helper map on the wall of his cottage. Keep the map's paper, crayon colours and gold-star stickers looking the same (this page shows a different, newly uncovered place on it)",
     "tools/art/out/adventure/postboat/ref-beaver-s07.png": "an earlier page of this story showing Beaver exactly as he must look: his two big white front teeth showing over his lower lip and his big flat criss-cross paddle tail. Draw Beaver like this (the place and the other characters are this page's own)",
     "tools/art/out/adventure/kite/ref-lamb.png": "Lamb's own model sheet: draw Lamb exactly like this, a sheep, not a bunny: her only ears are the two black ones sticking out sideways from the sides of her head under the beret, and NOTHING sticks up from the top of her beret",
-    "tools/art/out/adventure/kite/ref-beetle.png": "Beetle's own model sheet: draw Beetle exactly like this, a round shiny red shell with black spots and a small black head"
+    "tools/art/out/adventure/kite/ref-beetle.png": "Beetle's own model sheet: draw Beetle exactly like this, a round shiny red shell with black spots and a small black head",
+    "tools/art/out/adventure/trainline/ref-pelly-s01.png": "an earlier page of this story showing Pelly exactly as she must look (a big white pelican with a long peach bill and pouch, her light-blue postal cap and her satchel) and the mitten she wears: draw Pelly and the mitten like this (the place and the other characters are this page's own)"
   }
 }
