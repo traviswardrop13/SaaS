@@ -413,8 +413,15 @@ await section("skip and go", async () => {
   ok("Skip (for grown-ups) goes straight to the \"Let's go!\" scene", s.idx === 7 && (await pg.isVisible("#goBtn")), s);
   ok("…cutting Echo off, and never playing the scenes it skipped", (await pg.evaluate(() => h.stops)) > st0 && s.played.every((p) => p.text === BIG1[0].text || p.text === BIG1[7].text), s.played);
   await voiceIs(pg, "speaking");
-  const stops = await pg.evaluate(() => h.stops);
+  // the arrow key (a keyboard, an iPad's) turns pages, but only "Let's go!"
+  // leaves the last one: it must not cut Echo off mid-line (22 Oct 2026: it
+  // did, and he froze on his talking picture with "Let's go!" never glowing)
   await nap(pg, 650);
+  const k0 = await pg.evaluate(() => h.stops);
+  await pg.keyboard.press("ArrowRight"); await nap(pg, 120);
+  const k1 = await pg.evaluate(() => ({ stops: h.stops, voice: __adventure.voice, idx: __adventure.idx, view: __adventure.view }));
+  ok("the arrow key on the \"Let's go!\" scene turns nothing and leaves Echo talking", k1.stops === k0 && k1.voice === "speaking" && k1.idx === BIG1.length - 1 && k1.view === "scene", { k0, k1 });
+  const stops = await pg.evaluate(() => h.stops);
   const day = await localDay(pg);
   // the game page answers late, so the moment after the tap can be looked at
   await ctx.route("**/arcade-lighthouse.html", async (r) => { await new Promise((res) => setTimeout(res, 700)); r.continue(); });

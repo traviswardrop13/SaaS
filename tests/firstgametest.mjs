@@ -153,7 +153,7 @@ await scenario("Home, paying, no Premium", async () => {
     // price at once, on that game (Travis, 4 Oct 2026: "I want it to open
     // automatically if they click on a game that is grayed out"). The games
     // are behind Home's Arcade door since 22 Oct 2026 (STORY1).
-    await page.locator("#arcadeBtn").click();
+    await page.locator("#arcadeBtn").click(); await page.waitForTimeout(550); // Home ignores a tap for half a second after a view switch (a double tap)
     await page.locator('#activityGroups button[data-game="stack"]').click();
     await page.waitForURL(/\/subscribe\.html\?from=stack$/).catch(() => {});
     ok("a greyed game still answers a tap: it opens the price at once, on that game", /\/subscribe\.html\?from=stack$/.test(page.url()), page.url());

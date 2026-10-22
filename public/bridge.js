@@ -981,10 +981,14 @@
   }
   function controls() {
     // a tap turns the stone (under 12 px, under 300 ms); anything else slides
-    // it. The newest finger wins.
+    // it. The finger holding the stone keeps it: another finger or a palm is
+    // ignored until it lets go (taking `finger` from it left the stone held
+    // for good, with nothing able to drop, turn or send it back, and the round
+    // could never end).
     cv.addEventListener("pointerdown", function (e) {
       var p = pointAt(e);
       if (away || paused) return;
+      if (finger && finger.onStone && stone && stone.state === "held") return;
       var grab = grabbable() && (onStoneAt(p) || (little && rung >= 3));
       if (!grab) {
         ripple(p);

@@ -218,6 +218,20 @@ try{
   // and it is out of the way while a finger slides the stone
   await page.mouse.move(s.pos.sx,s.pos.sy);await page.mouse.down();await page.mouse.move(s.pos.sx+30,s.pos.sy,{steps:4});await advance(page,100);
   ok('while the stone is held the turn button steps aside',!(await br(page)).turn.shown);await page.mouse.up();
+  // a second finger or a palm while one finger holds the stone (22 Oct 2026:
+  // it took the stone's finger, the stone stayed held for good and the round
+  // could never end). Both orders of lifting.
+  await advance(page,2700);
+  for(const order of [[7,8],[8,7]]){
+   s=await br(page);const a={x:s.pos.sx,y:s.pos.sy},y2=Math.min(s.waterSy+30,s.board.bottom-10),b={x:a.x>s.board.right/2?60:s.board.right-60,y:y2};
+   await page.evaluate(([a,b,order])=>{const c=document.getElementById('bridgeCanvas'),ev=(t,id,p)=>c.dispatchEvent(new PointerEvent(t,{pointerId:id,pointerType:'touch',isPrimary:id===7,clientX:p.x,clientY:p.y,bubbles:true}));
+    ev('pointerdown',7,a);ev('pointermove',7,{x:a.x+15,y:a.y});ev('pointermove',7,{x:a.x+30,y:a.y});ev('pointerdown',8,b);
+    for(const id of order)ev('pointerup',id,id===7?{x:a.x+30,y:a.y}:b);},[a,b,order]);
+   s=await br(page);ok('a second touch while a finger holds the stone ('+(order[0]===7?'the stone\'s finger':'the second finger')+' lifts first): the stone is let go, never held for good',s.pos.state!=='held'&&s.misses===0,s.pos);
+   await advance(page,2700);s=await br(page);const r3=s.rot;await tapStone(page);s=await br(page);
+   ok('…and a finger can pick it up again: a tap turns it',s.rot===(r3+1)%4,{r3,rot:s.rot,state:s.pos.state});
+   await advance(page,300);
+  }
   ok('tapdrag: no runtime errors',errors.length===0,errors);await context.close();
  }
 

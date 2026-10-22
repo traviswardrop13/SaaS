@@ -1495,9 +1495,10 @@ star on Echo's helper map. Three days are built:
 Each has a version for ages 3-4 (`Sona.playStyle() === "simple"`: the scenes
 marked for both ages, the short lines, a six-word game) and one for 5-8 (eight
 scenes, four ending scenes, an eight-word game with a twist at word 5). The
-buddy a child picked is in every picture and every game, laid over the
-painting in a pose that already exists, never painted in and never under a
-finger.
+buddy a child picked is in every game and in 24 of the 36 pictures (the
+others, a view out of a window, a letter, a crowd's back, have no spot for
+it), laid over the painting in a pose that already exists, never painted in
+and never under a finger.
 - **Files.** The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
   QUEST1 block): id, game, page, hero, Home's title and line. (The same tag,
   STORY1, also marks the older episode engine: `sona.js`'s "the daily run is
@@ -1565,6 +1566,8 @@ finger.
   soon as it is ready and waits at most 2.5 s; Next glows when he is done;
   Next or a tap on the picture turns the page; taps wait 600 ms after a
   scene appears, so a double tap never skips one; nothing turns by itself.
+  The right-arrow key turns a page too, but never leaves the last intro scene
+  (only "Let's go!" does), so it cannot cut Echo off there.
   The last intro scene's big teal "Let's go!" stops the sound, writes
   `storySeen(id)` (the ONE thing the page writes) and opens the game. The
   ending opens on "Tap to see what happens", plays its scenes, then the
@@ -1660,7 +1663,9 @@ the canvas, one sandstone body from the near bank to Blossom Island on
 `bridge-canyon-wide.webp`, so a stone always fits its own hole. The word
 calls a stone up out of the river, turned the wrong way; a tap (under 12 px
 and 300 ms) turns it a quarter turn, anything else slides it, and a round
-turn button does the same. On its hole the right way up it drops in and
+turn button does the same. The finger holding the stone keeps it: a second
+finger or a palm is ignored until it lets go (it used to take the stone's
+finger and leave the stone held for good, so the round could never end). On its hole the right way up it drops in and
 glows; the wrong way up it bobs back ("Almost! Give it a turn."), a miss; a
 drop anywhere else is not a miss. Ages 5-8: L, T, boot, arrow, step, hook,
 half-moon, then the heart keystone at the top; from word 5 the river rises
@@ -1719,8 +1724,9 @@ line a child hears):
   no day number, until Day 4 exists; every child starts at Day 1.
 - The story games are only inside the stories, and a finished story is not
   on Home again.
-- Light the Way's boats still drift under Reduce Motion while Puzzle Bridge's
-  stones hold still: one of the two should change.
+- Under Reduce Motion both games hold still: Light the Way's boats stay on
+  their spots (the teacup's peek is a cut) and Puzzle Bridge's stones do not
+  swim.
 - Every speed, hold time, pool and star size, help timing and sound level
   (`MEDIA_PEAK` 0.4 in each game, set without a phone to listen on); Light the
   Way's moon (moved low so the top bar never covers it) and its brass rail
@@ -1771,7 +1777,9 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   Books card, the age note, Best tags, level badges, the locked note and the
   price on a grey tap.
 - **Moving between them.** The Arcade door pushes `?view=arcade` and switches
-  at once; "‹ Home" goes back if it was pushed, else replaces the address;
+  at once, and for 500 ms after the Arcade door or "‹ Home" no tap on the
+  page does anything (a double tap's second tap used to open whatever the new
+  view put under the finger: a book in Today's picks, or the price); "‹ Home" goes back if it was pushed, else replaces the address;
   Back and Forward read the address again. `?locked=` opens the Arcade with
   its note. `activities.html` (old links) adds `view=arcade` unless the
   address has `view=` or `locked=`, keeping the rest of it. Titles: "Sona" on

@@ -590,11 +590,21 @@
         if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
       }
       var backFocus=false;
+      // A double tap on the Arcade door or "‹ Home" switches the view on the
+      // first tap, and the second landed on whatever the new view put under
+      // the finger: a game in Today's picks the child never picked, or the
+      // plan screen for a locked one. So for 500 ms after a switch (the level
+      // sheet's settle) no tap on the page does anything; the switching tap
+      // itself passes, because it is seen before its handler stamps viewAt.
+      var viewAt=-1e9;
+      app.addEventListener("click",function(e){if(Date.now()-viewAt<500){e.preventDefault();e.stopPropagation();}},true);
       document.getElementById("arcadeBtn").onclick=function(){
+        viewAt=Date.now();
         try{history.pushState({view:"arcade"},"","/today.html?view=arcade");}catch(e){}
         showView("arcade",true);
       };
       document.getElementById("homeBack").onclick=function(){
+        viewAt=Date.now();
         var st=null;try{st=history.state;}catch(e){}
         if(st&&st.view==="arcade"){backFocus=true;history.back();return;}
         try{history.replaceState(null,"","/today.html");}catch(e){}

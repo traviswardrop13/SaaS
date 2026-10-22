@@ -252,6 +252,7 @@ await section("the views", async () => {
   ok("…scrolled to the top, focus on \"Pick a game!\", titled \"Sona — Play library\"", s.y === 0 && s.focus === "arcadeTitle" && s.title === "Sona — Play library", s);
   const back = await pg.locator("#homeBack").boundingBox();
   ok("\"‹ Home\" is a full-size button in the Arcade", back && back.height >= 44 && back.width >= 44, back);
+  await pg.waitForTimeout(550); // past the half second Home ignores taps after a switch
   await pg.locator("#homeBack").click(); await pg.waitForTimeout(200);
   s = await pg.evaluate(() => ({ same: window.__same, focus: document.activeElement && document.activeElement.id, title: document.title, story: !!document.getElementById("questCard").offsetParent }));
   ok("\"‹ Home\" goes back to Home (the step the door added), with no reload", s.same === 1 && pathOf(pg) === "/today.html" && (await view(pg)) === "home" && s.story && s.title === "Sona" && s.focus === "homeTitle", { url: pg.url(), s });
@@ -261,6 +262,31 @@ await section("the views", async () => {
   ok("…and Back comes Home", (await pg.evaluate(() => window.__same)) === 1 && (await view(pg)) === "home" && pathOf(pg) === "/today.html");
   ok("the views: no page errors", errors.length === 0, errors);
   await ctx.close();
+});
+
+// ── a double tap on a door that switches the view (22 Oct 2026: the second
+// tap landed on whatever the new view put under the finger, Today's first
+// pick, and opened a game the child never picked, or the price) ──
+await section("a double tap", async () => {
+  // at 430x932 the door's middle is over Today's first pick in the Arcade
+  for (const vp of [{ width: 430, height: 932 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+    const at = vp.width + "x" + vp.height + ": ";
+    const { ctx, pg, errors } = await open({ sub: true, viewport: vp });
+    const b = await pg.locator("#arcadeBtn").boundingBox();
+    const under = await pg.evaluate(([x, y]) => { const app = document.getElementById("libraryApp"); app.setAttribute("data-view", "arcade"); const e = document.elementFromPoint(x, y); const card = e && e.closest(".game-card, a, button"); app.setAttribute("data-view", "home"); return card ? (card.id || card.className) : null; }, [b.x + b.width / 2, b.y + b.height / 2]);
+    if (vp.width === 430) ok(at + "(a game card sits where the door was, so this is the real case)", !!under, under);
+    await pg.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2); await pg.waitForTimeout(700);
+    ok(at + "a double tap on the Arcade door opens the Arcade and nothing under the finger (" + under + " sits there)", pathOf(pg) === "/today.html?view=arcade" && (await view(pg)) === "arcade" && (await pg.evaluate(() => document.getElementById("levelOvl") ? document.getElementById("levelOvl").hidden !== false || !document.getElementById("levelOvl").offsetParent : true)), { url: pg.url(), under });
+    const card = pg.locator("#activityGroups .game-card:not([disabled])").first();
+    await card.click(); await pg.waitForURL((u) => new URL(u).pathname !== "/today.html", { timeout: 3000 }).catch(() => {});
+    ok(at + "…and a moment later a tap on a game opens it, as before", new URL(pg.url()).pathname !== "/today.html", pg.url());
+    await home(pg, "/today.html?view=arcade");
+    const h = await pg.locator("#homeBack").boundingBox();
+    await pg.mouse.dblclick(h.x + h.width / 2, h.y + h.height / 2); await pg.waitForTimeout(700);
+    ok(at + "a double tap on \"‹ Home\" comes Home and opens nothing", pathOf(pg) === "/today.html" && (await view(pg)) === "home", pg.url());
+    ok(at + "no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
 });
 
 await section("addresses", async () => {
@@ -330,6 +356,7 @@ await section("Home stays quiet", async () => {
     await pg.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
     await pg.waitForTimeout(250);
     await pg.locator("#arcadeBtn").click(); await pg.waitForTimeout(100);
+    await pg.waitForTimeout(550); // past the half second Home ignores taps after a switch
     await pg.locator("#homeBack").click(); await pg.waitForTimeout(200);
     const after = await store(pg);
     ok(label + ": loading Home writes nothing", before === loaded, { before: before.length, loaded: loaded.length });
@@ -475,6 +502,7 @@ await section("Reduce Motion: the fit", async () => {
     const back = await fitOf(pg);
     ok(at + "two quick returns to the front keep the same fit, the doors on screen", back.fit === first.fit && back.doors === first.doors && onScreen(back), { first, back });
     await pg.locator("#arcadeBtn").click(); await settle(pg);
+    await pg.waitForTimeout(550); // past the half second Home ignores taps after a switch
     await pg.locator("#homeBack").click(); await pg.waitForFunction(() => document.getElementById("libraryApp").getAttribute("data-view") === "home"); await settle(pg);
     const trip = await fitOf(pg);
     ok(at + "…and so does the Arcade and ‹ Home", trip.fit === first.fit && trip.doors === first.doors && onScreen(trip), { first, trip });

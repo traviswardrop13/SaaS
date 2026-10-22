@@ -554,6 +554,9 @@
     function tapOk() { return now() - shownAt >= TAP_GUARD_MS; }
     function turn() {
       if (view !== "scene" || !tapOk()) return;
+      // only "Let's go!" leaves the last intro scene: a key here must not cut
+      // Echo off mid-line (his line's end is what makes the button glow)
+      if (mode === "intro" && idx === run.length - 1) return;
       stopVoice();
       if (idx < run.length - 1) show(idx + 1);
       else if (mode === "end") showStickers();
