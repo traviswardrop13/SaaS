@@ -1,4 +1,5 @@
-// NOTIFY1: one reminder the day before the free trial ends (22 Oct 2026).
+// NOTIFY1: one reminder before the free trial ends (22 Oct 2026): 30 hours
+// before, so a cancel after it still counts (Apple's line is 24 hours).
 //
 // Travis: "can we add push notifications and have that be a step in the
 // onboarding where we ask them to turn it on to notify them a day before
@@ -14,7 +15,7 @@
 //      answer setup can wait for (notifyRefresh), a bridge that answers
 //      "not implemented" (no build that can remind, for the page), and the
 //      fake added onto the fake microphone's plugin, never over it;
-//   3. arming: a day before the end, never in the past or within the hour,
+//   3. arming: 30 hours before the end, never in the past or within the hour,
 //      one request however often it is armed, the fixed words (no name);
 //      the price screen's promise only for a row SURE of its free days;
 //   4. the one hook in buyPlan: a trial purchase arms AT ONCE, from the
@@ -25,7 +26,10 @@
 //      never takes the new reminder back;
 //   4b. the price screen's line follows iOS's own answer once it comes;
 //   4c. setup's reminder screen on the real block: only for a buyer the
-//      store gives free days, on a build that can, whom iOS has not asked;
+//      store is SURE it gives free days (plan.sure, as the price line), on
+//      a build that can, whom iOS has not asked;
+//   4d. Ask to Buy approved, and Restore after "not-entitled": the reminder
+//      is set before the price page leaves (Sona.trialReminderSold);
 //   5. the daily check: arms a trial, cancels once none is on (paid, ended,
 //      cancelled by the parent), once a day, never on a store that did not
 //      answer or hangs (asked again at most once an hour), never asks the store for a
@@ -42,6 +46,9 @@ let fails = 0, passes = 0;
 const ok = (n, p, extra) => { if (p) passes++; else fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (typeof extra === "string" ? extra : JSON.stringify(extra)))); };
 
 const DAY = 86400000, HOUR = 3600000;
+// the reminder's lead: 30 hours before the end, so a cancel after it still
+// counts (Apple's line is 24 hours); sona.js's TRIAL_REMIND_LEAD_MS
+const LEAD = 30 * HOUR;
 const ID = "sona-trial-end";
 
 const srv = await serve();
@@ -211,26 +218,26 @@ const now = (page) => page.evaluate(() => Date.now());
   const r = await p.page.evaluate((e) => Sona.trialReminderArm(e), end);
   const sched = await p.calls("notifySchedule"), st = await p.ios(), key = await p.key();
   const a = sched[0] && sched[0].a;
-  ok("a trial that ends in 3 days: one reminder, a day before its end, to the millisecond", r === true && sched.length === 1 && a.at === end - DAY, sched);
+  ok("a trial that ends in 3 days: one reminder, 30 hours before its end (a cancel after it still counts), to the millisecond", r === true && sched.length === 1 && a.at === end - LEAD, sched);
   ok("…its words are the fixed ones: \"Sona\" / \"Your free trial ends tomorrow.\"", a && a.title === "Sona" && a.body === "Your free trial ends tomorrow.", a);
   ok("…the request carries an id, a moment and those words, and nothing else", a && JSON.stringify(Object.keys(a).sort()) === JSON.stringify(["at", "body", "id", "title"]) && a.id === ID, a);
   ok("…NEVER A CHILD'S NAME: Mia's name is on this phone and in no part of it", a && !/Mia/.test(JSON.stringify(a)) && !/[\d$]/.test(a.title + a.body), a);
-  ok("…iOS holds it, and the phone notes when and for which end", st.pending[ID] && st.pending[ID].at === end - DAY && key.arm === end - DAY && key.end === end, [st.pending, key]);
+  ok("…iOS holds it, and the phone notes when and for which end", st.pending[ID] && st.pending[ID].at === end - LEAD && key.arm === end - LEAD && key.end === end, [st.pending, key]);
   const end2 = t0 + 7 * DAY;
   await p.page.evaluate((e) => Sona.trialReminderArm(e), end2);
   const st2 = await p.ios();
   ok("armed again for another end: still ONE request, the new one (the same id replaces it)",
-    Object.keys(st2.pending).length === 1 && st2.pending[ID].at === end2 - DAY, st2.pending);
+    Object.keys(st2.pending).length === 1 && st2.pending[ID].at === end2 - LEAD, st2.pending);
   const edge = await p.page.evaluate((t) => Promise.all([
-    Sona.trialReminderArm(t + 25 * 3600000 - 60000),  // the moment 59 minutes away
-    Sona.trialReminderArm(t + 20 * 3600000),           // within the last day: the moment has gone
+    Sona.trialReminderArm(t + 31 * 3600000 - 60000),  // the moment 59 minutes away
+    Sona.trialReminderArm(t + 26 * 3600000),           // within the last 30 hours: the moment has gone
     Sona.trialReminderArm(t - 3600000),                // already over
     Sona.trialReminderArm(NaN), Sona.trialReminderArm("soon"), Sona.trialReminderArm(0), Sona.trialReminderArm(undefined),
     Sona.trialReminderArm(t + 500 * 86400000),         // not a trial: years away
   ]), t0);
   ok("never in the past and never within the hour: a moment under an hour away, past, or not a time sets nothing",
     edge.every((x) => x === false) && (await p.calls("notifySchedule")).length === 2, [edge, (await p.calls("notifySchedule")).length]);
-  const ok25 = await p.page.evaluate((t) => Sona.trialReminderArm(t + 25 * 3600000 + 120000), await now(p.page));
+  const ok25 = await p.page.evaluate((t) => Sona.trialReminderArm(t + 31 * 3600000 + 120000), await now(p.page));
   ok("…one an hour and two minutes away is set", ok25 === true, ok25);
 
   // iOS's setting changed behind the app's back: iOS refuses, nothing is noted
@@ -307,8 +314,8 @@ const now = (page) => page.evaluate(() => Date.now());
   const T = (await now(o.page)) + 3 * DAY + 7 * 60000;
   let b = await buy(o, { rc: { periodType: "TRIAL", expirationDateMillis: T, willRenew: true } });
   let at = await armedAt(o);
-  ok("a purchase that starts the free trial arms the reminder AT ONCE (before buyPlan has even answered), for the end in the purchase's own record, a day before it",
-    b.res && b.res.ok === true && b.atOnce === T - DAY && at === T - DAY, [b, at]);
+  ok("a purchase that starts the free trial arms the reminder AT ONCE (before buyPlan has even answered), for the end in the purchase's own record, 30 hours before it",
+    b.res && b.res.ok === true && b.atOnce === T - LEAD && at === T - LEAD, [b, at]);
   ok("…once, and with no second lookup: the purchase named the end", (await o.calls("notifySchedule")).length - o.before === 1 && (await o.ios()).infos === b.i0, [await o.calls("notifySchedule"), (await o.ios()).infos, b.i0]);
   await o.context.close();
 
@@ -316,29 +323,29 @@ const now = (page) => page.evaluate(() => Date.now());
   const T2 = (await now(o.page)) + 3 * DAY + 5 * HOUR;
   b = await buy(o, { rcBuy: { periodType: "TRIAL", willRenew: true }, rc: { periodType: "TRIAL", expirationDateMillis: T2, willRenew: true } });
   at = await armedAt(o);
-  ok("the purchase names the free days but no end: armed at once from the store's own free time (3 days)…", b.res.ok && near(b.atOnce, b.t + 2 * DAY), [b, b.atOnce && (b.atOnce - b.t) / HOUR]);
-  ok("…then corrected to RevenueCat's own end once its record answers", at === T2 - DAY && (await o.ios()).infos === b.i0 + 1, [at, T2 - DAY]);
+  ok("the purchase names the free days but no end: armed at once from the store's own free time (3 days)…", b.res.ok && near(b.atOnce, b.t + 3 * DAY - LEAD), [b, b.atOnce && (b.atOnce - b.t) / HOUR]);
+  ok("…then corrected to RevenueCat's own end once its record answers", at === T2 - LEAD && (await o.ios()).infos === b.i0 + 1, [at, T2 - LEAD]);
   await o.context.close();
 
   o = await buyer({});
   b = await buy(o, { rc: { periodType: "TRIAL", willRenew: true } });
   at = await armedAt(o);
-  ok("RevenueCat gives no end anywhere: the store's own free time from the purchase (3 days), a day before",
-    b.res.ok && near(b.atOnce, b.t + 2 * DAY) && at === b.atOnce, [b, at && (at - b.t) / HOUR]);
+  ok("RevenueCat gives no end anywhere: the store's own free time from the purchase (3 days), 30 hours before",
+    b.res.ok && near(b.atOnce, b.t + 3 * DAY - LEAD) && at === b.atOnce, [b, at && (at - b.t) / HOUR]);
   await o.context.close();
 
   o = await buyer({}, { store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W" } } });
   b = await buy(o, { rc: { periodType: "TRIAL", willRenew: true } });
   at = await armedAt(o);
   ok("…a week free (the 7-day trial approved on 19 Oct): six days after the purchase",
-    b.res.ok && near(b.atOnce, b.t + 6 * DAY) && at === b.atOnce, [b, at && (at - b.t) / HOUR]);
+    b.res.ok && near(b.atOnce, b.t + 7 * DAY - LEAD) && at === b.atOnce, [b, at && (at - b.t) / HOUR]);
   await o.context.close();
 
   o = await buyer({});
   b = await buy(o, undefined);    // RevenueCat's answer names no period at all: the card sold free days
   at = await armedAt(o);
   ok("Apple's answer names no period: a card SURE it sold free days makes it a trial (as the list's plan post decides)",
-    b.plan.sure === true && b.res.ok && near(b.atOnce, b.t + 2 * DAY) && at === b.atOnce, [b, at]);
+    b.plan.sure === true && b.res.ok && near(b.atOnce, b.t + 3 * DAY - LEAD) && at === b.atOnce, [b, at]);
   await o.context.close();
 
   o = await buyer({}, { elig: "missing" });
@@ -351,14 +358,14 @@ const now = (page) => page.evaluate(() => Date.now());
   const T3 = (await now(o.page)) + 3 * DAY + 9 * 60000;
   b = await buy(o, { rcBuy: {}, rc: { periodType: "TRIAL", expirationDateMillis: T3, willRenew: true } });
   at = await armedAt(o);
-  ok("…while RevenueCat's own record, saying TRIAL with an end, sets it", b.plan.sure === false && b.atOnce === null && at === T3 - DAY, [b, at]);
+  ok("…while RevenueCat's own record, saying TRIAL with an end, sets it", b.plan.sure === false && b.atOnce === null && at === T3 - LEAD, [b, at]);
   await o.context.close();
 
   o = await buyer({ rcInfo: "fail" });
   b = await buy(o, { rc: { periodType: "TRIAL", willRenew: true } });
   at = await armedAt(o);
   ok("RevenueCat's record does not answer after the purchase: still armed, from the store's free time",
-    b.res.ok && near(b.atOnce, b.t + 2 * DAY) && at === b.atOnce, [b, at]);
+    b.res.ok && near(b.atOnce, b.t + 3 * DAY - LEAD) && at === b.atOnce, [b, at]);
   await o.context.close();
 
   o = await buyer({}, { store: { monthly: { price: "$9.99" }, annual: { price: "$59.99" } } });
@@ -407,14 +414,14 @@ const now = (page) => page.evaluate(() => Date.now());
   await arrive(o);
   let s1 = await o.ios(), k1 = await o.key();
   ok("THE PAGE LEAVES 1.2 s AFTER THE SALE WHILE THE STORE HANGS: iOS already holds the reminder, for the purchase's own end",
-    k0 && k0.sync > 0 && s1.pending[ID] && s1.pending[ID].at === T4 - DAY && k1.arm === T4 - DAY, [k0, s1.pending, k1]);
+    k0 && k0.sync > 0 && s1.pending[ID] && s1.pending[ID].at === T4 - LEAD && k1.arm === T4 - LEAD, [k0, s1.pending, k1]);
   ok("…and the sale cleared the day's check mark, so the next page asks the store again", k1.sync == null, k1);
   await settle(o.page, 2000);                                   // the next page's check is waiting on the store
   await o.page.evaluate(() => window.__ios.set({ rcInfo: "ok" }));
   await settle(o.page, 600);
   s1 = await o.ios(); k1 = await o.key();
   ok("…which it does: RevenueCat's answer, when it comes, keeps the same one reminder and marks the day",
-    k1.sync > 0 && Object.keys(s1.pending).length === 1 && s1.pending[ID].at === T4 - DAY, [k1, s1.pending]);
+    k1.sync > 0 && Object.keys(s1.pending).length === 1 && s1.pending[ID].at === T4 - LEAD, [k1, s1.pending]);
   await o.context.close();
 
   o = await buyer({});
@@ -422,12 +429,12 @@ const now = (page) => page.evaluate(() => Date.now());
   const t5 = await leave(o, { periodType: "TRIAL", expirationDateMillis: T5, willRenew: true }, { rcBuy: { periodType: "TRIAL", willRenew: true } });
   await arrive(o);
   s1 = await o.ios();
-  ok("…a purchase that named no end: iOS already holds it, from the store's own free time", s1.pending[ID] && near(s1.pending[ID].at, t5 + 2 * DAY), [s1.pending, t5]);
+  ok("…a purchase that named no end: iOS already holds it, from the store's own free time", s1.pending[ID] && near(s1.pending[ID].at, t5 + 3 * DAY - LEAD), [s1.pending, t5]);
   await settle(o.page, 2000);
   await o.page.evaluate(() => window.__ios.set({ rcInfo: "ok" }));
   await settle(o.page, 600);
   s1 = await o.ios();
-  ok("…and the next page corrects it to RevenueCat's own end", Object.keys(s1.pending).length === 1 && s1.pending[ID].at === T5 - DAY, s1.pending);
+  ok("…and the next page corrects it to RevenueCat's own end", Object.keys(s1.pending).length === 1 && s1.pending[ID].at === T5 - LEAD, s1.pending);
   await o.context.close();
 
   // the price page's own check is still waiting on the store when the parent buys
@@ -447,8 +454,8 @@ const now = (page) => page.evaluate(() => Date.now());
     return { res, early: await early, after: await after, cancelled: cancels() - c0, pending: window.__ios.state().pending, key: JSON.parse(localStorage.getItem("sona.notify.v1")) };
   }, T6);
   ok("A CHECK STILL WAITING FROM BEFORE THE SALE NEVER TAKES THE NEW REMINDER BACK: its \"no Premium\" is \"stale\", nothing cancelled",
-    race.res.ok && race.early === "stale" && race.cancelled === 0 && race.pending[ID] && race.pending[ID].at === T6 - DAY, race);
-  ok("…while a check asked after the sale is its own, and its answer counts (\"armed\", the day marked)", race.after === "armed" && race.key.sync > 0 && race.key.arm === T6 - DAY, race);
+    race.res.ok && race.early === "stale" && race.cancelled === 0 && race.pending[ID] && race.pending[ID].at === T6 - LEAD, race);
+  ok("…while a check asked after the sale is its own, and its answer counts (\"armed\", the day marked)", race.after === "armed" && race.key.sync > 0 && race.key.arm === T6 - LEAD, race);
   await o.context.close();
 }
 
@@ -476,6 +483,57 @@ const now = (page) => page.evaluate(() => Date.now());
   }
 }
 
+// ── 4d. a sale buyPlan's answer did not carry (review, 22 Oct 2026): an Ask
+// to Buy approved later, or Restore after Apple took the order and Premium
+// did not switch on ("not-entitled"). The price page's own check at load
+// marked the day checked; without Sona.trialReminderSold the reminder was
+// never set and the next 24 hours of pages answered "later" ──
+{
+  const card = (page, st) => page.waitForFunction((st) => { const c = document.getElementById("iapCard"); return c && c.getAttribute("data-state") === st; }, st);
+  const priced = async (pcfg) => {
+    const o = await phoneWith(Object.assign({ app: "buy", stamp: "post", setUp: true, store: STORES.monthlyFree }, pcfg), { perm: "granted" });
+    await o.page.goto(base + "/subscribe.html?setup=1");
+    await card(o.page, "free");
+    await settle(o.page, 2600);           // the page's own check has run (no Premium yet): the day marked
+    o.k0 = await o.key();
+    return o;
+  };
+  const near = (x, want) => !!x && Math.abs(x - want) < 15000;
+  const after = async (o, t) => {
+    await card(o.page, "done");
+    await settle(o.page, 300);           // before the page leaves (1 s and more)
+    const st = await o.ios(), k = await o.key();
+    return { at: st.pending[ID] && st.pending[ID].at, k, t };
+  };
+
+  let o = await priced({ buy: "pending" });
+  await o.page.locator("#iapBuy").click();
+  await o.page.waitForFunction(() => /Waiting for approval/.test(document.getElementById("iapMsg").textContent));
+  const t1 = await now(o.page);
+  await o.page.evaluate(() => { window.__phone.set({ entitled: true }); document.dispatchEvent(new Event("visibilitychange")); });
+  let r = await after(o, t1);
+  ok("ASK TO BUY, APPROVED LATER: the free trial's reminder is set before the page leaves, and the day's check mark cleared",
+    o.k0 && o.k0.sync > 0 && near(r.at, t1 + 3 * DAY - LEAD) && r.k && r.k.sync == null, [o.k0, r]);
+  await o.context.close();
+
+  o = await priced({ buy: "nogrant", restore: "finds" });
+  await o.page.locator("#iapBuy").click();
+  await o.page.waitForFunction(() => /Restore Purchases/.test(document.getElementById("iapMsg").textContent));
+  await settle(o.page, 1100);            // Restore takes no tap for a second after the buy tap
+  const t2 = await now(o.page);
+  await o.page.locator("#iapRestore").click();
+  r = await after(o, t2);
+  ok("\"NOT-ENTITLED\", THEN RESTORE: the reminder is set from the plan that was bought, and the day's check mark cleared",
+    o.k0 && o.k0.sync > 0 && near(r.at, t2 + 3 * DAY - LEAD) && r.k && r.k.sync == null, [o.k0, r]);
+  await o.context.close();
+
+  o = await priced({ restore: "finds" });
+  await o.page.locator("#iapRestore").click();
+  r = await after(o, 0);
+  ok("…while a plain Restore (no sale on this screen) sets nothing from the card", !r.at, r);
+  await o.context.close();
+}
+
 // ── 4c. setup's reminder screen on the real block (22 Oct 2026). setupscreenstest
 // fakes Sona.notify* and storePlan to hold the screen's own rules; here the
 // real NOTIFY1 and storePlan decide, on _phone.mjs's App Store and this file's
@@ -498,6 +556,7 @@ const now = (page) => page.evaluate(() => Date.now());
   await walk("a new buyer the store gives free days, iOS never asked", {}, { perm: "prompt" }, "remind");
   await walk("both plans offered with free days, the yearly picked", { offering: "both" }, { perm: "prompt" }, "remind");
   await walk("an Apple ID Apple calls ineligible for the free days", { elig: { monthly: 1, annual: 1 } }, { perm: "prompt" }, "/subscribe.html");
+  await walk("a phone that cannot tell whether this Apple ID gets the free days (plan.sure false: the price promises no reminder)", { elig: "missing" }, { perm: "prompt" }, "/subscribe.html");
   await walk("a monthly plan with no free days (charged today)", { store: STORES.noFree }, { perm: "prompt" }, "/subscribe.html");
   await walk("iOS already answered (allowed) before this page", {}, { perm: "granted" }, "/subscribe.html");
   await walk("a store that never gives the product", { products: "hang" }, { perm: "prompt" }, "/subscribe.html");
@@ -518,7 +577,7 @@ const now = (page) => page.evaluate(() => Date.now());
   await settle(o.page, 2300);
   const p1 = await pending(), k1 = await o.key(), infos1 = (await o.ios()).infos;
   ok("a page opens on a phone whose trial is on: the reminder is armed from RevenueCat's end, by itself",
-    p1 && p1.at === T - DAY && k1.sync > 0 && k1.arm === T - DAY, [p1, k1]);
+    p1 && p1.at === T - LEAD && k1.sync > 0 && k1.arm === T - LEAD, [p1, k1]);
   await o.page.reload(); await o.page.waitForFunction(() => !!window.Sona);
   await settle(o.page, 2300);
   const later = await o.page.evaluate(() => Sona.trialReminderSync(false));
@@ -533,7 +592,7 @@ const now = (page) => page.evaluate(() => Date.now());
   ok("…and when the app comes back to the front on a later day", (await o.ios()).infos === infos1 + 2, (await o.ios()).infos);
 
   const iso = await sync({ periodType: "TRIAL", expirationDate: new Date(t0 + 4 * DAY).toISOString(), willRenew: true });
-  ok("RevenueCat's end as a date string (no millis) is read too", iso === "armed" && (await pending()).at === t0 + 3 * DAY, [iso, await pending()]);
+  ok("RevenueCat's end as a date string (no millis) is read too", iso === "armed" && (await pending()).at === t0 + 4 * DAY - LEAD, [iso, await pending()]);
 
   const conv = await sync({ periodType: "NORMAL", expirationDateMillis: t0 + 30 * DAY, willRenew: true });
   ok("THE TRIAL BECAME A PAID PLAN: the reminder is taken back", conv === "cancelled" && (await pending()) === null && (await o.key()).arm == null, [conv, await pending(), await o.key()]);
@@ -546,9 +605,9 @@ const now = (page) => page.evaluate(() => Date.now());
 
   await sync({ periodType: "TRIAL", expirationDateMillis: T, willRenew: true });
   const unsure = await sync({ willRenew: true });
-  ok("Premium whose period RevenueCat does not name: what is set stays (\"kept\")", unsure === "kept" && (await pending()).at === T - DAY, unsure);
+  ok("Premium whose period RevenueCat does not name: what is set stays (\"kept\")", unsure === "kept" && (await pending()).at === T - LEAD, unsure);
   const noEnd = await sync({ periodType: "TRIAL", willRenew: true });
-  ok("…a trial with no end given: what is set stays", noEnd === "kept" && (await pending()).at === T - DAY, noEnd);
+  ok("…a trial with no end given: what is set stays", noEnd === "kept" && (await pending()).at === T - LEAD, noEnd);
 
   // within the last day: the moment has gone
   const t1 = await now(o.page);
@@ -614,7 +673,7 @@ const now = (page) => page.evaluate(() => Date.now());
     onHome.length === 0 && (await h.key()) === null && !(await h.ios()).pending[ID], [onHome, await h.key()]);
   await h.page.goto(base + "/__blank.html"); await h.page.waitForFunction(() => !!window.Sona);
   await settle(h.page, 2300);
-  ok("…while the next page that is not Home checks the trial and sets the reminder", ((await h.ios()).pending[ID] || {}).at === end - DAY && (await h.key()).sync > 0, [(await h.ios()).pending, await h.key()]);
+  ok("…while the next page that is not Home checks the trial and sets the reminder", ((await h.ios()).pending[ID] || {}).at === end - LEAD && (await h.key()).sync > 0, [(await h.ios()).pending, await h.key()]);
   await h.context.close();
 }
 
@@ -654,7 +713,14 @@ const now = (page) => page.evaluate(() => Date.now());
   const buy = (src.match(/\n  function buyPlan\(plan\) \{[\s\S]*?\n  \}\n/) || [""])[0];
   ok("buyPlan has ONE hook, on its success path, right after the list's plan post, handed the purchase's own answer",
     (buy.match(/_trialRemindBought\(/g) || []).length === 1 && /_tellPlan\(r && r\.period, plan\); _trialRemindBought\(r, plan\);/.test(buy)
-    && (src.match(/_trialRemindBought\(/g) || []).length === 2, buy.slice(0, 400));
+    && (src.match(/_trialRemindBought\(/g) || []).length === 3, buy.slice(0, 400));
+  ok("…and one more, the same step for a sale buyPlan did not answer (Ask to Buy approved, Restore after \"not-entitled\"), never throwing",
+    /function trialReminderSold\(plan\) \{ try \{ _trialRemindBought\(\{\}, plan \|\| null\); \} catch \(e\) \{\} \}/.test(code));
+  ok("THE LEAD IS 30 HOURS, one constant: a cancel after the reminder still counts (Apple's line is 24 hours)",
+    /const TRIAL_REMIND_LEAD_MS = 30 \* 60 \* 60 \* 1000;/.test(code) && (code.match(/TRIAL_REMIND_LEAD_MS/g) || []).length === 3);
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
+  ok("subscribe.html calls it, feature-checked, from the Ask to Buy approval and the Restore after \"not-entitled\"",
+    /typeof Sona\.trialReminderSold === "function"/.test(sub) && /soldElsewhere\(APPLE\.pendingPlan\); bought\(APPLE\.pendingKind\)/.test(sub) && /if \(APPLE\.unentPlan\) soldElsewhere\(APPLE\.unentPlan\); appleDone\("restored"/.test(sub));
   const ip = (src.match(/\n  function iapPurchase\(kind, product\) \{[\s\S]*?\n  \}\n/) || [""])[0];
   ok("…which carries the end from the purchase's own record (the price page leaves 1.2 s after a sale: no second lookup it may not live to hear)",
     /return \{ ok: true, period: _iapPeriod\(res\), end: _iapEnd\(res\) \};/.test(ip), ip.slice(0, 300));
@@ -665,7 +731,7 @@ const now = (page) => page.evaluate(() => Date.now());
   const noExport = (src.match(/const NO_EXPORT = \[[^\]]*\]/) || [""])[0], noImport = (src.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
   const perKid = (src.match(/const PER_KID = new Set\(\[[\s\S]*?\]\);/) || [""])[0];
   ok("sona.notify.v1 is on NO_EXPORT and NO_IMPORT, and is the phone's, not a child's", /"sona\.notify\.v1"/.test(noExport) && /"sona\.notify\.v1"/.test(noImport) && perKid.length > 100 && !/notify/.test(perKid));
-  ok("the seven names are on the export line", /global\.Sona = \{[^\n]*\bnotifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, [^\n]*\};/.test(src));
+  ok("the seven names are on the export line", /global\.Sona = \{[^\n]*\bnotifyAvailable, notifyState, notifyRefresh, notifyAsk, trialReminderOn, trialReminderArm, trialReminderSync, trialReminderSold, [^\n]*\};/.test(src));
   ok("the daily check runs only where the plugin can remind (a browser never schedules a timer for it), and never on Home",
     /if \(notifyAvailable\(\) && !_notifyHome\(\)\) \{\s*_notifyRefresh\(\);\s*setTimeout\(\(\) => \{ trialReminderSync\(false\); \}, 1500\);/.test(code)
     && /function _notifyHome\(\) \{ try \{ return \/\^\\\/today\(\\\.html\)\?\$\/i\.test\(location\.pathname\); \}/.test(code));

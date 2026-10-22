@@ -696,7 +696,12 @@
     // opens (the yearly row when the store offers it, else the monthly one):
     // storePlan's "free" is a product with free days AND a buyer Apple has not
     // called ineligible (a definite "not eligible" is "paid": charged today).
-    function remindFree(plan){try{var pick=plan&&(plan.year||plan);return !!(pick&&pick.state==="free"&&pick.free);}catch(e){return false;}}
+    // And only a row the store is SURE of (plan.sure, the test the price
+    // screen's own reminder line takes, Sona.trialReminderOn): a row that only
+    // may be free ("Only new subscribers get 3 days free. Otherwise Apple
+    // charges $9.99 today.") may charge today, and that screen then promises
+    // no reminder, so setup asks none either.
+    function remindFree(plan){try{var pick=plan&&(plan.year||plan);return !!(pick&&pick.state==="free"&&pick.free&&pick.sure===true);}catch(e){return false;}}
     function remindDue(){return remindMay()&&remindFree(remindPlan);}
     // Asked ONCE, as the ready screen shows (beside wallAsk): the store's plan
     // and, where sona.js has it (NOTIFY1), iOS's own answer about
@@ -1138,10 +1143,10 @@
     // UNDER REDUCE MOTION NOTHING MOVES HERE EITHER (the 22 Oct 2026 review):
     // the first game's poster, still, with no clip started and no slideshow
     // (read each time the screen opens, so a setting changed meanwhile counts).
-    var REEL_ORDER=["slice","hoops","tiles","bubbles","soccer","dino","feed","stack","run","glide","rise"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=3200;
+    var REEL_ORDER=["slice","hoops","tiles","bubbles","soccer","dino","feed","stack","run","glide","rise"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=3200,REEL_FADE_MS=650;
     var reel=(function(){
       var frame=document.getElementById("reelFrame"),vids=frame.querySelectorAll(".reel-clip"),stills=frame.querySelectorAll(".reel-still");
-      var list=null,at=0,mode="",live=false,cur=0,timer=0;
+      var list=null,at=0,mode="",live=false,cur=0,timer=0,fadeT=0;
       function calmOnly(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
       function clips(){
         var keys=[];sellGroups("",sellsAll()).forEach(function(g){g.games.forEach(function(x){keys.push(x.key);});});
@@ -1157,6 +1162,12 @@
         img.dataset.key=key;img.src=REEL_DIR+key+".webp";
       }
       function show(el){Array.prototype.forEach.call(frame.querySelectorAll(".reel-still,.reel-clip"),function(n){n.classList.toggle("on",n===el);});}
+      // The one that just stepped aside is still fading out (0.6 s,
+      // onboarding-crafted.css): loading the game after next into it then
+      // flashed a third game mid-fade (the 22 Oct 2026 review). So it is
+      // loaded only once the fade is over, and only if the reel is still on
+      // and that element is still the one off screen.
+      function afterFade(el,ok,fn){clearTimeout(fadeT);fadeT=setTimeout(function(){if(live&&ok()&&!el.classList.contains("on"))fn();},REEL_FADE_MS);}
       function stillsMode(){
         if(mode==="stills")return;mode="stills";frame.classList.add("stills");
         Array.prototype.forEach.call(vids,function(v){try{v.pause();v.removeAttribute("src");v.load();}catch(e){}});
@@ -1166,7 +1177,8 @@
       function tickStills(){
         clearTimeout(timer);
         if(!live||mode!=="stills"||list.length<2||calmOnly())return;
-        var next=stills[1-cur];still(next,list[(at+1)%list.length]);
+        var next=stills[1-cur],key=list[(at+1)%list.length];
+        afterFade(next,function(){return mode==="stills"&&next===stills[1-cur];},function(){still(next,key);});
         timer=setTimeout(function(){if(!live||mode!=="stills")return;at=(at+1)%list.length;cur=1-cur;show(stills[cur]);tickStills();},REEL_STILL_MS);
       }
       function load(v,key){v.dataset.key=key;v.poster=REEL_DIR+key+".webp";v.preload="auto";v.src=REEL_DIR+key+".mp4";try{v.load();}catch(e){}}
@@ -1179,7 +1191,8 @@
         at=(at+1)%list.length;cur=1-cur;var v=vids[cur];
         if(v.dataset.key!==list[at])load(v,list[at]);
         show(v);play(v);
-        load(vids[1-cur],list[(at+1)%list.length]);
+        var out=vids[1-cur],key=list[(at+1)%list.length];
+        afterFade(out,function(){return mode==="video"&&out===vids[1-cur];},function(){load(out,key);});
       }
       Array.prototype.forEach.call(vids,function(v){
         v.addEventListener("ended",ended);
@@ -1193,7 +1206,7 @@
           if(mode==="video"){if(still0){stillsMode();return;}play(vids[cur]);}else tickStills();
         },
         stop:function(){
-          if(!live)return;live=false;clearTimeout(timer);
+          if(!live)return;live=false;clearTimeout(timer);clearTimeout(fadeT);
           Array.prototype.forEach.call(vids,function(v){try{v.pause();}catch(e){}});
         }
       };

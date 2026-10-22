@@ -101,9 +101,12 @@ never used in the background.
 **What a family sees.** Near the end of setup, after "<Name>'s practice is
 ready", one screen asks "Want a reminder before your free trial ends?". "Turn
 on reminders" shows iOS's own Allow box. If they allow it and start the free
-trial, the phone shows one notification a day before the trial ends: "Sona /
+trial, the phone shows one notification the day before the trial ends: "Sona /
 Your free trial ends tomorrow." (Travis: "notify them a day before their
-trial ends"). It comes at the time of day the trial started, and it shows even
+trial ends"). It comes 30 hours before the end, not 24: Apple counts a cancel
+only at least 24 hours before the end, so a reminder at exactly a day before
+came too late to act on. So it shows six hours before the time of day the
+trial started, and it shows even
 while Sona is open (as a silent banner then: a game's mic may be listening). Each day Sona is opened it checks the trial with
 RevenueCat: once the parent has cancelled it, or it has become a paid plan
 (a switch to the yearly plan, say), the reminder is taken back.
@@ -129,7 +132,7 @@ reminder methods, so they never show the screen.
 **App Store Connect:** App Privacy has nothing new for this (nothing is
 collected). In the review notes for 1.0.9: "During setup the app offers to
 turn on notifications so it can remind the parent once, the day before the
-App Store free trial ends. It is a local notification scheduled on the
+App Store free trial ends (30 hours before, so cancelling still counts). It is a local notification scheduled on the
 device; there is no push service and nothing is sent to a server."
 
 ## Prereqs (on your Mac)

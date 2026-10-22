@@ -170,10 +170,11 @@ changing one. What follows from the rule:
   (the first game for a phone with nothing to sell). A headline and at most
   one short line a screen; **every word is a default for Travis and Rachel to
   change.** A child set up before walking setup again (`REWALK`: Back from the
-  first game) gets the questions only (hello, name, therapy, sounds, minutes,
-  the email step while the household has none, ready, microphone); a second
-  child or a family already asked gets hello, name, sounds, ready,
-  microphone; the clinician's own setup is unchanged. Five progress segments,
+  first game, a second visit) gets the questions only if the household was
+  never asked them (no `sona.setupasks.v1`: set up before 5 Oct 2026): hello,
+  name, therapy, sounds, minutes, the email step while the household has
+  none, ready, microphone. Any family set up since, a second child, or a
+  family already asked gets hello, name, sounds, ready, microphone; the clinician's own setup is unchanged. Five progress segments,
   one a question (name, what they love, therapy, sounds, minutes); the screens
   that sell, the email step, ready, the reminder, the microphone and the
   hand-off take none. The machinery under it is the old page's (the globals
@@ -317,9 +318,10 @@ changing one. What follows from the rule:
     may show what the child loves; that the therapy screen now says "stays on
     this phone". Travis's: every word; the interests and the games each
     fits; the reel's order; the reminder's words (the notification's are
-    NOTIFY1's); that a re-walk is asked the minutes again (and the email
-    step while the household has none); that the reminder ask is only on a
-    first setup.
+    NOTIFY1's); that a re-walk by a household never asked the questions
+    (set up before 5 Oct 2026) is asked the minutes again (and the email
+    step while the household has none), while one set up since is not; that
+    the reminder ask is only on a first setup.
   - **The email comes before the price** (Travis, 13 Oct 2026: "also move
     the email box before the price"). It used to be on the hand-off, after
     the price, so a parent who closed the price was never asked. Now it is
@@ -362,7 +364,8 @@ changing one. What follows from the rule:
     notifications and have that be a step in the onboarding where we ask
     them to turn it on to notify them a day before their trial ends"):
     "Want a reminder before your free trial ends?", "One notification, the
-    day before.", a teal "Turn on reminders" (iOS's own Allow box,
+    day before." (it shows about 30 hours before the end, so a cancel still
+    counts: NOTIFY1), a teal "Turn on reminders" (iOS's own Allow box,
     `Sona.notifyAsk`) and a cream "Not now"; Echo says "I'll give you a
     heads-up!". Only on a family's first setup, in an iPhone build that can
     set one (`Sona.notifyAvailable`), while iOS has never been asked
@@ -378,7 +381,10 @@ changing one. What follows from the rule:
     at 2.5 s (`remindAsk`). Leaving ready shows the reminder screen only when
     the row the price screen picks on arrival (the yearly one when offered,
     else the monthly) is `"free"`: a product with free days and a buyer
-    Apple has not called ineligible (a definite "not eligible" is `"paid"`).
+    Apple has not called ineligible (a definite "not eligible" is `"paid"`),
+    **and the store is sure of it** (`plan.sure`, the price line's own test
+    in `trialReminderOn`: a "new subscribers" row may charge today, and the
+    price screen then promises no reminder, so setup asks none).
     No store answer by then: no reminder screen, never a guess. The ready
     screen's Continue waits on that ask ("One moment…") only while it is in
     flight; a store that found a purchase meanwhile skips the screen too.
@@ -879,7 +885,11 @@ row)` is true: a build that can set a phone notification, a parent who
 allowed it on setup's reminder screen, and a picked row that is a free trial
 the store is SURE of (`plan.sure`: a "new subscribers" row may be charged
 today, with no trial to remind of) whose reminder moment is more than an
-hour away. Never on a charged-today row or the one payment. It is a promise
+hour away. The notification shows about 30 hours before the trial ends
+(`TRIAL_REMIND_LEAD_MS`), not 24: Apple counts a cancel only at least 24
+hours before the end, so a reminder at exactly a day before came too late to
+act on; 30 hours is still "the day before" and "tomorrow".
+Never on a charged-today row or the one payment. It is a promise
 the code keeps: the purchase sets the reminder at once (`buyPlan`, before
 the page leaves 1.2 s after a sale), and the daily check moves it or takes
 it back. The line's words and the notification's ("Sona" / "Your free trial
@@ -1156,7 +1166,8 @@ targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
 is now reversed. **Setup itself is for parents** (Travis, 5 Oct 2026: "I want
 to take out the button of who's setting up Sona because it's just for the
 parents"): the "Who's setting up Sona?" screen of 1 Oct is gone, and the
-hello (Echo in his world, one Continue) goes straight to the child's name. A
+hello (Echo in his world, one Continue) goes on to the screens that sell
+(see "SETUP, REBUILT FROM SCRATCH"; a family's first setup only), then the child's name. A
 speech therapist signs up at speaksona.com/for-slps. The clinician's own
 setup (`ORDER_SLP`) is kept, and kept tested, behind its own address,
 `/onboarding.html?slp=1`, which nothing in the app links to (in the iPhone
@@ -1735,8 +1746,9 @@ a purchase starts, renews, is cancelled or ends.
 **THE TRIAL REMINDER (NOTIFY1, 22 Oct 2026, iOS 1.0.9)** (Travis: "can we
 add push notifications and have that be a step in the onboarding where we
 ask them to turn it on to notify them a day before their trial ends"). One
-notification on the parent's phone the day before the free trial ends:
-"Sona" / "Your free trial ends tomorrow." It is LOCAL, not a push: the phone
+notification on the parent's phone the day before the free trial ends
+(about 30 hours before, so cancelling then still counts: Apple's line is 24
+hours): "Sona" / "Your free trial ends tomorrow." It is LOCAL, not a push: the phone
 sets it and shows it, so it reaches a family who gave no email too, and
 nothing leaves the phone for it. (The price screen's one line about it is in
 the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
@@ -1748,8 +1760,8 @@ the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
   device token, no APNs, no Push capability, no Info.plist text:
   `scripts/install-ios-speech.py` carries it like the mic. It answers
   Capacitor's `localNotificationHandler` so a "sona-" notification also shows
-  while Sona is open (it comes at the time of day the trial started, often
-  when the family plays), **as a banner and in the list, WITHOUT its sound**
+  while Sona is open (it comes 30 hours before the trial ends, six hours
+  before the time of day it started, often when the family plays), **as a banner and in the list, WITHOUT its sound**
   (review, 22 Oct 2026): a game's mic may be open, and iOS's chime through
   the speaker would play into Sona's own mic, against "nothing plays while
   the mic listens". With Sona closed it keeps its sound. Optional: a build
@@ -1770,8 +1782,13 @@ the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
   (allowed on a build that can; with a price row, also a free trial the
   store is sure of, `plan.sure === true`, whose reminder moment is more than
   an hour away), `trialReminderArm(endMs)` (id `sona-trial-end` at end −
-  24 h, only when that is more than an hour away) and
-  `trialReminderSync(force)`.
+  30 h, `TRIAL_REMIND_LEAD_MS`, only when that is more than an hour away:
+  Apple's cancel line is end − 24 h, so the reminder leaves six hours to act),
+  `trialReminderSync(force)` and **`trialReminderSold(plan)`** (the
+  purchase step for a sale `buyPlan`'s answer did not carry: an Ask to Buy
+  approved later, or Restore after "not-entitled". `subscribe.html` calls it,
+  feature-checked, before it leaves: counted, the day's mark cleared, armed
+  from the plan only for a sure free row, else RevenueCat asked).
 - **When it is set: at once, from the purchase** (one hook on `buyPlan`'s
   success path, after `_tellPlan`): the price page leaves 1.2 s after a
   sale, and RevenueCat's record can take 8 s, so a reminder that waited for
@@ -1804,8 +1821,10 @@ the pricing section: "THE TRIAL REMINDER ON THE PRICE SCREEN".)
   `notifyAvailable()`, `notifyState() === "prompt"` (after
   `notifyRefresh()`) and the price follows; the line only when
   `trialReminderOn(picked row)`.
-- **Defaults Travis did not pick:** the words; the time of day (the trial's
-  own, a day early); shown over the app when it is open (silently), where a
+- **Defaults Travis did not pick:** the words; the time of day (30 hours
+  before the end, six hours before the trial's own time of day, so a cancel
+  then still counts; the line and the notification still say "the day
+  before" and "tomorrow"); shown over the app when it is open (silently), where a
   child mid-game may see it; taken back when the parent cancelled the trial
   (as RCHOOK1's "Your free days end soon" email is not sent then); the
   minute setup waits on an Allow box that never answers; a store that does

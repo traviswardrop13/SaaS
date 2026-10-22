@@ -574,8 +574,8 @@ try {
     // anything changes" card is the web's founding families', and never shows in the app)
     const file = readFileSync(ROOT + "/subscribe.html", "utf8");
     const raw = file.slice(file.indexOf("// Native shell (App Store build): ONE paywall"), file.indexOf("// Build the recap from what this device actually recorded")).replace(/^\s*\/\/.*$/gm, "");
-    ok("the Apple card's script types no word of it: the only 'remind' left in its code is the name of sona.js's check, and the line is painted from planWords' headsUp",
-      raw.length > 5000 && (raw.match(/remind/gi) || []).length === (raw.match(/trialReminderOn/g) || []).length && /w\.headsUp/.test(raw) && /headsUp: aheadOn\(plan\)/.test(raw), (raw.match(/[^\n]*remind[^\n]*/gi) || []).filter((l) => !/trialReminderOn/.test(l)));
+    ok("the Apple card's script types no word of it: the only 'remind' left in its code is the names of sona.js's check and its purchase step (trialReminderOn, trialReminderSold), and the line is painted from planWords' headsUp",
+      raw.length > 5000 && (raw.match(/remind/gi) || []).length === (raw.match(/trialReminder(On|Sold)/g) || []).length && /w\.headsUp/.test(raw) && /headsUp: aheadOn\(plan\)/.test(raw), (raw.match(/[^\n]*remind[^\n]*/gi) || []).filter((l) => !/trialReminder(On|Sold)/.test(l)));
   });
 
   // ── 2. free days follow the store ──

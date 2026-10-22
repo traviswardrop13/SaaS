@@ -16,7 +16,8 @@ check — never a fail caused by the recognizer.
 Since 12 Oct 2026 the same plugin also **owns the microphone in the iPhone
 app**: `micPermission`, `micOpen` and `micClose`. See "Sona's own microphone"
 below. Since 22 Oct 2026 (iOS 1.0.9) it also sets **the trial reminder**, one
-local notification the day before the free trial ends: `notifyStatus`,
+local notification the day before the free trial ends (30 hours before, so a
+cancel then still counts): `notifyStatus`,
 `notifyAsk`, `notifySchedule` and `notifyCancel`. See "The trial reminder".
 
 ## It was never switched on (found 28 Sep 2026)
@@ -182,13 +183,15 @@ free trial ends tomorrow.", never a child's name).
 - While Sona is open, iOS shows a notification only if the app says so. The
   plugin answers Capacitor's router (`localNotificationHandler`) for Sona's
   own ids ("sona-…") with a banner and the list, and **no sound**: the
-  reminder comes at the time of day the trial started, which is often when
-  the family plays, and a game's mic may be open then (iOS's chime would play
+  reminder comes 30 hours before the end (six hours before the time of day
+  the trial started), which is often when the family plays, and a game's mic may be open then (iOS's chime would play
   into it). With Sona closed it comes with its sound as usual.
 
 When the page sets it: at once after a purchase that started a free trial
 (`Sona.buyPlan`), for the trial's end in the purchase's own record (else the
-store's free time from now) minus a day, before the price page leaves; and
+store's free time from now) minus 30 hours (Apple counts a cancel only at
+least 24 hours before the end, so a reminder at exactly a day before came too
+late to act on), before the price page leaves; and
 once a day on an app page other than Home (`Sona.trialReminderSync`), which
 sets it afresh while the trial is on and takes it back once no free trial is
 (a paid plan, ended, or cancelled by the parent). Never within the hour,
@@ -295,10 +298,10 @@ to Claude: that line is what shows the reminder while Sona is open.
       `Capacitor.Plugins.SonaSpeech.notifyCancel({ id: "sona-test" })` before
       the two minutes: nothing arrives.
 - [ ] A sandbox trial (from setup's price screen): Apple's sandbox makes free
-      days last minutes, so the day-before moment has already gone and nothing
+      days last minutes, so the reminder's moment (30 hours before) has already gone and nothing
       is set; that is expected. `await Sona.trialReminderSync(true)` reads
       "near" while the sandbox trial is on, and "cancelled" once it renews as a
-      paid period. `await Sona.trialReminderArm(Date.now() + 26 * 3600e3)`
+      paid period. `await Sona.trialReminderArm(Date.now() + 32 * 3600e3)`
       gives true (the call working; it would show in two hours, so clear it
       with `Capacitor.Plugins.SonaSpeech.notifyCancel({ id: "sona-trial-end" })`).
 
@@ -345,7 +348,7 @@ In Safari → Develop → the iPhone → Sona → Console:
   and shown on the phone.
 - Review notes for 1.0.9: "During setup the app offers to turn on
   notifications so it can remind the parent once, the day before the App
-  Store free trial ends. It is a local notification scheduled on the device;
+  Store free trial ends (30 hours before, so cancelling still counts). It is a local notification scheduled on the device;
   there is no push service and nothing is sent to a server."
 - Review notes: mention the speech-recognition permission is used for
   child speech practice, processed entirely on device.

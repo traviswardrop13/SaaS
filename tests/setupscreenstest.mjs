@@ -162,9 +162,16 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   let s=await reelState(page);
   ok('a browser that cannot play the clips gets the posters: no video drawn, the first game\'s poster on screen',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken,s);
   ok('…and asks for no clip at all',!requests.some(r=>/\.mp4/.test(r.url)),requests.filter(r=>/reel/.test(r.url)).map(r=>r.url));
-  await page.waitForTimeout(3600);
+  await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&/home-hoops/.test(i.getAttribute('src')||'');},null,{timeout:5000}).catch(()=>{});
+  const outgoing=()=>page.evaluate(()=>{const i=document.querySelector('#reelFrame .reel-still:not(.on)');return i?i.getAttribute('src'):null;});
+  const mid=await outgoing();
   s=await reelState(page);
   ok('…changing every few seconds to the next game in the demo order (Hoops), whose missing poster is its painted Home card: never a broken picture',JSON.stringify(s.on)==='["IMG:/assets/crafted/home-hoops.webp:card"]'&&!s.broken,s);
+  // the 22 Oct 2026 review: the outgoing still was loaded with the game
+  // after next while it was still fading out (a third game flashed)
+  ok('…the one fading out keeps its own game (Fruit Slice) while it fades',mid==='/assets/setup/reel/slice.webp',mid);
+  await page.waitForTimeout(900);
+  ok('…and only once the fade is over takes the game after next (Piano Tiles: its poster, missing here, then its Home card)',/^\/assets\/(setup\/reel\/tiles|crafted\/home-piano)\.webp$/.test((await outgoing())||''),await outgoing());
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();const at=Date.now();await page.waitForTimeout(3600);
   ok('off the reel nothing changes: the slideshow stops with the screen',JSON.stringify((await reelState(page)).on)==='["IMG:/assets/crafted/home-hoops.webp:card"]',Date.now()-at);
   clean('reel stills',errors);
@@ -186,7 +193,9 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   ok('…its poster shown until its frames come',await page.evaluate(()=>document.querySelector('.reel-clip.on').getAttribute('poster')==='/assets/setup/reel/slice.webp'));
   await page.evaluate(()=>document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended')));
   s=await reelState(page);
-  ok('as a clip ends the next one fades in and plays, and the first loads the one after (Piano Tiles)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]'&&/tiles\.mp4$/.test(s.clips[0])&&await page.evaluate(()=>__played.slice(-1)[0]==='/assets/setup/reel/hoops.mp4'),s);
+  ok('as a clip ends the next one fades in and plays, and the first keeps its own clip while it fades out (no third game mid-fade)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]'&&/slice\.mp4$/.test(s.clips[0])&&await page.evaluate(()=>__played.slice(-1)[0]==='/assets/setup/reel/hoops.mp4'),s);
+  await page.waitForTimeout(900);s=await reelState(page);
+  ok('…then, the fade over, the first loads the one after (Piano Tiles)',JSON.stringify(s.on)==='["VIDEO:/assets/setup/reel/hoops.mp4"]'&&/tiles\.mp4$/.test(s.clips[0]),s);
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();
   ok('leaving the reel pauses it',await page.evaluate(()=>(window.__paused||[]).length>=2));
   await page.evaluate(()=>{document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended'));});
@@ -303,8 +312,11 @@ await scenario('the minutes are the daily goal; what the child loves is kept as 
    clean('minutes '+mins,errors);
   }finally{await context.close();}
  }
- // a child set up before (Back from the first game): the minutes are asked
- // again, and the goal a grown-up set in Settings stays unless one is picked;
+ // a child set up before (Back from the first game) in a household never
+ // asked the questions (no sona.setupasks.v1: set up before 5 Oct 2026; any
+ // family set up since walks only hello, name, sounds, ready, microphone):
+ // the minutes are asked again, and the goal a grown-up set in Settings stays
+ // unless one is picked;
  // what the child loves is not asked, and an older profile's is kept
  for(const [mins,want] of [['skip',100],['10',60]]){
   const {context,page,errors}=await fresh({profile:{childName:'Milo',childAge:'6',focusSounds:['R'],mode:'speech',role:'parent',onboarded:true,dailyGoal:100,interests:['dragons'],email:'mom@example.com'}});try{
@@ -414,11 +426,15 @@ await scenario('the reminder ask: only where a reminder can be set and the price
  // no reminder screen, never a guess. Asked of the store as the ready screen
  // shows, once.
  const PAID={state:'paid',kind:'monthly',price:'$9.99',per:'month',free:null,sure:false,why:'',year:null};
- const FREE3={state:'free',kind:'monthly',price:'$9.99',per:'month',free:{n:3,unit:'day',text:'3 days'},sure:false,why:'',year:null};
+ const FREE3={state:'free',kind:'monthly',price:'$9.99',per:'month',free:{n:3,unit:'day',text:'3 days'},sure:true,why:'',year:null};
  for(const [label,plan,refresh,tapAtOnce] of [
    ['the store says this Apple ID already had its free days (charged today)',PAID,null,false],
    ['the store has nothing to sell (no product, or it timed out)',{state:'none',kind:'',price:'',per:'',free:null,sure:false,why:'timeout',year:null},null,false],
    ['the yearly row, picked as the price opens, has no free days (only monthly does)',Object.assign({},FREE3,{year:{state:'paid',kind:'annual',price:'$59.99',per:'year',free:null,sure:false,why:'',best:true}}),null,false],
+   // a row that only MAY be free (eligibility unknown: "Only new subscribers
+   // get 3 days free. Otherwise Apple charges $9.99 today."): the price
+   // screen promises no reminder for it, so setup asks none (review, 22 Oct)
+   ['the store is not sure this Apple ID gets the free days (plan.sure false)',Object.assign({},FREE3,{sure:false}),null,false],
    ['the store never answers, and the parent taps Continue at once',"hang",null,true],
    ['iOS, asked afresh, says it was answered before (denied)',FREE3,{to:'denied',ms:400},true]]){
   const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan,refresh,init:COUNT});try{
