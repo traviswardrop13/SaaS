@@ -219,8 +219,9 @@ ok("SLP-referred → tagged for the clinician's roster, with no founding grant w
 // behalf either — they are asked later, in Settings, or they keep their default
 // 22 Oct 2026 (Travis: "more so like how many minutes per day"): setup asks
 // the minutes, and the pick is the daily goal in reps; the days a week are
-// not asked, so a new family keeps the default 4.
-ok("the minutes picked in setup are the daily goal (10 min, 60 reps), the days a week the default", prof.dailyGoal === 60 && prof.dailyMinutes === 10 && prof.weeklyGoal === 4, JSON.stringify([prof.dailyGoal, prof.dailyMinutes, prof.weeklyGoal]));
+// not asked, so setup writes none (the default 4 is read, never saved: the
+// weekly report names a plan only when a grown-up picked one).
+ok("the minutes picked in setup are the daily goal (10 min, 60 reps), the days a week not written", prof.dailyGoal === 60 && prof.dailyMinutes === 10 && !("weeklyGoal" in prof), JSON.stringify([prof.dailyGoal, prof.dailyMinutes, prof.weeklyGoal]));
 ok("no email was demanded to finish", prof.email === "");
 ok("onboarding no pageerrors", errs.length === 0);
 

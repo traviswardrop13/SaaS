@@ -249,8 +249,9 @@ await scenario('the minutes are the daily goal; what the child loves is kept as 
   const {context,page,errors}=await fresh();try{
    await setupWalk(page,'mic',{name:'Ava',age:'6',minutes:mins,interests:mins==='10'?['music','food']:[]});
    const p=await page.evaluate(()=>({p:Sona.getProfile(),goal:Sona.repGoal(),days:Sona.goalDays()}));
-   if(reps)ok(mins+' min a day: the daily goal is '+reps+' reps, the minutes beside it, the days a week the default 4',p.p.dailyGoal===reps&&p.p.dailyMinutes===Number(mins)&&p.goal===reps&&p.p.weeklyGoal===4&&p.days===4,p);
-   else ok('Skip leaves the daily goal as it was (none saved: the default 30) and the minutes as they were (5)',!('dailyGoal' in p.p)&&p.goal===30&&p.p.dailyMinutes===5&&p.p.weeklyGoal===4,p);
+   // the days a week are never asked or written: the default 4 is read (goalDays), not saved
+   if(reps)ok(mins+' min a day: the daily goal is '+reps+' reps, the minutes beside it, the days a week not written (the default 4 read)',p.p.dailyGoal===reps&&p.p.dailyMinutes===Number(mins)&&p.goal===reps&&!('weeklyGoal' in p.p)&&p.days===4,p);
+   else ok('Skip leaves the daily goal as it was (none saved: the default 30) and the minutes as they were (5)',!('dailyGoal' in p.p)&&p.goal===30&&p.p.dailyMinutes===5&&!('weeklyGoal' in p.p),p);
    ok(mins+': what the child loves is on the profile as the ids picked',JSON.stringify(p.p.interests)===(mins==='10'?'["music","food"]':'[]'),p.p.interests);
    clean('minutes '+mins,errors);
   }finally{await context.close();}

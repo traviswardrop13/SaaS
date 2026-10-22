@@ -14,7 +14,10 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  *   i  a random id for the child (so the same child on two phones is one)
  *   d  days with at least one rep (0-7)
  *   g  days the daily goal was reached (0-7)
- *   gw the plan: 3, 4, 5 or 7 days a week
+ *   gw the plan: 3, 4, 5 or 7 days a week, ONLY when a grown-up picked one
+ *      (Settings or Progress; setup asked it until 22 Oct 2026). A child
+ *      whose days a week nobody chose carries none, and the email then
+ *      names no plan (see kidLines and the cheer line in render)
  *   r  reps (practice tries plus heard game and book asks)
  *   p  of those, practice tries
  *   s  the sounds those reps were in ("R", "SH", ...)
@@ -74,7 +77,7 @@ export const SEND_DAYS = [1, 2, 3]; // Monday, then Tuesday and Wednesday to cat
 export const SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"] as const;
 const SOUND_LABEL: Record<string, string> = { THV: "TH (v)" };
 
-export type Kid = { i?: string; d: number; g: number; gw: number; r: number; p: number; s: string[] };
+export type Kid = { i?: string; d: number; g: number; gw?: number; r: number; p: number; s: string[] };
 export type Week = { wk: string; kids: Kid[] };
 export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean };
 
@@ -141,7 +144,11 @@ function kidOk(v: unknown): Kid | null {
   const r = int(o.r, 0, 20000);
   const gw = int(o.gw, 0, 7);
   const s = Array.isArray(o.s) ? SOUNDS.filter((x) => (o.s as unknown[]).includes(x)) : [];
-  const k: Kid = { d: int(o.d, 0, 7), g: int(o.g, 0, 7), gw: [3, 4, 5, 7].includes(gw) ? gw : 4, r, p: int(o.p, 0, r), s };
+  // the plan only when the phone sent one of the four a grown-up can pick:
+  // anything else (none, or a number nobody can pick) is no plan, never a
+  // made-up 4 (the review of 22 Oct 2026: setup stopped asking the days)
+  const k: Kid = { d: int(o.d, 0, 7), g: int(o.g, 0, 7), r, p: int(o.p, 0, r), s };
+  if ([3, 4, 5, 7].includes(gw)) k.gw = gw;
   if (typeof o.i === "string" && /^[a-f0-9]{16}$/.test(o.i)) k.i = o.i;
   return k;
 }
@@ -335,11 +342,13 @@ function soundList(s: string[]): string {
  */
 function kidLines(k: Kid): string[] {
   if (!k.r) return ["No practice last week."];
-  const plan = k.gw === 7 ? "every day" : `${k.gw} days a week`;
+  // the plan is named only when a grown-up picked it: a family who never
+  // chose a number of days is never told "your plan: 4 days a week"
+  const plan = !k.gw ? "" : k.gw === 7 ? " (your plan: every day)" : ` (your plan: ${k.gw} days a week)`;
   const split = k.p === k.r ? "all in practice" : k.p === 0 ? "all in games and books" : `${k.p} in practice, ${k.r - k.p} in games and books`;
   const out = [
     `Said their sound out loud on ${days(k.d)}`,
-    `Reached the daily goal on ${days(k.g)} (your plan: ${plan})`,
+    `Reached the daily goal on ${days(k.g)}${plan}`,
     `${reps(k.r)}: ${split}`,
   ];
   if (k.s.length) out.push(`${k.s.length === 1 ? "Sound" : "Sounds"}: ${soundList(k.s)}`);
@@ -355,7 +364,8 @@ export function render(wk: string, kids: Kid[], unsubUrl: string, postal: string
     head: kids.length > 1 ? `Child ${i + 1}` + (k.s.length ? ` · ${soundList(k.s)}` : "") : "",
     lines: kidLines(k),
   }));
-  const cheer = kids.length && kids.every((k) => k.r > 0 && k.g >= k.gw)
+  // "the plan you set" only when every child has one a grown-up set, and kept it
+  const cheer = kids.length && kids.every((k) => k.r > 0 && typeof k.gw === "number" && k.g >= k.gw)
     ? "That’s the plan you set. Nice work keeping it going."
     : "Every rep counts. A few minutes on more days does more than one long day.";
   const repLine = "A rep is one time your child said their sound or word out loud. Silence never counts.";

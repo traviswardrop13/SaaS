@@ -862,10 +862,6 @@
       sc.appendChild(b);
     });
 
-    // The week's goal days are no longer asked (22 Oct 2026): the profile's,
-    // or four for a family never asked.
-    var goalVal = String(Sona.goalDays ? Sona.goalDays() : (p.weeklyGoal || 4));
-
     // Skipping target selection keeps the existing general play order. It
     // does not assess the child or infer practice targets from their age.
     document.getElementById("obExploreSounds").onclick=function(){
@@ -1387,9 +1383,11 @@
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
-        // the days a week are no longer asked: the goal this child's
-        // profile already has, which for a newly added child is the default
-        weeklyGoal: parseInt(goalVal, 10) || 4,
+        // The days a week are no longer asked (22 Oct 2026), so nothing
+        // here writes weeklyGoal: a profile keeps the one a grown-up picked
+        // (Settings, Progress, an older setup), and one that never had one
+        // reads as 4 days (Sona.goalDays) without the weekly report calling
+        // that "your plan" (REPORT1 sends a plan only when one is set).
         email: draft.email || "",
         pathReason: draft.pathReason || "",
         onboarded: true,

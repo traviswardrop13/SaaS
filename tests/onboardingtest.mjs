@@ -342,7 +342,7 @@ await scenario('the answers stay on this phone',async()=>{
   ok('the email typed on its step is posted once, when the parent leaves the ready screen, and not before',beforeReady===0&&afterReady===1,[beforeReady,afterReady]);
   await notNow(page);await atHandoff(page);
   const names=await page.evaluate(()=>[...document.querySelectorAll('button')].filter(b=>/Zephyrine/.test(b.textContent+' '+b.id+' '+b.className+' '+(b.value||''))).length);
-  const kept=await page.evaluate(()=>({asks:localStorage.getItem('sona.setupasks.v1'),read:Sona.setupAsks(),profile:localStorage.getItem('sona.profile.v1'),backup:Sona.exportString(),draft:localStorage.getItem('sona.obdraft.v1'),fbq:JSON.stringify(Array.from(fbq.queue).map(a=>Array.from(a))),posthog:Array.from(window.posthog).filter(c=>Array.isArray(c)).map(c=>Array.from(c)),title:document.title}));
+  const kept=await page.evaluate(()=>({asks:localStorage.getItem('sona.setupasks.v1'),read:Sona.setupAsks(),profile:localStorage.getItem('sona.profile.v1'),days:Sona.goalDays(),backup:Sona.exportString(),draft:localStorage.getItem('sona.obdraft.v1'),fbq:JSON.stringify(Array.from(fbq.queue).map(a=>Array.from(a))),posthog:Array.from(window.posthog).filter(c=>Array.isArray(c)).map(c=>Array.from(c)),title:document.title}));
   await next(page);await page.waitForURL(url=>url.pathname==='/charge.html');
   ok('the answers are kept in one household key, as fixed ids',kept.asks==='{"v":2,"therapy":"t_yes"}'&&kept.read.asked===true&&kept.read.therapy==='t_yes',kept.asks);
   // (the therapy answer's ids and the words that would give it away, what the
@@ -354,7 +354,9 @@ await scenario('the answers stay on this phone',async()=>{
   const steps=kept.posthog.filter(c=>c[0]==='capture'&&c[1]==='setup step').map(c=>c[2]);
   ok('one "setup step" per screen reached, saying which screen and nothing else',JSON.stringify(steps.map(p=>p.step))===JSON.stringify(FIRST_WALK.split(',').concat(['handoff']))&&steps.every(p=>JSON.stringify(Object.keys(p).sort())==='["native","step"]'),steps);
   ok('the saved profile has no field for the therapy answer, and a backup carries neither that answer nor a draft',!/"therapy"|t_yes|t_none|t_no/.test(kept.profile)&&!/setupasks|obdraft|t_yes|t_none|t_no/.test(kept.backup)&&kept.draft===null,kept.profile);
-  ok('…while the minutes picked ARE the daily goal (10 min, 60 reps), a real setting on the profile, beside the days a week every new family starts with (4)',/"dailyGoal":60\b/.test(kept.profile)&&/"dailyMinutes":10\b/.test(kept.profile)&&/"weeklyGoal":4\b/.test(kept.profile),kept.profile);
+  // the days a week are not asked (22 Oct 2026), so setup writes none: the
+  // default 4 is goalDays()'s, and the weekly report names no plan nobody picked
+  ok('…while the minutes picked ARE the daily goal (10 min, 60 reps), a real setting on the profile; the days a week, never asked, are not written (the default 4 is read, not saved)',/"dailyGoal":60\b/.test(kept.profile)&&/"dailyMinutes":10\b/.test(kept.profile)&&!/"weeklyGoal"/.test(kept.profile)&&kept.days===4,kept.profile);
   ok('…and what the child loves is on the profile as ids',/"interests":\["sports","dinosaurs"\]/.test(kept.profile),kept.profile);
   const lead=leadPosts(requests);
   ok('the one lead (the email step\'s address) is the grown-up\'s email, a role and campaign tags: today\'s fields exactly, from inside the app',lead.length===1&&JSON.stringify(Object.keys(lead[0]).sort())===JSON.stringify(['email','role','source','summary'])&&lead[0].email==='parent@example.com'&&lead[0].role==='parent'&&lead[0].source==='app-setup'&&lead[0].summary==='New parent (weekly report opt-in)',lead);
@@ -1124,7 +1126,7 @@ await scenario('where Sona can sell, ready\'s Continue leaves for the price and 
   ok('Continue on ready goes to exactly /subscribe.html?setup=1',page.url()===base+'/subscribe.html?setup=1',page.url());
   {const order=requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/lead'||new URL(r.url).pathname==='/subscribe.html').map(r=>new URL(r.url).pathname),lead=leadPosts(requests);
   ok('…the email step\'s address was posted once, before the price was asked for, and it is on the profile for the purchase\'s plan post',lead.length===1&&lead[0].email==='mom@example.com'&&lead[0].source==='app-setup'&&order[0]==='/api/lead'&&order.indexOf('/subscribe.html')>0&&await page.evaluate(()=>Sona.parentEmail()==='mom@example.com'),[order,lead]);}
-  ok('…with the profile saved, the therapy answer kept, the minutes picked as the daily goal (5 min, 30 reps), and the draft gone',at.profile.onboarded===true&&at.profile.childName==='Mia'&&JSON.stringify(at.profile.focusSounds)==='["R"]'&&at.asks==='{"v":2,"therapy":"t_yes"}'&&at.draft===null&&!('therapy' in at.profile)&&at.profile.dailyGoal===30&&at.profile.dailyMinutes===5&&at.profile.weeklyGoal===4,at);
+  ok('…with the profile saved, the therapy answer kept, the minutes picked as the daily goal (5 min, 30 reps), and the draft gone',at.profile.onboarded===true&&at.profile.childName==='Mia'&&JSON.stringify(at.profile.focusSounds)==='["R"]'&&at.asks==='{"v":2,"therapy":"t_yes"}'&&at.draft===null&&!('therapy' in at.profile)&&at.profile.dailyGoal===30&&at.profile.dailyMinutes===5&&!('weeklyGoal' in at.profile),at);
   ok('…the grown-ups stamp and the "after the price" marker written for this child, in this tab',Number(at.gate)>0&&!!marker&&marker.kid===''&&typeof marker.at==='number'&&await page.evaluate(()=>Sona.setupAfter()===true),at);
   ok('…no first game marked yet, the phone not asked for the microphone, and nothing bought or even priced by setup',at.firstgame===null&&at.mic===0&&at.bought===0&&at.asked===0,at);
   // a reload of setup while still unpaid (a Back swipe from the price): the
