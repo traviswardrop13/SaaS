@@ -570,8 +570,8 @@
         // buddy: on the doorstep to the right of Echo, right of the door (rest)
         { art: "s01", ages: "both", buddy: { x: 0.43, y: 0.7, h: 0.18, pose: "rest" },
           line: "Pelly has the mail! Oops. That's a wooden spoon. Are you making soup, Pelly?" },
-        // no buddy (PEEK, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: peeking over the stretch of the railing's top edge just right of Echo, with nothing on it and nothing behind it but the background, so a little character can peek over the railing there (peek)
+        { art: "s02", ages: "both", buddy: { x: 0.375, y: 0.643, h: 0.105, pose: "peek" },
           line: { big: "Here's the real letter. It's from Mama Swallow. Her family is moving into new nests on a cliff!",
                   little: "Here's the real letter. Mama Swallow is moving into new nests!" } },
         // buddy: on the sand just right of Echo, at the foot of the cliff (rest)
@@ -589,8 +589,8 @@
         // no buddy
         { art: "s06", ages: "big", buddy: null,
           line: "Each chick wants its own toy in bed tonight. A rabbit, a teddy bear, and a very, very long snake!" },
-        // no buddy (on the sand just right of the post's foot, not placed)
-        { art: "s07", ages: "big", buddy: null,
+        // buddy: on the sand just right of the post's foot (rest)
+        { art: "s07", ages: "big", buddy: { x: 0.665, y: 0.855, h: 0.15, pose: "rest" },
           line: "Here's the basket lift! A bundle in one basket, stones with just as many dots in the other. Then up it goes!" },
         // buddy: on the sand between Echo and the flat rock with the stones (rest)
         { art: "s08", ages: "both", buddy: { x: 0.405, y: 0.85, h: 0.185, pose: "rest" },
@@ -603,15 +603,15 @@
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Swoosh! The enormous quilt slides right into the top nest. Every nest has its bundle!",
                   little: "Swoosh! The big quilt fits in the top nest!" } },
-        // no buddy (on the picnic cloth in the lower middle, just in front of the pot, between the chicks and Echo, not placed)
-        { art: "e02", ages: "big", buddy: null,
+        // buddy: on the picnic cloth in the lower middle, just in front of the pot, between the chicks and Echo (rest)
+        { art: "e02", ages: "big", buddy: { x: 0.57, y: 0.825, h: 0.16, pose: "rest" },
           line: "Soup's on! Pelly stirs berry soup with her wooden spoon. So that's what it was for!" },
         // no buddy
         { art: "e03", ages: "both", buddy: null,
           line: { big: "Bedtime! Each chick snuggles in its own nest with its toy. And up top, Mama Swallow is a quilt with feet again!",
                   little: "Bedtime! Each chick hugs its toy in its own nest. And look, a quilt with feet!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.7, y: 0.725, h: 0.17, pose: "cheer" },
           line: "Eleven gold stars on our helper map! Every chick is snug in its new nest." }
       ]
     },
