@@ -79,7 +79,16 @@ function phoneInit(cfg){
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
     tCard:'[data-step="interests"]',tHead:'#interestsTitle',tYes:'#obInterests [data-val="sports"]',btn:'#nextBtn',
-    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .sell-line',sPic:'.step.sell.on .toss-game, .step.sell.on .rachel-photo, .step.sell.on .reel',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child'};
+    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .sell-line',sPic:'.step.sell.on .toss-game, .step.sell.on .rachel-photo, .step.sell.on .reel',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
+    rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips'};
+  // AS PAINTED (22 Oct 2026): where a screen's own motion draws a picture
+  // and how see-through it is, transforms and opacity included, for the
+  // problem screen's flashcards and game and the ready screen's Echo and
+  // sparkles. Under Reduce Motion each must be drawn as it ends from the
+  // first frame (a delayed animation used to hold its first keyframe). A
+  // selector matching several (the sparkles) reads as the one most drawn.
+  const VIS={pGame:'.step.on .toss-game',pToss:'.step.on .toss-c',pCards:'.step.on .toss-a',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
+  function seen(sel){let best=null;for(const el of document.querySelectorAll(sel)){const cs=getComputedStyle(el),r=el.getBoundingClientRect(),o=+cs.opacity;const v=cs.display==='none'||r.width<2||r.height<2||cs.visibility==='hidden'?null:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),o:Math.round(o*100)/100};if(v&&(!best||v.o>best.o))best=v;}return best&&best.o>0?best:null;}
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
   // is. Null when it is not drawn (display:none, or smaller than 2 px).
@@ -95,6 +104,7 @@ function phoneInit(cfg){
     if(!S.on)return;
     const b=document.body,f={t:Math.round(performance.now()),screen:b&&b.dataset.setupScreen,kb:S.kbState,open:!!(b&&b.classList.contains('keyboard-open')),h:innerHeight,active:document.activeElement&&document.activeElement.id,settling:!!(b&&b.classList.contains('ob-settling')),r:{}};
     for(const k in SEL)f.r[k]=(k==='btn'?paint:box)(document.querySelector(SEL[k]));
+    f.v={};for(const k in VIS)f.v[k]=seen(VIS[k]);
     const foot=document.querySelector('.obfoot'),btn=document.getElementById('nextBtn');
     f.footOp=foot?+getComputedStyle(foot).opacity:1;f.btnFont=btn?getComputedStyle(btn).fontSize:'';
     S.frames.push(f);requestAnimationFrame(tick);
@@ -489,6 +499,14 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
 // (a purchase plugin is there, with nothing to call: setup asks the store only
 // on the ready screen), so the games are the full grid, every playable
 // big-kid game.
+// …and "<Name>'s practice is ready!" after them, Echo cheering. Each screen's
+// own motion (the flashcard tossed away and the game sliding in, from 0.55 s
+// to 1.85 s; Echo's pop and the sparkles, to 1.5 s) is watched for 2.3 s:
+// under Reduce Motion the first frame is already the last (the tossed card
+// gone, the game in place, Echo there, no sparkle), and it is the very place
+// the motion-on run ended on, on the same phone.
+const ENDS={};
+const ownMotion=(fr,ks)=>{const out={};for(const k of ks){const vs=fr.map(f=>f.v[k]),a=vs[0];out[k]={first:a,last:vs[vs.length-1],changed:vs.filter(v=>JSON.stringify(v)!==JSON.stringify(a)).length,ever:vs.some(v=>!!v)};}return out;};
 for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
  const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
  try{
@@ -496,7 +514,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  for(const [key,keys] of [['problem',['sCard','sHead','sLine','sPic','btn']],['reel',['sCard','sHead','sPic','btn']],['rachel',['sCard','sHead','sPic','btn']],['games',['sCard','sHead','sGrid','sLast','btn']]]){
+  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sLine','sPic','btn'],'sCard',['pGame','pToss','pCards'],2300],['reel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
    if(key==='games'){
     // the name and what the child loves come between Rachel and the games
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
@@ -504,13 +522,36 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
     await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
     await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
    }
+   if(key==='ready'){
+    // the questions between the games and the ready screen: therapy, the
+    // sounds (R, as picked), the minutes, and the email step (left empty)
+    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();
+    await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');await page.locator('[data-step="sounds"].on').waitFor();
+    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
+    await calm(page);await page.tap('#obMinutes [data-val="10"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(600);
+   }
    await page.evaluate(()=>__steady.start());
    await calm(page);await page.tap('#nextBtn');
-   await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(1100);
-   const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r.sCard);
+   await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
+   const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
    const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
    if(key==='games')ok('…the games are the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
+   if(own.length){
+    const m=ownMotion(fr,own),span=fr.length?fr[fr.length-1].t-fr[0].t:0;
+    if(key==='problem'){
+     // motion on: the toss plays and ends (the game in place, the card gone); Reduce Motion starts there
+     if(!reduced)ok('with motion on, the problem screen\'s toss plays and ends within 2.3 s: the third card tossed away, the game slid in and fully drawn'+at,span>=2000&&m.pToss.ever&&!m.pToss.last&&m.pGame.changed>0&&m.pGame.last&&m.pGame.last.o===1&&m.pCards.last&&m.pCards.last.o===1,{span,m});
+     else ok('under Reduce Motion the problem screen\'s first frame is its last, for '+span+' ms: the tossed card never drawn, the game and the two cards in place from the first frame, unchanged'+at,span>=2000&&!m.pToss.ever&&m.pGame.first&&m.pGame.first.o===1&&m.pGame.changed===0&&m.pCards.first&&m.pCards.changed===0,{span,m});
+    }else{
+     if(!reduced)ok('with motion on, Echo pops onto the ready screen and the sparkles play and end within 2.3 s'+at,span>=2000&&m.rEcho.changed>0&&m.rEcho.last&&m.rEcho.last.o===1&&m.rSpark.ever&&!m.rSpark.last,{span,m});
+     else ok('under Reduce Motion the ready screen\'s first frame is its last, for '+span+' ms: Echo there from the first frame, unchanged, no sparkle ever drawn'+at,span>=2000&&m.rEcho.first&&m.rEcho.first.o===1&&m.rEcho.changed===0&&!m.rSpark.ever,{span,m});
+    }
+    // the same phone, the same screen: Reduce Motion's first frame is where the motion ended
+    const tag=D.name+'|'+key;
+    if(!reduced)ENDS[tag]=Object.fromEntries(own.map(k=>[k,m[k].last]));
+    else if(ENDS[tag])ok('…and it is exactly where the motion-on run ended ('+key+')'+at,own.every(k=>JSON.stringify(m[k].first)===JSON.stringify(ENDS[tag][k])),{reduce:Object.fromEntries(own.map(k=>[k,m[k].first])),motion:ENDS[tag]});
+   }
    await page.waitForTimeout(200);
   }
   ok('no runtime errors (the screens that sell'+at+')',errors.length===0,errors);

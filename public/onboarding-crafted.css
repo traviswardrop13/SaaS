@@ -91,6 +91,9 @@ body[data-setup-screen="welcome"] .mascot { display: none; }
    the first hello it fades in last (its place never moves: opacity only) */
 body[data-setup-screen="welcome"] .obfoot { background: none; }
 body.hello-intro[data-setup-screen="welcome"] .obfoot .inner { animation: hello-fade .45s ease-out 1.3s both; }
+/* …and until it has (body.hello-wait, onboarding.html: 1.75 s, never under
+   Reduce Motion) it takes no tap: an invisible button is not a way on */
+body.hello-wait[data-setup-screen="welcome"] .obfoot { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .hello, .hello *, body.hello-intro .welcome-name .wl, body.hello-intro .welcome-tag, body.hello-intro[data-setup-screen="welcome"] .obfoot .inner { animation: none !important; }
   .hello-orange, .hello-cloud-b { display: none; }
@@ -365,6 +368,22 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
   .ready-lines li { font-size: 14.5px; }
 }
 @media (max-height: 600px) { .ready-echo { width: 84px; height: 84px; margin-bottom: 4px; } }
+
+/* UNDER REDUCE MOTION EACH SCREEN'S FIRST FRAME IS ITS LAST (the review of
+   22 Oct 2026). sona.css cuts every animation to 0.001 ms but keeps its
+   delay, and a delayed animation that fills "both" shows its FIRST keyframe
+   until the delay is over: the game card on the problem screen stayed
+   invisible for 1.15 s and then jumped 80 px into place, the tossed card
+   vanished half a second in, Echo popped onto the ready screen. So nothing
+   in setup animates here, and what each animation would end on is drawn
+   from the first frame: the tossed card is gone, the game card is in place,
+   Echo stands cheering, and the sparkles (which end invisible) are not
+   drawn. (The hello's own layers are above; the steps, the footer and the
+   bubble in onboarding.html's own rules.) */
+@media (prefers-reduced-motion: reduce) {
+  .ob *, .ob *::before, .ob *::after, .obfoot * { animation: none !important; }
+  .toss-c, .spark { display: none; }
+}
 
 /* the reminder ask: Echo beside it, the question, one teal button, a cream "Not now" */
 .ob .step[data-step="remind"] { text-align: center; }

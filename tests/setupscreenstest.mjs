@@ -98,6 +98,15 @@ await scenario('the hello: the orchard without Echo painted in, and one live Ech
   const motion=await page.evaluate(()=>{const fin=a=>a.effect.getComputedTiming().endTime!==Infinity;const step=document.querySelector('.step.on').getAnimations({subtree:true}),hello=document.querySelector('.hello').getAnimations({subtree:true});return {step:step.length,stepLoops:step.filter(a=>!fin(a)).length,hello:hello.length,helloLoops:hello.filter(a=>!fin(a)).length,names:[...new Set(hello.map(a=>a.animationName))],intro:document.body.classList.contains('hello-intro')};});
   ok('with motion on, the intro plays (Sona drops in letter by letter inside the step) and every motion inside the step ends',motion.intro&&motion.step>=4&&motion.stepLoops===0,motion);
   ok('…while Echo bobs, waves and the orchard moves on for good, in the hello layer outside every step',motion.helloLoops>=5&&['hello-bob','hello-wave','hello-drift','hello-fall','hello-twinkle'].every(n=>motion.names.indexOf(n)>-1),motion);
+  // "Get started" fades in last (1.3 s + 0.45 s): until then it takes no tap
+  {const t=await page.evaluate(()=>({pe:getComputedStyle(document.querySelector('.obfoot')).pointerEvents,op:+getComputedStyle(document.querySelector('.obfoot .inner')).opacity}));
+   const c=await page.evaluate(()=>{const r=document.getElementById('nextBtn').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};});
+   await page.mouse.click(c.x,c.y);
+   ok('while "Get started" fades in it takes no tap: a press where it will be does nothing',t.pe==='none'&&await page.evaluate(()=>document.body.dataset.setupScreen==='welcome'),t);
+   // every frame until it takes taps again: never a tap while it is still faint
+   const fr=await page.evaluate(()=>new Promise(done=>{const out=[],t0=performance.now();(function grab(){const pe=getComputedStyle(document.querySelector('.obfoot')).pointerEvents,op=+getComputedStyle(document.querySelector('.obfoot .inner')).opacity;out.push({pe,op});if(pe!=='none'||performance.now()-t0>3000)done(out);else requestAnimationFrame(grab);})();}));
+   const live=fr.filter(f=>f.pe!=='none');
+   ok('…and once it has faded in (1.75 s) it does: no frame takes a tap while it is under 90% drawn',live.length===1&&live[0].op>=0.9&&fr.filter(f=>f.op<0.9).every(f=>f.pe==='none'),fr.slice(-4));}
   ok('…which a test can settle: finishing the step\'s own motion throws nothing',await page.evaluate(()=>{try{document.querySelector('.step.on').getAnimations({subtree:true}).forEach(a=>a.finish());return true;}catch(e){return e.message;}})===true);
   await next(page);await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="welcome"].on').waitFor();
   ok('Back to the hello within a visit: Echo is already there (no intro again), the idle motion only',await page.evaluate(()=>!document.body.classList.contains('hello-intro')&&document.querySelector('.step.on').getAnimations({subtree:true}).filter(a=>a.animationName==='hello-letter').length===0&&document.querySelector('.hello').getAnimations({subtree:true}).length>=5));
@@ -115,6 +124,7 @@ await scenario('the hello: the orchard without Echo painted in, and one live Ech
  {const {context,page,errors}=await fresh();try{
   const still=await page.evaluate(()=>({anims:document.querySelector('.hello').getAnimations({subtree:true}).length,step:document.querySelector('.step.on').getAnimations({subtree:true}).filter(a=>a.playState==='running').length,hi:getComputedStyle(document.querySelector('.hello-hi')).opacity,rest:getComputedStyle(document.querySelector('.hello-rest')).opacity,wave:getComputedStyle(document.querySelector('.hello-wave')).opacity,btn:getComputedStyle(document.querySelector('.obfoot .inner')).opacity}));
   ok('under Reduce Motion nothing on the hello moves: Echo stands on the path and says hi, the button is there',still.anims===0&&still.step===0&&still.hi==='1'&&still.rest==='1'&&still.wave==='0'&&still.btn==='1',still);
+  ok('…and takes a tap from the first frame',await page.evaluate(()=>getComputedStyle(document.querySelector('.obfoot')).pointerEvents!=='none'&&!document.body.classList.contains('hello-wait')));
   clean('hello, Reduce Motion',errors);
  }finally{await context.close();}}
  // every size: the brand, Echo and the button on screen, apart, and nothing scrolls
@@ -131,10 +141,11 @@ await scenario('the hello: the orchard without Echo painted in, and one live Ech
 const reelState=page=>page.evaluate(()=>{const f=document.getElementById('reelFrame'),vis=[...f.querySelectorAll('.reel-still,.reel-clip')].filter(e=>getComputedStyle(e).display!=='none'&&e.classList.contains('on'));return {stills:f.classList.contains('stills'),on:vis.map(e=>e.tagName+':'+(e.getAttribute('src')||'')+(e.classList.contains('card')?':card':'')),clips:[...f.querySelectorAll('.reel-clip')].map(v=>v.getAttribute('src')||''),clipShown:[...f.querySelectorAll('.reel-clip')].some(v=>getComputedStyle(v).display!=='none'),broken:[...f.querySelectorAll('img.reel-still.on')].some(i=>i.complete&&!i.naturalWidth&&!i.classList.contains('gone'))};});
 const toReel=async page=>{await setupWalk(page,'reel');await page.locator('[data-step="reel"].on').waitFor();};
 await scenario('the reel: real clips where the phone plays them, posters where it cannot, Home cards where a game has neither',async()=>{
+ // (motion on in this scenario: under Reduce Motion the reel is one still, below)
  // the tests' browser plays no H.264 (as a phone in Low Power Mode may refuse
  // to start one): the posters, as a slideshow; here every poster is missing
  // but Fruit Slice's, so the others are their games' Home cards
- {const {context,page,errors,requests}=await fresh({webSales:true,routes:[['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{
   await toReel(page);await page.waitForTimeout(300);
   let s=await reelState(page);
   ok('a browser that cannot play the clips gets the posters: no video drawn, the first game\'s poster on screen',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken,s);
@@ -148,7 +159,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  }finally{await context.close();}}
  // a phone that plays H.264: two videos take turns, one playing while the next loads
  const PLAYS=()=>{HTMLMediaElement.prototype.canPlayType=function(t){return /mp4/.test(t)?'probably':'';};HTMLMediaElement.prototype.play=function(){(window.__played=window.__played||[]).push(this.getAttribute('src'));return Promise.resolve();};HTMLMediaElement.prototype.pause=function(){(window.__paused=window.__paused||[]).push(this.getAttribute('src'));};};
- {const {context,page,errors}=await fresh({webSales:true,init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]});try{   // (the clips' bytes never arrive: a phone mid-download)
+ {const {context,page,errors}=await fresh({webSales:true,motion:true,init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]});try{   // (the clips' bytes never arrive: a phone mid-download)
   await toReel(page);await page.waitForTimeout(300);
   let s=await reelState(page);
   ok('a phone that plays H.264: the first clip (Fruit Slice) playing, the next (Hoops) loading behind it, muted, inline, no AirPlay',!s.stills&&s.on.length===1&&/^VIDEO:\/assets\/setup\/reel\/slice\.mp4$/.test(s.on[0])&&/hoops\.mp4$/.test(s.clips[1])&&await page.evaluate(()=>[...document.querySelectorAll('.reel-clip')].every(v=>v.muted&&v.hasAttribute('playsinline')&&v.hasAttribute('disableremoteplayback')&&v.getAttribute('x-webkit-airplay')==='deny'&&!v.hasAttribute('controls')&&!v.loop)&&__played.slice(-1)[0]==='/assets/setup/reel/slice.mp4'),s);
@@ -164,7 +175,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  }finally{await context.close();}}
  // a phone that refuses to start a clip (Low Power Mode), and a clip that is not there
  for(const [label,init,routes] of [['a phone that refuses to start a clip',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('no','NotAllowedError'));},[['**/assets/setup/reel/*.mp4',()=>{}]]],['a clip that is missing (404)',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.resolve();},null]]){
-  const {context,page,errors}=await fresh({webSales:true,init,routes});try{
+  const {context,page,errors}=await fresh({webSales:true,motion:true,init,routes});try{
    await toReel(page);await page.waitForFunction(()=>document.getElementById('reelFrame').classList.contains('stills'),null,{timeout:4000}).catch(()=>{});
    // (the poster is asked for as the clip gives up: read the frame once it has answered)
    await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&i.complete&&(i.naturalWidth>0||i.classList.contains('gone'));},null,{timeout:4000}).catch(()=>{});
@@ -175,7 +186,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  }
  // which games: the games screen's own rule, both age groups (no age asked yet)
  for(const [label,cfg,want] of [['a phone where the price follows',{webSales:true},['slice','hoops','tiles','bubbles','soccer','dino','feed','stack','run','glide','rise']],['a phone that cannot sell (only the games it opens)',{},['slice','tiles','bubbles','feed']]]){
-  const {context,page,errors}=await fresh(Object.assign({init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]},cfg));try{
+  const {context,page,errors}=await fresh(Object.assign({motion:true,init:PLAYS,routes:[['**/assets/setup/reel/*.mp4',()=>{}]]},cfg));try{
    await toReel(page);
    const list=[];for(let i=0;i<want.length+1;i++){list.push((await reelState(page)).on[0].replace(/^VIDEO:\/assets\/setup\/reel\/|\.mp4$/g,''));await page.evaluate(()=>document.querySelector('.reel-clip.on').dispatchEvent(new Event('ended')));}
    const playable=await page.evaluate(()=>Object.keys(Sona.GAME_ACTS).filter(k=>!Sona.GAME_ACTS[k].comingSoon&&Sona.GAME_ACTS[k].available!==false&&(Sona.trialFirst()||Sona.gameAccess(k).allowed)));
@@ -183,6 +194,22 @@ await scenario('the reel: real clips where the phone plays them, posters where i
    clean('reel list: '+label,errors);
   }finally{await context.close();}
  }
+ // UNDER REDUCE MOTION NOTHING MOVES (the review of 22 Oct 2026): the first
+ // game's poster, still: no clip asked for or started, no slideshow, even on
+ // a phone that plays H.264
+ {const {context,page,errors,requests}=await fresh({webSales:true,init:PLAYS,routes:[['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{
+  await toReel(page);await page.waitForTimeout(300);
+  const s0=await reelState(page);await page.waitForTimeout(3700);const s1=await reelState(page);
+  ok('under Reduce Motion the reel is the first game\'s poster, still: no clip asked for or played, and 4 s on the same picture (no slideshow)',s0.stills&&!s0.clipShown&&JSON.stringify(s0.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&JSON.stringify(s1.on)===JSON.stringify(s0.on)&&!s1.broken&&!requests.some(r=>/\.mp4/.test(r.url))&&await page.evaluate(()=>!(window.__played||[]).length),{s0,s1});
+  clean('reel, Reduce Motion',errors);
+ }finally{await context.close();}}
+ // a screen reader hears Echo's ask over the games; the pictures are decoration
+ {const {context,page,errors}=await fresh({webSales:true});try{
+  await toReel(page);
+  const a=await page.evaluate(()=>{const say=document.querySelector('.reel-say'),hiddenUp=el=>{for(let n=el;n;n=n.parentElement)if(n.getAttribute&&n.getAttribute('aria-hidden')==='true')return true;return false;};return {say:hiddenUp(document.getElementById('reelSay')),text:say.textContent.trim(),pics:[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip,.reel-say img')].every(e=>e.getAttribute('aria-hidden')==='true')};});
+  ok('the reel\'s "Say your rrrr sound!" is read by a screen reader (no aria-hidden over it); its videos, stills and Echo are hidden as decoration',!a.say&&a.text==='Say your rrrr sound!'&&a.pics,a);
+  clean('reel, screen reader',errors);
+ }finally{await context.close();}}
 });
 
 // ── "HEAR ECHO" ──

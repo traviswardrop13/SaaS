@@ -86,7 +86,7 @@
        and footer take no transition at all there (15 Oct 2026), and nothing
        in setup animates: each screen's first frame is its own. */
     @media(prefers-reduced-motion:reduce){.step.on,.bubble2,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
-    @media(prefers-reduced-motion:reduce){.ob,.ob *,.obfoot,.obfoot *{transition-property:none!important;}}
+    @media(prefers-reduced-motion:reduce){.ob,.ob *,.ob *::before,.ob *::after,.obfoot,.obfoot *{transition-property:none!important;}}
   </style>
   <link rel="stylesheet" href="/onboarding-crafted.css" />
 </head>
@@ -174,12 +174,15 @@
          and R is a stated example: the child's sound is not picked yet. -->
     <div class="step sell" data-step="reel">
       <h1 class="qh" id="reelTitle" tabindex="-1">They practice by playing.</h1>
-      <div class="reel-box"><div class="reel" id="reelFrame" aria-hidden="true">
-        <img class="reel-still" alt="" decoding="async" />
-        <img class="reel-still" alt="" decoding="async" />
-        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny"></video>
-        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny"></video>
-        <p class="reel-say"><img src="/assets/crafted/echo-talk.webp" alt="" /><span id="reelSay">Say your rrrr sound!</span></p>
+      <!-- The pictures are decoration to a screen reader (aria-hidden on each);
+           Echo's ask over them is read, before "Hear Echo" and the note that
+           R is an example. -->
+      <div class="reel-box"><div class="reel" id="reelFrame">
+        <img class="reel-still" alt="" decoding="async" aria-hidden="true" />
+        <img class="reel-still" alt="" decoding="async" aria-hidden="true" />
+        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny" aria-hidden="true"></video>
+        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny" aria-hidden="true"></video>
+        <p class="reel-say"><img src="/assets/crafted/echo-talk.webp" alt="" aria-hidden="true" /><span id="reelSay">Say your rrrr sound!</span></p>
       </div></div>
       <div class="reel-under">
         <button type="button" class="reel-hear" id="reelHear"><span class="reel-wave" aria-hidden="true"><i></i><i></i><i></i></span>Hear Echo</button>
@@ -1089,10 +1092,14 @@
     // iPhone in Low Power Mode), gets the posters instead, changing every few
     // seconds, and a game whose clip or poster is missing shows its painted
     // Home card. Never a black frame and never a broken video.
+    // UNDER REDUCE MOTION NOTHING MOVES HERE EITHER (the 22 Oct 2026 review):
+    // the first game's poster, still, with no clip started and no slideshow
+    // (read each time the screen opens, so a setting changed meanwhile counts).
     var REEL_ORDER=["slice","hoops","tiles","bubbles","soccer","dino","feed","stack","run","glide","rise"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=3200;
     var reel=(function(){
       var frame=document.getElementById("reelFrame"),vids=frame.querySelectorAll(".reel-clip"),stills=frame.querySelectorAll(".reel-still");
       var list=null,at=0,mode="",live=false,cur=0,timer=0;
+      function calmOnly(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
       function clips(){
         var keys=[];sellGroups("",sellsAll()).forEach(function(g){g.games.forEach(function(x){keys.push(x.key);});});
         return REEL_ORDER.filter(function(k){return keys.indexOf(k)>-1;}).concat(keys.filter(function(k){return REEL_ORDER.indexOf(k)<0;}));
@@ -1115,7 +1122,7 @@
       }
       function tickStills(){
         clearTimeout(timer);
-        if(!live||mode!=="stills"||list.length<2)return;
+        if(!live||mode!=="stills"||list.length<2||calmOnly())return;
         var next=stills[1-cur];still(next,list[(at+1)%list.length]);
         timer=setTimeout(function(){if(!live||mode!=="stills")return;at=(at+1)%list.length;cur=1-cur;show(stills[cur]);tickStills();},REEL_STILL_MS);
       }
@@ -1138,8 +1145,9 @@
       return {
         start:function(){
           if(live)return;live=true;
-          if(!list){list=clips();if(!list.length){frame.classList.add("empty");return;}mode=canPlay()?"video":"";if(!mode){stillsMode();return;}load(vids[0],list[0]);if(list.length>1)load(vids[1],list[1]);show(vids[0]);}
-          if(mode==="video")play(vids[cur]);else tickStills();
+          var still0=calmOnly();
+          if(!list){list=clips();if(!list.length){frame.classList.add("empty");return;}mode=!still0&&canPlay()?"video":"";if(!mode){stillsMode();return;}load(vids[0],list[0]);if(list.length>1)load(vids[1],list[1]);show(vids[0]);}
+          if(mode==="video"){if(still0){stillsMode();return;}play(vids[cur]);}else tickStills();
         },
         stop:function(){
           if(!live)return;live=false;clearTimeout(timer);
@@ -1237,7 +1245,8 @@
     }
 
     // the hello's intro plays once a page load; coming Back to it, Echo is already there
-    var helloSeen=false;
+    // HELLO_BTN_MS: when the intro's button has faded in (its 1.3 s delay and 0.45 s fade)
+    var helloSeen=false,helloWaited=false,HELLO_BTN_MS=1750;
     function render(){
       var key=ORDER[idx];
       replayAt(key,false);
@@ -1249,7 +1258,14 @@
       // screen must not open part-way down where the last one was left
       var sc0=document.querySelector(".ob"); if(sc0) sc0.scrollTop=0;
       document.body.dataset.setupScreen=key;document.body.classList.toggle("ob-world",key==="welcome");paintProgress(key);
-      document.body.classList.toggle("hello-intro",key==="welcome"&&!helloSeen);if(key!=="welcome"&&idx>0)helloSeen=true;
+      var intro=key==="welcome"&&!helloSeen;
+      document.body.classList.toggle("hello-intro",intro);if(key!=="welcome"&&idx>0)helloSeen=true;
+      // "Get started" fades in last (onboarding-crafted.css): until it is
+      // there it takes no tap, so a finger on an empty-looking spot never
+      // starts setup (never under Reduce Motion, where it is there at once)
+      if(intro&&!helloWaited){helloWaited=true;var rm=false;try{rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
+        if(!rm){document.body.classList.add("hello-wait");setTimeout(function(){document.body.classList.remove("hello-wait");},HELLO_BTN_MS);}}
+      if(!intro)document.body.classList.remove("hello-wait");
       mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
