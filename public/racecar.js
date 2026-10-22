@@ -146,7 +146,7 @@
     ["pointerup","pointercancel","lostpointercapture"].forEach(function(n){brake.addEventListener(n,function(){braking=false;hud();});});
     window.addEventListener("keydown",function(e){if(!running||parked)return;if(e.key==="ArrowLeft"||e.key==="a"){keys.left=true;missAt=0;e.preventDefault();}if(e.key==="ArrowRight"||e.key==="d"){keys.right=true;missAt=0;e.preventDefault();}if(e.key==="ArrowDown"||e.code==="Space"){braking=true;e.preventDefault();}});
     window.addEventListener("keyup",function(e){var was=keys.left||keys.right;if(e.key==="ArrowLeft"||e.key==="a")keys.left=false;if(e.key==="ArrowRight"||e.key==="d")keys.right=false;if(e.key==="ArrowDown"||e.code==="Space")braking=false;if(was&&!keys.left&&!keys.right&&gate&&running&&!parked)missAt=clock+.45;});
-    $("raceHelp").onclick=function(){if(running&&!parked&&slow<=POWER-2){$("raceBanner").textContent="Pit crew, ready!";api.practice();}};
+    $("raceHelp").onclick=function(){if(running&&!parked&&slow<=POWER-2&&api.practice())$("raceBanner").textContent="Pit crew, ready!";};
     window.addEventListener("blur",function(){braking=false;keys.left=keys.right=false;drag=null;});window.addEventListener("resize",size);
     // A Back/Forward Cache return restores this exact engine, not a new one.
     // Keep the earned car and let SayPlay's visible Resume control own play.
