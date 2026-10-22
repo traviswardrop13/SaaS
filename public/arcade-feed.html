@@ -301,7 +301,10 @@
       // the end of words opened, "bus" (a B word) beside "glass" was a second
       // right answer for S. Sona.hasSound reads the spelling (an x is a k and
       // an s). The first-letter rule stays.
-      (S.ALL_SOUNDS||[]).forEach(function(s){ if(s===SOUND)return; (S.wordsFor(s,"i")||[]).forEach(function(w){ if(w&&w.w&&w.e&&w.w[0].toLowerCase()!==String(TARGETS[0]&&TARGETS[0].w||" ")[0].toLowerCase()&&!(S.hasSound&&S.hasSound(w.w,SOUND))) OTHERS.push(w); }); });
+      // Nor a word filed under the practice sound at all (Z's "nose" and
+      // "rose" spell their z with an s), so a target never shows up twice.
+      var OWN={}; ((S.WORDS&&S.WORDS[SOUND])||[]).forEach(function(w){ OWN[w.w]=1; });
+      (S.ALL_SOUNDS||[]).forEach(function(s){ if(s===SOUND)return; (S.wordsFor(s,"i")||[]).forEach(function(w){ if(w&&w.w&&w.e&&!OWN[w.w]&&w.w[0].toLowerCase()!==String(TARGETS[0]&&TARGETS[0].w||" ")[0].toLowerCase()&&!(S.hasSound&&S.hasSound(w.w,SOUND))) OTHERS.push(w); }); });
     }catch(e){}
 
     // ── tiny cached TTS (same on-device cache as charge; repeat asks are free)

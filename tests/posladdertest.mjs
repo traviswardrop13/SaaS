@@ -91,9 +91,12 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
 {
   const at = (pos) => boot({ profile: { wordPosition: pos, childAge: "4" } });
   ok("a four-year-old's vocalic R or blends pick practises the start of a word", at("v").S.soundPos("R") === "i" && at("b").S.soundPos("S") === "i");
-  ok("…the middle and end of a word still apply", at("f").S.soundPos("R") === "f" && at("m").S.soundPos("R") === "m");
+  ok("…R at the end of a word is vocalic R, so it is held too", at("f").S.soundPos("R") === "i" && at("f").S.playWords("R").every((w) => w.pos === "i"));
+  ok("…while the middle and end of a word still apply to the rest", at("f").S.soundPos("S") === "f" && at("m").S.soundPos("R") === "m");
+  const hmx = at("i"); homework(hmx, { pos: "mix" });
+  ok("…and a speech therapist's Mixed homework is not cut down", hmx.S.soundPos("R") === "mix" && hmx.S.playWords("R").some((w) => w.pos === "v" || w.pos === "b"));
   const mx = at("mix").S;
-  ok("…and their Mixed leaves out vocalic R and blend words", mx.playWords("R").length > 0 && mx.playWords("R").every((w) => w.pos !== "v" && w.pos !== "b") && mx.ladderContent("R", 2).every((x) => x.pos !== "v" && x.pos !== "b"));
+  ok("…and their Mixed leaves out vocalic R and blend words, and R's end words with them", mx.playWords("R").length > 0 && mx.playWords("R").every((w) => w.pos !== "v" && w.pos !== "b" && w.pos !== "f") && mx.ladderContent("R", 2).every((x) => x.pos !== "v" && x.pos !== "b" && x.pos !== "f"));
   const hw = at("i"); homework(hw, { pos: "v" });
   ok("…while their speech therapist's homework keeps its own place", hw.S.soundPos("R") === "v");
 }
@@ -120,6 +123,22 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   const g = t.S.getProgress(); g.stage.THV = 3; t.local[t.S.kkey("sona.progress.v1")] = JSON.stringify(g);
   ok("TH (v)'s \"anywhere\" place keeps the sound's own climb (no step it earned is lost)", t.S.soundPos("THV") === "mix" && t.S.rungOf("THV") === 3);
   ok("Progress's milestones belong to a child: sona.firsts.v1 is per child", (() => { const slot = t.S.addKid("Sib", "6"); t.S.switchKid(slot); return t.S.kkey("sona.firsts.v1") !== "sona.firsts.v1"; })());
+}
+
+// ── 3b. a climb made under homework before this build is not lost ──
+{
+  const p = boot({ profile: { wordPosition: "i" } }); homework(p, { pos: "mix" });
+  const g = p.S.getProgress(); g.stage.R = 4; p.local[p.S.kkey("sona.progress.v1")] = JSON.stringify(g);
+  const before = p.local[p.S.kkey("sona.progress.v1")];
+  ok("a child who reached sentences on Mixed homework before this build keeps them at that place", p.S.soundPos("R") === "mix" && p.S.rungOf("R") === 4 && p.S.rungOf("R", "i") === 4);
+  ok("…and reading never writes", p.local[p.S.kkey("sona.progress.v1")] === before);
+  p.S.rungWin("R", 3);
+  const g2 = p.S.getProgress();
+  ok("…the first new write copies the climb to its place and marks the record", g2.posV === 1 && g2.stageAt["R.mix"] === 4 && p.S.rungOf("R") === 4);
+  homework(p, { pos: "f" });
+  ok("…after which a new place starts on its own (the sound alone still counts)", p.S.rungOf("R") === 1);
+  const n = boot({ profile: { wordPosition: "f" } });
+  ok("a family's own new place never inherits the start of a word's climb", (() => { const q = n.S.getProgress(); q.stage.R = 4; n.local[n.S.kkey("sona.progress.v1")] = JSON.stringify(q); return n.S.rungOf("R") === 1; })());
 }
 
 // ── 4. every step is the place's own ──
@@ -225,7 +244,14 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("…and GAMES_FOLLOW_POS is the one switch back to start-of-word words", f.GAMES_FOLLOW_POS === true);
   ok("a word carries the sound by its spelling, and an x is a k and an s", f.hasSound("glass", "S") && f.hasSound("fox", "K") && f.hasSound("fox", "S") && !f.hasSound("cat", "S") && !f.hasSound("ball", "R"));
   const feed = readFileSync(ROOT + "/arcade-feed.html", "utf8");
-  ok("Feed Echo's wrong pictures never carry the practice sound", /!\(S\.hasSound&&S\.hasSound\(w\.w,SOUND\)\)/.test(feed));
+  ok("Feed Echo's wrong pictures never carry the practice sound, nor are a word of its own bank (Z's s in nose, rose)", /!\(S\.hasSound&&S\.hasSound\(w\.w,SOUND\)\)/.test(feed) && /OWN\[w\.w\]/.test(feed));
+  // the cards take their place from the homework's own words, as the practice page does
+  const hw = at("i", { gameLevel: "syllable" }); homework(hw, { pos: "i", words: ["car", "star"] });
+  ok("start-of-word homework that names end words: the cards never ask a start-of-word syllable", hw.S.sylPos("R") === "f" && [0, 1, 2].map((c) => hw.S.gameAsk("R", c).text).every((t) => !/^r[aeiou]/.test(t)), [0, 1, 2].map((c) => hw.S.gameAsk("R", c).text));
+  // a practice syllable switched on is not a card line until the cards are
+  const mx = at("mix"); mx.SC.SYL_POS_ON.f.push("R");
+  mx.session["sona.boost.sound"] = "R"; mx.session["sona.boost.level"] = "syllable"; mx.session["sona.boost.ask"] = "ar"; mx.session["sona.boost.pos"] = "mix";
+  ok("under Mixed, a handed-over syllable from a place the cards have not been listened at is not repeated", [1, 2].every((c) => mx.S.gameAsk("R", c).text !== "ar"), [1, 2].map((c) => mx.S.gameAsk("R", c).text));
 }
 
 // ── 10. what is booked as practice, and where ──
@@ -247,6 +273,10 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   const g = S.getProgress(); g.stage.R = 5; g.stageAt = { "R.v": 4 }; local[S.kkey("sona.progress.v1")] = JSON.stringify(g);
   ok("past the last step: \"All steps done\", never \"Talking\" or \"Mastered\"", S.stepLabel("R", "i") === "All steps done" && S.stepLabel("R", "f") === "All steps done");
   ok("ladderWhere lists each place climbed, named as practised (R at the end of a word)", S.ladderWhere("R").map((w) => w.pos + ":" + w.done).join() === "i:true,f:true");
+  const sk = boot({ profile: { wordPosition: "f", focusSounds: ["S"] } }), q = sk.S.getProgress(); q.stage.S = 1; sk.local[sk.S.kkey("sona.progress.v1")] = JSON.stringify(q);
+  ok("a step a place skips is named by the next one it has: End of word with no syllables, past the sound, is \"Words\"", sk.S.ladderSteps("S").join() === "0,2,3" && sk.S.stepLabel("S") === "Words" && sk.S.stepLabel("S", "f", 1) === "Words" && sk.S.stepLabel("S", "i", 1) === "Syllables");
+  const th = boot(), tg = th.S.getProgress(); tg.stage.THV = 2; th.local[th.S.kkey("sona.progress.v1")] = JSON.stringify(tg);
+  ok("TH (v)'s one climb is listed once, as anywhere in a word (it has no start-of-word words)", th.S.ladderWhere("THV").map((w) => w.pos).join() === "mix");
   ok("one set of position names, with how a line says each", S.posPhrase("R", "f") === "R at the end of words" && S.posPhrase("R", "v") === "Vocalic R" && S.posPhrase("S", "b") === "S in blends" && S.posInfo("v").only.join() === "R");
   const pl = boot({ profile: { wordPosition: "f" } }), plan = pl.S.ladderPlan("R");
   ok("ladderPlan gives Settings the steps the practice page will ask, with a fixed example each", plan.pos === "f" && plan.have.join() === "0,2,3" && plan.steps[0].sample === "rrrr" && plan.steps[2].sample === "car" && plan.steps[3].sample === "I see a car.", plan);

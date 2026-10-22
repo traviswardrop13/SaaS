@@ -613,7 +613,8 @@
       Array.prototype.forEach.call(posEl.options, function (o) {
         var info = Sona.posInfo(o.value), txt = posLabels[o.value], off = false;
         if (openPos.indexOf(o.value) < 0) { off = true; txt += " · coming soon"; }
-        else if (little && info.only) { off = true; txt += " · not for ages 2–4"; }
+        // (not under homework: the therapist's own choice is never called wrong)
+        else if (little && !hw && info.only) { off = true; txt += " · not for ages 2–4"; }
         // vocalic R is R's; blends here are R's, S's and L's: a choice none of
         // this child's sounds has would be a choice the app half kept
         else if (info.only && !sounds.some(function (x) { return info.only.indexOf(x) >= 0; })) { off = true; txt += " · " + info.only.map(label).join(", ") + " only"; }
@@ -628,8 +629,11 @@
       if (hw) lines.push("Set by the speech therapist\u2019s homework: " + (posLabels[pick] || posLabels.mix) + ".");
       var held = !hw && little && (pick === "v" || pick === "b");
       if (held) lines.push("Blends and vocalic R usually come later, so " + nm + " practices the start of words.");
+      // R at the end of a word is vocalic R (car, door), held the same way
+      var rEnd = !hw && little && pick === "f" && sounds.indexOf("R") >= 0;
+      if (rEnd) lines.push("R at the end of a word is vocalic R, which usually comes later, so R practices the start of words.");
       else if (!hw && little && pick === "mix") lines.push("Blends and vocalic R usually come later, so " + nm + "\u2019s Mixed practice leaves them out.");
-      var toStart = held ? [] : sounds.filter(function (x) { return pick !== "mix" && pick !== "i" && Sona.soundPos(x) === "i"; });
+      var toStart = held ? [] : sounds.filter(function (x) { return pick !== "mix" && pick !== "i" && !(rEnd && x === "R") && Sona.soundPos(x) === "i"; });
       var toAny = sounds.filter(function (x) { return pick !== "mix" && Sona.soundPos(x) === "mix"; });
       var who = function (list) { return list.length > 3 ? nm + "\u2019s other sounds practice" : list.map(label).join(", ") + (list.length === 1 ? " practices" : " practice"); };
       if (toStart.length) lines.push((pick === "v" ? "Only R has vocalic R. " : pick === "b" ? "Only R, S and L have blends here. " : "") + who(toStart) + " the start of words.");
@@ -869,6 +873,8 @@
       if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " practice steps and coins on this device? Trophies, buddies and stickers stay. This cannot be undone.")) return;
       if (activeSlot() !== loadSlot) { location.reload(); return; }
       Sona.resetProgress(); alert("Progress reset.");
+      // the steps line reads the climb the reset just cleared
+      paintPractice(); paintGameLevel();
     };
 
     // ── THE PRACTICE BOARD (BOARD2, 11 Oct 2026; built dark) ──────────────

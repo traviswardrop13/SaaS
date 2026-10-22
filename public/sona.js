@@ -826,13 +826,37 @@
     const at = g.stageAt || {}, pre = sound + ".";
     return Object.keys(at).some((k) => k.indexOf(pre) === 0 && (at[k] | 0) >= 1);
   }
+  // BEFORE THIS BUILD every climb was kept in g.stage[sound], including one
+  // made under a speech therapist's homework at another place (most are
+  // "Mixed", the dashboard's default). A record from before it (no g.posV)
+  // reads that climb for the homework's own place, so a child who had reached
+  // sentences on their homework is not sent back to the sound; the first new
+  // write copies it there and marks the record (_posMark), and from then on
+  // each place keeps its own. Reading never writes.
+  function _posCarry(g, sound, k) {
+    if (g.posV || !k) return null;
+    const hw = homework();
+    if (!hw || !hw.pos || (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) < 0) return null;
+    return _ladKey(sound, hw.pos) === k ? (g.stage[sound] || 0) : null;
+  }
+  function _posMark(g) {
+    if (g.posV) return;
+    const hw = homework();
+    if (hw && hw.pos) (hw.sounds || []).forEach((x) => {
+      const s = String(x).toUpperCase(), k = _ladKey(s, hw.pos);
+      if (!k || !(g.stage[s] > 0)) return;
+      g.stageAt = g.stageAt || {};
+      if (g.stageAt[k] == null) g.stageAt[k] = g.stage[s];
+    });
+    g.posV = 1;
+  }
   // pos: a place in the word ("i", "m", "f", "v", "b", "mix"); left out, the
   // place this sound is practised at now (soundPos). 0..5: the first step not
   // yet earned.
   function rungOf(sound, pos) {
     sound = String(sound || "").toUpperCase();
-    const g = getProgress(), k = _ladKey(sound, pos);
-    let r = k ? ((g.stageAt || {})[k] | 0) : (g.stage[sound] || 0);
+    const g = getProgress(), k = _ladKey(sound, pos), own = (g.stageAt || {})[k];
+    let r = k ? (own != null ? own | 0 : (_posCarry(g, sound, k) || 0)) : (g.stage[sound] || 0);
     if (r < 1 && _aloneDone(g, sound)) r = 1;
     return Math.min(LADDER.length, r);
   }
@@ -846,6 +870,7 @@
     const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
     if (ok && rung >= cur && cur < LADDER.length) {
       const g = getProgress(), v = Math.min(LADDER.length, rung + 1);
+      _posMark(g);
       if (k) { g.stageAt = g.stageAt || {}; g.stageAt[k] = v; } else g.stage[sound] = v;
       save(GKEY, g);
     }
@@ -867,6 +892,7 @@
   function rungWin(sound, rung, pos) {
     sound = String(sound || "").toUpperCase();
     const g = getProgress(); const k = (_ladKey(sound, pos) || sound) + "." + rung;
+    _posMark(g);
     g.rungWins = g.rungWins || {};
     const w = (g.rungWins[k] | 0) + 1;
     if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1, pos); }
@@ -987,6 +1013,22 @@
     try { const p = getProfile().wordPosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
   }
   function _littleOne() { try { return playStyle() === "simple"; } catch (e) { return false; } }
+  // a place a child aged 2 to 4 is not given from a grown-up's pick
+  function _heldLittle(sound, pos) { return pos === "v" || pos === "b" || (String(sound).toUpperCase() === "R" && pos === "f"); }
+  // is this sound one the active homework names?
+  function _hwFor(sound) { const hw = homework(); return !!(hw && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(String(sound).toUpperCase()) >= 0); }
+  // The place a sound's SYLLABLES are practised at: the place its homework's
+  // own words sit, when an assignment names them ("car", "star" under a
+  // start-of-word assignment are end-of-word R); else the place it is
+  // practised at. The practice page and the game cards both read this.
+  function sylPos(sound, P) {
+    P = P || soundPos(sound);
+    const hww = homeworkWords(sound);
+    if (!hww.length) return P;
+    const ps = {}; hww.forEach((w) => { ps[w.pos || "i"] = 1; });
+    const k = Object.keys(ps);
+    return k.length === 1 ? k[0] : "mix";
+  }
   // Does this sound have bank words at this place?
   function posHas(sound, pos) {
     return (WORDS[String(sound || "").toUpperCase()] || []).some((w) => (w.pos || "i") === pos);
@@ -1011,7 +1053,8 @@
     // reduction is typical to about 4, vocalic R comes around 7): the start of
     // a word instead, and Settings says so. Their speech therapist's homework
     // still names its own place. Rachel's call.
-    if (!mine && _littleOne() && (p === "v" || p === "b")) p = "i";
+    // R at the end of a word IS vocalic R (car, door), so it is held too.
+    if (!mine && _littleOne() && (p === "v" || p === "b" || (sound === "R" && p === "f"))) p = "i";
     if (p === "mix" || posHas(sound, p)) return p;
     return posHas(sound, "i") ? "i" : "mix";
   }
@@ -1805,13 +1848,10 @@
     const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
     const P = pos || soundPos(sound);
     const ws = () => wordsFor(sound, P) || [];
-    // the syllables of the place the words really sit: homework that names
-    // "car" and "star" under a start-of-word assignment is end-of-word R
-    let SP = P;
-    const hww = homeworkWords(sound);
-    if (hww.length) { const ps = {}; hww.forEach((w) => { ps[w.pos || "i"] = 1; }); const k = Object.keys(ps); SP = k.length === 1 ? k[0] : "mix"; }
+    // the syllables of the place the words really sit (sylPos)
+    const SP = sylPos(sound, P);
     if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme", pos: "" }];
-    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).filter((s) => !(SP === "mix" && _littleOne() && (s.pos === "v" || s.pos === "b"))).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).filter((s) => !(SP === "mix" && _littleOne() && !_hwFor(sound) && _heldLittle(sound, s.pos))).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
     // once each: "cake" is filed at the start and the end of K
     if (lvl === "word") { const seen = {}; return ws().filter((w) => !seen[w.w] && (seen[w.w] = 1)).map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full", pos: w.pos || "i" })); }
     if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound, P) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w, pos: w.pos }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full", pos: s.pos || P }));
@@ -1874,9 +1914,14 @@
   // Sentences, or "All steps done" once the last step this place has is
   // earned. Never "Talking", which the practice page does not ask, and never
   // "Mastered", which reads like a grade (CLAUDE.md: nothing is an evaluation).
-  function stepLabel(sound, pos) {
-    const P = pos || soundPos(sound), r = rungOf(sound, P);
-    return r > ladderTop(sound, P) ? "All steps done" : rungLabel(r);
+  // r: a step number (left out, the one this child is on). A step this place
+  // skips is named by the next one it has: at the end of a word with no
+  // syllables switched on, the step after the sound is "Words".
+  function stepLabel(sound, pos, r) {
+    const P = pos || soundPos(sound), have = ladderSteps(sound, P);
+    if (r == null) r = rungOf(sound, P);
+    for (let i = 0; i < have.length; i++) if (have[i] >= r) return rungLabel(have[i]);
+    return "All steps done";
   }
   // Every place this child has climbed at for a sound, the start of a word
   // first, for Progress: [{ pos, rung, label, done }]. Vocalic R and R at the
@@ -1884,7 +1929,8 @@
   function ladderWhere(sound) {
     sound = String(sound || "").toUpperCase();
     const g = getProgress(), out = [];
-    if (g.stage[sound] != null) out.push("i");
+    // TH (v)'s own climb is "anywhere in a word": it has no start-of-word words
+    if (g.stage[sound] != null) out.push(posHas(sound, "i") ? "i" : "mix");
     Object.keys(g.stageAt || {}).forEach((k) => {
       if (k.indexOf(sound + ".") !== 0) return;
       let p = k.slice(sound.length + 1);
@@ -1996,7 +2042,7 @@
     try { const p = getProfile(); if (p.voiceOn === false || Number(p.volume) === 0) return "muted"; } catch (e) {}
     const SC = _gameContent();
     if (!(SC && SC.gameSyllables && SC.gameSyllables(sound).length)) return "sound";
-    if (!SC.gameSyllables(sound, soundPos(sound)).length) return "position";
+    if (!SC.gameSyllables(sound, sylPos(sound)).length) return "position";
     return "";
   }
   // The ceiling asked for, before the sound's own limits.
@@ -2021,10 +2067,16 @@
     } catch (e) { return null; }
   }
   function _gameItem(sound, want, card, hand) {
-    const SC = _gameContent(), bare = soundSay(sound), pos = soundPos(sound);
+    const SC = _gameContent(), bare = soundSay(sound), pos = sylPos(sound);
     const on = !!(SC && SC.gameSyllables && SC.gameSyllables(sound).length);
     const syls = on ? SC.gameSyllables(sound, pos) : [];
     let rung = 0, text = bare, at = "";
+    // A place whose card syllables are not on has no syllable step between
+    // the sound and a word, as the practice page has none there: one step up
+    // from the sound is the word ("car"), never the bare sound again.
+    // (A grown-up's "Sound, then syllables" is a ceiling, and stays one.)
+    let pick = ""; try { pick = getProfile().gameLevel || ""; } catch (e) {}
+    if (on && want === 1 && !syls.length && pick !== "syllable") want = 2;
     if (on && want > 0) {
       const hw = homeworkWords(sound);
       if (want >= 2) {
@@ -2042,7 +2094,10 @@
         // sound's at this place (never one the skip list holds back); else
         // today's
         const skip = (SC.GAME_SKIP || {})[sound] || [];
-        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 ? SC.syllables(sound, pos).filter((s) => s.t === hand.ask)[0] : null;
+        // only a syllable the CARDS may ask here (listened to in the card's
+        // line): the start of a word's five, or a switched-on place's table
+        const may = pos === "i" || pos === "mix" ? SC.syllables(sound) : SC.syllables(sound, pos);
+        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 ? may.filter((s) => s.t === hand.ask)[0] : null;
         const s = own || syls[(dayNum() + Math.max(1, card) - 1) % syls.length];
         text = s.t; at = s.pos || pos;
         rung = 1;
@@ -2287,8 +2342,9 @@
     const pick = homeworkWords(sound);
     if (pick.length) return pick;
     const list = (WORDS[sound] || []).slice();
-    // a little one's Mixed leaves out vocalic R and blends (soundPos)
-    if (pos === "mix" && _littleOne()) return list.filter(function (w) { return w.pos !== "v" && w.pos !== "b"; });
+    // a little one's Mixed (a grown-up's pick, not homework) leaves out vocalic
+    // R and blends, R's end words with them (soundPos)
+    if (pos === "mix" && _littleOne() && !_hwFor(sound)) return list.filter(function (w) { return !_heldLittle(sound, w.pos); });
     if (pos === "mix" || pos === "all") return list;
     pos = pos || "i"; // no selection → initial position (preserves prior behavior; SLPs opt into others)
     const sel = list.filter(function (w) { return (w.pos || "i") === pos; });
@@ -8835,5 +8891,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, playWords, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, sylPos, playWords, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

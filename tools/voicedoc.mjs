@@ -289,7 +289,18 @@ const sliceAskLine = (ask) => sliceAsk.m[1] + ask + sliceAsk.m[2];
 // What a card may ask past the bare sound: the lists in gamecontent.js.
 const GAME_ON = SC.GAME_SYL_ON.slice();
 for (const s of GAME_ON) if (!SOUNDS.includes(s)) fail(`GAME_SYL_ON names ${s}, which is not one of the ${SOUNDS.length} sounds.`);
-const gameSteps = (s) => ({ syl: SC.gameSyllables(s).map((x) => x.t), word: SC.gameWord(s) });
+// Every place a switched-on sound's cards can ask (22 Oct 2026): the start of
+// a word, then each other place's own syllables (only where GAME_POS_ON lists
+// it) and its short word (GAME_SHORT_AT).
+const PLACES = ["i", "m", "f", "v", "b"];
+const gameSteps = (s) => {
+  const syl = [], word = [];
+  PLACES.forEach((p) => {
+    SC.gameSyllables(s, p).forEach((x) => { if (!syl.includes(x.t)) syl.push(x.t); });
+    const w = SC.gameWord(s, p); if (w && !word.includes(w)) word.push(w);
+  });
+  return { syl: syl, word: word };
+};
 for (const s of SOUNDS) if (!existsSync(join(ROOT, "public/coach/say-echo", s + "-sound.wav"))) fail(`public/coach/say-echo/${s}-sound.wav is missing — the games and the practice page play it for ${s}.`);
 
 // Echo's mid-round ask: all six games share the say-it voice. A cached
@@ -1089,15 +1100,15 @@ P(`**{ask} = a syllable or the short word** — only for the sounds switched on 
 P();
 P("| Sound | Syllables, in order | Short word |");
 P("|---|---|---|");
-GAME_ON.forEach((s) => { const g = gameSteps(s); totals.fillers += g.syl.length + (g.word ? 1 : 0); P(`| ${SOUND_TITLE(s)} | ${g.syl.join(", ")} | ${g.word || "—"} |`); });
+GAME_ON.forEach((s) => { const g = gameSteps(s); totals.fillers += g.syl.length + g.word.length; P(`| ${SOUND_TITLE(s)} | ${g.syl.join(", ")} | ${g.word.join(", ") || "—"} |`); });
 P();
 P(`**{ask} can also be** a word from a speech therapist's homework for that sound, or the syllable or word the "Say it 5 times" page just ended on (it hands it over, so a card never asks below it). Those are C3's syllables and Part D's words; not expanded here.`);
 P();
 P(`Rachel's calls, built on defaults until she answers: which syllables and in what order, whether "${SC.GAME_SHORT.R || "rot"}" is the word, the lists for the other ${SOUNDS.length - GAME_ON.length} sounds, and Echo's TTS voice modelling a syllable at all.`);
 P();
-const cardLines = GAME_ON.reduce((a, s) => a + gameSteps(s).syl.length + (gameSteps(s).word ? 1 : 0), 0);
-P(`**All ${cardLines} lines for the sounds switched on.** Best left to TTS; listed so nothing is hidden.`);
-GAME_ON.forEach((s) => { const g = gameSteps(s); g.syl.concat(g.word ? [g.word] : []).forEach((a, i) => C(`card-${s}-${a}.mp3`, sliceAskLine(a), i < g.syl.length ? `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a syllable.` : `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a short word.`, sliceAsk.cite)); });
+const cardLines = GAME_ON.reduce((a, s) => a + gameSteps(s).syl.length + gameSteps(s).word.length, 0);
+P(`**All ${cardLines} lines for the sounds switched on**, at every place in a word (a place's syllables only where \`GAME_POS_ON\` lists it; its short word from \`GAME_SHORT_AT\`). Best left to TTS; listed so nothing is hidden.`);
+GAME_ON.forEach((s) => { const g = gameSteps(s); g.syl.concat(g.word).forEach((a, i) => C(`card-${s}-${a}.mp3`, sliceAskLine(a), i < g.syl.length ? `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a syllable.` : `${roundName("slice")}'s card asks ${SOUND_TITLE(s)} in a short word.`, sliceAsk.cite)); });
 cTable();
 
 // C8 the picture games

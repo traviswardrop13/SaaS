@@ -211,18 +211,20 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   homework(p, { pos: "f", words: ["car", "star"] });
   const t = texts(S, "R");
   ok("end-of-word homework: the cards stay on the sound, then one of the homework's own words; never a start-of-word syllable",
-    S.practicePos() === "f" && t[0] === "rrrr" && t[1] === "rrrr" && ["car", "star"].includes(t[2]) && S.gameAsk("R", 2).html === t[2].slice(0, -1) + '<b class="snd">r</b>', t);
+    S.practicePos() === "f" && t[0] === "rrrr" && ["car", "star"].includes(t[1]) && ["car", "star"].includes(t[2]) && S.gameAsk("R", 2).html === t[2].slice(0, -1) + '<b class="snd">r</b>', t);
   homework(p, { pos: "v", words: null });
   ok("\"er, ar, or\" homework that names no words: no start-of-word syllable, and the word card asks vocalic R's own short word",
-    S.practicePos() === "v" && texts(S, "R").join() === "rrrr,rrrr,bird" && S.gameTop("R") === 2 && S.gameHold("R") === "position", texts(S, "R"));
+    S.practicePos() === "v" && texts(S, "R").join() === "rrrr,bird,bird" && S.gameTop("R") === 2 && S.gameHold("R") === "position", texts(S, "R"));
   hand(p, "R", "word", "bird");
   ok("…unless the practice page just asked one of its words: the cards repeat it", texts(S, "R").join() === "rrrr,bird,bird", texts(S, "R"));
   hand(p, "R", "syllable", "ree");
   ok("…and a start-of-word syllable the practice page asked is not carried into the cards under that homework", texts(S, "R").join() === "rrrr,bird,bird", texts(S, "R"));
   const q = boot(); homework(q, { pos: "f", words: ["car"] });
-  ok("with \"Sona decides\", the homework's word still waits for the earned level", texts(q.S, "R").join() === "rrrr,rrrr,rrrr", texts(q.S, "R"));
-  q.S.recordRung("R", 0, 1);
-  ok("…and comes once it is earned", texts(q.S, "R").join() === "rrrr,rrrr,car", texts(q.S, "R"));
+  // 22 Oct 2026: a place with no syllable step goes from the sound straight
+  // to a word, as its practice page does, so the word is one step up
+  ok("with \"Sona decides\", a place with no syllable step asks the homework's word one step up from the sound", texts(q.S, "R").join() === "rrrr,car,car", texts(q.S, "R"));
+  q.S.saveProfile({ gameLevel: "syllable" });
+  ok("…but a grown-up's \"Sound, then syllables\" stays a ceiling: the bare sound", texts(q.S, "R").join() === "rrrr,rrrr,rrrr", texts(q.S, "R"));
 }
 
 // ── 7. it only reads ──
@@ -256,7 +258,7 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   const at = (pos, over) => { const p = boot({ profile: Object.assign({ wordPosition: pos }, over || {}) }); return p; };
   const f = at("f", { gameLevel: "word" }), { S, SC } = f;
   ok("a family's own End of word reaches the cards, with no start-of-word syllable while End's syllables are off",
-    S.soundPos("R") === "f" && texts(S, "R").join() === "rrrr,rrrr,car" && S.gameHold("R") === "position", texts(S, "R"));
+    S.soundPos("R") === "f" && texts(S, "R").join() === "rrrr,car,car" && S.gameHold("R") === "position", texts(S, "R"));
   ok("…and R's new places ship switched off: Middle, End, Vocalic R and Blends",
     JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((x) => SC.gameSyllables("R", x).length === 0));
   ok("…while Mixed asks the start-of-word syllables and word, which were listened to", SC.gameSyllables("R", "mix").map((x) => x.t).join() === SC.gameSyllables("R").map((x) => x.t).join() && SC.gameWord("R", "mix") === "rot");

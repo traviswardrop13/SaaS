@@ -90,7 +90,12 @@
             if (!bytes || !bytes.byteLength || !Sona.mediaPCM) { btn.classList.remove("playing"); status.textContent = "Echo's voice is not answering. Try again in a moment."; return; }
             status.textContent = "“Ready? Say " + say + ", five times.”";
             playing = Sona.mediaPCM(bytes, { volume: 0.9 });
-            playing.done.then(function () { if (mine === gen) btn.classList.remove("playing"); });
+            playing.done.then(function (how) {
+              if (mine !== gen) return;
+              btn.classList.remove("playing");
+              // a phone can refuse to play once the voice has loaded; say so, never leave the line as if it was heard
+              if (how === "failed") status.textContent = "Echo's voice could not play here. Tap it again.";
+            });
           })
           .catch(function () { if (mine === gen) { btn.classList.remove("playing"); status.textContent = "Echo's voice is not answering. Try again in a moment."; } });
       }

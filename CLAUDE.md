@@ -3211,18 +3211,30 @@ selected."
   has vocalic R. S practices the start of words."), greying out a choice none
   of the child's sounds has. TH (v) has no start-of-word word a picture can
   show, so it practises anywhere in a word.
+- **Ages 2 to 4 are never given vocalic R or blends from a grown-up's pick**
+  (cluster reduction is typical to about 4, vocalic R comes around 7): they
+  practise the start of words instead, and R at the end of a word, which IS
+  vocalic R, is held the same way; their Mixed leaves those words out.
+  Settings greys the two out ("· not for ages 2–4") and says why; the saved
+  pick is kept for when they turn five. A speech therapist's homework still
+  names its own place, Mixed included.
 - **Each place climbs on its own:** the sound alone, that place's syllables,
   its words, sentences built on them, one step a round, one step past what
   was earned (the same rule as before). The start of a word keeps
-  `g.stage[sound]`; other places live in `g.stageAt` ("R.f"), wins "R.f.2",
+  `g.stage[sound]`; other places live in `g.stageAt` ("R.m"), wins "R.m.2",
   inside the same progress record (reset, backup and removal treat it the
   same). The sound alone is shared (passed at one place, passed at all); R at
-  the end of a word and vocalic R are one climb ("R.v"). A step with nothing
-  in it is skipped, never asked (`Sona.ladderSteps`): that closed a bug where
-  the fifth round asked the empty "talking" step, fell back to "rrrr", and
-  two clean "rrrr"s marked a sound Mastered. Progress shows each place's step
-  and says "All steps done", never "Talking" or "Mastered"; its Firsts are
-  per child and per place.
+  the end of a word and vocalic R are one climb ("R.v"). A record from before
+  this build (no `g.posV`) reads its old climb for the place of the homework
+  it was made under, until its first new write copies it there: a child on
+  Mixed homework is not sent back to the sound. A step with nothing in it is
+  skipped, never asked (`Sona.ladderSteps`): that closed a bug where the
+  fifth round asked the empty "talking" step, fell back to "rrrr", and two
+  clean "rrrr"s marked a sound Mastered. Progress shows each place's step (a
+  skipped step is named by the next one it has: past the sound at a place
+  with no syllables, "Words") and says "All steps done", never "Talking" or
+  "Mastered"; its Firsts are per child and per place. The day's adventure
+  keeps one place for all its rounds (`run.pos`).
 - **"Each day's practice starts with"** (`profile.ladderStart`: the sound,
   syllables, words or sentences). Default: the sound, every step, as before.
   A later start skips the steps below it (they count as the child's for the
@@ -3233,10 +3245,12 @@ selected."
   middle `SYL_MID` ("ah-rah", hyphen kept so a voice reads two beats), end
   `SYL_END` (spelled as English endings: "ope", "oak", "ace", "edge"), vocalic
   R `SYL_VOC` (ar, or, air, ear, ire; Echo is given "are", "ore"; no "er"),
-  blends `SYL_BLEND` (R trah…, S stah, **spa** never "spee", which said
-  without its s is "pee"; L blah…). **Asked only once someone has listened**:
-  `SYL_POS_ON` (today vocalic R, which R's end uses too); every other place
-  skips the syllable step, sound → words. `/listen.html` (grown-ups, linked
+  blends `SYL_BLEND` (R trah, free, grew…; S **spa** never "spee", which said
+  without its s is "pee", ski, snoo, smoh, stay; L blah…). Left out on
+  purpose: "oss", "ohss" and "ahz" (each can sound like a rude word), and
+  ends with no English spelling. **Asked only once someone has listened**:
+  `SYL_POS_ON` ships EMPTY (nothing switched on yet); every place but the
+  start of a word skips the syllable step, sound → words. `/listen.html` (grown-ups, linked
   from nowhere) plays every syllable in the practice page's own line, so
   Travis or Rachel can listen and switch a place on (one entry). `soundmap`
   holds every table to the never-say list (also as a blend said without its
@@ -3247,14 +3261,20 @@ selected."
   a bank word missing from it. The five frames are unchanged for a word you
   count. Echo is given a sentence without its full stop.
 - **A step down stays on target** (`Sona.stepDown`): a sentence to its own
-  word, a word to its closest syllable at its own place ("car" → "ar"), a
-  syllable to the sound alone.
+  word; a word to a syllable at its own place (R's vowel + R words by
+  `STEP_SYL`: bear → air, four → or; an "er" word such as bird to the sound
+  alone; others the syllable sharing the most letters, rabbit → rah), or to
+  the sound alone where the place has no syllables switched on; a syllable to
+  the sound alone.
 - **The games follow the place.** Hoops, Soccer Goal, Dino Dig, Bubble Pop,
   Feed Echo and every sayplay.js game ask that place's words
   (`Sona.playWords`; `GAMES_FOLLOW_POS` is the one switch back); the
   start-of-word themes only at the start of a word; Feed Echo's wrong pictures
-  never carry the practice sound (`Sona.hasSound`). Fruit Slice's cards: see
-  "Games ask for more than the sound". The books stay start-of-word.
+  never carry the practice sound (`Sona.hasSound`) and are never a word of its
+  own bank. Fruit Slice's cards: see "Games ask for more than the sound"
+  (a place with no card syllables goes from the sound to its word, as the
+  practice page does; the place comes from the homework's own words when it
+  names some, `Sona.sylPos`). The books stay start-of-word.
 - **Listening and booking.** A try at the sound alone or a syllable is never
   booked as a word place (the clinician's pass rate by position counts words
   and sentences only). On a syllable round Apple's words are compared run
@@ -3271,8 +3291,8 @@ selected."
   `SENT_FORM`; bare-sound and syllable tries left out of the position pass
   rate; the syllable listening rule and `HEAR_ALIKE`; "cah" for car still
   passing at the end of a word (`HEAR_SUBS_END`, unchanged); "sandwich" moved
-  to end-of-word CH; vocalic R and blends offered at any age (shown, not
-  gated, like the sounds).
+  to end-of-word CH; vocalic R and blends (and R's end) held for ages 2 to 4
+  from a grown-up's pick; the step-down choices (`STEP_SYL`).
 `tests/posladdertest.mjs` holds these rules; `kidtest` the Settings pickers;
 `progtest`, `hwtest`, `gameasktest`, `heartest` and `soundmap` the rest.
 
