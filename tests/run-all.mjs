@@ -1,6 +1,7 @@
 // Runs every suite in order; exits nonzero if any fails.
 // Locally: `node tests/run-all.mjs` (needs playwright — see _env.mjs).
 import { spawnSync } from "child_process";
+import { writeSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 
@@ -142,21 +143,34 @@ const SUITES = [
 // suite that failed early named itself but not what failed in it. Each suite's
 // output is echoed whole as it ends (a suite's own lines are not interleaved
 // with another's, and nothing else changes for a reader of the full log).
-const bad = [], fails = {};
-for (const s of SUITES) {
-  console.log("\n━━━ " + s + " ━━━");
-  const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: ["inherit", "pipe", "pipe"], timeout: 300000, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
-  if (r.stdout) process.stdout.write(r.stdout);
-  if (r.stderr) process.stderr.write(r.stderr);
-  if (r.status !== 0) {
-    bad.push(s + (r.signal ? " (" + r.signal + ")" : "")); console.log("SUITE FAILED: " + bad[bad.length - 1]);
-    const lines = ((r.stdout || "") + "\n" + (r.stderr || "")).split("\n").filter((l) => /^\s*(FAIL|✗|Error|TypeError|ReferenceError|AssertionError)/.test(l) || /FAILURES? \//.test(l) || /\d+ failures?\b/i.test(l));
-    fails[s] = lines.slice(0, 60).map((l) => l.length > 700 ? l.slice(0, 700) + " …" : l);
+// Every line goes out with writeSync, waiting out a full pipe (22 Oct 2026).
+// GitHub's runner hands Node a non-blocking pipe: a big suite's output written
+// with process.stdout.write was taken in part, the rest queued for the event
+// loop, and spawnSync never lets the loop run, so the queue (every later
+// suite, and the list of failures) was dropped when the run exited. The log
+// on #234 stopped mid-word at suite 69 of 126.
+const pause = new Int32Array(new SharedArrayBuffer(4));
+function say(fd, text) {
+  const buf = Buffer.from(text, "utf8");
+  for (let off = 0, tries = 0; off < buf.length;) {
+    try { off += writeSync(fd, buf, off, buf.length - off); tries = 0; }
+    catch (e) { if (e.code !== "EAGAIN" || ++tries > 3000) throw e; Atomics.wait(pause, 0, 0, 10); }
   }
 }
-for (const s of Object.keys(fails)) {
-  console.log("\n── what failed in " + s + " ──");
-  for (const l of fails[s]) console.log(l);
+const bad = [], fails = {};
+for (const s of SUITES) {
+  say(1, "\n━━━ " + s + " ━━━\n");
+  const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: ["inherit", "pipe", "pipe"], timeout: 300000, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
+  say(1, r.stdout || "");
+  say(2, r.stderr || "");
+  if (r.status !== 0) {
+    bad.push(s + (r.signal ? " (" + r.signal + ")" : ""));
+    const lines = ((r.stdout || "") + "\n" + (r.stderr || "")).split("\n").filter((l) => /^\s*(FAIL|✗|Error|TypeError|ReferenceError|AssertionError)/.test(l) || /FAILURES? \//.test(l) || /\d+ failures?\b/i.test(l));
+    fails[s] = lines.slice(0, 60).map((l) => l.length > 700 ? l.slice(0, 700) + " …" : l);
+    say(1, "SUITE FAILED: " + bad[bad.length - 1] + "\n");
+  }
 }
-console.log(bad.length ? "\n" + bad.length + " SUITE(S) FAILED: " + bad.join(", ") : "\nALL SUITES GREEN");
+let tail = "";
+for (const s of Object.keys(fails)) tail += "\n── what failed in " + s + " ──\n" + fails[s].join("\n") + "\n";
+say(1, tail + (bad.length ? "\n" + bad.length + " SUITE(S) FAILED: " + bad.join(", ") : "\nALL SUITES GREEN") + "\n");
 process.exit(bad.length ? 1 : 0);
