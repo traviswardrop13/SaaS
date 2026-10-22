@@ -366,7 +366,10 @@ if (appFree) {
       practice: ["practice", "daily", "session", "demo"].map((w) => Sona.gated(w)),
       free: keys.filter((k) => Sona.GAME_ACTS[k].tier === "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed]),
       paid: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed, Sona.gated(k)]),
-      parked: keys.filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
+      // No game is parked since 22 Oct 2026; park one here so the rule
+      // that keeps a Coming soon game shut still has something to hold.
+      parked: (function () { var a = Sona.GAME_ACTS.peekaboo, was = a.comingSoon; a.comingSoon = true;
+        try { return [{ key: "peekaboo", access: Sona.gameAccess("peekaboo") }]; } finally { a.comingSoon = was; } })(),
       released: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).length,
       story: Sona.gated("story"),
       unnamed: Sona.gated(),
@@ -383,7 +386,7 @@ if (appFree) {
     st.free.length >= 2 && st.free.every(([, a]) => a === true), JSON.stringify(st.free));
   // Peekaboo and every Say & Play game until it is rebuilt (Travis, 26 Sep
   // 2026: "put the 20 games as coming soon"; Bubble Pop came back 30 Sep).
-  ok("…but Coming soon games remain unavailable to this family", st.parked.length>=2&&["peekaboo"].every(k=>st.parked.some(g=>g.key===k))&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
+  ok("…but Coming soon games remain unavailable to this family", st.parked.length>=1&&["peekaboo"].every(k=>st.parked.some(g=>g.key===k))&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
   ok("…but no Premium game, asked by the catalog or the gate",
     st.paid.length > 0 && st.paid.every(([, a, g]) => a === false && g === true), JSON.stringify(st.paid));
   ok("…and Premium content that is not a game stays Premium",
