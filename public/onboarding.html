@@ -673,15 +673,50 @@
     var SELL_FIRST=["problem","reel","rachel"],SELL_AFTER=["interests","games"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
-    // follows: a family who will not meet a free trial is never asked about
-    // one. Read again as the ready screen is left (remindDue), so a store
-    // that found a purchase meanwhile skips it.
-    function remindDue(){try{return draft.role!=="slp"&&!!(Sona.notifyAvailable&&Sona.notifyAvailable()&&Sona.notifyState&&Sona.notifyState()==="prompt"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
+    // follows (remindMay: what the page knows at once, and what the order is
+    // built from). It asks "Want a reminder before your free trial ends?",
+    // so it is shown only to a family the store says WILL be offered free
+    // days (remindDue, read as the ready screen is left): an Apple ID that
+    // already had the free days (a reinstall, a second iPad) is charged
+    // today, and must never be told about a trial it will not get. The
+    // store's answer is asked as the ready screen shows (remindAsk, below);
+    // no answer by the time the parent leaves the ready screen means no
+    // reminder screen: it is never asked on a guess. A store that found a
+    // purchase meanwhile skips it too (trialFirst is then false).
+    function remindMay(){try{return draft.role!=="slp"&&!!(Sona.notifyAvailable&&Sona.notifyAvailable()&&Sona.notifyState&&Sona.notifyState()==="prompt"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
+    // the store's Plan (Sona.storePlan), once it has answered; null until then
+    var remindPlan=null,remindP=null,REMIND_WAIT_MS=2500;
+    // A free trial for THIS buyer, on the row the price screen picks as it
+    // opens (the yearly row when the store offers it, else the monthly one):
+    // storePlan's "free" is a product with free days AND a buyer Apple has not
+    // called ineligible (a definite "not eligible" is "paid": charged today).
+    function remindFree(plan){try{var pick=plan&&(plan.year||plan);return !!(pick&&pick.state==="free"&&pick.free);}catch(e){return false;}}
+    function remindDue(){return remindMay()&&remindFree(remindPlan);}
+    // Asked ONCE, as the ready screen shows (beside wallAsk): the store's plan
+    // and, where sona.js has it (NOTIFY1), iOS's own answer about
+    // notifications (Sona.notifyRefresh: notifyState alone is a guess on a
+    // page that has not heard from iOS yet). → a Promise that resolves once
+    // both have answered, or REMIND_WAIT_MS (2.5 s, setupWall's bound) after
+    // the ask, whichever is first; never rejects. A plan that answers later
+    // (or changes: storePlan's onLate, a late "not eligible") is still kept.
+    // Not asked at all, and not remembered, when no reminder may follow.
+    function remindAsk(){
+      if(remindP)return remindP;
+      if(!remindMay()||!Sona.storePlan)return Promise.resolve();
+      remindP=new Promise(function(done){
+        var left=2,t=setTimeout(done,REMIND_WAIT_MS);
+        function one(){if(--left<=0){clearTimeout(t);done();}}
+        function heard(pl){if(pl&&typeof pl==="object")remindPlan=pl;}
+        try{Promise.resolve(Sona.storePlan({onLate:heard})).then(heard,function(){}).then(one);}catch(e){one();}
+        try{if(!Sona.notifyRefresh)one();else Promise.resolve(Sona.notifyRefresh()).then(null,function(){}).then(one);}catch(e){one();}
+      });
+      return remindP;
+    }
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
       var sell=asks&&!p.onboarded;
-      var o=asks?["welcome"].concat(sell?SELL_FIRST:[],["name"],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindDue()?["remind"]:[],["mic"])
+      var o=asks?["welcome"].concat(sell?SELL_FIRST:[],["name"],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindMay()?["remind"]:[],["mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
@@ -752,7 +787,9 @@
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
     var micBusy=false, micGeneration=0, finished=false, asking=false;
     document.getElementById("micPromise").textContent=Sona.MIC_PROMISE||"";
-    function updateNext(){nextBtn.disabled=micBusy||leaving||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy||leaving||asking;}
+    // asking: an answer from outside the page is awaited (iOS's Allow box,
+    // or the store's word before the reminder screen)
+    function updateNext(){nextBtn.disabled=micBusy||leaving||asking||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy||leaving||asking;}
     function stopSetupTracks(stream){try{if(stream)stream.getTracks().forEach(function(track){track.stop();});}catch(e){}}
     function cancelSetupMic(){micGeneration++;micBusy=false;if(!finished)updateNext();}
     function requestSetupMic(){
@@ -1278,7 +1315,7 @@
       // Continue (onboarding-crafted.css reads body.ob-answered).
       if(key==="therapy"||key==="minutes"){document.getElementById(key==="therapy"?"obTherapy":"obMinutes").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
       document.body.classList.toggle("ob-answered",(key==="therapy"||key==="minutes")&&!!draft[key]);
-      if(key==="ready"){paintReady();wallAsk();}
+      if(key==="ready"){paintReady();wallAsk();remindAsk();}
       if(key==="remind"){["remindYes","remindNo"].forEach(function(id){var b=document.getElementById(id);b.disabled=false;b.removeAttribute("aria-busy");b.textContent=id==="remindYes"?"Turn on reminders":"Not now";});}
       // the games are painted with the screens that sell, so their pictures
       // are on their way before the screen that shows them
@@ -1317,8 +1354,21 @@
       if((key==="therapy"||key==="minutes")&&!draft[key])return;
       if(key==="remind")return;
       if(key==="ready"){
-        if(ORDER[idx+1]==="remind"&&remindDue()){try{Sona.sfx.tap();}catch(e){}settle();idx++;render();return;}
-        leaveReady();return;
+        if(ORDER[idx+1]!=="remind"||!remindMay()){leaveReady();return;}
+        // The reminder screen waits on the store's answer (and iOS's), asked
+        // as this screen showed: usually long in hand by now; if not, the
+        // button reads "One moment…" until it is, 2.5 s after the ask at
+        // most. Then the reminder screen, or (no free trial for this buyer,
+        // or no answer) on as if it were not there.
+        asking=true;try{Sona.sfx.tap();}catch(e){}
+        nextBtn.textContent="One moment…";nextBtn.setAttribute("aria-busy","true");updateNext();
+        remindAsk().then(function(){
+          asking=false;
+          if(finished||leaving||ORDER[idx]!=="ready"){updateNext();return;}
+          if(remindDue()){settle();idx++;render();return;}
+          leaveReady(null,true);
+        });
+        return;
       }
       if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.classList.add("needed"); return; } nameEl.classList.remove("needed"); }
@@ -1484,12 +1534,14 @@
     //    stamp, or, if the store found a purchase, straight on;
     //  · everyone else goes on to the microphone here, with no reload.
     // Whether a price is due is read from Sona.trialFirst() at the instant of
-    // going, so the store's answer counts even if it came late.
-    function leaveReady(btn){
+    // going, so the store's answer counts even if it came late. quiet: the
+    // tap's chime already rang (the ready screen's Continue, which waited on
+    // the store before coming here).
+    function leaveReady(btn,quiet){
       if(leaving||finished)return;
       var b=btn||nextBtn;
       var due=false;try{due=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
-      leaving=true;try{Sona.sfx.tap();}catch(e){}
+      leaving=true;if(!quiet){try{Sona.sfx.tap();}catch(e){}}
       // no Back from here: the profile is about to be saved, and a Back left
       // painted beside "One moment…" looks live and does nothing
       backBtn.style.display="none";
@@ -1512,18 +1564,26 @@
       wallAsk().then(go,go);setTimeout(go,3000);
     }
     // The reminder screen's two ways on. "Turn on reminders" opens iOS's own
-    // Allow box first (Sona.notifyAsk; whatever the answer, and also when the
-    // phone never answers, it goes on); "Not now" goes on at once. Neither
-    // sets a reminder: that waits for a free trial to really start.
+    // Allow box first (Sona.notifyAsk), then goes on whatever the answer;
+    // "Not now" goes on at once. Neither sets a reminder: that waits for a
+    // free trial to really start. While iOS's box is up both buttons and Back
+    // are still. A bridge that never answers (NOTIFY1 itself gives up only
+    // after 60 s) holds the screen REMIND_ASK_MS at most, then it goes on to
+    // the price as if the parent had answered; the late answer, if one ever
+    // comes, is kept by sona.js and moves nothing here.
     // (not refused once saved: a price that never loaded brings this screen
     // back after 8 seconds, and its buttons must try again)
+    var REMIND_ASK_MS=12000;
     function remindGo(b,ask){
       if(finished||leaving||asking||ORDER[idx]!=="remind"||settling())return;
       var other=document.getElementById(b.id==="remindYes"?"remindNo":"remindYes");
       if(!ask){other.disabled=true;leaveReady(b);return;}
       asking=true;b.disabled=other.disabled=true;updateNext();try{Sona.sfx.tap();}catch(e){}
       var r=null;try{r=Sona.notifyAsk&&Sona.notifyAsk();}catch(e){r=null;}
-      Promise.resolve(r).then(null,function(){}).then(function(){asking=false;if(ORDER[idx]==="remind")leaveReady(b);else updateNext();});
+      var on=false;
+      function go(){if(on)return;on=true;clearTimeout(t);asking=false;if(ORDER[idx]==="remind")leaveReady(b,true);else updateNext();}
+      var t=setTimeout(go,REMIND_ASK_MS);
+      Promise.resolve(r).then(null,function(){}).then(go);
     }
     document.getElementById("remindYes").onclick=function(){remindGo(this,true);};
     document.getElementById("remindNo").onclick=function(){remindGo(this,false);};

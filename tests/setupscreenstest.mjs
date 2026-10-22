@@ -23,10 +23,14 @@
 //   - what the child loves: saved as ids when asked, an older profile's kept
 //     when not;
 //   - the reminder ask: only where the iPhone can set one (Sona.notifyAvailable),
-//     iOS has never been asked (Sona.notifyState "prompt") and the price
-//     follows; iOS's box only on "Turn on reminders"; either way on to the
-//     price, the profile saved as the screen is left; skipped when the store
-//     found a purchase meanwhile;
+//     iOS has never been asked (Sona.notifyState "prompt", read afresh with
+//     Sona.notifyRefresh where sona.js has it) and the price follows, AND the
+//     store says this buyer will be offered free days on the row the price
+//     screen picks (Sona.storePlan "free"; never asked on a guess: no answer
+//     in 2.5 s, no screen); iOS's box only on "Turn on reminders", a box that
+//     never answers let go of after 12 s; either way on to the price, the
+//     profile saved as the screen is left; skipped when the store found a
+//     purchase meanwhile;
 //   - the look: Travis's brighter teal on the main buttons, a picked chip's
 //     teal ring.
 // The iPhone's notification methods are sona.js's (NOTIFY1); here they are
@@ -53,16 +57,24 @@ const WEBP=Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuU
 // The phone's edges, as onboardingtest's: a microphone that records asks, and
 // every recording Sona would play written down (mediaPCM) instead. cfg.notify:
 // the iPhone's reminder methods ({state, ask:'granted'|'denied'|'hang'}), or
-// none (a build without them). cfg.webSales: a phone where the price follows.
+// none (a build without them); with them, the store's answer (Sona.storePlan):
+// cfg.plan, a Plan as sona.js hands one (free days for a new subscriber by
+// default), 'hang' (never answers) or {late:ms, plan}; and cfg.refresh, iOS's
+// own word read afresh (Sona.notifyRefresh, NOTIFY1): {to, ms} or 'hang'.
+// cfg.webSales: a phone where the price follows.
 function edges(cfg){
   try{localStorage.getItem('x');}catch(e){return;}
-  const h=window.__s={media:[],stops:0,asks:0,mics:0,notifyAsks:0};
+  const h=window.__s={media:[],stops:0,asks:0,mics:0,notifyAsks:0,plans:0,refresh:0};
+  const FREE={state:'free',kind:'monthly',price:'$9.99',per:'month',free:{n:3,unit:'day',text:'3 days'},sure:true,why:'',year:null};
   navigator.mediaDevices.getUserMedia=()=>{h.mics++;return new Promise(()=>{});};
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(v){sona=v;
     v.mediaPCM=(bytes,o)=>{h.media.push({len:bytes&&bytes.byteLength,volume:o&&o.volume,head:Array.from(new Uint8Array(bytes.buffer||bytes,bytes.byteOffset||0,8))});let end;const done=new Promise(r=>{end=r;});return {done,stop(){h.stops++;end('stopped');}};};
     v.speak=v.speakNow=()=>{h.spoke=(h.spoke||0)+1;return Promise.resolve();};
-    if(cfg.notify){v.notifyAvailable=()=>true;v.notifyState=()=>window.__notifyState||cfg.notify.state;v.notifyAsk=()=>{h.notifyAsks++;if(cfg.notify.ask==='hang')return new Promise(r=>{window.__notifyAnswer=r;});return Promise.resolve(cfg.notify.ask||'granted');};}
+    if(cfg.notify){v.notifyAvailable=()=>true;v.notifyState=()=>window.__notifyState||cfg.notify.state;v.notifyAsk=()=>{h.notifyAsks++;if(cfg.notify.ask==='hang')return new Promise(r=>{window.__notifyAnswer=r;});return Promise.resolve(cfg.notify.ask||'granted');};
+      const plan=cfg.plan===undefined?FREE:cfg.plan;
+      v.storePlan=(o)=>{h.plans++;if(o&&typeof o.onLate==='function')window.__planLate=o.onLate;if(plan==='hang')return new Promise(()=>{});if(plan&&plan.late)return new Promise(r=>setTimeout(()=>r(plan.plan||FREE),plan.late));return Promise.resolve(plan);};
+      if(cfg.refresh)v.notifyRefresh=()=>{h.refresh++;if(cfg.refresh==='hang')return new Promise(()=>{});return new Promise(r=>setTimeout(()=>{window.__notifyState=cfg.refresh.to;r(cfg.refresh.to);},cfg.refresh.ms||300));};}
     if(cfg.media)v.voiceAsMedia=()=>true;
     Object.keys(v.sfx||{}).forEach(k=>{if(typeof v.sfx[k]==='function')v.sfx[k]=()=>{};});}});
   if(cfg.webSales)try{sessionStorage.setItem('sona.websalesui','1');}catch(e){}
@@ -300,9 +312,9 @@ await scenario('the minutes are the daily goal; what the child loves is kept as 
 // ── THE REMINDER ASK ──
 const NOTIFY={state:'prompt',ask:'granted'};
 // read on the price page (a stub with no sona.js): straight from storage
-const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(localStorage.getItem('sona.profile.v1')||'{}').onboarded),marker:sessionStorage.getItem('sona.setupafter.v1'),gate:sessionStorage.getItem('sona.gate.v1'),asks:localStorage.getItem('__asks')}));
+const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(localStorage.getItem('sona.profile.v1')||'{}').onboarded),marker:sessionStorage.getItem('sona.setupafter.v1'),gate:sessionStorage.getItem('sona.gate.v1'),asks:localStorage.getItem('__asks'),remind:localStorage.getItem('__remindSeen'),plans:localStorage.getItem('__plans')}));
 // how many times iOS was asked on the setup page, kept as it leaves
-const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html')localStorage.setItem('__asks',String(window.__s.notifyAsks));}catch(e){}});};
+const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html'){localStorage.setItem('__asks',String(window.__s.notifyAsks));localStorage.setItem('__remindSeen',window.seenSteps&&window.seenSteps.remind?'1':'0');localStorage.setItem('__plans',String(window.__s.plans));}}catch(e){}});};
 await scenario('the reminder ask: only where a reminder can be set and the price follows',async()=>{
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
   ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
@@ -375,6 +387,70 @@ await scenario('the reminder ask: only where a reminder can be set and the price
   dead=false;await calm(page);await page.locator('#remindNo').click();await page.waitForURL(u=>u.pathname==='/subscribe.html');
   ok('…and a second tap reaches the price',new URL(page.url()).pathname==='/subscribe.html');
   clean('remind, the price never loads',errors);
+ }finally{await context.close();}}
+ // iOS's Allow box that never answers (a stuck bridge: NOTIFY1 lets go only
+ // after 60 s) holds the screen 12 s at most, then the price, as if answered
+ {const {context,page,errors}=await fresh({webSales:true,notify:{state:'prompt',ask:'hang'},init:COUNT});try{
+  await setupWalk(page,'remind',{name:'Mia'});await page.clock.install();
+  await calm(page);await page.locator('#remindYes').click({noWaitAfter:true});
+  await page.clock.runFor(11000);await new Promise(r=>setTimeout(r,200));
+  ok('iOS\'s box unanswered for 11 s: still waiting on the reminder screen, both buttons and Back still',await page.evaluate(()=>document.body.dataset.setupScreen==='remind'&&document.getElementById('remindYes').disabled&&document.getElementById('remindNo').disabled&&document.getElementById('backBtn').disabled&&!Sona.getProfile().onboarded));
+  await page.clock.runFor(1500);await page.waitForURL(u=>u.pathname==='/subscribe.html',{timeout:4000});
+  const a=await at(page);
+  ok('…12 s on it goes to the price by itself, the profile saved, iOS asked once',a.path==='/subscribe.html'&&a.saved&&a.asks==='1'&&!!a.marker,a);
+  clean('remind, iOS never answers',errors);
+ }finally{await context.close();}}
+ // THE REMINDER IS ABOUT A FREE TRIAL, SO ONLY A BUYER THE STORE WILL GIVE ONE
+ // IS ASKED (the review of 22 Oct 2026): an Apple ID that already had the free
+ // days (a reinstall, a second iPad) is charged today, and no store answer is
+ // no reminder screen, never a guess. Asked of the store as the ready screen
+ // shows, once.
+ const PAID={state:'paid',kind:'monthly',price:'$9.99',per:'month',free:null,sure:false,why:'',year:null};
+ const FREE3={state:'free',kind:'monthly',price:'$9.99',per:'month',free:{n:3,unit:'day',text:'3 days'},sure:false,why:'',year:null};
+ for(const [label,plan,refresh,tapAtOnce] of [
+   ['the store says this Apple ID already had its free days (charged today)',PAID,null,false],
+   ['the store has nothing to sell (no product, or it timed out)',{state:'none',kind:'',price:'',per:'',free:null,sure:false,why:'timeout',year:null},null,false],
+   ['the yearly row, picked as the price opens, has no free days (only monthly does)',Object.assign({},FREE3,{year:{state:'paid',kind:'annual',price:'$59.99',per:'year',free:null,sure:false,why:'',best:true}}),null,false],
+   ['the store never answers, and the parent taps Continue at once',"hang",null,true],
+   ['iOS, asked afresh, says it was answered before (denied)',FREE3,{to:'denied',ms:400},true]]){
+  const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan,refresh,init:COUNT});try{
+   await setupWalk(page,'updates',{name:'Mia'});
+   const before=await page.evaluate(()=>__s.plans);
+   await calm(page);await page.locator('#updSkip').click();await page.locator('[data-step="ready"].on').waitFor();
+   if(!tapAtOnce)await page.waitForTimeout(2700);
+   const t0=Date.now();await calm(page);await page.locator('#nextBtn').click({noWaitAfter:true});
+   if(tapAtOnce){await page.waitForTimeout(250);
+    const w=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,text:document.getElementById('nextBtn').textContent,busy:document.getElementById('nextBtn').getAttribute('aria-busy'),off:document.getElementById('nextBtn').disabled,back:document.getElementById('backBtn').disabled,saved:!!Sona.getProfile().onboarded}));
+    ok(label+': Continue waits on the answer ("One moment…", still, Back still, nothing saved)',w.screen==='ready'&&w.text==='One moment…'&&w.busy==='true'&&w.off&&w.back&&!w.saved,w);}
+   await page.waitForURL(u=>u.pathname==='/subscribe.html',{timeout:6000});
+   const a=await at(page),took=Date.now()-t0;
+   ok(label+': no reminder screen, straight on to the price, iOS never asked, the profile saved',a.remind==='0'&&a.asks==='0'&&a.saved&&!!a.marker,a);
+   ok('…the store was asked once, as the ready screen showed (never before it)'+(tapAtOnce?', and the wait was 2.5 s at most ('+took+' ms)':''),before===0&&a.plans==='1'&&(!tapAtOnce||took<3600),{before,a,took});
+   clean('no remind: '+label,errors);
+  }finally{await context.close();}
+ }
+ // a store answer on its way as Continue is tapped: the wait ends with it, and
+ // a free trial for this buyer brings the reminder screen; a slow iOS answer
+ // is waited for only 2.5 s, and its last word (never asked) counts
+ for(const [label,plan,refresh] of [['the store answers 1 s after the ready screen showed',{late:1000,plan:FREE3},null],['iOS, asked afresh, never answers (its last word, never asked, stands)',FREE3,'hang']]){
+  const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan,refresh,init:COUNT});try{
+   await setupWalk(page,'ready',{name:'Mia'});
+   const t0=Date.now();await calm(page);await page.locator('#nextBtn').click();
+   await page.locator('[data-step="remind"].on').waitFor({timeout:4000});
+   const took=Date.now()-t0;
+   ok(label+': the reminder screen follows once the wait is over ('+took+' ms), iOS not asked yet',await page.evaluate(()=>__s.notifyAsks===0&&!Sona.getProfile().onboarded)&&took<3600,took);
+   clean('remind after a wait: '+label,errors);
+  }finally{await context.close();}
+ }
+ // a "not eligible" that arrives after the first answer (storePlan's onLate)
+ // takes the reminder screen away before the parent leaves the ready screen
+ {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan:FREE3,init:COUNT});try{
+  await setupWalk(page,'ready',{name:'Mia'});await page.waitForTimeout(200);
+  await page.evaluate(p=>window.__planLate(p),PAID);
+  await next(page);await page.waitForURL(u=>u.pathname==='/subscribe.html');
+  const a=await at(page);
+  ok('a late "not eligible" from the store: no reminder screen, on to the price',a.remind==='0'&&a.asks==='0'&&a.saved,a);
+  clean('remind, a late not eligible',errors);
  }finally{await context.close();}}
  // it fits, with its two buttons clear of the footer
  for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}]){
