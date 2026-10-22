@@ -634,8 +634,8 @@
         // buddy: on the wide flat mossy stone just right of Echo (rest)
         { art: "s04", ages: "big", buddy: { x: 0.46, y: 0.58, h: 0.165, pose: "rest" },
           line: "Each one knows a lovely tune. Boom, boom goes the drum. Plink, plonk go the reeds. Ding, ding go the bells!" },
-        // no buddy (on the near mossy bank just right of Echo, not placed)
-        { art: "s05", ages: "both", buddy: null,
+        // buddy: on the near mossy bank just right of Echo (rest)
+        { art: "s05", ages: "both", buddy: { x: 0.46, y: 0.8, h: 0.17, pose: "rest" },
           line: { big: "Nobody knows who goes first, so they all play at once. Boom, plink, ding! A bunny and a mouse cover their ears.",
                   little: "They all play at once. Boom, plink, ding! Oh dear, what a mix-up!" } },
         // no buddy (on the front of the lily pad just right of Echo, not placed)
@@ -659,12 +659,12 @@
         // no buddy
         { art: "e02", ages: "big", buddy: null,
           line: "The bunny and the mouse pat the water. Splish, splash! And this time, nobody covers their ears." },
-        // no buddy (on the mossy bank just right of Echo, in front of the row, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the mossy bank just right of Echo, in front of the row (rest)
+        { art: "e03", ages: "both", buddy: { x: 0.6, y: 0.755, h: 0.17, pose: "rest" },
           line: { big: "Pelly shares her sandwich with the band. And Newt's tail plays one last plink, right on time!",
                   little: "Pelly shares her sandwich. And Newt's tail goes plink!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.668, y: 0.705, h: 0.19, pose: "cheer" },
           line: { big: "Take a bow, conductor! That's twelve gold stars on our helper map.",
                   little: "Take a bow! That's twelve gold stars on our helper map." } }
       ]
