@@ -3479,14 +3479,16 @@
   // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
-  // The Say & Play games list themselves (say: true), in catalog order. A
-  // playable one comes before every parked one (Home draws only the playable
-  // ones since 19 Oct 2026: each shelf is those, in this order).
+  // The Say & Play games list themselves (say: true), in catalog order.
+  // Bubble Pop and Peekaboo come before them, so the little kids' second free
+  // game (Bubble Pop) is not below ten Premium cards now that all eighteen
+  // are open (22 Oct 2026). A playable game comes before every parked one
+  // (Home draws only the playable ones since 19 Oct 2026: each shelf is
+  // those, in this order).
   const SAY_KEYS = Object.keys(GAME_ACTS).filter(function (key) { return GAME_ACTS[key].say; });
-  const ACTIVITY_KEYS = GAME_KEYS.concat(
-    SAY_KEYS.filter(function (key) { return !GAME_ACTS[key].comingSoon; }),
-    SAY_KEYS.filter(function (key) { return GAME_ACTS[key].comingSoon; }),
-    ["bubbles", "peekaboo", "rise"]);
+  const ACTIVITY_ORDER = GAME_KEYS.concat(["bubbles", "peekaboo"], SAY_KEYS, ["rise"]);
+  const ACTIVITY_KEYS = ACTIVITY_ORDER.filter(function (key) { return !GAME_ACTS[key].comingSoon; })
+    .concat(ACTIVITY_ORDER.filter(function (key) { return GAME_ACTS[key].comingSoon; }));
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";

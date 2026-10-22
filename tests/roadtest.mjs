@@ -505,7 +505,7 @@ await section("the road page: stops and the month", async () => {
     await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="3"]'); await f.page.waitForTimeout(500);
     const l3 = await line(f.page); await yay(f.page); const l3b = await line(f.page);
-    ok("stop 3: \"Level 2 is open in every game!\", then \"+20 coins!\"", l3 === "Level 2 is open in every game!" && l3b === "+20 coins!", [l3, l3b]);
+    ok("stop 3: \"Level 2 is open!\" (not \"in every game\": since 22 Oct 2026 most games have no levels), then \"+20 coins!\"", l3 === "Level 2 is open!" && l3b === "+20 coins!", [l3, l3b]);
     await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="4"]'); await f.page.waitForTimeout(500); await yay(f.page);
     await f.page.click('#roadList .rd-stop[data-stop="5"]'); await f.page.waitForTimeout(300);

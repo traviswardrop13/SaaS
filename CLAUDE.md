@@ -1938,10 +1938,11 @@ rep. `sayplaytest` pins which game asks how many times. With two:
   says "1 more time! Tap the mic". Silence never earns the move.
 - **Each saying heard is one rep** on the week's count (two a word); still
   never practice data. Whether two is right, whether the littles should say it
-  twice too (Bubble Pop asks once; the ten parked games for ages 3-4 would ask
-  twice as built, so settle it before one comes back), whether Echo should
-  model the word again before the second, and whether both count as reps are
-  Rachel's calls.
+  twice too (Bubble Pop asks once; the other ten ages 3-4 games and Peekaboo
+  ask twice as built), whether Echo should model the word again before the
+  second, and whether both count as reps are Rachel's calls. **They opened
+  asking twice on 22 Oct 2026, before she answered** (Travis: "turn on all 18
+  games"); her answer is one setting a game (`sayTimes: 1`, as Bubble Pop's).
 - **The wait a child feels is before the mic can hear, not after the word**
   (Echo's word, 250 ms of quiet, the mic opening, and on a game's first word
   450 ms to measure the room). Each is a guard: do not shorten them.
@@ -2216,7 +2217,8 @@ every ask that hands a child the turn: the practice page's prompt, a tap on
 Echo, the turtle and its two retry lines ("… five times. Go!", joined on as
 one clip after the words, so the quiet before the mic still starts at its
 end), every Say & Play word (Bubble Pop, Hoops, Soccer Goal, Dino Dig) and
-Feed Echo's ask. Not the books (their ask is pinned) and not parked Peekaboo.
+Feed Echo's ask. Not the books (their ask is pinned); Peekaboo, open since 22
+Oct 2026, asks through `sayplay.js` like the other Say & Play games.
 "Go!" is ONE clip, `Sona.goClip`: this page's copy or the phone's saved one,
 asked for on its own so every saved ask stays valid, never a wait on the
 network after a visit's first ask (that one waits `GO_WAIT_MS`, 1.5 s, at
@@ -2974,10 +2976,10 @@ the tests first. Whether to switch it on is Travis's, after that.
 Redis, with `BOARD_REDIS_SERVER`); `boardtest` plays the phone's half, the
 Settings card and `board.html`.
 
-Peekaboo has no card on Home (19 Oct 2026), no New
-shelf promotion and no direct-link, paid or earned bypass; since 16 Oct 2026
-it is a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"),
-and `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
+Peekaboo is open since 22 Oct 2026, a Premium game on Home with the other
+seventeen rebuilt games (it had no card from 19 Oct); since 16 Oct 2026 it is
+a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"), and
+`simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
 2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
 Feed Echo's
