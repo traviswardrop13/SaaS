@@ -7778,7 +7778,20 @@
   function _yearPlan(a) {
     const yp = a.yr;
     if (!yp || !a.p) return null;
-    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = _yearBest(yp, a.p);
+    // "Best value" compares the yearly price with twelve monthly ones. Beside
+    // a one-payment row that costs no more than the year, that tag would be a
+    // false comparison on the card ("$59.99/yr · Best value" over "One
+    // payment $59.99"), so it goes whenever that row shows and its price is
+    // at or under the year's, or the two cannot be compared.
+    const life = _lifePlan(a), lifeCheaper = !!life && (function () {
+      try {
+        const y = Math.round(Number(yp.price) * 100), l = Math.round(Number(a.lf.price) * 100);
+        if (!(y > 0 && l > 0 && isFinite(y) && isFinite(l))) return true;
+        if (!yp.currencyCode || !a.lf.currencyCode || String(yp.currencyCode) !== String(a.lf.currencyCode)) return true;
+        return l <= y;
+      } catch (e) { return true; }
+    })();
+    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = !lifeCheaper && _yearBest(yp, a.p);
     if (typeof intro === "object" && !cant) return _plan("free", "", yp, intro, a.eligY === "yes", "annual", { best });
     if (intro === "none" || cant) return _plan("paid", "", yp, null, false, "annual", { best });
     return null;

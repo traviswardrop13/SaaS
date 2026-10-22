@@ -493,7 +493,7 @@
     <div class="card" id="planCard">
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
       <!-- shown only to a family with an active plan (the last script block) -->
-      <p class="muted" id="planCancel" hidden style="margin-top:8px;font-size:12.5px;line-height:1.5;">To cancel a plan bought on speaksona.com, email <a href="mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan">hello@speaksona.com</a> and we&rsquo;ll cancel it for you. A plan bought on iPhone or iPad: open the phone&rsquo;s Settings, tap your name, then Subscriptions.</p>
+      <p class="muted" id="planCancel" hidden style="margin-top:8px;font-size:12.5px;line-height:1.5;">To cancel a plan bought on speaksona.com, email <a href="mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan">hello@speaksona.com</a> and we&rsquo;ll cancel it for you. A subscription bought on iPhone or iPad: open the phone&rsquo;s Settings, tap your name, then Subscriptions. A one payment has nothing to cancel.</p>
     </div>
 
     <!-- native paywall (App Store build): Apple's sheet, required restore +
@@ -1165,7 +1165,10 @@
         // it, an end far enough away). A sona.js without it, or one that
         // throws: no line, as before. The words are planWords'.
         function aheadOn(plan) {
-          try { return !!plan && plan.state === "free" && typeof Sona.trialReminderOn === "function" && Sona.trialReminderOn(plan) === true; } catch (e) { return false; }
+          // (only when the free days are certain: on a "for new subscribers"
+          // row the note above says Apple may charge today, with no trial and
+          // so no reminder, and nothing there is stated as plain fact)
+          try { return !!plan && plan.state === "free" && plan.sure === true && typeof Sona.trialReminderOn === "function" && Sona.trialReminderOn(plan) === true; } catch (e) { return false; }
         }
         function wordsOf(plan) {
           // (the same plain card if planWords ever throws: never a blank one)

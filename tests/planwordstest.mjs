@@ -283,7 +283,15 @@ try {
     ok("the offering lists all three: a yearly row and a one-payment row beside monthly, each from its own product, the offering read once",
       !!p && p.state === "free" && !!p.year && p.year.kind === "annual" && p.year.state === "free" && same(lb(p), LIFE) && r.offerings === 1 &&
       same(r.asked.map((a) => a[0]).sort(), [IDS.annual, IDS.lifetime, IDS.monthly].sort()) && same(r.eligIds.map((a) => a[0]).sort(), [IDS.annual, IDS.monthly].sort()), [brief(p), lb(p), r.asked, r.eligIds]);
-    ok("…the yearly row still carries Best value, and the one payment none", await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.year, {}).tag === "Best value" && Sona.planWords(plan.life, {}).tag === "")));
+    // "Best value" compares twelve monthly prices; beside a one payment that
+    // costs no more than the year, the tag would be a false comparison
+    ok("…the one payment at the year's price: no Best value on the yearly row, and none on the one payment", await page.evaluate(() => Sona.storePlan().then((plan) => plan.year.best === false && Sona.planWords(plan.year, {}).tag === "" && Sona.planWords(plan.life, {}).tag === "")));
+    p = await planFor({ store: Object.assign({}, STORES.monthlyFree, { lifetime: { price: "$149.99" } }), offering: "all" });
+    ok("…a one payment dearer than the year leaves the yearly row its Best value", !!p && !!p.year && p.year.best === true && !!p.life && p.life.price === "$149.99", [brief(p), p && p.year && p.year.best]);
+    p = await planFor({ store: Object.assign({}, STORES.monthlyFree, { lifetime: { price: "$39.99" } }), offering: "all" });
+    ok("…and one cheaper than the year takes the tag away too", !!p && !!p.year && p.year.best === false && !!p.life, [brief(p), p && p.year && p.year.best]);
+    p = await planFor({ store: STORES.monthlyFree, offering: ["monthly", "annual"] });
+    ok("…while yearly and monthly alone keep Best value exactly as before", !!p && !!p.year && p.year.best === true && p.life === null, [brief(p), p && p.year && p.year.best]);
     // the store's figure, verbatim
     p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "US$1,299.00" } }, offering: ["monthly", "lifetime"] });
     w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.life, {})));

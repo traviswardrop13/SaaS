@@ -448,15 +448,23 @@ these are true, in this order (the same order as the yearly row, for the
 same reason: offered but not attached, Apple would take a parent's money and
 unlock nothing):
 
-1. **App Store Connect:** an In-App Purchase of type **Non-Consumable**, product
-   ID `com.speaksona.app.lifetime` (the id is App Store Connect's and never
-   shown to a parent), reference name "Sona Premium, One Payment", display name
-   "Sona Premium, One Payment", price $59.99 (or the price Travis wants: the
-   card shows whatever Apple answers). A non-consumable has no introductory
-   offer; if one ever came back with free days, the card would show no row.
-   Submit it with the build (a first in-app purchase goes to review with an
-   app version).
-2. **RevenueCat:** add the product, attach it to the **`full`** entitlement
+1. **App Store Connect:** the Non-Consumable with product ID
+   `com.speaksona.app.lifetime` **already exists**: it is July 2026's "Sona
+   Lifetime" ($79.99), and App Store Connect never lets a product id be used
+   twice. So EDIT it, do not create one: reference name "Sona Premium, One
+   Payment", display name (App Store Localization) "Sona Premium, One
+   Payment", price $59.99 (or the price Travis wants: the card shows whatever
+   Apple answers). Apple's own buy sheet shows the display name, so a
+   leftover "Sona Lifetime" would put the word on screen. (22 Oct 2026:
+   Travis's App Store Connect showed it being edited, "Ready for Review", in
+   the 1.0.9 draft.) A non-consumable has no introductory offer; if one ever
+   came back with free days, the card would show no row. Submit it with the
+   build (a first in-app purchase goes to review with an app version). If the
+   old product was ever deleted, make a new one with a NEW id and keep the old
+   id in `IAP_PRODUCTS` so a July buyer still restores.
+2. **RevenueCat:** the product is likely already there and already in the
+   **`full`** entitlement (on 1 Oct 2026 it was the one product attached to
+   it). Check it is attached to **`full`**
    (the one every Premium check reads), **then** add a package for it to the
    **current offering**: the built-in **Lifetime** package type (`$rc_lifetime`)
    or a custom one, either works. The card shows the row only when the current

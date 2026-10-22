@@ -324,7 +324,9 @@ changing one. What follows from the rule:
   you the day before it ends."**, only when `Sona.trialReminderOn(picked
   row)` says this phone will show it AND the picked row is a free trial
   (`planWords`' `headsUp`, painted into `#iapAhead`; the page feature-checks
-  the function). Never on a charged-today row or the one payment, never
+  the function), and only on a row whose free days are certain (`plan.sure`;
+  on a "for new subscribers" row Apple may charge today, with no trial and
+  so no reminder). Never on a charged-today row or the one payment, never
   otherwise; `planwordstest` holds it to that word for word and
   `pricescreentest` (1d, 15c) plays it. The words are Travis's and Rachel's
   to change. "Paywall viewed" and the one-shot (`planShown`) count only once
@@ -593,7 +595,14 @@ lifetime"). Apple's card can show a third row, under monthly.
 - **The product:** `IAP_PRODUCTS.lifetime = "com.speaksona.app.lifetime"`, a
   NON-CONSUMABLE in the same `full` entitlement, App Store name "Sona
   Premium, One Payment", $59.99 (Travis's to set in App Store Connect; the
-  card shows the store's price). The id is the store's and never shown.
+  card shows the store's price). The id is the store's and never shown. **It
+  is July 2026's "Sona Lifetime" ($79.99) product, edited, not a new one:**
+  App Store Connect never reuses an id, and Apple's buy sheet shows the
+  display name, so a leftover "Sona Lifetime" puts the word on screen.
+- **No "Best value" beside it:** the yearly row's tag compares twelve monthly
+  prices, so it goes whenever the one payment shows at a price at or under
+  the year's, or the two cannot be compared (one payment $59.99 under a
+  "$59.99/yr · Best value" would be a false comparison).
 - **Shown only by the yearly row's rule:** RevenueCat's CURRENT offering
   lists it (among its packages or as its `lifetime` package; one
   `getOfferings` read serves both rows, `_offered`) AND the store returns it
@@ -626,8 +635,12 @@ lifetime"). Apple's card can show a third row, under monthly.
   welcome series stops; no note is queued: nothing ends).
 - **The web sells no such thing** (`/api/checkout` is subscription mode only,
   `iaptest`): the one payment is Apple's alone.
-- **Travis's tasks (NATIVE.md, "One payment, a third row"):** the
-  non-consumable in App Store Connect, submitted with the build; in
+- **The Premium page and Settings › Your plan:** in the app the Premium
+  page's price line names the one payment when the store's answer carries
+  it ("…, or one payment"), and the cancel line says a one payment has
+  nothing to cancel.
+- **Travis's tasks (NATIVE.md, "One payment, a third row"):** the existing
+  non-consumable edited in App Store Connect, submitted with the build; in
   RevenueCat, attach it to `full`, THEN add its package to the current
   offering (offered but not attached, Apple would take the money and open
   nothing). **Travis's to know:** a family who bought the one payment and

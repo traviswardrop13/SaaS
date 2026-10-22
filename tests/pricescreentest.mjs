@@ -538,7 +538,9 @@ try {
     }
     await load(...at(SETUP, { store: STORES.monthlyFree, remind: true, elig: "missing" })); await until("free");
     let s = await snap();
-    ok("…a free trial for new subscribers (not sure): the line is under the button, the note above it", s.ahead === LINE && s.aheadUnder === true && s.noteAbove === true, [s.ahead, s.noteAbove]);
+    // not sure of the free days: the note says Apple may charge today, with
+    // no trial and so no reminder, and nothing there is stated as plain fact
+    ok("…a free trial for new subscribers (not sure): no line, the note above the button, and nothing says remind", s.ahead === "" && s.noteAbove === true && !/remind|notif/i.test(s.body), [s.ahead, s.noteAbove]);
     for (const [label, cfg] of [["charged today", { store: STORES.noFree, remind: true }], ["Apple says this buyer used the free days", { store: STORES.monthlyFree, elig: { monthly: 1 }, remind: true }],
       ["the phone will not show it", { store: STORES.monthlyFree, remind: false }], ["a sona.js whose check throws", { store: STORES.monthlyFree, remind: "throw" }],
       ["a sona.js with no such check", { store: STORES.monthlyFree }]]) {
@@ -1199,7 +1201,7 @@ try {
       ["free days, sure", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" }, lifetime: { price: y } } }, "free"],
       ["free days, not sure", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" }, lifetime: { price: y } }, elig: "missing" }, "free"],
       ["free days, sure, with the heads-up line", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" }, lifetime: { price: y } }, remind: true }, "free"],
-      ["free days, not sure, with the heads-up line", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" }, lifetime: { price: y } }, elig: "missing", remind: true }, "free"],
+      ["free days, not sure, the phone could remind", { store: { monthly: { price: m, free: "P1W" }, annual: { price: y, free: "P1W" }, lifetime: { price: y } }, elig: "missing", remind: true }, "free"],
       ["charged today", { store: { monthly: { price: m }, annual: { price: y }, lifetime: { price: y } } }, "paid"],
     ];
     const MEASURE3 = (sb) => {
@@ -1248,6 +1250,8 @@ try {
             if (q.fit !== m.fit || Math.abs(q.year.top - m.year.top) > 0.5 || Math.abs(q.month.top - m.month.top) > 0.5 || Math.abs(q.life.top - m.life.top) > 0.5) say("a tap on " + p.id + " re-fitted the page and moved the rows " + JSON.stringify({ fit: q.fit, life: q.life }));
             if (q.buy.bottom > q.fold || q.decline.bottom > q.fold || q.scrollY !== 0) say("with " + p.id + " picked the button or the X is off the first screen " + JSON.stringify({ buy: q.buy, decline: q.decline }));
             if (/heads-up/.test(shape) && (p.id === "iapLife" ? !!q.ahead : !q.ahead)) say("with " + p.id + " picked the heads-up line is " + (q.ahead ? "there" : "missing"));
+            // not sure of the free days: never the line, whatever is picked
+            if (/not sure, the phone could remind/.test(shape) && q.ahead) say("with " + p.id + " picked the heads-up line shows on a not-sure row");
           }
           if (m.scrollY !== 0 || m.head.top < 0 || m.year.top < 0) say("the top is cut off");
           if (!(m.year.bottom <= m.month.top && m.month.bottom <= m.life.top)) say("the rows are not yearly, monthly, then the one payment");
