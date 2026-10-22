@@ -1654,6 +1654,37 @@ Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
 
+**Setup's game reel is real play, filmed (SETUPREEL1, 22 Oct 2026)** (Travis:
+"Do like a little clip of a few games so that parents can see it"). The clips
+on setup's "They practice by playing." screen are
+`public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
+first frame), one per playable game: slice, tiles, hoops, soccer, dino,
+stack, run, glide, rise, feed, bubbles. Nothing in them is drawn or edited:
+`tools/setupreel/record.mjs` (run by hand, never in the battery; its header
+says how) opens each game page as it is on `tools/appstore/capture.mjs`'s fake
+phone, plays it with the page's own controls and the fake microphone (a word
+or sound counts only the way a child's does, by the page's own check), and
+films one 1/30 s frame at a time on Playwright's virtual clock, cropped to the
+game at 3:4. A clip is 3 to 4 seconds, 540×720 H.264 High, no audio track (it
+can never make a sound), moov first, tagged BT.709, at most 300 KB, its
+poster at most 60 KB. The tool stops on a clip or poster over budget, a crop
+that leaves the screen, or the child's name in the page's text in any frame
+(a word drawn on a canvas it cannot see: check the sheets). `setupreeltest`
+holds the files, and that the list is the catalog's playable games, never a
+Coming soon one. **A new game on the reel** is a scene in `record.mjs`, its
+key in `KEYS` and in the test's `REEL`, and setup's own list
+(`onboarding.html`); run the tool alone (it is CPU heavy, port 9303) and look
+at every contact sheet in `tools/setupreel/out/sheets/` before committing a
+clip. **Travis's calls:** which moment each clip shows (Fruit Slice in Super
+Slice, a Hoops basket, Soccer Goal ending on GOAL!, Dino Dig ending as a bone
+lands, Feed Echo feeding two pictures, Piano Tiles a song's opening, a tile
+or two at a time), the crops, the 3–4 s, Rise Up's calm clip (one key drops
+it), and the strict budgets. **Rachel's:** every clip is on R (setup says
+"Example: the R sound"), the little kids' games (Feed Echo, Bubble Pop) too,
+so a parent of a 2–4 year old sees R played, a sound not asked of that age;
+and the clips show the rewards a child earns by saying the sound (Super
+Slice, the ball, the brush, the bubbles).
+
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the
 page's words sit on a cream card over its bottom; the shelf shows each fuller
