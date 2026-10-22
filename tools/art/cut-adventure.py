@@ -326,6 +326,10 @@ TOUCH = {
     # Day 5: drawn five times, Beaver came out once with a tail on Echo and
     # once with no teeth, the day's joke (he nibbled his own door)
     "postboat/e01": [("teeth", (0.397, 0.290, 0.017, 0.010))],
+    # Day 14: four tiny cream crayon sparkles by the map's two moons, which a
+    # child counting the fourteen gold stars could count too
+    "observatory/e04": [("fill", (0.785, 0.125, 0.009, 0.007)), ("fill", (0.875, 0.123, 0.009, 0.007)),
+                        ("fill", (0.844, 0.426, 0.009, 0.007)), ("fill", (0.890, 0.440, 0.009, 0.007))],
     "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
     "lantern/s05": [("unlight", [(0.095, 0.655, 0.050), (0.472, 0.409, 0.020), (0.746, 0.390, 0.020), (0.105, 0.488, 0.025)]),
                     ("fill", (0.437, 0.121, 0.021, 0.023))],    # a wing on Glowworm, who has none
@@ -418,6 +422,8 @@ STARS = {
     "trainline/e04": [(0.241, 0.140, 0.050), (0.857, 0.118, 0.050), (0.356, 0.368, 0.050), (0.210, 0.352, 0.050), (0.400, 0.140, 0.050), (0.508, 0.185, 0.050), (0.674, 0.124, 0.050), (0.356, 0.293, 0.050)],
     # Day 12: 1 drawn, 11 laid on (the red-and-white lighthouse's tower, below its lamp (Day 1's place); the little house on the lighthouse's rocky island; the red-roofed shop with the red awning, top middle (Day 2's toy shop); the stone bridge's right end, over the river (Day 3's place); the farmhouse at the top right; the pine trees at the map's right edge, right of the farmhouse; the red-roofed cottage on the path, middle left; the cottage roof at the lower left (it also hides a tiny pale weathervane speck there); the vegetable garden and fence beside that cottage; the little footbridge over the stream, lower middle (left of Echo's wing); the pine forest in the middle of the map, between the clouds)
     "concert/e04": [(0.320, 0.156, 0.045), (0.266, 0.203, 0.045), (0.649, 0.205, 0.045), (0.781, 0.234, 0.045), (0.767, 0.182, 0.045), (0.867, 0.195, 0.045), (0.363, 0.326, 0.045), (0.305, 0.398, 0.045), (0.405, 0.417, 0.045), (0.498, 0.417, 0.045), (0.566, 0.283, 0.045)],
+    # Day 14: 1 drawn, 13 laid on (the red-and-white lighthouse, on its striped tower below the lamp (Day 1's place); the two-storey shop with the red awning, lower left, on its roof (Day 2's toy shop: no striped awning is drawn); the stone bridge over the river, on its arch (Day 3's place); the red-roofed house on the little island at the top of the map; the red-roofed house in the village right of the middle (beside the blue-roofed one); the cottage with the pink blossom tree, middle left; the red-roofed house with the smoking chimney, right edge; the blossom island in the middle of the lower river; the red-roofed cottage at the bottom, above Echo's star; the little green islet right of the lighthouse; the long causeway from the lighthouse's rocks, on its path; the pine forest on the bottom-right island, left of the small domed tower; the pine trees on the green hill below the observatory, left of the tower)
+    "observatory/e04": [(0.430, 0.184, 0.045), (0.275, 0.392, 0.045), (0.527, 0.320, 0.045), (0.625, 0.134, 0.045), (0.674, 0.240, 0.045), (0.317, 0.303, 0.045), (0.854, 0.324, 0.045), (0.610, 0.383, 0.045), (0.503, 0.461, 0.045), (0.547, 0.193, 0.045), (0.483, 0.254, 0.045), (0.747, 0.477, 0.045), (0.750, 0.207, 0.045)],
 }
 
 

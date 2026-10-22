@@ -770,8 +770,8 @@
         { art: "e03", ages: "both", buddy: { x: 0.865, y: 0.78, h: 0.145, pose: "cheer" },
           line: { big: "Everyone comes to the Sky Show. And Owl dances under the stars in both fluffy slippers!",
                   little: "Owl dances in her two fluffy slippers. Shuffle, shuffle!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.63, y: 0.688, h: 0.19, pose: "cheer" },
           line: "Fourteen gold stars on our helper map, all shining bright. What a helper you've been!" }
       ]
     }
