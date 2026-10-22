@@ -396,7 +396,7 @@
           line: "Lamb waves up at her flower. And Beetle waves up at herself, flying high!" },
         // no buddy (on the grass just right of Echo, far below Pelly and the kite, not placed)
         { art: "e03", ages: "both", buddy: null,
-          line: { big: "Pelly came to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Silly Pelly!",
+          line: { big: "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Silly Pelly!",
                   little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,

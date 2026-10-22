@@ -629,7 +629,7 @@
         },
         "BEETLE": {
           "re": "\\bBeetle\\b",
-          "label": "Beetle, the real little red beetle character (a beetle painted on a cloth picture may still show)"
+          "label": "Beetle the real little red beetle character (a beetle painted on a cloth picture may still show)"
         },
         "THE KITE": {
           "re": "THE KITE|\\b(giant|patchwork) kite\\b",
