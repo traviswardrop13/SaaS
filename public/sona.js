@@ -1812,7 +1812,8 @@
     return _gameItem(sound, _gameWant(sound), 2, null).rung;
   }
   // opts.first: as on the first game of a day, ignoring the practice page's
-  // hand-over (Settings paints its line with it).
+  // hand-over (the tests read the day's asks with it; Settings' grey line did
+  // until its picker went on 22 Oct 2026).
   function gameAsk(sound, card, opts) {
     sound = String(sound || "").toUpperCase();
     card = Math.max(0, Math.min(2, parseInt(card, 10) || 0));

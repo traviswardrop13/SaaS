@@ -1,5 +1,6 @@
 // Daily goals: one local, per-child play+practice count, earned-day stamps,
-// silent celebrations, homework precedence and grown-up controls.
+// silent celebrations, homework precedence and grown-up controls (on
+// Progress since 22 Oct 2026, when Settings' week-by-week card went).
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { chromium, ROOT, launchOpts } from './_env.mjs';
@@ -51,9 +52,15 @@ try{
  ok('midnight resets today, not earned history',await page.evaluate(()=>Sona.dayGoal().n===0&&!Sona.dayGoal().done&&Object.keys(JSON.parse(localStorage.getItem('sona.goaldays.v1'))).length>0));
  await page.evaluate(()=>{localStorage.setItem(Sona.kkey('sona.homework.v1'),JSON.stringify({hw:{sounds:['R'],repsPerDay:40}}));sessionStorage.setItem('sona.gate.v1',String(Date.now()-(window.__jump||0)));});
  ok('homework target outranks the family target',await page.evaluate(()=>Sona.repGoal()===40));
- await page.goto(origin+'/settings.html#reps');await page.waitForFunction(()=>!!document.getElementById('dailyGoalPick')?.options.length,{},{timeout:3000}).catch(async e=>{console.log('SETTINGS DIAGNOSTIC',await page.evaluate(()=>({url:location.href,body:document.body.textContent.slice(0,300),gate:sessionStorage.getItem('sona.gate.v1'),now:Date.now()})),errors);throw e;});
- state=await page.evaluate(()=>({lock:document.getElementById('dailyGoalPick').disabled,value:document.getElementById('dailyGoalPick').value,days:[...document.getElementById('goalDaysPick').options].map(o=>o.value),overflow:document.documentElement.scrollWidth>innerWidth+1,help:document.getElementById('goalHelp').textContent}));
- ok('grown-up controls fit 320px with 3, 4, 5 or every day and a locked assignment target',state.lock&&state.value==='40'&&state.days.join(',')==='3,4,5,7'&&!state.overflow&&/sound practice only/.test(state.help),state);
+ // The grown-up controls live on Progress since 22 Oct 2026 (Travis: "simplify
+ // settings ... the minimum viable features"): the daily goal moved in beside
+ // the days-a-week buttons, and Settings' week-by-week card went.
+ await page.goto(origin+'/progress.html');await page.waitForFunction(()=>!!document.getElementById('dailyGoalPick')?.options.length,{},{timeout:3000}).catch(async e=>{console.log('PROGRESS DIAGNOSTIC',await page.evaluate(()=>({url:location.href,body:document.body.textContent.slice(0,300),gate:sessionStorage.getItem('sona.gate.v1'),now:Date.now()})),errors);throw e;});
+ state=await page.evaluate(()=>({lock:document.getElementById('dailyGoalPick').disabled,value:document.getElementById('dailyGoalPick').value,opts:[...document.getElementById('dailyGoalPick').options].map(o=>o.value),days:[...document.querySelectorAll('#wkGoalPick .gbtn')].map(b=>b.dataset.g),overflow:document.documentElement.scrollWidth>innerWidth+1,help:document.getElementById('goalHelp').textContent,inWeek:!!document.querySelector('#weekCard #dailyGoalPick')}));
+ ok('grown-up controls on Progress fit 320px with 3, 4, 5 or every day and a locked assignment target',state.inWeek&&state.lock&&state.value==='40'&&state.days.join(',')==='3,4,5,7'&&!state.overflow&&/sound practice only/.test(state.help),state);
+ ok('under five the daily goal offers 20, 30, 40 or 50 reps, as Settings did',state.opts.join(',')==='20,30,40,50',state.opts);
+ await page.goto(origin+'/settings.html');await page.waitForFunction(()=>!!window.Sona&&!!document.getElementById('kidsCard'));
+ ok('Settings no longer carries a goal picker or the week-by-week card',await page.evaluate(()=>!document.querySelector('#dailyGoalPick, #goalDaysPick, #goalHelp, #reps')));
  ok('no page errors',errors.length===0,errors);await context.close();
  const lowered=await fresh('6');
  // (a grown-up's own 50: the default is 30 for every age since 5 Oct 2026, and 40 reps would already meet it)
@@ -64,6 +71,19 @@ try{
  await lowered.page.evaluate(()=>window.__jump=86400000);
  ok('a goal earned by lowering survives midnight in the weekly streak',await lowered.page.evaluate(()=>!Sona.dayGoal().done&&Sona.dayGoal().n===0&&Sona.momWeek().goalDone===1&&Sona.momWeek().metDays[3]));
  await lowered.context.close();
+ // Unlocked (no homework), from age five: 30 to 100, plus a number already
+ // saved so a goal picked before is always on the list; a pick is this child's.
+ const picker=await fresh('6');
+ await picker.page.evaluate(()=>{Sona.saveProfile({dailyGoal:45});sessionStorage.setItem('sona.gate.v1',String(Date.now()));});
+ await picker.page.goto(origin+'/progress.html');await picker.page.waitForFunction(()=>!!document.getElementById('dailyGoalPick')?.options.length,{},{timeout:3000});
+ const pick=()=>picker.page.evaluate(()=>({lock:document.getElementById('dailyGoalPick').disabled,value:document.getElementById('dailyGoalPick').value,opts:[...document.getElementById('dailyGoalPick').options].map(o=>o.value).join(','),help:document.getElementById('goalHelp').textContent,saved:Sona.getProfile().dailyGoal,goal:Sona.dayGoal().goal}));
+ state=await pick();
+ ok('from five the picker offers 30, 50, 70 or 100 and keeps a saved 45, unlocked',state.opts==='30,45,50,70,100'&&state.value==='45'&&!state.lock&&/Practice, games and books all count/.test(state.help),state);
+ await picker.page.selectOption('#dailyGoalPick','70');
+ state=await pick();
+ ok('a pick on Progress becomes the child\'s daily goal',state.saved===70&&state.goal===70&&state.value==='70',state);
+ ok('no page errors on Progress',picker.errors.length===0,picker.errors);
+ await picker.context.close();
  const late=await fresh('4',Date.UTC(2026,10,1,5,59));
  await late.page.evaluate(()=>{Sona.saveProfile({dailyGoal:1});Sona.logAttempt({sound:'R',pass:false,reps:1});});
  ok('a voiced practice try counts even before it matches',await late.page.evaluate(()=>Sona.dayGoal().n===1&&Sona.dayGoal().done&&Sona.dayReps(undefined,true)===1));

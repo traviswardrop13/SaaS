@@ -483,11 +483,14 @@ ok("the Sound Check nudge no longer exists at all", playHome.nudge === false);
 ok("nothing on the kid home offers a Sound Check", !/sound check/i.test(playHome.body), playHome.body.slice(0, 160));
 ok("the rotation starts on the easiest sound", playHome.firstSound === "P", playHome.firstSound);
 
-// Settings: the play note shows, and hand-picking sounds moves to focus mode
+// Settings: hand-picking sounds still moves a play family to focus mode. The
+// note that said so ("Picking sounds below switches to focus mode. Stay in
+// play mode") went on 22 Oct 2026 (Travis: "simplify settings. It's too busy"),
+// so a tap on a chip is the whole of it now: saveAll still records the switch.
 await page.evaluate(() => { try { Sona.gateVerify(); } catch (e) {} });
 await page.goto("http://localhost:8129/settings.html"); await page.waitForTimeout(700);
-const noteShown = await page.evaluate(() => getComputedStyle(document.getElementById("playNote")).display !== "none");
-ok("Settings shows the play-mode note", noteShown);
+const playSettings = await page.evaluate(() => ({ mode: Sona.getProfile().mode, note: !!document.getElementById("playNote") || !!document.getElementById("playKeep"), words: /play mode|focus mode/i.test(document.body.innerText) }));
+ok("a play family's Settings has no play-mode note any more", playSettings.mode === "play" && !playSettings.note && !playSettings.words, JSON.stringify(playSettings));
 await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#sounds .sound")];
   chips.filter((b) => !/^R\b/.test(b.textContent.trim())).slice(0, 18).forEach((b) => b.click()); // deselect all but one
@@ -624,7 +627,11 @@ ok("today no pageerrors", errs.length === 0);
   const tucked = await pg.evaluate(() => {
     const box = document.getElementById("moveBox");
     return { closed: !!box && box.tagName === "DETAILS" && !box.open, label: box ? box.querySelector("summary").textContent.trim() : "",
-      inside: ["backupCopy", "backupDl", "restoreIn", "restoreBk", "undoRestore"].every((id) => box && box.contains(document.getElementById(id))),
+      inside: ["backupCopy", "restoreIn", "restoreBk", "undoRestore"].every((id) => box && box.contains(document.getElementById(id))),
+      // one way out since 22 Oct 2026, the code: no "Download file" button
+      // (a copy that fails shows the code in the box, and a download inside
+      // the iPhone app was never shown to save anything)
+      noFile: !document.getElementById("backupDl") && ![...document.querySelectorAll("button, a")].some((b) => /download/i.test(b.textContent)),
       // nothing a parent can see comes after it (a screen-reader-only status may)
       last: !!box && (!box.nextElementSibling || box.nextElementSibling.classList.contains("sr")),
       // (a closed <details> keeps its content's boxes in Chrome, so ask the browser)
@@ -632,6 +639,7 @@ ok("today no pageerrors", errs.length === 0);
   });
   ok("Backup & restore is tucked behind a closed 'Moving to a new phone?' link at the foot of Settings",
     tucked.closed && tucked.label === "Moving to a new phone?" && tucked.inside && tucked.last && tucked.hidden, JSON.stringify(tucked));
+  ok("…and its one way out is the backup code: there is no file download", tucked.noFile, JSON.stringify(tucked));
   // The restore box sits inside a collapsed <details> too — a parent has
   // to go looking for it, which is the right default for a destructive
   // control. Drive it from script rather than fighting the disclosure widget:
