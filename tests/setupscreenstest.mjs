@@ -157,7 +157,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
  // the tests' browser plays no H.264 (as a phone in Low Power Mode may refuse
  // to start one): the posters, as a slideshow; here every poster is missing
  // but Fruit Slice's, so the others are their games' Home cards
- {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[['**/assets/setup/reel/*.webp',r=>r.fulfill({status:404,body:''})],['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{   // (the real posters taken away: a later route wins)
   await toReel(page);await page.waitForTimeout(300);
   let s=await reelState(page);
   ok('a browser that cannot play the clips gets the posters: no video drawn, the first game\'s poster on screen',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken,s);
@@ -168,6 +168,14 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();const at=Date.now();await page.waitForTimeout(3600);
   ok('off the reel nothing changes: the slideshow stops with the screen',JSON.stringify((await reelState(page)).on)==='["IMG:/assets/crafted/home-hoops.webp:card"]',Date.now()-at);
   clean('reel stills',errors);
+ }finally{await context.close();}}
+ // the real posters (tools/setupreel's files): a browser that plays no H.264 sees each game's own still, not its Home card
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true});try{
+  await toReel(page);
+  await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&i.complete;},null,{timeout:4000}).catch(()=>{});
+  const s=await reelState(page),w=await page.evaluate(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i?[i.naturalWidth,i.naturalHeight]:null;});
+  ok('the reel\'s own posters: Fruit Slice\'s still from the reel (540 x 720), not a Home card, and no clip asked for',s.stills&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken&&w&&w[0]===540&&w[1]===720&&!requests.some(r=>/\.mp4/.test(r.url)),{s,w});
+  clean('reel, the real posters',errors);
  }finally{await context.close();}}
  // a phone that plays H.264: two videos take turns, one playing while the next loads
  const PLAYS=()=>{HTMLMediaElement.prototype.canPlayType=function(t){return /mp4/.test(t)?'probably':'';};HTMLMediaElement.prototype.play=function(){(window.__played=window.__played||[]).push(this.getAttribute('src'));return Promise.resolve();};HTMLMediaElement.prototype.pause=function(){(window.__paused=window.__paused||[]).push(this.getAttribute('src'));};};
@@ -186,13 +194,13 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   clean('reel clips',errors);
  }finally{await context.close();}}
  // a phone that refuses to start a clip (Low Power Mode), and a clip that is not there
- for(const [label,init,routes] of [['a phone that refuses to start a clip',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('no','NotAllowedError'));},[['**/assets/setup/reel/*.mp4',()=>{}]]],['a clip that is missing (404)',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.resolve();},null]]){
+ for(const [label,init,routes] of [['a phone that refuses to start a clip',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('no','NotAllowedError'));},[['**/assets/setup/reel/*.mp4',()=>{}],['**/assets/setup/reel/*.webp',r=>r.fulfill({status:404,body:''})]]],['a clip that is missing (404)',()=>{HTMLMediaElement.prototype.canPlayType=()=>'probably';HTMLMediaElement.prototype.play=()=>Promise.resolve();},[['**/assets/setup/reel/*.mp4',r=>r.fulfill({status:404,body:''})],['**/assets/setup/reel/*.webp',r=>r.fulfill({status:404,body:''})]]]]){
   const {context,page,errors}=await fresh({webSales:true,motion:true,init,routes});try{
    await toReel(page);await page.waitForFunction(()=>document.getElementById('reelFrame').classList.contains('stills'),null,{timeout:4000}).catch(()=>{});
    // (the poster is asked for as the clip gives up: read the frame once it has answered)
    await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&i.complete&&(i.naturalWidth>0||i.classList.contains('gone'));},null,{timeout:4000}).catch(()=>{});
    const s=await reelState(page);
-   ok(label+': the posters instead (here Fruit Slice\'s Home card), never a dead frame or a broken video',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/crafted/home-fruit.webp:card"]'&&!s.broken,s);
+   ok(label+' (and no posters either): the Home cards instead (here Fruit Slice\'s), never a dead frame or a broken video',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/crafted/home-fruit.webp:card"]'&&!s.broken,s);
    clean('reel: '+label,errors);
   }finally{await context.close();}
  }
