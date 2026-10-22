@@ -100,6 +100,34 @@ fix, so a `--redo` of one of these pages loses it):
   letter, though the storm broke it the night before. Painted out (a masked
   edit, only that strip kept): the river runs on with no bridge, as in s05.
 
+Days 4-14 (22 Oct 2026). Every page was checked against its line by a
+reviewer looking at the picture (writing, Echo off-model, a character
+missing, doubled or wrong, extra limbs, the fix drawn before the game, a face
+under the caption card) and redrawn with the reason until it passed, up to
+five times; from the third round only those hard faults sent a page back.
+What a later round still noticed but let pass is in the PR. Fixed after
+drawing by `cut-adventure.py` (`TOUCH`, the same way every time it runs; the
+raws in `tools/art/out/adventure/` stay as the model drew them):
+- **the helper maps (every e04)**: drawn with the one star Echo presses; the
+  stars of the days before are the game's own glossy star, laid on the map's
+  places with a soft shadow (`STARS`, placed with `--stars` and counted on
+  the proof). Day 4's map was drawn with its four. The map pages draw from
+  `tools/art/out/adventure/ref-map.png`, Day 3's map cut out of its page with
+  its stars filled in: the whole page brought back its stars, and its Echo's
+  two-lobed pink feather, as extra stars and a third feather.
+- **lantern/s02, s04-s08, home**: the mushroom lamps glowed on every page
+  before the game (three drawings each); inside each lamp's circle only warm,
+  bright pixels are turned to dull dusk glass. Echo's own porch lamp stays
+  lit, and so does the chart's drawing of a lit lamp (s07).
+- **lantern/s05**: a wing on Glowworm, who has none, filled in from the sky.
+- **postboat/e01**: Beaver's two front teeth, the day's joke, drawn on.
+- **kite/e04**: Echo's back feather drawn coral, turned to his yellow.
+- **observatory/e04**: four tiny cream crayon sparkles by the moons, which a
+  child counting fourteen stars could count too, filled in.
+Pages drawn against an earlier page of their own story: postboat e01 and e03
+(Beaver as on s07), kite s04 and e02 (Lamb's and Beetle's own model sheets),
+trainline e03 (Pelly and the mitten as on s01).
+
 ## 3. Home's pictures
 
 768x432, cut from the centre 16:9 band of a 1536x1024 drawing.
@@ -114,6 +142,10 @@ fix, so a `--redo` of one of these pages loses it):
 - `home-arcade`: Echo in the middle (x 0.32-0.68, y 0.25-0.95) with a
   watermelon slice, basketball, piano keys, soccer ball and a bone around him:
   the square centre crop keeps Echo whole.
+- `home-<id>` for Days 4-14: each shows the day's problem (never the fix)
+  with Echo, checked whole at 16:9 and 2:1. Where Echo stands low (frontdoor,
+  trainline, rooftops) the 5:2 and 3:1 crops of the smallest phones trim his
+  feet, as Day 1's 3:1 does.
 
 ## 4. Light the Way (`lighthouse-*`, for P4)
 
