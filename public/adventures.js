@@ -252,12 +252,12 @@
         // buddy: on the doorstep to the right of Echo, right of the door (rest)
         { art: "s01", ages: "both", buddy: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },
           line: "Pelly waddles up with a letter! Oops. That's a teapot. And it's still warm!" },
-        // no buddy (on the garden path just right of Echo, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: on the garden path just right of Echo (rest)
+        { art: "s02", ages: "both", buddy: { x: 0.79, y: 0.765, h: 0.21, pose: "rest" },
           line: { big: "Here's the real letter. It's from Postmaster Otter, down by the sea. He needs our help!",
                   little: "Here's the real letter. Postmaster Otter needs our help!" } },
-        // no buddy (on the jetty's plank deck just right of Echo, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the jetty's plank deck just right of Echo (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.42, y: 0.83, h: 0.19, pose: "rest" },
           line: { big: "Otter has parcels for everybody on the little islands. Look at that pile!",
                   little: "Postmaster Otter has a big pile of parcels!" } },
         // buddy: on the flat mossy rock just right of Echo (rest)
@@ -270,8 +270,8 @@
         // no buddy
         { art: "s06", ages: "big", buddy: null,
           line: "Mouse's little blue house has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!" },
-        // no buddy (on the floating jetty's planks just right of Echo, not placed)
-        { art: "s07", ages: "both", buddy: null,
+        // buddy: on the floating jetty's planks just right of Echo (rest)
+        { art: "s07", ages: "both", buddy: { x: 0.44, y: 0.745, h: 0.185, pose: "rest" },
           line: { big: "Then there's Beaver. He nibbled his own front door by mistake. Crunch! His new one is on that raft.",
                   little: "Silly Beaver nibbled his door. Crunch! His new one is on a raft." } },
         // buddy: on the jetty planks in the lower right, right of Otter and in front of the postboat (cheer)

@@ -1000,7 +1000,11 @@
         },
         "s04": {
           "picture": "The grassy top of Breezy Hill on a bright, breezy morning: soft green grass fills the lower half of the picture, with a big open blue sky above and rolling green hills far below. In the middle of the picture, a little way back, three soft square cloth pictures stand propped up side by side against the big round grey rock, like paintings at a show: a little brown boat with a coral sail on blue ripples, a round red beetle with black spots, and a bright blue crescent moon. Beetle stands on the grass right in front of the beetle picture, posing proudly beside it, and the painting looks exactly like her. On the left of the middle, Lamb stands and proudly holds up the fourth cloth picture, the red-and-yellow flower, with both hooves, a dab of red paint on her nose. Echo stands on the grass in the lower middle, just left of the middle, laughing with one wing on his tummy.",
-          "buddy": "on the grass just right of Echo, nearer the front than the rock: a patch of plain grass, nothing on it"
+          "buddy": "on the grass just right of Echo, nearer the front than the rock: a patch of plain grass, nothing on it",
+          "also": [
+            "file:tools/art/out/adventure/kite/ref-lamb.png",
+            "file:tools/art/out/adventure/kite/ref-beetle.png"
+          ]
         },
         "s05": {
           "picture": "The grassy top of Breezy Hill on a bright, very breezy morning: soft green grass fills the lower half of the picture, blue sky above. Goat's giant kite (THE KITE) leans upright against the big round grey rock in the middle of the picture, still plain, with no pictures sewn on and no tail. A gust of wind has lifted the four soft square cloth pictures (the flower, the boat, the beetle and the blue moon) that were laid on the kite, and they flip and flutter in the air just above it like big leaves. Goat, on the left of the kite, reaches up with both hooves to catch one, his ears flying. Echo, on the right of the kite, hops up with his wings out to catch another, giggling. A round wicker basket of rolled-up bright ribbons sits on the grass in front of the rock. Funny and breezy, never worrying.",
@@ -1024,7 +1028,11 @@
         },
         "e02": {
           "picture": "The grassy top of Breezy Hill on a bright, breezy day: soft green grass fills the lower third of the picture, blue sky above. High in the blue sky in the upper middle flies the finished giant kite (THE KITE), big enough that its four sewn pictures (the flower, the boat, the beetle and the blue moon) and its ribbon tail are easy to see, its thin string running down out of the picture at the left edge. On the grass below, on the left of the middle, Lamb waves up at the flower picture on the kite with one hoof, beaming. Beside her, Beetle sits on top of the big round grey rock and waves up at the beetle picture with two of her little legs, giggling. Echo stands on the grass in the lower middle, laughing.",
-          "buddy": "on the grass just right of Echo, apart from the rock: a patch of plain grass, nothing on it"
+          "buddy": "on the grass just right of Echo, apart from the rock: a patch of plain grass, nothing on it",
+          "also": [
+            "file:tools/art/out/adventure/kite/ref-lamb.png",
+            "file:tools/art/out/adventure/kite/ref-beetle.png"
+          ]
         },
         "e03": {
           "picture": "The grassy top of Breezy Hill on a bright, breezy day: soft green grass fills the lower third of the picture, blue sky above. High in the sky in the upper middle of the picture, Pelly the pelican floats up into the blue sky, holding the curved handle of her open sunny-yellow umbrella with white polka dots in one wing, her orange feet dangling, delighted and a little surprised. Just right of her flies the finished giant kite (THE KITE) with its four sewn pictures and its ribbon tail. Its thin string runs down to a wooden spool that Goat holds on the grass on the left of the middle, laughing. Echo stands on the grass in the lower middle, laughing with both wings on his tummy.",
@@ -1499,6 +1507,8 @@
     "public/assets/adventure/windup/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
     "public/assets/adventure/bridge/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
     "public/assets/adventure/bridge/e04.webp": "an earlier page of this story world: Echo's helper map on the wall of his cottage. Keep the map's paper, crayon colours and gold-star stickers looking the same (this page shows a different, newly uncovered place on it)",
-    "tools/art/out/adventure/postboat/ref-beaver-s07.png": "an earlier page of this story showing Beaver exactly as he must look: his two big white front teeth showing over his lower lip and his big flat criss-cross paddle tail. Draw Beaver like this (the place and the other characters are this page's own)"
+    "tools/art/out/adventure/postboat/ref-beaver-s07.png": "an earlier page of this story showing Beaver exactly as he must look: his two big white front teeth showing over his lower lip and his big flat criss-cross paddle tail. Draw Beaver like this (the place and the other characters are this page's own)",
+    "tools/art/out/adventure/kite/ref-lamb.png": "Lamb's own model sheet: draw Lamb exactly like this, a sheep, not a bunny: her only ears are the two black ones sticking out sideways from the sides of her head under the beret, and NOTHING sticks up from the top of her beret",
+    "tools/art/out/adventure/kite/ref-beetle.png": "Beetle's own model sheet: draw Beetle exactly like this, a round shiny red shell with black spots and a small black head"
   }
 }
