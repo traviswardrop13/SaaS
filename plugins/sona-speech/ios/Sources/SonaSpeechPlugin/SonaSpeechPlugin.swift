@@ -108,9 +108,10 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         nc.addObserver(self, selector: #selector(wentBackground(_:)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         nc.addObserver(self, selector: #selector(wentBackground(_:)), name: UIScene.didEnterBackgroundNotification, object: nil)
         // The trial reminder is shown even while Sona is open (below,
-        // willPresent): families play at the same time most days, and that is
-        // the time of day the reminder was set at. Capacitor stays iOS's
-        // notification delegate; it hands local notifications to this handler.
+        // willPresent, without its sound: a game's mic may be listening):
+        // families play at the same time most days, and that is the time of
+        // day the reminder was set at. Capacitor stays iOS's notification
+        // delegate; it hands local notifications to this handler.
         bridge?.notificationRouter.localNotificationHandler = self
     }
 
@@ -802,11 +803,19 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
  * plays: unanswered, it would vanish unseen on exactly the day it matters.
  * Only Sona's own ids ("sona-"); anything else is left as iOS would leave it.
  * A tap on it simply opens the app.
+ *
+ * SILENT while Sona is open: a banner and the list, never the sound. The
+ * family is likely mid-game, and a game's mic may be open (Sona's own mic has
+ * no voice processing): iOS's chime through the speaker would play into it,
+ * breaking "nothing plays while the mic listens", and could pass a loudness
+ * bar or count as a book's wrong-sound try. With Sona closed the reminder
+ * keeps its sound (content.sound above). Whether a child should see the
+ * banner over a game at all is Travis's call.
  */
 extension SonaSpeechPlugin: NotificationHandlerProtocol {
     public func willPresent(notification: UNNotification) -> UNNotificationPresentationOptions {
         guard notification.request.identifier.hasPrefix("sona-") else { return [] }
-        return [.banner, .list, .sound]
+        return [.banner, .list]
     }
 
     public func didReceive(response: UNNotificationResponse) {}

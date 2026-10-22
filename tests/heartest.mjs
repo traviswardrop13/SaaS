@@ -343,8 +343,14 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     && (code.match(/UNMutableNotificationContent\(\)/g) || []).length === 1);
   ok("cancel removes the waiting request by its id", /removePendingNotificationRequests\(withIdentifiers: \[id\]\)/.test(nb));
   ok("shown while Sona is open too (the reminder is set for the time of day the family plays), and only Sona's own",
-    /bridge\?\.notificationRouter\.localNotificationHandler = self/.test(code) && /extension SonaSpeechPlugin: NotificationHandlerProtocol \{[\s\S]{0,200}guard notification\.request\.identifier\.hasPrefix\("sona-"\) else \{ return \[\] \}\s*return \[\.banner, \.list, \.sound\]/.test(code)
+    /bridge\?\.notificationRouter\.localNotificationHandler = self/.test(code) && /extension SonaSpeechPlugin: NotificationHandlerProtocol \{[\s\S]{0,200}guard notification\.request\.identifier\.hasPrefix\("sona-"\) else \{ return \[\] \}\s*return \[\.banner, \.list\]\s*\}/.test(code)
     && !/pushNotificationHandler/.test(code));
+  // review, 22 Oct 2026: shown over the app WITH its sound, iOS's chime would
+  // play through the speaker into a game's open mic (Sona's own mic has no
+  // voice processing), against "nothing plays while the mic listens"
+  const present = (code.match(/func willPresent\(notification: UNNotification\)[^{]*\{[\s\S]*?\n    \}/) || [""])[0];
+  ok("…SILENTLY while Sona is open: a banner and the list, never .sound (a game's mic may be listening)",
+    present.length > 40 && !/\.sound|\.badge|\.alert/.test(present) && /\[\.banner, \.list\]/.test(present), present);
   ok("LOCAL ONLY: no Apple push service (no registerForRemoteNotifications, no device token), and the plugin never takes over iOS's notification delegate",
     !/registerForRemoteNotifications|deviceToken|APNs|\.delegate\s*=/.test(code));
 }
