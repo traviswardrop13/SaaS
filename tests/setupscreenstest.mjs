@@ -335,6 +335,19 @@ await scenario('the reminder ask: only where a reminder can be set and the price
   ok('a reminder no longer due when ready is left: straight on to the price, the reminder screen never shown, iOS never asked',new URL(page.url()).pathname==='/subscribe.html'&&(await at(page)).saved&&(await at(page)).asks==='0');
   clean('remind skipped late',errors);
  }finally{await context.close();}}
+ // the price never loads (its request dies): the reminder screen comes back
+ // after 8 seconds with both buttons live, and they try again
+ {let dead=true;const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,routes:[['**/subscribe.html**',r=>dead?r.abort('aborted'):r.fulfill({status:200,contentType:'text/html',body:'<p>price</p>'})]]});try{
+  await setupWalk(page,'remind',{name:'Mia'});await page.clock.install();
+  await calm(page);await page.locator('#remindNo').click({noWaitAfter:true});
+  ok('"Not now" turns busy at once ("One moment…"), the profile saved',await page.evaluate(()=>document.getElementById('remindNo').textContent==='One moment…'&&document.getElementById('remindNo').disabled&&document.getElementById('remindYes').disabled&&Sona.getProfile().onboarded===true));
+  await page.clock.runFor(11500);await new Promise(r=>setTimeout(r,300));
+  const again=await page.evaluate(()=>({screen:document.body.dataset.setupScreen,yes:document.getElementById('remindYes').disabled,no:document.getElementById('remindNo').disabled,text:document.getElementById('remindNo').textContent,back:getComputedStyle(document.getElementById('backBtn')).display}));
+  ok('the price never loaded: 8 seconds on, the reminder screen is back with both buttons live and no Back into the saved questions',again.screen==='remind'&&!again.yes&&!again.no&&again.text==='Not now'&&again.back==='none',again);
+  dead=false;await calm(page);await page.locator('#remindNo').click();await page.waitForURL(u=>u.pathname==='/subscribe.html');
+  ok('…and a second tap reaches the price',new URL(page.url()).pathname==='/subscribe.html');
+  clean('remind, the price never loads',errors);
+ }finally{await context.close();}}
  // it fits, with its two buttons clear of the footer
  for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}]){
   const {context,page,errors}=await fresh({viewport:vp,webSales:true,notify:NOTIFY});try{
