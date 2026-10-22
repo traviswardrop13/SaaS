@@ -316,6 +316,8 @@ STARS = {
     "frontdoor/e04": [(0.561, 0.166, 0.045), (0.754, 0.120, 0.045), (0.816, 0.099, 0.045), (0.871, 0.129, 0.045), (0.731, 0.174, 0.045), (0.810, 0.190, 0.045)],
     # Day 8: 1 drawn, 7 laid on (the striped toy shop's roof (Day 2's place); the stone bridge's arch (Day 3's place); the pine forest left of the toy shop; the little brown hills on the sandy shore, top left of the map; the small red-roofed house right of the toy shop, at the map's right edge; the autumn tree clump on the map's right edge; the pink blossom trees on the map's right edge)
     "lantern/e04": [(0.812, 0.103, 0.045), (0.793, 0.172, 0.045), (0.721, 0.120, 0.045), (0.640, 0.088, 0.045), (0.876, 0.139, 0.045), (0.874, 0.255, 0.045), (0.867, 0.306, 0.045)],
+    # Day 9: 1 drawn, 8 laid on (the red-and-white lighthouse, on its striped tower (Day 1's place); the toy shop with the striped awning, on its gable (Day 2's place; also hides a tiny number-like mark there); the stone bridge over the river, on its arch (Day 3's place); the little red-roofed house by the river, on its roof; the snowy mountain peaks at the top of the map; the rocky point with pine trees across the sea, right of the mountains; the pine forest left of the toy shop; the small pine trees by the stream, left of the clouds)
+    "trainline/e04": [(0.241, 0.140, 0.050), (0.857, 0.118, 0.050), (0.356, 0.368, 0.050), (0.210, 0.352, 0.050), (0.400, 0.140, 0.050), (0.508, 0.185, 0.050), (0.674, 0.124, 0.050), (0.356, 0.293, 0.050)],
 }
 
 
