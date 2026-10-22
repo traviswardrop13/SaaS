@@ -1794,8 +1794,10 @@ Claude joined them to the story:
   pinecone, a toothbrush, a carrot, a mitten, an umbrella, a wooden spoon, a
   sandwich, a pancake, a fluffy slipper), the problem, "Let's go!", the game,
   the ending, and a gold star ("Four gold stars on our helper map!" up to
-  fourteen; the map page is a close-up of the one new star, since no drawing
-  can be trusted to count stars). Eight scenes and four endings for 5-8, six
+  fourteen; the model draws the whole map with the one star Echo presses,
+  and `cut-adventure.py`'s `STARS` lays the days before's stars on its
+  places, the game's own glossy star, so a child can count them, as Days
+  1-3's maps got theirs). Eight scenes and four endings for 5-8, six
   and three for 3-4, every line under the story-line rules. Pictures in
   `public/assets/adventure/<id>/`, Home's `home-<id>.webp`, drawn by
   `tools/art/gen-adventure.mjs` from `adventure-prompts.json` (a later story
