@@ -553,6 +553,12 @@
     // before then opens nothing. Dropped here, so the next save of any setting
     // stops carrying it in the profile and into backups.
     delete p.parentPin;
+    // The game-card picker is gone too (Travis, 22 Oct 2026: "simplify
+    // settings ... the minimum viable features"). A pick saved from it would
+    // hold a child's cards at that step for good with nothing left to change
+    // it, so it is dropped here, the parent code's way: the cards follow what
+    // the child has earned on the practice page (_gameWant).
+    delete p.gameLevel;
     // SOUND IS ON OR OFF; THE PHONE'S SIDE BUTTONS DO THE REST (Travis, 30 Sep
     // 2026: "why can't we just use our phones to adjust volume on the side of
     // our iphone?"). The Settings slider is gone, so a level saved from it —
@@ -1587,7 +1593,7 @@
     // One default for every age (Travis, 5 Oct 2026: "we'll just set the
     // default to thirty reps per day. Right now it's set to fifty", which it
     // was for ages 5 and up). So three days a week is a 90-rep week. A number a
-    // grown-up picked in Settings is kept.
+    // grown-up picked on Progress (Settings until 22 Oct 2026) is kept.
     return g > 0 ? g : REP_GOAL_DEFAULT;
   }
   function goalState() {
@@ -1702,16 +1708,14 @@
   // The card between rounds always said the bare sound. It now climbs: the
   // sound alone ("rrrr"), then ONE syllable a card ("ree"; a different one
   // each calendar day, never three in a breath), then a short word ("rot").
-  // This is the one reader every round game calls, and the Settings picker
-  // paints its grey line from it, so neither can promise an ask the other
-  // won't make.
+  // This is the one reader every round game calls.
   //
   // gameAsk(sound, card): card 0 is the bare sound (Echo's power button, and
   // where a card steps back to); 1 and 2 are the two cards between rounds.
   // The step asked is min(top, floor + card):
-  //   top   — the grown-up's pick in Settings (profile.gameLevel), else one
-  //           step past what the child has EARNED on the practice page, the
-  //           practice page's own rule. A pick wins both ways.
+  //   top   — one step past what the child has EARNED on the practice page,
+  //           the practice page's own rule. (A grown-up's pick in Settings
+  //           set it until 22 Oct 2026; getProfile drops an old pick.)
   //   floor — the step the "Say it 5 times" page ended on this sitting
   //           (charge.html hands it over), so a card never asks below what
   //           the child was just asked; its own syllable or word is reused.
@@ -1734,15 +1738,12 @@
   // them are Rachel's calls (CLAUDE.md, "Games ask for more than the sound").
   const GAME_LEVELS = ["isolation", "syllable", "word"];
   function _gameContent() { return (typeof window !== "undefined" && window.SonaContent) || null; }
-  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned or
-  // picked. One answer, read by the cards (through _gameWant and _gameItem)
-  // and by the Settings line, which says the reason in words, so the two can
-  // never disagree:
+  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned. One
+  // answer, read by the cards (through _gameWant and _gameItem):
   //   "little"   — a child aged 2 to 4. Their Home still shows the round
   //                games (Fruit Slice is free and open to a four-year-old),
-  //                and Settings hides the picker for that age, so their cards
-  //                ask the bare sound exactly as before, whatever a pick saved
-  //                at an older age says. Whether little ones should ever be
+  //                and their cards ask the bare sound exactly as before,
+  //                whatever was earned. Whether little ones should ever be
   //                asked a syllable is Rachel's call.
   //   "muted"    — Echo's voice is off in Sona. Only his voice can model a
   //                syllable or a word; nothing past the bare sound is recorded.
@@ -1763,9 +1764,7 @@
   function _gameWant(sound) {
     const hold = gameHold(sound);
     if (hold === "little" || hold === "muted") return 0;
-    let pick = ""; try { pick = getProfile().gameLevel || ""; } catch (e) {}
-    const i = GAME_LEVELS.indexOf(pick);
-    return i >= 0 ? i : Math.min(2, rungOf(sound) + 1);
+    return Math.min(2, rungOf(sound) + 1);
   }
   // What the practice page ended on this sitting, if it was this sound.
   function _gameHand(sound) {
@@ -4303,8 +4302,8 @@
     return y + "-W" + String(wk).padStart(2, "0");
   }
   // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
-  // week by week in Settings). ONE bucketing of the day ledger feeds Home,
-  // Progress and Settings, so no two surfaces can disagree about "this week" —
+  // week by week in Settings, a card that went on 22 Oct 2026). ONE bucketing
+  // of the day ledger feeds Home and Progress, so no two surfaces can disagree about "this week" —
   // Home's old Grown-ups pop-up summed sound checks while Progress summed
   // tries, and showed two different numbers for the same week.
   //
@@ -4724,7 +4723,7 @@
   // level until Rachel says, and a parked game has none. Kept per child
   // (PER_KID). A tap plays the level last picked; Home asks once per game when
   // a new level opens (playLevelAsk), and that tap and a pick are the only
-  // writes Home makes. A grown-up can hold a child at Level 1 (cap). A child's
+  // writes Home makes. A child's
   // longest row at Level 2 and 3 is kept here; Level 1's stays with Beat Your
   // Best, so a best is never measured against a level whose top it cannot
   // reach. Nothing here is sent anywhere: the game page says "level played".
@@ -4749,8 +4748,11 @@
   function _lvState() { const p = load(PLAYLEVELKEY, {}); return (p && typeof p === "object" && !Array.isArray(p)) ? p : {}; }
   function _lvOf(map, key) { return (map && typeof map === "object" && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
   // Pure: how many levels are open for this child, 1 to 3.
+  // A "Level 1 only" saved from Settings (cap: 1) is ignored: the picker went
+  // on 22 Oct 2026 ("simplify settings"), and a cap nobody can lift would keep
+  // that child on Level 1 for good. It rides in backups, so it is ignored on
+  // read rather than swept once.
   function playLevelsOpen() {
-    if ((_lvState().cap | 0) === 1) return 1;
     const t = trophies(); let n = 1;
     for (let i = 1; i < PLAY_LEVEL_AT.length; i++) if (t >= PLAY_LEVEL_AT[i]) n = i + 1;
     return n;
@@ -4777,12 +4779,10 @@
     const p = _lvState(); p.pick = (p.pick && typeof p.pick === "object") ? p.pick : {};
     p.pick[key] = n; save(PLAYLEVELKEY, p); return true;
   }
-  // Settings only: "Level 1 only" (1), or open as earned (anything else)
-  function setPlayLevelCap(n) { const p = _lvState(); if (n === 1 || n === "1") p.cap = 1; else delete p.cap; save(PLAYLEVELKEY, p); return true; }
   // Pure: what the sheet and the road show for one game.
   function playLevelInfo(key) {
     const k = _lvKey(key), open = playLevelsOpen(), t = trophies();
-    return { key: k || String(key), pick: playLevel(k), cap: (_lvState().cap | 0) === 1,
+    return { key: k || String(key), pick: playLevel(k),
       levels: (k ? PLAY_LEVEL_LINES[k] : []).map((line, i) => ({ n: i + 1, line, open: i + 1 <= open, at: PLAY_LEVEL_AT[i], have: t })) };
   }
   // A child's longest row at Level 2 or 3, by Level 1's rules: whole numbers
@@ -8466,5 +8466,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

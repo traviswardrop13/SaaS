@@ -16,6 +16,11 @@
     .week{display:flex;gap:8px;margin-top:12px;}
     .gbtn{border:2px solid #e2ecf7;background:#fff;border-radius:12px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:#6b86a3;cursor:pointer;}
     .gbtn.on{background:var(--act);border-color:var(--act);color:#fff;}
+    /* the daily goal, beside the days-a-week buttons (moved from Settings,
+       22 Oct 2026): one line, label then picker, that never runs off a 320px phone */
+    .goal-daily{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-top:12px;font-weight:800;font-size:13.5px;color:#6b86a3;}
+    .goal-daily select{width:auto;min-width:130px;min-height:44px;padding:6px 10px;border:2px solid #e2ecf7;border-radius:12px;background:#fff;color:var(--ink);font:800 15px "Nunito",sans-serif;}
+    .rw-note{font-size:12px;font-weight:700;line-height:1.5;margin-top:8px;}
     .day{flex:1;text-align:center;}
     .day .d{position:relative;width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
       font-size:16px;background:#eef3fb;color:var(--muted);}
@@ -275,7 +280,18 @@
         <button class="gbtn" data-g="5">5 days/wk</button>
         <button class="gbtn" data-g="7">Every day</button>
       </div>
-      <p class="goal-note muted">Days at the daily rep goal count. Change the daily goal in Settings.</p>
+      <!-- THE DAILY GOAL lives here since 22 Oct 2026, under the days-a-week
+           buttons it goes with (Settings' week-by-week card went: "simplify
+           settings ... the minimum viable features"). It is the one place a
+           grown-up changes the number, so a saved goal is never stuck. A
+           speech therapist's homework sets its own number and locks it. -->
+      <label class="goal-daily" for="dailyGoalPick">Daily goal <select id="dailyGoalPick" aria-describedby="goalHelp"></select></label>
+      <p id="goalHelp" class="goal-note muted"></p>
+      <!-- One short line (Travis, 30 Sep 2026), here since 22 Oct 2026 with
+           the reps it explains. It stays true: practice counts every voiced
+           try, right or not yet; a game counts only when it asked and heard;
+           silence counts nowhere. Never a %, a score or a verdict. -->
+      <p class="muted rw-note">A rep is one time <span id="rwWho">your child</span> says their sound or word out loud, in practice, a game or a book. Silence never counts.</p>
       <p id="clearest"></p>
     </div>
 
@@ -366,9 +382,18 @@
     // back-swipe can restore this page from the bfcache without re-running
     // scripts — re-check the gate whenever the page is shown again.
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+    // THE PAGE BELONGS TO ONE CHILD (Settings' rule, here since 22 Oct 2026,
+    // when the daily goal moved in beside the days a week). A back-swipe can
+    // bring this page back from the bfcache after Settings switched to
+    // another child, and a goal tapped then would be saved for the child now
+    // picked, on a page showing someone else. So it reloads instead.
+    function activeSlot() { try { var k = Sona.activeKid && Sona.activeKid(); return k ? k.slot : ""; } catch (e) { return ""; } }
+    var loadSlot = activeSlot();
+    window.addEventListener("pageshow", function (e) { if (e.persisted && activeSlot() !== loadSlot) location.reload(); });
     var p = Sona.getProfile();
     var g = Sona.getProgress();
     var name = (p.childName || "").trim();
+    if (name) document.getElementById("rwWho").textContent = name;
     document.getElementById("title").textContent = name ? (name + "'s progress") : "Progress";
     function esc(value) { var el = document.createElement("span"); el.textContent = String(value == null ? "" : value); return el.innerHTML; }
     function count(value) { return Math.max(0, Math.floor(Number(value) || 0)); }
@@ -464,8 +489,33 @@
         document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) { b.classList.toggle("on", parseInt(b.dataset.g, 10) === w.goal); });
       }
       document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) {
-        b.onclick = function () { Sona.saveProfile({ weeklyGoal: parseInt(b.dataset.g, 10) }); paintWk(); prepareWeeklyCard(); };
+        b.onclick = function () {
+          if (activeSlot() !== loadSlot) { location.reload(); return; }
+          Sona.saveProfile({ weeklyGoal: parseInt(b.dataset.g, 10) }); paintWk(); prepareWeeklyCard();
+        };
       });
+      // The daily number: 20 to 50 under five, 30 to 100 from five, plus any
+      // number already saved, so a goal picked before is always on the list.
+      // Homework keeps its own target, and its report counts sound practice
+      // only, which the line under the picker says.
+      var pick = document.getElementById("dailyGoalPick");
+      function paintDaily() {
+        var d = Sona.dayGoal(), hw = Sona.homework ? Sona.homework() : null;
+        var opts = parseInt(Sona.getProfile().childAge, 10) >= 5 ? [30, 50, 70, 100] : [20, 30, 40, 50];
+        if (opts.indexOf(d.goal) < 0) opts.push(d.goal);
+        opts.sort(function (a, b) { return a - b; });
+        pick.innerHTML = "";
+        opts.forEach(function (n) { var o = document.createElement("option"); o.value = n; o.textContent = n + " reps"; pick.appendChild(o); });
+        pick.value = d.goal; pick.disabled = !!(hw && hw.repsPerDay > 0);
+        document.getElementById("goalHelp").textContent = pick.disabled
+          ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only."
+          : "A day counts when the daily goal is met. Practice, games and books all count.";
+      }
+      pick.onchange = function () {
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        Sona.saveProfile({ dailyGoal: parseInt(pick.value, 10) }); paintDaily(); paintWk(); prepareWeeklyCard();
+      };
+      paintDaily();
       paintWk();
     })();
 

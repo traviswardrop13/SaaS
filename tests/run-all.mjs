@@ -31,12 +31,12 @@ const SUITES = [
   "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
-  "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; Settings' pick, the practice page's floor, homework; it only reads
+  "gameasktest.mjs", // GAMEASK1: what a game's say-it card asks for: the sound, then one syllable, then a short word; what was earned (an old Settings pick is dropped), the practice page's floor, homework; it only reads
   "trophytest.mjs", // TROPHY1/COIN3: trophies follow the honest rep, a day at the goal is 30 whatever the goal, never spent or lost; coins no longer minted, a hardened wallet, never sold
   "boardapitest.mjs", // BOARDAPI1: the Practice Board server, built dark: fails closed, the phone never confirms itself, a day counts once and never early, deletion always works, nothing about a child kept
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "dailygoaltest.mjs", // daily rep goals, quiet once-a-day celebration, and weekly goal-day streaks
-  "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
+  "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner and on Progress — one count everywhere
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
@@ -62,7 +62,7 @@ const SUITES = [
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "homepickstest.mjs", // deterministic daily picks stay in the child's sound and age
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
-  "roadtest.mjs", // ROAD1/LEVELS1 on Home and in Settings: one tap still plays, "Pick a level" once per game when a level opens, the level badge, "Level 1 only"; Home only reads
+  "roadtest.mjs", // ROAD1/LEVELS1 on Home and the road: one tap still plays, "Pick a level" once per game when a level opens, the level badge, an old "Level 1 only" ignored; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
