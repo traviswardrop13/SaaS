@@ -486,6 +486,10 @@ await section("the road page: stops and the month", async () => {
   let f = await fresh({ trophies: 2000 });
   try {
     await road(f.page);
+    // how it works, in pictures (22 Oct 2026): talk › trophies › chest › coins › shop
+    const how = await f.page.evaluate(() => { const r = document.getElementById("howRow"), b = r.getBoundingClientRect(); return { label: r.getAttribute("aria-label"), role: r.getAttribute("role"), words: [...r.querySelectorAll(".rd-how-step b")].map((x) => x.textContent), pics: [...r.querySelectorAll(".rd-how-pic")].every((x) => !!x.querySelector("svg")), fits: b.right <= innerWidth + 0.5 && b.left >= -0.5, beforeHero: !!(r.compareDocumentPosition(document.getElementById("hero")) & Node.DOCUMENT_POSITION_FOLLOWING) }; });
+    ok("the road says how coins are earned, in pictures first: Talk › Trophies › Chest › Coins › Shop, with every picture painted, above the road, inside the screen", JSON.stringify(how.words) === JSON.stringify(["Talk", "Trophies", "Chest", "Coins", "Shop"]) && how.pics && how.fits && how.beforeHero && how.role === "img", how);
+    ok("…and its label is the whole sentence a grown-up reads out: talk for trophies, the goal opens the chest, the chest gives coins, coins go to the Buddy Shop", how.label === "Talk to earn trophies. Reach your goal to open today's chest. The chest gives coins. Spend coins in the Buddy Shop.", how.label);
     const stops = await f.page.evaluate(() => [...document.querySelectorAll("#roadList .rd-stop")].map((r) => ({ n: +r.dataset.stop, open: r.classList.contains("open"), tag: r.tagName, flag: (r.querySelector(".rd-flag") || {}).textContent || "" })));
     const ns = stops.map((s) => s.n);
     ok("with 2,000 trophies and nothing opened, every stop from 1 to 21 waits on the page, each a button that says \"Open!\"", [...Array(21)].every((_, i) => ns.includes(i + 1)) && stops.filter((s) => s.n <= 21).every((s) => s.open && s.tag === "BUTTON" && s.flag === "Open!"), stops.slice(0, 3));
