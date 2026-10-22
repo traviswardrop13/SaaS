@@ -584,7 +584,11 @@
     var INTEREST_GAMES={sports:["hoops","soccer"],music:["tiles"],dinosaurs:["dino"],animals:["run","feed"],space:["rise","glide","bubbles"],building:["stack"],food:["slice","feed"]};
     // HOW LONG EACH DAY (22 Oct 2026): the minutes a parent picks, as the
     // daily goal in reps (about 6 a minute: 5 minutes is the 30 reps that
-    // were every family's default). Rachel's table to change.
+    // were every family's default). Rachel's table to change, and hers to
+    // rule on where it bites: one table for every age, so a 2-4 year old
+    // can be set to 90 reps a day (about 18 Feed Echo or Bubble Pop rounds
+    // before the chest opens). A second child is not asked and keeps 30
+    // (Travis's call whether to ask).
     var MINUTE_REPS={"5":30,"10":60,"15":90};
     var draft = {
       childName: p.childName || "",
@@ -682,7 +686,9 @@
     // store's answer is asked as the ready screen shows (remindAsk, below);
     // no answer by the time the parent leaves the ready screen means no
     // reminder screen: it is never asked on a guess. A store that found a
-    // purchase meanwhile skips it too (trialFirst is then false).
+    // purchase meanwhile skips it too (trialFirst is then false). Asking
+    // only such a family (rather than words that assume no trial) is a
+    // default Travis did not pick: his call to change.
     function remindMay(){try{return draft.role!=="slp"&&!!(Sona.notifyAvailable&&Sona.notifyAvailable()&&Sona.notifyState&&Sona.notifyState()==="prompt"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
     // the store's Plan (Sona.storePlan), once it has answered; null until then
     var remindPlan=null,remindP=null,REMIND_WAIT_MS=2500;
