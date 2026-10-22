@@ -615,6 +615,232 @@
       ]
     },
     {
+      "id": "lantern",
+      "light": "sunset",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GLOWWORM: Glowworm, a small, chubby, cheerful clay glowworm (a soft little bug shaped like a round caterpillar; not a snake, not a snail, no shell, no wings, no clothes) with a pale butter-yellow body made of four round segments, a big round head with big glossy eyes, small pink cheeks and a wide smile, two thin antennae with little round tips, six tiny legs, and a round tail end that glows a soft warm golden yellow like a little night-light; about half Echo's height when he sits up, and about as long as Echo is tall. RABBIT: Rabbit, a fluffy, cheerful caramel-brown clay rabbit (a real rabbit, not a white bunny and not a wind-up toy: no key, no jacket, no drum, no scarf) with long upright ears with pink insides, a cream muzzle and tummy, a pink nose, a round white fluffy tail and big soft back feet, in a cozy plum-purple knitted jumper with a little orange-and-green knitted carrot on its front; he stands upright on his back feet; about one and a half times Echo's height. HEDGEHOG: Hedgehog, a small, round, friendly clay hedgehog with soft, smooth, rounded chestnut-brown spines (soft-looking, never sharp), a cream face and tummy, a shiny black button nose, tiny round ears, small pink paws and a tiny cherry-red knitted bobble hat with a white bobble; she stands upright on her back feet; about as tall as Echo. The woods in this story are the Mushroom Woods at dusk: soft mossy tree trunks, rounded teal-green leaves, ferns, little ordinary woodland mushrooms, a pale sandy earthen path that winds between them, and a lavender-blue evening sky with the last warm peach light. The lights along the path all look like this: little mushroom lamps (each a wide, rounded, ribbed honey-wood mushroom cap on two short wooden posts over a round wooden base, with a small round glass light between the posts where it glows, about as tall as Echo, with a tiny wooden switch lever at its foot), round flat stepping stones set into the path that glow softly like little moons only when lit, one small honey-wood power box with two round sockets on its front at the start of the path, soft thick lamp cords (some honey-yellow, some teal) with a round wooden plug at each end, and one great big lantern at the end of the path, a classic honey-wood lantern with a rounded rectangular frame, a short handle loop and a big glass window, about twice Echo's height, hanging from a low mossy branch over a small circle of tree-stump seats, with a few little mushroom lamps standing around the circle. Unlit, every lamp and the big lantern have dark grey glass with no glow at all.",
+      "who": {
+        "GLOWWORM": {
+          "re": "Glowworm",
+          "label": "Glowworm"
+        },
+        "RABBIT": {
+          "re": "Rabbit",
+          "label": "Rabbit"
+        },
+        "HEDGEHOG": {
+          "re": "Hedgehog",
+          "label": "Hedgehog"
+        }
+      },
+      "lineups": [
+        "lantern"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "afternoon",
+          "picture": "A warm late afternoon at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and pulls a big orange carrot with a leafy green top out of her beak pouch, the carrot dangling from the tip of her bill, and blinks at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the carrot.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "afternoon",
+          "picture": "Close up on the porch of Echo's cottage in the warm late afternoon. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little smiling yellow worm with a glowing tail, a row of little mushroom-shaped lamps along a wiggly path, one big lantern at the end of the path, and loose squiggly cords on the ground: only crayon lines, no numbers, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "Sunset at the edge of the Mushroom Woods: soft mossy tree trunks and rounded teal-green leaves arch over the start of a pale sandy path that winds away into the woods, a few little mushroom lamps standing dark along it (grey glass, no glow). Left of the middle, a little way in from the left edge, Glowworm sits on top of a low mossy tree stump beside the path, waving hello with one tiny leg, his tail end glowing softly. In the upper right of the middle, on the far side of the path and well above the near path, Rabbit holds a little stack of three soft round cushions and smiles, and Hedgehog stands just right of Rabbit, waving. Echo stands on the near path in the lower middle, just left of the middle, waving back at Glowworm. The near path runs across the lower third of the picture.",
+          "buddy": "on the near sandy path just right of Echo: a patch of plain path, nothing on it"
+        },
+        "s04": {
+          "picture": "A wide view down the long winding lamp path of the Mushroom Woods at sunset. Little mushroom lamps stand along the pale sandy path and round flat stepping stones are set into it as it curls away between the mossy trees, every one of them dark (grey glass, no glow, stones plain and unlit). Far away at the end of the path, in the upper middle, a small circle of tree-stump seats waits under the great big lantern, which hangs dark from a low mossy branch (grey glass, no glow). In front, on the near path just left of the middle, Hedgehog walks along with Glowworm riding on top of her red bobble hat, Glowworm pointing proudly down the path with one tiny leg. Echo walks beside them in the middle, looking where Glowworm points. The near end of the path runs across the lower third of the picture.",
+          "buddy": "on the sandy path just right of Echo: plain path, nothing on it"
+        },
+        "s05": {
+          "picture": "Beside the lamp path in the Mushroom Woods at sunset, a few little mushroom lamps standing dark along it (grey glass, no glow). High up in the upper middle of the picture, Glowworm hops into the air with a big hiccup: eyes wide, cheeks puffed out, antennae boinging, his tail end flashing bright yellow. NO letters anywhere: no writing of the hiccup at all; it shows only by his hop and his flashing tail. On the far side of the path below him, Rabbit on the left giggles behind one paw, his stack of cushions wobbling, and Hedgehog on the right laughs with both paws on her tummy. Echo stands on the near path in the lower middle, just left of the middle, giggling behind one wing. Silly, never worrying. The near path runs across the lower third of the picture.",
+          "buddy": "on the near sandy path just right of Echo: plain path, nothing on it"
+        },
+        "s06": {
+          "picture": "At the start of the lamp path in the Mushroom Woods at sunset: the small honey-wood power box sits on the ground in the upper middle of the picture, its two round sockets empty, and beside it lies a big messy heap of loose lamp cords, honey-yellow and teal, with their round wooden plugs pulled out and lying every which way. Behind it, a row of little mushroom lamps and round stepping stones runs up the path, all dark (grey glass, no glow, stones plain and unlit). Glowworm bounces up off the top of the power box in one more tiny hiccup hop, with a sheepish little smile. Echo stands on the near path in the lower left of the middle, wings on his cheeks, surprised. The near path runs across the lower third of the picture.",
+          "buddy": "on the near sandy path in the lower right of the middle, just right of Echo and apart from the heap of cords: plain path, nothing on it"
+        },
+        "s07": {
+          "picture": "A big sheet of cream paper pinned with two little wooden pegs to the wide mossy trunk of a tree beside the lamp path at sunset, filling the middle of the picture, with three simple crayon drawings stacked from top to bottom and no words at all. At the top: a little wooden power box joined to a little mushroom lamp by one honey-yellow cord, the lamp dark. In the middle: the same lamp with a second, teal cord running back from it to the power box, and big curvy arrows going out along the yellow cord and back along the teal one, the lamp still dark and its little switch lever pointing down. At the bottom: the same lamp with both cords, its little switch lever flipped up, glowing bright yellow. No letters, no numbers. Nothing stands in front of the paper: no characters anywhere in the picture. Keep the paper in the top 85% of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "The start of the long lamp path in the Mushroom Woods at sunset, the last peach light fading into a lavender-blue sky. The small honey-wood power box sits on the near path left of the middle, its two round sockets empty and its loose cords coiled beside it, ready. Echo stands proudly just right of the power box, in the middle of the picture, facing the viewer, one wing holding a cord's round wooden plug up high and the other wing out, ready to help. Behind him the path winds away past little mushroom lamps and round stepping stones, all dark (grey glass, no glow), up to the great big lantern hanging dark from a low branch far away in the upper middle over its circle of tree-stump seats. In the upper left, on the far side of the path behind the power box, Glowworm sits on Rabbit's shoulder and Hedgehog stands beside them, all three smiling and hopeful. The near path runs across the lower third of the picture.",
+          "buddy": "on the near sandy path just right of Echo: plain path, nothing on it"
+        },
+        "e01": {
+          "picture": "The whole lamp path in the Mushroom Woods, seen from a little way up, now shining at dusk under a deep lavender-blue sky: every little mushroom lamp glows warm butter-yellow, the round stepping stones glow softly like little moons, and neat honey-yellow and teal cords run tidily along the side of the path, lamp to lamp, from the small honey-wood power box near the start of the path, left of the middle and well above the bottom of the picture. At the end of the path, in the upper middle, the great big lantern shines bright gold from its low mossy branch, filling the circle of tree-stump seats beneath it with warm golden light, and the little mushroom lamps around the circle glow too. Echo is not in this picture, and no other character either. The near path runs across the lower third of the picture.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "Under the great big lantern, shining warm gold from its low mossy branch near the top of the picture, in the Mushroom Woods at dusk: a small circle of tree-stump seats, each with a soft round cushion, with little glowing mushroom lamps standing around the circle. Rabbit sits on a stump on the left, ears up, smiling, listening. Glowworm curls up happily on top of a glowing little mushroom lamp just right of Rabbit, his tail end glowing. Hedgehog sits on a stump left of the middle, paws on her tummy, smiling. Echo sits on a stump just right of the middle, eyes half closed, a happy listening smile, one wing cupped by his ear. Glowing stepping stones lead to the circle from the front. Warm golden light on every face. The mossy ground runs across the lower third of the picture.",
+          "buddy": "the empty tree-stump seat just right of Echo, with a plain soft cushion on it and nothing else"
+        },
+        "e03": {
+          "picture": "Under the great big lantern, shining warm gold, in the Mushroom Woods at dusk, everyone laughing. Pelly the pelican has just landed on the left of the circle of tree-stump seats and holds out the big orange carrot with its leafy green top. Rabbit, in the middle, happily munches the end of the carrot, cheeks full. On the right, Glowworm, on top of a glowing little mushroom lamp, pops up with one last tiny hiccup, his tail end flashing, and Hedgehog laughs beside him. Echo stands in the lower middle, just left of the middle, laughing, wings up. The mossy ground runs across the lower third of the picture.",
+          "buddy": null
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. The gold stars already on the map stay exactly as in the attached picture. Near one edge of the map, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a little patch of woods with tiny round green trees, tiny cream mushrooms and a winding path of tiny glowing yellow dots leading to one little lantern. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little woods with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. At dusk in the Mushroom Woods, under a lavender-blue sky, Echo stands on the pale sandy path beside the small honey-wood power box, holding up the round wooden plug of a loose honey-yellow lamp cord with both wings, looking hopeful; around the box lie more loose honey-yellow and teal cords, and beside it a little mushroom lamp stands dark (grey glass, no glow). Glowworm bounces up off the top of the power box in a little hiccup hop, his tail end glowing softly, with a sheepish smile. Beyond them the path winds away past more dark mushroom lamps and plain round stepping stones toward the great big lantern, dark, hanging from a low mossy branch. Cozy and magical, never scary. Echo, the power box, the lamp and Glowworm are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo left of the middle and Glowworm on the power box right of it. Only Echo and Glowworm appear: no other characters.",
+      "chars": [
+        {
+          "key": "glowworm",
+          "h": 0.55,
+          "prompt": "Glowworm, full body, sitting up on his back half, facing forward, smiling: a small, chubby, cheerful clay glowworm (a soft little bug shaped like a round caterpillar; not a snake, not a snail, no shell, no wings, no clothes) with a pale butter-yellow body made of four round segments, a big round head with big glossy eyes, small pink cheeks and a wide smile, two thin antennae with little round tips, six tiny legs, and a round tail end that glows a soft warm golden yellow like a little night-light; one tiny front leg raised in a wave."
+        },
+        {
+          "key": "rabbit",
+          "h": 1.5,
+          "prompt": "Rabbit, full body, standing upright on his back feet, facing forward, smiling: a fluffy, cheerful caramel-brown clay rabbit (a real rabbit, not a white bunny and not a wind-up toy: no key, no jacket, no drum, no scarf) with long upright ears with pink insides, a cream muzzle and tummy, a pink nose, a round white fluffy tail showing beside him and big soft back feet, in a cozy plum-purple knitted jumper with a little orange-and-green knitted carrot on its front."
+        },
+        {
+          "key": "hedgehog",
+          "h": 1.0,
+          "prompt": "Hedgehog, full body, standing upright on her back feet, facing forward, smiling: a small, round, friendly clay hedgehog with soft, smooth, rounded chestnut-brown spines (soft-looking, never sharp), a cream face and tummy, a shiny black button nose, tiny round ears, small pink paws and feet, and a tiny cherry-red knitted bobble hat with a white bobble."
+        }
+      ]
+    },
+    {
+      "id": "trainline",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. HARE: Stationmaster Hare, a friendly clay hare who stands upright, with soft cream fur that is light golden-tan on her back, her cheeks and the tips of her very long upright ears (pink inside), a pink nose, small whiskers and big hind feet, a red knitted scarf and a little shiny brass whistle on a red cord around her neck; no hat; about one and a half times Echo's height, ears included. FROG: Frog, Hare's helper on the train crew, a cheerful, round, bright leaf-green clay frog with a smooth cream belly, big round friendly dark-brown eyes on top of his head, small pink cheeks, a very wide happy smile and a little cornflower-blue knitted scarf; he stands upright on his long back legs; about as tall as Echo. SQUIRREL: Squirrel, a cheerful russet-orange clay squirrel with a cream tummy, tufted ears, a big curled bushy tail and a cream knitted scarf, always with her red wooden sled with two curled runners; a little taller than Echo. BADGER: Baker Badger on his day off, a friendly, round clay badger standing upright on two legs (a real badger, not a raccoon, no mask ring and no striped tail): a white face with one broad black stripe running back over each eye, a shiny black nose, small round white-tipped ears, a soft grey back, black arms and legs, a muted teal shirt with a collar and its sleeves rolled up, a warm brown woolly vest over it and a muted teal knitted scarf; today he wears no chef's cap and no apron, because it is his day off from his bakery; about twice Echo's height. THE DUCK FAMILY: a white clay mother duck with an orange bill and orange webbed feet, about one and a half times Echo's height, and her two fluffy little yellow ducklings with orange bills, each about half Echo's height; always exactly these three, never more ducklings. THE TRAIN: the brand-new valley train, a chunky little toy steam train of exactly two parts and no face: in front, a steam engine with a turquoise boiler wrapped in gold bands and a round gold front, a red cab with one window and a turquoise roof, a tall red chimney with a gold rim, a small gold dome, a red cowcatcher at its front and turquoise wheels with big gold hubs; behind it, one turquoise-and-cream passenger coach with a rounded cream roof, gold trim and rivets, two big open windows and turquoise wheels with big gold hubs; it is big enough for Hare to sit inside and look out of a window; no writing or numbers on it. Snowdrop Valley in this story is a soft, snowy valley of rounded snowbanks, small fir trees dusted with snow, little white snowdrop flowers and cream winter sunshine, with a cozy honey-wood station with a snowy roof and a little brass bell hanging by its door, a low rounded sledding hill, two honey-wood cottages with snowy roofs among the fir trees, and a small round pond of clear blue water (not frozen) with snowy banks. The track pieces are chunky toy-train track pieces, straight and curved, each made of honey-wood sleepers with two smooth grey rails on top.",
+      "who": {
+        "HARE": {
+          "re": "\\bHare\\b",
+          "label": "Stationmaster Hare"
+        },
+        "FROG": {
+          "re": "\\bFrog\\b",
+          "label": "Frog"
+        },
+        "SQUIRREL": {
+          "re": "\\bSquirrel\\b",
+          "label": "Squirrel"
+        },
+        "BADGER": {
+          "re": "\\bBadger\\b",
+          "label": "Baker Badger"
+        },
+        "THE DUCK FAMILY": {
+          "re": "duck family|ducklings|mother duck",
+          "label": "the duck family (the white mother duck and her two ducklings)"
+        },
+        "THE TRAIN": {
+          "re": "\\b[Tt]rain\\b",
+          "label": "the valley train"
+        }
+      },
+      "lineups": [
+        "trainline"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A warm, sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture), with flowers along the path and no snow anywhere. Pelly the pelican stands on the left of the door and proudly pulls one fuzzy red knitted mitten out of her beak pouch, holding it up in her bill as if it were the letter. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a long-eared hare in a red scarf waving beside a little red-and-turquoise engine pulling one coach, standing on white snow under falling snowflakes, with no rails under it: only crayon lines, no numbers, no writing at all. Echo stands behind the low wooden porch railing, left of the middle, leaning on it toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "A bright, snowy winter morning in Snowdrop Valley. The cozy honey-wood station, with its snowy roof and the little brass bell by its door, stands in the upper middle of the picture. In front of it the brand-new valley train (THE TRAIN) stands on the smooth snow across the middle of the picture, facing right, shiny and new, sitting on plain snow: there are NO tracks and no rails anywhere in this picture. Up beside the train, Frog stands by the coach, left of the middle, scratching his head, and Stationmaster Hare stands by the engine, right of the middle, holding out both paws with a sheepish grin. Nearer, on the snow in the lower middle, Echo looks up at the train with his beak open in surprise.",
+          "buddy": "on the open snow just left of Echo, well below the coach and Frog: a patch of plain, smooth snow, nothing on it"
+        },
+        "s04": {
+          "picture": "Beside the honey-wood station on a bright, snowy morning. The brand-new valley train (THE TRAIN) stands on the snow in the upper middle, gleaming, with no tracks under it: Stationmaster Hare stands on a little wooden step stool, happily polishing the engine's tall red chimney with a big cloth, and Frog rubs a coach window with a little sponge, both too busy to look round. In the lower left of the middle, a small wooden builders' cart, piled high with chunky toy-train track pieces (straight and curved), stands forgotten in the snow, with a thick cap of snow on top of the pile. Echo stands on the snow just right of the cart, in the lower middle, pointing a wing at the pile and giggling.",
+          "buddy": "on the snow just right of Echo: a patch of plain, smooth snow, nothing on it"
+        },
+        "s05": {
+          "picture": "On the long, snowy wooden platform in front of the honey-wood station on a bright winter morning. Along the back of the platform, in the upper middle, three passengers wait in a row, from left to right: Squirrel, bouncing with excitement and hugging her red sled; Baker Badger in the middle, in his knitted scarf and woolly vest with no chef's cap today, giving a big sleepy yawn behind one paw; and the duck family (the white mother duck and her two fluffy yellow ducklings), standing in a neat little line. Echo stands at the front of the platform, left of the middle, looking up at them with a big smile. The platform's front edge runs straight across the lower third of the picture, with plain snow below it.",
+          "buddy": "on the front of the platform just right of Echo: plain wooden boards, nothing on them"
+        },
+        "s06": {
+          "picture": "On the snow in front of the honey-wood station on a bright winter morning. In the middle of the picture, a big soft snowdrift with a puff of snow still flying up from it: Frog and Baker Badger have just tumbled into it together and sit side by side in the snow, both dusted all over with snow, laughing, a little heap of snow on top of Frog's head like a hat. Nobody is hurt: silly, not worrying. Echo stands on the snow in the lower left of the middle and giggles behind one wing.",
+          "buddy": "on the plain snow just right of Echo, in front of the snowdrift and well below it: a patch of plain, smooth snow, nothing on it"
+        },
+        "s07": {
+          "picture": "Looking out over Snowdrop Valley from the station on a bright, snowy morning, wide open smooth snow in the middle with NO tracks or rails anywhere. Upper left of the middle, a low rounded sledding hill, with a small wooden signpost at its foot whose board shows one simple painted red sled. Upper right of the middle, among snowy fir trees, two honey-wood cottages with snowy roofs, with a small wooden signpost whose board shows one simple painted little house. Lower right of the middle, a small round pond of clear blue water with snowy banks, with a small wooden signpost whose board shows one simple painted white duck. The three places and their signposts all sit inside the middle 70% of the width, above the bottom eighth. Each board shows only its one simple painted picture: no writing at all. Nobody is in this picture: Echo is not in this picture, and no other character either.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "In front of the honey-wood station on a bright, snowy morning. The brand-new valley train (THE TRAIN) waits on the snow in the upper middle, facing right, ready to go, with plain smooth snow ahead of it and no tracks yet. On the station's front step, upper left of the middle, Stationmaster Hare gives a big paw thumbs-up and Frog waves both hands. In the lower left of the middle, the small wooden builders' cart, piled high with chunky toy-train track pieces (straight and curved), the snow now brushed off them, stands on the snow. Echo stands on the snow just right of the cart, in the lower middle, facing the viewer, proudly holding up one curved track piece in both wings, ready to build.",
+          "buddy": "on the plain snow just right of Echo: a patch of plain, smooth snow, nothing on it"
+        },
+        "e01": {
+          "picture": "A high view over the whole of Snowdrop Valley on a bright, snowy morning, everything inside the middle 70% of the width: a finished toy railway of honey-wood sleepers and smooth grey rails runs in one big loop from the honey-wood station (lower left of the middle), up past the low sledding hill (upper left), across to the two honey-wood cottages among fir trees (upper right), down past the small round blue pond (right of the middle) and back to the station, with one fork in the middle. The brand-new valley train (THE TRAIN) is just pulling in at the station, a small puff of white steam from its chimney, with Stationmaster Hare and Frog waving from the coach windows. Echo stands beside the station door, ringing the little brass bell with one wing, the other wing up. Plain snow below the station.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "Snowdrop Valley on a bright, snowy morning, everyone happy at their stops, a finished toy railway curving between them. In the upper left of the middle, Squirrel whizzes down the low rounded sledding hill on her red sled, her scarf flying, laughing. In the upper right of the middle, Baker Badger stands in the open doorway of his snowy honey-wood cottage in fluffy brown slippers, still in his knitted scarf, holding a steaming mug and waving. In the lower middle, the duck family (the white mother duck and her two fluffy yellow ducklings) paddles in the small round blue pond, little splashes around the ducklings. Plain snow along the bottom. Echo is not in this picture.",
+          "buddy": null
+        },
+        "e03": {
+          "picture": "A happy little party on the snowy wooden platform in front of the honey-wood station, the valley train (THE TRAIN) resting behind on its finished track. At the back of the platform, upper left of the middle, Stationmaster Hare pours hot cocoa from a big pot into little cups on a small table, and Frog beside her holds up a plate of round cookies. At the back of the platform, upper right of the middle, Pelly the pelican has just landed, wearing the fuzzy red mitten pulled over her postal cap like a cozy little hat, its thumb sticking up, looking very proud. Echo stands at the front of the platform, left of the middle, holding a little cup of cocoa and laughing. The platform's front edge runs straight across the lower third of the picture, with plain snow below it.",
+          "buddy": "on the front of the platform just right of Echo: plain wooden boards, nothing on them"
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. The gold stars already on the map stay exactly as in the attached picture. Among the white hills at one edge of the map, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a little snowy valley with tiny fir trees, a tiny round hill, two tiny houses and a round blue pond, joined by a thin looping crayon railway. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little snowy valley with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On a bright, snowy winter morning in Snowdrop Valley, the brand-new valley train (THE TRAIN) stands on the smooth snow in front of the cozy honey-wood station, facing right, with only plain smooth snow ahead of it: no tracks, no rails anywhere. Echo stands on the snow just left of the middle, in front of the coach, holding up one chunky curved toy-train track piece in both wings and looking toward the empty snow ahead with a curious, eager face; the engine is right of the middle. Beyond, the snowy valley with a low sledding hill, two little honey-wood cottages among fir trees and a small blue pond. Bright and cheerful. Echo, the train and the station are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo left of the middle and the engine right of it. Only Echo appears: no other characters.",
+      "chars": [
+        {
+          "key": "hare",
+          "h": 1.6,
+          "prompt": "Stationmaster Hare, full body, standing upright, facing forward, smiling: a friendly clay hare with soft cream fur that is light golden-tan on her back, her cheeks and the tips of her very long upright ears (pink inside), a pink nose, small whiskers and big hind feet, a red knitted scarf and a little shiny brass whistle on a red cord around her neck; no hat; one paw raised in a wave."
+        },
+        {
+          "key": "frog",
+          "h": 1.0,
+          "prompt": "Frog, full body, standing upright on his long back legs, facing forward, grinning: a cheerful, round, bright leaf-green clay frog with a smooth cream belly, big round friendly dark-brown eyes on top of his head, small pink cheeks, a very wide happy smile, green webbed hands and feet and a little cornflower-blue knitted scarf."
+        },
+        {
+          "key": "squirrel",
+          "h": 1.25,
+          "prompt": "Squirrel, full body, standing, three-quarter view, smiling: a cheerful russet-orange clay squirrel with a cream tummy, tufted ears, a big curled bushy tail and a cream knitted scarf, holding upright beside her a red wooden sled with two curled runners."
+        },
+        {
+          "key": "badger",
+          "h": 2.0,
+          "prompt": "Baker Badger on his day off, full body, standing, facing forward, smiling kindly: a friendly, round clay badger standing upright on two legs (a real badger, not a raccoon, no mask ring and no striped tail): a white face with one broad black stripe running back over each eye, a shiny black nose, small round white-tipped ears, a soft grey back, black arms and legs, a muted teal shirt with a collar and its sleeves rolled up, a warm brown woolly vest over it and a muted teal knitted scarf; no chef's cap and no apron today; little black paws and feet, nothing in his paws."
+        },
+        {
+          "key": "train",
+          "h": 2.5,
+          "prompt": "The valley train, the whole train, side view, facing right, standing still: a chunky little clay-and-wood toy steam train of exactly two parts and no face: in front, a steam engine with a turquoise boiler wrapped in gold bands and a round gold front, a red cab with one window and a turquoise roof, a tall red chimney with a gold rim, a small gold dome, a red cowcatcher at its front and turquoise wheels with big gold hubs; behind it, one turquoise-and-cream passenger coach with a rounded cream roof, gold trim and rivets, two big open windows and turquoise wheels with big gold hubs; no writing or numbers on it, nobody inside."
+        }
+      ]
+    },
+    {
       "id": "kite",
       "light": "day",
       "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GOAT: Goat, a small, friendly cream-white clay goat who always stands upright on his two back hooves, with soft floppy ears, two small rounded tan horns, a little tufty cream beard, kind eyes, small grey hooves and a plain sage-green waistcoat with two little wooden buttons; no hat; about one and a half times Echo's height. LAMB: Lamb, a small, round, fluffy clay lamb (a girl) who stands upright on her two back hooves, with a curly snow-white woolly coat, a soft black face with big friendly eyes and pink cheeks, black ears that stick out sideways, little black hooves, a lemon-yellow painter's smock with a few dabs of paint on it and a little round blue beret; about as tall as Echo; she is not a goat: no horns, no beard, no waistcoat. BEETLE: a tiny, round, shiny red clay beetle (a girl) with big black spots on her back, a small black head with two short curly feelers, big friendly glossy eyes, pink cheeks and six tiny black legs; about half Echo's height; she looks just like the beetle painted on the beetle picture. THE KITE: Goat's giant patchwork kite, a big diamond of pale cream woven cloth on two thin crossed honey-wood sticks, about as tall as Pelly, with four square spaces in its middle, two by two, marked only by faint pale lines, and little round eyelet holes along its two lower edges. Its four cloth pictures are four soft squares of cream cloth with frayed edges, each with one painted picture: a red-and-yellow flower with two green leaves, a little brown boat with a coral sail on blue ripples, a round red beetle with black spots, and a bright blue crescent moon with no face. Until it is finished the kite is plain, with no pictures sewn on it and no tail. When it is finished the four pictures are sewn on, two by two (the flower top left, the boat top right, the beetle bottom left, the moon bottom right), with neat little stitches, and a tail of four bright ribbons, red, golden yellow, blue and green, hangs from its bottom point, with small cloth bows tied along it. The hill in this story is Breezy Hill, a wide, soft green grassy hilltop with a few daisies and clover, one big round grey rock, a big open blue sky with a few puffy white clouds, and gentle rolling green hills far below.",
@@ -721,6 +947,127 @@
       ]
     },
     {
+      "id": "concert",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. FROG: Frog, the band's drummer, a big, round, plump, bright leaf-green clay frog with a smooth cream belly, a few soft darker-green spots on his back legs, big round friendly brown eyes on top of his head, a wide happy smile and small pink cheeks; no clothes, no scarf; he sits upright on his folded back legs and plays a shallow round honey-wood drum with a cream drum skin, a band of little gold studs and short hanging laces round its side, patting it with his hands (no drumsticks); sitting up, about one and a half times Echo's height. NEWT: Newt, the band's harp player, a slim, friendly warm-orange clay newt with a peach-cream belly, small round dark-brown spots along her back and tail, a small rounded head with dark kind eyes and a gentle smile, four small legs with little round toes, and a very long spotted orange tail that curls round at its tip; no clothes; she sits upright and plays a small wooden reed harp: a honey-wood frame (two upright posts, a gently curved top bar and a flat base) about as tall as she is sitting, with exactly three upright green reed strings side by side; sitting up, a little taller than Echo. DUCK: Duck, the band's bell player, ONE soft, round, extra-fluffy pale butter-cream clay duck with a big round head, a short rounded orange bill (no pouch), orange webbed feet, a little tuft of feathers on top of her head and kind brown eyes; no clothes; much smaller than Pelly and nothing like her; she plays exactly two shiny gold bells hanging from a small curved honey-wood stand, one bigger bell lower down and one smaller bell higher up, tapping them with the tip of her wing; a little taller than Echo. POND NEIGHBORS: two little pond neighbors who come to listen, always these same two: a small cream-white bunny (a real bunny, not a toy: no key, no drum, no clothes) with long soft ears with pink insides, a pink nose and a fluffy round white tail, a little over half Echo's height; and ONE tiny chestnut-brown field mouse (brown, not grey; no clothes, no hat) with round pink ears, a pink nose and a long thin pink tail, a little under half Echo's height. The pond in this story is Lily Pond, a calm, sunny woodland pond with pale blue-green water, soft mossy banks dotted with tiny white wildflowers, green reeds and round mossy stones at its edges, a few round lily pads, and in its middle one very big, round, flat green lily pad that floats like a little stage, big enough for the whole band.",
+      "who": {
+        "FROG": {
+          "re": "\\bFrog\\b",
+          "label": "Frog the drummer"
+        },
+        "NEWT": {
+          "re": "\\bNewt\\b",
+          "label": "Newt"
+        },
+        "DUCK": {
+          "re": "\\bDuck\\b",
+          "label": "Duck"
+        },
+        "POND NEIGHBORS": {
+          "re": "bunny|field mouse|neighbors",
+          "label": "the little bunny and the tiny field mouse"
+        }
+      },
+      "lineups": [
+        "concert"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and pulls a big, thick sandwich out of her beak pouch (two slices of soft bread with a frilly green lettuce leaf and a yellow cheese slice poking out, one round bite missing from its corner), holding it up and blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the sandwich.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a big round green lily pad on blue water, with a smiling green frog beside a round drum, a smiling orange newt beside a little harp and a smiling white duck beside two yellow bells sitting on it: only crayon lines on the paper (the real band is not in this picture), no musical notes, no numbers, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "A sunny morning at Lily Pond, the calm woodland pond of this story, with pale blue-green water, mossy banks with tiny white wildflowers and soft green reeds at its edges. In the middle of the picture, three round lily pads float close together near the bank in a gentle curve, each just big enough for one musician and their instrument: on the left one sits Frog beside his drum, on the middle one, a little further back, Newt beside her reed harp, and on the right one Duck beside her two bells; all three wave hello, smiling. Echo stands on the near mossy bank in the lower middle, waving back with both wings up. The mossy bank runs across the lower third of the picture.",
+          "buddy": "on the mossy bank just right of Echo: plain mossy grass, nothing on it"
+        },
+        "s04": {
+          "picture": "Lily Pond on a sunny morning, seen from its mossy bank. Out on the pale blue-green water, three round lily pads, each just big enough for one musician and their instrument, float a little apart from each other: Frog on the left one pats his drum with both hands, eyes closed happily; Newt on the middle one, a little further back, plucks one reed of her reed harp; Duck on the right one taps her smaller bell with the tip of her wing. Each one plays alone, happily lost in their own tune and facing a different way, and soft round ripples spread out from each lily pad. Echo sits on a wide, flat, mossy stone at the water's edge in the lower left of the middle, listening with his head tilted and a big smile. No musical notes or symbols anywhere. The wide flat stone runs across the lower third of the picture.",
+          "buddy": "on the wide flat mossy stone just right of Echo: plain stone, nothing on it"
+        },
+        "s05": {
+          "picture": "The very big, round, flat green lily pad in the middle of Lily Pond. The three musicians are all bunched up together in its very middle in a funny muddle, all playing at once: Frog bangs his drum, Newt plucks all three reeds of her harp, and Duck rings both bells as hard as she can; their elbows and wings bump, the big lily pad wobbles and splashy ripples fly every which way. Everyone has funny surprised faces: silly, never scary. On the far mossy bank in the upper right of the middle, the two pond neighbors, the little cream bunny and the tiny brown field mouse, sit side by side and cover their ears with their paws, giggling. Echo stands on the near mossy bank in the lower left of the middle, his two head feathers blown straight back, both wings up by his head, beak open in a funny surprised face. No musical notes or symbols anywhere. The near mossy bank runs across the lower third of the picture.",
+          "buddy": "on the near mossy bank just right of Echo: plain mossy grass, nothing on it"
+        },
+        "s06": {
+          "picture": "A close-up on the very big, round, flat green lily pad in the middle of Lily Pond. Newt sits in the upper middle of the picture beside her reed harp and looks back over her shoulder in surprise, because the curly tip of her own long spotted tail has curled round and is plucking one of the harp's reeds all by itself. Frog sits further back on the lily pad on the left beside his drum, laughing with both hands on his tummy. Echo stands at the front of the lily pad in the lower left of the middle, giggling behind one wing. The front edge of the big lily pad runs across the lower third of the picture, with calm water below it.",
+          "buddy": "on the front of the lily pad just right of Echo: plain green lily pad, nothing on it"
+        },
+        "s07": {
+          "picture": "The very big, round, flat green lily pad in the middle of Lily Pond, seen from a little above, filling the middle of the picture, calm water all around. Around its edge lie three smaller round pale-green leaf circles, evenly spaced like seats (one on the left, one at the back, one on the right), all empty, with nothing on them. In the middle of the big lily pad, Echo stands with one wing raised high like a conductor, grinning, as if showing who goes next. Frog sits just right of him beside his drum, pointing at the empty leaf seats with one hand, smiling. No musical notes or symbols anywhere.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "The very big, round, flat green lily pad in the middle of sunny Lily Pond, with the three musicians waiting in a little huddle near its back edge with their instruments, looking hopefully at Echo: Frog beside his drum on the left, Newt beside her reed harp in the middle, Duck beside her two bells on the right. Echo stands at the front of the lily pad, just left of the middle, facing the viewer, one wing raised high like a conductor, ready to begin. The front edge of the big lily pad runs across the lower third of the picture, with calm water below it.",
+          "buddy": "on the front of the lily pad just right of Echo: plain green lily pad, nothing on it"
+        },
+        "e01": {
+          "picture": "The very big, round, flat green lily pad in the middle of sunny Lily Pond, with the three musicians seated around it in a happy curve, each on its own pale-green leaf circle with room to play: Frog pats his drum on the left, Newt plucks her reed harp at the back in the middle, and Duck rings her two bells on the right. They play together, looking at one another and grinning. Soft round ripples spread out from the lily pad across the whole pond. Echo stands at the front edge of the lily pad, just below the middle of the picture, turned a little toward the band, one wing raised like a conductor, beaming. No musical notes or symbols anywhere. Calm water below the lily pad.",
+          "buddy": null
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "A close-up of the mossy bank at the edge of Lily Pond on a sunny afternoon: the two pond neighbors, the little cream bunny and the tiny brown field mouse, sit side by side at the water's edge in the middle of the picture, ears up and laughing, patting the shallow water with their paws and making happy little splashes. Echo stands beside them on the bank, on the right of the middle, clapping his wings. Behind them, out on the water, Frog, Newt and Duck wave from the very big green lily pad with their instruments. Calm water below.",
+          "buddy": null
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "A sunny afternoon picnic on the mossy bank of Lily Pond, the calm water and the very big lily pad behind. In a row across the middle of the picture, on the moss: Pelly the pelican (drawn exactly like the Pelly in the attached earlier picture; this place is Lily Pond, not Echo's cottage) sits on the left, breaking her big sandwich into pieces; Frog sits next to her, holding a piece of sandwich in both hands and grinning; Duck stands next to him, laughing, a crumb on her bill; and Newt sits on the right beside her reed harp and winks, while the curly tip of her long spotted tail plucks one reed all by itself. Echo stands in front of them on the bank in the lower left of the middle, laughing, wings up. The mossy bank runs across the lower third of the picture.",
+          "buddy": "on the mossy bank just right of Echo, in front of the row: plain mossy grass, nothing on it",
+          "also": [
+            "file:public/assets/adventure/windup/s01.webp"
+          ]
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with its earlier gold stars still on it and no writing anywhere on it. In a little green wood near the middle of the map, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a small round blue pond ringed with green reeds, with one big round green lily pad floating in it and a tiny drum on the lily pad. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little pond with one wing, beaming.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On sunny Lily Pond, Echo stands at the front edge of a very big, round, flat green lily pad, one wing raised high, ready to conduct, with a hopeful smile; on the lily pad just behind him, Frog with his drum, Newt with her reed harp and Duck with her two bells are all bunched up together, all playing at once in a funny muddle, splashy ripples flying, with surprised faces. Bright and cheerful, never scary. No musical notes or symbols. Echo and the three musicians are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo left of the middle and the musicians right of it. Only Echo, Frog, Newt and Duck appear: no other characters.",
+      "chars": [
+        {
+          "key": "frog",
+          "h": 1.4,
+          "prompt": "Frog, full body, sitting upright on his folded back legs, facing forward, smiling: a big, round, plump, bright leaf-green clay frog with a smooth cream belly, a few soft darker-green spots on his back legs, big round friendly brown eyes on top of his head, a wide happy smile and small pink cheeks; no clothes, no scarf; beside him on the right stands his shallow round honey-wood drum with a cream drum skin, a band of little gold studs and short hanging laces round its side, one of his hands resting on the skin (no drumsticks)."
+        },
+        {
+          "key": "newt",
+          "h": 1.2,
+          "prompt": "Newt, full body, sitting upright, facing forward, smiling: a slim, friendly warm-orange clay newt with a peach-cream belly, small round dark-brown spots along her back and tail, a small rounded head with dark kind eyes, a gentle smile and small pink cheeks, four small legs with little round toes, and a very long spotted orange tail that curls round beside her into a curly tip; no clothes; beside her stands her small wooden reed harp: a honey-wood frame (two upright posts, a gently curved top bar and a flat base) about as tall as she is sitting, with exactly three upright green reed strings side by side."
+        },
+        {
+          "key": "duck",
+          "h": 1.25,
+          "prompt": "Duck, full body, standing, facing forward, smiling: ONE soft, round, extra-fluffy pale butter-cream clay duck with a big round head, a short rounded orange bill (no pouch), orange webbed feet, a little tuft of feathers on top of her head, kind brown eyes and small pink cheeks; no clothes; beside her stands a small curved honey-wood stand with exactly two shiny gold bells hanging from it, one bigger bell lower down and one smaller bell higher up, and she touches the smaller bell with the tip of one wing."
+        },
+        {
+          "key": "bunny",
+          "h": 0.6,
+          "prompt": "The little pond bunny, full body, sitting up, facing forward, smiling: a small cream-white clay bunny (a real bunny, not a toy: no key, no drum, no clothes) with long soft upright ears with pink insides, a pink nose, small pink cheeks, little paws and a fluffy round white tail."
+        },
+        {
+          "key": "field-mouse",
+          "h": 0.45,
+          "prompt": "The tiny field mouse, full body, standing on its back feet, facing forward, smiling: ONE tiny chestnut-brown clay field mouse (brown, not grey; no clothes, no hat) with round pink ears, a pink nose, small pink cheeks, little paws and a long thin pink tail."
+        }
+      ]
+    },
+    {
       "id": "rooftops",
       "light": "day",
       "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GARDENER BIRD: Gardener Bird, a small, plump, friendly clay garden bird like a robin, a different bird from Echo (not blue, and not a round ball like Echo: she has a clear head, a neck and a long tail): a soft warm brown head and back, muted sage-teal wings, a cream belly with a little warm rust-orange patch on her chest, a short, neat, dark grey beak, kind dark eyes, a rounded brown tail and thin orange legs; no hat, no clothes; she carries one small teal tin watering can with a round brass sprinkler head; about one and a half times Echo's height. THE SPRINGBOARD: the seed springboard, a little wooden garden toy for sending seed pods up to the rooftops (not a weapon: no bow, no string, no arrows): a low honey-wood stand, a gently curved wooden arm with a small round wooden cup at its tip, just big enough for one seed pod, and a coiled teal spring with a round wooden pull-handle at its back; a little taller than Echo. The seed pods in this story are plump, smooth, cream-colored, egg-shaped pods, each about half as tall as Echo, each with a little green leaf mark on its side; the climbing seed pods have a curly green swirl mark instead. Gardener Bird's seed cart is a small honey-wood garden cart with two round wooden wheels and a long wooden handle, about twice as wide as Echo. The town in this story is a sunny little hilltop town of rounded clay houses with cream, peach and lavender walls, little blue arched doors and windows and terracotta tiled edges, each house with a broad, flat rooftop terrace at a different height, stepping up the hill from low on the left to high on the right, joined by narrow stone stairs only as wide as Echo; a cobbled lane runs along the foot of the town. On every rooftop sits one terracotta planter of fresh dark soil. One planter is tucked under a little slanted tiled roof, with a springy fabric awning of exactly three broad stripes, cream, rust, cream, sticking out from the wall below it on two thin wooden poles. On the highest roof stands the old rooftop arch, a tall curved wooden garden arch of thin crossed slats with a wide planter at its foot.",
@@ -815,6 +1162,91 @@
           "key": "cart",
           "h": 1.0,
           "prompt": "Gardener Bird's seed cart, the whole of it, side three-quarter view: a small honey-wood garden cart with two round wooden wheels and a long wooden handle, heaped high with plump, smooth, cream-colored egg-shaped seed pods, each with a little green leaf mark on its side, and a few climbing seed pods with a curly green swirl mark instead."
+        }
+      ]
+    },
+    {
+      "id": "observatory",
+      "light": "evening",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. OWL: Owl, a round, fluffy clay owl (a real owl, not a chick) with soft honey-brown feathers, a round cream face with a thin brown rim, no ear tufts, big round glossy amber-brown eyes, a small grey-brown hooked beak, small pink cheeks, a speckled cream tummy with little brown arrow-shaped marks, brown wings with cream-edged feathers, a little navy-blue neckerchief dotted with tiny gold stars, and a pair of fluffy lilac slippers, each with a small white pompom, on her cream feathered feet; no hat, no glasses; about one and a half times Echo's height. The place in this story is Owl's observatory, a round tower of honey-coloured wood and pale stone on top of a grassy hill, with big arched double doors and a domed roof of wooden ribs with one round window at its very top, closed by two wooden shutters that slide apart. Inside is one round, lamp-lit room: honey-wood walls, pale stone pillars with warm glowing lamps in little arched niches, curved wooden bench seats along the walls and a smooth honey-wood floor. On the back wall is Owl's wooden sky: on the left, a painted golden wooden sun on a tall wooden lift beside a painted green hill; on the right, a big round navy-blue window frame with a silver wooden crescent moon on a turning arm; high in the middle, a big round navy-and-gold ring of golden wooden stars with four little round pictures on it (a sailboat, a stone bridge, a pink flower and a patchwork kite); and low in the middle, a big wooden drive wheel with spokes and a round handle, standing on a long, low wooden platform (like one wide step) at the foot of the wall. Wooden axles stand between them, where chunky honey-wood gears fit (small, medium and large, each with big rounded teeth).",
+      "who": {
+        "OWL": {
+          "re": "\\bOwl\\b",
+          "label": "Owl"
+        }
+      },
+      "lineups": [
+        "observatory"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "afternoon",
+          "picture": "A warm late afternoon at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls one fluffy lilac slipper with a small white pompom out of her beak pouch, the slipper dangling from the tip of her bill as if it were a letter, looking very pleased with herself. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "afternoon",
+          "picture": "Close up on the porch of Echo's cottage on a warm late afternoon. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little round owl beside a round tower with a domed roof on a hill; inside the tower, a little sun, a crescent moon and a ring of stars, with a heap of loose round gears on the floor below them: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide, the fluffy lilac slipper tucked under one wing. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "light": "sunset",
+          "picture": "Sunset on top of a grassy hill, the first few stars coming out in the lilac sky. In the upper middle stands Owl's observatory: a round tower of honey-coloured wood and pale stone with a domed roof of wooden ribs, its round top window shut, and big arched double doors at its foot, wide open, with warm lamplight glowing inside. In the open doorway stands Owl, sleepy, in the middle of a big yawn, wearing ONE fluffy lilac slipper on her right foot; her left foot is bare, showing her cream feathered toes. A wide stone path climbs to the doors from the bottom of the picture. Echo stands on the path in the lower middle, just left of the middle, holding up the other fluffy lilac slipper toward Owl with both wings, laughing.",
+          "buddy": "on the stone path just right of Echo: a patch of plain path, nothing on it"
+        },
+        "s04": {
+          "picture": "Inside Owl's observatory, lamp-lit, just inside the big arched doors: a little round wooden table with a small warm lamp on it stands in the middle of the picture. Owl sits on a wooden stool at the table, now in both fluffy lilac slippers, a napkin tucked under her beak, happily eating her breakfast: a bowl of seeds and berries and a big mug of cocoa. Through a round window behind her, the sky is dark blue with a few stars and the cream moon. Echo stands on the honey-wood floor on the left of the table, giggling behind one wing.",
+          "buddy": null
+        },
+        "s05": {
+          "picture": "Inside Owl's observatory, lamp-lit and cozy, looking at the back wall of the round room. Owl's wooden sky fills the upper two thirds of the picture, all of it inside the middle 70% of the width: on the left, the painted golden wooden sun sits low at the bottom of its tall wooden lift, beside the painted green hill; on the right, the silver wooden crescent moon in its big round navy-blue window frame; high in the middle, the big round navy-and-gold ring of golden wooden stars with its four little round pictures (a sailboat, a stone bridge, a pink flower and a patchwork kite); low in the middle, the big wooden drive wheel on its long, low wooden platform. The wooden axles between them are bare: no gears on them at all. The round window at the top of the domed ceiling is shut. On the honey-wood floor in the lower third, Owl stands left of the middle, pointing up proudly with one wing, and Echo stands just right of her, near the middle, looking up in wonder, beak open.",
+          "buddy": "on the honey-wood floor just right of Echo: plain floor, nothing on it"
+        },
+        "s06": {
+          "picture": "Inside Owl's observatory, lamp-lit, in front of Owl's wooden sky. Owl stands on the long, low wooden platform in the middle of the picture, about two thirds of the way down, turning the round handle of the big wooden drive wheel with both wings, puzzled: the drive wheel turns, but the painted sun, the silver moon and the ring of golden stars above all stay completely still, with bare wooden axles between them and no gears on them. On the floor in front of the right end of the platform, a low wooden tray holds a jumble of loose chunky wooden gears, small, medium and large. Echo stands on the floor in the lower left of the middle, both wings on his cheeks, surprised. The curved wooden bench seats along the walls are empty.",
+          "buddy": "on the honey-wood floor just right of Echo, in front of the left end of the platform: plain floor, nothing on it"
+        },
+        "s07": {
+          "picture": "Inside Owl's observatory, lamp-lit, close to the low wooden tray of loose chunky wooden gears. Owl stands on the honey-wood floor in the middle of the picture like a friendly teacher, smiling, holding up two chunky honey-wood gears, a small one in one wing and a big one in the other, with their big rounded teeth fitted neatly together. Echo stands on the floor on the left, looking at the two gears with wide eyes, one wing on his chin. The tray of gears sits on the floor on the right.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "Inside Owl's observatory, lamp-lit, in front of Owl's wooden sky. The long, low wooden platform runs across the middle of the picture about two thirds of the way down, with the big wooden drive wheel standing on it just right of the middle. Echo stands on the platform just left of the drive wheel, facing the viewer, ready and smiling, one wing on the wheel's round handle and the other holding up one chunky wooden gear. Above and behind him, the painted sun, the silver moon and the ring of golden stars wait, still, and the bare wooden axles between them glow softly. Owl stands on the floor on the right, in front of the platform's right end, beside the low wooden tray of loose gears, giving a hopeful wing thumbs-up.",
+          "buddy": "on the left part of the platform, just left of Echo: plain wooden platform, nothing on it"
+        },
+        "e01": {
+          "picture": "Inside Owl's observatory, lamp-lit and glowing: Owl's wooden sky working at last, all of it inside the middle 70% of the width. On the left, the painted golden sun has risen high up its wooden lift above the painted green hill; on the right, the silver crescent moon swings round inside its big round navy-blue window frame; high in the middle, the ring of golden wooden stars turns with its four little round pictures; chunky wooden gears now sit on every axle, joined tooth to tooth all the way down to the big wooden drive wheel. Above, the two shutters of the round window at the top of the domed ceiling have slid open, showing the real deep-blue night sky full of little stars. Echo and Owl stand side by side on the floor in the lower middle, looking up, wings up, cheering.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "A close-up of the big round navy-and-gold ring of golden wooden stars as it turns, filling the middle of the picture: between its golden stars, four little round painted pictures go past, each in its own gold frame: a sailboat on blue water, an old stone bridge over a river, a pink flower, and a patchwork kite with ribbons. Soft curved lines show it turning. The real deep-blue night sky full of little stars shows through the open round window in the ceiling behind it. Echo is not in this picture, and no other character either.",
+          "buddy": null
+        },
+        "e03": {
+          "picture": "Owl's Sky Show, inside the round, lamp-lit observatory under the turning wooden sky, the round window in the ceiling open to the night stars. On the curved wooden bench seats along the walls sit happy little animal families in pajamas with blankets (moles, lambs and raccoons), clapping and pointing up at the sun, moon and stars. In the middle of the honey-wood floor, Owl dances a happy little dance in both fluffy lilac slippers, wings out, eyes shut with joy. Echo dances on the floor just left of her, wings up, laughing.",
+          "buddy": "on the honey-wood floor just right of Owl: plain floor, nothing on it"
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. The gold stars already on the map stay exactly as in the attached picture. A soft white puffy cloud has just drifted off the map to one side, uncovering a new place: a green hilltop with a tiny round honey-coloured tower with a domed roof, and a little crayon crescent moon above it. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny tower with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. Inside Owl's round, lamp-lit observatory at night, in front of Owl's wooden sky, which stands still: a painted golden sun low beside a painted green hill on the left, a silver crescent moon in a round navy-blue window frame on the right, and a big ring of golden wooden stars high in the middle, with bare wooden axles between them and no gears on them. In the middle, the big wooden drive wheel with spokes stands on its long, low wooden platform. Echo stands left of the middle, beside a low wooden tray of loose chunky wooden gears, holding up one gear with both wings, looking hopeful. Owl stands right of the middle in her fluffy lilac slippers, turning the drive wheel's round handle, puzzled, because nothing above it moves. Echo, the drive wheel, the gears and Owl are all in the middle band of the picture (their tops below 25% from the top and their bottoms above 75% from the top), Echo left of the middle and Owl right of it. Only Echo and Owl appear: no other characters.",
+      "chars": [
+        {
+          "key": "owl",
+          "h": 1.5,
+          "prompt": "Owl, full body, standing, facing forward, smiling: a round, fluffy clay owl (a real owl, not a chick) with soft honey-brown feathers, a round cream face with a thin brown rim, no ear tufts, big round glossy amber-brown eyes, a small grey-brown hooked beak, small pink cheeks, a speckled cream tummy with little brown arrow-shaped marks, brown wings with cream-edged feathers, a little navy-blue neckerchief dotted with tiny gold stars, and a pair of fluffy lilac slippers, each with a small white pompom, on her cream feathered feet; no hat, no glasses; her wings folded at her sides."
         }
       ]
     }

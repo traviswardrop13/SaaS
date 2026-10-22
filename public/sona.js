@@ -5374,10 +5374,10 @@
       line: "Use a crane to finish a footbridge and help Tortoise move into his new house." },
     { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern",
       title: "The Glowworm Lantern Walk",
-      line: "Connect working circuits to light a woodland path and its gathering lantern." },
+      line: "Glowworm's hiccups popped out the lamp plugs! Light the way for his lantern walk." },
     { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline",
       title: "All Aboard for Snowdrop Valley",
-      line: "Build railway routes and guide animal passengers to their valley stops." },
+      line: "The new valley train has no tracks! Lay the tracks and take everyone to their stop." },
     { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite",
       title: "The Hilltop Patchwork Kite",
       line: "Goat's giant kite isn't sewn yet. Stitch it, balance it, and fly it high!" },
@@ -5386,13 +5386,13 @@
       line: "Balance a basket lift to deliver blankets and soft toys to a high nest village." },
     { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert",
       title: "The Lily-Pad Concert",
-      line: "Explore pond instruments, practise short musical patterns and conduct a shared concert." },
+      line: "Frog, Newt and Duck all play at once. Be their conductor at the pond concert!" },
     { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops",
       title: "Seeds Across the Rooftops",
       line: "Gardener Bird's cart can't climb the narrow stairs. Send the seeds up to the rooftops!" },
     { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory",
       title: "The Moving-Star Observatory",
-      line: "Join working gear trains to move a painted sun, orbiting moon and star carousel." },
+      line: "Owl's wooden sun, moon and stars won't move. Fit the gears and turn the big wheel!" },
   ];
   // "adventure" is the story card itself (Home's access(), the price's ?from=)
   const STORY_KEYS = ["adventure"].concat(STORY_DAYS.map((d) => d.game));

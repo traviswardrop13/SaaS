@@ -351,6 +351,112 @@
       ]
     },
 
+    // Day 8: The Glowworm Lantern Walk.
+    lantern: {
+      wash: "#56598a",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly flies in with a letter! Oops. That's a carrot. Who is that for, Pelly?" },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Glowworm in the Mushroom Woods. He needs our help with his lamps tonight!",
+                  little: "Here's the real letter. Glowworm needs our help with his lamps!" } },
+        // no buddy (on the near sandy path just right of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Into the Mushroom Woods we go. Hello, Glowworm! Rabbit and Hedgehog are here for the lantern walk too.",
+                  little: "Hello, Glowworm! Hello, Rabbit and Hedgehog!" } },
+        // no buddy (on the sandy path just right of Echo, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Every evening, Glowworm leads a walk down the lamp path to the big lantern, to hear the crickets sing." },
+        // no buddy (on the near sandy path just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Oh dear, Glowworm has the hiccups. And every hiccup makes him hop! Hic, hop! Hic, hop!",
+                  little: "Glowworm has the hiccups! Hic, hop! Hic, hop!" } },
+        // no buddy (on the near sandy path in the lower right of the middle, just right of Echo and apart from the heap of cords, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "He hopped right into the lamp cords. Pop, pop, pop! Now every plug is out, and the lamps won't light.",
+                  little: "He hopped on the cords. Pop, pop, pop! Out came the plugs. The lamps won't light!" } },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "Every light needs two cords. One takes the power in, one brings it back. Then flip the switch. Click!" },
+        // no buddy (on the near sandy path just right of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's plug in every cord and flip every switch, lamp by lamp, all the way to the big lantern. Ready?",
+                  little: "Let's plug in the cords and switch on the lamps. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Click! The great big lantern glows gold. Every lamp shines, and the stepping stones glow like little moons!",
+                  little: "Click! The big lantern glows. Every lamp is shining!" } },
+        // no buddy (the empty tree-stump seat just right of Echo, with a plain soft cushion on it and nothing else, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Glowworm leads the walk down the shining path. Then we all sit and listen to the crickets. Chirp, chirp!" },
+        // no buddy
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly's carrot was for Rabbit all along! Crunch, crunch. And Glowworm's hiccups are almost gone... hic!",
+                  little: "Pelly's carrot was for Rabbit! Crunch, crunch!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Eight gold stars on our helper map! You lit up the woods. Goodnight, Glowworm!" }
+      ]
+    },
+
+    // Day 9: All Aboard for Snowdrop Valley.
+    trainline: {
+      wash: "#a9cbe0",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly flew in with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here." },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Hare in snowy Snowdrop Valley. She needs help with her brand-new train!",
+                  little: "It's from Hare. She needs help with her new train!" } },
+        // no buddy (on the open snow just left of Echo, well below the coach and Frog, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Hare and Frog are the train crew. Here's their shiny new train. But look! There are no tracks!",
+                  little: "Hare and Frog have a shiny new train. But where are the tracks?" } },
+        // no buddy (on the snow just right of Echo, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Hare and Frog polished the train all week. They forgot the tracks! They're still on the cart, under the snow." },
+        // no buddy (on the front of the platform just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Squirrel wants to go sledding. Baker Badger has a day off and wants a nap. The duck family wants a swim!",
+                  little: "Squirrel, Badger and the duck family all need a ride!" } },
+        // no buddy (on the plain snow just right of Echo, in front of the snowdrift and well below it, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "Frog tried to carry Badger home on his back. One hop, two hops, plop! Now they're both snowy and giggling.",
+                  little: "Frog tried to carry Badger. One hop, two hops, plop! Silly Frog!" } },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "Every stop has a picture sign. A sled for the hill, a little house for Badger, and a duck for the pond." },
+        // no buddy (on the plain snow just right of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's lay the tracks and drive everyone to their stop. Then Hare and Frog get a ride too. Ready?",
+                  little: "Let's build the tracks and give everyone a ride. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Ding, ding! Everyone got to their stop. And Hare and Frog rode all the way around and back home!",
+                  little: "Ding, ding! The train is home. Hooray!" } },
+        // no buddy
+        { art: "e02", ages: "big", buddy: null,
+          line: "Squirrel zooms down the hill. Badger is home in his slippers. And the ducklings splash in the pond!" },
+        // no buddy (on the front of the platform just right of Echo, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Cocoa at the station for everyone! And here comes Pelly, wearing that red mitten as a cozy hat.",
+                  little: "Look! Pelly is wearing the mitten as a hat!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Nine gold stars on our helper map! You built train tracks for the whole valley." }
+      ]
+    },
+
     // Day 10: The Hilltop Patchwork Kite.
     kite: {
       wash: "#8cc3e3",
@@ -404,6 +510,60 @@
       ]
     },
 
+    // Day 12: The Lily-Pad Concert.
+    concert: {
+      wash: "#6fb39b",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly brought us a letter! Oops. That's a sandwich. Pelly, were you saving that for lunch?" },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Frog at Lily Pond. The pond concert is today, and he needs our help!",
+                  little: "Here's the real letter. Frog's band needs our help with their concert!" } },
+        // no buddy (on the mossy bank just right of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "At Lily Pond, we meet the band. Frog has a drum, Newt has a reed harp, and Duck has two little bells.",
+                  little: "Meet the pond band! Frog has a drum, Newt has a harp, and Duck has bells." } },
+        // no buddy (on the wide flat mossy stone just right of Echo, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Each one knows a lovely tune. Boom, boom goes the drum. Plink, plonk go the reeds. Ding, ding go the bells!" },
+        // no buddy (on the near mossy bank just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Nobody knows who goes first, so they all play at once. Boom, plink, ding! The bunny and mouse cover their ears.",
+                  little: "They all play at once. Boom, plink, ding! Oh dear, what a mix-up!" } },
+        // no buddy (on the front of the lily pad just right of Echo, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "And Newt's curly tail keeps plucking the reeds all by itself. Plink, plonk! Oops, silly tail!",
+                  little: "And Newt's silly tail keeps plucking her harp. Plink, plink!" } },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "Everyone needs their own seat, with room to play. Then a conductor waves a hand to show who goes next!" },
+        // no buddy (on the front of the lily pad just right of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's play their tunes, give each one a seat, pick who goes first, and be the conductor. Ready?",
+                  little: "Let's play their music and help them play together. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Everyone takes a turn, and the band plays one lovely song together. The last note floats across the pond.",
+                  little: "Everyone takes a turn. What a lovely song!" } },
+        // no buddy
+        { art: "e02", ages: "big", buddy: null,
+          line: "The bunny and the mouse pat the water. Splish, splash! And this time, nobody covers their ears." },
+        // no buddy (on the mossy bank just right of Echo, in front of the row, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly shares her sandwich with the band. And Newt's tail plays one last plink, right on time!",
+                  little: "Newt's silly tail plays one last plink. Hooray!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: { big: "Twelve gold stars on our helper map! Take a bow, conductor.",
+                  little: "Twelve gold stars on our helper map! Take a bow!" } }
+      ]
+    },
+
     // Day 13: Seeds Across the Rooftops.
     rooftops: {
       wash: "#8cc0dc",
@@ -454,6 +614,59 @@
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
           line: "Thirteen gold stars on our helper map! And a little garden on every rooftop." }
+      ]
+    },
+
+    // Day 14: The Moving-Star Observatory.
+    observatory: {
+      wash: "#c4945a",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly brought us a letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!" },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Owl at the Moving-Star Observatory. Her stars have stopped moving!",
+                  little: "Here's the real letter, from Owl. Her stars are stuck!" } },
+        // no buddy (on the stone path just right of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Owl opens the round doors in just one fluffy slipper. So that's whose it is! Here you go, Owl.",
+                  little: "Owl has one fluffy slipper on. Here's the other one!" } },
+        // no buddy
+        { art: "s04", ages: "big", buddy: null,
+          line: "Owl sleeps all day, so now it's her breakfast time. At night! Good morning, Owl!" },
+        // no buddy (on the honey-wood floor just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "After breakfast, look at Owl's wooden sky! A painted sun, a silver moon and a ring of golden stars.",
+                  little: "Look up! A wooden sun, a moon and lots of stars." } },
+        // no buddy (on the honey-wood floor just right of Echo, in front of the left end of the platform, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "Tonight is the Sky Show. Owl turns the big wheel, but nothing moves. The gears are still in their tray!",
+                  little: "Owl turns the big wheel. Nothing moves! The gears are in a pile." } },
+        // no buddy
+        { art: "s07", ages: "big", buddy: null,
+          line: "Owl shows us the trick. Too small, a gear can't reach. Too big, it squeezes! Just right, round they go." },
+        // no buddy (on the left part of the platform, just left of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's fit the gears and turn the big wheel, so the sun, moon and stars move again. Ready?",
+                  little: "Let's fit the gears and turn the wheel. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "The sun goes up, the moon goes round, and the stars spin. And the roof opens to the real stars!",
+                  little: "The sun, the moon and the stars all move. Hooray!" } },
+        // no buddy
+        { art: "e02", ages: "big", buddy: null,
+          line: "Look at the little pictures going round! A boat, a bridge, a flower and a kite. Just like our adventures!" },
+        // no buddy (on the honey-wood floor just right of Owl, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Everyone comes to the Sky Show. And Owl dances under the stars in both fluffy slippers!",
+                  little: "Owl dances in her two fluffy slippers. Shuffle, shuffle!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Fourteen gold stars on our helper map! The whole map is shining, all thanks to you." }
       ]
     }
   };
