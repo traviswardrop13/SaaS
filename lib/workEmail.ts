@@ -1,7 +1,7 @@
 /**
  * IS THIS A WORK EMAIL? (24 Sep 2026)
  *
- * The clinician dashboard is open to ANY address — the landing page collects
+ * The clinician dashboard is open to ANY address — the clinician page collects
  * every email and a new clinician goes straight in. What needs a work address
  * is one thing only: the clinician's OWN free Premium on their own phone.
  * A school or clinic domain is weak evidence that the person is a practising

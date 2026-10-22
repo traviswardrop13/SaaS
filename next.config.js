@@ -55,14 +55,20 @@ const nextConfig = {
   // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
   async rewrites() {
     return [
-      // THE ROOT IS THE CLINICIAN PAGE (22 Sep 2026). speaksona.com is where
-      // the SLP ad lands, so it serves the SLP page itself rather than
-      // redirecting — a redirect costs a hop on cold paid traffic and splits
-      // the SEO. One copy of that page exists, in public/, and both URLs show
-      // it; for-slps.html carries a canonical pointing at the root so search
-      // engines are told which one is the page. The parent landing page moved
-      // to /families and is unchanged.
-      { source: "/", destination: "/for-slps.html" },
+      // THE ROOT IS THE FAMILY PAGE (Travis, 22 Oct 2026: "speaksona.com is
+      // only for parents. I don't want to target therapists at all"). This
+      // reverses 22 Sep 2026, when / served for-slps.html for the SLP ad. A
+      // rewrite, not a redirect, so the address bar stays speaksona.com and
+      // the page's ranking is not split across two URLs; app/families/page.tsx
+      // carries a canonical pointing at the root. /families keeps working for
+      // every link already out there. The native shell loads this root too,
+      // and that page sends it straight into the app (its inline Capacitor
+      // guard), exactly as it did before 22 Sep.
+      //
+      // for-slps.html still answers at /for-slps for clinicians who already
+      // have that link, but it is noindex and nothing on the family side
+      // links to it.
+      { source: "/", destination: "/families" },
       { source: "/for-slps", destination: "/for-slps.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
       { source: "/slp", destination: "/slp.html" },

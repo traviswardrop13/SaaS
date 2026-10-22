@@ -27,22 +27,94 @@ const pages = readdirSync(APP + "/public").filter((f) => f.endsWith(".html"));
 ok("there are pages for the glob to cover", pages.length > 20, String(pages.length));
 
 
-// ── the root, and what a shared link looks like ──
+// ── the root is the family page (Travis, 22 Oct 2026) ──
+// "speaksona.com is only for parents. I don't want to target therapists at
+// all." This reverses 22 Sep 2026, when / served the clinician page for the
+// SLP ad. Every pin here is one way the root could quietly go back to
+// speaking to clinicians, or a search engine could be told it still does.
 {
+  const fam = readFileSync(APP + "/app/families/page.tsx", "utf8");
+  const famShown = fam.replace(/\{\/\*[\s\S]*?\*\/\}/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
 
-  // A REWRITE, NOT A REDIRECT. Cold paid traffic pays for the extra hop, and
-  // two URLs serving one page splits whatever ranking the page earns.
-  ok("/ serves the SLP page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(code),
-    "the ad points at the root; the root has to be the page the ad promised");
-  ok("…as a rewrite, so the URL stays speaksona.com", !/redirects\(\)[\s\S]*for-slps\.html/.test(code));
-  ok("…and the page says which URL it is", /rel="canonical" href="https:\/\/speaksona\.com\/"/.test(slps));
+  // A REWRITE, NOT A REDIRECT: the address bar stays speaksona.com, and two
+  // URLs serving one page would split whatever ranking it earns.
+  ok("/ serves the family page", /source:\s*"\/"\s*,\s*destination:\s*"\/families"/.test(code),
+    "speaksona.com is for parents; the root has to be their page");
+  ok("…never the clinician page", !/source:\s*"\/"\s*,\s*destination:\s*"\/for-slps/.test(code));
+  // Only the redirects() body: the headers() and rewrites() lists both carry
+  // a source "/" of their own, and either quote style is a redirect.
+  const redirBody = (code.match(/redirects\s*\(\)\s*\{([\s\S]*?)\n  \},?/) || [])[1] || "";
+  ok("…as a rewrite, so the URL stays speaksona.com", !/source:\s*["'`]\/["'`]/.test(redirBody));
+  ok("…and the family page says the root is its URL", /alternates: \{ canonical: "https:\/\/speaksona\.com\/" \}/.test(fam));
+  // The iOS shell loads this same root. Before 22 Sep this page was the root
+  // and its inline guard was what sent the shell into the app; it has to
+  // still be there and still be the first thing in <main>. nativefamilytest
+  // runs the guard itself.
+  ok("…and sends the native shell straight into the app, before anything renders",
+    /<main[^>]*>\s*\{\/\*[^*]*\*\/\}\s*<script\s+dangerouslySetInnerHTML=\{\{\s*__html:\s*`if\(typeof window!=="undefined"&&window\.Capacitor\)/.test(fam));
 
-  // THE GROWTH PLAN IS SLPS TELLING SLPS, so the link gets pasted into a
-  // Facebook group and a district Slack. A link with no card is a grey box.
-  // The old root got its title and icons from app/layout.tsx; this page is
-  // static and inherits nothing, which is exactly how it lost them.
+  // Nothing a parent reads, and nothing a crawler is handed, points at the
+  // clinician side.
+  const CLIN = /for-slps|slp-login|slp\.html|\/slp(?![\w-])/;
+  ok("the family page never links to the clinician pages", !CLIN.test(famShown),
+    (famShown.match(/.{0,60}(for-slps|slp-login|slp\.html|\/slp(?![\w-])).{0,20}/) || [])[0]);
+  // …nor does any other page a parent or a crawler reaches. Only the
+  // clinician page itself: settings.html links to the dashboard from the
+  // clinician-profile card on purpose (the door that stayed), so the sweep is
+  // for the marketing page, the one thing "not targeting therapists" removed.
+  const CLIN_PAGES = new Set(["for-slps.html", "slp.html", "slp-login.html"]);
+  const linkers = pages.filter((f) => !CLIN_PAGES.has(f) && /href="\/for-slps/.test(readFileSync(APP + "/public/" + f, "utf8")))
+    .concat(["app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx"]
+      .filter((f) => /href="\/for-slps/.test(readFileSync(APP + "/" + f, "utf8"))));
+  ok("…and no other family page links to the clinician page", linkers.length === 0, linkers.join(", "));
+  ok("…and never claims a certification Rachel does not hold", !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b/i.test(famShown));
+  ok("the clinician page is noindex now", /<meta name="robots" content="noindex" \/>/.test(slps));
+  ok("…and no longer tells search engines it is the root",
+    !/rel="canonical" href="https:\/\/speaksona\.com\/"/.test(slps) && !/og:url" content="https:\/\/speaksona\.com\/"/.test(slps));
+  const sitemap = readFileSync(APP + "/app/sitemap.ts", "utf8");
+  const urls = sitemap.match(/url: `[^`]*`/g) || [];
+  ok("the sitemap lists the root", urls.some((u) => u === "url: `${BASE}/`"));
+  ok("…and no clinician, private or duplicate page",
+    urls.length > 0 && !urls.some((u) => /slp|join|leads|founders|families/.test(u)), urls.join(", "));
+  // A crawler that is disallowed never fetches the page, so it never sees
+  // the noindex — and Google can list a blocked URL anyway, from links.
+  const robots = readFileSync(APP + "/app/robots.ts", "utf8").replace(/^\s*\/\/.*$/gm, "");
+  ok("robots does not block the noindex pages, so crawlers can read the noindex", !/slp|join|leads|founders/.test(robots));
+  ok("…and names the AI assistants' crawlers, so a parent asking one can hear about Sona",
+    /"GPTBot"/.test(robots) && /"OAI-SearchBot"/.test(robots) && /"ClaudeBot"/.test(robots) && /"PerplexityBot"/.test(robots));
+  const llms = readFileSync(APP + "/app/llms.txt/route.ts", "utf8");
+  // Everything the route can send: the body AND the cost lines it splices in
+  // — every string literal, with the comments stripped.
+  const llmsBody = llms.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok("llms.txt speaks to parents only — no clinician dashboard, caseload or SLP link",
+    /const body = `/.test(llmsBody) && !/dashboard|caseload|for-slps|Caseload Premium|For speech therapists/i.test(llmsBody));
+  ok("…its price line reads the switch rather than being typed in", /FREE_MODE\s*\?/.test(llms) && !/\$\d/.test(llmsBody));
+  ok("…and never claims a certification Rachel does not hold", !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b/i.test(llmsBody));
+
+  // THE CARD A LINK TO speaksona.com SHOWS when a parent pastes it into a
+  // group chat. The old root's card came from for-slps.html and said "for
+  // SLPs"; a link with no card is a grey box.
+  for (const tag of ["openGraph", "twitter", "summary_large_image"]) {
+    ok(`the family page declares ${tag}`, fam.includes(tag));
+  }
+  ok("…with an absolute image URL, because a scraper resolves it against nothing",
+    /images: \[\{ url: "https:\/\/speaksona\.com\/og-families\.png", width: 1200, height: 630/.test(fam));
+  const ogf = APP + "/public/og-families.png";
+  ok("…and that image is actually in the repo", existsSync(ogf));
+  if (existsSync(ogf)) {
+    const b = readFileSync(ogf);
+    ok("…at the dimensions the tags promise", b.readUInt32BE(16) === 1200 && b.readUInt32BE(20) === 630, b.readUInt32BE(16) + "x" + b.readUInt32BE(20));
+  }
+}
+
+// ── what a shared link to the clinician page looks like ──
+// Clinicians who already use Sona still share /for-slps with each other,
+// even though nothing on the family side links to it any more.
+{
+  const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
+  // A link with no card is a grey box. This page is static and inherits
+  // nothing from app/layout.tsx, which is exactly how it lost them once.
   for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
     ok(`a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(slps));
   }

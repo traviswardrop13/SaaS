@@ -170,8 +170,8 @@ Premium page, **no trial**, renews yearly, cancel anytime in Stripe's billing
 portal. Every family who joins through that clinician's link gets Premium —
 whether or not they say "Yes, share progress": access and sharing are separate
 promises. $79.99 ÷ 12 = $6.6658, so "**under $7 a month**", never "$6.67".
-`lib/caseload.ts` holds every constant; the static landing page cannot import
-it, so `shiptest` pins its copy to it.
+`lib/caseload.ts` holds every constant; the static clinician page
+(`for-slps.html`) cannot import it, so `shiptest` pins its copy to it.
 - **Covered = paid or grandfathered.** Paid is a Stripe subscription stamped
   `plan: slp-caseload, slp: <email>` in active, trialing or past_due. Stripe
   keeps a cancelled plan active to its period end, so families keep Premium to
@@ -218,7 +218,7 @@ it, so `shiptest` pins its copy to it.
   gone, and nothing when the route doesn't answer. A clinician repeats what
   she reads, and a bare launch price is a figure most families will not see.
 - **Their own phone needs a work email.** The dashboard stays open to any email
-  (the landing page collects every one), but the clinician's own free Premium
+  (the clinician page at `/for-slps` collects every one), but the clinician's own free Premium
   link is emailed only to a work address; free-mail domains get "No work
   email? Request access", approved by hand on `/leads.html`. Approval sends
   no email, so the card says "Requested — once we approve it, this button will
@@ -290,19 +290,36 @@ from a URL parameter: coverage is the server's answer to the enrolment ticket
 the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
-**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
-targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
-is now reversed: the clinician door is back on the first setup screen — it is
-the only entrance to `ORDER_SLP`, so removing it again makes that whole
-branch dead code — `for-slps.html` is indexable and linked from the landing
-footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
-also pay: the dashboard and the free version stay free, and a clinician who
-wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician.
+**SPEAKSONA.COM IS FOR PARENTS ONLY** (Travis, 22 Oct 2026: "speaksona.com
+is only for parents. I don't want to target therapists at all"). This
+reverses 21–22 Sep, when the SLP side was the channel and `/` served
+`for-slps.html` for the SLP ad. Now `/` rewrites to the family page
+(`app/families/page.tsx`, canonical = the root); `for-slps.html` is
+`noindex`, out of the sitemap and `llms.txt`, and nothing on the family side
+links to it. `shiptest` pins all of that. What did NOT change: the clinician
+page still answers at `/for-slps` for clinicians who already have the link,
+and the dashboard, Caseload Premium (some clinicians pay for it) and every
+covered family keep working — not targeting therapists is not breaking the
+ones already here. The clinician door on the first setup screen (browser
+only; `betatest` pins it open, and it is the only entrance to `ORDER_SLP`)
+was left in place; removing it is Travis's call, not a cleanup.
 
-Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
-dashboard and its login) and `join.html` (a family's redemption link, which
-carries a credential in the URL). Those are surfaces, not marketing.
+The dashboard and the free version stay free for clinicians, and a clinician
+who wants every game for their families buys Caseload Premium — one yearly
+price, never per family, never to the clinician.
+
+`noindex`, correctly: `for-slps.html`, `slp.html` and `slp-login.html` (the
+clinician pages) and `join.html` (a family's redemption link, which carries
+a credential in the URL). `app/robots.ts` must not disallow them: a blocked
+crawler never sees the noindex.
+
+## Search and AI assistants (22 Oct 2026)
+Parents ask Google and ChatGPT "how can my kid practice speech at home", so
+the public site is built to be read: `app/robots.ts` (names the AI crawlers),
+`app/sitemap.ts` (public pages only), `app/llms.txt/route.ts` (reads
+`FREE_MODE`, never a price, never "certified"), and schema.org labels on the
+family page whose FAQ is built from the same `faq` array it prints. Any page
+that explains HOW to practice a sound is Rachel's to review before it ships.
 
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`

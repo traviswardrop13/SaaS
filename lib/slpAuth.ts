@@ -379,7 +379,7 @@ export async function sendMagicEmail(
           `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
           `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
           `</ol>` +
-          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com/slp-login and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
         /**
          * A PLAIN-TEXT PART, because an HTML-only email scores worse with
@@ -395,7 +395,7 @@ export async function sendMagicEmail(
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +
           "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
           "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
-          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
+          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com/slp-login and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
       }),
     });
     /**

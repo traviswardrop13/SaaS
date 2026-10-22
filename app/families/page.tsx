@@ -70,19 +70,40 @@ const YEARLY = CHARTER_PRICE;   // the launch-era default; PricingPaid renders f
 // counted there, where it happens. The payload never carries a child's name.
 const TRACKER = `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`;
 
-// THIS IS /families NOW, not the root. speaksona.com is the clinician page
-// (Travis, 22 Sep 2026: SLPs are the channel), and this page moved rather than
-// being rewritten so that every purchase surface keeps BOTH pricing states —
-// the switch has flipped eleven times and hand-editing a price into a page is
-// the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
-// a family reaching it through their SLP never sees it at all.
+// THIS IS THE ROOT AGAIN (Travis, 22 Oct 2026: "speaksona.com is only for
+// parents. I don't want to target therapists at all"). next.config.js
+// rewrites / here, and /families still answers for every link already out
+// there; the canonical below tells search engines the root is the page. It
+// lives at app/families rather than app/page.tsx because the 22 Sep move
+// kept it intact here, and a rewrite needs no second copy. Every purchase
+// surface keeps BOTH pricing states — the switch has flipped a dozen times
+// and hand-editing a price into a page is the one thing CLAUDE.md forbids.
+// A family reaching it through their SLP never sees it at all.
+const META_DESCRIPTION = FREE_MODE
+  ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
+  // No figure here: metadata is fixed at build, and the price moves with the
+  // charter count. The page body prints it, per request, from that count.
+  : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.";
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
-  description: FREE_MODE
-    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
-    // No figure here: metadata is fixed at build, and the price moves with the
-    // charter count. The page body prints it, per request, from that count.
-    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.",
+  description: META_DESCRIPTION,
+  alternates: { canonical: "https://speaksona.com/" },
+  // The card a link to speaksona.com shows when a parent pastes it into a
+  // group chat. The image is the family one; og-slp.png says "for SLPs".
+  openGraph: {
+    type: "website",
+    siteName: "Sona",
+    url: "https://speaksona.com/",
+    title: "Sona — R-sound practice kids actually love",
+    description: META_DESCRIPTION,
+    images: [{ url: "https://speaksona.com/og-families.png", width: 1200, height: 630, alt: "Sona — R-sound practice kids actually love" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sona — R-sound practice kids actually love",
+    description: META_DESCRIPTION,
+    images: ["https://speaksona.com/og-families.png"],
+  },
 };
 
 /* ---------- shared bits ---------- */
@@ -292,9 +313,16 @@ function PricingFree() {
   );
 }
 
+// Without this, Next prerenders the page ONCE at build (it reads no request
+// data), and in a paid state the charter price and spots-left count would be
+// frozen until the next deploy — $59.99 shown long after spot 50. A minute
+// matches charterSpots()'s own memo, and keeps the root (which the iOS shell
+// loads on every launch) served from cache rather than rendered per tap.
+export const revalidate = 60;
+
 export default async function Landing() {
-  // one Stripe read per render (memoised a minute); the page is no-store, so
-  // this is the truth at the moment the parent is looking at it
+  // one Stripe read per regeneration (memoised a minute), so the count is at
+  // most a couple of minutes old; /api/checkout picks the tier at purchase
   const spots: Spots = FREE_MODE
     ? { cap: CHARTER_CAP, taken: 0, left: 0, open: false, source: "fallback", at: Date.now() }
     : await charterSpots();
@@ -340,6 +368,42 @@ export default async function Landing() {
       <script
         dangerouslySetInnerHTML={{
           __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
+        }}
+      />
+      {/* Labels for Google and AI assistants: who makes Sona, what the app
+          is, and the Quick answers. The FAQ is built from the same `faq`
+          array the page prints, so the two can never disagree — minus the
+          cost answer, which in a paid state carries the charter price, and a
+          price copied into a search engine's cache outlives spot fifty. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Sona",
+              url: "https://speaksona.com/",
+              logo: "https://speaksona.com/icon-512.png",
+              sameAs: [APP_STORE_URL],
+            },
+            { "@context": "https://schema.org", "@type": "WebSite", name: "Sona", url: "https://speaksona.com/" },
+            {
+              "@context": "https://schema.org",
+              "@type": "MobileApplication",
+              name: "Sona",
+              url: "https://speaksona.com/",
+              operatingSystem: "iOS, Web",
+              applicationCategory: "EducationalApplication",
+              description: "Daily speech-sound practice games for kids ages 4–9, built with a licensed pediatric speech-language pathologist.",
+              installUrl: APP_STORE_URL,
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: faq.filter(([q]) => q !== "What does it cost?").map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+            },
+          ]).replace(/</g, "\\u003c"),
         }}
       />
       {/* Founding link (/?ff=<code>) forwards into onboarding for server-side validation. */}
@@ -519,7 +583,7 @@ export default async function Landing() {
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 14px" }}>{finalFootnote}</div>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}><AppStoreBadge /></div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
           </div>
         </section>
       </div>

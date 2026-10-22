@@ -66,10 +66,11 @@ if (appFree) {
     .replace(/\/\*[\s\S]*?\*\//g, " ")             // block comments
     .replace(/(^|[^:])\/\/[^\n]*/g, "$1");         // line comments, keeping https://
 
-  // THE PARENT LANDING PAGE IS /families NOW. speaksona.com is the clinician
-  // page (22 Sep 2026: SLPs are the channel); the page moved rather than being
-  // rewritten precisely so these pins keep holding — it still carries BOTH
-  // pricing states and still reads the one switch.
+  // THE PARENT PAGE IS app/families/page.tsx, served at speaksona.com/ (a
+  // rewrite, Travis 22 Oct 2026: the site is for parents only) and still at
+  // /families. It moved there on 22 Sep rather than being rewritten precisely
+  // so these pins keep holding — it carries BOTH pricing states and reads
+  // the one switch.
   //
   // THESE USED TO SCAN FOR THE ABSENCE OF A PRICE, and that was right while
   // app/page.tsx was hand-rewritten for each era. It is not right any more.

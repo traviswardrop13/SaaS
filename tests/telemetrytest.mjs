@@ -112,9 +112,16 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
-  ok("the page the ad points at loads the pixel",
+  ok("the clinician page loads the pixel",
     /<script src="\/pixel\.js"><\/script>/.test(slps),
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
+  // THE ROOT IS THE FAMILY PAGE AGAIN (Travis, 22 Oct 2026), and an ad that
+  // points at speaksona.com lands there. That page is a Next page, so its
+  // pixel comes from app/layout.tsx — the same silent loss as above if it
+  // ever goes.
+  const layout = readFileSync(APP + "/app/layout.tsx", "utf8");
+  ok("the root — the family page — loads the pixel, from app/layout.tsx",
+    /<script src="\/pixel\.js" \/>/.test(layout));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.

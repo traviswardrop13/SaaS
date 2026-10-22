@@ -6,7 +6,11 @@ import { chromium, ROOT, launchOpts } from './_env.mjs';
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT;
 const server=createServer((req,res)=>{
  let p=new URL(req.url,'http://local').pathname;
- if(p==='/')p='/for-slps.html';
+ // The root is the family page (Travis, 22 Oct 2026): app/families/page.tsx,
+ // a Next page this static server cannot render. What runs in the native
+ // shell is its inline guard, the first script in <main>, so serve exactly
+ // that script, read from the source, in front of some page content.
+ if(p==='/'){const m=readFileSync(path.join(ROOT,'..','app','families','page.tsx'),'utf8').match(/__html: `(if\(typeof window!=="undefined"&&window\.Capacitor\)[^`]*)`/);res.writeHead(m?200:500,{'content-type':'text/html'});res.end(m?'<!doctype html><html><body><main><script>'+m[1]+'</script><h1>Sona for families</h1></main></body></html>':'family guard not found');return;}
  if(['/slp','/slp-login','/for-slps'].includes(p))p+='.html';
  if(p.startsWith('/api/')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(p==='/api/slp/auth/me'?{ok:true,email:'clinician@example.test',code:'test',familyKey:'fixture'}:{ok:true,clients:[]}));return;}
  const file=path.join(root,p);

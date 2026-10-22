@@ -20,16 +20,20 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Speech practice kids actually want to do — Sona for SLPs</title>
-  <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
-       page the ads land on and the one a clinician finds by searching.
-       Indexable on purpose; the dashboard, its login and the family's
-       redemption link stay noindex — those are private surfaces.
+  <!-- /for-slps. Until 22 Oct 2026 next.config.js rewrote / to this file and
+       it was the page the SLP ad landed on. Travis, 22 Oct 2026: "speaksona.com
+       is only for parents. I don't want to target therapists at all." So the
+       root is the family page now, and this page is noindex and linked from
+       nothing on the family side. It stays live because clinicians who
+       already use Sona have this link, and its answers (what is stored, what
+       Caseload Premium costs) are the ones they signed up under.
 
        Built from the 23 Sep 2026 design handoff. Where the handoff's copy
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
+  <meta name="robots" content="noindex" />
   <meta name="description" content="Give every family on your caseload free daily speech practice at home. You assign the sound and the position; practice days, reps and pass rate roll up to your free dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
-  <link rel="canonical" href="https://speaksona.com/" />
+  <link rel="canonical" href="https://speaksona.com/for-slps" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
        SLPs, which means the link gets pasted into a Facebook group, a district
@@ -39,7 +43,7 @@
        against nothing. -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
-  <meta property="og:url" content="https://speaksona.com/" />
+  <meta property="og:url" content="https://speaksona.com/for-slps" />
   <meta property="og:title" content="Speech practice kids actually want to do." />
   <meta property="og:description" content="Pick the sound, and every kid on your caseload goes home with a few minutes of practice a day with Echo, free. Nothing to plan, and you see who practiced." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png" />
@@ -63,11 +67,12 @@
        says what third parties it talks to should not add one for typefaces. -->
   <link href="/fonts.css" rel="stylesheet">
 
-  <!-- THE AD LANDS HERE, SO THE PIXEL BELONGS HERE. The root used to be the
-       Next page, which loads this from app/layout.tsx; rewriting / to this
-       static page once took the pixel off the landing page without anyone
-       noticing, and a campaign with no PageView and no Lead optimises on
-       clicks. Nothing a child ever sees loads it (tests/telemetrytest.mjs
+  <!-- THE PIXEL STAYS so a clinician who arrives through an old link is
+       still counted. Until 22 Oct 2026 this was where the SLP ad landed;
+       the root is the family page again, which gets the pixel from
+       app/layout.tsx. Rewriting / to this static page once took the pixel
+       off the landing page without anyone noticing, and a campaign with no
+       PageView and no Lead optimises on clicks. Nothing a child ever sees loads it (tests/telemetrytest.mjs
        holds the list), and no event below carries a name, an age or a child.
        The privacy answers further down say it is here. -->
   <script src="/pixel.js"></script>
@@ -234,7 +239,7 @@
 
 <header>
   <div class="wrap hbar">
-    <a class="brand" href="/" aria-label="Sona for SLPs">
+    <a class="brand" href="/for-slps" aria-label="Sona for SLPs">
       <img src="/echo.png" alt="" width="40" height="40">
       <b>Sona</b><span>for SLPs</span>
     </a>
@@ -245,8 +250,9 @@
   </div>
 </header>
 <script>
-  // Parents land here from the same ads as clinicians. This page's form is
-  // for SLPs, so a parent gets a way out that does not ask for an email:
+  // A parent can still reach this page through an old or shared link (it
+  // was the root, and the SLP ad's landing page, until 22 Oct 2026). Its form
+  // is for SLPs, so a parent gets a way out that does not ask for an email:
   // straight to the App Store on an iPhone or iPad (iPadOS reports itself as
   // a Mac with a touchscreen), and the family page — which also runs in any
   // browser — everywhere else.
