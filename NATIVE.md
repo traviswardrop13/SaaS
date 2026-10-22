@@ -434,6 +434,48 @@ To take the yearly row off again, remove the product from the current
 offering in RevenueCat: the card goes back to the monthly row alone, and a
 yearly buyer is still recognised on a restore.
 
+## One payment, a third row (22 Oct 2026, for iOS 1.0.9)
+
+Travis, 22 Oct 2026: "ok go build it all", the one-time purchase on the price
+screen; "i dont wanna say lifetime". The card can show a third row under
+monthly: **"One payment"**, "Yours to keep. No subscription.", the App
+Store's price with no period; picked, the button says "Get Sona Premium —
+$59.99" (the store's price). It is never picked when the screen opens (yearly
+is, or monthly without a yearly row), never says "lifetime", "free" or "Best
+value", and has no free days. The web card is unchanged: the website sells
+subscriptions only. Nothing here needs code: the row appears by itself once
+these are true, in this order (the same order as the yearly row, for the
+same reason: offered but not attached, Apple would take a parent's money and
+unlock nothing):
+
+1. **App Store Connect:** an In-App Purchase of type **Non-Consumable**, product
+   ID `com.speaksona.app.lifetime` (the id is App Store Connect's and never
+   shown to a parent), reference name "Sona Premium, One Payment", display name
+   "Sona Premium, One Payment", price $59.99 (or the price Travis wants: the
+   card shows whatever Apple answers). A non-consumable has no introductory
+   offer; if one ever came back with free days, the card would show no row.
+   Submit it with the build (a first in-app purchase goes to review with an
+   app version).
+2. **RevenueCat:** add the product, attach it to the **`full`** entitlement
+   (the one every Premium check reads), **then** add a package for it to the
+   **current offering**: the built-in **Lifetime** package type (`$rc_lifetime`)
+   or a custom one, either works. The card shows the row only when the current
+   offering lists the product; attached but not offered, nothing changes.
+3. **Check on a phone** (TestFlight, a sandbox Apple ID): the three rows,
+   then a tap on "One payment" and the button. Premium switches on, and
+   Restore Purchases on a reinstall finds it again (the same `full`
+   entitlement). The webhook needs nothing new: RevenueCat tells Sona of it as
+   a `NON_RENEWING_PURCHASE`, which `lib/revenuecat.ts` already files as
+   "paid" (so the welcome emails stop, and no free-days note is ever queued).
+
+To take the row off again, remove the package from the current offering in
+RevenueCat. Never remove the product itself from sale in a way that breaks
+restores: anyone who bought it keeps Premium, and `IAP_PRODUCTS.lifetime`
+stays in `sona.js` so a restore recognises them.
+
+App Store Connect's App Privacy answers need no new line for it: it is a
+purchase, already listed with the subscriptions.
+
 ## RevenueCat webhook (16 Oct 2026, RCHOOK1)
 
 RevenueCat tells Sona's server whenever an App Store purchase of Sona Premium
