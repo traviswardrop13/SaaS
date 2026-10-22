@@ -120,7 +120,10 @@ Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
 in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
 buying opens every finished game and every book. Unfinished games stay
 closed regardless of subscription, trial or earned access, and since 19 Oct
-2026 have no card on Home (see "Coming soon games are hidden"). **Since 3 Oct 2026 the free version is not every
+2026 have no card on Home (see "Coming soon games are hidden"). **The daily
+story is Premium too** (STORY1, 22 Oct 2026), by the books' rule: shown
+locked where Sona can sell, and on a phone that cannot buy replaced by the
+game of the day (see "Daily story (STORY1)"). **Since 3 Oct 2026 the free version is not every
 family's:** where Sona can sell, a family set up from then on starts with the
 trial (see "TRIAL FIRST" right below).
 
@@ -185,7 +188,7 @@ changing one. What follows from the rule:
     setup hands the child), and **"Games <Name> will play"** (a grid of the
     age group's playable games from the catalog, never a Coming soon one;
     where no price follows, only the games that phone opens; since 22 Oct
-    2026 a peek: Home's first nine, or three little-kid and six big-kid
+    2026 a peek: the Arcade's first nine, or three little-kid and six big-kid
     games with no age, each group's rest counted as "and 7 more"). Statements
     with Continue and Back: nothing asked or stored (Travis took out two
     question screens on 5 Oct), no progress segment, only on a family's
@@ -368,7 +371,8 @@ changing one. What follows from the rule:
 - **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
   2026: "I want it to open automatically if they click on a game that is
   grayed out"): no "Ask a grown-up" note, no grown-ups check, straight to the
-  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`),
+  plan screen as the offer on that game (`?from=<game>`, a book `?from=library`,
+  Home's locked story card `?from=adventure` since 22 Oct 2026, STORY1),
   for any family Sona can sell to (`offerOnLock()`), free version or not. The
   plan screen asks no check for a `?from=` visit that shows the offer: Apple
   wants a parental gate before a buy screen only in its Kids category, which
@@ -1582,18 +1586,345 @@ Premium in the app as RevenueCat last told it (RCHOOK1). It has no button: the
 list fills itself, and the old "Send everyone to Kit" catch-up
 (`/api/founders/kit-sync`) is gone with Kit.
 
-## Home: choose a game, then practice
-**Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
-on “Pick a game!”; `activities.html` preserves old query/hash links by
-redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
-Fruit Slice from 5; see "The ask happens after the product proves itself"),
-and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
-inside deliberate game/practice sessions. Parent settings, progress,
-profiles, earned coins (now visible on the Trophy Road, and spent in the Buddy Shop), homework and
-entitlement sync remain available. Home gains one Trophy Road card under
-"Pick a game!" (read-only), a level badge on a card's picture, and a level
-sheet that opens only from a tap (see "Trophies, coins and the Trophy Road"
-and "Levels inside games").
+## Daily story (STORY1): Home's big card
+**Home leads with today's story** (22 Oct 2026; Travis chose both age
+groups, today's painted clay look, and that the story is Premium). A story
+day is one to two minutes of painted pictures Echo reads aloud, a new game
+that fixes the story's problem, then a short happy ending and a sticker:
+Pelly's letter (Pelly the pelican always pulls the wrong thing out of her
+beak pouch first: a fish, a rubber duck, a banana; never "Penny", who is
+the penguin of *Penny's Pebble Party*) → the problem → "Let's
+go!" → the game → "See what happens!" → the ending → the sticker → a gold
+star on Echo's helper map. Three days are built:
+- **Day 1, "The Lighthouse Sneeze":** Captain Wally the walrus sneezes the
+  lamp out; the child is the light and finds seven lost boats in the fog
+  (**Light the Way**, key `lighthouse`).
+- **Day 2, "Grandpa Bear's Sleepy Toys":** the toys partied all night and ran
+  out of wind; the child winds each one just right for the Toy Parade
+  (**Wind-Up Toys**, key `windup`).
+- **Day 3, "The Puzzle Bridge":** the storm broke the bridge to Blossom
+  Island; the child fits the stones back for Grandma Tortoise's 100th
+  birthday (**Puzzle Bridge**, key `bridge`).
+
+Each has a version for ages 3-4 (`Sona.playStyle() === "simple"`: the scenes
+marked for both ages, the short lines, a six-word game) and one for 5-8 (eight
+scenes, four ending scenes, an eight-word game with a twist at word 5). The
+buddy a child picked is in every game and in 24 of the 36 pictures (the
+others, a view out of a window, a letter, a crowd's back, have no spot for
+it), laid over the painting in a pose that already exists, never painted in
+and never under a finger.
+- **Files.** The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
+  QUEST1 block): id, game, page, hero, Home's title and line. (The same tag,
+  STORY1, also marks the older episode engine: `sona.js`'s "the daily run is
+  an EPISODE" block, `storytest` and the parked `story.html`; they are not
+  this.) The scenes are
+  `public/adventures.js` (`window.SonaAdventures`, loaded by the player
+  alone). The player is `public/adventure.html` with
+  `public/crafted-adventure.css`. Each game is a Say & Play game on the play
+  hook: `public/<key>.js`, `public/<key>.css`, a hand-written
+  `public/arcade-<key>.html`. Pictures: `public/assets/adventure/<id>/
+  s01-s08.webp, e01-e04.webp` (800×1200), `public/assets/crafted/game/
+  <key>-*.webp`, Home's `home-<hero>.webp` and the Arcade door's
+  `home-arcade.webp`; made by `tools/art/gen-adventure.mjs` and
+  `cut-adventure.py` from `adventure-prompts.json`. Every number a game or
+  the player reads off a picture is in `design/adventure/art-notes.md`, and
+  `design/adventure/review.html` shows every page with its line for Travis
+  and Rachel. **Adding a story is two edits:** its line in `STORY_DAYS`, its
+  scenes in `adventures.js` (and its game and pictures); every child who
+  finished the others meets it the next day.
+- **THE STORY IS PREMIUM, BY THE BOOKS' RULE** (`Sona.storyOpen()`: Sona
+  free, Premium from any source, or a trial; never the three-day
+  demonstration window `gated()` honours; in the founders' preview, its
+  "trial" plan). Where Sona can sell (`offerOnLock()`), a family without it
+  still SEES the story (`storyShown()`) with a small "Premium" tag, and a tap
+  opens the price at once, as a grey game's does: `/subscribe.html?from=
+  adventure` ("Unlock today's story, and every game", today's story picture
+  with Echo, no grown-ups check, never recorded, the X back Home; with every
+  story finished, the plain offer). That includes a family who keeps the free
+  version on a phone that can buy. **A phone that cannot buy, without
+  Premium, never sees a locked story:** its card is the old game of the day
+  (QUEST1), which borrows a game it can open. A wall nobody can pass is a
+  broken app. Entitlement is read again on every page, never from an
+  address: `gameAccess("adventure" | "lighthouse" | "windup" | "bridge")`
+  answers `storyOpen()` (tier `premium`), the engine's own check sends a
+  locked story game to `/today.html` (`gameBounce`) before any mic or sound,
+  and the player checks before any picture, sound or fetch.
+- **One scheduler, QUEST1's.** `sona.quest.v1` (per child, in backups) keeps
+  `i`, `last` and `done` and gains `s` (stories finished), `ls` (the last
+  one), `lk` ("story" or "game"), `got` (the stickers its finish gave) and
+  `seen` ("<date>|<id>": today's intro reached "Let's go!"). Every save
+  MERGES (a game day's write used to replace the record, and would wipe `s`).
+  `questToday()` answers `kind: "story"` while a story is left and
+  `storyShown()`, else the game of the day (`kind: "game"`). **Every child
+  starts at Day 1**, new or partway through the 14 days, and goes back to
+  the day they were on after the last story: a story never moves `i`.
+  Still one item a calendar day: a game day finished today keeps the story
+  for tomorrow, and a missed day loses nothing.
+- **The day is finished when the game's round ends** (the engine's end card,
+  `questEnd(<key>)`), so the sticker is given before the ending is watched
+  and closing the app in between loses nothing: ONE sticker
+  (`awardNextSticker`), no coins, no banner (the ending's sticker card shows
+  it, read from `storyEnding(id).got`), the event "adventure day done"
+  `{ game }`. `storyEnding(id).ok` opens an ending only once that story is
+  finished.
+- **The game hands back to the story** (`sayplay.js`, `G.exit` and
+  `G.again`): its end card's one teal button is "See what happens!" to
+  `/adventure.html?part=end&story=<id>` (only an address of exactly that
+  shape is taken), with no Play again. The ✕ during play still goes Home.
+- **The player** (`adventure.html`). On the website it opens on a card (the
+  story's picture, "Day N", its title, a teal "Tap to start"), because a page
+  plays nothing until a tap; in the iPhone app the intro starts at once. Seen
+  today: a teal "Keep going" (straight to the game) and a cream "Watch the
+  story again". Each scene: the picture whole, a caption card over its foot
+  (Echo, the line, a cream "Hear it", a teal Next). Echo starts the line as
+  soon as it is ready and waits at most 2.5 s; Next glows when he is done;
+  Next or a tap on the picture turns the page; taps wait 600 ms after a
+  scene appears, so a double tap never skips one; nothing turns by itself.
+  The right-arrow key turns a page too, but never leaves the last intro scene
+  (only "Let's go!" does), so it cannot cut Echo off there.
+  The last intro scene's big teal "Let's go!" stops the sound, writes
+  `storySeen(id)` (the ONE thing the page writes) and opens the game. The
+  ending opens on "Tap to see what happens", plays its scenes, then the
+  sticker card ("You got 🐚 Shell!", one reward chime, no confetti under
+  Reduce Motion) and "Back home". A cream Skip, top right, is for grown-ups
+  and not behind the grown-ups check, as the books' is: to "Let's go!" in the
+  intro, to the sticker card in the ending. Its events, "adventure opened"
+  and "adventure ending watched", carry `{ game }` alone.
+- **Echo's voice, one line at a time:** a recorded file when
+  `/assets/adventure/voice/manifest.js` lists exactly that line (the file is
+  named by FNV-1a of `TTS_CACHE_VERSION + "|" + line`, so a re-worded line has
+  no file), else the live voice through the phone's shared cache
+  (`SayIt.line`, `arcade-sayit.js`), else the browser's own voice, cut at
+  9 s; in the app every one plays as media. **No line is recorded yet** (no
+  manifest): every line plays in the live voice. `shiptest` checks a
+  manifest when there is one. Sound off (a volume of 0): captions only,
+  nothing fetched, Next live at once. Going to the background stops the line;
+  coming back plays nothing until a tap.
+- **Every story line keeps the rules** (`adventuretest`, and voicedoc's B9
+  lists all 49): 120 characters at most, plain punctuation, no child's name,
+  no speech sound named, nothing about how to talk (never louder, slowly,
+  strong, stretch, "say it"), none of score, points, correct, wrong, miss,
+  fail, charge, and the same line on every phone. **No story scene asks the
+  child to speak:** that happens only in the game's word turn. "Ah-choo!",
+  "Honk-shoo" and "Whoosh!" are story words, never targets.
+- **The buddy's spot** on each picture is a box in `adventures.js`, copied
+  from `design/adventure/art-notes.md` section 2; `adventuretest` holds the
+  two equal, so a redrawn page's new box changes both. The player keeps it
+  clear of the caption card, Echo's face and every button, and leaves it out
+  where that would lift it more than half its height (on a 320×568 phone,
+  Day 3's s04). The fox, every new family's buddy, has a peek drawn for the
+  stories' three peek spots (`buddy-fox-peek.webp`); Fruit Slice never asks
+  for it, so a fox child's market is unchanged.
+- **What a story day earns:** the scenes nothing; the game one game rep for
+  each saying Echo hears (16 for ages 5-8, 12 for 3-4, two more for each help
+  pill), toward the daily goal and trophies like every game, never practice
+  data; the day one sticker.
+- **Not in the catalog, on purpose.** The story games are not in `GAME_ACTS`
+  or `ACTIVITY_KEYS` (`Sona.gameKey("lighthouse") === ""`): on no shelf, in
+  no picks row, in no setup grid, in no website game count, with no level
+  and no Best. A finished story is not on Home again (its ending still opens
+  by address).
+- **Departures from the spec, kept:** the player does not load `saycheck.js`
+  (`SayCheck.say` cannot say when a line starts, which the 2.5 s rule needs,
+  so the page plays `SayIt.line`'s bytes itself); Day 3's e02 is ages 5-8
+  only; Skip lands on the "Let's go!" scene and plays its line; a tap on the
+  last intro picture does nothing (only "Let's go!" starts the game); Day 1's
+  s01 has the buddy left of Echo; Day 1's e01 is the game's own seven boats
+  on an empty harbor, and Day 2's s07 is cut to the chart alone. Six pages
+  were touched up after drawing (art-notes lists them): the parade's
+  crocodile and jack-in-the-box laid in from their cast drawings, the helper
+  map's stars moved onto the places helped, and the bridge painted out behind
+  Day 3's first two pages (the storm broke it the night before).
+
+**Light the Way** (Day 1, `lighthouse.js`, `LIGHTHOUSE1`). A night sea under
+a soft veil; the word, said two times, lights the lamp; the finger moves a
+pool of light (drawn 56 px above a fingertip, or 0.8 of its radius if that is
+less, so the finger never covers it; on a mouse pointer) and HOLDS it on the
+lost boat: the boat's lantern blazes, it toots and chugs home. Ages 5-8:
+tugboat, rowboat, sailboat (a barrel decoy), banana boat (a sleepy whale),
+the teacup boat behind the cove rocks as a cloud covers the moon (the twist),
+bathtub (a rubber duck), the ferry behind fog banks (a buoy), then a sweep
+over the town lights twelve windows. Ages 3-4: five boats on a still, lighter
+sea with no decoys and a big pool, then six windows. A decoy lit is a funny
+reaction, a kind banner and one rung on the help ladder, nothing else. The
+ladder climbs with seconds of the finger SEARCHING (4, 8, 12; ages 3-4: 2, 4,
+6) or decoys lit (1, 2, 3), never with waiting, and at its top nearly any
+sweep finds the boat; nothing is ever found without a finger. Help pill:
+"Bright beam" (the pool doubles and the fog clears for 10 s). End card:
+"Every boat is home!" / "You lit the way through the fog." The lit windows
+are cut from `lighthouse-town-lit.webp`, identical to the sea outside them,
+and `lighthousetest`'s art part reads the pictures' own pixels.
+
+**Wind-Up Toys** (Day 2, `windup.js`, `WINDUP1`). The word pops the next
+toy's key out; the finger draws circles round the brass dial, either way
+(the winding is the angle swept round its centre, so a scribble does not
+wind), and LETS GO at the star on the spring meter: under 30% is no try; too
+little, the toy yawns and sits ("A little more winding!"); in the star it
+wakes with its trick and marches to the parade line; too much, a dizzy spin
+and the needle drops just under the star. Ages 5-8: bunny, frog, top,
+crocodile, then the cuckoo pops (the twist) and the top shelf's elephant,
+jack-in-the-box and hippo need more turns and a narrower star, then the
+giant music box's crank (about four circles, no star). Ages 3-4: no star and
+nothing to overdo; the meter only fills, and the toy wakes when it rings.
+Two ladders climb side by side: misses (a wider star, then the key catches in
+it, then any let-go past 30% wakes the toy) and seconds without a quarter
+turn (arrows and a moving dot, then rubbing winds, then any drag winds).
+Help pill: "Oil can" (every circle counts double and the star is wide for
+10 s). One finger owns the dial: a circling finger keeps it, but a touch that
+has not moved for 0.3 s gives way to a new one, with no try (a resting thumb
+used to own it for as long as it stayed down), and the dial losing focus
+drops an arrow-key hold. End card: "The parade is on!" / "You woke up every toy."
+
+**Puzzle Bridge** (Day 3, `bridge.js`, `BRIDGE1`). The bridge is drawn by
+the canvas, one sandstone body from the near bank to Blossom Island on
+`bridge-canyon-wide.webp`, so a stone always fits its own hole. The word
+calls a stone up out of the river, turned the wrong way; a tap (under 12 px
+and 300 ms) turns it a quarter turn, anything else slides it, and a round
+turn button does the same. The finger holding the stone keeps it: a second
+finger or a palm is ignored until it lets go (it used to take the stone's
+finger and leave the stone held for good, so the round could never end). On its hole the right way up it drops in and
+glows; the wrong way up it bobs back ("Almost! Give it a turn."), a miss; a
+drop anywhere else is not a miss. Ages 5-8: L, T, boot, arrow, step, hook,
+half-moon, then the heart keystone at the top; from word 5 the river rises
+and each stone swims a slow loop in the water. The camera follows the gap (a
+hole at least 30% of the board's width) and pulls back to the whole bridge
+for the finale. Ages 3-4: circle, square, triangle, star, moon, heart, the
+right way round, two holes open at a time, a bounce back from the wrong one.
+Ladder: misses or seconds of trying (a ghost of the stone in the hole, then
+the hole glows and an arrow says which way and how many taps, then a drop
+near the hole turns it into place). Help pill: "Calm river" (the river goes
+glassy, the stone still, the ghost shows, 10 s). End card: "The bridge is
+whole again!" / "Every stone is back where it belongs."
+
+**What the three games keep** (each its own suite, and every Say & Play
+rule): the word, said two times, earns each step and the finger makes it;
+silence earns nothing; the step counts 1.15 s after the cheer, on a live page
+only; the help ladder resets with each word and never finishes a move by
+itself; Echo's directions go through `api.instruct` from `STEP_LINES` (ages
+5-8) and `LITTLE_LINES` (ages 3-4), with "Hear what to do"; the optional help
+pill asks the word again through `api.practice()`, and silence or "Back to
+the game" gives the move back with no power; every painted picture has a
+drawn stand-in; Reduce Motion cuts or fades; keyboard play works; the game
+file never touches storage, reps, coins or stickers; the game's own sounds
+are media in the app. Words that fit the story (`GAME_WORDS`: boat, moon,
+key, toy, rock…) are asked on words 1, 4 and 7 (1 and 4 for ages 3-4) when
+the child's sound has one; homework words win.
+
+**For Rachel** (built on defaults until she answers; the PR body lists every
+line a child hears):
+- What a story game asks: the child's own sound at the start of a word, said
+  on its own, homework first; the story words on words 1, 4 and 7 (the
+  `GAME_WORDS` table for `lighthouse`, `windup`, `bridge`; "river" left out on
+  purpose).
+- Two sayings a word for both ages (16 a day for 5-8, 12 for 3-4; Bubble Pop
+  asks the littles once). One line per game page (`sayTimes: 1`) would change
+  it.
+- The day is light on speaking: 16 or 12 sayings against a daily goal of 30;
+  the story pictures ask for nothing.
+- The games do not check the age a sound is usually learned: a four-year-old
+  whose family picked R gets R words, as in Bubble Pop.
+- A child the phone cannot hear cannot finish the day: only a heard voice
+  moves the game, and there is no skip to the ending.
+- "Heard" means a voice of the right kind, not the right word; nothing here
+  is practice data or a grade.
+- Day 3's "When they hear a word, up they float!" frames the word as calling
+  the stones; every story line, each game's 14 directions and its two
+  start-card lines are hers to read.
+- What the pictures show a child: a sneeze and a walrus with a cold, toys
+  asleep after a party, a bridge broken by a storm.
+
+**For Travis** (defaults he did not pick, to judge on his phone):
+- Day 2's finger move (the spec's alternative was cloud-sheep herding).
+- A phone that cannot buy gets the game of the day; a family who keeps the
+  free version on a phone that can buy sees the story locked.
+- After Day 3 the card is the game of the day again, "Today's adventure" with
+  no day number, until Day 4 exists; every child starts at Day 1.
+- The story games are only inside the stories, and a finished story is not
+  on Home again.
+- Under Reduce Motion both games hold still: Light the Way's boats stay on
+  their spots (the teacup's peek is a cut) and Puzzle Bridge's stones do not
+  swim.
+- Every speed, hold time, pool and star size, help timing and sound level
+  (`MEDIA_PEAK` 0.4 in each game, set without a phone to listen on); Light the
+  Way's moon (moved low so the top bar never covers it) and its brass rail
+  across a phone; Wind-Up Toys' Grandpa Bear half hidden behind a wide toy,
+  the buddy's small drawn shelf and the cuckoo's drawn doors; Puzzle Bridge's
+  hump, the ages 3-4 stones floating over the rail, the friends' size and the
+  flood's darkness.
+- Two pages to redraw first if anyone minds: Day 1's e02 (the rowboat's crew
+  reads as bunnies) and Day 2's e01 (a bear in the crowd could be Grandpa
+  Bear); and the night pages on a real phone in a dark room.
+- Before "merge": play all three games on his phone, look at
+  `design/adventure/review.html`, and listen to the recorded lines with Rachel
+  once they exist.
+
+`storycoretest` (the rules in `sona.js`, the offer, the hand-back),
+`homestorytest` (Home), `adventuretest` (the player), `lighthousetest` (run as
+`lighthouseplaytest`, `lighthousehelptest`, `lighthousefittest`),
+`winduptest` and `bridgetest` (run as `bridgeplaytest`, `bridgelittletest`,
+`bridgefittest`) play it; `shiptest` checks every picture and the voice
+manifest, `loadtest` the colours, and `node tools/voicedoc.mjs --check` every
+line (B7-B9).
+
+## Home: today's story, the Arcade and the Books
+**Home leads with today's story; every game is one tap away in the Arcade**
+(STORY1, 22 Oct 2026; Home was the silent Play library from 24 Sep 2026).
+`today.html` is one page with two views, `#libraryApp[data-view="home" |
+"arcade"]`: every block is built once on load, as before, and the view only
+decides what shows (hidden on the view's wrapper, never by a block's own
+`hidden`, which `paintQuest`, `paintRoad` and the preview notice set
+themselves), so there is still one copy of the game card, `launch()`, the
+offer, the level sheet, the grown-ups check and "Home opens the offer once".
+- **Home** (`/today.html`): "Today's adventure" (its first h1), the story card
+  (`#questCard`, see "Daily story (STORY1)": a 16:9 picture, "Day N", the
+  title, the hook line, a 64 px teal play button, a "Premium" tag without
+  it; done: tomorrow's picture dark, "Day 1 done!" and "Come back tomorrow for
+  Day 2!", or "Come back tomorrow for a new adventure!"), two doors
+  (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
+  **Books**, `home-books.webp` and the Books card's own tag, one handler for
+  both), then the Trophy Road card. On a phone the doors are tiles with the
+  picture as a 2:1 band on top (the Arcade picture's game things sit at its
+  edges, so it is never cut to a square); on an iPad, rows with a 3:2
+  picture. The card's tap stays exactly
+  `card.onclick=function(){if(done)return;launch(game);}`; on a story day
+  `game` is `{ kind: "story", key: "adventure", go: "/adventure.html", tier:
+  "premium" }`, so `launch()` opens it, or opens the price where Sona sells.
+- **The Arcade** (`/today.html?view=arcade`): "‹ Home", then "Pick a game!"
+  and everything Home was: Today's picks, Limited time, both shelves, the
+  Books card, the age note, Best tags, level badges, the locked note and the
+  price on a grey tap.
+- **Moving between them.** The Arcade door pushes `?view=arcade` and switches
+  at once, and for 500 ms after the Arcade door or "‹ Home" no tap on the
+  page does anything (a double tap's second tap used to open whatever the new
+  view put under the finger: a book in Today's picks, or the price); "‹ Home" goes back if it was pushed, else replaces the address;
+  Back and Forward read the address again. `?locked=` opens the Arcade with
+  its note. `activities.html` (old links) adds `view=arcade` unless the
+  address has `view=` or `locked=`, keeping the rest of it. Titles: "Sona" on
+  Home, "Sona — Play library" in the Arcade. **Every game's exit, the price's
+  X, setup's end and `firstGameEnd` still go to plain `/today.html`, which is
+  Home:** after any game a child lands on Home, not back in the Arcade
+  (Travis's to change: a tab-only marker could return them).
+- **The fit is measured, never guessed** (`fitHome`, `fit1`…`fit5`: the story
+  picture to 2:1, tighter type, a phone's door pictures to 5:2, the story
+  picture to 5:2, then 3:1): the play button and both doors are on the first
+  screen at 320×568, 375×667, 390×844, 430×932 and 768×1024, every button at
+  least 44 px; the Trophy Road card may fall below on the smallest. With the
+  real pictures only the founding banner on a 320×568 phone needs all five
+  (3:1 trims Echo's feathers and feet in Day 1's picture).
+
+Setup finishes in the first game (Feed Echo for 3-4, Fruit Slice from 5; see
+"The ask happens after the product proves itself"), and every visit after
+that opens on Home. **Home is silent and only reads:** on load, on coming back
+to the front and between the views it writes nothing, sends nothing and
+speaks nothing, and its source never says `questEnd`, comments included.
+There is no old adventure-map Home or menu narration. Voice remains inside
+deliberate game/practice sessions. Parent settings, progress, profiles,
+earned coins (now visible on the Trophy Road, and spent in the Buddy Shop),
+homework and entitlement sync remain available. Home has one Trophy Road card
+under the two doors (read-only); the Arcade's cards carry a level badge on
+their picture, and a level sheet opens only from a tap (see "Trophies, coins
+and the Trophy Road" and "Levels inside games"). `homestorytest` pins Home;
+`activitytest`, `fittest`, `homepickstest` and the rest play the Arcade.
 
 **The fuller books** (Travis, 26 Sep 2026: "do one for each letter"): one
 twelve-page story per sound, first on each sound's shelf in `library.html`.
@@ -1875,7 +2206,12 @@ parking still works (`freetest` parks one in the page to prove it). What every o
   earns a power on top. **It can always be left:** silence, a pause, or the
   "Back to the game" pill gives the earned move straight back with no power
   (`endHelp` in `sayplay.js`, added because Codex's version froze the game
-  until the child spoke). `sayplaytest`'s "help ask" scenario pins it.
+  until the child spoke). `sayplaytest`'s "help ask" scenario pins it. The
+  pill and "Back to the game" sit in the same place, so a tap within half a
+  second of either switch on the very spot the switching tap touched does
+  nothing (22 Oct 2026: a double tap on the pill asked and cancelled at
+  once; `helpDoubleTap`): a tap elsewhere, a key and silence are never held
+  back. `lighthousetest`'s help part plays it.
 - **A cheer before the next word:** the step counts about 1.15 s after the
   success, so its chime is heard (a step finished mid-direction stops only
   Echo's voice, `stopVoice`).
@@ -2778,7 +3114,7 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   opened", "road gift opened", "month gift opened") are sent by `sona.js` and
   carry nothing: no stop or step number (a stop is a lifetime trophy count),
   no coins.
-- **Home's one card** (`#roadCard`, under "Pick a game!"): the next gift's
+- **Home's one card** (`#roadCard`, under Home's two doors): the next gift's
   picture (or the waiting one, or the chest when it is ready) and a five-part
   bar; the counts are small and the words are in its label; a teal dot when
   something is ready. It only reads `Sona.roadState()`; a tap goes to the road.
@@ -2791,11 +3127,17 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   Echo and Bubble Pop needs six rounds to open the chest at the default goal.
 
 **The daily adventure (QUEST1, 13 Oct 2026)** (Travis: "go build the daily
-adventure", a 14-day run of one game a day with a little story). Home shows
-one card under "Pick a game!" (`#questCard`): "Day 3 of 14", one line from
-Echo's world ("The wind blew Echo's tower down. Help him build it back up!"),
-the game's own painted Home picture and a teal play button. A tap is that
-game card's own tap (`launch`: access, the price, "Pick a level").
+adventure", a 14-day run of one game a day with a little story). **Since 22
+Oct 2026 the stories come first** (STORY1, above): the same scheduler shows
+Home's big card a story while one is left, for every child, and this game of
+the day after the last one, or on a phone that cannot buy without Premium.
+On a game day the card (`#questCard`, under "Today's adventure") shows the
+game's name, one line from Echo's world ("The wind blew Echo's tower down.
+Help him build it back up!"), the game's own painted Home picture and the
+teal play button. **The "Day N of 14" counter is gone**, so that after Day 3
+of the story no child sees "Day 1 of 14"; the child's place in the 14 days
+(`i`) is never moved by a story. A tap is that game card's own tap (`launch`:
+access, the price, "Pick a level").
 - **One list per age group** (`QUEST_DAYS` in `sona.js`): ages 5-8 the nine
   big-kid games (Rise Up on day 11 since 14 Oct 2026), never the same game
   two days running; ages 3-4 Feed Echo
@@ -2809,20 +3151,26 @@ game card's own tap (`launch`: access, the price, "Pick a level").
 - **The gift is a sticker, the next one** (`awardNextSticker`; two on days 7
   and 14), never coins (COIN3), with a quiet note for five seconds, no voice.
 - **A missed day loses nothing**: the adventure waits on its day, moves on
-  once a quest is done and never twice in a calendar day. A done day shows
-  "Come back tomorrow for Day N+1!" with tomorrow's picture dark, never
-  playable early. No timer, no countdown, nothing random.
+  once a quest is done and never twice in a calendar day. A done game day
+  shows "All done for today!" and "Come back tomorrow for a new adventure!"
+  ("…for Day N!" when tomorrow is a story) with tomorrow's picture dark,
+  never playable early. No timer, no countdown, nothing random.
 - **A family without Premium is never sent to a locked game**: a day whose
   game this phone cannot open borrows the next open game in the list, with
-  that game's own line (`QUEST_LINE`).
-- **Home only reads** (`questToday()`), as roadtest and trophytest require.
-  Per child (`sona.quest.v1`, `PER_KID`). The event "adventure day done"
-  carries the game key only.
+  that game's own line (`QUEST_LINE`). A story is the one exception, on
+  purpose: where Sona can sell, it is shown locked and its tap opens the
+  price (STORY1).
+- **Home only reads** (`questToday()`, which always answers a `kind`,
+  "story" or "game"), as roadtest and trophytest require. Per child
+  (`sona.quest.v1`, `PER_KID`); every save merges into the record, which also
+  holds the stories' fields (STORY1). The event "adventure day done" carries
+  the game key only.
 - **Defaults Travis did not pick:** stickers rather than coins, waiting on a
   missed day, restarting after 14, a lost round counting, and the games'
   Home pictures rather than new art. **For Rachel:** the 28 lines say
   nothing about how to talk; whether a story should ever name a sound is hers.
-`tests/questtest.mjs` plays it.
+`tests/questtest.mjs` plays the game days, `storycoretest` the stories in
+front of them.
 
 **Levels inside games (LEVELS1, Travis, 9 Oct 2026: "kids see games and
 levels but have to unlock them"; he chose levels inside games, not locked

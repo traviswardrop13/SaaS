@@ -29,24 +29,30 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 // post-era families, with paid-state behavior exercised only through the seam.
 const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeera2.v1","sona.freeera3.v1","sona.freeera4.v1","sona.freeera5.v1"])localStorage.setItem(key,key==="sona.freeera.v1"?"post":"done");localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
 
+// The game library is Home's Arcade since 22 Oct 2026 (STORY1): Home itself
+// leads with today's story, and every game is one tap away, at ?view=arcade.
 // park: serve the sona.js with four games parked again (tests/_parked.mjs);
 // none is parked since 22 Oct 2026, and these checks pin what parking does
-async function home(age, premium, park) {
+async function home(age, premium, park, path = "/today.html?view=arcade") {
   const ctx = await browser.newContext();
   if (park) await servePark(ctx, ROOT);
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8178/today.html");
   await pg.evaluate(seed(age || "7", premium));
-  await pg.goto("http://localhost:8178/today.html");
+  await pg.goto("http://localhost:8178" + path);
   await pg.waitForTimeout(700);
   return { ctx, pg };
 }
 
 // ── Home starts with real choices, across both age groups. ──
+const shownH1 = () => [...document.querySelectorAll("h1")].filter((h) => h.offsetParent).map((h) => h.textContent).join("|");
 for (const age of ["3", "4", "5", "8"]) {
-  const { ctx, pg } = await home(age, true, true);
-  const st = await pg.evaluate(() => ({
-    heading: document.querySelector("h1")?.textContent || "",
+  const { ctx, pg } = await home(age, true, true, "/today.html");
+  const front = await pg.evaluate((f) => ({ first: document.querySelector("h1")?.textContent || "", shown: new Function("return (" + f + ")()")(), story: !!document.getElementById("questCard")?.offsetParent }), shownH1.toString());
+  ok("age " + age + ": Home opens on today's adventure, with the story card", front.first === "Today's adventure" && front.shown === "Today's adventure" && front.story, JSON.stringify(front));
+  await pg.goto("http://localhost:8178/today.html?view=arcade"); await pg.waitForTimeout(400);
+  const st = await pg.evaluate((f) => ({
+    heading: new Function("return (" + f + ")()")(),
     keys: [...document.querySelectorAll("#activityGroups .game-card")].map(e => e.dataset.game),
     groups: [...document.querySelectorAll("#activityGroups .activity-group")].map(e => e.dataset.group),
     playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
@@ -57,8 +63,8 @@ for (const age of ["3", "4", "5", "8"]) {
     run: sessionStorage.getItem("sona.run.v1"),
     books: document.getElementById("booksCard")?.textContent || "",
     bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
-  }));
-  ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
+  }), shownH1.toString());
+  ok("age " + age + ": Home's Arcade opens directly to Pick a game", st.heading === "Pick a game!" && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
   // 29 = the six released games, Rise Up, the twenty Say & Play games, and two parked.
   // The Say & Play games are Coming soon until each is rebuilt (Travis, 26
   // Sep 2026), so what is playable is the six first games plus any rebuilt;
@@ -81,11 +87,11 @@ for (const age of ["3", "4", "5", "8"]) {
   const {ctx, pg} = await home("7", false, true);
   await pg.evaluate(() => sessionStorage.setItem("sona.paidui", "1"));
   await pg.reload();
-  const st = await pg.evaluate(() => ({
-    heading:document.querySelector("h1").textContent,
+  const st = await pg.evaluate((f) => ({
+    heading:new Function("return (" + f + ")()")(),
     cards:[...document.querySelectorAll("#activityGroups .game-card")].map(e => ({key:e.dataset.game,locked:e.dataset.locked==="true",disabled:e.disabled,tier:Sona.gameAct(e.dataset.game).tier,comingSoon:!!Sona.gameAct(e.dataset.game).comingSoon,tag:e.querySelector(".game-access").textContent})),
     parkedInCatalog:Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon).length,
-  }));
+  }), shownH1.toString());
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
   ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+st.parkedInCatalog===29&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);

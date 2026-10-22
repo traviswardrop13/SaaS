@@ -1,9 +1,10 @@
 // QUEST1: the daily adventure (Travis, 12-13 Oct 2026: "a new quest or like
 // daily activity that they complete every day. That is only showing up for
 // that day ... a 14-day rotation"). One quest a day, one round of one game.
-// This suite pins the promises a child and a parent can see:
-//   - Home shows today's quest and only reads: loading it writes nothing and
-//     sends nothing (the Trophy Road card's rule);
+// Since 22 Oct 2026 the stories come first (STORY1, tests/storycoretest.mjs),
+// and Home's card is homestorytest's to play. This suite pins the game of the
+// day, the days a child spends on the 14 once the stories are finished (or on
+// a phone that shows none):
 //   - only a finished round of TODAY'S game finishes the day, once; tomorrow's
 //     is shown dark and cannot be played early;
 //   - a missed day loses nothing (the adventure waits), and day 14 goes back
@@ -11,7 +12,9 @@
 //   - a sticker a day, two on days 7 and 14, and never a coin (COIN3);
 //   - ages 3-4 get Feed Echo and Bubble Pop; a family without Premium is
 //     never sent to a game it cannot open;
-//   - every game the adventure can name finishes the quest from its end card.
+//   - every game the adventure can name finishes the quest from its end card;
+//   - every save merges into the record, so the stories a child finished stay
+//     finished.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -39,10 +42,15 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const origin = "http://127.0.0.1:" + server.address().port;
 const browser = await chromium.launch(launchOpts());
 
+// How many stories this build tells (STORY1): a Premium child is seeded as
+// having finished them all, so the game of the day is what this suite reads.
+const STORY_LEN = ((readFileSync(ROOT + "/sona.js", "utf8").match(/const STORY_DAYS = \[[\s\S]*?\n  \];/) || [""])[0].match(/\bid: "/g) || []).length;
 // A set-up child with every era stamp (CLAUDE.md: a seed missing one is
-// grandfathered and the paywall vanishes). `premium` opens every game;
-// without it the phone keeps the free version (a browser cannot sell here).
+// grandfathered and the paywall vanishes). `premium` opens every game (and
+// every story, which it is seeded as having finished); without it the phone
+// keeps the free version (a browser cannot sell here), and shows no story.
 function seedScript({ age, premium, quest, dayShift }) {
+  if (premium) quest = Object.assign({ s: STORY_LEN, ls: STORY_LEN - 1, lk: "game" }, quest || {});
   return `(() => {
     const SHIFT = ${(dayShift || 0) * 86400000};
     if (SHIFT) { const R = Date; const N = function (...a) { return a.length ? new R(...a) : new R(R.now() + SHIFT); };
@@ -62,44 +70,29 @@ async function open(page, opts) {
   await pg.goto(origin + page); await pg.waitForFunction(() => window.Sona && Sona.questToday);
   return { ctx, pg, errors };
 }
-const store = (pg) => pg.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; });
 
-// ── 1. Home shows today's quest, and only reads ──
-await section("Home's adventure card", async () => {
-  const { ctx, pg, errors } = await open("/today.html", { age: 7, premium: true });
-  await pg.waitForSelector("#questCard:not([hidden])", { timeout: 8000 }).catch(() => {});
-  const card = await pg.evaluate(() => { const c = document.getElementById("questCard"); return { hidden: c.hidden, day: c.querySelector("#questDay").textContent, line: c.querySelector("#questLine").textContent, img: (c.querySelector("img") || {}).src || "" }; });
-  ok("a new child's Home shows day 1 of 14", !card.hidden && /Day 1 of 14/.test(card.day), card);
-  ok("…with day 1's own line and its game's picture", /picnic/.test(card.line) && /home-fruit\.webp$/.test(card.img), card);
-  const before = await store(pg), sent = posted.length;
-  await pg.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
-  await pg.waitForTimeout(300);
-  const after = await store(pg);
-  ok("loading Home writes no adventure state", !("sona.quest.v1" in after), Object.keys(after));
-  ok("…and coming back to the front changes nothing either", JSON.stringify(before) === JSON.stringify(after));
-  ok("…and sends no adventure event", !posted.slice(sent).some((p) => /adventure/.test(p.body)), posted.slice(sent));
-  ok("Home has no page errors", errors.length === 0, errors);
-  const src = readFileSync(ROOT + "/today.html", "utf8");
-  ok("Home never finishes a quest (no questEnd in today.html)", !/questEnd/.test(src));
-  ok("the card's tap is the game card's own tap (launch: access, price, levels)", /card\.onclick=function\(\)\{if\(done\)return;launch\(game\);\}/.test(src));
-  await ctx.close();
-});
+// (Home's adventure card, and its handler pin, are homestorytest's: Home is
+// the daily story's card now. What stays here about Home is source-only,
+// in section 4: it never finishes a quest.)
 
-// ── 2. only today's game finishes the day, once, with a sticker and no coin ──
+// ── 1. only today's game finishes the day, once, with a sticker and no coin ──
 await section("finishing a quest", async () => {
   const { ctx, pg } = await open("/__sona", { age: 7, premium: true });
   const r = await pg.evaluate(() => {
+    const q0 = Sona.questToday();
     const coins0 = Sona.getCoins(), stk0 = Object.keys(Sona.stickersEarned()).length;
     const wrong = Sona.questEnd("tiles");                 // day 1 is Fruit Slice
     const right = Sona.questEnd("slice");
     const again = Sona.questEnd("slice");
     const q = Sona.questToday();
-    return { wrong, right, again, q, coins: Sona.getCoins() - coins0, stk: Object.keys(Sona.stickersEarned()).length - stk0, banner: (document.getElementById("sonaQuestBanner") || {}).textContent || "" };
+    return { q0, wrong, right, again, q, coins: Sona.getCoins() - coins0, stk: Object.keys(Sona.stickersEarned()).length - stk0, banner: (document.getElementById("sonaQuestBanner") || {}).textContent || "", rec: JSON.parse(localStorage.getItem("sona.quest.v1") || "null") };
   });
+  ok("with every story finished (" + STORY_LEN + "), today is the game of the day: day 1, Fruit Slice", r.q0.kind === "game" && r.q0.state === "open" && r.q0.day === 1 && r.q0.game === "slice" && r.q0.total === 14, r.q0);
   ok("another game's round does not finish the day", r.wrong === null, r.wrong);
   ok("a round of today's game finishes day 1", r.right && r.right.day === 1, r.right);
   ok("…once: a second round the same day finishes nothing", r.again === null, r.again);
-  ok("the card now says day 1 is done and shows day 2 dark", r.q.state === "done" && r.q.day === 1 && r.q.next && r.q.next.day === 2 && r.q.next.game === "tiles", r.q);
+  ok("the card now says day 1 is done and shows day 2 dark", r.q.kind === "game" && r.q.state === "done" && r.q.day === 1 && r.q.next && r.q.next.kind === "game" && r.q.next.day === 2 && r.q.next.game === "tiles", r.q);
+  ok("the save merges: day 2 is next, and the stories finished stay finished", r.rec && r.rec.i === 1 && r.rec.last === 0 && r.rec.lk === "game" && r.rec.s === STORY_LEN, r.rec);
   ok("one sticker for the day", r.stk === 1, r.stk);
   ok("no coins (they come from the chest and the road only)", r.coins === 0, r.coins);
   ok("a quiet note says so", /Day 1 adventure done!/.test(r.banner), r.banner);
@@ -108,7 +101,7 @@ await section("finishing a quest", async () => {
   await ctx.close();
 });
 
-// ── 3. the next day, a missed day, days 7 and 14 ──
+// ── 2. the next day, a missed day, days 7 and 14 ──
 await section("the days", async () => {
   const today = new Date(), p2 = (n) => String(n).padStart(2, "0");
   const ymd = (d) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
@@ -145,13 +138,13 @@ await section("the days", async () => {
   }
 });
 
-// ── 4. ages and access ──
+// ── 3. ages and access ──
 await section("ages and access", async () => {
   {
     const { ctx, pg } = await open("/__sona", { age: 4, premium: true });
     const list = await pg.evaluate(() => Sona.QUEST_DAYS.simple.map((d) => d.game));
     const q = await pg.evaluate(() => Sona.questToday());
-    ok("ages 3-4 get the little kids' adventure", q.game === "feed", q);
+    ok("ages 3-4 get the little kids' adventure", q.kind === "game" && q.game === "feed", q);
     ok("…made of Feed Echo and Bubble Pop only", list.length === 14 && list.every((g) => g === "feed" || g === "bubbles"), list);
     await ctx.close();
   }
@@ -159,7 +152,7 @@ await section("ages and access", async () => {
     const { ctx, pg } = await open("/__sona", { age: 7, premium: false, quest: { i: 2, last: 1, done: "2026-01-01" } });
     const r = await pg.evaluate(() => ({ q: Sona.questToday(), stack: Sona.gameAccess("stack").allowed, slice: Sona.gameAccess("slice").allowed }));
     ok("(a family without Premium cannot open Block Stacker here)", r.stack === false && r.slice === true, r);
-    ok("…so day 3 sends them to a game they can open, with that game's line", r.q.day === 3 && r.q.game !== "stack" && ["slice", "tiles"].includes(r.q.game) && r.q.line.length > 0, r.q);
+    ok("…so day 3 sends them to a game they can open, with that game's line", r.q.kind === "game" && r.q.day === 3 && r.q.game !== "stack" && ["slice", "tiles"].includes(r.q.game) && r.q.line.length > 0, r.q);
     await ctx.close();
   }
   {
@@ -173,7 +166,7 @@ await section("ages and access", async () => {
   }
 });
 
-// ── 5. every game the adventure can name finishes it from its end card ──
+// ── 4. every game the adventure can name finishes it from its end card ──
 {
   const hooks = { slice: "arcade-slice.html", tiles: "arcade-tiles.html", stack: "arcade-stack.html", run: "arcade-run.html", glide: "arcade-glide.html", rise: "arcade-rise.html", feed: "arcade-feed.html" };
   for (const [key, file] of Object.entries(hooks)) {
@@ -192,7 +185,9 @@ await section("ages and access", async () => {
   const block = (sona.match(/QUEST1: the daily adventure[\s\S]*?\/\/ ── Native audio capture/) || [""])[0];
   ok("the adventure mints no coins and asks for nothing new", block.length > 0 && !/addCoins|mintCoins|logAttempt|bumpReps|gameRep\(|recordRung/.test(block.replace(/\/\/.*$/gm, "")));
   ok("its sticker is the next one, never random", /awardNextSticker\(\)/.test(block) && !/awardRandomSticker|Math\.random/.test(block.replace(/\/\/.*$/gm, "")));
-  ok("its lines say nothing about HOW to talk (cueing is Rachel's)", !/louder|slowly|strong|stretch|say it/i.test(JSON.stringify((block.match(/const QUEST_DAYS = \{[\s\S]*?\n  \};/) || [""])[0])));
+  ok("its lines say nothing about HOW to talk (cueing is Rachel's), the stories' hooks included",
+    !/louder|slowly|strong|stretch|say it/i.test(JSON.stringify((block.match(/const QUEST_DAYS = \{[\s\S]*?\n  \};/) || [""])[0]) + JSON.stringify((block.match(/const STORY_DAYS = \[[\s\S]*?\n  \];/) || [""])[0])));
+  ok("Home never finishes a quest (no questEnd anywhere in today.html, comments included)", !/questEnd/.test(readFileSync(ROOT + "/today.html", "utf8")));
   const relay = readFileSync(ROOT + "/../app/api/track/route.ts", "utf8");
   ok("its event is allow-listed by the relay", relay.includes('"adventure day done"'));
   ok("the adventure is each child's own (PER_KID)", /"sona\.quest\.v1"/.test(sona.slice(sona.indexOf("const PER_KID"), sona.indexOf("const PER_KID") + 4000)));

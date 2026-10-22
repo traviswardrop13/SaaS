@@ -53,7 +53,7 @@ for (const [dev, w, h] of PORTRAIT) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Leo", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
     localStorage.setItem("sona.micok", "1");
   });
-  let m = await measure(page, "today.html");
+  let m = await measure(page, "today.html?view=arcade");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
   ok(dev + " today: library cards have a usable touch area", m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 80, JSON.stringify(m.firstCard));
   ok(dev + " today: every playable game's card (none Coming soon) remains visible by scrolling", m.cards === m.playable && m.playable >= 11 && !m.scrollLocked, JSON.stringify(m));
@@ -79,14 +79,16 @@ for (const [dev, w, h] of PORTRAIT) {
   await page.close();
 }
 
-// The library is intentionally taller than a phone. Its final game and parked
-// book shelf must be genuinely reachable, with no fixed action covering them.
+// The library (Home's Arcade since 22 Oct 2026, STORY1; Home's own first
+// screen is measured by homestorytest) is intentionally taller than a phone.
+// Its final game and parked book shelf must be genuinely reachable, with no
+// fixed action covering them.
 {
   const page = await browser.newPage({viewport:{width:320,height:568}});
   await page.addInitScript(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({childName:"Leo",childAge:"4",focusSounds:["P"],onboarded:true,voiceOn:false}));
   });
-  await measure(page,"today.html");
+  await measure(page,"today.html?view=arcade");
   const cards = page.locator("#activityGroups .game-card");
   const last = cards.last();
   await last.scrollIntoViewIfNeeded();
@@ -109,7 +111,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Leo", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.micok", "1");
   });
-  let m = await measure(page, "today.html");
+  let m = await measure(page, "today.html?view=arcade");
   ok(dev + " today: game cards have a real size in landscape", m.cards === m.playable && m.playable >= 11 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 80, JSON.stringify(m));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");

@@ -1,0 +1,64 @@
+/* Wind-Up Toys: Grandpa Bear's toy shop on one canvas, the winding dial at the
+   foot of it, and the engine's turn card over it while a word is asked. The
+   teal and cream come from /action.css (through sayplay.css); none is pasted
+   here. Everything measured by windup.js (the dial's focus ring, the buddy)
+   has no transition, so a box never reports a size it is on its way from. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#windupCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}
+#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}
+#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}
+#ttl{font-size:16px;}
+#dots{gap:4px;padding:13px 10px;}
+#dots i{width:7px;height:7px;}
+#dots i.on{background:var(--act);}
+#windupBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:14px;right:14px;width:fit-content;max-width:calc(100% - 28px);margin:0 auto;padding:8px 13px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.5vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
+/* the buddy on the shelf: decoration, never in a finger's way */
+#windupBuddy{position:absolute;z-index:2;left:0;top:0;width:60px;height:60px;object-fit:contain;object-position:50% 100%;pointer-events:none;transition:none;filter:drop-shadow(0 3px 4px rgba(90,58,30,.25));}
+#windupBuddy:not([src]),#windupBuddy[hidden]{display:none;}
+#windupBuddy.badge{border-radius:50%;object-position:50% 50%;}
+#windupBuddy.hop{animation:windupHop .9s cubic-bezier(.3,1.5,.5,1);}
+@keyframes windupHop{0%,100%{transform:translateY(0);}35%{transform:translateY(-14%);}}
+@media (prefers-reduced-motion: reduce){#windupBuddy.hop{animation:none;}}
+/* the dial's keyboard handle: an invisible round button over the dial, so a
+   keyboard can reach it; the finger winds on the canvas underneath */
+#windupDial{position:absolute;z-index:4;transform:translate(-50%,-50%);padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;pointer-events:none;transition:none;}
+#windupDial:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+#windupControls{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:12px;align-items:stretch;pointer-events:none;}
+#windupControls button{pointer-events:auto;}
+#windupHearStep{width:58px;min-width:58px;min-height:58px;display:grid;place-items:center;padding:8px;}
+#windupHearStep svg{width:27px;height:27px;}
+#windupHelp{min-height:58px;min-width:150px;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 14px;touch-action:manipulation;}
+#windupHelp img{width:34px;height:38px;object-fit:contain;flex:none;}
+.windup-help-label{display:flex;flex-direction:column;gap:5px;align-items:center;min-width:0;}
+.windup-help-label>span{font-family:"Baloo 2",sans-serif;font-size:19px;font-weight:800;line-height:1.05;}
+#windupPower{display:block;width:70px;height:4px;background:rgba(255,255,255,.28);border-radius:99px;overflow:hidden;}
+#windupPower[hidden]{display:none;}
+#windupPowerFill{display:block;height:100%;background:var(--cream-card);}
+#windupControls button:disabled{opacity:.52;cursor:default;}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}
+#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}
+#hear svg{width:24px;height:24px;}
+/* the word's picture (crafted-words.js: a span holding a cropped sheet). The
+   rules that size it live in the crafted-* sheets, which this page does not
+   load: without these both spans stay inline at 0x0, and a child who can't
+   read sees an empty square beside the word. As crafted-hoops.css does. */
+#pic{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:3px;}
+#pic>.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;width:100%!important;height:100%!important;}
+#pic .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #windupControls{visibility:hidden;}
+body:not([data-phase=play]) #windupControls button{pointer-events:none;}
+.windup-intro{width:100%;max-height:150px;aspect-ratio:16/9;object-fit:cover;border-radius:20px;border:3px solid var(--cream-card);box-shadow:0 4px 0 var(--cream-line);}
+.windup-intro.echo{object-fit:contain;background:#c98d4f;}
+#startTitle{font-family:"Baloo 2",sans-serif;font-size:31px;line-height:1.1;font-weight:800;}
+.ovl{padding:20px;}
+.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}
+button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:14px;}#top{gap:6px;}#dots{gap:3px;padding:13px 8px;}#dots i{width:6px;height:6px;}#windupControls{left:12px;right:12px;}#windupHelp{min-width:140px;padding:6px 10px;}#windupHelp img{width:29px;height:34px;}.windup-help-label>span{font-size:17px;}#windupBanner{font-size:17px;padding:7px 11px;}}
+@media(max-height:640px){#windupBanner{top:calc(69px + env(safe-area-inset-top));}#windupControls{bottom:calc(14px + env(safe-area-inset-bottom));}#windupHearStep,#windupHelp{min-height:52px;}#windupHearStep{width:52px;min-width:52px;}.windup-intro{max-height:95px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(7px + env(safe-area-inset-top));}#windupBanner{top:calc(60px + env(safe-area-inset-top));font-size:15px;padding:5px 11px;}#windupControls{bottom:calc(10px + env(safe-area-inset-bottom));}#windupHelp,#windupHearStep{min-height:48px;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}.windup-intro{display:none;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}

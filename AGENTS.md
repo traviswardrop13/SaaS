@@ -7,8 +7,10 @@ how Travis wants to be talked to — and if the two ever disagree, `CLAUDE.md`
 wins. Read it before your first edit; it is not optional context.
 
 > **Where the product is today (22 Oct 2026):** Pricing is on (a trial first;
-> see CLAUDE.md). Home is the silent game library: all 29 games are open (the
-> eighteen rebuilt ones since 22 Oct 2026), and the books are on. CLAUDE.md is
+> see CLAUDE.md). Home leads with today's story (STORY1, Premium) above two
+> doors, the Arcade and the Books, and stays silent: all 29 games are open in
+> the Arcade (the eighteen rebuilt ones since 22 Oct 2026), and the books are
+> on. CLAUDE.md is
 > the current rulebook. The SLP dashboard is browser-only and stays separate
 > from the installed family app.
 

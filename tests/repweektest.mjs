@@ -157,7 +157,9 @@ await scenario("Home's corner", async () => {
   ok("it is a real button with a full-size tap target", s.tag === "BUTTON" && s.pill.h >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l && s.pill.t >= s.gear.t - 1 && s.pill.b <= s.gear.b + 1, s);
   ok("on a phone the 'Sona' wordmark steps aside for the count and the Grown-ups button", s.label === "none", s);
-  ok("the page's first heading is still Pick a game!", s.firstH1 === "Pick a game!", s.firstH1);
+  // Home leads with today's story since 22 Oct 2026 (STORY1); "Pick a game!"
+  // heads the Arcade, one tap away
+  ok("the page's first heading is Today's adventure", s.firstH1 === "Today's adventure", s.firstH1);
   ok("Home stores nothing new about reps or weeks", JSON.stringify(before) === JSON.stringify(keys), { before, keys });
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
   await page.screenshot({ path: OUT + "/repweek-home-375.png" });

@@ -58,6 +58,21 @@ const nextConfig = {
       { source: "/dino.js", headers: noStore },
       { source: "/bubbles.js", headers: noStore },
       { source: "/crafted-road.css", headers: noStore },
+      // The daily story (STORY1, 22 Oct 2026): the three games' play scripts
+      // and sheets, the story's scenes and its player's sheet, the say-it
+      // helper whose SayIt.line the player calls by name, and the recorded
+      // voice's manifest (a line whose words change gets a new file name, so
+      // a stale manifest would send a fresh line to the live voice for good).
+      { source: "/lighthouse.js", headers: noStore },
+      { source: "/windup.js", headers: noStore },
+      { source: "/bridge.js", headers: noStore },
+      { source: "/lighthouse.css", headers: noStore },
+      { source: "/windup.css", headers: noStore },
+      { source: "/bridge.css", headers: noStore },
+      { source: "/adventures.js", headers: noStore },
+      { source: "/crafted-adventure.css", headers: noStore },
+      { source: "/arcade-sayit.js", headers: noStore },
+      { source: "/assets/adventure/voice/manifest.js", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },
       { source: "/apple-touch-icon.png", headers: noStore },
       { source: "/icon-192.png", headers: noStore },

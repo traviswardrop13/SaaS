@@ -59,17 +59,18 @@ await page.goto("http://localhost:8132/coach-call.html?dev=1");
 await page.waitForTimeout(700);
 ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementById("capOvl").classList.contains("show")));
 
-// home card
-await page.goto("http://localhost:8132/today.html");
+// home card (the catalog is Home's Arcade since 22 Oct 2026, STORY1)
+await page.goto("http://localhost:8132/today.html?view=arcade");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
   keys:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
   // every catalog game but the parked ones (Home hides Coming soon, 19 Oct 2026)
   playable:Object.keys(Sona.GAME_ACTS).filter(k=>!Sona.GAME_ACTS[k].comingSoon).length,
-  title:document.querySelector('h1').textContent
+  title:document.getElementById('arcadeTitle').textContent,
+  shown:!!document.getElementById('arcadeTitle').offsetParent
 }));
 ok("Home offers games and never exposes Coach Call",
-  card.keys.length===card.playable&&card.playable>=11&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
+  card.keys.length===card.playable&&card.playable>=11&&card.title==='Pick a game!'&&card.shown&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

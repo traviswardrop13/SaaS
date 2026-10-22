@@ -145,7 +145,9 @@ const present = existsSync(ROOT + "/activities.html");
 ok("the play library is a shipped page", present);
 let hasContract = false;
 await section("library prerequisites", async () => {
-  const { ctx, pg } = await fixture({ path: "/today.html" });
+  // the picker is Home's Arcade since 22 Oct 2026 (STORY1): Home leads with
+  // today's story, and its Arcade door opens this (homestorytest)
+  const { ctx, pg } = await fixture({ path: "/today.html?view=arcade" });
   try {
     hasContract = await pg.evaluate(() => typeof window.Sona?.activityLibrary === "function");
     ok("Sona provides the activity library content contract", hasContract);
@@ -158,7 +160,7 @@ await section("library prerequisites", async () => {
       ok("…so Peekaboo and every rebuilt Say & Play game is playable", ["peekaboo", ...sayLittle, ...sayBig].every((key) => playableKeys.includes(key)), playableKeys);
       ok("…and the six first games and Rise Up are never Coming soon", ["feed", ...adventureKeys, "rise"].every((key) => playableKeys.includes(key)), playableKeys);
     }
-    ok("Home itself presents the game picker, with a card for every game but the parked ones", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === homeKeys.length, await pg.locator("#activityGroups button[data-game]").count());
+    ok("Home's Arcade presents the game picker, with a card for every game but the parked ones", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === homeKeys.length, await pg.locator("#activityGroups button[data-game]").count());
   } finally { await ctx.close(); }
 });
 
