@@ -172,7 +172,7 @@ changing one. What follows from the rule:
     practice you can do at home.", the second for both No and Not yet; Travis took "It does not replace a speech
     therapist." off the second on 15 Oct 2026).
     **Days a week** (3 days / 5 days / Every day) is a real setting, the
-    child's weekly goal (`profile.weeklyGoal`, the one Settings shows), and
+    child's weekly goal (`profile.weeklyGoal`, the one Progress shows), and
     Skip leaves that goal as it was. The wording of both, the two sentences
     and the ready screen are Rachel's to change; so is how much practice a
     family is asked for.
@@ -320,8 +320,18 @@ changing one. What follows from the rule:
   one ("Your free days end soon", RCHOOK1, below), but only to a parent who
   gave the app an email, so the price screen still promises none, and the
   words email, remind and notify may not appear on it (`pricescreentest`,
-  `setupbuytest`, `planwordstest`). A third row promising it, for a family
-  it is truly armed for, is Travis's call. "Paywall viewed" and the one-shot (`planShown`) count only once
+  `setupbuytest`, `planwordstest`), **with one exception since 22 Oct 2026**
+  (Travis: setup asks iPhone for its Allow box, so the phone itself reminds,
+  NOTIFY1): one line under the button and its small print, **"We'll remind
+  you the day before it ends."**, only when `Sona.trialReminderOn(picked
+  row)` says this phone will show it AND the picked row is a free trial
+  (`planWords`' `headsUp`, painted into `#iapAhead`; the page feature-checks
+  the function), and only on a row whose free days are certain (`plan.sure`;
+  on a "for new subscribers" row Apple may charge today, with no trial and
+  so no reminder). Never on a charged-today row or the one payment, never
+  otherwise; `planwordstest` holds it to that word for word and
+  `pricescreentest` (1d, 15c) plays it. The words are Travis's and Rachel's
+  to change. "Paywall viewed" and the one-shot (`planShown`) count only once
   a priced card is on screen.
 - **THE PRICE SCREEN IS ONE ROW, NO DATE, AND AN X (Travis, 6 Oct 2026, with
   a reference paywall: "too many words ... I don't want it to say Friday
@@ -350,8 +360,8 @@ changing one. What follows from the rule:
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
   **Since 19 Oct 2026 the yearly plan is a second row above this one**
-  (below, "TWO PLANS ON THE IPHONE AGAIN"). Lifetime still needs a new App
-  Store product first (Travis's task).
+  (below, "TWO PLANS ON THE IPHONE AGAIN"), **and since 22 Oct 2026 the one
+  payment a third row under it** (below, "ONE PAYMENT, A THIRD ROW").
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and the Books card says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
@@ -511,8 +521,12 @@ charter price, and **it is the one picked when the plan screen opens**.
   steps aside for it; monthly keeps its own line, which says how to cancel.
   What Apple requires stays: each plan's price and period, the renewal, where
   to cancel, and Restore Purchases, Terms and Privacy as links. The button is
-  setup's lighter teal (`.planbuy .btn.go` in `crafted-family.css`, "for
-  now": painted art for it has not arrived).
+  setup's teal (`.planbuy .btn.go` in `crafted-family.css`, "for
+  now": painted art for it has not arrived), since 22 Oct 2026 setup's
+  BRIGHTER teal (Travis: "not sure I love the greenish button"; a
+  `#16c2be → #0e9c99` face, a `#0a8784` edge and shadow, a white label with
+  a `#087572` shadow), so the two buttons a parent taps in a row still
+  match (`pricescreentest` 14).
 - **Monthly never touches the charter.** `/api/checkout` has its own short
   branch for it — its own amount, a month interval, no `trial_period_days`,
   **no `tier` stamp**, inline `price_data` only (never an env Price), and it
@@ -576,6 +590,68 @@ This replaces "one plan, no pick" below.
 - **A parked game is never offered:** `?from=<a Coming soon game>` is
   Settings › Your plan, behind the check.
 `pricescreentest` (1b, 15, 15b) and `planwordstest` (2b) play both rows.
+
+**ONE PAYMENT, A THIRD ROW (22 Oct 2026, iOS 1.0.9)** (Travis: "ok go build
+it all", the one-time purchase on the price screen; "i dont wanna say
+lifetime"). Apple's card can show a third row, under monthly.
+- **The product:** `IAP_PRODUCTS.lifetime = "com.speaksona.app.lifetime"`, a
+  NON-CONSUMABLE in the same `full` entitlement, App Store name "Sona
+  Premium, One Payment", $59.99 (Travis's to set in App Store Connect; the
+  card shows the store's price). The id is the store's and never shown. **It
+  is July 2026's "Sona Lifetime" ($79.99) product, edited, not a new one:**
+  App Store Connect never reuses an id, and Apple's buy sheet shows the
+  display name, so a leftover "Sona Lifetime" puts the word on screen.
+- **No "Best value" beside it:** the yearly row's tag compares twelve monthly
+  prices, so it goes whenever the one payment shows at a price at or under
+  the year's, or the two cannot be compared (one payment $59.99 under a
+  "$59.99/yr · Best value" would be a false comparison).
+- **Shown only by the yearly row's rule:** RevenueCat's CURRENT offering
+  lists it (among its packages or as its `lifetime` package; one
+  `getOfferings` read serves both rows, `_offered`) AND the store returns it
+  by its own id with a price (`iapProduct("lifetime")`, category
+  `NON_SUBSCRIPTION`). Missing, slow (the same 1.2 s grace), throwing, an
+  unnamed product, no price, or one that claims free days: no row, the card
+  exactly as before. No monthly product sells nothing, this row included.
+  It is `plan.life` on the Plan `storePlan()` answers: always "paid", `per`
+  "once", no eligibility asked.
+- **Its words (`planWords`, Travis's to change):** "One payment" over "Yours
+  to keep. No subscription.", the store's price with no period; picked, the
+  check line "One payment · No subscription", the button "Get Sona Premium —
+  $59.99" and the small print "One payment of $59.99. No subscription."
+  Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
+- **The pick:** yearly, monthly, then the one payment, top to bottom; yearly
+  picked on arrival (monthly without a yearly row), **never the one
+  payment**; a row that arrives on a card a parent is reading comes in
+  unpicked, and one that goes away while picked takes the pick to monthly
+  (`take()` keeps the row the parent was reading while it is there). The fit
+  holds for every row picked (`APPLE.others`, `APPLE.alt(kind)`), so a tap on
+  any row moves no row; for three rows on the smallest phone in the longest
+  shape one more level closes the rows up (`fit9`, last, never reached with
+  one or two rows). The arrow keys go round all three.
+- **Buying and keeping it:** `Sona.buyPlan(plan.life)` buys it through the
+  same one purchase call (`purchaseStoreProduct`; an old plugin's
+  `purchaseProduct` with type "inapp"); success is the `full` entitlement on;
+  the list hears "paid" (`_tellPlan`); Restore finds it by the same
+  entitlement; it never arms the trial reminder. RevenueCat tells the server
+  with `NON_RENEWING_PURCHASE`, already "paid" in `lib/revenuecat.ts` (the
+  welcome series stops; no note is queued: nothing ends).
+- **The web sells no such thing** (`/api/checkout` is subscription mode only,
+  `iaptest`): the one payment is Apple's alone.
+- **The Premium page and Settings › Your plan:** in the app the Premium
+  page's price line names the one payment when the store's answer carries
+  it ("…, or one payment"), and the cancel line says a one payment has
+  nothing to cancel.
+- **Travis's tasks (NATIVE.md, "One payment, a third row"):** the existing
+  non-consumable edited in App Store Connect, submitted with the build; in
+  RevenueCat, attach it to `full`, THEN add its package to the current
+  offering (offered but not attached, Apple would take the money and open
+  nothing). **Travis's to know:** a family who bought the one payment and
+  still has an old subscription that later ends would be told "We miss you
+  at Sona" by RCHOOK1 (its EXPIRATION does not know of the one payment). It
+  cannot happen from Sona's own card (an Apple ID with Premium is never sold
+  a second plan), only from a subscription bought somewhere else beside it.
+`planwordstest` (2c), `pricescreentest` (1c, 15c) and `rcwebhooktest` (3b)
+play it.
 
 **THE IPHONE SELLS ONE PLAN: 3 DAYS FREE, THEN $9.99 A MONTH** (Travis, 5 Oct
 2026: "get rid of the annual option and update the copy so that it says three
@@ -2306,15 +2382,13 @@ card between rounds said the bare sound. What is built is the first slice:
   card may ask it).
 - **How far a child's cards go:** one step past what they have earned on the
   practice page (so a new child gets a syllable on both cards, and the word
-  after two clean practice rounds), or what a grown-up picked in Settings.
-  Never below what the "Say it 5 times" page just asked: that page hands over
+  after two clean practice rounds). (A grown-up could pick it in Settings
+  until 22 Oct 2026; see "The game-card picker is gone" below.) Never below what the "Say it 5 times" page just asked: that page hands over
   the step it ended on and its item (`sona.boost.level`, `sona.boost.ask`),
   and a card repeats that syllable or word instead of adding a new target.
-- **Two kinds of child never get the harder cards** (`Sona.gameHold` says which, and
-  the Settings line reads it): **a child aged 2 to 4**, whatever was earned
-  or saved (Home shows a four-year-old Fruit Slice too, and Settings hides
-  the picker for that age, so the cards had to stay on the bare sound for
-  hiding it to be honest), and **any child while Sona's sound is off**
+- **Two kinds of child never get the harder cards** (`Sona.gameHold` says
+  which): **a child aged 2 to 4**, whatever was earned (Home shows a
+  four-year-old Fruit Slice too), and **any child while Sona's sound is off**
   (only Echo's voice can model a syllable).
 - **Switched on one sound at a time.** `gamecontent.js` holds three lists
   Rachel can read: `GAME_SYL_ON` (today `["R"]`), `GAME_SKIP` (never asked:
@@ -2352,22 +2426,20 @@ card between rounds said the bare sound. What is built is the first slice:
   tell "ree" from "rrrr" or "rot", so harder means what Echo asks, never what
   is checked, and Echo never says "correct". Nothing said in a game moves the
   earned level, and a heard card is exactly one game rep, never practice data.
-- **Settings has one picker** under Word position: "Between rounds in a game,
-  Echo asks for" (Sona decides · Just the sound · Sound, then syllables ·
-  Sound, syllables, word), saved per child as `profile.gameLevel`. It is a
-  ceiling for the cards and never writes the earned level. The choices are
-  short on purpose: a phone's closed picker cut the longer ones off ("Sona
-  decides (starts easy, gets h…") and two of them then read the same;
-  `kidtest` measures them at 320 px. The wording is Travis's to change. Its
-  grey line is painted from the same reader, for the sound a game will
-  really ask (the homework's sound first), so it shows only what will be
-  asked, and it names Fruit Slice because that is the only game that does
-  this yet. When something holds the cards to the bare sound the line says
-  what: Sona's sound is off, the sound is not switched on yet, or the place
-  in the word being practised has no syllables switched on yet ("Fruit Slice
-  has no syllables at the end of words yet, so the cards skip them"; it
-  names the place, whoever picked it). Hidden for a child
-  aged 2 to 4, whose cards keep the bare sound whatever is saved.
+- **The game-card picker is gone** (Travis, 22 Oct 2026: "simplify settings
+  ... get rid of as much as we possibly can"). From 2 to 22 Oct Settings had
+  "Between rounds in a game, Echo asks for" (Sona decides · Just the sound ·
+  Sound, then syllables · Sound, syllables, word), saved per child as
+  `profile.gameLevel`, a ceiling for the cards. Now every child's cards
+  follow what they earned, and `getProfile()` drops a saved pick (the parent
+  code's way), because a pick nobody can change would hold that child's
+  cards at that step for good. **For Rachel:** a child
+  aged 5 or more on R whose grown-up had picked "Just the sound" is asked a
+  syllable ("ree") on Fruit Slice's cards at once (a new child's cards start
+  one step past what they earned, which is a syllable), and one whose
+  grown-up picked the word drops to syllables until the word is earned.
+  Whether a grown-up should set the step by hand is still her open call
+  (below); this build has no control for it.
 - **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
   Sound Sprint, Flappy Glide, Rise Up: Echo says their cards out loud, but
   they ask only the bare sound; each needs Fruit Slice's one line for the
@@ -2380,15 +2452,21 @@ card between rounds said the bare sound. What is built is the first slice:
   eight-second step back, and whether the card after a step back should
   repeat the same ask, as built, or go lower); Echo's computer voice
   modelling "ree" and "rot" rather than her own recordings; that a card asks
-  for "rot" but cannot check it; whether a grown-up may set the step by hand;
+  for "rot" but cannot check it; whether a grown-up may set the step by hand
+  (the picker went on 22 Oct 2026 with the Settings simplification; the
+  question is still hers);
   what the cards ask under end-of-word homework; and whether a child aged 2
   to 4 should ever be asked a syllable (today: never).
 `tests/gameasktest.mjs` holds the reader to these rules; `slicetest`,
 `micquietgamestest` and `iphonepolishtest` play the card; `soundmap` pins the
-three lists and `kidtest` the picker.
+three lists and `kidtest` that Settings has no picker and an old pick is
+dropped.
 
-**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal; Settings keeps the
-week-by-week total, and Progress keeps sound practice apart from play. One count, `Sona.repWeeks`/`weekReps`:
+**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal, and a
+tap on it opens the grown-ups check, then Progress; Progress keeps sound practice apart from play. (Settings
+kept an eight-week chart and the best week until 22 Oct 2026, when the
+Settings simplification took the card out; the rep line and the daily goal
+moved to Progress.) One count, `Sona.repWeeks`/`weekReps`:
 the practice page's voiced tries (`outcomes().days[].tries`, only days since
 tries were counted, 22 Sep 2026) **plus every sound a game asked for and
 heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
@@ -2405,7 +2483,7 @@ silence never does. **Progress keeps practice apart:** its "tries" and
 everything it hands a clinician (the summary, the card, "Free-play games are
 not included") are the practice page's alone (`weekReps(offset, sound,
 true)`), with a "Plus N said out loud in games and books" line so the week still adds
-up to the Settings weekly total. `tests/repweektest.mjs` pins it.
+up to the week's whole count (`Sona.weekReps(0)`). `tests/repweektest.mjs` pins it.
 
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
@@ -2623,7 +2701,7 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   goal**: a family goal of 100 earns no more, a speech therapist's 10 a day no
   less (at the default goal of 30, one trophy a rep). They are never spent and
   never lost; the ledger pays only the difference from what today already
-  paid, so nothing pays twice (a goal lowered in Settings that fills today
+  paid, so nothing pays twice (a goal lowered on Progress that fills today
   pays the day at once, from reps already said). "Reset progress" leaves
   them. A child already on Sona started with what their reps since 21 Sep
   2026 earned; a restore that brings history but no trophy record counts
@@ -2727,8 +2805,10 @@ a parked game has none.
 - **One tap still plays.** The first tap on a game after a new level opens
   shows "Pick a level" for that game, once (`playLevelAsk`); every tap after
   plays the level last picked. The road page's "Game levels" changes it. A
-  card playing Level 2 or 3 carries a small numeral and pips. A grown-up's
-  "Level 1 only" (Settings, Buddy & world) turns it all off.
+  card playing Level 2 or 3 carries a small numeral and pips. (A grown-up's
+  "Level 1 only" in Settings went on 22 Oct 2026 with the Settings
+  simplification; a cap saved before is ignored on read, since it rides in
+  backups, and `setPlayLevelCap` is gone.)
 - **Level 1 is today's game, byte for byte:** each page keeps its Level 1
   tables and best lines on their own lines and overrides after them.
 - **Finger play only.** A level never changes what a child says or how often,
@@ -2748,8 +2828,9 @@ a parked game has none.
 
 **The Buddy Shop and the kept buddies (SHOP1, OWN1, 11 Oct 2026)** (Travis,
 9 Oct 2026: "a currency so they can buy stuff like characters"). The buddy
-screen (`customize.html`, still reached from Home's buddy and Settings ›
-Buddy & world) is the Buddy Shop: buddies, hats and places.
+screen (`customize.html`, reached from Home's buddy and the Trophy Road's
+Buddy Shop link; Settings' Buddy & world card went on 22 Oct 2026) is the
+Buddy Shop: buddies, hats and places.
 - **Who keeps what.** `_keepBuddies()`, a one-shot sweep in
   `_keepFreeVersion`'s shape, runs right after it on load: a device already
   set up on its first load of this build is stamped `sona.buddyset.v1`
@@ -2786,9 +2867,8 @@ Buddy & world) is the Buddy Shop: buddies, hats and places.
   trophies and "Find it on the Trophy Road!". No dialogs, no voice, no price
   sign and no "buy" in a child's words; no confetti under Reduce Motion.
   `sona.js` sends "shop item got" (the kind, the item and its coin price,
-  never a balance). Settings' Buddy & world card says where trophies and
-  coins come from, and "Reset progress" says it keeps trophies, buddies and
-  stickers (it resets the practice steps and the coins).
+  never a balance). "Reset progress" in Settings says it keeps trophies,
+  buddies and stickers (it resets the practice steps and the coins).
 - **Setup's hidden buddy step** offers only the buddies the family has (the
   starters on a new phone).
 `trophytest` pins the sweep, the prices, buying and giving back (no
@@ -2866,7 +2946,7 @@ the tests first. Whether to switch it on is Travis's, after that.
 - **What it is.** One monthly board of the Sona kids whose grown-up turned it
   on, counting **goal days**: a day with the daily goal's stamp
   (`sona.goaldays.v1`) and at least `BOARD_MIN_REPS` (10) reps, so practice,
-  games and books all count, as Settings already tells parents (the 10 is
+  games and books all count, as Progress already tells parents (the 10 is
   Rachel's to confirm). The top ten places and the child's own entry; ties
   share a place, and a tie too long to list is one line ("+38 more kids with
   11 days"). Other children's counts are a snapshot taken once a UTC day, so
@@ -3166,9 +3246,33 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Progress · Settings · Talk to us. The old three-door pop-up is gone; its plan
   and trial lines now live in Settings > Account.
 
-- **Settings is short** (Travis, 30 Sep 2026).
-  - Reps in one line: "A rep is one time <name> says their sound or word out
-    loud, in practice, a game or a book. Silence never counts." (`repweektest`.)
+- **Settings is the minimum** (Travis, 22 Oct 2026: "simplify settings.
+  It's too busy. Let's get rid of as much as we possibly can, including like
+  we want the minimum viable features"; it was already "short" on 30 Sep).
+  Top to bottom: **Your family** (switch, add, remove a child); **one card
+  for the child picked** (name, age, sounds to practice, Word position and
+  "Each day's practice starts with", each with its one grey line, and
+  "Reset progress" last: the two pickers are what Travis asked for the same
+  day, see "Word positions and the practice steps"); the "Sound is off in Sona."
+  line only while muted; the Practice Board card only while it is live or
+  owed; **Account** (the plan line with See Premium and Restore, then
+  Privacy · Terms); the clinician's "Open dashboard →" only for a
+  clinician in a browser; and **"Moving to a new phone?"** at the foot.
+  Gone from it: the week-by-week reps card (the daily goal and the rep line
+  moved to Progress, beside the days-a-week buttons; Home's rep count opens
+  Progress), the game-card picker and the "Level 1 only" picker (saved
+  values are ignored, so nobody is stuck: see each one's section), the Buddy
+  & world card (the shop is Home's), the play-mode note, the age line, the
+  page's subtitle, the divider, "Help" (the Talk to us tab is the same
+  page), the backup's "Download file", and the clinician's code, key and
+  message (the dashboard has them). **The "Founder key" link shows only
+  after the five taps on "Account"** (the mic-numbers taps), on that visit;
+  a founder still sees "Founder access ✓". Before adding a control back,
+  ask whether a parent needs it here; a saved value with no control left
+  must be ignored on read, never left to stick.
+  - Reps in one line, on Progress since 22 Oct 2026: "A rep is one time
+    <name> says their sound or word out loud, in practice, a game or a
+    book. Silence never counts." (`repweektest`.)
   - No volume slider: the phone's side buttons set the level ("why can't we
     just use our phones to adjust volume on the side of our iphone?").
     `getProfile()` plays any saved level above zero at the one normal level,
@@ -3192,7 +3296,8 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   22 Oct 2026). Every position is open to families again; the 1 Oct closing
   ("not built yet") is over. See "Word positions and the practice steps"
   below for the rules, the switches and Rachel's calls (`posladdertest`,
-  `progtest`, `hwtest`, `kidtest`).
+  `progtest`, `hwtest`, `kidtest`). Settings' picker hides itself only while
+  `FAMILY_POSITIONS` opens a single position (then one line says which).
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).
@@ -3428,9 +3533,9 @@ accepted game and book asks. **The default is 30 reps a day at every age**
 (Travis, that evening: "we'll just set the default to thirty reps per day.
 Right now it's set to fifty", which it was for ages 5–8; "if they say three
 days per week, that will make their goal ninety reps a week"), and 4 days a
-week for a family never asked. Setup asks the days (3, 5 or every day); in
-Settings grown-ups choose 3, 4, 5 or every day and a daily number, and a
-number picked there is kept. **"Every day" is 7 again**: for a few hours on 5
+week for a family never asked. Setup asks the days (3, 5 or every day); on
+Progress grown-ups choose 3, 4, 5 or every day and a daily number (in
+Settings until 22 Oct 2026), and a number picked there is kept. **"Every day" is 7 again**: for a few hours on 5
 Oct a saved 7 read as 5. An
 active clinician assignment keeps precedence over the family's daily number.
 These are product defaults, not a research-established treatment dose.
@@ -3447,8 +3552,8 @@ practice days for the clinical summary; `.metDays/.goalDone` serve the goal.
 Game and book reps remain outside outcomes, clinician summaries, shared
 progress and homework reports. They earn trophies (TROPHY1), and a goal day
 they complete can count on the Practice Board if a grown-up turned it on
-(BOARD2; the board ships switched off). Settings explicitly explains
-the homework report's practice-only count. No child name enters goal analytics.
+(BOARD2; the board ships switched off). Progress, under the daily goal,
+explicitly explains the homework report's practice-only count. No child name enters goal analytics.
 `dailygoaltest`, `repweektest`, `momweek` and `booktest` pin the boundaries.
 
 Rachel's follow-up review belongs in the development record, not a warning
@@ -3459,5 +3564,5 @@ flow or an approval screen for families:
 | Daily default |30 at every age, adjustable|
 | What a rep means |Voiced practice try, accepted game ask or accepted book word; no silence|
 | Homework and play |Home includes play toward the displayed goal; clinician report stays practice-only|
-| Weekly target |4 days by default; setup offers 3, 5 or every day; Settings and Progress 3, 4, 5 or every day; earned-day stamps|
+| Weekly target |4 days by default; setup offers 3, 5 or every day; Progress 3, 4, 5 or every day; earned-day stamps|
 | Book check limitations |One accepted word is a play rep, without a clinical correctness claim|

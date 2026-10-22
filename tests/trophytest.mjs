@@ -19,8 +19,9 @@
 //     wallet refuses a junk amount;
 //   - none of it writes the speech ladder or the practice records.
 // Game levels (LEVELS1, section 13) joined in step 3: Level 2 at 150 trophies
-// and Level 3 at 750, per child, picked by a tap, held at Level 1 by a grown-
-// up's cap, each level's own best. The buddies' painted poses (BUDDY2,
+// and Level 3 at 750, per child, picked by a tap, each level's own best. (A
+// grown-up's "Level 1 only" cap went with Settings' Buddy & world card on 22
+// Oct 2026: a cap an older build saved is ignored.) The buddies' painted poses (BUDDY2,
 // section 14) joined in step 4: every picture BUDDY_ART names is on disk in
 // its pose's frame, a missing pose falls back in one order, and reading them
 // writes nothing. The daily chest, the Trophy Road and the month's path
@@ -449,25 +450,30 @@ sec("12a telemetry: never a count", () => {
 // ── 13. levels inside games (LEVELS1, step 3) ──
 // Every game opens as before; inside nine of them Level 2 opens at 150
 // trophies and Level 3 at 750, per child. A tap plays the level last picked,
-// Home asks once per game per newly opened level, a grown-up can hold a child
-// at Level 1, and Level 2 and 3 keep their own longest rows (Level 1's stays
-// with Beat Your Best, untouched).
+// Home asks once per game per newly opened level, and Level 2 and 3 keep their
+// own longest rows (Level 1's stays with Beat Your Best, untouched).
+// Settings' "Level 1 only" picker went on 22 Oct 2026 (Travis: "simplify
+// settings ... the minimum viable features"), and setPlayLevelCap with it. A
+// cap an older build saved ({cap: 1}) still rides in the record and in
+// backups, and nothing is left to lift it, so it is ignored on read: levels
+// open by trophies alone. seedCap writes it by hand, as that build did.
 const seedTrophies = (p, t) => { p.local[p.S.kkey("sona.trophy.v1")] = JSON.stringify({ v: 1, t, d: "2026-10-20", dn: 0, m: "2026-10", mn: 0 }); };
 const lvRec = (p) => JSON.parse(p.local[p.S.kkey("sona.playlevel.v1")] || "null");
+const seedCap = (p) => { const k = p.S.kkey("sona.playlevel.v1"); p.local[k] = JSON.stringify(Object.assign(JSON.parse(p.local[k] || "{}"), { cap: 1 })); };
 sec("13a levels open with lifetime trophies", () => {
   const p = boot(), { S } = p;
-  ok("Sona exports the levels' readers and writers", ["playLevelsOpen", "playLevel", "playLevelAsk", "setPlayLevel", "setPlayLevelCap", "playLevelInfo", "playBest", "playBestOffer"].every((f) => typeof S[f] === "function") && Array.isArray(S.PLAY_LEVEL_AT) && !!S.PLAY_LEVEL_LINES);
+  ok("Sona exports the levels' readers and writers", ["playLevelsOpen", "playLevel", "playLevelAsk", "setPlayLevel", "playLevelInfo", "playBest", "playBestOffer"].every((f) => typeof S[f] === "function") && Array.isArray(S.PLAY_LEVEL_AT) && !!S.PLAY_LEVEL_LINES);
+  ok("…and no longer a cap writer: setPlayLevelCap is gone with Settings' \"Level 1 only\"", !("setPlayLevelCap" in S) && !/function setPlayLevelCap\b/.test(SRC), typeof S.setPlayLevelCap);
   ok("thresholds are 150 and 750 trophies", JSON.stringify(S.PLAY_LEVEL_AT) === "[0,150,750]");
   ok("nine released games have three levels each; Feed Echo and every parked game have none",
     JSON.stringify(Object.keys(S.PLAY_LEVEL_LINES).sort()) === JSON.stringify(["bubbles", "dino", "glide", "hoops", "run", "slice", "soccer", "stack", "tiles"]) && Object.values(S.PLAY_LEVEL_LINES).every((l) => l.length === 3)
     && Object.keys(S.PLAY_LEVEL_LINES).every((k) => S.GAME_ACTS[k] && !S.GAME_ACTS[k].comingSoon));
   const opens = [0, 149, 150, 749, 750, 5000].map((t) => { seedTrophies(p, t); return S.playLevelsOpen(); });
   ok("playLevelsOpen() is 1, 1, 2, 2, 3, 3 at 0, 149, 150, 749, 750, 5000 trophies", JSON.stringify(opens) === "[1,1,2,2,3,3]", opens);
-  S.setPlayLevelCap(1);
-  const capped = [0, 150, 750, 5000].map((t) => { seedTrophies(p, t); return S.playLevelsOpen(); });
-  ok("with a grown-up's \"Level 1 only\" it is 1 at any count", capped.every((n) => n === 1) && lvRec(p).cap === 1, capped);
-  S.setPlayLevelCap(0);
-  ok("\"Open as earned\" lifts the cap", S.playLevelsOpen() === 3 && !("cap" in lvRec(p)));
+  seedCap(p);
+  const capped = [0, 149, 150, 749, 750, 5000].map((t) => { seedTrophies(p, t); return S.playLevelsOpen(); });
+  ok("a stored {cap: 1} from an older build is ignored: still 1, 1, 2, 2, 3, 3 by trophies", JSON.stringify(capped) === "[1,1,2,2,3,3]" && lvRec(p).cap === 1, capped);
+  ok("…and reading it writes nothing (the old cap is not swept, only never read)", (() => { const before = snap(p); S.playLevelsOpen(); S.playLevelInfo("slice"); return snap(p) === before; })());
 });
 sec("13b what a game page plays", () => {
   const p = boot(), { S } = p;
@@ -484,13 +490,11 @@ sec("13b what a game page plays", () => {
   seedTrophies(p, 200);
   ok("after trophies drop (an older backup) a pick of 3 plays Level 2 and is kept", S.playLevel("slice") === 2 && lvRec(p).pick.slice === 3);
   ok("…and a locked level is refused", S.setPlayLevel("slice", 3) === false);
-  S.setPlayLevelCap(1);
-  ok("under \"Level 1 only\" every game plays Level 1 whatever was picked", S.playLevel("slice") === 1 && S.playLevel("tiles") === 1);
+  seedCap(p);
+  ok("a stored {cap: 1} (the old \"Level 1 only\") changes nothing: each game still plays what was picked, up to what is open", S.playLevel("slice") === 2 && S.playLevel("tiles") === 2 && lvRec(p).cap === 1);
   const info = S.playLevelInfo("slice");
-  ok("playLevelInfo says the cap, the pick and each level's line, threshold and lock", info.cap === true && info.pick === 1 && info.levels.length === 3 && info.levels[0].open && !info.levels[1].open && info.levels[2].at === 750 && info.levels[1].line === "Faster fruit!" && info.levels[2].have === 200, info);
-  S.setPlayLevelCap(0);
-  const i2 = S.playLevelInfo("slice");
-  ok("…and without the cap, Level 1 and 2 open at 200 trophies, Level 3 locked at 750", !i2.cap && i2.pick === 2 && i2.levels.map((l) => l.open).join() === "true,true,false", i2);
+  ok("playLevelInfo says the pick and each level's line, threshold and lock: Level 1 and 2 open at 200 trophies, Level 3 locked at 750", info.pick === 2 && info.levels.length === 3 && info.levels.map((l) => l.open).join() === "true,true,false" && info.levels[2].at === 750 && info.levels[1].line === "Faster fruit!" && info.levels[2].have === 200, info);
+  ok("…and no cap field any more, even with an old cap stored", !("cap" in info), info);
   ok("Feed Echo's info lists no levels", S.playLevelInfo("feed").levels.length === 0);
 });
 sec("13c Home asks once per game per newly opened level", () => {
@@ -504,8 +508,8 @@ sec("13c Home asks once per game per newly opened level", () => {
   ok("Feed Echo and a parked game never ask", S.playLevelAsk("feed") === false && S.playLevelAsk("peekaboo") === false);
   seedTrophies(p, 800);
   ok("when Level 3 opens, the game asks once more", S.playLevelAsk("slice") === true && S.playLevelAsk("slice") === false && lvRec(p).seen.slice === 3);
-  S.setPlayLevelCap(1);
-  ok("under \"Level 1 only\" nothing asks", S.playLevelAsk("stack") === false);
+  seedCap(p);
+  ok("a stored {cap: 1} does not silence the ask: a game not yet asked at Level 3 asks once", S.playLevelAsk("stack") === true && S.playLevelAsk("stack") === false && lvRec(p).seen.stack === 3);
 });
 sec("13d Level 2 and 3 keep their own longest rows", () => {
   const p = boot(), { S } = p;
@@ -540,8 +544,9 @@ sec("13e per child, reads write nothing, the ladder untouched", () => {
   p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" }); p.local["sona.rotation.v1"] = JSON.stringify({ i: 1 });
   const pin = () => JSON.stringify({ stage: S.getProgress().stage, stageAt: S.getProgress().stageAt || null, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, coins: S.coinsNow(), t: S.trophies() });
   const was = pin();
-  for (let i = 0; i < 50; i++) { S.setPlayLevel("slice", 1 + (i % 3)); S.playLevelAsk("tiles"); S.playBestOffer("stack", 2, i + 1); S.setPlayLevelCap(i % 2); S.playLevelInfo("run"); }
-  ok("50 level picks, asks, bests and caps leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, coins and trophies byte-identical", pin() === was);
+  seedCap(p);   // an old build's cap rides along, and is read past every time
+  for (let i = 0; i < 50; i++) { S.setPlayLevel("slice", 1 + (i % 3)); S.playLevelAsk("tiles"); S.playBestOffer("stack", 2, i + 1); S.playLevelsOpen(); S.playLevelInfo("run"); }
+  ok("50 level picks, asks, bests and reads past an old cap leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, coins and trophies byte-identical", pin() === was);
   const r = S.exportData(), q = boot({ profile: null });
   ok("a backup carries the levels", JSON.stringify(r).includes("sona.playlevel.v1") && q.S.importData(r).ok && q.S.playBest("stack", 2) === 50, q.S.playBest("stack", 2));
 });
@@ -554,6 +559,7 @@ sec("13f where LEVELS1 lives in sona.js, and what it touches", () => {
   ok("it never reads access, a pass or a verdict, never pays coins, sends, logs or writes practice",
     !/gameAccess|gated\(|premium\(|freeVersion|offerOnLock|trialFirst|\bpass\b|hearVerdict|addCoins|spendCoins|sendProgress|track\(|fetch\(|sendBeacon|logAttempt|gameRep\(|setItem|outcomes\(\)/.test(code), (code.match(/[^\n]*(gameAccess|track\(|fetch\(|setItem|addCoins)[^\n]*/) || [""])[0]);
   ok("its names keep clear of the say-it card's GAME_LEVELS and profile.gameLevel", !/GAME_LEVELS|gameLevel\b/.test(code));
+  ok("it reads no cap: the old \"Level 1 only\" is nowhere in its code (only in a comment saying why)", !/\bcap\b/.test(code), (code.match(/[^\n]*\bcap\b[^\n]*/) || [""])[0]);
   const perKid = (SRC.match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("the record is per child (PER_KID), and its name matches no /rep|week/ key Home may not write", perKid.includes('"sona.playlevel.v1"') && !/rep|week/i.test("sona.playlevel.v1"));
   const route = readFileSync(path.resolve(ROOT, "..", "app/api/track/route.ts"), "utf8");

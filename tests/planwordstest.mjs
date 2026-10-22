@@ -5,8 +5,10 @@
 // product alone; since 19 Oct 2026 ("go, yes to 1 2 3") the yearly one can be
 // a second row beside it, ONLY when RevenueCat's current offering lists it
 // and the store returns it (scenario 2b; anything else is the monthly row
-// alone, exactly as before). Two functions in sona.js own everything a price
-// screen may say about either:
+// alone, exactly as before), and since 22 Oct 2026 the one payment (a
+// non-consumable, "lifetime" to the store and never to a parent) a third row
+// by the same rule (scenario 2c). Two functions in sona.js own everything a
+// price screen may say about any of them:
 //   Sona.storePlan()  turns the store's answers (the product, whether THIS
 //                     buyer may still have the free days, whether this Apple
 //                     ID already has Premium) into one of four states;
@@ -23,7 +25,9 @@
 //     that is not the store's, no plain "nothing to pay today" when the phone
 //     is not sure, and no promise of a message before the charge (since 16
 //     Oct 2026 Sona sends one, "Your free days end soon", but only to a
-//     parent who gave the app an email, so the card still promises none);
+//     parent who gave the app an email, so the card still promises none)
+//     except the one heads-up line, on a free row, when the page says this
+//     phone will show it (22 Oct 2026);
 //   - the parent's email handed to RevenueCat (RCHOOK1), and nothing else;
 //   - buyPlan's one purchase call and its error codes, on a plain bridge and
 //     on one that answers every unknown method name;
@@ -68,7 +72,7 @@ const ask = (opts = {}) => page.evaluate((o) => {
 }, opts);
 const got = () => page.evaluate(() => window.__plan);
 const late = () => page.evaluate(() => window.__late || []);
-const rec = () => page.evaluate(() => ({ asked: __phone.asked, bought: __phone.bought, eligAsked: __phone.eligAsked, eligIds: __phone.eligIds, syncs: __phone.syncs, restores: __phone.restores, infos: __phone.infos, unknown: __phone.unknown, offerings: __phone.offerings }));
+const rec = () => page.evaluate(() => ({ asked: __phone.asked, types: __phone.types, bought: __phone.bought, eligAsked: __phone.eligAsked, eligIds: __phone.eligIds, syncs: __phone.syncs, restores: __phone.restores, infos: __phone.infos, unknown: __phone.unknown, offerings: __phone.offerings }));
 const sub = () => page.evaluate(() => { try { return JSON.parse(localStorage.getItem("sona.sub.v1") || "null"); } catch (e) { return null; } });
 async function planFor(cfg, ms = 0) { await load(cfg); await ask(); if (ms) await tick(ms); return got(); }
 const brief = (p) => p && { state: p.state, kind: p.kind, sure: p.sure, why: p.why, price: p.price, id: p.id, per: p.per, free: p.free && p.free.text };
@@ -247,6 +251,129 @@ try {
       r = await rec();
       ok("buyPlan with the " + which + "ly row's plan buys " + want + ", once, with no second getProducts call", !!b && b.ok === true && same(r.bought, [want]) && r.asked.length === 2, [b, r.bought, r.asked]);
     }
+  });
+
+  // ── 2c. THE ONE-PAYMENT ROW (22 Oct 2026, Travis: "ok go build it all";
+  // "i dont wanna say lifetime"): a non-consumable, offered only when
+  // RevenueCat's current offering lists it AND the store returns it ──
+  await scenario("the one-payment row", async () => {
+    const lb = (p) => p && p.life ? { state: p.life.state, kind: p.life.kind, id: p.life.id, price: p.life.price, per: p.life.per, free: p.life.free, sure: p.life.sure } : null;
+    const LIFE = { state: "paid", kind: "lifetime", id: IDS.lifetime, price: "$59.99", per: "once", free: null, sure: false };
+    let p = await planFor({ store: STORES.monthlyFree, offering: ["monthly", "lifetime"] });
+    ok("the offering lists monthly and the one payment: the monthly plan, carrying a one-payment row from that product's own answer, charged once",
+      !!p && p.state === "free" && p.kind === "monthly" && p.sure === true && p.year === null && same(lb(p), LIFE), [brief(p), lb(p)]);
+    let r = await rec();
+    ok("…the store was asked for monthly, then (once the offering listed it) for the one payment as a non-subscription; eligibility only for monthly; the offering read once",
+      same(r.asked, [[IDS.monthly], [IDS.lifetime]]) && same(r.types, ["subs", "NON_SUBSCRIPTION"]) && same(r.eligIds, [[IDS.monthly]]) && r.offerings === 1, [r.asked, r.types, r.eligIds, r.offerings]);
+    ok("…the one-payment plan is frozen, keeps the store's product out of JSON, and carries no row, tag or year of its own",
+      await page.evaluate(() => Sona.storePlan().then((plan) => { const l = plan.life; try { l.price = "$1"; } catch (e) {} return Object.isFrozen(l) && l.price === "$59.99" && !!l._p && l._p.identifier === "com.speaksona.app.lifetime" && Object.keys(l).indexOf("_p") === -1 && !("year" in l) && !("life" in l) && !("best" in l) && JSON.stringify(plan).indexOf("productCategory") === -1; })));
+    let w = await page.evaluate(() => Sona.storePlan().then((plan) => JSON.parse(JSON.stringify(Sona.planWords(plan.life, {})))));
+    ok("its words, exactly: One payment, its one line, the store's price with no period, and for the pick a check line, the button and the small print",
+      same(w, { state: "paid", title: "Get Sona Premium", tag: "", price: "One payment of $59.99.", what: "Daily practice, every game and every book.", rows: [], note: "One payment of $59.99. No subscription.", noteFirst: false, noteLast: true,
+        name: "One payment", sub: "Yours to keep. No subscription.", amount: "$59.99", check: "One payment \u00b7 No subscription", button: "Get Sona Premium — $59.99", act: "buy", header: "Sona Premium: one payment of $59.99.", none: null, headsUp: "" }), w);
+    const anyWay = await page.evaluate(() => Sona.storePlan().then((plan) => [{}, { headsUp: true }, { freeVersion: true }, { headsUp: true, freeVersion: true }].map((o) => JSON.stringify(Sona.planWords(plan.life, o)))));
+    ok("…and never 'lifetime', 'free', 'Best value', a trial, a period or a renewal, in any field, whatever the page passes",
+      anyWay.every((j) => !/lifetime|free|best value|trial|\/mo|\/yr|a month|a year|renew|subscribers/i.test(j)) && anyWay.every((j) => JSON.parse(j).headsUp === ""), anyWay);
+    w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan, {})));
+    ok("…and the monthly row beside it is word for word what it was alone", w.name === "Monthly" && w.amount === "$9.99/mo" && w.sub === "3-day free trial" && w.button === "Start practicing!" && w.tag === "", w);
+
+    // all three
+    p = await planFor({ store: STORES.monthlyFree, offering: "all" });
+    r = await rec();
+    ok("the offering lists all three: a yearly row and a one-payment row beside monthly, each from its own product, the offering read once",
+      !!p && p.state === "free" && !!p.year && p.year.kind === "annual" && p.year.state === "free" && same(lb(p), LIFE) && r.offerings === 1 &&
+      same(r.asked.map((a) => a[0]).sort(), [IDS.annual, IDS.lifetime, IDS.monthly].sort()) && same(r.eligIds.map((a) => a[0]).sort(), [IDS.annual, IDS.monthly].sort()), [brief(p), lb(p), r.asked, r.eligIds]);
+    // "Best value" compares twelve monthly prices; beside a one payment that
+    // costs no more than the year, the tag would be a false comparison
+    ok("…the one payment at the year's price: no Best value on the yearly row, and none on the one payment", await page.evaluate(() => Sona.storePlan().then((plan) => plan.year.best === false && Sona.planWords(plan.year, {}).tag === "" && Sona.planWords(plan.life, {}).tag === "")));
+    p = await planFor({ store: Object.assign({}, STORES.monthlyFree, { lifetime: { price: "$149.99" } }), offering: "all" });
+    ok("…a one payment dearer than the year leaves the yearly row its Best value", !!p && !!p.year && p.year.best === true && !!p.life && p.life.price === "$149.99", [brief(p), p && p.year && p.year.best]);
+    p = await planFor({ store: Object.assign({}, STORES.monthlyFree, { lifetime: { price: "$39.99" } }), offering: "all" });
+    ok("…and one cheaper than the year takes the tag away too", !!p && !!p.year && p.year.best === false && !!p.life, [brief(p), p && p.year && p.year.best]);
+    p = await planFor({ store: STORES.monthlyFree, offering: ["monthly", "annual"] });
+    ok("…while yearly and monthly alone keep Best value exactly as before", !!p && !!p.year && p.year.best === true && p.life === null, [brief(p), p && p.year && p.year.best]);
+    // the store's figure, verbatim
+    p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "US$1,299.00" } }, offering: ["monthly", "lifetime"] });
+    w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.life, {})));
+    ok("the store's price string, verbatim, is every figure the one-payment row shows", !!p && p.life && p.life.price === "US$1,299.00" && w.amount === "US$1,299.00" && w.button === "Get Sona Premium — US$1,299.00" &&
+      w.note === "One payment of US$1,299.00. No subscription." && w.price === "One payment of US$1,299.00." && (JSON.stringify(w).match(/(?:US)?\$[\d,.]*\d/g) || []).every((x) => x === "US$1,299.00"), w);
+    // a charged-today monthly beside it: both charge today, each its own words
+    p = await planFor({ store: STORES.noFree, offering: ["monthly", "lifetime"] });
+    ok("monthly charged today beside the one payment: both rows, each its own", !!p && p.state === "paid" && same(lb(p), LIFE), [brief(p), lb(p)]);
+
+    // SAFETY: anything but an offering that lists it, and a store that has it, is the card as before
+    for (const [label, cfg] of [
+      ["the offering lists the monthly package alone (the fake's default)", {}],
+      ["the offering lists yearly and monthly only", { offering: "both" }],
+      ["getOfferings is missing", { offering: "missing" }],
+      ["getOfferings is missing on a bridge that answers every name", { offering: "missing", bridge: "proxy" }],
+      ["getOfferings throws", { offering: "throw" }],
+      ["getOfferings fails", { offering: "fail" }],
+      ["there is no current offering", { offering: "none" }],
+      ["the offering lists it, but the store has no such product", { offering: ["monthly", "lifetime"], store: { monthly: { price: "$9.99", free: "P3D" } } }],
+      ["the offering lists it, and the store answers its ask with the monthly product", { offering: ["monthly", "lifetime"], store: { monthly: { price: "$9.99", free: "P3D" } }, wrong: true }],
+      ["the one payment comes back with no identifier", { offering: ["monthly", "lifetime"], store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "$59.99", noId: true } } }],
+      ["the one payment has no price string", { offering: ["monthly", "lifetime"], store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "$59.99", noPriceString: true } } }],
+      ["the one payment claims free days (no plan this card can describe)", { offering: ["monthly", "lifetime"], store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "$59.99", free: "P3D" } } }],
+    ]) {
+      p = await planFor(Object.assign({ store: STORES.monthlyFree }, cfg));
+      r = await rec();
+      const quiet = !cfg.offering || cfg.offering === "both" || cfg.offering === "missing" || cfg.offering === "throw" || cfg.offering === "fail" || cfg.offering === "none";
+      ok(label + ": no one-payment row" + (quiet ? ", and the one payment is never asked for" : ""),
+        !!p && p.state === "free" && p.kind === "monthly" && p.sure === true && p.life === null && (cfg.offering === "both" ? !!p.year : p.year === null) &&
+        (!quiet || !r.asked.some((a) => a.indexOf(IDS.lifetime) > -1)), [brief(p), lb(p), r.asked]);
+    }
+    p = await planFor({ store: STORES.yearOnly, offering: "all" });
+    ok("no monthly product: nothing is sold, the one payment included, even when the offering lists it", !!p && p.state === "none" && p.life === null && p.year === null, [brief(p), lb(p)]);
+    p = await planFor({ store: STORES.monthlyFree, offering: "all", entitled: true });
+    ok("this Apple ID already has Premium (a one payment bought before included): owned, with no row at all", !!p && p.state === "owned" && p.life === null && p.year === null, brief(p));
+
+    // the time limits: the one payment holds the card back no longer than the yearly row may
+    const holdLife = (ms) => page.evaluate((ms) => {
+      const P = Capacitor.Plugins.Purchases, real = P.getProducts;
+      P.getProducts = (a) => a.productIdentifiers[0] === "com.speaksona.app.lifetime" ? (ms < 0 ? new Promise(() => {}) : new Promise((res) => setTimeout(() => res(real(a)), ms))) : real(a);
+    }, ms);
+    await load({ store: STORES.monthlyFree, offering: ["monthly", "lifetime"] }); await holdLife(-1); await ask(); await tick(1199);
+    ok("a one-payment product that never answers: the card waits up to 1,199 ms after the monthly product", await got() === null);
+    await tick(1); p = await got();
+    ok("…then the monthly row alone, at 1,200 ms", !!p && p.state === "free" && p.sure === true && p.life === null, [brief(p), lb(p)]);
+    await load({ store: STORES.monthlyFree, offering: ["monthly", "lifetime"] }); await holdLife(800); await ask(); await tick(799);
+    ok("a one-payment product that answers within the limit: the card waits for it (nothing at 799 ms)", await got() === null);
+    await tick(1); p = await got();
+    ok("…and shows its row at 800 ms", !!p && same(lb(p), LIFE), lb(p));
+    await load({ store: STORES.monthlyFree, offering: "hang" }); await ask(); await tick(1200);
+    p = await got();
+    await page.evaluate(() => __phone.set({ offering: ["monthly", "lifetime"] })); await tick(2000);
+    p = await page.evaluate(() => Sona.storePlan());
+    r = await rec();
+    ok("an offering that answers after the limit adds no row under a reading parent: no late call, no ask for the one payment", (await late()).length === 0 && p.life === null && same(r.asked, [[IDS.monthly]]), [brief(p), r.asked]);
+    await ask({ fresh: true }); p = await got();
+    ok("…a fresh ask (Try again, back at the front) may show it", !!p && same(lb(p), LIFE), lb(p));
+
+    // buying it: the non-consumable, through the one purchase call real phones use
+    await load({ store: STORES.monthlyFree, offering: ["monthly", "lifetime"] });
+    let b = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan.life)).then((x) => x, (e) => ({ err: e && e.code })));
+    r = await rec();
+    ok("buyPlan with the one-payment row's plan buys the one-payment product, once, with no second getProducts call", !!b && b.ok === true && same(r.bought, [IDS.lifetime]) && r.asked.length === 2, [b, r.bought, r.asked]);
+    let s = await sub();
+    ok("…and once Apple's \"full\" entitlement is on, Premium is on, from Apple", !!s && s.active === true && s.source === "apple", s);
+    await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); });
+    const back = await page.evaluate(() => Sona.iapRestore().then((a) => a, () => "failed"));
+    s = await sub();
+    ok("Restore Purchases finds it again by the same entitlement (a reinstall, a new phone)", back === true && !!s && s.active === true && s.source === "apple", [back, s]);
+    // an old plugin with no product API buys it by id, as the store's in-app type
+    await load({ store: STORES.monthlyFree });
+    const old = await page.evaluate(() => {
+      const P = Capacitor.Plugins.Purchases; window.__pp = [];
+      P.purchaseStoreProduct = undefined;
+      P.purchaseProduct = async (a) => { window.__pp.push(JSON.parse(JSON.stringify(a))); localStorage.setItem("__ent", "1"); return { customerInfo: { entitlements: { active: { full: { identifier: "full", isActive: true } } } } }; };
+      return Sona.iapPurchase("lifetime").then((x) => ({ x, pp: window.__pp }), (e) => ({ err: String(e && e.message), pp: window.__pp }));
+    });
+    ok("an old plugin with no product API: the one payment is bought by its id as an in-app purchase (never as a subscription)",
+      !!old.x && old.x.ok === true && same(old.pp, [{ productIdentifier: IDS.lifetime, type: "inapp" }]), old);
+    await load({ store: STORES.monthlyFree, offering: ["monthly", "lifetime"], buy: "owned" });
+    b = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan.life)).then((x) => x, (e) => ({ err: e && e.code })));
+    ok("Apple's 'already purchased' for the one payment: a restore finds it, never a second sale", !!b && b.restored === true, b);
   });
 
   // ── 3. the time limits, on a paused clock ──
@@ -524,6 +651,7 @@ try {
         out.push({ kind: "wait", freeVersion, w: Sona.planWords(undefined, o) });
         out.push({ kind: "owned", freeVersion, w: Sona.planWords({ state: "owned", kind: "", id: "", price: "", per: "", free: null, sure: false, why: "" }, o) });
         ["timeout", "error", "no-product", "no-plugin"].forEach((why) => out.push({ kind: "none", why, freeVersion, w: Sona.planWords({ state: "none", kind: "", id: "", price: "", per: "", free: null, sure: false, why }, o) }));
+        ["$59.99", "US$1,299.00"].forEach((price) => out.push({ kind: "once", price, freeVersion, w: Sona.planWords({ state: "paid", kind: "lifetime", id: "x", price, per: "once", free: null, sure: false, why: "" }, o) }));
         ["$9.99", "US$1,299.00"].forEach((price) => ["month", "year"].forEach((per) => {
           out.push({ kind: "paid", price, per, freeVersion, w: Sona.planWords({ state: "paid", kind: "monthly", id: "x", price, per, free: null, sure: false, why: "" }, o) });
           FREES.forEach((free) => [true, false].forEach((sure) => out.push({ kind: "free", price, per, free, sure, freeVersion, day: label(free.n, free.unit), w: Sona.planWords({ state: "free", kind: "monthly", id: "x", price, per, free, sure, why: "" }, o) })));
@@ -534,15 +662,18 @@ try {
     const bad = (pick, test) => all.filter(pick).filter((c) => !test(c, c.w, JSON.stringify(c.w))).map((c) => ({ kind: c.kind, price: c.price, per: c.per, free: c.free && c.free.text, sure: c.sure, why: c.why, fv: c.freeVersion, w: c.w })).slice(0, 2);
     const check = (name, pick, test) => { const b = bad(pick, test); ok(name, b.length === 0 && all.filter(pick).length > 0, b); };
     const any = () => true, is = (k) => (c) => c.kind === k;
-    ok("the table covers every state", all.length === 2 * (2 + 1 + 4 + 2 * 2 * (1 + 4 * 2)), all.length);
-    check("the state says which card it is", any, (c, w) => w.state === c.kind);
+    ok("the table covers every state", all.length === 2 * (2 + 1 + 4 + 2 + 2 * 2 * (1 + 4 * 2)), all.length);
+    check("the state says which card it is (the one payment is charged today)", any, (c, w) => w.state === (c.kind === "once" ? "paid" : c.kind));
+    check("the one payment never says 'free', 'lifetime', 'Best value', a period or a renewal, in any field", is("once"), (c, w, j) => !/free|lifetime|best value|trial|\/mo|\/yr|a month|a year|renew/i.test(j));
+    check("the one payment: its name, its line, the store's price with no period, and its pick's words", is("once"), (c, w) => w.name === "One payment" && w.sub === "Yours to keep. No subscription." && w.amount === c.price &&
+      w.button === "Get Sona Premium — " + c.price && w.check === "One payment \u00b7 No subscription" && w.note === "One payment of " + c.price + ". No subscription." && w.noteLast === true && w.tag === "" && w.act === "buy" && w.rows.length === 0);
     check("a pay-today plan never says 'free', in any field", is("paid"), (c, w, j) => !/free/i.test(j));
     check("'nothing to sell' never says 'free'", is("none"), (c, w, j) => !/free/i.test(j));
     check("'nothing to sell' shows no figure: no digit, no $", is("none"), (c, w, j) => !/[\d$]/.test(j));
     check("the waiting card shows no figure: no digit, no $", is("wait"), (c, w, j) => !/[\d$]/.test(j));
     check("an Apple ID that already has it is shown nothing to buy", is("owned"), (c, w) => w.button === "" && w.act === "" && w.price === "" && w.tag === "" && w.what === "" && w.rows.length === 0 && w.note === "" && w.header === "" && w.none === null);
-    check("every $ figure on a priced card is the store's own string", (c) => c.kind === "paid" || c.kind === "free", (c, w, j) => { const f = j.match(/(?:US)?\$[\d,.]*\d/g) || []; return f.length >= 3 && f.every((x) => x === c.price); });
-    check("the button buys exactly when there is a priced plan", any, (c, w) => (w.act === "buy") === (c.kind === "free" || c.kind === "paid") && (c.kind !== "none" || w.act === "retry") && (c.kind !== "wait" || w.act === "wait"));
+    check("every $ figure on a priced card is the store's own string", (c) => c.kind === "paid" || c.kind === "free" || c.kind === "once", (c, w, j) => { const f = j.match(/(?:US)?\$[\d,.]*\d/g) || []; return f.length >= 3 && f.every((x) => x === c.price); });
+    check("the button buys exactly when there is a priced plan", any, (c, w) => (w.act === "buy") === (c.kind === "free" || c.kind === "paid" || c.kind === "once") && (c.kind !== "none" || w.act === "retry") && (c.kind !== "wait" || w.act === "wait"));
     check("no dated rows on any card (Travis, 6 Oct 2026: no billing day, just the free days)", any, (c, w) => w.rows.length === 0 && !/(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,/.test(JSON.stringify(w)));
     check("a priced card is one row: the plan's name, the store's price with its period, and a check line that says it renews", (c) => c.kind === "free" || c.kind === "paid", (c, w) => w.name === (c.per === "month" ? "Monthly" : c.per === "year" ? "Yearly" : "Sona Premium") && w.amount.indexOf(c.price + "/") === 0 && /Subscription auto-renews$/.test(w.check));
     check("free: the tag, the tile's line and the button are built from the store's two answers", is("free"), (c, w) => w.tag === "" && w.price === c.free.text + " free, then " + c.price + " a " + c.per + "." && w.button === "Start practicing!");
@@ -551,14 +682,38 @@ try {
     check("free, NOT sure: the note says who gets the free time, what Apple charges otherwise, and that Apple shows the terms", (c) => c.kind === "free" && !c.sure, (c, w) => w.note === "Only new subscribers get " + c.free.text + " free. Otherwise Apple charges " + c.price + " today. Apple shows your exact terms before you confirm. Cancel anytime in Settings\u00a0→\u00a0Subscriptions.");
     check("only the not-sure card puts its note first", (c) => !(c.kind === "free" && !c.sure), (c, w) => w.noteFirst === false);
     check("paid: the tile's line, the note and the button say it is charged today", is("paid"), (c, w) => w.price === c.price + " a " + c.per + ", charged today." && flat(w.note) === "Charged to your Apple ID today, then every " + c.per + ". Renews unless canceled in Settings → Subscriptions." && w.button === "Subscribe — " + c.price + " a " + c.per && w.title === "Get Sona Premium" && w.tag === "" && w.header === "Sona Premium: " + c.price + " a " + c.per + ", charged today.");
-    check("what Premium opens is said on every card that can sell or is asking, and follows the free version", (c) => c.kind === "wait" || c.kind === "free" || c.kind === "paid", (c, w) => w.what === (c.freeVersion ? "Every game and every book." : "Daily practice, every game and every book."));
+    check("what Premium opens is said on every card that can sell or is asking, and follows the free version", (c) => c.kind === "wait" || c.kind === "free" || c.kind === "paid" || c.kind === "once", (c, w) => w.what === (c.freeVersion ? "Every game and every book." : "Daily practice, every game and every book."));
     check("nothing says 'until', and nothing says 'a day before'", any, (c, w, j) => !/until/i.test(j) && !/a day before/i.test(j));
-    check("NO MESSAGE BEFORE THE CHARGE IS PROMISED: no field of any state says email, remind or notify", any, (c, w, j) => !/e-?mail|remind|notif/i.test(j));
+    check("NO MESSAGE BEFORE THE CHARGE IS PROMISED: no field of any state says email, remind or notify (the page did not say this phone will show a heads-up)", any, (c, w, j) => !/e-?mail|remind|notif/i.test(j) && w.headsUp === "");
     check("no saving, no was-price, no web offer's words", any, (c, w, j) => !/119\.88|59\.89|save \$|half|charter|founding|spots/i.test(j));
     check("plain text only: no markup in any field", any, (c, w, j) => !/[<>]|&nbsp;|&amp;/.test(j));
     check("'could not reach' and 'cannot be bought' are told apart by why", is("none"), (c, w) => w.button === "Try again" && w.title === "Sona Premium" && w.header === w.none.title &&
       ((c.why === "timeout" || c.why === "error") ? (w.none.title === "We couldn't reach the App Store." && w.none.text === "Check your connection, then try again.") : (w.none.title === "Sona Premium can't be bought right now." && w.none.text === "Please try again in a little while.")));
     check("the waiting card: its button and its header", is("wait"), (c, w) => w.button === "Checking the App Store…" && w.title === "Sona Premium" && w.none === null && w.header === (c.freeVersion ? "Sona Premium: every game and every book." : "Sona Premium: daily practice, every game and every book."));
+    // THE ONE HEADS-UP LINE (22 Oct 2026): the same table, with the page
+    // saying this phone will show its own heads-up the day before the free
+    // days end. Only a free card gains a line, exactly Travis's words, and
+    // nothing else on any card changes.
+    const ahead = await page.evaluate(() => {
+      const now = new Date(2026, 9, 5, 12), out = [];
+      const plans = [null, { state: "owned", kind: "", id: "", price: "", per: "", free: null, sure: false, why: "" }, { state: "none", kind: "", id: "", price: "", per: "", free: null, sure: false, why: "timeout" },
+        { state: "paid", kind: "monthly", id: "x", price: "$9.99", per: "month", free: null, sure: false, why: "" }, { state: "paid", kind: "lifetime", id: "x", price: "$59.99", per: "once", free: null, sure: false, why: "" },
+        { state: "free", kind: "monthly", id: "x", price: "$9.99", per: "month", free: { n: 3, unit: "day", text: "3 days" }, sure: true, why: "" },
+        { state: "free", kind: "monthly", id: "x", price: "$9.99", per: "month", free: { n: 7, unit: "day", text: "7 days" }, sure: false, why: "" },
+        { state: "free", kind: "annual", id: "x", price: "$59.99", per: "year", free: { n: 7, unit: "day", text: "7 days" }, sure: true, why: "" }];
+      plans.forEach((pl) => [true, false].forEach((fv) => {
+        const off = Sona.planWords(pl, { freeVersion: fv, now }), on = Sona.planWords(pl, { freeVersion: fv, now, headsUp: true }), junk = Sona.planWords(pl, { freeVersion: fv, now, headsUp: "yes" });
+        const strip = (w) => { const c = JSON.parse(JSON.stringify(w)); delete c.headsUp; return JSON.stringify(c); };
+        out.push({ state: pl ? pl.state : "wait", kind: pl ? pl.kind : "", off: off.headsUp, on: on.headsUp, junk: junk.headsUp, same: strip(off) === strip(on), onText: JSON.stringify(on) });
+      }));
+      return out;
+    });
+    ok("the heads-up line: a free card shows exactly \"We'll remind you the day before it ends.\" when the page says so, and only then",
+      ahead.filter((a) => a.state === "free").length === 6 && ahead.filter((a) => a.state === "free").every((a) => a.on === "We'll remind you the day before it ends." && a.off === "" && a.junk === ""), ahead);
+    ok("…every other card (asking, owned, none, charged today, the one payment) never shows it, whatever the page says",
+      ahead.filter((a) => a.state !== "free").every((a) => a.on === "" && a.off === "" && a.junk === "" && !/remind|notif|e-?mail/i.test(a.onText)), ahead.filter((a) => a.state !== "free"));
+    ok("…and the line changes nothing else on any card", ahead.every((a) => a.same), ahead.filter((a) => !a.same));
+    ok("…and on a free card it is the only place the card speaks of a heads-up", ahead.filter((a) => a.state === "free").every((a) => (a.onText.match(/remind/gi) || []).length === 1 && !/notif|e-?mail/i.test(a.onText)), ahead);
     const broken = await page.evaluate(() => [{ state: "free", price: "$9.99", per: "month", free: null }, { state: "paid", price: "", per: "month" }, { state: "paid", price: "$9.99", per: "" }, { state: "nonsense" }, {}].map((pl) => Sona.planWords(pl, {})));
     ok("a plan too broken to describe is never priced: no figure, 'Try again'", broken.every((w) => w.state === "none" && w.act === "retry" && !/[\d$]/.test(JSON.stringify(w)) && !/free/i.test(JSON.stringify(w))), broken);
 
@@ -568,25 +723,25 @@ try {
     ok("the App Store today, a buyer who gets the free days: the exact card", same(w, {
       state: "free", title: "Start Sona Premium with 3 days free", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
       rows: [], note: "3 days free, then $9.99 a month. Cancel anytime.", noteFirst: false, noteLast: true,
-      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "No payment today \u00b7 Subscription auto-renews", button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null }), w);
+      name: "Monthly", sub: "3-day free trial", amount: "$9.99/mo", check: "No payment today \u00b7 Subscription auto-renews", button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free, then $9.99 a month.", none: null, headsUp: "" }), w);
     w = await real({ store: STORES.monthlyFree, elig: "missing" });
     ok("…the same store when the phone cannot tell: the exact card", same(w, {
       state: "free", title: "Sona Premium: 3 days free for new subscribers", tag: "", price: "3 days free, then $9.99 a month.", what: "Daily practice, every game and every book.",
       rows: [], note: "Only new subscribers get 3 days free. Otherwise Apple charges $9.99 today. Apple shows your exact terms before you confirm. Cancel anytime in Settings → Subscriptions.", noteFirst: true, noteLast: false,
       name: "Monthly", sub: "3-day free trial for new subscribers", amount: "$9.99/mo", check: "Subscription auto-renews",
-      button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free for new subscribers, then $9.99 a month.", none: null }), w);
+      button: "Start practicing!", act: "buy", header: "Sona Premium: 3 days free for new subscribers, then $9.99 a month.", none: null, headsUp: "" }), w);
     for (const [label, cfg] of [["a monthly product with no free days", { store: STORES.noFree }], ["a buyer Apple calls ineligible", { store: STORES.monthlyFree, elig: { monthly: 1 } }]]) {
       w = await real(cfg);
       ok(label + ": the exact charged-today card", same(w, {
         state: "paid", title: "Get Sona Premium", tag: "", price: "$9.99 a month, charged today.", what: "Daily practice, every game and every book.", rows: [],
         note: "Charged to your Apple ID today, then every month. Renews unless canceled in Settings → Subscriptions.", noteFirst: false, noteLast: false,
         name: "Monthly", sub: "Charged today", amount: "$9.99/mo", check: "Subscription auto-renews",
-        button: "Subscribe — $9.99 a month", act: "buy", header: "Sona Premium: $9.99 a month, charged today.", none: null }), w);
+        button: "Subscribe — $9.99 a month", act: "buy", header: "Sona Premium: $9.99 a month, charged today.", none: null, headsUp: "" }), w);
     }
     w = await real({ store: STORES.yearOnly });
     ok("a store with only the yearly product: the exact 'cannot be bought' card, with no figure", same(w, {
       state: "none", title: "Sona Premium", tag: "", price: "", what: "", rows: [], note: "", noteFirst: false, noteLast: false, name: "", sub: "", amount: "", check: "", button: "Try again", act: "retry",
-      header: "Sona Premium can't be bought right now.", none: { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." } }), w);
+      header: "Sona Premium can't be bought right now.", none: { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." }, headsUp: "" }), w);
   });
 
   // ── 9. no reminder without a mailer ──
@@ -595,7 +750,13 @@ try {
     const a = src.indexOf("// PLAN-WORDS-BEGIN"), b = src.indexOf("// PLAN-WORDS-END");
     const block = a > -1 && b > a ? src.slice(a, b) : "";
     ok("every sentence Apple's card may show sits between the two markers", block.length > 2000 && /function planWords\(/.test(block) && /function planSay\(/.test(block) && /function planBillDate\(/.test(block) && src.indexOf("// PLAN-WORDS-BEGIN", a + 1) === -1, block.length);
-    ok("…and that source says nothing of mail, a reminder or a notification, comments included", !/mail|remind|notif/i.test(block), (block.match(/.{0,40}(?:mail|remind|notif).{0,40}/i) || [""])[0]);
+    // since 22 Oct 2026 ONE sentence may (the heads-up line, on a free row,
+    // when the page says this phone will show it): it is written once, as a
+    // constant, and nothing else in the block, comments included, says it
+    const HEADS = 'const PLAN_HEADS_UP = "We\'ll remind you the day before it ends.";';
+    const rest = block.split(HEADS).join(" ");
+    ok("…and that source says nothing of mail, a reminder or a notification, comments included, but for the one heads-up line, written once",
+      block.split(HEADS).length === 2 && !/mail|remind|notif/i.test(rest), (rest.match(/.{0,40}(?:mail|remind|notif).{0,40}/i) || [""])[0]);
     // RevenueCat's webhook (app/api/revenuecat, 16 Oct 2026) now feeds a
     // "Your free days end soon" email, but only for a parent who gave the
     // app an email: a family who skipped it gets none. So the card still
@@ -772,6 +933,19 @@ try {
     await buy(); await settle();
     L = leads();
     ok("with no word from Apple, a pay-today plan is told 'paid'", L.length === 1 && L[0].plan === "paid", L);
+
+    // the one payment (22 Oct 2026): charged once, today, so "paid", with or without Apple's word
+    for (const t of [null, "NORMAL"]) {
+      hits.length = 0;
+      await load({ offering: ["monthly", "lifetime"] });
+      await seed({ "sona.profile.v1": Object.assign({ email: "once@example.com" }, KID) });
+      if (t) await period(t);
+      b = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.buyPlan(plan.life)).then((r) => r, (e) => ({ code: e && e.code })));
+      await settle();
+      L = leads();
+      ok("the one payment bought" + (t ? ", Apple calling it " + t : ", with no word from Apple") + ": the list is told 'paid', once, and nothing about the child",
+        !!b && b.ok === true && L.length === 1 && L[0].plan === "paid" && L[0].source === "app-paid" && L[0].email === "once@example.com" && same(Object.keys(L[0]).sort(), ["email", "plan", "role", "source", "summary"]) && !/Mia|lifetime/i.test(JSON.stringify(L[0])), [b, L]);
+    }
 
     hits.length = 0;
     await load({});
@@ -1034,17 +1208,20 @@ try {
   // ── 15. the source, and the fake itself ──
   {
     const src = readFileSync(ROOT + "/sona.js", "utf8"), analytics = readFileSync(ROOT + "/analytics.js", "utf8");
-    ok("both product ids are still in sona.js: the yearly one restores the families who hold it",
-      /const IAP_PRODUCTS = \{ annual: "com\.speaksona\.app\.annual", monthly: "com\.speaksona\.app\.monthly" \};/.test(src));
+    ok("all three product ids are in sona.js: the yearly one restores the families who hold it, and the one payment is a non-consumable of its own",
+      /const IAP_PRODUCTS = \{ annual: "com\.speaksona\.app\.annual", monthly: "com\.speaksona\.app\.monthly", lifetime: "com\.speaksona\.app\.lifetime" \};/.test(src));
     const sp = src.slice(src.indexOf("function storePlan("), src.indexOf("function buyPlan("));
-    // since 19 Oct 2026 storePlan names the yearly product, but only behind
-    // RevenueCat's offering: nothing about it comes before _offersYear(P)
-    const behind = sp.indexOf("_offersYear(P)"), offers = src.slice(src.indexOf("function _offersYear("), src.indexOf("function _yearPlan("));
-    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, with monthly's eligibility call unchanged, and names the yearly product only after RevenueCat's offering listed it",
+    // since 19 Oct 2026 storePlan names the yearly product, and since 22 Oct
+    // 2026 the one payment, but only behind RevenueCat's offering: nothing
+    // about either comes before _offered(P), read once for both
+    const behind = sp.indexOf("_offered(P)"), offers = src.slice(src.indexOf("function _offered("), src.indexOf("function _lifePlan("));
+    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, with monthly's eligibility call unchanged, and names the yearly product and the one payment only after RevenueCat's offering listed them",
       /iapProduct\("monthly"\)/.test(sp) && !/getProducts|getOfferings/.test(sp) && /checkTrialOrIntroductoryPriceEligibility\(\{ productIdentifiers: \[id\] \}\)/.test(sp) &&
-      behind > 0 && !/annual/.test(sp.slice(0, behind)) && sp.indexOf('iapProduct("annual")') > behind && /if \(!listed \|\| a\.yr !== undefined\) return noYear\(\);/.test(sp), sp.slice(0, 200));
-    ok("…and the offering counts only when its CURRENT offering lists the yearly product among its packages (by the product's own id)",
-      /typeof P\.getOfferings !== "function"/.test(offers) && /r\.current/.test(offers) && /availablePackages/.test(offers) && /pk\.product\.identifier === IAP_PRODUCTS\.annual/.test(offers) && /\(\) => false\)/.test(offers), offers.slice(0, 300));
+      behind > 0 && !/annual|lifetime/.test(sp.slice(0, behind)) && sp.split("_offered(P)").length === 2 && sp.indexOf('iapProduct("annual")') > behind && sp.indexOf('iapProduct("lifetime")') > behind &&
+      /if \(!o\.annual \|\| a\.yr !== undefined\) return noYear\(\);/.test(sp) && /if \(!o\.lifetime \|\| a\.lf !== undefined\) return noLife\(\);/.test(sp), sp.slice(0, 200));
+    ok("…and the offering counts only when its CURRENT offering lists each product among its packages (by the product's own id), and a broken one lists neither",
+      /typeof P\.getOfferings !== "function"/.test(offers) && /r\.current/.test(offers) && /availablePackages/.test(offers) && /pk\.product\.identifier === id/.test(offers) &&
+      /has\(IAP_PRODUCTS\.annual\)/.test(offers) && /has\(IAP_PRODUCTS\.lifetime\)/.test(offers) && /\(\) => \(\{ annual: false, lifetime: false \}\)\)/.test(offers), offers.slice(0, 300));
     const ip = (src.match(/function iapPurchase\(kind, product\) \{[\s\S]*?\n  \}/) || [""])[0];
     ok("iapPurchase picks ONE purchase method before it asks Apple anything: no list of attempts, no retry on a rejection",
       ip.length > 200 && !/attempts|\.catch\(fn\)/.test(ip) && (ip.match(/P\.purchaseStoreProduct\(/g) || []).length === 1 && (ip.match(/P\.purchaseProduct\(/g) || []).length === 1 &&
@@ -1085,7 +1262,9 @@ try {
     ok("…run from its own text alone it builds the store, the seeds and the recorders (it is handed to addInitScript, which ships nothing else)",
       !!alone && same(alone.products, [[IDS.monthly, "$9.99", "P3D"], [IDS.annual, "$59.99", "P3D"]]) && alone.elig[IDS.monthly].status === 2 && alone.unknown === "not implemented" && alone.gate === true && alone.marker === "k2" && alone.kids === "k2" && same(alone.recs, [1, 1, 1, 1, ["purchaseProduct"]]), alone || why);
     ok("the exported stores are the ones the suites name, and the default is the App Store since 5 Oct 2026",
-      same(Object.keys(STORES), ["monthlyFree", "noFree", "yearOnly", "empty"]) && same(STORES.monthlyFree.monthly, { price: "$9.99", free: "P3D" }) && !STORES.noFree.monthly.free && !STORES.yearOnly.monthly && same(IDS, { monthly: "com.speaksona.app.monthly", annual: "com.speaksona.app.annual" }) && ZONE === "America/Boise" && new Date(NOON).toISOString() === "2026-10-05T18:00:00.000Z");
+      same(Object.keys(STORES), ["monthlyFree", "noFree", "yearOnly", "empty"]) && same(STORES.monthlyFree.monthly, { price: "$9.99", free: "P3D" }) && !STORES.noFree.monthly.free && !STORES.yearOnly.monthly &&
+      same(STORES.monthlyFree.lifetime, { price: "$59.99" }) && same(STORES.noFree.lifetime, { price: "$59.99" }) && !STORES.yearOnly.lifetime &&
+      same(IDS, { monthly: "com.speaksona.app.monthly", annual: "com.speaksona.app.annual", lifetime: "com.speaksona.app.lifetime" }) && ZONE === "America/Boise" && new Date(NOON).toISOString() === "2026-10-05T18:00:00.000Z");
     await load({ intro: "none" }); await ask();
     const legacy = [brief(await got())];
     await load({ intro: "free3" }); await ask(); legacy.push(brief(await got()));

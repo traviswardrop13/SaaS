@@ -13,7 +13,9 @@
 //     block after a miss and the song after a lost heart are the same at all
 //     three levels;
 //   - every note a level plays is one the keys have (C to B);
-//   - a pick above what is open plays the highest open level;
+//   - a pick above what is open plays the highest open level, and a cap an
+//     older build saved (Settings' "Level 1 only", gone since 22 Oct 2026)
+//     is ignored;
 //   - Level 2 and 3 keep their own best: a Level 3 row never shows up in a
 //     Level 1 best line, Level 1 can still say "New best!", and Level 1's
 //     record is untouched by a Level 2 round;
@@ -272,9 +274,16 @@ await section("a pick above what is open", async () => {
     ok("a pick of Level 3 at 200 trophies plays Level 2", g.LV === 2 && g.first === "Hot Cross Buns", g);
     ok("…with no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
+  // Settings' "Level 1 only" went on 22 Oct 2026 ("simplify settings"), and
+  // nothing is left to lift a cap an older build saved, so a stored cap: 1 is
+  // ignored: the game plays the level picked, as earned.
+  posts.length = 0;
   const c = await open("slice", { trophies: 800, levels: { cap: 1, pick: { slice: 3 } } });
   try {
-    ok("under a grown-up's \"Level 1 only\" the game plays Level 1", await c.page.evaluate(() => LV === 1 && WAVES[0].goal === 6));
+    const g = await c.page.evaluate(() => ({ LV, WAVES, GIANT_CUTS }));
+    ok("a stored cap: 1 from an older build changes nothing: a Level 3 pick at 800 trophies plays Level 3", g.LV === 3 && eq(g.WAVES, UP.slice[3].WAVES) && g.GIANT_CUTS === UP.slice[3].GIANT_CUTS, g);
+    ok("…and \"level played\" is posted once, for Level 3", await told("slice", 3), tracked("slice"));
+    ok("…with no page errors", c.errors.length === 0, c.errors);
     posts.length = 0;
   } finally { await c.context.close(); }
 });
