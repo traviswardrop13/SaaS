@@ -173,9 +173,13 @@ function scenePrompt(s, part) {
   const spot = !sc.buddy ? "" : /^PEEK:/.test(sc.buddy)
     ? `\nEMPTY SPOT, ON PURPOSE: leave ${sc.buddy.replace(/^PEEK:\s*/, "")}. Keep it completely clear: one more little character, the size of Echo, will peek over it there later. Do not draw that character.`
     : `\nEMPTY SPOT, ON PURPOSE: leave ${sc.buddy}. It must stay completely empty and uncluttered (no character, animal, toy, object, plant or shadow on it), with room for one more little character the size of Echo to stand there later. Do not draw that character.`;
+  // the story's opening pages show its problem: the model draws the happy
+  // ending by habit (water already running in a dry garden, flowers in bare
+  // planters), so every s-page says it outright
+  const before = /^s\d\d$/.test(part) ? `\nTHIS PAGE IS BEFORE THE PROBLEM IS SOLVED: draw the problem exactly as described. Nothing is fixed, finished, flowing, growing, lit or moving yet unless the description says so.` : "";
   return `${STYLE(lightOf(s, sc))}\n\n${refNote(lineups(s.id).length, sc.also)}\n\nCharacters for this story (only the ones named in the scene appear):\n${P.echo}\n${s.bible}` +
     (placesIn(sc.picture) ? `\n${placesIn(sc.picture)}` : "") +
-    `\n\nOne picture-book page, a single tall scene (not a grid, no panels, no border, the picture running to every edge): ${sc.picture}${spot}\n` +
+    `\n\nOne picture-book page, a single tall scene (not a grid, no panels, no border, the picture running to every edge): ${sc.picture}${before}${spot}\n` +
     `Only the characters named in this description appear, each exactly once, with a normal number of arms, legs, wings and flippers.` +
     (away.length || echoOut ? ` These characters are NOT in this scene and must not appear anywhere in it: ${[...(echoOut ? ["Echo"] : []), ...away].join(", ")}.` : "") +
     ` No objects the description does not mention, no letters on the letter, no writing on any sign or map.\n` +

@@ -203,8 +203,8 @@
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Gardener Mouse. Her flowers are thirsty, and her waterwheel has stopped!",
                   little: "Here's the real letter, from Gardener Mouse. Her flowers need a drink!" } },
-        // no buddy (on the sandy path just right of Echo, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the sandy path just right of Echo (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.71, y: 0.755, h: 0.19, pose: "rest" },
           line: { big: "Up the hill we go, to Gardener Mouse's garden. Oh dear. The flowers are droopy, and the pond is dry.",
                   little: "Oh dear. Droopy flowers, an empty pond, and a wheel that won't turn!" } },
         // no buddy
@@ -620,8 +620,8 @@
     concert: {
       wash: "#6fb39b",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.485, y: 0.708, h: 0.18, pose: "rest" },
           line: "Hello, Pelly! Is that a letter? Oops. That's a sandwich. One bite is already gone!" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
@@ -645,8 +645,8 @@
         // no buddy
         { art: "s07", ages: "big", buddy: null,
           line: "Everyone needs their own seat, with room to play. Then a conductor waves a hand to show who goes next!" },
-        // no buddy (on the front of the lily pad just right of Echo, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the front of the lily pad just right of Echo (cheer)
+        { art: "s08", ages: "both", buddy: { x: 0.735, y: 0.675, h: 0.17, pose: "cheer" },
           line: { big: "Let's play their tunes, give each one a seat, pick who goes first, and be the conductor. Ready?",
                   little: "Let's play their music and help them play together. Ready?" } }
       ],
