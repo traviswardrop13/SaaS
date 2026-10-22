@@ -1460,6 +1460,62 @@ a purchase starts, renews, is cancelled or ends.
   RevenueCat).
 `rcwebhooktest` plays the route, the store, both emails and the words.
 
+**THE TRIAL REMINDER (NOTIFY1, 22 Oct 2026, iOS 1.0.9)** (Travis: "can we
+add push notifications and have that be a step in the onboarding where we
+ask them to turn it on to notify them a day before their trial ends"). One
+notification on the parent's phone the day before the free trial ends:
+"Sona" / "Your free trial ends tomorrow." It is LOCAL, not a push: the phone
+sets it and shows it, so it reaches a family who gave no email too, and
+nothing leaves the phone for it.
+- **Native:** Sona's own plugin (SonaSpeech) gained `notifyStatus`,
+  `notifyAsk` (iOS's own Allow box: alerts and a sound, no badge),
+  `notifySchedule({ id, at, title, body })` (one calendar trigger that never
+  repeats; the same id replaces the one waiting; past or 400+ days away
+  refused) and `notifyCancel({ id })`, with UNUserNotificationCenter. No
+  device token, no APNs, no Push capability, no Info.plist text:
+  `scripts/install-ios-speech.py` carries it like the mic. It answers
+  Capacitor's `localNotificationHandler` so a "sona-" notification also shows
+  while Sona is open (it comes at the time of day the trial started, often
+  when the family plays). Optional: a build without the four methods
+  (1.0.8 and before) offers no reminder anywhere. `heartest` pins the Swift.
+- **sona.js, block NOTIFY1:** `Sona.notifyAvailable()` (all four methods
+  there), `notifyState()` ("granted" / "denied" / "prompt" / "unavailable",
+  iOS's last answer, read again as each app page opens; "provisional" reads
+  "prompt"), `notifyAsk()` (never rejects; a bridge that never answers lets
+  the screen go on after a minute, its late answer still kept),
+  `trialReminderOn(plan?)` (allowed on a build that can; with a price row,
+  also a free trial whose reminder moment is more than an hour away),
+  `trialReminderArm(endMs)` (id `sona-trial-end` at end − 24 h, only when
+  that is more than an hour away) and `trialReminderSync(force)`.
+- **When it is set:** right after a purchase that started a free trial (one
+  hook on `buyPlan`'s success path, after `_tellPlan`, deciding "trial" the
+  same way: Apple's period, else what the card sold), for RevenueCat's trial
+  end, or the store's own free time when RevenueCat gives none; never waited
+  on. **And checked once a day** on an app page (and when the app comes back
+  to the front): RevenueCat's `full` entitlement on TRIAL with an end sets it
+  afresh; a paid period, no Premium, or a trial the parent already cancelled
+  (`willRenew` false) takes it back; a store that does not answer changes
+  nothing; a family who did not allow notifications is not looked up at all.
+  A reminder already set for (within an hour of) the end stays to be shown
+  in its last day; one set for an end that moved goes.
+- **Never a child's name, never a price, never an event or a request:** the
+  words are one fixed pair, and `notifytest` holds the block to no fetch, no
+  track, no profile. `sona.notify.v1` (`state`, `asked`, `arm`, `end`,
+  `sync`) is this phone's, on `NO_EXPORT` and `NO_IMPORT`.
+- **Setup's reminder screen and the price screen's one line** ("We'll remind
+  you the day before it ends.") read this block: the screen shows only when
+  `notifyAvailable()`, `notifyState() === "prompt"` and the price follows;
+  the line only when `trialReminderOn(picked row)`.
+- **Defaults Travis did not pick:** the words; the time of day (the trial's
+  own, a day early); shown over the app when it is open; taken back when the
+  parent cancelled the trial (as RCHOOK1's "Your free days end soon" email
+  is not sent then); the minute setup waits on an Allow box that never
+  answers. **Travis's to know:** a parent with an email may now hear twice
+  before the free days end (this, and RCHOOK1's email). Nothing here is
+  Rachel's: the reminder says nothing about a child or practice.
+  `notifytest` plays it on a fake phone; NATIVE.md and SPEECH_PLUGIN.md hold
+  the Mac steps and the phone checklist for 1.0.9.
+
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
 every clinician account, counts everyone since the "I'm a…" landing page
 (25 Sep 2026) by what they chose, and says what the list answered for each
