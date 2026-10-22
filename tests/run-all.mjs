@@ -67,6 +67,22 @@ const SUITES = [
   "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the three stories come before the game of the day for every child, Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
   "homestorytest.mjs", // STORY1 on Home: one big story card (open, locked, done, a game day after Day 3), the Arcade and Books doors, Back and Forward, Home only reads, the play button and both doors on the first screen at five sizes
   "adventuretest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot, nothing written but seen
+  "daily-contenttest.mjs", // All eleven new days require real controllers, both age paths, short story acts and actual setting/earned-ending art
+  "daily-waterwheeltest.mjs", // Day 4: real water routes, gates and split flow; speech widens joins, with honest progress and safe interruptions
+  "daily-postboattest.mjs", // Day 5: steer, dock, transfer parcels and tow a separate raft; speech calms water without delivering for the child
+  "daily-bakerytest.mjs", // Day 6: catch ingredients, stir, shape, bake and sort real batches; speech steadies pours and widens useful heat
+  "daily-bridgetest.mjs", // Day 7: winch, rotate and lower supported bridge pieces, then steer both carts to the real door; speech steadies loads
+  "daily-lanterntest.mjs", // Day 8: true supply/bulb/return circuits, manual switches and short repair; speech traces live paths and widens real catches
+  "daily-trainlinetest.mjs", // Day 9: join rail ends, route and stop a real train, transfer pictured passengers and return the crew; speech widens joins and slows travel
+  "daily-kitetest.mjs", // Day 10: fit pictures, continuously sew, thread front/back, swap real tail weights and steer balanced flight; speech steadies cloth and calms gusts
+  "daily-nestlifttest.mjs", // Day 11: choose real counterweight sums, wind and brake the loaded lift, hand over each bundle and slide the quilt into its room; speech damps actual sway
+  "daily-concerttest.mjs", // Day 12: strike and pluck real owned instruments, play timed phrases, arrange and conduct an earned concert; speech slows beats and widens the actual window
+  "daily-rooftopstest.mjs", // Day 13: load, aim and launch real seeds, bank off the awning and grow every planter; speech calms actual drift without planting for the child
+  "daily-observatorytest.mjs", // Day 14: true gear meshes transmit signed ratios to the sun, moon and stars; real motor work, idler correction and speech-assisted valid catches
+  "daily-narrationtest.mjs", // Three spoken story acts and an ending earned through actual play, using the existing quiet audio owner
+  "daily-directionstest.mjs", // Real rapid tool/rail/cart transitions retain essential owned directions; paused or finished tasks cannot leak stale cues
+  "daily-storyendingtest.mjs", // A real narrated railway finish waits for the owned home cue before every ending sentence and the child's Continue
+  "daily-previewtest.mjs", // Local review serves the real speech/story game, returns safely, stays loopback-only and leaves production access untouched
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash

@@ -1,0 +1,27 @@
+.daily-bridge-canvas { touch-action:none; }
+.bridge-controls { position:absolute; inset:0; pointer-events:none; touch-action:none; color:#687950; font-family:inherit; }
+.bridge-controls [hidden] { display:none !important; }
+.bridge-controls button { box-sizing:border-box; pointer-events:auto; touch-action:none; -webkit-tap-highlight-color:transparent; transition:none !important; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; line-height:1.05; }
+.bridge-controls button:disabled { opacity:.42; cursor:default; }
+.bridge-controls button:focus-visible { outline:3px solid #fff2c5; outline-offset:2px; box-shadow:0 0 0 5px #4a877b; }
+.bridge-handle { position:absolute; min-width:44px; min-height:44px; border:0; padding:0; border-radius:12px; background:transparent; color:transparent; transform:translate(-50%,-50%); }
+.bridge-arrow,.bridge-rotate,.bridge-action,.bridge-stop { position:absolute; min-width:44px; height:44px; min-height:44px; padding:5px; border:1px solid rgba(105,112,76,.3); border-radius:12px; background:var(--act-cream,#f5edcf); color:#627854; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 0 rgba(69,91,61,.15); }
+.bridge-controls svg { width:23px; height:23px; flex:0 0 23px; }
+.bridge-arrow { width:44px; }
+.bridge-arrow-left { left:10px; bottom:58px; }
+.bridge-arrow-down { left:58px; bottom:58px; }
+.bridge-arrow-right { left:106px; bottom:58px; }
+.bridge-arrow-up { left:58px; bottom:106px; }
+.bridge-arrow[aria-pressed="true"] { background:#b6cba9; box-shadow:inset 0 0 0 2px #5d8876; }
+.bridge-action { right:10px; bottom:58px; width:144px; background:var(--act-teal,#3c8585); color:#faf4d8; }
+.bridge-rotate { bottom:106px; width:69px; font-size:12px !important; gap:2px; }
+.bridge-rotate-left { right:85px; }
+.bridge-rotate-right { right:10px; }
+.bridge-rotate svg { width:21px; flex-basis:21px; }
+.bridge-stop { left:10px; bottom:10px; width:140px; }
+.bridge-help { position:absolute !important; left:auto !important; right:10px !important; bottom:10px !important; transform:none !important; width:144px !important; min-width:0 !important; height:44px !important; min-height:44px !important; padding:5px 6px !important; font-size:14px !important; line-height:1.05 !important; }
+.bridge-help img { width:28px !important; height:28px !important; object-fit:contain; }
+.bridge-help.powered { box-shadow:0 0 0 3px rgba(195,209,154,.75),0 3px 0 rgba(54,84,63,.18); }
+.bridge-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(min-width:600px) { .bridge-arrow-left { left:18px; } .bridge-arrow-down,.bridge-arrow-up { left:70px; } .bridge-arrow-right { left:122px; } .bridge-action,.bridge-help { right:18px !important; } .bridge-rotate-left { right:93px; } .bridge-rotate-right { right:18px; } .bridge-stop { left:18px; width:148px; } }
+@media(prefers-reduced-motion:reduce) { .bridge-controls *,.bridge-help { animation:none !important; transition:none !important; } }
