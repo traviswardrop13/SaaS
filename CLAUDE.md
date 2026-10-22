@@ -3283,18 +3283,19 @@ selected."
   evidence either way. Pass: EVERY word heard (filler aside) is part of a try
   that is exactly the target, its usual-error form or a word `HEAR_ALIKE`
   lists, joined with a vowel's h dropped ("Ah rah", "Ara", "ah wah" for
-  ah-rah; "are" for ar; five tries in one listen); never a run picked out of
-  a longer phrase, or a grown-up's "is he" would spell "ice". Fail: every word
-  is exactly ANOTHER syllable of that place ("or" or "er" for ar, "free" for
-  trah), or no word carries the sound or its usual error ("taco", "is a" for
-  ar; "way" for play: a blend keeps its other letter). Anything else is
-  unknown and the shape check decides, such as a word with the target's
-  consonants as they sound (`_hearKey`: "Oh row" for oh-roh, "Itchy" for
-  ee-chee, "an" for ahn, a grown-up's "the" for athe). A try with its sound
-  missing is never a pass here ("ah" for ar is a vowel). A grown-up's "say"
-  sets aside only the words that spell the target ("say Ara" one, "say ah
-  rah" two), and is never the "say" of "ay-say". A blend
-  word said without its sound fails ("top" for stop). Not built yet: a child
+  ah-rah; "are" for ar; five tries in one listen; a letter is read as its
+  name, "E, C" for ee-see); never a run picked out of a longer phrase, or a
+  grown-up's "is he" would spell "ice". Fail: every word is exactly ANOTHER
+  syllable of that place ("or" or "er" for ar, "free" for trah), or no word
+  carries the sound or its usual error ("taco", "is a" for ar; "way" for
+  play: a blend keeps its other letter). Anything else is unknown and the
+  shape check decides, as it did before Apple's listener: a word with the
+  sound in it ("Oh row" for oh-roh, "Itchy" for ee-chee, "two" for oo-too,
+  "Year" for ear, a grown-up's "the" for athe; "rabbit" for ah-rah too). A
+  try with its sound melted away is never a pass here ("ah" or "owe" is a
+  vowel). A grown-up's "say" sets aside only the words that spell the target
+  ("say Ara" one, "say ah rah" two), and is never the "say" of "ay-say". A
+  blend word said without its sound fails ("top" for stop). Not built yet: a child
   who pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
   (each voiced burst is a try); look at that before switching Middle on. The
   website's shape check no longer fails a practice word for the hiss of its
