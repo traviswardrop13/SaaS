@@ -351,6 +351,59 @@
       ]
     },
 
+    // Day 7: Tortoise's New Front Door.
+    frontdoor: {
+      wash: "#94ac7d",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly flew in with a letter. Oops. That's a toothbrush! Whose is it?" },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Tortoise. He's moving to a new house today, and he needs our help!",
+                  little: "Here's the real letter. Tortoise has a new house, and he needs our help!" } },
+        // no buddy (on the sandy path just left of Echo, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "Meet Tortoise and his moving cart. His new house is just over the stream. See the green door?",
+                  little: "This is Tortoise and his cart. His new house is over the stream, but there's no bridge!" } },
+        // no buddy (on the plain grass just right of Echo, in front of the cart, not placed)
+        { art: "s04", ages: "big", buddy: null,
+          line: "Tortoise packed his chair, his books and his cozy blanket. But where is his toothbrush?" },
+        // no buddy
+        { art: "s05", ages: "big", buddy: null,
+          line: "Oh no, there's no bridge! The new one is still in pieces, all in a big pile by the water." },
+        // no buddy (on the plain grass just right of Echo, well away from the plank, not placed)
+        { art: "s06", ages: "both", buddy: null,
+          line: { big: "Tortoise tries to carry a long plank on his shell. Round and round he spins! Whoa, whoops!",
+                  little: "Tortoise tries to carry a big piece of wood. Round and round he spins. Whoops!" } },
+        // no buddy
+        { art: "s07", ages: "both", buddy: null,
+          line: { big: "Good thing there's a crane! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
+                  little: "The crane lifts the wood. Turn it to fit, then down it goes. Clunk!" } },
+        // no buddy (on the wooden landing's planks just right of Echo, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's build the bridge, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
+                  little: "Let's build a bridge, then roll Tortoise's cart to his door. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy (on the bridge's plank walkway just behind Echo, toward the near bank, not placed)
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Ding-dong! Tortoise's cart rolls across our new bridge, all the way to his green door.",
+                  little: "Ding-dong! Tortoise's cart made it to his green door!" } },
+        // no buddy (the plain patch of round rug just right of Echo, nothing on it, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!" },
+        // no buddy (on the stone path just right of Echo, not placed)
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Pelly is back, and look! That toothbrush is Tortoise's. He sent it with his letter by mistake!",
+                  little: "Pelly brings the toothbrush. It's Tortoise's! Brush, brush!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Seven gold stars on our helper map! You built a bridge to Tortoise's new front door." }
+      ]
+    },
+
     // Day 8: The Glowworm Lantern Walk.
     lantern: {
       wash: "#56598a",
@@ -507,6 +560,59 @@
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
           line: "Ten gold stars on our helper map! You made every picture fly." }
+      ]
+    },
+
+    // Day 11: The Sandstone Nest Lift.
+    nestlift: {
+      wash: "#d99a62",
+      intro: [
+        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
+        { art: "s01", ages: "both", buddy: null,
+          line: "Pelly's here with the mail! Oops. That's a wooden spoon. Are you making soup, Pelly?" },
+        // no buddy (PEEK, not placed)
+        { art: "s02", ages: "both", buddy: null,
+          line: { big: "Here's the real letter. It's from Mama Swallow. She has new nests on a cliff, and she needs our help!",
+                  little: "Here's the real letter. Mama Swallow needs our help!" } },
+        // no buddy (on the sand just right of Echo, at the foot of the cliff, not placed)
+        { art: "s03", ages: "both", buddy: null,
+          line: { big: "This is Sandstone Cliff, with little round nests all the way up. Mama Swallow and her chicks wave hello!",
+                  little: "Look! Mama Swallow and her three chicks. Their new nests are way up high!" } },
+        // no buddy
+        { art: "s04", ages: "both", buddy: null,
+          line: { big: "Uh-oh! The blankets and toys are all bundled up, and the bundles are too wide for the twisty stairs.",
+                  little: "Oh no! The blankets and toys are too big for the stairs!" } },
+        // no buddy (on the sand just right of Echo, not placed)
+        { art: "s05", ages: "both", buddy: null,
+          line: { big: "Mama Swallow tried to fly the enormous quilt up by herself. Flap, flap, flop! Now it's a quilt with feet.",
+                  little: "Mama Swallow tried to fly the big quilt up. Flop! Now it's a quilt with feet!" } },
+        // no buddy
+        { art: "s06", ages: "big", buddy: null,
+          line: "Each chick wants its own toy in bed tonight. A rabbit, a teddy bear, and a very, very long snake!" },
+        // no buddy (on the sand just right of the post's foot, not placed)
+        { art: "s07", ages: "big", buddy: null,
+          line: "Here's the basket lift! A bundle in one basket, stones with just as many dots in the other. Then up it goes!" },
+        // no buddy (on the sand between Echo and the flat rock with the stones, not placed)
+        { art: "s08", ages: "both", buddy: null,
+          line: { big: "Let's balance each bundle with stones, wind it up, up, up, and pop it into its nest. Ready?",
+                  little: "Here's a basket lift! Let's carry the blankets and toys up to the nests. Ready?" } }
+      ],
+      go: "Let's go!",
+      ending: [
+        // no buddy
+        { art: "e01", ages: "both", buddy: null,
+          line: { big: "Swoosh! The enormous quilt slides right into the top nest. Every nest has its bundle!",
+                  little: "Swoosh! The big quilt is in the top nest. Hooray!" } },
+        // no buddy (on the picnic cloth in the lower middle, just in front of the pot, between the chicks and Echo, not placed)
+        { art: "e02", ages: "big", buddy: null,
+          line: "Pelly flies in with her wooden spoon and makes berry soup for everybody. So that's what it's for!" },
+        // no buddy
+        { art: "e03", ages: "both", buddy: null,
+          line: { big: "Bedtime! Each chick snuggles in its own nest with its toy. And up top, Mama Swallow is a quilt with feet again!",
+                  little: "Bedtime! Each chick hugs its toy in its own nest. And look, a quilt with feet!" } },
+        // no buddy (the right half of the bench, just right of Echo, not placed)
+        { art: "e04", ages: "both", buddy: null,
+          line: "Eleven gold stars on our helper map! Every nest is cozy, thanks to you." }
       ]
     },
 

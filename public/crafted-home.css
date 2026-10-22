@@ -176,6 +176,8 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .quest-art[data-story="trainline"]{background:#a9cbe0;}
 .quest-art[data-story="concert"]{background:#6fb39b;}
 .quest-art[data-story="observatory"]{background:#c4945a;}
+.quest-art[data-story="frontdoor"]{background:#94ac7d;}
+.quest-art[data-story="nestlift"]{background:#d99a62;}
 .quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
 .quest-pic svg{width:46%;height:auto;max-height:86%;}

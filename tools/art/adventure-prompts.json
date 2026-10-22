@@ -615,6 +615,108 @@
       ]
     },
     {
+      "id": "frontdoor",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. TORTOISE: Tortoise, a cheerful, young grown-up clay tortoise who walks on four chunky legs: a smooth sandy-gold face with round cheeks, big shiny brown eyes and a small happy smile, sandy-gold legs with little rounded toes, and a tall, rounded shell of warm chestnut-brown plates edged in honey; no clothes, no glasses, no flowers, no hat and no scarf (he is not an old granny tortoise and not a little green turtle); with his head up he is about one and a half times Echo's height. THE MOVING CART: Tortoise's moving cart, a little honey-wood wagon with four spoked wooden wheels and a long wooden pull handle with a crossbar at its end, loaded with his small honey-wood chair with a slatted back, a stack of three books (green, red and blue) tied with a cream ribbon bow, and his folded teal-and-cream checked blanket with cream fringes; its sides are about as tall as Echo, the chair's back a little taller. THE CRANE: a big wooden crane that stands over the stream like a tall open doorway: two tall honey-wood legs, one on each bank, a long wooden beam across their tops, a little wooden pulley block that rolls along the beam, and a rope that hangs down from the block to a big round teal-grey hook; about five times Echo's height. The place in this story: a clear turquoise stream with mossy round boulders, little white flowers and sandy banks, on a sunny day. On the far bank stands Tortoise's new house, a cozy little round house built into a grassy bank: round sandy-stone walls, a grassy roof dotted with white flowers, a round window, a round green front door with a brass knob, and a little brass bell on a string beside the door. Before the bridge is built there is no bridge at all, only a short, empty wooden landing on each bank facing the other across the water, and the new bridge's pieces (tall honey-wood posts, long honey-wood beams, flat panels of walking planks and one short plank) wait in a neat pile on the near bank. Once it is built, the new bridge is a little honey-wood footbridge on sturdy wooden posts, with plank walking boards and a low wooden rail on each side.",
+      "who": {
+        "TORTOISE": {
+          "re": "\\bTortoise\\b",
+          "label": "Tortoise"
+        },
+        "THE MOVING CART": {
+          "re": "\\b[Cc]art\\b",
+          "label": "Tortoise's moving cart"
+        },
+        "THE CRANE": {
+          "re": "\\b[Cc]rane\\b",
+          "label": "the big wooden crane"
+        }
+      },
+      "lineups": [
+        "frontdoor"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright, sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a small green toothbrush with white bristles out of her beak pouch, holding it up in the tip of her bill as if it were a letter, blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little brown tortoise pulling a small wagon toward a little round house with a round green door, on the far side of a wavy blue stream: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "A sunny morning beside the clear turquoise stream. The grassy near bank, with a sandy path along it, runs across the lower third of the picture; the stream runs across the middle; on the far bank, in the upper middle, stands Tortoise's new house, built into a grassy bank, with its round green front door and the little brass bell beside it. There is no bridge across the stream anywhere in this picture: only the short, empty wooden landing on each bank. On the near bank, right of the middle, Tortoise stands beside his loaded moving cart (THE MOVING CART), smiling and pointing one front foot across the water at the green door. Echo stands on the sandy path just left of the middle, looking across at the house, eyes wide.",
+          "buddy": "on the sandy path just left of Echo: a patch of plain path, nothing on it"
+        },
+        "s04": {
+          "picture": "A close view on the grassy near bank of the turquoise stream on a sunny morning. Tortoise's loaded moving cart (THE MOVING CART) stands a little back, in the upper middle of the picture, seen from the side, with his small honey-wood chair, his three books tied with a cream ribbon bow and his folded teal-and-cream checked blanket in it. Tortoise stands at the right end of the cart, lifting one corner of the blanket with his nose and peeking under it, puzzled, looking for something. In front, on the grass in the lower left of the middle, Echo looks under a dandelion leaf, scratching his head with one wing, puzzled. The plain grass runs across the lower third of the picture.",
+          "buddy": "on the plain grass just right of Echo, in front of the cart: plain grass, nothing on it"
+        },
+        "s05": {
+          "picture": "The near bank of the sunny turquoise stream, seen from a little above. There is no bridge across the stream: on each bank a short, empty wooden landing sticks out over the water, facing the other across the gap. On the near bank, in the middle of the picture, the new bridge's pieces lie in a neat pile: two tall honey-wood posts, two long honey-wood beams, a few flat panels of walking planks and one short plank. Behind the pile the big wooden crane (THE CRANE) stands over the stream, its round hook hanging empty. Tortoise stands just right of the pile, looking at it with his mouth open. Echo stands just left of the pile, one wing on his cheek, surprised. Across the water, in the upper right of the middle, Tortoise's little round house shows its round green door.",
+          "buddy": null
+        },
+        "s06": {
+          "picture": "The grassy near bank of the turquoise stream on a sunny morning, the stream behind with no bridge across it. A little further back on the bank, in the upper middle of the picture, Tortoise carries one long honey-wood plank (about three times as long as Echo is tall) balanced across the top of his shell and spins round in a circle, so the plank swings round with him, with big curved motion lines around it; his eyes are swirly and dizzy and he has a big silly grin. The whole plank stays well inside the middle of the picture. Silly, not scary: nobody is near the ends of the plank. In front, on the grass in the lower left of the middle, well away from the plank, Echo giggles behind one wing. The plain grass runs across the lower third of the picture.",
+          "buddy": "on the plain grass just right of Echo, well away from the plank: plain grass, nothing on it"
+        },
+        "s07": {
+          "picture": "A close view of the big wooden crane (THE CRANE) over the sparkling turquoise stream on a sunny morning: its long wooden beam runs across the upper part of the picture between its two tall wooden legs, which stand at the left and right edges, one on each bank; from the little wooden pulley block in the middle of the beam a rope hangs down to the big round teal-grey hook. On the hook hangs one long honey-wood plank, swinging a little (two small curved motion lines at its ends). Below it, just above the water between the two short wooden landings, floats a soft, glowing pale-yellow outline of the very same plank, showing where it goes. Echo stands on the near bank's short wooden landing in the lower left of the middle, pointing one wing up at the plank, smiling. Calm water across the bottom of the picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "The grassy near bank of the turquoise stream on a sunny morning, the stream running across the middle of the picture and no bridge across it yet. In the lower middle, the near bank's short, wide, empty wooden landing sticks out over the water; Echo stands on it just left of the middle, wings out, ready to help, facing the viewer. Behind him the big wooden crane (THE CRANE) stands over the stream, its round hook hanging ready, with the neat pile of new honey-wood bridge pieces at its foot on the near bank, left of the landing. Across the water, on the far bank in the upper right of the middle, Tortoise's little round house shows its round green door. On the grassy near bank right of the landing, a little further back, Tortoise waits beside his loaded moving cart (THE MOVING CART) with a hopeful smile, one front foot raised. Calm water and plain grass across the bottom of the picture.",
+          "buddy": "on the wooden landing's planks just right of Echo: plain planks, nothing on them"
+        },
+        "e01": {
+          "picture": "A sunny day at the turquoise stream. The new wooden footbridge is finished: a little honey-wood footbridge on sturdy wooden posts, with plank walking boards and a low wooden rail on each side, crosses the stream from the near bank at the left, a little above the bottom of the picture, to the far bank in the upper right of the middle. On the far bank, right of the middle, Tortoise's loaded moving cart (THE MOVING CART) has stopped right in front of the round green door of his little round house, and the little brass bell beside the door is ringing, swinging on its string with two small curved motion lines; Tortoise stands beside the cart, beaming. Echo stands on the bridge's planks in the middle of the picture, cheering, wings up. Calm water across the bottom of the picture.",
+          "buddy": "on the bridge's plank walkway just behind Echo, toward the near bank: plain planks, nothing on it"
+        },
+        "e02": {
+          "light": "indoor",
+          "picture": "Inside Tortoise's new round house: sandy-stone walls, a round window, a wooden shelf, a little wooden bed and a round braided rug on a pale stone floor. His small honey-wood chair with a slatted back now stands by the round window, his three books (green, red and blue) stand on the shelf, and his teal-and-cream checked blanket lies on the little bed. On the round rug, left of the middle, Tortoise does a slow, happy dance, one front foot lifted, eyes closed, smiling. Echo dances beside him on the rug, just right of the middle, wings up, laughing.",
+          "buddy": "the plain patch of round rug just right of Echo, nothing on it"
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "A sunny afternoon outside Tortoise's little round house on the far bank: round sandy-stone walls, a grassy roof dotted with white flowers, and the round green front door wide open, with a string of little plain paper flags in soft colours (nothing on them) hung over it. The new wooden footbridge crosses the turquoise stream behind, on the left. Pelly the pelican, exactly as she looks in the attached earlier picture (only Pelly comes from it: this page is at Tortoise's house, not at Echo's cottage), stands left of the door and holds out a small green toothbrush with white bristles in the tip of her bill. Tortoise, in the middle, reaches for it with one front foot, laughing in surprise. Echo stands on the stone path in front, just right of the middle, laughing with both wings on his tummy. The stone path runs across the lower third of the picture.",
+          "buddy": "on the stone path just right of Echo: plain path, nothing on it",
+          "also": [
+            "file:public/assets/adventure/windup/s01.webp"
+          ]
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. The gold stars already on the map stay exactly as in the attached picture. In a green, grassy corner of the island on the map, away from the river and the stone bridge already there, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a tiny round house with a round green door in a grassy bank, beside a little blue stream with a tiny wooden footbridge across it. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the tiny round house with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On a sunny morning by a sparkling turquoise stream with mossy boulders, Echo stands on the grassy near bank at the foot of the big wooden crane (THE CRANE), whose rope and round hook hold up one long honey-wood plank over the water; there is no bridge yet, only a short, empty wooden landing on each bank. Beside Echo, Tortoise waits with his loaded moving cart (THE MOVING CART), looking hopefully across the water. Across the stream, on the far bank, Tortoise's cozy little round house, built into a grassy bank, shows its round green front door. The crane's legs and beam may run up to the top edge, but Echo, Tortoise, the cart, the hanging plank and the green door are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; Echo and Tortoise left of the middle, the hanging plank in the middle and the green door right of it. Only Echo and Tortoise appear: no other characters, and no finished bridge.",
+      "chars": [
+        {
+          "key": "tortoise",
+          "h": 1.5,
+          "prompt": "Tortoise, full body, standing on his four chunky legs, three-quarter view, head up, smiling: a cheerful, young grown-up clay tortoise with a smooth sandy-gold face, round cheeks, big shiny brown eyes and a small happy smile, sandy-gold legs with little rounded toes, and a tall, rounded shell of warm chestnut-brown plates edged in honey; no clothes, no glasses, no flowers, no hat and no scarf."
+        },
+        {
+          "key": "cart",
+          "h": 1.3,
+          "prompt": "Tortoise's moving cart, the whole cart, side three-quarter view, nothing else with it: a little honey-wood wagon with four spoked wooden wheels and a long wooden pull handle with a crossbar at its end, loaded with a small honey-wood chair with a slatted back, a stack of three books (green, red and blue) tied with a cream ribbon bow, and a folded teal-and-cream checked blanket with cream fringes."
+        }
+      ]
+    },
+    {
       "id": "lantern",
       "light": "sunset",
       "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GLOWWORM: Glowworm, a small, chubby, cheerful clay glowworm (a soft little bug shaped like a round caterpillar; not a snake, not a snail, no shell, no wings, no clothes) with a pale butter-yellow body made of four round segments, a big round head with big glossy eyes, small pink cheeks and a wide smile, two thin antennae with little round tips, six tiny legs, and a round tail end that glows a soft warm golden yellow like a little night-light; about half Echo's height when he sits up, and about as long as Echo is tall. RABBIT: Rabbit, a fluffy, cheerful caramel-brown clay rabbit (a real rabbit, not a white bunny and not a wind-up toy: no key, no jacket, no drum, no scarf) with long upright ears with pink insides, a cream muzzle and tummy, a pink nose, a round white fluffy tail and big soft back feet, in a cozy plum-purple knitted jumper with a little orange-and-green knitted carrot on its front; he stands upright on his back feet; about one and a half times Echo's height. HEDGEHOG: Hedgehog, a small, round, friendly clay hedgehog with soft, smooth, rounded chestnut-brown spines (soft-looking, never sharp), a cream face and tummy, a shiny black button nose, tiny round ears, small pink paws and a tiny cherry-red knitted bobble hat with a white bobble; she stands upright on her back feet; about as tall as Echo. The woods in this story are the Mushroom Woods at dusk: soft mossy tree trunks, rounded teal-green leaves, ferns, little ordinary woodland mushrooms, a pale sandy earthen path that winds between them, and a lavender-blue evening sky with the last warm peach light. The lights along the path all look like this: little mushroom lamps (each a wide, rounded, ribbed honey-wood mushroom cap on two short wooden posts over a round wooden base, with a small round glass light between the posts where it glows, about as tall as Echo, with a tiny wooden switch lever at its foot), round flat stepping stones set into the path that glow softly like little moons only when lit, one small honey-wood power box with two round sockets on its front at the start of the path, soft thick lamp cords (some honey-yellow, some teal) with a round wooden plug at each end, and one great big lantern at the end of the path, a classic honey-wood lantern with a rounded rectangular frame, a short handle loop and a big glass window, about twice Echo's height, hanging from a low mossy branch over a small circle of tree-stump seats, with a few little mushroom lamps standing around the circle. Unlit, every lamp and the big lantern have dark grey glass with no glow at all.",
@@ -943,6 +1045,119 @@
           "key": "beetle",
           "h": 0.45,
           "prompt": "Beetle, full body, standing on her six tiny legs, three-quarter view, smiling: a tiny, round, shiny red clay beetle (a girl) with big black spots on her back, a small black head with two short curly feelers, big friendly glossy eyes, pink cheeks and six tiny black legs."
+        }
+      ]
+    },
+    {
+      "id": "nestlift",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. SWALLOW: Mama Swallow, a slim, friendly clay barn swallow (a real swallow with a slim body and long pointed wings, not a round ball like Echo, not a duck), with a glossy deep navy-blue back, head and wings, a rusty-orange forehead and throat, a cream-white tummy, a small pointed black beak, kind round eyes, small pink cheeks, little dark feet and a long forked tail with two thin tail streamers; she wears a little sunflower-yellow neckerchief knotted at her neck; she is about one and a half times Echo's height. CHICKS: Mama Swallow's three chicks, three round, fluffy baby swallows, all three the same size, each about half Echo's height: soft smoky-grey down on top, cream tummies, little rusty-orange faces, wide yellow-edged beaks, small pink cheeks, short stubby wings and tiny stubby tails; never sky blue, so they never look like Echo. THE BUNDLES: the family's soft moving bundles, the very ones the game shows: two blanket bundles (each a neat stack of folded wool blankets striped cream, teal and brick red, tied round the middle with a cream cloth band, with little fringed ends; the second stack a little taller), the rabbit (a cream felt toy bunny with long pink-lined ears and pink paws), the teddy bear (a round honey-brown felt teddy bear with a cream muzzle, a cream tummy and round ears), the long snake (a very, very long stuffed felt snake striped sage green and teal, with a cream tummy and a smiling face), each toy about three quarters of Echo's height, and the enormous quilt (a huge, thick, folded patchwork quilt of teal, brick-red, mustard and cream squares with little stitched flowers, about twice as wide as Echo). THE LIFT: the basket lift at the foot of the cliff, just left of the nests: a tall, sturdy honey-wood post, as tall as the cliff, with a long wooden balance beam across its top like a seesaw high in the sky; from the beam's left end hangs the stone basket, a round woven basket for stones; from its right end hangs the lift basket, a big round woven basket on a long rope that rides up and down right beside the nests' round doorways; a little wooden winch wheel with a handle on the post winds the rope; a short shiny golden rail runs from just under the beam's right end into the top nest's round doorway; and three smooth round grey-green stones with cream-white dots painted on them (one with one dot, one with two dots, one with three dots; dots only, never numbers) go in the stone basket. The place in this story is the nest village on Sandstone Cliff, a tall, warm peach-and-cream sandstone cliff with soft rounded rock layers, tufts of sage-green plants and little white flowers, under a bright blue sky with soft white clouds: up its face, one above another, five cozy round nest rooms are carved into the rock, each with a round doorway, a little shelf and a round bed of woven straw inside, the top nest the widest; a very narrow twisty stair, just wide enough for Echo to squeeze up, is carved into the rock and winds up past them; at the foot of the cliff lies a wide flat ledge of warm sand, with a far canyon view behind it.",
+      "who": {
+        "SWALLOW": {
+          "re": "\\bMama Swallow\\b(?!')",
+          "label": "Mama Swallow (the grown-up barn swallow)"
+        },
+        "CHICKS": {
+          "re": "\\b[Cc]hicks?\\b",
+          "label": "Mama Swallow's three chicks"
+        },
+        "THE BUNDLES": {
+          "re": "\\b(bundles?|blankets?|quilt|rabbit|bear|snake)\\b",
+          "label": "the bundles (the blankets, the quilt and the soft toys)"
+        },
+        "THE LIFT": {
+          "re": "\\b[Ll]ift\\b",
+          "label": "the basket lift"
+        }
+      },
+      "lineups": [
+        "nestlift"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and proudly pulls a long wooden spoon out of her beak pouch, holding it up by its handle and blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the spoon.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a tall orange cliff with little round nests in it, a dark-blue bird with an orange face and a long forked tail flying beside it, and a little pile of striped packages at the bottom of the cliff: only crayon lines, no writing at all. A low wooden porch railing runs straight across the picture about two thirds of the way down. Echo stands behind the railing just left of the middle, both wings resting on its top rail, leaning toward the letter, eyes wide.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing on it and nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "The foot of Sandstone Cliff on a sunny day. The tall peach-and-cream sandstone cliff rises up the right half of the picture, its five round nest doorways carved one above another up its face, all of them empty and all well inside the picture, away from its right edge, and the very narrow twisty stair winding up past them. On the left, a bright blue sky with soft white clouds above a far canyon view. On the wide flat ledge of warm sand at the foot of the cliff, Mama Swallow stands left of the middle, waving one wing, and her three chicks stand in a row in front of her, waving their stubby little wings. Echo stands on the sand just right of the middle, near the foot of the cliff, waving back at them, delighted.",
+          "buddy": "on the sand just right of Echo, at the foot of the cliff: a patch of plain sand, nothing on it"
+        },
+        "s04": {
+          "picture": "The bottom of the very narrow twisty stair, carved into the peach sandstone cliff between two rounded rock walls, in the middle of the picture; its opening is just wide enough for Echo to squeeze through. The teddy bear (the round honey-brown felt teddy bear) is wedged sideways in the opening, its round arms and legs sticking out on both sides, much too wide to go up. Mama Swallow hovers in the air just above it, flapping, tugging the teddy bear's ear with her beak, with a puzzled, funny face, not upset. Echo stands on the sand just below, pushing the teddy bear with both wings, cheeks puffed out. On the sand to the right of the stair waits a big wobbly pile of the other bundles: the two blanket bundles, the rabbit, the long snake, and the enormous quilt on top.",
+          "buddy": null
+        },
+        "s05": {
+          "picture": "On the wide flat ledge of warm sand at the foot of the peach sandstone cliff. The enormous patchwork quilt has flopped down on the sand in the upper middle of the picture like a lumpy little tent, with Mama Swallow underneath it: only her two little dark feet and the two thin tips of her forked tail poke out from under its bottom edge, and one navy wing pokes out of its side, waving cheerfully. Her three chicks sit on a low flat rock on the left of the quilt, giggling behind their stubby wings. Echo stands on the sand in the lower middle, laughing, both wings on his tummy. Silly and cozy, nobody hurt.",
+          "buddy": "on the sand just right of Echo: a patch of plain sand, nothing on it"
+        },
+        "s06": {
+          "picture": "A close view on the warm sand at the foot of the peach sandstone cliff, a soft blue sky behind. The three chicks sit in a row in the middle of the picture, each hugging its own toy: the chick on the left hugs the rabbit, the chick in the middle hugs the teddy bear, and the chick on the right is wrapped round and round in the very long stuffed snake like a big striped scarf, the snake's smiling face resting on top of the chick's head and its long tail trailing across the sand. All three chicks look up and away with hopeful, excited faces. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s07": {
+          "picture": "A close view of the basket lift (THE LIFT) at the foot of the peach sandstone cliff. The tall honey-wood post stands in the middle of the picture with the long wooden balance beam across its top, perfectly level. From the beam's right end, the round woven lift basket hangs on its rope at the height of the post's middle, with one blanket bundle inside; a little round wooden tag hangs on the bundle with two cream-white dots painted on it. From the beam's left end hangs the round woven stone basket at the same height, with ONE smooth grey-green stone inside that has two cream-white dots on it. The other two stones (one with one dot, one with three dots) lie on the sand at the lower left. Echo stands on the sand just left of the post's foot, one wing pointing up at the level beam, smiling. Dots only, no numbers anywhere.",
+          "buddy": "on the sand just right of the post's foot: a patch of plain sand, nothing on it and nothing hanging low above it"
+        },
+        "s08": {
+          "picture": "The foot of Sandstone Cliff by the basket lift (THE LIFT), on a sunny day. Left of the middle, the tall honey-wood post of the lift rises with its long wooden balance beam high above, the empty stone basket hanging from the beam's left end; three smooth grey-green stones with cream-white dots (one, two and three dots) sit in a neat little row on a low flat rock at the foot of the post. Right of the middle, at the foot of the cliff, the empty lift basket rests on the sand, its long rope rising straight up to the beam's right end. Echo stands on the sand in the lower middle, just left of the lift basket, facing the viewer, holding up a blanket bundle with both wings, ready and smiling. Above the lift basket the cliff rises with its five round nest doorways, empty and waiting, one above another up to the wide top nest high above, all well inside the picture, away from its right edge.",
+          "buddy": "on the sand between Echo and the flat rock with the stones: a patch of plain sand, nothing on it"
+        },
+        "e01": {
+          "picture": "The nest village finished, on a sunny day: the tall peach sandstone cliff rises in the middle of the picture with its five round nest rooms one above another, each glowing warmly inside and holding its bundle in its round straw bed: the two blanket bundles in the lowest nest, the rabbit in the next, then the teddy bear, then the long snake, and at the very top, in the widest nest, the enormous patchwork quilt in the lift basket, which has just slid in along the short shiny golden rail of the basket lift. On the left, the top of the lift's honey-wood post and its level balance beam, the stone basket hanging from its left end with all three dotted stones inside. On a little rock ledge just left of the top nest, Mama Swallow cheers with both wings up, her tail streamers flying. Echo flutters in the blue sky just below her, cheering, wings wide.",
+          "buddy": null
+        },
+        "e02": {
+          "light": "afternoon",
+          "picture": "A warm afternoon on the wide flat ledge of warm sand at the foot of the peach sandstone cliff, the round nest doorways above, each with its bundle tucked inside. A little picnic on a red-and-white checked picnic cloth in the middle of the picture: behind a big round clay pot of purple berry soup, in the upper middle, Pelly the pelican stirs the soup proudly with her long wooden spoon. Mama Swallow stands on the left of the pot, holding out a little bowl, and her three chicks sit in a row in front of her, holding little bowls and slurping happily. Echo stands on the sand on the right of the pot, holding up his own little bowl, laughing.",
+          "buddy": "on the picnic cloth in the lower middle, just in front of the pot, between the chicks and Echo: a plain patch of checked cloth, nothing on it"
+        },
+        "e03": {
+          "light": "sunset",
+          "picture": "Bedtime at sunset on Sandstone Cliff: a close view of the upper part of the cliff, every round nest doorway glowing warm and cozy inside. In the widest top nest, in the upper middle of the picture, the enormous patchwork quilt is heaped on the round straw bed like a lumpy little tent, with Mama Swallow fast asleep underneath it: only her two little dark feet and the two thin tips of her forked tail poke out from under its edge. Below the top nest, one above another, are three more nests, and in each one a chick snuggles sleepily in its own straw bed with its own toy: in the nest just under the top one, a chick with the long snake, whose striped tail flops out over the doorway's edge; in the next, a chick hugging the teddy bear; and in the next, a chick hugging the rabbit. Echo flutters in the soft sky on the left of the middle, waving goodnight with one wing. The lowest nest, with the blanket bundles, is below this picture; the bottom of the picture is plain warm rock.",
+          "buddy": null
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. The gold stars already on the map stay exactly as in the attached picture. Near one edge of the island, a soft white puffy cloud has just drifted off to one side, uncovering a new place: a tall peach-orange cliff with five tiny round nests in it, one above another. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little cliff with one wing, beaming. Plain wooden floor below.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. A sunny day at the foot of a tall peach-and-cream sandstone cliff: on the right, five little round nest doorways, all empty, are carved one above another up the cliff. In the middle of the picture, the two round woven baskets of the basket lift (THE LIFT) hang on ropes from its long wooden balance beam high above, and the beam is tipped: the right one, the lift basket, holds a blanket bundle and hangs low, just above the sand, and the left one, the stone basket, is empty and hangs higher. Echo stands on the sand between them, holding up one smooth grey-green stone with two cream-white dots on it toward the stone basket, cheerful and determined. Mama Swallow flutters just above the stone basket, cheering him on. The two baskets, Echo and Mama Swallow are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; the stone basket and Mama Swallow left of the middle, Echo in the middle and the lift basket right of it. Only Echo and Mama Swallow appear: no other characters.",
+      "chars": [
+        {
+          "key": "swallow",
+          "h": 1.5,
+          "prompt": "Mama Swallow, full body, standing, facing forward, smiling: a slim, friendly clay barn swallow (a real swallow with a slim body and long pointed wings, not a round ball, not a duck), with a glossy deep navy-blue back, head and wings, a rusty-orange forehead and throat, a cream-white tummy, a small pointed black beak, kind round eyes and small pink cheeks, little dark feet, and a long forked tail with two thin tail streamers; a little sunflower-yellow neckerchief knotted at her neck."
+        },
+        {
+          "key": "chicks",
+          "h": 0.55,
+          "prompt": "Mama Swallow's three chicks standing side by side, full body, facing forward and smiling: three round, fluffy baby swallows, all three the same size, with soft smoky-grey down on top, cream tummies, little rusty-orange faces, wide yellow-edged beaks, small pink cheeks, short stubby wings and tiny stubby tails; never sky blue."
+        },
+        {
+          "key": "toys",
+          "h": 0.8,
+          "prompt": "Three soft toys standing side by side, full body, facing forward, smiling, all about the same height: a rabbit (a cream felt toy bunny with long pink-lined ears and pink paws), a teddy bear (a round honey-brown felt teddy bear with a cream muzzle, a cream tummy and round ears), and a long snake (a very, very long stuffed felt snake striped sage green and teal, with a cream tummy and a smiling face, its body coiled in a loose curl). Soft stitched felt, like cuddly toys."
+        },
+        {
+          "key": "blankets",
+          "h": 1.1,
+          "prompt": "Two moving bundles side by side, seen from the front: on the left, a blanket bundle (a neat stack of folded wool blankets striped cream, teal and brick red, tied round the middle with a cream cloth band, with little fringed ends), and on the right, the enormous quilt (a huge, thick, folded patchwork quilt of teal, brick-red, mustard and cream squares with little stitched flowers, about twice as wide as the blanket bundle and a little taller)."
         }
       ]
     },
