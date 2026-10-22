@@ -1083,6 +1083,10 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // paid SUBSCRIPTION sessions too, which is exactly how a cancelled subscriber
 // restored permanent access. Travis retired the idea outright on 19 Sep 2026.
 // Access comes from a live subscription: the one thing that can expire.
+// (ON THE WEB. The iPhone's one payment, 22 Oct 2026, is Apple's own
+// non-consumable in RevenueCat's "full" entitlement: Apple's record and a
+// restore through it are what grant it, never a Stripe Checkout Session, so
+// everything below still holds.)
 {
   // CODE, not commentary. The route's header explains WHY lifetime is gone and
   // therefore contains the very string being banned — the same describing-vs-
@@ -1103,6 +1107,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("checkout sells a subscription and nothing else",
     /mode:\s*"subscription"/.test(chk) && !/mode:\s*"payment"/.test(chk),
     "a one-time mode here is how a lifetime product would come back");
+  const sj = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("the iPhone's one payment is Apple's alone: its id sits beside the subscriptions for restore, and Restore grants only what Apple's \"full\" entitlement says",
+    /lifetime: "com\.speaksona\.app\.lifetime"/.test(sj) && /function iapRestore\(\) \{\s*return iapConfigure\(\)\.then\(\(P\) => P\.restorePurchases\(\)\)\.then\(\(info\) => \{\s*const active = _iapActive\(info\);/.test(sj) && /const IAP_ENTITLEMENT = "full";/.test(sj));
   // the retired monthly plan is a different thing and must survive: those
   // people are still billed, and a reinstall has to come back paid
   ok("…while an existing monthly subscriber still restores",
