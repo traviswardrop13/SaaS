@@ -320,8 +320,18 @@ changing one. What follows from the rule:
   one ("Your free days end soon", RCHOOK1, below), but only to a parent who
   gave the app an email, so the price screen still promises none, and the
   words email, remind and notify may not appear on it (`pricescreentest`,
-  `setupbuytest`, `planwordstest`). A third row promising it, for a family
-  it is truly armed for, is Travis's call. "Paywall viewed" and the one-shot (`planShown`) count only once
+  `setupbuytest`, `planwordstest`), **with one exception since 22 Oct 2026**
+  (Travis: setup asks iPhone for its Allow box, so the phone itself reminds,
+  NOTIFY1): one line under the button and its small print, **"We'll remind
+  you the day before it ends."**, only when `Sona.trialReminderOn(picked
+  row)` says this phone will show it AND the picked row is a free trial
+  (`planWords`' `headsUp`, painted into `#iapAhead`; the page feature-checks
+  the function), and only on a row whose free days are certain (`plan.sure`;
+  on a "for new subscribers" row Apple may charge today, with no trial and
+  so no reminder). Never on a charged-today row or the one payment, never
+  otherwise; `planwordstest` holds it to that word for word and
+  `pricescreentest` (1d, 15c) plays it. The words are Travis's and Rachel's
+  to change. "Paywall viewed" and the one-shot (`planShown`) count only once
   a priced card is on screen.
 - **THE PRICE SCREEN IS ONE ROW, NO DATE, AND AN X (Travis, 6 Oct 2026, with
   a reference paywall: "too many words ... I don't want it to say Friday
@@ -350,8 +360,8 @@ changing one. What follows from the rule:
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
   **Since 19 Oct 2026 the yearly plan is a second row above this one**
-  (below, "TWO PLANS ON THE IPHONE AGAIN"). Lifetime still needs a new App
-  Store product first (Travis's task).
+  (below, "TWO PLANS ON THE IPHONE AGAIN"), **and since 22 Oct 2026 the one
+  payment a third row under it** (below, "ONE PAYMENT, A THIRD ROW").
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and the Books card says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
@@ -511,8 +521,12 @@ charter price, and **it is the one picked when the plan screen opens**.
   steps aside for it; monthly keeps its own line, which says how to cancel.
   What Apple requires stays: each plan's price and period, the renewal, where
   to cancel, and Restore Purchases, Terms and Privacy as links. The button is
-  setup's lighter teal (`.planbuy .btn.go` in `crafted-family.css`, "for
-  now": painted art for it has not arrived).
+  setup's teal (`.planbuy .btn.go` in `crafted-family.css`, "for
+  now": painted art for it has not arrived), since 22 Oct 2026 setup's
+  BRIGHTER teal (Travis: "not sure I love the greenish button"; a
+  `#16c2be → #0e9c99` face, a `#0a8784` edge and shadow, a white label with
+  a `#087572` shadow), so the two buttons a parent taps in a row still
+  match (`pricescreentest` 14).
 - **Monthly never touches the charter.** `/api/checkout` has its own short
   branch for it — its own amount, a month interval, no `trial_period_days`,
   **no `tier` stamp**, inline `price_data` only (never an env Price), and it
@@ -576,6 +590,68 @@ This replaces "one plan, no pick" below.
 - **A parked game is never offered:** `?from=<a Coming soon game>` is
   Settings › Your plan, behind the check.
 `pricescreentest` (1b, 15, 15b) and `planwordstest` (2b) play both rows.
+
+**ONE PAYMENT, A THIRD ROW (22 Oct 2026, iOS 1.0.9)** (Travis: "ok go build
+it all", the one-time purchase on the price screen; "i dont wanna say
+lifetime"). Apple's card can show a third row, under monthly.
+- **The product:** `IAP_PRODUCTS.lifetime = "com.speaksona.app.lifetime"`, a
+  NON-CONSUMABLE in the same `full` entitlement, App Store name "Sona
+  Premium, One Payment", $59.99 (Travis's to set in App Store Connect; the
+  card shows the store's price). The id is the store's and never shown. **It
+  is July 2026's "Sona Lifetime" ($79.99) product, edited, not a new one:**
+  App Store Connect never reuses an id, and Apple's buy sheet shows the
+  display name, so a leftover "Sona Lifetime" puts the word on screen.
+- **No "Best value" beside it:** the yearly row's tag compares twelve monthly
+  prices, so it goes whenever the one payment shows at a price at or under
+  the year's, or the two cannot be compared (one payment $59.99 under a
+  "$59.99/yr · Best value" would be a false comparison).
+- **Shown only by the yearly row's rule:** RevenueCat's CURRENT offering
+  lists it (among its packages or as its `lifetime` package; one
+  `getOfferings` read serves both rows, `_offered`) AND the store returns it
+  by its own id with a price (`iapProduct("lifetime")`, category
+  `NON_SUBSCRIPTION`). Missing, slow (the same 1.2 s grace), throwing, an
+  unnamed product, no price, or one that claims free days: no row, the card
+  exactly as before. No monthly product sells nothing, this row included.
+  It is `plan.life` on the Plan `storePlan()` answers: always "paid", `per`
+  "once", no eligibility asked.
+- **Its words (`planWords`, Travis's to change):** "One payment" over "Yours
+  to keep. No subscription.", the store's price with no period; picked, the
+  check line "One payment · No subscription", the button "Get Sona Premium —
+  $59.99" and the small print "One payment of $59.99. No subscription."
+  Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
+- **The pick:** yearly, monthly, then the one payment, top to bottom; yearly
+  picked on arrival (monthly without a yearly row), **never the one
+  payment**; a row that arrives on a card a parent is reading comes in
+  unpicked, and one that goes away while picked takes the pick to monthly
+  (`take()` keeps the row the parent was reading while it is there). The fit
+  holds for every row picked (`APPLE.others`, `APPLE.alt(kind)`), so a tap on
+  any row moves no row; for three rows on the smallest phone in the longest
+  shape one more level closes the rows up (`fit9`, last, never reached with
+  one or two rows). The arrow keys go round all three.
+- **Buying and keeping it:** `Sona.buyPlan(plan.life)` buys it through the
+  same one purchase call (`purchaseStoreProduct`; an old plugin's
+  `purchaseProduct` with type "inapp"); success is the `full` entitlement on;
+  the list hears "paid" (`_tellPlan`); Restore finds it by the same
+  entitlement; it never arms the trial reminder. RevenueCat tells the server
+  with `NON_RENEWING_PURCHASE`, already "paid" in `lib/revenuecat.ts` (the
+  welcome series stops; no note is queued: nothing ends).
+- **The web sells no such thing** (`/api/checkout` is subscription mode only,
+  `iaptest`): the one payment is Apple's alone.
+- **The Premium page and Settings › Your plan:** in the app the Premium
+  page's price line names the one payment when the store's answer carries
+  it ("…, or one payment"), and the cancel line says a one payment has
+  nothing to cancel.
+- **Travis's tasks (NATIVE.md, "One payment, a third row"):** the existing
+  non-consumable edited in App Store Connect, submitted with the build; in
+  RevenueCat, attach it to `full`, THEN add its package to the current
+  offering (offered but not attached, Apple would take the money and open
+  nothing). **Travis's to know:** a family who bought the one payment and
+  still has an old subscription that later ends would be told "We miss you
+  at Sona" by RCHOOK1 (its EXPIRATION does not know of the one payment). It
+  cannot happen from Sona's own card (an Apple ID with Premium is never sold
+  a second plan), only from a subscription bought somewhere else beside it.
+`planwordstest` (2c), `pricescreentest` (1c, 15c) and `rcwebhooktest` (3b)
+play it.
 
 **THE IPHONE SELLS ONE PLAN: 3 DAYS FREE, THEN $9.99 A MONTH** (Travis, 5 Oct
 2026: "get rid of the annual option and update the copy so that it says three

@@ -117,6 +117,38 @@ await scenario("a family that can buy", async () => {
   } finally { await context.close(); }
 });
 
+// THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, so the price
+// has a third row. A parent who picks it is charged once, comes back to
+// setup for the microphone and the hand-off, and the list hears "paid".
+await scenario("a family that buys the one payment", async () => {
+  const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant", offering: "all" });
+  try {
+    await toReady(page, "Ava", "ava.mom@example.com");
+    await tap(page, "#nextBtn");
+    await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
+    await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
+    const rows = await page.evaluate(() => ["iapYear", "iapPlan", "iapLife"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
+    ok("the price has three rows, yearly picked, the one payment last and unpicked, and it never says lifetime",
+      rows.every(Boolean) && rows[0][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[2][2]) && !/lifetime/i.test(await text(page, "body")), rows);
+    await tap(page, "#iapLife");
+    ok("…picked: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
+      (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
+    await tap(page, "#iapBuy");
+    await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });
+    await step(page, "mic");
+    const bought = await page.evaluate(() => ({ id: localStorage.getItem("__bought"), premium: !!(window.Sona && Sona.premium && Sona.premium()), game: sessionStorage.getItem("sona.firstgame.v1") }));
+    ok("it buys the one-payment product and comes back to setup on the microphone screen", bought.id === IDS.lifetime && bought.premium && !bought.game, bought);
+    await tap(page, "#nextBtn");
+    await step(page, "achieve");
+    await tap(page, "#nextBtn");
+    await page.waitForURL(/\/today\.html$/, { timeout: 12000 });
+    const all = leads(requests), plan = all.filter((l) => l.plan);
+    ok("…then Home, and the list hears \"paid\" for the same address, never a trial", plan.length === 1 && plan[0].plan === "paid" && plan[0].source === "app-paid" && plan[0].email === "ava.mom@example.com", all);
+    ok("…with nothing about the child in any request", !requests.some((r) => /\bAva\b/.test(decodeURIComponent(r.url) + " " + (r.body || ""))));
+    ok("a family that buys the one payment: no page errors", errors.length === 0, errors);
+  } finally { await context.close(); }
+});
+
 await scenario("Not now", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant" });
   try {
