@@ -660,23 +660,23 @@ window.DailyAdventureStories = [
     "title": "The Lily-Pad Concert",
     "description": "Explore pond instruments, practise short musical patterns and conduct a shared concert.",
     "mechanic": "musical-timing-and-arrangement",
-    "speechHelp": "Echo temporarily slows the musical cue and widens its timing window. The child still taps, plucks and chimes the demonstrated pattern; speech adds no played notes.",
+    "speechHelp": "Echo temporarily slows musical cues, widens timing windows, softens reed pulls and broadens seating catches. Every note, placement and conducting entry still needs the child's action.",
     "youngerGoals": [
       "Try the drum, reed harp and chimes.",
-      "Play Frog's short drum patterns.",
-      "Play Newt's and Duck's answering patterns.",
+      "Answer Frog's three-note and four-note drum phrases.",
+      "Play Newt's four-note reed answer and Duck's three-note chime answer.",
       "Arrange the musicians and choose the opening instrument.",
-      "Conduct their combined piece and play its chosen ending."
+      "Choose an ending, raise the baton, conduct nine player cues and play the final phrase."
     ],
     "olderGoals": [
-      "Explore the drum and reed harp.",
+      "Explore the drum and all three reed pitches.",
       "Try the chimes and discover their higher and lower notes.",
-      "Play Frog's first drum pattern.",
-      "Play the drum's longer reply.",
-      "Follow Newt's rising and falling reed pattern.",
-      "Answer with Duck's chiming phrase.",
+      "Answer Frog's three-note drum phrase.",
+      "Play the drum's five-note reply.",
+      "Follow Newt's five-note rising and falling reed phrase.",
+      "Answer with Duck's four-note chime phrase.",
       "Place the musicians and choose their opening and ending.",
-      "Conduct the complete alternating piece and its final phrase."
+      "Raise the baton, conduct twelve player cues and play the chosen four-note ending."
     ],
     "acts": [
       {
@@ -717,9 +717,10 @@ window.DailyAdventureStories = [
           "The separate parts are ready to become one little concert.",
           "Place the musicians around the broad lily pad so you can see their instruments.",
           "Choose which sound will begin.",
-          "Follow the conductor's moving cue as the drum, reeds and chimes take their turns.",
           "Choose a soft chime finish or one cheerful drum roll.",
-          "Raise your conductor's hand and guide everyone through the finished piece."
+          "Raise your conductor's hand when you are ready.",
+          "Follow the moving cue as the drum, reeds and chimes take their turns.",
+          "Then play your chosen ending and let the last sound float across the pond."
         ]
       }
     ],
@@ -734,6 +735,7 @@ window.DailyAdventureStories = [
       "sub": "You played the patterns and helped the musicians perform together."
     },
     "art": "/assets/crafted/daily/day12-lily-pad-concert-v1.webp",
+    "endingArt": "/assets/crafted/daily/day12-concert-ending-v1.webp",
     "ready": false
   },
   {
@@ -745,10 +747,10 @@ window.DailyAdventureStories = [
     "speechHelp": "Echo shows the next flight arc and temporarily calms the wind. The child still sets angle and strength and lands the seed pod in real soil; misses return to the tray.",
     "youngerGoals": [
       "Launch a seed pod into the nearest planter.",
-      "Fill the low rooftop planters.",
-      "Aim seed pods into the higher planters.",
-      "Land the climbing seeds in the arch planter.",
-      "Finish the last arch planter with its remaining seed pods."
+      "Fill the low planter, then bounce a pod from the awning into its sheltered neighbour.",
+      "Fill the tall, far and high rooftop planters.",
+      "Land the first two climbing pods in the arch planter.",
+      "Land the remaining three climbing pods to finish the flowering arch."
     ],
     "olderGoals": [
       "Set the springboard and land a seed in the nearest planter.",
@@ -757,8 +759,8 @@ window.DailyAdventureStories = [
       "Reach the far planter with a longer arc.",
       "Adjust for the rooftop breeze at the narrow planter.",
       "Use the awning's bounce to reach the sheltered planter.",
-      "Aim the first climbing pods into the arch planter.",
-      "Land the remaining climbing pods to complete the flowering arch."
+      "Aim the first two climbing pods into the arch planter.",
+      "Land the remaining three climbing pods to complete the flowering arch."
     ],
     "acts": [
       {
@@ -785,6 +787,8 @@ window.DailyAdventureStories = [
           "The next planters stand farther away and higher up.",
           "Change the springboard's angle and how far you pull it back.",
           "Watch each pod's curved journey.",
+          "One planter hides beneath an awning.",
+          "Bounce its pod from the striped fabric into the soil.",
           "Echo can show the next flight path and calm the rooftop breeze.",
           "Any pod that misses rolls down the return chute.",
           "It is ready for another launch."
@@ -815,6 +819,7 @@ window.DailyAdventureStories = [
       "sub": "You landed the seed pods and grew a flowering rooftop arch."
     },
     "art": "/assets/crafted/daily/day13-rooftop-seeds-v1.webp",
+    "endingArt": "/assets/crafted/daily/day13-rooftops-ending-v1.webp",
     "ready": false
   },
   {

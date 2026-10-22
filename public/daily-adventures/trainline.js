@@ -26,7 +26,42 @@
   function throttle(){var v=0;Object.keys(holds).forEach(function(k){v+=holds[k]||0;});return clamp(v,-1,1);}
   function sound(name){if(api&&api.sfx)try{api.sfx(name);}catch(e){}}
   function banner(text){if(bannerEl)bannerEl.textContent=text;if(statusEl)statusEl.textContent=text;}
-  function instruct(key,text){if(said[key]||!api||!api.instruct)return;said[key]=true;try{api.instruct(text);}catch(e){}}
+  // Keep essential tool directions behind this game's current owned line.
+  // Pause retries only the current task; later words never inherit its queue.
+  var directionQueue = [], directionBusy = false, directionActive = null, directionGeneration = 0;
+  function directionScope() { return stage + ":" + taskIndex + ":" + phase(); }
+  function clearDirections(retry) {
+    var interrupted = directionActive;
+    directionGeneration++; directionBusy = false; directionActive = null;
+    if (!retry) { directionQueue = []; return; }
+    if (interrupted && interrupted.scope === directionScope()) {
+      delete said[interrupted.key];
+      if (!directionQueue.some(function (item) { return item.key === interrupted.key && item.scope === interrupted.scope; })) directionQueue.unshift(interrupted);
+    }
+  }
+  function flushDirections() {
+    if (directionBusy || !playable() || !api || !api.instruct) return;
+    var scope = directionScope();
+    while (directionQueue.length) {
+      var item = directionQueue.shift();
+      if (item.scope !== scope || said[item.key]) continue;
+      var token = directionGeneration, result;
+      directionBusy = true; directionActive = item; said[item.key] = true;
+      try { result = api.instruct(item.text); } catch (e) { result = Promise.resolve(); }
+      function finished() {
+        if (token !== directionGeneration) return;
+        directionBusy = false; directionActive = null; flushDirections();
+      }
+      Promise.resolve(result).then(finished, finished);
+      return;
+    }
+  }
+  function instruct(key, text) {
+    if (said[key] || !api || !api.instruct) return;
+    var scope = directionScope();
+    if (!directionQueue.some(function (item) { return item.key === key && item.scope === scope; })) directionQueue.push({key:key, text:text, scope:scope});
+    flushDirections();
+  }
   function on(el,name,fn,options){el.addEventListener(name,fn,options||false);listeners.push([el,name,fn,options||false]);}
   function makeGoals(){function build(ids){return{kind:"build",pieces:ids};}function delivery(id){return{kind:"deliver",passenger:id};}goals=young?[[build(["station","fork"])],[delivery("squirrel")],[build(["cottages"]),delivery("badger"),build(["pond"]),delivery("ducks")],[build(["upper-loop","lower-loop"])],[{kind:"crew"}]]:[[build(["station","fork-a"])],[build(["fork-b"])],[delivery("squirrel")],[build(["cottages-a","cottages-b"])],[delivery("badger")],[build(["pond-a","pond-b"]),delivery("ducks")],[build(["hill-upper","upper-cottages","pond-lower","lower-station"])],[{kind:"crew"}]];}
   function bez(a,b,c,d,t){var u=1-t;return{x:u*u*u*a.x+3*u*u*t*b.x+3*u*t*t*c.x+t*t*t*d.x,y:u*u*u*a.y+3*u*u*t*b.y+3*u*t*t*c.y+t*t*t*d.y};}
@@ -147,11 +182,11 @@
     if(power>0&&active){ctx.fillStyle="#6a8d82";roundRect(W*.5-30,H-13,60,3,1.5);ctx.fill();ctx.fillStyle="#cbb56d";roundRect(W*.5-30,H-13,60*power/POWER,3,1.5);ctx.fill();}}
   function tick(dt){if(paused||away||destroyed||document.hidden)return;clock+=dt;if(doneAt){if(clock>=doneAt){doneAt=0;hud();if(api&&api.done)api.done();}else publish();return;}if(!playable()){publish();return;}power=Math.max(0,power-dt);moveTrain(dt);crewHomeCue();hud();}
   function frame(now){if(destroyed)return;var dt=last?Math.min(.05,(now-last)/1000):0;last=now;tick(dt);draw();raf=requestAnimationFrame(frame);}
-  function onWord(index){if(destroyed||index<0||index>=count)return;if(stage===index&&active){paused=false;power=POWER;hud();return;}cancelGesture();clearHolds();train.v=0;stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;homeCue=false;said={};last=0;startTask();draw();}
-  function pause(){paused=true;last=0;cancelGesture();clearHolds();hud();draw();}
-  function reset(){cancelGesture();clearHolds();pieces.forEach(function(p){p.placed=false;p.angle=young?15:30;});passengers.forEach(function(p){p.state="waiting";});train={edge:"S_A",s:0,v:0,history:[],distance:0};route="cottage";crewVisited=[];departed=false;homeCue=false;completed=[];served=[];stage=-1;taskIndex=0;active=false;paused=false;won=false;power=0;clock=0;doneAt=0;misses=0;placements=0;transfers=0;switchOps=0;buffers=0;manualDistance=0;said={};last=0;rebuildRails();banner("The valley is waiting for its railway.");hud();draw();}
-  function finale(){cancelGesture();clearHolds();active=false;paused=false;power=0;doneAt=0;train.v=0;won=completed.length>=count&&served.length===3&&crewVisited.length===3&&passenger("crew").state==="aboard"&&stoppedAt("S");banner(won?"Every neighbour has a stop. The crew is home!":"The valley railway is waiting.");hud();draw();}
-  function destroy(){if(!initialized)return;destroyed=true;cancelGesture();clearHolds();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(cv)cv.classList.remove("daily-trainline-canvas");if(help){help.classList.remove("trainline-help","powered");help.disabled=false;}initialized=false;active=false;publish();}
+  function onWord(index){if(destroyed||index<0||index>=count)return;if(stage!==index||!active)clearDirections(false);if(stage===index&&active){paused=false;power=POWER;flushDirections();hud();return;}cancelGesture();clearHolds();train.v=0;stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;homeCue=false;said={};last=0;startTask();draw();}
+  function pause(){clearDirections(true);paused=true;last=0;cancelGesture();clearHolds();hud();draw();}
+  function reset(){clearDirections(false);cancelGesture();clearHolds();pieces.forEach(function(p){p.placed=false;p.angle=young?15:30;});passengers.forEach(function(p){p.state="waiting";});train={edge:"S_A",s:0,v:0,history:[],distance:0};route="cottage";crewVisited=[];departed=false;homeCue=false;completed=[];served=[];stage=-1;taskIndex=0;active=false;paused=false;won=false;power=0;clock=0;doneAt=0;misses=0;placements=0;transfers=0;switchOps=0;buffers=0;manualDistance=0;said={};last=0;rebuildRails();banner("The valley is waiting for its railway.");hud();draw();}
+  function finale(){clearDirections(false);cancelGesture();clearHolds();active=false;paused=false;power=0;doneAt=0;train.v=0;won=completed.length>=count&&served.length===3&&crewVisited.length===3&&passenger("crew").state==="aboard"&&stoppedAt("S");banner(won?"Every neighbour has a stop. The crew is home!":"The valley railway is waiting.");hud();draw();}
+  function destroy(){clearDirections(false);if(!initialized)return;destroyed=true;cancelGesture();clearHolds();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(cv)cv.classList.remove("daily-trainline-canvas");if(help){help.classList.remove("trainline-help","powered");help.disabled=false;}initialized=false;active=false;publish();}
   window.DailyAdventureGames=window.DailyAdventureGames||{};
-  window.DailyAdventureGames.trainline={init:function(a,n){if(initialized)destroy();api=a;count=n===8?8:5;young=count===5;destroyed=false;initialized=true;away=false;cv=$("dailyCanvas");layer=$("dailyControls");help=$("dailyHelp");bannerEl=$("dailyBanner");if(!cv||!layer)throw new Error("Trainline needs dailyCanvas and dailyControls");ctx=cv.getContext("2d");cv.classList.add("daily-trainline-canvas");if(help)help.classList.add("trainline-help");reduceMotion=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);buttons={};passButtons={};makeGoals();world();controls();[["bg","/assets/crafted/daily/day09-snowdrop-train-v1.webp"],["train","/assets/crafted/game/train-engine-coach-v1.webp"],["squirrel","/assets/crafted/daily/day09-passenger-squirrel-v1.webp"],["badger","/assets/crafted/daily/day09-passenger-badger-v1.webp"],["ducks","/assets/crafted/daily/day09-passenger-ducks-v2.webp"],["bunny","/assets/crafted/buddy-bunny-sit.webp"],["frog","/assets/crafted/buddy-frog-sit.webp"]].forEach(function(p){var i=new Image();i.onload=draw;i.src=p[1];art[p[0]]=i;});fit();reset();raf=requestAnimationFrame(frame);},onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;banner("Roomier rail joins and a slower train for careful stops.");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy};
+  window.DailyAdventureGames.trainline={init:function(a,n){if(initialized)destroy();api=a;count=n===8?8:5;young=count===5;destroyed=false;initialized=true;away=false;cv=$("dailyCanvas");layer=$("dailyControls");help=$("dailyHelp");bannerEl=$("dailyBanner");if(!cv||!layer)throw new Error("Trainline needs dailyCanvas and dailyControls");ctx=cv.getContext("2d");cv.classList.add("daily-trainline-canvas");if(help)help.classList.add("trainline-help");reduceMotion=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);buttons={};passButtons={};makeGoals();world();controls();[["bg","/assets/crafted/daily/day09-snowdrop-train-v1.webp"],["train","/assets/crafted/game/train-engine-coach-v1.webp"],["squirrel","/assets/crafted/daily/day09-passenger-squirrel-v1.webp"],["badger","/assets/crafted/daily/day09-passenger-badger-v1.webp"],["ducks","/assets/crafted/daily/day09-passenger-ducks-v2.webp"],["bunny","/assets/crafted/buddy-bunny-sit.webp"],["frog","/assets/crafted/buddy-frog-sit.webp"]].forEach(function(p){var i=new Image();i.onload=draw;i.src=p[1];art[p[0]]=i;});fit();reset();raf=requestAnimationFrame(frame);},onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;flushDirections();banner("Roomier rail joins and a slower train for careful stops.");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;if(playing!==false)flushDirections();hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy};
 })();

@@ -20,7 +20,42 @@
   function batch() { return batches[selectedBatch]; }
   function phase() { var t = task(); if (!t) return "waiting"; if (t.type === "pour") return batch().flourChecked ? "pourLiquid" : "pourFlour"; if (t.type === "shape") return "shape" + (selectedBatch === 0 ? "Round" : selectedBatch === 1 ? "Curl" : "Berry"); return t.type; }
   function assistance() { var threshold = younger ? [1, 2] : [2, 3], a = misses >= threshold[1] ? 2 : misses >= threshold[0] ? 1 : 0, seconds = younger ? [2.5, 5] : [4, 8]; return Math.max(a, effort >= seconds[1] ? 2 : effort >= seconds[0] ? 1 : 0); }
-  function say(key, text) { if (said[key] || !api || !api.instruct) return; said[key] = true; try { api.instruct(text); } catch (e) {} }
+  // Keep essential tool directions behind this game's current owned line.
+  // Pause retries only the current task; later words never inherit its queue.
+  var directionQueue = [], directionBusy = false, directionActive = null, directionGeneration = 0;
+  function directionScope() { return stage + ":" + taskIndex + ":" + selectedBatch + ":" + phase(); }
+  function clearDirections(retry) {
+    var interrupted = directionActive;
+    directionGeneration++; directionBusy = false; directionActive = null;
+    if (!retry) { directionQueue = []; return; }
+    if (interrupted && interrupted.scope === directionScope()) {
+      delete said[interrupted.key];
+      if (!directionQueue.some(function (item) { return item.key === interrupted.key && item.scope === interrupted.scope; })) directionQueue.unshift(interrupted);
+    }
+  }
+  function flushDirections() {
+    if (directionBusy || !canPlay() || !api || !api.instruct) return;
+    var scope = directionScope();
+    while (directionQueue.length) {
+      var item = directionQueue.shift();
+      if (item.scope !== scope || said[item.key]) continue;
+      var token = directionGeneration, result;
+      directionBusy = true; directionActive = item; said[item.key] = true;
+      try { result = api.instruct(item.text); } catch (e) { result = Promise.resolve(); }
+      function finished() {
+        if (token !== directionGeneration) return;
+        directionBusy = false; directionActive = null; flushDirections();
+      }
+      Promise.resolve(result).then(finished, finished);
+      return;
+    }
+  }
+  function say(key, text) {
+    if (said[key] || !api || !api.instruct) return;
+    var scope = directionScope();
+    if (!directionQueue.some(function (item) { return item.key === key && item.scope === scope; })) directionQueue.push({key:key, text:text, scope:scope});
+    flushDirections();
+  }
   function sound(key) { if (api && api.sfx) { try { api.sfx(key); } catch (e) {} } }
   function banner(text) { if (bannerEl) bannerEl.textContent = text; if (statusEl) statusEl.textContent = text; }
   function on(el, name, fn, opts) { el.addEventListener(name, fn, opts || false); listeners.push([el, name, fn, opts || false]); }
@@ -257,15 +292,15 @@
     hud();
   }
   function frame(now) {if(destroyed)return;var dt=last?Math.min(0.05,(now-last)/1000):0;last=now;tick(dt);draw();raf=requestAnimationFrame(frame);}
-  function onWord(index) {if(destroyed||index<0||index>=count)return;if(stage===index&&active){paused=false;power=POWER;hud();return;}cancelGesture();stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;effort=0;last=0;said={};beginTask();draw();}
-  function pause() {paused=true;last=0;cancelGesture();hud();draw();}
-  function reset() {cancelGesture();makeBatches();completed=[];stage=-1;taskIndex=0;selectedBatch=0;active=false;paused=false;won=false;power=0;clock=0;last=0;doneAt=0;particles=[];splashes=[];emission=0;misses=0;effort=0;manualDistance=0;caught=0;spilled=0;pourChecks=0;levelUses=0;ovenRemovals=0;sortDrops=0;setHeat=0.15;actualHeat=0.15;heatTouched=false;heatTouches=0;ovenBatch=-1;heatInput.value="15";said={};tool=toolHome();banner("The bakery's breakfast trays are waiting.");hud();draw();}
-  function finale() {cancelGesture();active=false;paused=false;power=0;doneAt=0;won=completed.length>=count&&batches.every(function(b){return b.baked&&b.cooled&&b.buns.every(function(x){return x.sorted;});});banner(won?"Breakfast is ready for the neighbours!":"The bakery is ready for your next batch.");hud();draw();}
-  function destroy() {if(!initialized)return;destroyed=true;cancelGesture();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(cv)cv.classList.remove("daily-bakery-canvas");if(helpEl){helpEl.classList.remove("bakery-help","powered");helpEl.disabled=false;}initialized=false;active=false;stage=-1;publish();}
+  function onWord(index) {if(destroyed||index<0||index>=count)return;if(stage!==index||!active)clearDirections(false);if(stage===index&&active){paused=false;power=POWER;flushDirections();hud();return;}cancelGesture();stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;effort=0;last=0;said={};beginTask();draw();}
+  function pause() {clearDirections(true);paused=true;last=0;cancelGesture();hud();draw();}
+  function reset() {clearDirections(false);cancelGesture();makeBatches();completed=[];stage=-1;taskIndex=0;selectedBatch=0;active=false;paused=false;won=false;power=0;clock=0;last=0;doneAt=0;particles=[];splashes=[];emission=0;misses=0;effort=0;manualDistance=0;caught=0;spilled=0;pourChecks=0;levelUses=0;ovenRemovals=0;sortDrops=0;setHeat=0.15;actualHeat=0.15;heatTouched=false;heatTouches=0;ovenBatch=-1;heatInput.value="15";said={};tool=toolHome();banner("The bakery's breakfast trays are waiting.");hud();draw();}
+  function finale() {clearDirections(false);cancelGesture();active=false;paused=false;power=0;doneAt=0;won=completed.length>=count&&batches.every(function(b){return b.baked&&b.cooled&&b.buns.every(function(x){return x.sorted;});});banner(won?"Breakfast is ready for the neighbours!":"The bakery is ready for your next batch.");hud();draw();}
+  function destroy() {clearDirections(false);if(!initialized)return;destroyed=true;cancelGesture();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(cv)cv.classList.remove("daily-bakery-canvas");if(helpEl){helpEl.classList.remove("bakery-help","powered");helpEl.disabled=false;}initialized=false;active=false;stage=-1;publish();}
   window.DailyAdventureGames=window.DailyAdventureGames||{};
   window.DailyAdventureGames.bakery={
     init:function(a,n){if(initialized)destroy();api=a;count=n===8?8:5;younger=count===5;destroyed=false;initialized=true;away=false;cv=$("dailyCanvas");layer=$("dailyControls");helpEl=$("dailyHelp");bannerEl=$("dailyBanner");if(!cv||!layer)throw new Error("Bakery needs dailyCanvas and dailyControls");ctx=cv.getContext("2d");cv.classList.add("daily-bakery-canvas");if(helpEl)helpEl.classList.add("bakery-help");reduceMotion=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);batchButtons=[];bunButtons=[];makeGoals();makeBatches();controls();
       [["bg","/assets/crafted/daily/day06-moonberry-bakery-v1.webp"],["bowl","/assets/crafted/game/cake-bowl-v1.webp"],["jug","/assets/crafted/game/cake-jug-v1.webp"],["spoon","/assets/crafted/game/cake-spoon-v1.webp"],["wood","/assets/crafted/painted-wood-ivory.webp"]].concat(KEYS.map(function(key){return["bun-"+key,"/assets/crafted/daily/day06-bun-"+key+"-v1.webp"];})).forEach(function(p){var i=new Image();i.onload=function(){draw();};i.src=p[1];art[p[0]]=i;});fit();reset();raf=requestAnimationFrame(frame);},
-    onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;banner("Steady hands! The pictures give your hands more room.");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy
+    onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;flushDirections();banner("Steady hands! The pictures give your hands more room.");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;if(playing!==false)flushDirections();hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy
   };
 })();

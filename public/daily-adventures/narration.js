@@ -5,13 +5,14 @@
   function wrap(story, game) {
     if (!story || !game) throw new Error("A story and physical game are required");
     var api, total = 5, current = -1, seen = {}, pending = null, paused = false, generation = 0;
+    var physicalInstruction = null, endingOwed = false;
     var card, title, picture, words, next, replay, previousFocus, callback, listeners = [];
     function on(el, event, fn) { el.addEventListener(event, fn); listeners.push([el, event, fn]); }
     function publish() {
       window.__dailyNarration = { day: story.day, stage: current, total: total, open: !!pending,
-        mode: pending ? pending.mode : null, act: pending ? pending.act : null,
+        mode: pending ? pending.mode : endingOwed ? "ending-wait" : null, act: pending ? pending.act : null,
         speaking: !!pending && pending.speaking, paused: paused,
-        physicalEndingEarned: !!pending && pending.mode === "ending", seen: Object.keys(seen) };
+        physicalEndingEarned: endingOwed || !!pending && pending.mode === "ending", seen: Object.keys(seen) };
     }
     function build() {
       if (!document.getElementById("dailyNarrationStyle")) {
@@ -41,7 +42,7 @@
       title.tabIndex = -1;
     }
     function close() {
-      generation++; pending = null; callback = null; if (card) card.hidden = true;
+      generation++; pending = null; callback = null; endingOwed = false; physicalInstruction = null; if (card) card.hidden = true;
       if (previousFocus && document.contains(previousFocus) && !previousFocus.disabled) { try { previousFocus.focus(); } catch (e) {} }
       publish();
     }
@@ -88,20 +89,43 @@
       }
       return null;
     }
+    function showEnding() {
+      endingOwed = false;
+      show("ending", null, function () { api.done(); });
+    }
+    function waitForEnding() {
+      endingOwed = true;
+      var token = ++generation, stage = current;
+      var voice = physicalInstruction && physicalInstruction.stage === stage ? physicalInstruction.promise : Promise.resolve();
+      publish();
+      function afterVoice() {
+        if (token !== generation || paused || !endingOwed || current !== stage) return;
+        showEnding();
+      }
+      // A quick final physical action can finish before its own direction.
+      // Wait on that same owner's promise before starting the first ending
+      // sentence, rather than letting instruct silently reject every line.
+      Promise.resolve(voice).then(afterVoice, afterVoice);
+    }
     return {
       init: function (a, n) {
-        api = a; total = n === 8 ? 8 : 5; current = -1; paused = false; seen = {}; pending = null;
+        api = a; total = n === 8 ? 8 : 5; current = -1; paused = false; seen = {}; pending = null; endingOwed = false; physicalInstruction = null;
         build(); var proxy = {};
         Object.keys(a).forEach(function (key) { proxy[key] = a[key]; });
+        proxy.instruct = function (text) {
+          var result = api.instruct(text);
+          physicalInstruction = {stage:current, promise:Promise.resolve(result)};
+          return result;
+        };
         proxy.done = function () {
-          if (paused || pending) return;
-          if (current === total - 1) show("ending", null, function () { api.done(); });
+          if (paused || pending || endingOwed) return;
+          if (current === total - 1) waitForEnding();
           else api.done();
         };
         game.init(proxy, total); publish();
       },
       onWord: function (index) {
-        current = index; paused = false; var act = actAt(index);
+        current = index; paused = false; endingOwed = false; physicalInstruction = null; var act = actAt(index);
         if (act) show("act", act, function () { seen[story.acts.indexOf(act)] = true; game.onWord(index); publish(); });
         else { game.onWord(index); publish(); }
       },
@@ -109,13 +133,16 @@
       pause: function () { paused = true; generation++; if (game.pause) game.pause(); publish(); },
       resume: function (playing) {
         paused = playing === false;
+        // The shared owner has stopped the interrupted clip before resume.
+        // Claim it synchronously, ahead of an obsolete mechanical replay.
+        if (endingOwed && playing !== false) { showEnding(); return; }
         if (pending && playing !== false) { speak(); return; }
         if (game.resume) game.resume(playing); publish();
       },
       reset: function () { close(); seen = {}; current = -1; paused = false; game.reset(); publish(); },
       finale: function () { close(); if (game.finale) game.finale(); publish(); },
       destroy: function () {
-        generation++; pending = null; listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2]); }); listeners = [];
+        generation++; pending = null; endingOwed = false; physicalInstruction = null; listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2]); }); listeners = [];
         if (card && card.parentNode) card.parentNode.removeChild(card); if (game.destroy) game.destroy(); publish();
       }
     };

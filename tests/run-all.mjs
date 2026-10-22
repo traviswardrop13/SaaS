@@ -72,7 +72,10 @@ const SUITES = [
   "daily-trainlinetest.mjs", // Day 9: join rail ends, route and stop a real train, transfer pictured passengers and return the crew; speech widens joins and slows travel
   "daily-kitetest.mjs", // Day 10: fit pictures, continuously sew, thread front/back, swap real tail weights and steer balanced flight; speech steadies cloth and calms gusts
   "daily-nestlifttest.mjs", // Day 11: choose real counterweight sums, wind and brake the loaded lift, hand over each bundle and slide the quilt into its room; speech damps actual sway
+  "daily-concerttest.mjs", // Day 12: strike and pluck real owned instruments, play timed phrases, arrange and conduct an earned concert; speech slows beats and widens the actual window
   "daily-narrationtest.mjs", // Three spoken story acts and an ending earned through actual play, using the existing quiet audio owner
+  "daily-directionstest.mjs", // Real rapid tool/rail/cart transitions retain essential owned directions; paused or finished tasks cannot leak stale cues
+  "daily-storyendingtest.mjs", // A real narrated railway finish waits for the owned home cue before every ending sentence and the child's Continue
   "daily-previewtest.mjs", // Local review serves the real speech/story game, returns safely, stays loopback-only and leaves production access untouched
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries

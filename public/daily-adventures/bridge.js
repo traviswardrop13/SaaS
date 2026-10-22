@@ -27,7 +27,42 @@
   function loadAngle(){return crane.load?crane.load.angle+crane.theta*0.22:0;}
   function sound(name){if(api&&api.sfx)try{api.sfx(name);}catch(e){}}
   function banner(text){if(bannerEl)bannerEl.textContent=text;if(statusEl)statusEl.textContent=text;}
-  function instruct(key,text){if(said[key]||!api||!api.instruct)return;said[key]=true;try{api.instruct(text);}catch(e){}}
+  // Keep essential tool directions behind this game's current owned line.
+  // Pause retries only the current task; later words never inherit its queue.
+  var directionQueue = [], directionBusy = false, directionActive = null, directionGeneration = 0;
+  function directionScope() { return stage + ":" + taskIndex + ":" + phase(); }
+  function clearDirections(retry) {
+    var interrupted = directionActive;
+    directionGeneration++; directionBusy = false; directionActive = null;
+    if (!retry) { directionQueue = []; return; }
+    if (interrupted && interrupted.scope === directionScope()) {
+      delete said[interrupted.key];
+      if (!directionQueue.some(function (item) { return item.key === interrupted.key && item.scope === interrupted.scope; })) directionQueue.unshift(interrupted);
+    }
+  }
+  function flushDirections() {
+    if (directionBusy || !playable() || !api || !api.instruct) return;
+    var scope = directionScope();
+    while (directionQueue.length) {
+      var item = directionQueue.shift();
+      if (item.scope !== scope || said[item.key]) continue;
+      var token = directionGeneration, result;
+      directionBusy = true; directionActive = item; said[item.key] = true;
+      try { result = api.instruct(item.text); } catch (e) { result = Promise.resolve(); }
+      function finished() {
+        if (token !== directionGeneration) return;
+        directionBusy = false; directionActive = null; flushDirections();
+      }
+      Promise.resolve(result).then(finished, finished);
+      return;
+    }
+  }
+  function instruct(key, text) {
+    if (said[key] || !api || !api.instruct) return;
+    var scope = directionScope();
+    if (!directionQueue.some(function (item) { return item.key === key && item.scope === scope; })) directionQueue.push({key:key, text:text, scope:scope});
+    flushDirections();
+  }
   function on(el,name,fn,options){el.addEventListener(name,fn,options||false);listeners.push([el,name,fn,options||false]);}
   function makeGoals(){goals=young?[["support-a"],["support-b","frame"],["panel-a","panel-b"],["gap","test"],["move"]]:[["support-a"],["support-b"],["rear"],["middle"],["front"],["panel-a","panel-b"],["gap","test"],["move"]];}
   function makePieces(){
@@ -136,11 +171,11 @@
   function craneArt(){if(phase()!=="crane")return;var hp=hookPoint();ctx.strokeStyle="#9b9873";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(W*.055,boom+work.height*.23);ctx.lineTo(W*.055,boom);ctx.lineTo(W*.945,boom);ctx.lineTo(W*.945,boom+work.height*.23);ctx.stroke();ctx.strokeStyle="#c9bd8c";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(W*.055,boom+10);ctx.lineTo(W*.945,boom+10);ctx.stroke();wood(crane.x-18,boom-12,36,24);ctx.strokeStyle="#9e9065";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(crane.x,boom+9);ctx.lineTo(hp.x,hp.y-7);ctx.stroke();if(crane.load){var p=pieces[crane.load.id];ellipse(hp.x,hp.y+8,pieceGeometry(p).length*.47,8,"rgba(61,87,71,.14)");drawPiece(p,hp,loadAngle(),false);}ctx.strokeStyle="#5a8078";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(hp.x,hp.y-10);ctx.lineTo(hp.x,hp.y+4);ctx.arc(hp.x+5,hp.y+4,5,PI,0,true);ctx.stroke();ellipse(hp.x,hp.y-13,4,4,"#c9d2b4","#718e7e");}
   function cartArt(){if(phase()!=="cart"&&!testFinished&&!movingFinished)return;var x=cart.x,y=cart.y,im=cart.kind==="moving"?image("cart"):null,size=Math.max(58,W*.14);ctx.save();ctx.translate(x,y);ctx.rotate(cart.sway*.4);ellipse(0,14,size*.46,8,"rgba(71,86,60,.18)");if(im){var h=size*im.naturalHeight/im.naturalWidth;ctx.drawImage(im,-size/2,-h+21,size,h);}else{wood(-size*.40,-14,size*.8,25);if(cart.kind==="moving"){wood(-size*.22,-38,size*.25,25);ctx.fillStyle="#9aab96";roundRect(0,-31,size*.34,18,4);ctx.fill();ctx.strokeStyle="#e2d4b0";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(size*.16,-31);ctx.lineTo(size*.16,-13);ctx.stroke();}[-.26,.26].forEach(function(t){ellipse(size*t,14,8,8,"#7a795c","#d9cb9d");ctx.strokeStyle="#bcb68b";ctx.beginPath();ctx.moveTo(size*t-6*Math.cos(cart.spin),14-6*Math.sin(cart.spin));ctx.lineTo(size*t+6*Math.cos(cart.spin),14+6*Math.sin(cart.spin));ctx.stroke();});}ctx.restore();ctx.strokeStyle=canArrive()?"#f1efbf":"#c4d1ae";ctx.lineWidth=3;ctx.setLineDash([4,5]);ctx.beginPath();ctx.ellipse(door.x,door.y,dockTolerance(),laneHalf*1.2,0,0,TAU);ctx.stroke();ctx.setLineDash([]);}
   function draw(){if(!ctx||destroyed)return;ctx.clearRect(0,0,W,H);background();bridgeArt();craneArt();cartArt();if(power>0&&active){ctx.fillStyle="rgba(239,244,214,.95)";roundRect(W-112,work.top-2,100,22,10);ctx.fill();ctx.fillStyle="#657c5b";ctx.font="700 11px system-ui,sans-serif";ctx.textAlign="center";ctx.fillText(phase()==="cart"?"Steady cart":"Steady crane",W-62,work.top+13);}}
-  function onWord(index){if(destroyed||index<0||index>=count)return;if(stage===index&&active){paused=false;power=POWER;hud();return;}cancelGesture();stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;effort=0;said={};last=0;startTask();draw();}
-  function pause(){paused=true;last=0;cancelGesture();hud();draw();}
-  function reset(){cancelGesture();makePieces();placed=[];completed=[];stage=-1;taskIndex=0;active=false;paused=false;won=false;power=0;clock=0;doneAt=0;misses=0;effort=0;attached=0;releases=0;rotations=0;said={};testFinished=false;movingFinished=false;crane={x:source.x,vx:0,length:Math.max(25,work.height*.16),theta:0,omega:0,load:null};cart={x:Math.max(28,W*.08),y:lane,vx:0,vy:0,sway:0,swayVelocity:0,spin:0,kind:"test",distance:0,collisions:0,arrived:false};last=0;banner("The bridge pieces are waiting beside the stream.");hud();draw();}
-  function finale(){cancelGesture();active=false;paused=false;power=0;doneAt=0;won=completed.length>=count&&testFinished&&movingFinished;banner(won?"Welcome home, Tortoise!":"Tortoise's bridge is ready for more building.");hud();draw();}
-  function destroy(){if(!initialized)return;destroyed=true;cancelGesture();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(canvas)canvas.classList.remove("daily-bridge-canvas");if(help){help.classList.remove("bridge-help","powered");help.disabled=false;}initialized=false;active=false;publish();}
+  function onWord(index){if(destroyed||index<0||index>=count)return;if(stage!==index||!active)clearDirections(false);if(stage===index&&active){paused=false;power=POWER;flushDirections();hud();return;}cancelGesture();stage=index;taskIndex=0;active=true;paused=false;won=false;power=POWER;doneAt=0;misses=0;effort=0;said={};last=0;startTask();draw();}
+  function pause(){clearDirections(true);paused=true;last=0;cancelGesture();hud();draw();}
+  function reset(){clearDirections(false);cancelGesture();makePieces();placed=[];completed=[];stage=-1;taskIndex=0;active=false;paused=false;won=false;power=0;clock=0;doneAt=0;misses=0;effort=0;attached=0;releases=0;rotations=0;said={};testFinished=false;movingFinished=false;crane={x:source.x,vx:0,length:Math.max(25,work.height*.16),theta:0,omega:0,load:null};cart={x:Math.max(28,W*.08),y:lane,vx:0,vy:0,sway:0,swayVelocity:0,spin:0,kind:"test",distance:0,collisions:0,arrived:false};last=0;banner("The bridge pieces are waiting beside the stream.");hud();draw();}
+  function finale(){clearDirections(false);cancelGesture();active=false;paused=false;power=0;doneAt=0;won=completed.length>=count&&testFinished&&movingFinished;banner(won?"Welcome home, Tortoise!":"Tortoise's bridge is ready for more building.");hud();draw();}
+  function destroy(){clearDirections(false);if(!initialized)return;destroyed=true;cancelGesture();if(raf)cancelAnimationFrame(raf);raf=0;listeners.forEach(function(l){l[0].removeEventListener(l[1],l[2],l[3]);});listeners=[];if(root&&root.parentNode)root.parentNode.removeChild(root);if(canvas)canvas.classList.remove("daily-bridge-canvas");if(help){help.classList.remove("bridge-help","powered");help.disabled=false;}initialized=false;active=false;publish();}
   window.DailyAdventureGames=window.DailyAdventureGames||{};
-  window.DailyAdventureGames.bridge={init:function(a,n){if(initialized)destroy();api=a;count=n===8?8:5;young=count===5;destroyed=false;initialized=true;away=false;canvas=$("dailyCanvas");layer=$("dailyControls");help=$("dailyHelp");bannerEl=$("dailyBanner");if(!canvas||!layer)throw new Error("Bridge needs dailyCanvas and dailyControls");ctx=canvas.getContext("2d");canvas.classList.add("daily-bridge-canvas");if(help)help.classList.add("bridge-help");reduceMotion=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);rotateButtons=[];arrows=[];makeGoals();makePieces();controls();[["bg","/assets/crafted/daily/day07-tortoise-bridge-v1.webp"],["wood","/assets/crafted/painted-wood-ivory.webp"],["cart",cartArtPath]].forEach(function(p){var i=new Image();i.onload=draw;i.src=p[1];art[p[0]]=i;});fit();reset();raf=requestAnimationFrame(frame);},onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;banner(phase()==="cart"?"A steadier moving cart!":"A steadier load and a wider landing!");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy};
+  window.DailyAdventureGames.bridge={init:function(a,n){if(initialized)destroy();api=a;count=n===8?8:5;young=count===5;destroyed=false;initialized=true;away=false;canvas=$("dailyCanvas");layer=$("dailyControls");help=$("dailyHelp");bannerEl=$("dailyBanner");if(!canvas||!layer)throw new Error("Bridge needs dailyCanvas and dailyControls");ctx=canvas.getContext("2d");canvas.classList.add("daily-bridge-canvas");if(help)help.classList.add("bridge-help");reduceMotion=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);rotateButtons=[];arrows=[];makeGoals();makePieces();controls();[["bg","/assets/crafted/daily/day07-tortoise-bridge-v1.webp"],["wood","/assets/crafted/painted-wood-ivory.webp"],["cart",cartArtPath]].forEach(function(p){var i=new Image();i.onload=draw;i.src=p[1];art[p[0]]=i;});fit();reset();raf=requestAnimationFrame(frame);},onWord:onWord,onHelp:function(){if(destroyed||!active||doneAt)return;paused=false;power=POWER;last=0;flushDirections();banner(phase()==="cart"?"A steadier moving cart!":"A steadier load and a wider landing!");hud();draw();},pause:pause,resume:function(playing){paused=playing===false;last=0;if(playing!==false)flushDirections();hud();draw();},reset:reset,finale:finale,finish:finale,destroy:destroy};
 })();
