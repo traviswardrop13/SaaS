@@ -8147,7 +8147,9 @@
       const v = _notifyLoad(), keep = {};
       Object.keys(patch).forEach((k) => { if (patch[k] == null) delete v[k]; else v[k] = patch[k]; });
       ["state", "asked", "arm", "end", "sync"].forEach((k) => { if (v[k] != null) keep[k] = v[k]; });
-      localStorage.setItem(NOTIFYKEY, JSON.stringify(keep));
+      const out = JSON.stringify(keep);
+      // the same answer read again on every page is not written again
+      if (localStorage.getItem(NOTIFYKEY) !== out) localStorage.setItem(NOTIFYKEY, out);
     } catch (e) {}
   }
   function _notifyWithin(p, ms, dflt) {
