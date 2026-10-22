@@ -1080,7 +1080,7 @@
         },
         "CHICKS": {
           "re": "\\b[Cc]hicks?\\b",
-          "label": "Mama Swallow's three chicks"
+          "label": "the three little swallow chicks"
         },
         "THE BUNDLES": {
           "re": "\\b(bundles?|blankets?|quilt|rabbit|bear|snake)\\b",
