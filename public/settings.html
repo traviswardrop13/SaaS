@@ -106,7 +106,7 @@
        full on a 320 px phone while it is closed (kidtest measures them); the
        grey line under it carries the rest. If one is ever longer, the cut
        ends in "…" instead of mid-letter. */
-    .family-settings #gameLevel{text-overflow:ellipsis;}
+    .family-settings #gameLevel,.family-settings #practicePos,.family-settings #ladderStart{text-overflow:ellipsis;}
     /* game levels (LEVELS1): under the buddy row, with the same short-choice rule */
     .family-settings #playLevelCap{text-overflow:ellipsis;}
     /* sound: one slim line, and only while Sona itself is muted. A .card, so
@@ -260,11 +260,17 @@
         Picking sounds below switches to focus mode. <a href="#" id="playKeep">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
-      <!-- ONLY THE START OF A WORD CAN BE PICKED FOR NOW (Travis, 1 Oct 2026:
-           "have the options listed but to not let them select other
-           positioning because it's not built yet"). Every position stays on
-           the list so a parent sees what is coming; the script below greys
-           out the ones Sona.FAMILY_POSITIONS does not open yet. -->
+      <!-- EVERY WORD POSITION CAN BE PICKED (Travis, 22 Oct 2026: "a full,
+           in-depth, thorough build-out of word positions … build that so it
+           works in the games"). From 1 Oct only the start of a word was open,
+           "because it's not built yet"; each place now has its own syllables,
+           words, sentences and climb, and the picture games use its words.
+           The script greys out only what this child cannot use: an id
+           Sona.FAMILY_POSITIONS does not open ("coming soon"), and vocalic R
+           or blends when none of the child's sounds has them. Under a speech
+           therapist's homework the picker shows the homework's position and
+           is locked, like the daily goal. The grey line under it shows only
+           when something needs saying. Saved as profile.wordPosition. -->
       <label class="field" for="practicePos">Word position</label>
       <select id="practicePos" aria-describedby="posNote">
         <option value="i">Beginning of word</option>
@@ -274,7 +280,25 @@
         <option value="b">Blends (tr, st, bl…)</option>
         <option value="mix">Mixed (all positions)</option>
       </select>
-      <p class="muted set-lead" id="posNote">For now, Sona practices each sound at the beginning of a word. The other positions are coming soon.</p>
+      <p class="muted set-lead" id="posNote" hidden></p>
+      <!-- WHERE THE DAY'S PRACTICE STARTS (Travis, 22 Oct 2026: "I'm not sure
+           … if only some need to do the progression, or if all of them do.
+           But let's at least just build it in so it's an option that can be
+           selected"). The practice page climbs one step a round: the sound
+           alone, syllables, words, sentences. "The sound" keeps every step
+           (as before); a later choice starts the day there. The grey line is
+           painted from Sona.ladderPlan, the reader the practice page climbs
+           by, so it shows the steps that will really be asked. Locked to "The
+           sound" under homework. Whether a grown-up may skip steps is Rachel's
+           call. Saved as profile.ladderStart. -->
+      <label class="field" for="ladderStart">Each day’s practice starts with</label>
+      <select id="ladderStart" aria-describedby="ladderNote">
+        <option value="">The sound</option>
+        <option value="syllable">Syllables</option>
+        <option value="word">Words</option>
+        <option value="sentence">Sentences</option>
+      </select>
+      <p class="muted set-lead" id="ladderNote"></p>
       <!-- WHAT A GAME'S SAY-IT CARD ASKS FOR (Travis, 1 Oct 2026: "start with
            isolation then ree rah roh then rot. and maybe have that be
            something to update in settings"). One picker, one grey line. It is
@@ -488,6 +512,7 @@
     var childEl = document.getElementById("childName"),
         ageEl = document.getElementById("childAge"),
         posEl = document.getElementById("practicePos"),
+        startEl = document.getElementById("ladderStart"),
         levelEl = document.getElementById("gameLevel"),
         wrap = document.getElementById("sounds");
 
@@ -503,16 +528,16 @@
 
     childEl.value = p.childName || "";
     ageEl.value = p.childAge || "";
-    // Grey out the positions a family cannot pick yet, and show the one in
-    // use: a position saved before the others were closed reads as Beginning,
-    // which is what the practice page now asks for (Sona.practicePos).
+    // The family's OWN position and starting step, kept apart from what the
+    // two pickers show: under homework they show the therapist's choices,
+    // locked, and saving the sounds must never write those over the family's.
+    // The position is profile.wordPosition; the old practicePosition (from
+    // before 1 Oct, or a pilot link) is never read again (Sona.practicePos).
     var openPos = (Sona.FAMILY_POSITIONS || ["i"]);
-    Array.prototype.forEach.call(posEl.options, function (o) {
-      if (openPos.indexOf(o.value) >= 0) return;
-      o.disabled = true; o.textContent = o.textContent + " · coming soon";
-    });
-    posEl.value = openPos.indexOf(p.practicePosition) >= 0 ? p.practicePosition : "i";
-    document.getElementById("posNote").hidden = openPos.length > 1;
+    var famPos = openPos.indexOf(p.wordPosition) >= 0 ? p.wordPosition : "i";
+    var famStart = ["", "syllable", "word", "sentence"].indexOf(p.ladderStart || "") >= 0 ? (p.ladderStart || "") : "";
+    var posLabels = {};
+    Array.prototype.forEach.call(posEl.options, function (o) { posLabels[o.value] = o.textContent; });
     // What the cards between rounds ask for: "" lets Sona decide (one step
     // past what the child has earned). A value this build does not know
     // reads as that.
@@ -575,6 +600,53 @@
     // speech therapist's homework is for another part of the word. It names
     // Fruit Slice because that is the only game whose cards do this so far;
     // when the others do, this line changes.
+    // ── Word position and "Each day's practice starts with" ─────────────
+    // Painted from sona.js's own readers (soundPos, ladderPlan, rungOf), the
+    // ones the practice page and the games climb by, so the two lines can
+    // only say what will really be asked.
+    function paintPractice() {
+      var hw = Sona.homework(), sounds = Sona.rotSounds(), nm = (childEl.value || "").trim() || "your child";
+      var label = function (x) { return Sona.soundLabel ? Sona.soundLabel(x) : x; };
+      Array.prototype.forEach.call(posEl.options, function (o) {
+        var info = Sona.posInfo(o.value), txt = posLabels[o.value], off = false;
+        if (openPos.indexOf(o.value) < 0) { off = true; txt += " · coming soon"; }
+        // vocalic R is R's; blends here are R's, S's and L's: a choice none of
+        // this child's sounds has would be a choice the app half kept
+        else if (info.only && !sounds.some(function (x) { return info.only.indexOf(x) >= 0; })) { off = true; txt += " · " + info.only.map(label).join(", ") + " only"; }
+        o.disabled = off; o.textContent = txt;
+      });
+      if (hw) { posEl.value = hw.pos || "mix"; startEl.value = ""; }
+      else { posEl.value = famPos; startEl.value = famStart; }
+      if (posEl.selectedIndex < 0) posEl.value = "i";
+      posEl.disabled = startEl.disabled = !!hw;
+      // the position line: only when something needs saying
+      var pick = Sona.practicePos(), lines = [];
+      if (hw) lines.push("Set by the speech therapist\u2019s homework: " + (posLabels[pick] || posLabels.mix) + ".");
+      var toStart = sounds.filter(function (x) { return pick !== "mix" && pick !== "i" && Sona.soundPos(x) === "i"; });
+      var toAny = sounds.filter(function (x) { return pick !== "mix" && Sona.soundPos(x) === "mix"; });
+      var who = function (list) { return list.length > 3 ? nm + "\u2019s other sounds practice" : list.map(label).join(", ") + (list.length === 1 ? " practices" : " practice"); };
+      if (toStart.length) lines.push((pick === "v" ? "Only R has vocalic R. " : pick === "b" ? "Only R, S and L have blends here. " : "") + who(toStart) + " the start of words.");
+      if (toAny.length) lines.push("TH (v) has no words that start with it, so it uses words like mother and feather.");
+      if (pick !== "i" && Sona.GAMES_FOLLOW_POS) lines.push("Games with pictures use these words too.");
+      var pn = document.getElementById("posNote");
+      pn.textContent = lines.join(" "); pn.hidden = !lines.length;
+      // the steps line: what the day's rounds will ask, for the sound the
+      // practice page asks next, from the step the day starts at up to one
+      // past what the child has done (charge.html's own rule)
+      // the climb moves through the steps this place has (plan.have; the
+      // syllable step is skipped where its syllables are not switched on),
+      // from the day's first to one past what the child has done
+      var snd = Sona.rotSound(), plan = Sona.ladderPlan(snd), st = plan.steps, have = plan.have || [0, 1, 2, 3];
+      var at = function (r) { for (var k = 0; k < have.length; k++) if (have[k] >= r) return k; return have.length - 1; };
+      var from = at(plan.start), reach = Math.min(have.length - 1, at(Math.max(Sona.rungOf(snd, plan.pos), plan.start)) + 1), asks = [];
+      var q = function (k) { return "\u201C" + String(st[have[k]].sample).replace(/[.!?]+$/, "") + "\u201D"; };
+      for (var k = from; k <= reach; k++) asks.push(q(k));
+      var line = Sona.posPhrase(snd, plan.pos) + ": " + asks.join(", then ") + (asks.length > 1 ? ", one step each game." : ".");
+      if (reach < have.length - 1) line += " Harder steps open as " + nm + " practices.";
+      if (from >= 1) line += " " + (have[from] >= 3 ? "A sentence" : have[from] === 2 ? "A word" : "A syllable") + " that\u2019s too hard steps back to " + q(from - 1) + ".";
+      if (hw) line = "The homework climbs every step, from the sound. " + line;
+      document.getElementById("ladderNote").textContent = line;
+    }
     function paintGameLevel() {
       document.getElementById("gameLevelBox").hidden = Sona.playStyle() === "simple";
       var label = function (x) { return Sona.soundLabel ? Sona.soundLabel(x) : x; };
@@ -587,10 +659,11 @@
       var said = asks.map(function (t) { return "\u201C" + t + "\u201D"; }).join(", then ");
       if (hold === "sound") line = "For " + name + " today: " + said + ". So far only " + on.map(label).join(", ") + " has syllables and a short word, and only in Fruit Slice.";
       else if (hold === "muted") line = "For " + name + " in Fruit Slice today: " + said + ". Sound is off in Sona, so the cards ask just the sound.";
-      else if (hold === "position") line = "For " + name + " in Fruit Slice today: " + said + ". Your child\u2019s speech therapist set a different part of the word, so the cards keep to the sound" + (asks.length > 1 ? ", then one of the homework\u2019s words." : ".");
-      else line = (levelEl.value ? "" : "Sona starts easy and gets harder. ") + "For " + name + " in Fruit Slice today: " + said + ". The other games don\u2019t have this yet.";
+      else if (hold === "position") line = "For " + Sona.posPhrase(snd, Sona.soundPos(snd)) + " in Fruit Slice today: " + said + ". Fruit Slice has no syllables " + (Sona.soundPos(snd) === "v" ? "for vocalic R" : Sona.posInfo(Sona.soundPos(snd)).place) + " yet, so the cards skip them.";
+      else line = (levelEl.value ? "" : "Sona starts easy and gets harder. ") + "For " + (Sona.soundPos(snd) === "i" ? name : Sona.posPhrase(snd, Sona.soundPos(snd))) + " in Fruit Slice today: " + said + ". The other games don\u2019t have this yet.";
       document.getElementById("gameLevelNote").textContent = line;
     }
+    paintPractice();
     paintGameLevel();
     // AUTOSAVE (29 Sep 2026). One Save button at the foot of a page of cards
     // meant a parent who changed the sounds and then tapped Back to play lost
@@ -611,7 +684,8 @@
       var name = childEl.value.trim();
       Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
         focusArea: "articulation",
-        practicePosition: posEl.value, gameLevel: levelEl.value, focusSounds: [].concat(Array.from(sel)) });
+        wordPosition: famPos, ladderStart: famStart, gameLevel: levelEl.value, focusSounds: [].concat(Array.from(sel)) });
+      paintPractice();
       paintGameLevel();
       paintGoals();
       // show what was kept, so a name typed with stray spaces reads as saved
@@ -668,6 +742,7 @@
         sel=new Set(Sona.PLAY_ORDER);
         wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
         Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
+        paintPractice();
         paintGameLevel();
         showSaved(keep);
       };
@@ -693,7 +768,8 @@
     }
     window.addEventListener("pagehide", flushText);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushText(); });
-    posEl.addEventListener("change", function () { saveAll(posEl); });
+    posEl.addEventListener("change", function () { if (!posEl.disabled) famPos = posEl.value; saveAll(posEl); });
+    startEl.addEventListener("change", function () { if (!startEl.disabled) famStart = startEl.value; saveAll(startEl); });
     levelEl.addEventListener("change", function () { saveAll(levelEl); });
 
     // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home and

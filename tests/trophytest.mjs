@@ -390,7 +390,7 @@ sec("9a the speech ladder and the practice records are never written by any of i
   p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" });
   p.local["sona.rotation.v1"] = JSON.stringify({ i: 2 });
   const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);
-  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, stageAt: S.getProgress().stageAt || null, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null });
   const before = pin();
   for (let i = 0; i < 50; i++) { S.trophyState(); S.trophies(); S.coinsNow(); S.addCoins(3); S.spendCoins(1); S.mintCoins(); S.mintStoryBonus(); }
   ok("50 rounds of trophy and coin reads, payments and spends leave the stage, rung wins, today's sound, the rotation, outcomes, attempts and game reps byte-identical", pin() === before && S.coinsNow() === 100);
@@ -538,7 +538,7 @@ sec("13e per child, reads write nothing, the ladder untouched", () => {
   ok("playLevel, playLevelsOpen, playLevelInfo and playBest write no key", snap(p) === before);
   p.local["sona.progress.v1"] = JSON.stringify(Object.assign(S.getProgress(), { stage: { R: 2 }, rungWins: { "R:2": 1 } }));
   p.local["sona.today.v1"] = JSON.stringify({ d: "2026-10-20", sound: "R" }); p.local["sona.rotation.v1"] = JSON.stringify({ i: 1 });
-  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, coins: S.coinsNow(), t: S.trophies() });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, stageAt: S.getProgress().stageAt || null, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, coins: S.coinsNow(), t: S.trophies() });
   const was = pin();
   for (let i = 0; i < 50; i++) { S.setPlayLevel("slice", 1 + (i % 3)); S.playLevelAsk("tiles"); S.playBestOffer("stack", 2, i + 1); S.setPlayLevelCap(i % 2); S.playLevelInfo("run"); }
   ok("50 level picks, asks, bests and caps leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, coins and trophies byte-identical", pin() === was);
@@ -934,7 +934,7 @@ sec("18b the chest, the road and the month never write the speech ladder or the 
   const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);
   p.local["sona.outcomes.v1"] = OCT20();
   p.local["sona.goaldays.v1"] = JSON.stringify({ "2026-10-20": 30 });
-  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, goals: p.local["sona.goaldays.v1"], tro: p.local["sona.trophy.v1"] || null });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, stageAt: S.getProgress().stageAt || null, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, goals: p.local["sona.goaldays.v1"], tro: p.local["sona.trophy.v1"] || null });
   const before = pin();
   for (let i = 0; i < 50; i++) { S.chestState(); S.chestOpen(); S.roadState(); S.roadOpen(1 + (i % 12)); S.monthOpen(1 + (i % 8)); S.roadSettle(); S.roadRolledSeen(); S.playLevelInfo("slice"); }
   ok("50 rounds of chest, road and month opens, settles and reads leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, goal stamps and trophies byte-identical",
@@ -1162,7 +1162,7 @@ sec("19g the shop only reads when it shows, and never touches practice", () => {
   p.local["sona.rotation.v1"] = JSON.stringify({ i: 2 });
   const g0 = JSON.parse(p.local["sona.progress.v1"]); g0.stage = { R: 2 }; g0.rungWins = { "R:2": 1 }; p.local["sona.progress.v1"] = JSON.stringify(g0);
   p.local["sona.outcomes.v1"] = OCT20();
-  const pin = () => JSON.stringify({ stage: S.getProgress().stage, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, tro: p.local["sona.trophy.v1"] || null, goals: p.local["sona.goaldays.v1"] || null });
+  const pin = () => JSON.stringify({ stage: S.getProgress().stage, stageAt: S.getProgress().stageAt || null, rungWins: S.getProgress().rungWins, today: p.local["sona.today.v1"], rot: p.local["sona.rotation.v1"], out: S.outcomes(), att: p.local["sona.attempts.v1"] || null, gr: p.local["sona.gamereps.v1"] || null, tro: p.local["sona.trophy.v1"] || null, goals: p.local["sona.goaldays.v1"] || null });
   const pinned = pin();
   for (let i = 0; i < 50; i++) { S.buyItem("characters", ["cat", "bee", "dino"][i % 3]); S.undoBuy(); S.equip("characters", ["fox", "bunny", "panda"][i % 3]); S.shopItem("backdrops", "beach"); S.buyItem("outfits", "cap"); }
   ok("50 rounds of buying, giving back and wearing leave the stage, rung wins, today's sound, the rotation, outcomes, attempts, game reps, trophies and goal stamps byte-identical", pin() === pinned, { coins: S.coinsNow() });

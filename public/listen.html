@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="robots" content="noindex" />
+  <title>Sona — Hear Echo's syllables</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/sona.css" />
+  <meta name="theme-color" content="#fff6e9" />
+  <!-- THE LISTENING PAGE (22 Oct 2026). Every place in a word now has its
+       own syllables (gamecontent.js): "ah-rah" in the middle of a word, "ope"
+       at the end, "trah" in a blend. Echo's computer voice models them, and a
+       voice that misreads one models the wrong sound to a child copying it.
+       So a place's syllables are asked of children only once someone has
+       LISTENED to them (SYL_POS_ON for the practice page, GAME_POS_ON for a
+       game's cards), and this page is where that listening happens: every
+       table, on or off, each syllable said in exactly the line the practice
+       page uses. It only plays; it changes nothing. Behind the grown-ups
+       check, linked from nowhere a child can reach. -->
+  <style>
+    body{background:#fff6e9;}
+    .wrap{max-width:640px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px 40px;}
+    h1{font-size:24px;margin:6px 0 8px;}
+    .lead{color:var(--muted,#7a6a58);font-weight:700;font-size:14px;line-height:1.5;margin:0 0 14px;}
+    .place{background:#fff;border-radius:18px;padding:14px 14px 6px;margin:0 0 14px;box-shadow:0 2px 0 #f0dcbc;}
+    .place h2{font-size:17px;margin:0 0 8px;}
+    .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #f4e6cf;}
+    .row:first-of-type{border-top:0;}
+    .snd{min-width:58px;font-weight:900;}
+    .state{font-size:11.5px;font-weight:800;color:var(--muted,#7a6a58);flex-basis:100%;margin-top:-4px;}
+    .state.on{color:#2f8a3a;}
+    .row button{font:800 15px/1 "Nunito",sans-serif;padding:10px 12px;border-radius:12px;border:2px solid #f0dcbc;background:#fffaf2;color:inherit;min-height:44px;}
+    .row button.playing{border-color:#ff8a3d;background:#fff0e3;}
+    #status{min-height:20px;font-weight:800;font-size:13px;color:var(--muted,#7a6a58);margin:0 0 10px;}
+    .back{display:inline-block;margin-top:6px;font-weight:800;}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Hear Echo's syllables</h1>
+    <p class="lead">Each place in a word has its own syllables. Children hear a place's syllables only after someone at Sona has listened to them here. Tap one to hear exactly what Echo says on the practice page.</p>
+    <p class="lead">"Off" ones are skipped for now: practice goes from the sound straight to words. Sounds right? Say which, and it gets switched on.</p>
+    <p id="status" role="status" aria-live="polite"></p>
+    <div id="places"></div>
+    <a class="back" href="/settings.html">← Back to Settings</a>
+  </main>
+  <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
+  <script>
+    (function () {
+      if (!window.Sona || !Sona.requireGate || !Sona.requireGate()) return;
+      var SC = window.SonaContent, host = document.getElementById("places"), status = document.getElementById("status");
+      if (!SC || !SC.syllableTables) { status.textContent = "The syllable tables did not load."; return; }
+      var NAMES = { m: "Middle of word", f: "End of word", v: "Vocalic R", b: "Blends" }, order = ["m", "f", "v", "b"];
+      var label = function (s) { return Sona.soundLabel ? Sona.soundLabel(s) : s; };
+      var tables = SC.syllableTables(), playing = null, gen = 0;
+      order.forEach(function (pos) {
+        var mine = tables.filter(function (t) { return t.pos === pos; });
+        if (!mine.length) return;
+        var box = document.createElement("section"); box.className = "place";
+        var h = document.createElement("h2"); h.textContent = NAMES[pos]; box.appendChild(h);
+        mine.forEach(function (t) {
+          var row = document.createElement("div"); row.className = "row";
+          var s = document.createElement("span"); s.className = "snd"; s.textContent = label(t.sound); row.appendChild(s);
+          t.items.forEach(function (it) {
+            var b = document.createElement("button"); b.type = "button"; b.textContent = it.t;
+            b.setAttribute("aria-label", "Hear " + it.t + " for " + label(t.sound));
+            b.onclick = function () { play(b, it.say || it.t); };
+            row.appendChild(b);
+          });
+          var st = document.createElement("span"); st.className = "state" + (t.on ? " on" : "");
+          st.textContent = t.on ? "On: children hear these" : "Off: not asked yet";
+          row.appendChild(st);
+          box.appendChild(row);
+        });
+        host.appendChild(box);
+      });
+      // the practice page's own line, so what is heard here is what a child hears
+      function play(btn, say) {
+        var mine = ++gen;
+        if (playing) { try { playing.stop(); } catch (e) {} playing = null; }
+        [].forEach.call(document.querySelectorAll(".row button.playing"), function (x) { x.classList.remove("playing"); });
+        btn.classList.add("playing"); status.textContent = "Loading Echo's voice…";
+        var prof = Sona.getProfile ? Sona.getProfile() : {};
+        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: "Ready? Say " + say + ", five times.", voice: prof.voiceId || "", stable: true }) })
+          .then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+          .then(function (bytes) {
+            if (mine !== gen) return;
+            if (!bytes || !bytes.byteLength || !Sona.mediaPCM) { btn.classList.remove("playing"); status.textContent = "Echo's voice is not answering. Try again in a moment."; return; }
+            status.textContent = "“Ready? Say " + say + ", five times.”";
+            playing = Sona.mediaPCM(bytes, { volume: 0.9 });
+            playing.done.then(function () { if (mine === gen) btn.classList.remove("playing"); });
+          })
+          .catch(function () { if (mine === gen) { btn.classList.remove("playing"); status.textContent = "Echo's voice is not answering. Try again in a moment."; } });
+      }
+    })();
+  </script>
+</body>
+</html>

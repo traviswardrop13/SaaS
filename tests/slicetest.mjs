@@ -591,7 +591,7 @@ await scenario("the old run's card", async () => {
 const waveOver = (page) => page.evaluate(() => { waveGot = WAVES[wave].goal; });
 const cardNow = (page) => page.evaluate(() => ({ title: document.getElementById("revTitle").textContent, orange: [...document.querySelectorAll("#revTitle .snd")].map((b) => b.textContent),
   note: document.getElementById("revListen").textContent, rung: ASK && ASK.rung, text: ASK && ASK.text, pill: document.getElementById("slowSound").textContent, rev: REV, live: __f.live, media: __f.media.slice() }));
-const records = (page) => page.evaluate(() => JSON.stringify([Sona.getProgress().stage, Sona.outcomes(), localStorage.getItem("sona.attempts.v1"), Sona.repsToday()]));
+const records = (page) => page.evaluate(() => JSON.stringify([Sona.getProgress().stage, Sona.getProgress().stageAt || null, Sona.outcomes(), localStorage.getItem("sona.attempts.v1"), Sona.repsToday()]));
 const listening = (page) => page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent) && __f.live === 1, null, { timeout: 12000 });
 
 await scenario("the cards climb", async () => {

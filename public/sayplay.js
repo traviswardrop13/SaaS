@@ -464,8 +464,11 @@
   }
 
   // ── words: the child's rotation sound, short picture words first ──
+  // At the place in the word the child practises (Sona.playWords, 22 Oct
+  // 2026): an end-of-word child is asked "car", never "rabbit". The themed
+  // words (Sona.gameWords) are all start-of-word, so they come only then.
   function pool(sound) {
-    var ws = (S && S.wordsFor) ? (S.wordsFor(sound, "i") || []) : [];
+    var ws = (S && S.playWords) ? (S.playWords(sound) || []) : [];
     return ws.filter(function (w) { return w && w.w && w.e; }).sort(function (a, b) { return a.w.length - b.w.length; }).slice(0, 10);
   }
   function pickWord() {

@@ -195,6 +195,58 @@ ok("the consent copy states it plainly",
     badShort.length === 0, badShort.map((x) => x + ": " + SC.GAME_SHORT[x]).join(", "));
 }
 
+// ---- 7d. a syllable for every place in a word (Travis, 22 Oct 2026: "not
+// just saying the sound of the letter R, but to progress where we're doing
+// re, ra, ru, and then we're doing a full word and applying that to each
+// letter") ----
+// Middle, End, Vocalic R and Blends each have a table of syllables Rachel can
+// read (gamecontent.js). This holds the tables to the never-say list in every
+// form a child could end up saying: what the card shows, what Echo's voice is
+// given, and a blend said WITHOUT its sound (the commonest blend error, which
+// is why S's blend is "spa", never "spee"); and to the listening rule: a
+// place is asked only once someone has listened (SYL_POS_ON, GAME_POS_ON).
+{
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(ROOT + "/public/gamecontent.js", "utf8"), box);
+  const SC = box.window.SonaContent;
+  const NEVER = ["gay", "poo", "ass", "allah", "jah", "pee", "poop", "butt", "fart", "god", "damn", "hell", "sex", "nig", "fag", "kill"];
+  const SPELL = { P: "p", B: "b", M: "m", N: "n", T: "t", D: "d", K: "[ck]", G: "g", F: "f", V: "v", S: "s|c(?=e)", Z: "z|s(?=e)", SH: "sh", CH: "t?ch", J: "dge|g(?=e)|j", L: "l", R: "r", TH: "th", THV: "th" };
+  const tables = SC && SC.syllableTables ? SC.syllableTables() : [];
+  ok("every place has its own tables: Middle and End for every sound, Vocalic R for R, Blends for R, S and L",
+    ["m", "f"].every((p) => ALL.every((x) => tables.some((t) => t.pos === p && t.sound === x)))
+    && tables.filter((t) => t.pos === "v").map((t) => t.sound).join() === "R" && tables.filter((t) => t.pos === "b").map((t) => t.sound).sort().join() === "L,R,S",
+    tables.map((t) => t.pos + ":" + t.sound).join(" "));
+  const bad = [], thin = [];
+  for (const t of tables) {
+    if (t.items.length < 3) thin.push(t.pos + " " + t.sound);
+    for (const it of t.items) {
+      const forms = [it.t, it.say].concat(it.t.split("-"));
+      if (t.pos === "b") forms.push(it.t.replace(new RegExp(SPELL[t.sound]), ""));
+      forms.forEach((f) => { const w = String(f).toLowerCase().replace(/[^a-z]/g, ""); if (NEVER.includes(w)) bad.push(`${t.pos} ${t.sound}: ${it.t} (${f})`); });
+      if (!new RegExp(SPELL[t.sound]).test(it.t)) bad.push(`${t.pos} ${t.sound}: ${it.t} does not spell its sound`);
+      if (t.pos === "m" && !/^[a-z]+-[a-z]+$/.test(it.t)) bad.push(`m ${t.sound}: ${it.t} is not two beats`);
+    }
+  }
+  ok("no syllable at any place is, says, or (as a blend without its sound) leaves a never-say word, and each spells its sound", bad.length === 0, bad.join("; "));
+  ok("every table has at least three syllables to choose from", thin.length === 0, thin.join(", "));
+  ok("a middle syllable keeps its hyphen in what Echo is given (two beats, never \"eerie\"), and leaves out ah-lah, ah-jah, ee-ree and ee-lee",
+    tables.filter((t) => t.pos === "m").every((t) => t.items.every((it) => it.say === it.t)) && !tables.some((t) => t.items.some((it) => /^(ah-lah|ah-jah|ee-ree|ee-lee)$/.test(it.t))));
+  ok("vocalic R has no \"er\" (a voice reads it as a hesitation), and gives Echo real words to say (are, ore)",
+    !SC.syllables("R", "v").some((x) => x.t === "er") && SC.syllables("R", "v").map((x) => x.say).join() === "are,ore,air,ear,ire");
+  // the listening rule
+  ok("only vocalic R's syllables ship switched on for the practice page (R at the end of a word uses them too)",
+    JSON.stringify(SC.SYL_POS_ON) === JSON.stringify({ m: [], f: ["R"], v: ["R"], b: [] }), JSON.stringify(SC.SYL_POS_ON));
+  ok("a place that is not switched on has no syllables to ask (the climb skips the step); one with no table uses the start of a word",
+    SC.syllables("S", "f").length === 0 && SC.syllables("R", "m").length === 0 && SC.syllables("S", "v").map((x) => x.t).join() === SC.syllables("S").map((x) => x.t).join());
+  ok("no game card asks a new place's syllables until it is listed in GAME_POS_ON (none yet)",
+    JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((p) => SC.gameSyllables("R", p).length === 0));
+  // …and what each place would ask the day it is switched on
+  ALL.forEach((x) => ["m", "f", "b"].forEach((p) => { if (!SC.SYL_POS_ON[p].includes(x)) SC.SYL_POS_ON[p].push(x); }));
+  const on = [];
+  for (const t of tables) { const got = SC.syllables(t.sound, t.pos).map((x) => x.t).join(); if (got !== t.items.map((x) => x.t).join()) on.push(t.pos + " " + t.sound + ": " + got); }
+  ok("switched on, every place asks exactly its own table", on.length === 0, on.join("; "));
+}
+
 
 // ---- 8. the ladder lost a rung, so stored progress had to be remapped ----
 // g.stage[sound] is an INDEX into LADDER. Dropping "phrase" re-points every

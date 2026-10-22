@@ -118,6 +118,15 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   ok('…"taco" FAILS a bare K too, though it has a k sound', (await V("taco", "K", "kuh", ISO)) === "fail");
   const SYL = { level: "syllable" };
   ok('a syllable round: "wah" for rah passes', (await V("wah", "R", "rah", SYL)) === "pass");
+  // 22 Oct 2026: a syllable at every place in a word. Apple writes syllables
+  // as words, so the words heard are compared run together and with a vowel's
+  // h dropped, and HEAR_ALIKE lists what it writes for a few ("are" for ar);
+  // a clear word that is not close still fails, for every sound
+  ok('a middle syllable: "Ah rah", "Ara" and the usual error "ah wah" pass for ah-rah', (await V("Ah rah", "R", "ah-rah", SYL)) === "pass" && (await V("Ara", "R", "ah-rah", SYL)) === "pass" && (await V("ah wah", "R", "ah-rah", SYL)) === "pass");
+  ok('…"Are" passes for ar, and "We" for ree', (await V("Are", "R", "ar", SYL)) === "pass" && (await V("We", "R", "ree", SYL)) === "pass");
+  ok('…while "taco" fails for kah, ah-kah and oak, and "rock", "wow" and "water" fail for rah', (await V("Taco", "K", "kah", SYL)) === "fail" && (await V("taco", "K", "ah-kah", SYL)) === "fail" && (await V("Coke", "K", "oak", SYL)) === "fail" && (await V("rock", "R", "rah", SYL)) === "fail" && (await V("wow", "R", "rah", SYL)) === "fail" && (await V("water", "R", "rah", SYL)) === "fail");
+  ok('a blend said without its sound fails, as a word and as a syllable: "top" for stop, "tee" for tree, "tah" for trah', (await V("top", "S", "stop", { level: "word", pos: "b" })) === "fail" && (await V("tee", "R", "tree", { level: "word", pos: "b" })) === "fail" && (await V("tah", "R", "trah", { level: "syllable", pos: "b" })) === "fail" && (await V("stop", "S", "stop", { level: "word", pos: "b" })) === "pass");
+  ok('a grown-up\'s "say ah-rah" is two words set aside, not one', (await V("say ah rah", "R", "ah-rah", SYL)) === "unknown");
   ok('…"ah" is unknown', (await V("ah", "R", "rah", SYL)) === "unknown");
   ok('…"taco" FAILS', (await V("taco", "R", "rah", SYL)) === "fail");
 }
@@ -205,8 +214,8 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(charge));
   ok("the round biases recognition toward the practice word",
     /speechStart\(\{ words:/.test(charge));
-  ok("the judge is told the round's kind and, on a sentence round, the sentence",
-    /S\.hearVerdict\(text,SOUND,[^;]*\{level:ITEM\.level,frame:ITEM\.level==="sentence"\?String\(ITEM\.t\|\|""\):""\}\)/.test(charge));
+  ok("the judge is told the round's kind, on a sentence round the sentence, and the place in the word (a blend said without its sound fails)",
+    /S\.hearVerdict\(text,SOUND,[^;]*\{level:ITEM\.level,frame:ITEM\.level==="sentence"\?String\(ITEM\.t\|\|""\):"",pos:ITEM\.pos\|\|""\}\)/.test(charge));
   ok("Apple listens up to 15 s an attempt (9 s left a child who waited for Echo's nudge about one)",
     /var REC_BUDGET=15000;/.test(charge) && (charge.match(/recognitionRemaining=REC_BUDGET/g) || []).length === 2 && !/recognitionRemaining=9000/.test(charge));
   ok("stop() waits for Apple's final transcript instead of answering with a partial guess",

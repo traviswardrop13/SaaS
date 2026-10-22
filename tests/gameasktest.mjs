@@ -18,6 +18,10 @@
 //     reuses that page's own syllable or word;
 //   - an SLP's homework wins: its words, and no start-of-word syllable when
 //     the target is the end of a word;
+//   - every place in a word has its own cards (22 Oct 2026): a place's
+//     syllables only once someone has listened to them (GAME_POS_ON lists
+//     none of R's new ones yet), and its own short word (GAME_SHORT_AT, "car"
+//     at the end of a word), for a family's pick as for homework;
 //   - it only READS. Nothing it does touches a practice record or a game rep.
 // What a card HEARS is not here: it hears "a voice of the right kind" and
 // cannot tell "ree" from "rrrr" or "rot" (slicetest and micquietgamestest
@@ -209,11 +213,12 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
   ok("end-of-word homework: the cards stay on the sound, then one of the homework's own words; never a start-of-word syllable",
     S.practicePos() === "f" && t[0] === "rrrr" && t[1] === "rrrr" && ["car", "star"].includes(t[2]) && S.gameAsk("R", 2).html === t[2].slice(0, -1) + '<b class="snd">r</b>', t);
   homework(p, { pos: "v", words: null });
-  ok("\"er, ar, or\" homework that names no words: every card stays on the sound", S.practicePos() === "v" && texts(S, "R").join() === "rrrr,rrrr,rrrr" && S.gameTop("R") === 0, texts(S, "R"));
+  ok("\"er, ar, or\" homework that names no words: no start-of-word syllable, and the word card asks vocalic R's own short word",
+    S.practicePos() === "v" && texts(S, "R").join() === "rrrr,rrrr,bird" && S.gameTop("R") === 2 && S.gameHold("R") === "position", texts(S, "R"));
   hand(p, "R", "word", "bird");
   ok("…unless the practice page just asked one of its words: the cards repeat it", texts(S, "R").join() === "rrrr,bird,bird", texts(S, "R"));
   hand(p, "R", "syllable", "ree");
-  ok("…and a syllable the practice page asked is not carried into the cards under that homework", texts(S, "R").join() === "rrrr,rrrr,rrrr", texts(S, "R"));
+  ok("…and a start-of-word syllable the practice page asked is not carried into the cards under that homework", texts(S, "R").join() === "rrrr,bird,bird", texts(S, "R"));
   const q = boot(); homework(q, { pos: "f", words: ["car"] });
   ok("with \"Sona decides\", the homework's word still waits for the earned level", texts(q.S, "R").join() === "rrrr,rrrr,rrrr", texts(q.S, "R"));
   q.S.recordRung("R", 0, 1);
@@ -240,10 +245,45 @@ const homework = (p, over) => { p.local[p.S.kkey("sona.homework.v1")] = JSON.str
 {
   const src = readFileSync(ROOT + "/sona.js", "utf8");
   ok("a switch to a sibling clears the practice page's level and item with its sound",
-    /\["sona\.play\.token", "sona\.play\.active", "sona\.boost\.sound", "sona\.boost\.level", "sona\.boost\.ask"\]\.forEach\(\(k\) => sessionStorage\.removeItem\(k\)\)/.test(src));
+    /\["sona\.play\.token", "sona\.play\.active", "sona\.boost\.sound", "sona\.boost\.level", "sona\.boost\.ask", "sona\.boost\.pos"\]\.forEach\(\(k\) => sessionStorage\.removeItem\(k\)\)/.test(src));
   const charge = readFileSync(ROOT + "/charge.html", "utf8");
   ok("the practice page hands over the step it ended on and its item, beside the sound",
     /sessionStorage\.setItem\("sona\.boost\.sound",SOUND\)/.test(charge) && /sessionStorage\.setItem\("sona\.boost\.level",ITEM\.level\|\|"isolation"\); sessionStorage\.setItem\("sona\.boost\.ask",String\(ITEM\.word\|\|ITEM\.t\|\|""\)\)/.test(charge));
+}
+
+// ── 9. every place in a word (22 Oct 2026) ──
+{
+  const at = (pos, over) => { const p = boot({ profile: Object.assign({ wordPosition: pos }, over || {}) }); return p; };
+  const f = at("f", { gameLevel: "word" }), { S, SC } = f;
+  ok("a family's own End of word reaches the cards, with no start-of-word syllable while End's syllables are off",
+    S.soundPos("R") === "f" && texts(S, "R").join() === "rrrr,rrrr,car" && S.gameHold("R") === "position", texts(S, "R"));
+  ok("…and R's new places ship switched off: Middle, End, Vocalic R and Blends",
+    JSON.stringify(SC.GAME_POS_ON) === JSON.stringify({ R: [] }) && ["m", "f", "v", "b"].every((x) => SC.gameSyllables("R", x).length === 0));
+  ok("…while Mixed asks the start-of-word syllables and word, which were listened to", SC.gameSyllables("R", "mix").map((x) => x.t).join() === SC.gameSyllables("R").map((x) => x.t).join() && SC.gameWord("R", "mix") === "rot");
+  // switched on (as when someone has listened): the place's own syllables, never "ree"
+  SC.GAME_POS_ON.R = ["f"];
+  const t = texts(S, "R"), syl = SC.gameSyllables("R", "f").map((x) => x.t);
+  ok("once End is switched on, its cards ask End's own syllable, then car",
+    S.gameHold("R") === "" && t[0] === "rrrr" && syl.includes(t[1]) && !/^r/.test(t[1]) && t[2] === "car" && S.gameAsk("R", 1, { first: true }).rung === 1, t);
+  const h = at("f"); h.SC.GAME_POS_ON.R = ["f"];
+  hand(h, "R", "syllable", "air");
+  ok("…and a syllable the practice page asked at this place is repeated", h.S.gameAsk("R", 1).text === "air" && h.S.gameAsk("R", 2).text === "air" && h.S.gameAsk("R", 1).html === 'ai<b class="snd">r</b>', h.S.gameAsk("R", 1));
+  h.session["sona.boost.pos"] = "i";
+  ok("…but not one handed over before the place was changed", h.S.gameAsk("R", 1).text !== "air" || h.SC.gameSyllables("R", "f")[(h.S.dayNum()) % 3].t === "air", texts(h.S, "R"));
+  delete h.session["sona.boost.pos"];
+  for (const pos of ["m", "v", "b"]) {
+    const q = at(pos, { gameLevel: "word" }); q.SC.GAME_POS_ON.R = [pos]; ["m", "b"].forEach((x) => { if (q.SC.SYL_POS_ON[x].indexOf("R") < 0) q.SC.SYL_POS_ON[x].push("R"); });
+    const own = q.SC.gameSyllables("R", pos).map((x) => x.t), w = q.SC.GAME_SHORT_AT.R[pos];
+    ok("R " + pos + ": its own syllables (" + own.join(", ") + ") and its own short word (" + w + "), a bank word at that place",
+      own.length === 3 && own.every((x) => !/^r[aeiou]/.test(x)) && q.S.gameAsk("R", 2).text === w && (q.S.WORDS.R || []).some((x) => x.w === w && (x.pos === pos || (pos === "v" && x.pos === "v"))), own);
+  }
+  // the day's first step lifts the floor between rounds; a pick in the game picker still wins
+  const w = at("i", { ladderStart: "word" });
+  ok("a child whose day starts at words is not handed a syllable between rounds", texts(w.S, "R").join() === "rrrr,rot,rot", texts(w.S, "R"));
+  const pick = at("i", { ladderStart: "word", gameLevel: "isolation" });
+  ok("…but \"Just the sound\" in the game picker still wins", texts(pick.S, "R").join() === "rrrr,rrrr,rrrr", texts(pick.S, "R"));
+  const hw = at("i", { ladderStart: "word" }); homework(hw);
+  ok("…and under homework the day starts at the sound whatever is saved, so the cards climb from it", hw.S.ladderStart() === 0 && hw.S.gameAsk("R", 1).rung === 1, texts(hw.S, "R"));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

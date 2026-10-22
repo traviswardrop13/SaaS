@@ -1628,9 +1628,8 @@ sound before a vowel by its `tests/booklex.json` entry. Where a page had such
 a word it is the key ("she", not "milkshake"; "ruby", not "rooster"). Two
 words can't, and `readtest` lists them by name so the next one is a decision:
 **"bath"** on the TH book's fifth page, where no word starts with that sound
-(the one key in the app that isn't start-of-word, while Settings tells parents
-"Sona practices each sound at the beginning of a word"; true of practice, and
-a book word is play), and **"rory"**, an R on both sides of "or", on a page
+(the one key in the app that isn't start-of-word; the books stay
+start-of-word whatever Word position is picked, and a book word is play), and **"rory"**, an R on both sides of "or", on a page
 with nothing easier. A key the reader can't find fails silently (Echo asks,
 nothing glows), so `readtest` runs every key of every book through the
 reader's own highlighter. Nothing about the moment changed for them, the age
@@ -1918,7 +1917,9 @@ rep. `sayplaytest` pins which game asks how many times. With two:
 - **Words that fit the game** are selected from existing painted bank
   entries (`GAME_WORDS`/`gameWords`), before a vowel with no blend, at turns
   1, 4 and 7 when available, without repeating a themed word. Other turns
-  use the existing beginning-position pool. Named clinician homework always
+  use the words of the place in a word the child practises (`Sona.playWords`;
+  every theme is start-of-word, so themes come only at the start of a word,
+  see "Word positions and the practice steps"). Named clinician homework always
   overrides themes. No new word, speech gate or practice outcome is added.
   `soundmarktest`, `soundmap`, `hwtest` and `sayplaytest` check the words,
   artwork and precedence; Rachel reviews the exact table in the PR.
@@ -2314,10 +2315,15 @@ card between rounds said the bare sound. What is built is the first slice:
   into `GAME_SYL_ON` only after someone has **listened** to its lines on a
   phone. A sound that is not in it asks the bare sound exactly as before, so
   nothing changed for any child who is not on R.
-- **An SLP's homework wins.** Its own words are the word card's words. When
-  its position is not the start of a word (end of word, "er, ar, or") there
-  is no syllable step, because "ree" is a start-of-word R, not her target:
-  the sound, then one of the homework's words if it names any.
+- **An SLP's homework wins.** Its own words are the word card's words.
+- **Every place in a word has its own cards** (22 Oct 2026, with every word
+  position open; see "Word positions and the practice steps"). "ree" is a
+  start-of-word R, so it is never asked of a child practising another place.
+  That place's syllables are asked only once someone has listened to them in
+  the card's one line (`GAME_POS_ON`, today `{ R: [] }`: none); until then the
+  cards skip the syllable step: the sound, then a word of that place (the
+  practice page's, the homework's, or `GAME_SHORT_AT`: R middle "zero", end
+  "car", vocalic "bird", blends "tree"). Mixed asks the start-of-word ones.
 - **Fruit Slice's card is the only one that does it.** It shows the ask with
   only the sound's letters orange and says it in ONE line of Echo's own voice
   ("To keep playing, say... ree."), because nothing past the bare sound is
@@ -2349,8 +2355,10 @@ card between rounds said the bare sound. What is built is the first slice:
   really ask (the homework's sound first), so it shows only what will be
   asked, and it names Fruit Slice because that is the only game that does
   this yet. When something holds the cards to the bare sound the line says
-  what: Sona's sound is off, the sound is not switched on yet, or a speech
-  therapist's homework is for another part of the word. Hidden for a child
+  what: Sona's sound is off, the sound is not switched on yet, or the place
+  in the word being practised has no syllables switched on yet ("Fruit Slice
+  has no syllables at the end of words yet, so the cards skip them"; it
+  names the place, whoever picked it). Hidden for a child
   aged 2 to 4, whose cards keep the bare sound whatever is saved.
 - **Not built yet:** the other five round games (Piano Tiles, Block Stacker,
   Sound Sprint, Flappy Glide, Rise Up: Echo says their cards out loud, but
@@ -3172,23 +3180,101 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 - **Practice syllables never spell "gay" or "poo"** (Travis, 30 Sep 2026):
   `syllables()` in `gamecontent.js` swaps them for "guy" and "pie". `soundmap`
   checks a NEVER_SAY list; add to it, never drop a syllable.
-- **The word position drives the practice page** (Travis, 30 Sep 2026): the
-  word step, the sentence step and the step-down read `Sona.practicePos()`
-  (homework position first, then the family's setting); a position with no
-  words for that sound falls back to start-of-word words. The games keep
-  start-of-word words until Rachel says otherwise (`progtest`, `hwtest`).
-  **A family can pick only the start of a word for now** (Travis, 1 Oct 2026:
-  "have the options listed but to not let them select other positioning
-  because it's not built yet ... make it clear that it's just the initial
-  position"). Settings and the pilot page list all six positions; the ones not
-  in `FAMILY_POSITIONS` (sona.js, today just `"i"`) are greyed out and say
-  "coming soon", with one line under the list saying so. A position a family
-  saved before reads as the start of a word. A speech therapist's homework
-  still names its own position. Add an id to that list to open one
-  (`kidtest`).
+- **The word position drives every step and the games** (Travis, 30 Sep and
+  22 Oct 2026). Every position is open to families again; the 1 Oct closing
+  ("not built yet") is over. See "Word positions and the practice steps"
+  below for the rules, the switches and Rachel's calls (`posladdertest`,
+  `progtest`, `hwtest`, `kidtest`).
 - **Child slots are never reused, and a removed child takes their saved tries**
   (`addKid` high-water mark, `removeKid` deletes that slot's clips; a page that
   leaves right after either waits on `Sona.clipsSettled()`).
+
+## Word positions and the practice steps (22 Oct 2026)
+Travis, 22 Oct 2026: "a full, in-depth, thorough build-out of word positions
+… Rachel talks about the importance of not just saying the sound of the
+letter R, but to progress where we're doing re, ra, ru, and then we're doing a
+full word and applying that to each letter … build that so it works in the
+games … I'm not sure if only some need to do the progression, or if all of
+them do. But let's at least just build it in so it's an option that can be
+selected."
+- **Every position is open.** Settings' Word position (Beginning, Middle,
+  End, Vocalic R, Blends, Mixed) saves `profile.wordPosition`, per child. The
+  old `profile.practicePosition` (picks from before 1 Oct, pilot links) is
+  never read again, so nobody's place changes without a grown-up choosing it.
+  `FAMILY_POSITIONS` is still the switch that would grey one out. A speech
+  therapist's homework names its own position, for its own sounds only, and
+  under homework Settings shows it locked ("Set by the speech therapist's
+  homework: …"); saving anything else never writes it over the family's pick.
+- **A place each sound really has** (`Sona.soundPos`): vocalic R is R's;
+  blends are R's, S's and L's (the picker says "tr, st, bl"); another sound
+  picked there practises the start of words, and Settings says so ("Only R
+  has vocalic R. S practices the start of words."), greying out a choice none
+  of the child's sounds has. TH (v) has no start-of-word word a picture can
+  show, so it practises anywhere in a word.
+- **Each place climbs on its own:** the sound alone, that place's syllables,
+  its words, sentences built on them, one step a round, one step past what
+  was earned (the same rule as before). The start of a word keeps
+  `g.stage[sound]`; other places live in `g.stageAt` ("R.f"), wins "R.f.2",
+  inside the same progress record (reset, backup and removal treat it the
+  same). The sound alone is shared (passed at one place, passed at all); R at
+  the end of a word and vocalic R are one climb ("R.v"). A step with nothing
+  in it is skipped, never asked (`Sona.ladderSteps`): that closed a bug where
+  the fifth round asked the empty "talking" step, fell back to "rrrr", and
+  two clean "rrrr"s marked a sound Mastered. Progress shows each place's step
+  and says "All steps done", never "Talking" or "Mastered"; its Firsts are
+  per child and per place.
+- **"Each day's practice starts with"** (`profile.ladderStart`: the sound,
+  syllables, words or sentences). Default: the sound, every step, as before.
+  A later start skips the steps below it (they count as the child's for the
+  stretch); a step down can still go below it (end on a success); a day that
+  starts above the sound puts the mouth cue on its first round. Homework
+  always starts at the sound, and Settings locks it.
+- **Syllables at every place** (`gamecontent.js`, tables Rachel can read):
+  middle `SYL_MID` ("ah-rah", hyphen kept so a voice reads two beats), end
+  `SYL_END` (spelled as English endings: "ope", "oak", "ace", "edge"), vocalic
+  R `SYL_VOC` (ar, or, air, ear, ire; Echo is given "are", "ore"; no "er"),
+  blends `SYL_BLEND` (R trah…, S stah, **spa** never "spee", which said
+  without its s is "pee"; L blah…). **Asked only once someone has listened**:
+  `SYL_POS_ON` (today vocalic R, which R's end uses too); every other place
+  skips the syllable step, sound → words. `/listen.html` (grown-ups, linked
+  from nowhere) plays every syllable in the practice page's own line, so
+  Travis or Rachel can listen and switch a place on (one entry). `soundmap`
+  holds every table to the never-say list (also as a blend said without its
+  sound) and to the listening switches.
+- **Sentences are English.** `SENT_FORM` says how every bank word sits in a
+  sentence ("an egg", "milk", "Here are grapes", "the sun", "my mom", and no
+  sentence at all for "think", "happy", the numbers); `posladdertest` fails on
+  a bank word missing from it. The five frames are unchanged for a word you
+  count. Echo is given a sentence without its full stop.
+- **A step down stays on target** (`Sona.stepDown`): a sentence to its own
+  word, a word to its closest syllable at its own place ("car" → "ar"), a
+  syllable to the sound alone.
+- **The games follow the place.** Hoops, Soccer Goal, Dino Dig, Bubble Pop,
+  Feed Echo and every sayplay.js game ask that place's words
+  (`Sona.playWords`; `GAMES_FOLLOW_POS` is the one switch back); the
+  start-of-word themes only at the start of a word; Feed Echo's wrong pictures
+  never carry the practice sound (`Sona.hasSound`). Fruit Slice's cards: see
+  "Games ask for more than the sound". The books stay start-of-word.
+- **Listening and booking.** A try at the sound alone or a syllable is never
+  booked as a word place (the clinician's pass rate by position counts words
+  and sentences only). On a syllable round Apple's words are compared run
+  together, with a vowel's h dropped and `HEAR_ALIKE` ("are" for ar); a clear
+  word not close still fails ("taco" for kah, "rock" for rah). A blend said
+  without its sound fails ("top" for stop). The website's shape check no
+  longer fails an R or L word for the hiss of its other letters ("star"), nor
+  an S blend for its voiced ones.
+- **Rachel's calls, built on defaults until she answers:** every syllable
+  table, and which places are switched on; whether R's end and vocalic R are
+  one climb and the sound alone counts everywhere; whether a grown-up may
+  start above the sound, and the cue on that first round; the picture games
+  (also for ages 2 to 4) following the position; Feed Echo's wrong pictures;
+  `SENT_FORM`; bare-sound and syllable tries left out of the position pass
+  rate; the syllable listening rule and `HEAR_ALIKE`; "cah" for car still
+  passing at the end of a word (`HEAR_SUBS_END`, unchanged); "sandwich" moved
+  to end-of-word CH; vocalic R and blends offered at any age (shown, not
+  gated, like the sounds).
+`tests/posladdertest.mjs` holds these rules; `kidtest` the Settings pickers;
+`progtest`, `hwtest`, `gameasktest`, `heartest` and `soundmap` the rest.
 
 ## Code conventions
 - `public/` is static ES5 — no build step, no framework, no bundler. It ships

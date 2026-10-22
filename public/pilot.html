@@ -84,7 +84,8 @@
         <option value="mix">Mixed (all positions)</option>
       </select>
       <script>
-        // Only the start of a word can be picked for now (see FAMILY_POSITIONS in sona.js).
+        // Every position is open (22 Oct 2026); FAMILY_POSITIONS in sona.js is
+        // still the switch that would grey one out again.
         (function () {
           var el = document.getElementById("pos"), open = (window.Sona && Sona.FAMILY_POSITIONS) || ["i"];
           Array.prototype.forEach.call(el.options, function (o) { if (open.indexOf(o.value) < 0) { o.disabled = true; o.textContent = o.textContent + " · coming soon"; } });
@@ -157,7 +158,9 @@
       b.onclick=function(){ if(picked[s]){delete picked[s];b.classList.remove("on");} else {picked[s]=true;b.classList.add("on");} };
       wrap.appendChild(b);
     });
-    var _pp=qp.get("pos"); if(_pp&&$("pos")) $("pos").value=_pp;
+    // only a position this build opens; a programmatic value would select even
+    // a greyed-out one
+    var _pp=qp.get("pos"); if(_pp&&$("pos")&&((window.Sona&&Sona.FAMILY_POSITIONS)||["i"]).indexOf(_pp)>=0) $("pos").value=_pp;
     if($("cCode")&&CRED.code) $("cCode").value=CRED.code;
     if($("cKey")&&CRED.key) $("cKey").value=CRED.key;
 
@@ -207,7 +210,7 @@
     function finish(name, age, sounds){
       try{
         if(window.Sona){
-          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
+          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), wordPosition:($("pos")&&$("pos").selectedIndex>=0&&!$("pos").options[$("pos").selectedIndex].disabled?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
           if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();
         }
       }catch(e){}

@@ -359,6 +359,9 @@
   </div>
 
   <script src="/sona.js"></script>
+  <!-- the practice content, so a sound's last step here is the practice
+       page's own (TH (v) at the end of words has no sentence step) -->
+  <script src="/gamecontent.js"></script>
   <script>
     // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
     // pass of the home screen's grown-ups gate) is sent back to the gate.
@@ -381,6 +384,17 @@
     function earlyText(k) { var n = triesOf(out[k]); return "Too early to tell — " + n + (n === 1 ? " try" : " tries") + " so far"; }
     var keys = Object.keys(out).filter(function (k) { return triesOf(out[k]) > 0; });
     var POSLBL = { i: "Start of word", m: "Middle of word", f: "End of word", v: "Vocalic R", b: "Blends" };
+    var POSWHERE = { i: "start of words", m: "middle of words", f: "end of words", v: "vocalic R", b: "blends", mix: "anywhere in a word" };
+    // every place this child has climbed at for a sound, plus the place it is
+    // practised at now (it may have no step yet): [{ pos, rung, label, done }]
+    function placesOf(k) {
+      var where = (Sona.ladderWhere ? Sona.ladderWhere(k) : []).slice(), cur = Sona.soundPos ? Sona.soundPos(k) : "i";
+      if (Sona.rungOf && !where.some(function (w) { return w.pos === cur; })) {
+        var r = Sona.rungOf(k, cur), top = Sona.ladderTop ? Sona.ladderTop(k, cur) : 3;
+        where.push({ pos: cur, rung: r, label: Sona.stepLabel ? Sona.stepLabel(k, cur) : (Sona.rungLabel ? Sona.rungLabel(r) : ""), done: r > top });
+      }
+      return where;
+    }
     function posLineOf(k) {
       var o = out[k], parts = []; if (!o || !o.byPos) return "";
       Object.keys(o.byPos).forEach(function (pos) { var x = o.byPos[pos]; if (x.a > 0) parts.push((POSLBL[pos] || pos) + " · " + count(x.p) + " of " + count(x.a)); });
@@ -487,7 +501,17 @@
         (pos ? '<div class="poschips" aria-label="Sound checks by word position">' + pos + '</div>' : '');
       accHost.appendChild(row);
       var detail = document.createElement("div"); detail.className = "accrow";
-      detail.textContent = soundLabel(k) + " sound · " + triesOf(o) + " tries · " + (Sona.rungLabel ? Sona.rungLabel(Sona.rungOf(k)) : "Sound practice");
+      // Each place in the word climbs on its own (22 Oct 2026), so a child who
+      // has practised more than the start of words sees each place's step
+      // ("start of words: Sentences · end of words: Syllables"): one step for
+      // the sound would make a switch of place look like going backwards.
+      // Past the last step a place has: "All steps done", never "Talking" or
+      // "Mastered" (Sona.stepLabel).
+      var where = placesOf(k);
+      var steps = !where.length ? "Sound practice"
+        : (where.length === 1 && where[0].pos === "i") ? where[0].label
+        : where.map(function (w) { return (POSWHERE[w.pos] || w.pos) + ": " + w.label; }).join(" · ");
+      detail.textContent = soundLabel(k) + " sound · " + triesOf(o) + " tries · " + steps;
       bs.appendChild(detail);
     });
 
@@ -678,14 +702,20 @@
       // 2) rung advances — dated from now, when this page first sees the climb
       var seen = {}, sounds = [];
       Object.keys(oo).concat(Object.keys(g.bySound || {})).forEach(function (k) { if (!seen[k]) { seen[k] = 1; sounds.push(k); } });
+      // One snapshot per place in the word (22 Oct 2026): a single one per
+      // sound would date a "first" every time a grown-up switched place and
+      // the other place's step was higher. The start of a word keeps the
+      // sound's own key, so nothing seen before is seen again.
       sounds.forEach(function (k) {
-        var r = Sona.rungOf ? Sona.rungOf(k) : 0, prev = f.rungs[k];
+        placesOf(k).forEach(function (w) {
+        var lk = Sona.ladderKey ? Sona.ladderKey(k, w.pos) : k, key = lk === k ? k : k + "@" + lk.slice(k.length + 1), r = w.rung, prev = f.rungs[key], at = w.pos === "i" ? "" : " " + (Sona.posInfo ? Sona.posInfo(w.pos).place : "");
         if (typeof prev === "number" && r > prev) {
-          var id = "rung-" + k + "-" + r;
-          var lbl = r >= L ? ("Every " + sl(k) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r) : "a new") + " level — " + sl(k) + " sound");
-          if (!has(id)) f.entries.push({ id: id, e: (r >= L ? '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><path d="M20 10h24v6c0 10-5 16-12 16s-12-6-12-16Z" fill="#ffd21c"/><path d="M20 12h-8c0 8 4 12 10 13M44 12h8c0 8-4 12-10 13" stroke="#f0a800" stroke-width="4" fill="none"/><rect x="28" y="32" width="8" height="8" fill="#f0a800"/><rect x="20" y="42" width="24" height="7" rx="3" fill="#b97900"/><circle cx="26" cy="16" r="2.5" fill="#fff" opacity=".8"/></svg>' : '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="ob-rocket"><path d="M20 42l-8 12 13-4Z" fill="#ff5c5c"></path><path d="M44 42l8 12-13-4Z" fill="#ff5c5c"></path><path d="M32 5c9 7 12 22 8 41H24c-4-19-1-34 8-41Z" fill="#f0f0f5"></path><path d="M32 5c5 4 8 10 9 17H23c1-7 4-13 9-17Z" fill="#ff5c5c"></path><circle cx="32" cy="31" r="6" fill="#4db3f2"></circle><circle cx="32" cy="31" r="6" fill="none" stroke="#d0d5dd" stroke-width="2"></circle><path d="M26 46q6 12 12 0-6 4-12 0Z" fill="#ffb100"></path><circle cx="27" cy="15" r="2.2" fill="#fff" opacity=".75"></circle></g></svg>'), label: lbl, date: todayKey() });
+          var id = "rung-" + key + "-" + r;
+          var lbl = w.done ? ("Every " + sl(k) + " level cleared" + at) : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r) : "a new") + " level — " + sl(k) + " sound" + at);
+          if (!has(id)) f.entries.push({ id: id, e: (w.done ? '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><path d="M20 10h24v6c0 10-5 16-12 16s-12-6-12-16Z" fill="#ffd21c"/><path d="M20 12h-8c0 8 4 12 10 13M44 12h8c0 8-4 12-10 13" stroke="#f0a800" stroke-width="4" fill="none"/><rect x="28" y="32" width="8" height="8" fill="#f0a800"/><rect x="20" y="42" width="24" height="7" rx="3" fill="#b97900"/><circle cx="26" cy="16" r="2.5" fill="#fff" opacity=".8"/></svg>' : '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="ob-rocket"><path d="M20 42l-8 12 13-4Z" fill="#ff5c5c"></path><path d="M44 42l8 12-13-4Z" fill="#ff5c5c"></path><path d="M32 5c9 7 12 22 8 41H24c-4-19-1-34 8-41Z" fill="#f0f0f5"></path><path d="M32 5c5 4 8 10 9 17H23c1-7 4-13 9-17Z" fill="#ff5c5c"></path><circle cx="32" cy="31" r="6" fill="#4db3f2"></circle><circle cx="32" cy="31" r="6" fill="none" stroke="#d0d5dd" stroke-width="2"></circle><path d="M26 46q6 12 12 0-6 4-12 0Z" fill="#ffb100"></path><circle cx="27" cy="15" r="2.2" fill="#fff" opacity=".75"></circle></g></svg>'), label: lbl, date: todayKey() });
         }
-        f.rungs[k] = r;
+        f.rungs[key] = r;
+        });
       });
       saveF(f);
       // render — newest first, plus exactly one gentle "coming up" outline row
@@ -704,8 +734,10 @@
         var next = null;
         if (!has("pass-" + top)) { next = "First clear " + sl(top) + " sound"; }
         else {
-          var r2 = Sona.rungOf ? Sona.rungOf(top) : 0;
-          if (r2 < L) next = (r2 + 1 >= L) ? ("Every " + sl(top) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r2 + 1) : "the next") + " level — " + sl(top) + " sound");
+          // the step the place being practised climbs to next, never past
+          // the last step it has (Sona.ladderTop)
+          var r2 = Sona.rungOf ? Sona.rungOf(top) : 0, t2 = Sona.ladderTop ? Sona.ladderTop(top) : L - 1;
+          if (r2 <= t2) next = (r2 + 1 > t2) ? ("Every " + sl(top) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r2 + 1) : "the next") + " level — " + sl(top) + " sound");
         }
         if (next) html += '<div class="firstrow next"><span class="fe"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M32 8l6 18 18 6-18 6-6 18-6-18-18-6 18-6Z" fill="#ffd21c"/><circle cx="26" cy="20" r="2.5" fill="#fff" opacity=".8"/></svg></span><b>' + next + '</b><span class="fd">coming up</span></div>';
       }

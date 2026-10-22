@@ -300,6 +300,11 @@
     // each child's Practice Board entry and the last board they saw (BOARD2,
     // 11 Oct 2026): never in a backup, and gone when the child is removed
     "sona.board.v1", "sona.boardcache.v1",
+    // Progress's Firsts: the steps each child has been seen to reach. It was
+    // the phone's, so a sister's climb was dated as her brother's "first"
+    // (22 Oct 2026, with one climb per place in the word). The first child
+    // keeps the key as it was.
+    "sona.firsts.v1",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
@@ -371,7 +376,7 @@
       else sessionStorage.removeItem(key);
       // A game entrance token is transient; the saved ready checkpoint owns
       // any already-earned game and will issue its own token on resume.
-      ["sona.play.token", "sona.play.active", "sona.boost.sound", "sona.boost.level", "sona.boost.ask"].forEach((k) => sessionStorage.removeItem(k));
+      ["sona.play.token", "sona.play.active", "sona.boost.sound", "sona.boost.level", "sona.boost.ask", "sona.boost.pos"].forEach((k) => sessionStorage.removeItem(k));
     } catch (e) {}
   }
   function addKid(name, age) {
@@ -786,17 +791,65 @@
   // g.stage[sound] indexes THIS array — see migrateLadder() before reordering it.
   const LADDER = ["isolation", "syllable", "word", "sentence", "conversation"];
   const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", sentence: "Sentences", conversation: "Talking" };
+  // The highest step the practice page can ask: "conversation" has no line
+  // to say (its items are questions with no .t). It used to be reachable on
+  // the fifth round of a day, fall back to the bare sound, and two clean
+  // "rrrr"s there marked the sound Mastered (ladderTop, below).
+  const PRACTICE_TOP = LADDER.indexOf("sentence");
   const RUNG_MASTER = 0.8; // ~80% on a rung advances to the next
-  function rungOf(sound) { const g = getProgress(); return Math.min(LADDER.length, g.stage[sound] || 0); } // 0..6
+  // ── one climb per sound AND place in the word (22 Oct 2026) ──
+  // Travis: "not just saying the sound of the letter R, but to progress where
+  // we're doing re, ra, ru, and then we're doing a full word and applying that
+  // to each letter", with every word position open. A child who says R well
+  // at the start of words may still need syllables at the end of them, so each
+  // place climbs on its own. The start of a word keeps g.stage[sound] and its
+  // "R.2" win counts, so nothing a child has earned moves; every other place
+  // lives beside it in g.stageAt ("R.f"; wins "R.f.2"), inside the same
+  // record, so a reset, a backup, a sibling and a removal treat it exactly as
+  // they treat the rest. Two places share one climb: R at the end of a word IS
+  // vocalic R (car, door, bear), so "f" for R is kept as "v". And the sound
+  // alone is the same sound wherever it sits, so once any of a sound's climbs
+  // has passed it, every climb starts above it. Which climbs share is
+  // Rachel's call (CLAUDE.md, "Word positions and the practice steps").
+  function _ladKey(sound, pos) {
+    sound = String(sound || "").toUpperCase();
+    const p = pos || soundPos(sound);
+    if (!p || p === "i") return "";
+    // TH (v) has no start-of-word words, so "anywhere in a word" is where it
+    // has always really been practised: it keeps the sound's own climb
+    if (p === "mix" && !posHas(sound, "i")) return "";
+    return sound + "." + (sound === "R" && p === "f" ? "v" : p);
+  }
+  function ladderKey(sound, pos) { sound = String(sound || "").toUpperCase(); return _ladKey(sound, pos) || sound; }
+  function _aloneDone(g, sound) {
+    if ((g.stage[sound] | 0) >= 1) return true;
+    const at = g.stageAt || {}, pre = sound + ".";
+    return Object.keys(at).some((k) => k.indexOf(pre) === 0 && (at[k] | 0) >= 1);
+  }
+  // pos: a place in the word ("i", "m", "f", "v", "b", "mix"); left out, the
+  // place this sound is practised at now (soundPos). 0..5: the first step not
+  // yet earned.
+  function rungOf(sound, pos) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(), k = _ladKey(sound, pos);
+    let r = k ? ((g.stageAt || {})[k] | 0) : (g.stage[sound] || 0);
+    if (r < 1 && _aloneDone(g, sound)) r = 1;
+    return Math.min(LADDER.length, r);
+  }
   function rungName(i) { return LADDER[i] || "mastered"; }
   function rungLabel(i) { return LADDER_LABEL[LADDER[i]] || "Mastered"; }
   // Record a finished round at `rung`. accuracy: 0..1 (or a pass boolean). Encouraging:
   // advances only when solid and never regresses.
-  function recordRung(sound, rung, accuracy) {
-    const g = getProgress(); const cur = g.stage[sound] || 0;
+  function recordRung(sound, rung, accuracy, pos) {
+    sound = String(sound || "").toUpperCase();
+    const k = _ladKey(sound, pos), cur = rungOf(sound, pos);
     const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
-    if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
-    return g.stage[sound] || 0;
+    if (ok && rung >= cur && cur < LADDER.length) {
+      const g = getProgress(), v = Math.min(LADDER.length, rung + 1);
+      if (k) { g.stageAt = g.stageAt || {}; g.stageAt[k] = v; } else g.stage[sound] = v;
+      save(GKEY, g);
+    }
+    return rungOf(sound, pos);
   }
   // One clean first-listen pass at the stretch rung; the second one earns it.
   // The rule (two passes, never down) is Rachel's and is unchanged — this is
@@ -808,13 +861,17 @@
   // now, so it follows them through load()/save(), a backup and a removal.
   // Counts left under the old keys are not read: a child at worst needs one
   // more clean round, which is the safe direction.
-  function rungWin(sound, rung) {
-    const g = getProgress(); const k = sound + "." + rung;
+  // Each place in the word counts its own wins ("R.2" at the start, "R.v.2"
+  // for vocalic R and R at the end), so two clean rounds in two places never
+  // add up to a step in either.
+  function rungWin(sound, rung, pos) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(); const k = (_ladKey(sound, pos) || sound) + "." + rung;
     g.rungWins = g.rungWins || {};
     const w = (g.rungWins[k] | 0) + 1;
-    if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1); }
+    if (w >= 2) { delete g.rungWins[k]; save(GKEY, g); return recordRung(sound, rung, 1, pos); }
     g.rungWins[k] = w; save(GKEY, g);
-    return g.stage[sound] || 0;
+    return rungOf(sound, pos);
   }
   // ── free-play rotation: one letter at a time, one rung per game ──
   // A rotation = ROT_LEN practice rounds (≈ one pass of the games — any games,
@@ -906,22 +963,71 @@
   // One reader for both, so a page cannot honour homework for the sound and
   // quietly ignore it for the position.
   //
-  // A FAMILY CAN PICK ONLY THE START OF A WORD FOR NOW (Travis, 1 Oct 2026:
-  // "have the options listed but to not let them select other positioning
-  // because it's not built yet ... make it clear that it's just the initial
-  // position"). Only the practice page ever read the setting; the games ask
-  // for start-of-word words whatever it says (and so do the books, but for
-  // the odd page with no such word), so "Middle" was a choice the app half
-  // kept. FAMILY_POSITIONS is the one switch: Settings
-  // and the pilot page list every position and grey out the ones not in it
-  // ("coming soon"), and a position saved before this reads as the start of
-  // a word here rather than being quietly honoured on one page. Add an id to
-  // open it. An SLP's homework still names its own position.
-  const FAMILY_POSITIONS = ["i"];
+  // EVERY POSITION IS OPEN (Travis, 22 Oct 2026: "a full, in-depth, thorough
+  // build-out of word positions … build that so it works in the games"). From
+  // 1 Oct only the start of a word could be picked, "because it's not built
+  // yet"; now each place has its own syllables, words, sentences and climb
+  // (soundPos, ladderContent, rungOf) and the picture games follow it.
+  // FAMILY_POSITIONS stays the one switch: an id taken out of it greys out in
+  // Settings again ("coming soon") and reads as the start of a word here.
+  // An SLP's homework still names its own position.
+  //
+  // THE FAMILY'S PICK IS profile.wordPosition, NEVER THE OLD
+  // profile.practicePosition. That one still holds whatever a family chose
+  // before 1 Oct (or a pilot link's ?pos=), and a family who has not opened
+  // Settings since would have found their child moved to the end of words, or
+  // vocalic R, with nobody choosing it. Only today's Settings writes this one.
+  const FAMILY_POSITIONS = ["i", "m", "f", "v", "b", "mix"];
   function practicePos() {
     const hw = homework();
     if (hw && hw.pos) return hw.pos;
-    try { const p = getProfile().practicePosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
+    return _famPos();
+  }
+  function _famPos() {
+    try { const p = getProfile().wordPosition || "i"; return FAMILY_POSITIONS.indexOf(p) >= 0 ? p : "i"; } catch (e) { return "i"; }
+  }
+  // Does this sound have bank words at this place?
+  function posHas(sound, pos) {
+    return (WORDS[String(sound || "").toUpperCase()] || []).some((w) => (w.pos || "i") === pos);
+  }
+  // THE PLACE A SOUND IS REALLY PRACTISED AT. practicePos() is one choice for
+  // every sound a child has, but vocalic R exists only for R, blends only for
+  // R, S and L (the picker says it: "tr, st, bl"), and TH (v) has no word that
+  // starts with it that a picture can show. So: the chosen place when this
+  // sound has words there; else the start of a word; else (TH (v)) anywhere in
+  // the word, "mix". An assignment that names this sound's own words keeps its
+  // own position whatever those words are. The practice page, the games,
+  // Settings and Progress all read this, so none can practise one place while
+  // another shows a different one.
+  function soundPos(sound) {
+    sound = String(sound || "").toUpperCase();
+    // an assignment's position belongs to the assignment's sounds
+    const hw = homework();
+    const p = hw && hw.pos && (hw.sounds || []).map((x) => String(x).toUpperCase()).indexOf(sound) < 0 ? _famPos() : practicePos();
+    if (homeworkWords(sound).length) return p;
+    if (p === "mix" || posHas(sound, p)) return p;
+    return posHas(sound, "i") ? "i" : "mix";
+  }
+  // ── "Each day's practice starts with" (Travis, 22 Oct 2026: "I'm not sure
+  // … if only some need to do the progression, or if all of them do. But
+  // let's at least just build it in so it's an option that can be selected") ──
+  // The step the day's first round asks, 0..3 (the sound, syllables, words,
+  // sentences); the climb goes on from there one step a round, as it always
+  // has (charge.html). "" = the sound, every step, as before. The steps a
+  // child starts above count as theirs for the climb: they stretch one past
+  // the start, and two clean rounds at the start step earn it and every step
+  // below it, the practice page's own rule for a stretch (a syllable win from
+  // a fresh start has always written "words next"). Saving the setting writes
+  // nothing on its own. A
+  // speech therapist's homework climbs every step from the sound, whatever is
+  // saved, and Settings says so: a parent must not skip steps of an
+  // assignment the therapist cannot see skipped. Whether a grown-up may skip
+  // steps at all is Rachel's call.
+  function ladderStart() {
+    if (homework()) return 0;
+    let s = ""; try { s = getProfile().ladderStart || ""; } catch (e) {}
+    const i = LADDER.indexOf(s);
+    return i > 0 && i <= PRACTICE_TOP ? i : 0;
   }
   function rotState() {
     const st = load(ROTKEY, {}); const f = rotSounds();
@@ -1676,23 +1782,131 @@
   // Practice items for a (sound, rung), wired to the existing content sources.
   // isolation/syllable score as "phoneme" (lenient); word+ score "full". Degrades
   // gracefully to words if SonaContent (gamecontent.js) isn't loaded on a page.
-  function ladderContent(sound, rung) {
+  // pos: the place in the word; left out, the place this sound is practised
+  // at (soundPos: homework's, then the family's, with its fallbacks). Every
+  // step follows it (22 Oct 2026): the syllables are built for that place
+  // ("ar" at the end of a word, "ah-rah" in the middle, "trah" in a blend;
+  // gamecontent.js holds the tables), the words sit there, and the sentences
+  // are built on those words. It used to be the word and sentence steps only,
+  // with "rah" asked of a child working on the end of words.
+  // Every item carries its own `pos` (the bank word's own tag for a word or a
+  // sentence, so "cake" is marked and booked where it is being practised;
+  // none for the sound alone), and `say`, what Echo's voice says, which may
+  // be respelled from what the card shows (`display`).
+  function ladderContent(sound, rung, pos) {
     const SC = (typeof window !== "undefined") ? window.SonaContent : null;
     const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
-    // The word step asks for the position being practised: homework's, then
-    // the family's setting (practicePos). It passed no position and so always
-    // asked for start-of-word words, whatever Settings or the SLP said (Travis,
-    // 30 Sep 2026: the position must actually drive the practice page). A
-    // position with no words for this sound falls back to start-of-word ones
-    // inside wordsFor. The games keep start-of-word words on purpose and call
-    // wordsFor(sound, "i") themselves.
-    const ws = () => wordsFor(sound, practicePos()) || [];
-    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
-    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
-    if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
-    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full" }));
-    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
+    const P = pos || soundPos(sound);
+    const ws = () => wordsFor(sound, P) || [];
+    // the syllables of the place the words really sit: homework that names
+    // "car" and "star" under a start-of-word assignment is end-of-word R
+    let SP = P;
+    const hww = homeworkWords(sound);
+    if (hww.length) { const ps = {}; hww.forEach((w) => { ps[w.pos || "i"] = 1; }); const k = Object.keys(ps); SP = k.length === 1 ? k[0] : "mix"; }
+    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme", pos: "" }];
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound, SP) : []).map((s) => ({ t: s.t, say: s.say || s.t, display: s.t, level: "syllable", mode: "phoneme", pos: s.pos || SP }));
+    // once each: "cake" is filed at the start and the end of K
+    if (lvl === "word") { const seen = {}; return ws().filter((w) => !seen[w.w] && (seen[w.w] = 1)).map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full", pos: w.pos || "i" })); }
+    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound, P) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w, pos: w.pos }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full", pos: s.pos || P }));
+    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound, P) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
     return [];
+  }
+  // The steps this sound has something to ask at this place, in order:
+  // [0, 1, 2, 3] at the start of a word; [0, 2, 3] where the place's
+  // syllables are not switched on yet (gamecontent.js SYL_POS_ON: the climb
+  // goes from the sound straight to words); [0, 1, 2] for TH (v) at the end
+  // of a word, whose bathe, smooth, teethe and breathe no sentence can hold.
+  // The practice page climbs only these, so a step with nothing in it is
+  // never asked — and so never earned on a bare "thuh" said in its place.
+  function ladderSteps(sound, pos) {
+    const P = pos || soundPos(sound), out = [0];
+    for (let r = 1; r <= PRACTICE_TOP; r++) if (ladderContent(sound, r, P).some((it) => it && it.t)) out.push(r);
+    return out;
+  }
+  // The highest of them.
+  function ladderTop(sound, pos) { const st = ladderSteps(sound, pos); return st[st.length - 1]; }
+  // The easier target when a round steps down (CLAUDE.md: "End every
+  // speech-practice round on a success. Step the target down"). It used to
+  // be the first item one step lower, so "I see a bear." stepped down to
+  // "car". Now: a sentence steps down to its own word; a word to the
+  // syllable that shares the most of its letters ("car" → "ar", "rabbit" →
+  // "rah"); a syllable to the sound alone. Same place in the word throughout,
+  // and it may go below the step the day started at: a step down is help,
+  // not a start.
+  function stepDown(item, sound, pos) {
+    const r = LADDER.indexOf(item && item.level);
+    if (r <= 0) return null;
+    // the item's own place first: homework's "rabbit" under an end-of-word
+    // assignment steps down to "rah", not "ar"
+    const P = (item.pos && item.pos !== "mix" && item.level !== "syllable") ? item.pos : (pos || soundPos(sound));
+    let lower = [];
+    for (let s = r - 1; s >= 0 && !lower.length; s--) lower = ladderContent(sound, s, P).filter((it) => it && it.t);
+    if (!lower.length) return null;
+    if (item.level === "sentence" && item.word) {
+      const own = lower.filter((it) => it.word === item.word)[0];
+      if (own) return own;
+    }
+    if (item.level === "word" && lower[0].level === "syllable") {
+      const w = String(item.word || item.t || "").toLowerCase();
+      let best = lower[0], score = -1;
+      lower.forEach((it) => { const n = _shared(String(it.t).toLowerCase().replace(/[^a-z]/g, ""), w); if (n > score) { score = n; best = it; } });
+      return best;
+    }
+    return lower[0];
+  }
+  // A step's name for a grown-up, at this place: Sound, Syllables, Words,
+  // Sentences, or "All steps done" once the last step this place has is
+  // earned. Never "Talking", which the practice page does not ask, and never
+  // "Mastered", which reads like a grade (CLAUDE.md: nothing is an evaluation).
+  function stepLabel(sound, pos) {
+    const P = pos || soundPos(sound), r = rungOf(sound, P);
+    return r > ladderTop(sound, P) ? "All steps done" : rungLabel(r);
+  }
+  // Every place this child has climbed at for a sound, the start of a word
+  // first, for Progress: [{ pos, rung, label, done }]. Vocalic R and R at the
+  // end of a word are one climb, named for whichever is being practised.
+  function ladderWhere(sound) {
+    sound = String(sound || "").toUpperCase();
+    const g = getProgress(), out = [];
+    if (g.stage[sound] != null) out.push("i");
+    Object.keys(g.stageAt || {}).forEach((k) => {
+      if (k.indexOf(sound + ".") !== 0) return;
+      let p = k.slice(sound.length + 1);
+      if (sound === "R" && p === "v" && soundPos(sound) === "f") p = "f";
+      if (out.indexOf(p) < 0) out.push(p);
+    });
+    return out.map((p) => { const r = rungOf(sound, p); return { pos: p, rung: r, label: stepLabel(sound, p), done: r > ladderTop(sound, p) }; });
+  }
+  // What the practice page will ask a sound, step by step, for Settings'
+  // lines: { sound, pos, picked, fellBack, start, top, homework, steps:
+  // [{ level, label, sample }] }. The sample is the FIRST item of each step,
+  // never a random one, so the line does not change each time a grown-up
+  // taps something. It only reads.
+  function ladderPlan(sound) {
+    sound = String(sound || "").toUpperCase();
+    const SC = (typeof window !== "undefined") ? window.SonaContent : null;
+    const pos = soundPos(sound), picked = practicePos(), have = ladderSteps(sound, pos), top = have[have.length - 1];
+    const steps = [];
+    for (let r = 0; r <= PRACTICE_TOP; r++) {
+      if (have.indexOf(r) < 0) { steps.push({ level: LADDER[r], label: rungLabel(r), sample: "" }); continue; }
+      const items = ladderContent(sound, r, pos).filter((it) => it && it.t);
+      let sample = items[0] ? (r === 0 ? items[0].t : items[0].display) : "";
+      if (LADDER[r] === "sentence" && SC && SC.sentenceFor) {
+        const w = (wordsFor(sound, pos) || []).filter((x) => SC.sentenceFor(x.w, 0))[0];
+        if (w) sample = SC.sentenceFor(w.w, 0).t;
+      }
+      steps.push({ level: LADDER[r], label: rungLabel(r), sample: sample });
+    }
+    return { sound: sound, pos: pos, picked: picked, fellBack: pos !== picked, start: Math.min(ladderStart(), top), top: top, have: have, homework: !!homework(), steps: steps };
+  }
+  // the longest run of letters a and b share ("ar" and "car": 2)
+  function _shared(a, b) {
+    let best = 0;
+    for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
+      let n = 0; while (a[i + n] && a[i + n] === b[j + n]) n++;
+      if (n > best) best = n;
+    }
+    return best;
   }
 
   // ── GAMEASK1: what a round game's say-it card asks for (Travis, 1 Oct
@@ -1719,11 +1933,17 @@
   // whatever top and floor say (gameHold): those cards keep the bare sound.
   // Otherwise it is lowered to what can really be asked: a sound whose syllables nobody
   // has listened to yet (SonaContent.GAME_SYL_ON) stays on the bare sound,
-  // as does a page without gamecontent.js; and when the position being
-  // practised is not the start of a word (an SLP's end-of-word or "er, ar,
-  // or" homework) there is no syllable step, because "ree" is a start-of-word
-  // R, a different target from the one the therapist set: the sound, then one
-  // of the homework's own words if it names any.
+  // as does a page without gamecontent.js.
+  // EVERY PLACE IN THE WORD HAS ITS OWN CARDS (22 Oct 2026). The cards ask
+  // the syllables and the short word of the place being practised
+  // (soundPos): "ar" and "car" at the end of a word, never "ree", which is a
+  // start-of-word R. A place whose game lines are not switched on
+  // (gameSyllables(sound, pos) is empty) skips the syllable step: the sound,
+  // then a word of that place if there is one (the practice page's, the
+  // homework's, or its GAME_SHORT_AT word), as end-of-word homework did.
+  // The floor also rises to the step before the day's first step
+  // (ladderStart), so a child who starts at words is not handed a syllable
+  // between rounds; a grown-up's pick in the game picker still wins.
   //
   // HONEST LIMITS. A card hears only "a voice of the right kind": it cannot
   // tell "ree" from "rrrr" or "rot", so harder here means what Echo ASKS,
@@ -1748,7 +1968,9 @@
   //                syllable or a word; nothing past the bare sound is recorded.
   //   "sound"    — this sound's syllables are not switched on yet (or the
   //                page has no gamecontent.js).
-  //   "position" — the position being practised is not the start of a word.
+  //   "position" — the sound is switched on, but the place in the word it is
+  //                practised at has no game syllables yet: the cards skip
+  //                the syllable step (the sound, then a word of that place).
   //   ""         — nothing does.
   function gameHold(sound) {
     sound = String(sound || "").toUpperCase();
@@ -1756,7 +1978,7 @@
     try { const p = getProfile(); if (p.voiceOn === false || Number(p.volume) === 0) return "muted"; } catch (e) {}
     const SC = _gameContent();
     if (!(SC && SC.gameSyllables && SC.gameSyllables(sound).length)) return "sound";
-    if (practicePos() !== "i") return "position";
+    if (!SC.gameSyllables(sound, soundPos(sound)).length) return "position";
     return "";
   }
   // The ceiling asked for, before the sound's own limits.
@@ -1765,42 +1987,51 @@
     if (hold === "little" || hold === "muted") return 0;
     let pick = ""; try { pick = getProfile().gameLevel || ""; } catch (e) {}
     const i = GAME_LEVELS.indexOf(pick);
-    return i >= 0 ? i : Math.min(2, rungOf(sound) + 1);
+    return i >= 0 ? i : Math.min(2, Math.max(rungOf(sound), ladderStart()) + 1);
   }
-  // What the practice page ended on this sitting, if it was this sound.
+  // What the practice page ended on this sitting, if it was this sound — and
+  // this place in the word: an ask handed over before a grown-up changed the
+  // position is not reused.
   function _gameHand(sound) {
     try {
       if (String(sessionStorage.getItem("sona.boost.sound") || "").toUpperCase() !== sound) return null;
       const lvl = LADDER.indexOf(sessionStorage.getItem("sona.boost.level") || "");
       if (lvl < 0) return null;
+      const hp = sessionStorage.getItem("sona.boost.pos");
+      if (hp != null && hp !== soundPos(sound)) return null;
       return { rung: Math.min(2, lvl), ask: String(sessionStorage.getItem("sona.boost.ask") || "").toLowerCase().trim() };
     } catch (e) { return null; }
   }
   function _gameItem(sound, want, card, hand) {
-    const SC = _gameContent(), bare = soundSay(sound);
-    const syls = SC && SC.gameSyllables ? SC.gameSyllables(sound) : [];
-    let rung = 0, text = bare;
-    if (syls.length && want > 0) {
-      const start = practicePos() === "i", hw = homeworkWords(sound);
+    const SC = _gameContent(), bare = soundSay(sound), pos = soundPos(sound);
+    const on = !!(SC && SC.gameSyllables && SC.gameSyllables(sound).length);
+    const syls = on ? SC.gameSyllables(sound, pos) : [];
+    let rung = 0, text = bare, at = "";
+    if (on && want > 0) {
+      const hw = homeworkWords(sound);
       if (want >= 2) {
-        // the practice page's own word, then the homework's, then the short word
-        if (hand && hand.rung === 2 && (WORDS[sound] || []).some((w) => String(w.w).toLowerCase() === hand.ask)) text = hand.ask;
-        else if (hw.length) text = String(hw[(dayNum() + card) % hw.length].w).toLowerCase();
-        else if (start && SC.gameWord) text = SC.gameWord(sound) || "";
-        else text = "";
-        if (text) rung = 2; else text = bare;
+        // the practice page's own word, then the homework's, then this
+        // place's short word
+        const mine = hand && hand.rung === 2 ? (WORDS[sound] || []).filter((w) => String(w.w).toLowerCase() === hand.ask) : [];
+        const own = mine.filter((w) => w.pos === pos)[0] || mine[0] || null;
+        if (own) { text = hand.ask; at = own.pos; }
+        else if (hw.length) { const w = hw[(dayNum() + card) % hw.length]; text = String(w.w).toLowerCase(); at = w.pos; }
+        else { text = (SC.gameWord && SC.gameWord(sound, pos)) || ""; at = pos; }
+        if (text) rung = 2; else { text = bare; at = ""; }
       }
-      if (!rung && start) {
+      if (!rung && syls.length) {
         // the practice page's own syllable if it just asked one of this
-        // sound's (never one the skip list holds back); else today's
+        // sound's at this place (never one the skip list holds back); else
+        // today's
         const skip = (SC.GAME_SKIP || {})[sound] || [];
-        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 && SC.syllables(sound).some((s) => s.t === hand.ask);
-        text = own ? hand.ask : syls[(dayNum() + Math.max(1, card) - 1) % syls.length].t;
+        const own = hand && hand.rung === 1 && skip.indexOf(hand.ask) < 0 ? SC.syllables(sound, pos).filter((s) => s.t === hand.ask)[0] : null;
+        const s = own || syls[(dayNum() + Math.max(1, card) - 1) % syls.length];
+        text = s.t; at = s.pos || pos;
         rung = 1;
       }
     }
     return {
-      rung: rung, level: GAME_LEVELS[rung], text: text, html: soundMark(text, sound),
+      rung: rung, level: GAME_LEVELS[rung], text: text, html: soundMark(text, sound, at),
       // how Echo models it: the bare sound is Rachel's recording; a syllable
       // or word is one line in his own voice, which the page must fall back
       // from (to card 0) the moment it cannot play
@@ -1818,7 +2049,8 @@
     sound = String(sound || "").toUpperCase();
     card = Math.max(0, Math.min(2, parseInt(card, 10) || 0));
     const hand = (opts && opts.first) ? null : _gameHand(sound);
-    const want = card ? Math.min(_gameWant(sound), (hand ? hand.rung : 0) + card) : 0;
+    const floor = Math.max(hand ? hand.rung : 0, ladderStart() - 1);
+    const want = card ? Math.min(_gameWant(sound), floor + card) : 0;
     return _gameItem(sound, want, card, hand);
   }
 
@@ -1915,8 +2147,9 @@
     ],
     CH: [
       { w: "cheese", e: "🧀", i: 1, pos: "i" }, { w: "chair", e: "🪑", i: 1, pos: "i" }, { w: "cherry", e: "🍒", i: 1, pos: "i" }, { w: "chicken", e: "🐔", i: 1, pos: "i" }, { w: "chocolate", e: "🍫", i: 1, pos: "i" }, { w: "chips", e: "🍟", i: 1, pos: "i" },
-      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "sandwich", e: "🥪", pos: "m" }, { w: "ketchup", e: "🍅", pos: "m" },
-      { w: "beach", e: "🏖️", pos: "f" }, { w: "peach", e: "🍑", pos: "f" }, { w: "watch", e: "⌚", pos: "f" }, { w: "lunch", e: "🥪", pos: "f" }, { w: "branch", e: "🌿", pos: "f" }, { w: "couch", e: "🛋️", pos: "f" }
+      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "ketchup", e: "🍅", pos: "m" },
+      // "sandwich" ends in its ch, so it is an end word (22 Oct 2026; it was filed as middle)
+      { w: "sandwich", e: "🥪", pos: "f" }, { w: "beach", e: "🏖️", pos: "f" }, { w: "peach", e: "🍑", pos: "f" }, { w: "watch", e: "⌚", pos: "f" }, { w: "lunch", e: "🥪", pos: "f" }, { w: "branch", e: "🌿", pos: "f" }, { w: "couch", e: "🛋️", pos: "f" }
     ],
     TH: [
       { w: "thumb", e: "👍", i: 1, pos: "i" }, { w: "three", e: "3️⃣", i: 1, pos: "i" }, { w: "thread", e: "🧵", i: 1, pos: "i" }, { w: "think", e: "💭", i: 1, pos: "i" }, { w: "thirty", e: "🔢", i: 1, pos: "i" }, { w: "thorn", e: "🌹", i: 1, pos: "i" },
@@ -1980,9 +2213,13 @@
     hoops: { B:["ball"], N:["net"], S:["sock"], SH:["shoe","shirt"], K:["cup"], M:["medal"], L:["leg"] },
     dino: { B:["bone","bucket"], R:["rock"], M:["mountain","map"], N:["nest"], T:["tooth"], D:["dinosaur"], K:["cave"], F:["foot"], V:["volcano"], S:["sand","sun"], SH:["shell"], L:["leaf","lizard"], TH:["thorn"] }
   };
+  // Every theme is a start-of-word word ("sock", "rock"), so a child
+  // practising another place gets none: a themed "rock" every third turn
+  // would undo an end-of-word round (22 Oct 2026).
   function gameWords(key,sound) {
     sound=String(sound||"").toUpperCase();
     if(homeworkWords(sound).length)return [];
+    if(soundPos(sound)!=="i")return [];
     var names=(GAME_WORDS[key]||{})[sound]||[], all=[];
     Object.keys(WORDS).forEach(function(snd){all=all.concat(WORDS[snd]);});
     return names.map(function(name){
@@ -1991,11 +2228,28 @@
     }).filter(function(w){return !!w;});
   }
 
-  // Word positions for targeted practice — SLPs pick where in the word the sound sits.
+  // Word positions for targeted practice — where in the word the sound sits.
+  // ONE set of names (22 Oct 2026): Settings, Progress and the clinician's
+  // dashboard each had their own ("Beginning of word", "Start of word",
+  // "the beginning of words"). name: the short name; label: Settings' choice;
+  // place: how a line says it ("R at the end of words"); only: the sounds it
+  // exists for (vocalic R is R; blends here are R, S and L, as the label's
+  // "tr, st, bl" says).
   const POSITIONS = [
-    { id: "i", name: "Beginning" }, { id: "m", name: "Middle" }, { id: "f", name: "End" },
-    { id: "v", name: "Vocalic R" }, { id: "b", name: "Blends" }, { id: "mix", name: "Mixed" },
+    { id: "i", name: "Beginning", label: "Beginning of word", place: "at the start of words" },
+    { id: "m", name: "Middle", label: "Middle of word", place: "in the middle of words" },
+    { id: "f", name: "End", label: "End of word", place: "at the end of words" },
+    { id: "v", name: "Vocalic R", label: "Vocalic R (er, ar, or…)", place: "as vocalic R", only: ["R"] },
+    { id: "b", name: "Blends", label: "Blends (tr, st, bl…)", place: "in blends", only: ["R", "S", "L"] },
+    { id: "mix", name: "Mixed", label: "Mixed (all positions)", place: "anywhere in a word" },
   ];
+  function posInfo(pos) { for (let i = 0; i < POSITIONS.length; i++) if (POSITIONS[i].id === pos) return POSITIONS[i]; return POSITIONS[0]; }
+  // "R at the end of words", "Vocalic R", "S in blends": a sound and its place,
+  // the way every grown-up line says it.
+  function posPhrase(sound, pos) {
+    const P = posInfo(pos), name = soundLabel(sound);
+    return P.id === "v" ? "Vocalic " + name : name + " " + P.place;
+  }
   // An assignment may name its own words. Only words this app already knows
   // are used — an SLP typing a word with no recorded target is a silent
   // dead end, so unknown ones fall through to the bank rather than shipping
@@ -2021,6 +2275,31 @@
     if (sel.length) return sel;
     const init = list.filter(function (w) { return (w.pos || "i") === "i"; });
     return init.length ? init : list;
+  }
+
+  // THE PICTURE GAMES' WORDS (22 Oct 2026: Travis, "build that so it works in
+  // the games"). Hoops, Soccer Goal, Dino Dig, Bubble Pop, Feed Echo and every
+  // game on sayplay.js used to ask start-of-word words whatever was picked
+  // (they called wordsFor(sound, "i") themselves); they now ask the words of
+  // the place this sound is practised at, the same words as the practice
+  // page's word step. Once each ("cake" is filed at the start and the end of
+  // K). GAMES_FOLLOW_POS is the one switch back to start-of-word words for
+  // every game, if Rachel says so.
+  const GAMES_FOLLOW_POS = true;
+  function playWords(sound) {
+    sound = String(sound || "").toUpperCase();
+    const seen = {};
+    return (wordsFor(sound, GAMES_FOLLOW_POS ? soundPos(sound) : "i") || []).filter(function (w) {
+      if (!w || !w.w || seen[w.w]) return false; seen[w.w] = 1; return true;
+    });
+  }
+  // Does a word have this sound anywhere in it, by its spelling? Feed Echo's
+  // wrong pictures must not: under end-of-word S, "bus" beside "glass" was two
+  // right answers. An x is a k and an s ("fox").
+  function hasSound(word, sound) {
+    const w = String(word || "").toLowerCase(), S2 = String(sound || "").toUpperCase();
+    if ((S2 === "K" || S2 === "S") && w.indexOf("x") >= 0) return true;
+    return Object.keys(_hearSpots(w, S2)).length > 0;
   }
 
   // --- prize chests (one at the end of each sound's path) ---
@@ -4046,8 +4325,8 @@
     return null;
   }
   // When the position rule finds nothing: if the sound's spellings occur
-  // exactly once in the word, that one IS the sound ("sandwich" is filed
-  // under middle CH, but its only ch is at the end). Two or more is a guess.
+  // exactly once in the word, that one IS the sound (a word asked at a place
+  // its own spelling does not show). Two or more is a guess.
   function smOnly(snd, w) {
     var lead = SM_LEAD[snd] || [snd.charAt(0).toLowerCase()], spell = SM_SPELL[snd] || lead, hits = [], i = 0, h;
     var all = lead.concat(spell).sort(function (a, b) { return b.length - a.length; });
@@ -4260,9 +4539,14 @@
       d.a++; if (pass) d.p++;
       // by word position (initial/medial/final/vocalic/blends) — the clinical breakdown.
       // Prefer the word's own tagged position; else fall back to the practice setting.
-      let pos = a.pos || "";
+      // A try at the sound alone or a syllable is not a WORD at any place
+      // (22 Oct 2026): "rrrr" and "ree" were booked under the position being
+      // practised, so with the end of words open a bare R would have counted
+      // as an end-of-word R in the clinician's pass rate by position.
+      let pos = a.pos && a.pos !== "mix" ? a.pos : "";
       if (!pos && word) { const hit = (WORDS[sound] || []).filter(function (x) { return x.w === word; })[0]; if (hit) pos = hit.pos || "i"; }
       if (!pos) { try { pos = practicePos(); } catch (e) { pos = ""; } }
+      if (a.level === "isolation" || a.level === "syllable") pos = "";
       if (pos && pos !== "mix" && pos !== "all") {
         bs.byPos = bs.byPos || {}; const bp = bs.byPos[pos] || (bs.byPos[pos] = { a: 0, p: 0 }); bp.a++; if (pass) bp.p++;
       }
@@ -6967,6 +7251,23 @@
     }
     return out;
   }
+  // A blend with its target sound taken out: "stop" → "top", "tree" → "tee".
+  // That is the error a blend round practises (the cluster said without the
+  // sound), so it is never a close try (22 Oct 2026, with blends open to
+  // families). Only a spelling of the sound that sits next to another
+  // consonant is taken out.
+  function _hearDrop(w, sound) {
+    const out = [], src = HEAR_SPELL[sound];
+    if (!src) return out;
+    const re = new RegExp(src, "g"), cons = (c) => !!c && /[b-df-hj-np-tv-z]/.test(c);
+    let m;
+    while ((m = re.exec(w))) {
+      const at = m.index, len = m[0].length || 1;
+      if (cons(w.charAt(at - 1)) || cons(w.charAt(at + len))) out.push(w.slice(0, at) + w.slice(at + len));
+      if (!m[0].length) re.lastIndex++;
+    }
+    return out;
+  }
   // Is a within n edits (letters changed, added or dropped) of b?
   function _hearNear(a, b, n) {
     if (Math.abs(a.length - b.length) > n) return false;
@@ -6984,6 +7285,49 @@
       .replace(/\d+/g, (d) => " " + (HEAR_NUM[+d] || d) + " ")     // Apple writes "four" as "4"
       .replace(/[^a-z' ]+/g, " ").split(/\s+/)
       .map((t) => t.replace(/^'+|'+$/g, "")).filter(Boolean);
+  }
+  // A SYLLABLE IS NOT A WORD (22 Oct 2026, with a syllable for every place in
+  // a word: "ar", "ah-rah", "trah"). Apple writes what it hears as words, so a
+  // good "ah-rah" comes back "Ah rah", "Ara" or just "Rah", and a good "ar"
+  // comes back "Are". A try passes when, with a vowel's h dropped on both
+  // sides, the words heard (one at a time, or all run together) are:
+  //   - one HEAR_ALIKE lists for the target (the words Apple writes for it);
+  //   - or within one letter of the target or its usual-error form ("wah"
+  //     for rah, "we" for ree), no more than two letters longer, and carrying
+  //     the sound or its usual error. The last part of a middle syllable
+  //     ("rah" of "ah-rah") counts as the target too.
+  // Everything else fails: "taco" for kah (a K, but nowhere near), "rock" for
+  // rah, a blend said without its sound ("tah" for trah). Never the end-of-
+  // word errors (HEAR_SUBS_END): their "" matches every word. Filler alone is
+  // unknown, as on every round. Which words are alike is Rachel's to change.
+  const HEAR_ALIKE = {
+    rah: ["raw"], ree: ["re", "rhee"], roo: ["rue", "roux", "ru"], roh: ["row", "roe", "rho"], ray: ["re"],
+    ar: ["are", "r"], or: ["ore", "oar"], air: ["heir", "err"], ear: ["ere"],
+    slay: ["sleigh"], kray: ["cray"], grew: ["grue"], clue: ["klue"],
+  };
+  function _hearSyllable(tokens, content, word, S2, dropped) {
+    const flat = (x) => String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1");
+    const whole = word.replace(/[^a-z-]/g, ""), w = flat(whole), last = flat(whole.split("-").pop());
+    const targets = [w].concat(last && last !== w ? [last] : []);
+    const alike = (HEAR_ALIKE[whole.replace(/-/g, "")] || []).map(flat);
+    const subs = HEAR_SUBS[S2] || [];
+    const cands = content.map(flat).concat(tokens.length > 1 ? [flat(tokens.join(""))] : []).filter(Boolean);
+    const gone = dropped.map(flat);
+    for (let i = 0; i < cands.length; i++) {
+      const c = cands[i];
+      if (gone.indexOf(c) >= 0) continue;
+      if (alike.indexOf(c) >= 0) return "pass";
+      for (let k = 0; k < targets.length; k++) {
+        const tg = targets[k];
+        // the target's usual-error forms, never one that doubles a letter the target lacks
+        const forms = _hearVariants(tg, S2).map(flat).filter((f) => !/(.)\1/.test(f) || /(.)\1/.test(tg));
+        if (c.length > tg.length + 2 || !forms.some((f) => f === c || _hearNear(c, f, 1))) continue;
+        let carries = Object.keys(_hearSpots(c, S2)).length > 0;
+        for (let j = 0; !carries && j < subs.length; j++) carries = !!subs[j] && tg.indexOf(subs[j]) < 0 && c.indexOf(subs[j]) >= 0;
+        if (carries) return "pass";
+      }
+    }
+    return "fail";
   }
   /**
    * hearVerdict(transcript, sound, word, opts?) → "pass" | "fail" | "unknown"
@@ -7014,9 +7358,11 @@
     const S2 = String(sound || "").toUpperCase();
     let tokens = _hearTokens(transcript);
     if (!tokens.length) return "unknown";
+    // a grown-up's "say ah-rah" is two words after "say", not one
+    const parts = Math.max(1, String(word || "").split(/[-\s]+/).filter(Boolean).length);
     const said = [];
     for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") { i++; continue; }
+      if (tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") { i += parts; continue; }
       said.push(tokens[i]);
     }
     tokens = said;
@@ -7046,10 +7392,13 @@
       }
       return "fail";
     }
+    const dropped = opts.pos === "b" ? _hearDrop(w, S2) : [];
+    if (opts.level === "syllable") return _hearSyllable(tokens, content, String(word || "").toLowerCase(), S2, dropped);
     const vars = _hearVariants(w, S2);
     const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
     for (let i = 0; i < content.length; i++) {
       const t = content[i];
+      if (dropped.indexOf(t) >= 0 || dropped.some((d) => t === d + "s")) continue;
       for (let k = 0; k < vars.length; k++) {
         const v = vars[k];
         if (t === v || t === v + "s" || t === v + "es" || t === v + "'s") return "pass";
@@ -8466,5 +8815,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, posInfo, posPhrase, posHas, soundPos, playWords, hasSound, GAMES_FOLLOW_POS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderKey, ladderContent, PRACTICE_TOP, ladderSteps, ladderTop, ladderStart, stepDown, stepLabel, ladderWhere, ladderPlan, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

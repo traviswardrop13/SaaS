@@ -128,7 +128,7 @@ const cueShortOf = (sound) => new Function("CUETIP", "var CUESHORT=(" + cueShort
 const tipRule = find(CH, /var tip=\((.*)\);\n/, "retry tip rule");
 const tipOf = (sound) => new Function("c", "soundName", "var tip=(" + tipRule.m[1] + "); return tip;")(S.cue(sound), () => soundNameOf(sound));
 const sayLineFn = liftFn(CH, "sayLine", true);
-find(CH, /if\(ITEM\.level==="isolation"\) ask="make your "\+soundName\(\)\+" sound";\n\s*else ask="say "\+\(ITEM\.display\|\|ITEM\.t\);/, "sayLine ask forms");
+find(CH, /if\(ITEM\.level==="isolation"\) ask="make your "\+soundName\(\)\+" sound";\n(?:\s*\/\/[^\n]*\n)*\s*else ask="say "\+\(ITEM\.say\|\|ITEM\.display\|\|ITEM\.t\);/, "sayLine ask forms");
 find(CH, /return "Ready\? "\+CUESHORT\+", and "\+ask\+", "\+times\+"\. Go!";/, "cued first prompt");
 find(CH, /return "Ready\? "\+ask\.charAt\(0\)\.toUpperCase\(\)\+ask\.slice\(1\)\+", "\+times\+"\. Go!";/, "plain prompt");
 // "Go!" is Echo's one shared clip (Sona.goClip), joined on after a hand-over
@@ -195,7 +195,7 @@ const afterChime = find(CH, /var AFTER_CHIME_MS=(\d+);/, "AFTER_CHIME_MS");
 const nudge = find(CH, /nudges\+\+;playPrompt\(\);nextNudge=activeMs\(\)\+(\d+);armIdle\(\);/, "idle nudge");
 const armIdleRefs = allIdx(CH, /armIdle\(\)/).length;
 if (armIdleRefs !== 3) fail(`armIdle() now has ${armIdleRefs} references (expected 3: its definition and two recursive calls). If the idle nudge was wired up, move it out of Part E.`);
-find(CH, /ITEMS=\(S\.ladderContent\(SOUND,useRung\)\|\|\[\]\)\.filter\(function\(it\)\{return it&&it\.t;\}\);/, "ladder filter on it.t (keeps the conversation rung silent)");
+find(CH, /ITEMS=\(S\.ladderContent\(SOUND,ur,POS\)\|\|\[\]\)\.filter\(function\(it\)\{return it&&it\.t;\}\);/, "ladder filter on it.t (keeps the conversation rung silent)");
 // Completeness: every say()/sayAfterChime() call site in charge.html must sit inside one anchor.
 {
   const covered = [promptCall, coach, idea, praise, roundEnd, win, chest, advEnd, quiet];
@@ -549,7 +549,7 @@ const spIntros = spPlay.filter((g) => g.intro).map((g) => g.intro);
 // its own when it is switched on, parked or rebuilt on another script.
 const SP = "public/simple-play.js";
 const spWord = find(SP, /body: JSON\.stringify\(\{ text: word, voice: profile\.voiceId \|\| "", stable: true \}\)/, "simple-play word request");
-find(SP, /S\.wordsFor\(sound, "i"\) \|\| \[\] : \[\]\)\.filter\(function \(w\) \{ return w && w\.w && w\.e; \}\)\n\s*\.sort\(function \(a, b\) \{ return a\.w\.length - b\.w\.length; \}\)\.slice\(0, 8\);/, "simple-play word pool (same rule as Feed Echo)");
+find(SP, /S\.playWords\(sound\) \|\| \[\] : \[\]\)\.filter\(function \(w\) \{ return w && w\.w && w\.e; \}\)\n\s*\.sort\(function \(a, b\) \{ return a\.w\.length - b\.w\.length; \}\)\.slice\(0, 8\);/, "simple-play word pool (same rule as Feed Echo)");
 const simpleSay = find(SP, /render\(\); effect\("tap"\); sayWord\(\); focus\(\$\("hearWord"\)\);/, "simple-play says the word when the picture is revealed");
 const simpleHear = find(SP, /\$\("hearWord"\)\.onclick = sayWord;/, "simple-play 'Hear it'");
 const simpleVoice = find(SP, /fetch\("\/api\/tts", options\)/, "simple-play's voice request");
@@ -594,12 +594,20 @@ const storyPraise = find(ST, /await say\(Sona\.praiseLine\(\)\);/, "story praise
 const storyRetry = find(ST, /say\(p\.word\)\.then\(function\(\)\{ turn\(\); \}\);/, "story retry word");
 const storyHear = find(ST, /Sona\.speakNow\(p\.text\.replace\("___",p\.word\),SPEAK_OPTS\);/, "story 'Hear it'");
 find(ST, /var FALLBACK=\(window\.SonaContent\?SonaContent\.storyPages\(SOUND\):/, "story fallback pages");
-const framesOf = (fn) => (0, eval)(find(GC, new RegExp(`function ${fn}\\(sound\\) \\{\\s*var frames = (\\[[^\\]]*\\]);`), `${fn}() frames`).m[1]);
-const SENTENCE_FRAMES = framesOf("sentences"), STORY_FRAMES = framesOf("storyPages"), CHAT_FRAMES = framesOf("chats");
-const storyFrames = find(GC, /function storyPages\(sound\) \{/, "storyPages()");
-const chatFrames = find(GC, /function chats\(sound\) \{/, "chats()");
-const sentFrames = find(GC, /function sentences\(sound\) \{/, "sentences()");
-const sylFn = find(GC, /function syllables\(sound\) \{/, "syllables()");
+// The frames carry slots since 22 Oct 2026 ({a}: "a", "an" or nothing, by
+// the word's SENT_FORM; {is}: "is" or "are"); written out here as for a word
+// you count ("a", "is"), which is how most bank words take them.
+const fillFrame = (f) => f.replace("{a}", "a ").replace("{b}", "a ").replace("{the}", "the ").replace("{the2}", "the ").replace("{my}", "my ").replace("{is}", "is");
+const framesOf = (fn) => (0, eval)(find(GC, new RegExp(`function ${fn}\\(sound, pos\\) \\{\\s*var frames = (\\[[^\\]]*\\]);`), `${fn}() frames`).m[1]).map(fillFrame);
+const SENTENCE_FRAMES = (0, eval)(find(GC, /var SENT_FRAMES = (\[[^\]]*\]);/, "SENT_FRAMES").m[1]).map(fillFrame), STORY_FRAMES = framesOf("storyPages"), CHAT_FRAMES = framesOf("chats");
+const storyFrames = find(GC, /function storyPages\(sound, pos\) \{/, "storyPages()");
+const chatFrames = find(GC, /function chats\(sound, pos\) \{/, "chats()");
+const sentFrames = find(GC, /var SENT_FRAMES = \[/, "sentences()");
+const sylFn = find(GC, /function syllables\(sound, pos\) \{/, "syllables()");
+const sentForm = find(GC, /var SENT_FORM = \{/, "SENT_FORM");
+// listen.html: plays each syllable in the practice page's own line
+const LISTEN = "public/listen.html";
+const listenLine = find(LISTEN, /text: "Ready\? Say " \+ say \+ ", five times\."/, "the listening page's line");
 
 // chapter.html (today's chapter)
 const CP = "public/chapter.html";
@@ -733,7 +741,7 @@ const ccLines = []; // {text, line, when}
 // picture games and the round games' power button speak through the shared
 // scripts read above; the pages themselves hold no voice call.)
 {
-  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYIT, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, "public/sona.js"];
+  const READ = [CH, FEED, SLICE, TILES, RUN, HELP, SAYIT, SAYPLAY, SCK, LB, SP, CK, ST, CP, CC, LISTEN, "public/sona.js"];
   for (const f of readdirSync(join(ROOT, "public")).filter((f) => f.endsWith(".html") || f.endsWith(".js"))) {
     const text = src("public/" + f);
     const m = /\/api\/tts|SpeechSynthesisUtterance/.exec(text) || SPEAK_CALL.exec(text);
@@ -994,7 +1002,7 @@ P("repeats on a tap. {n} as in C1. **Best left to TTS in the cloned voice** — 
 P("blank is a word, and words render fine; only bare sounds do not. Listed so nothing");
 P("is hidden.");
 P();
-P(`**{target} = a syllable** — the sound's onset plus ah / ee / oo / oh / ay (${sylFn.cite}), except G's "gay" is "guy" and P's "poo" is "pie": two words a child is never asked to say (Travis, 30 Sep 2026); ${SOUNDS.length} × 5 = ${SOUNDS.length * 5} (TH and THV share the same five):`);
+P(`**{target} = a syllable, at the start of a word** (the default) — the sound's onset plus ah / ee / oo / oh / ay (${sylFn.cite}), except G's "gay" is "guy" and P's "poo" is "pie": two words a child is never asked to say (Travis, 30 Sep 2026); ${SOUNDS.length} × 5 = ${SOUNDS.length * 5} (TH and THV share the same five):`);
 P();
 P("| Sound | Syllables |");
 P("|---|---|");
@@ -1002,11 +1010,26 @@ let sylCount = 0;
 SOUNDS.forEach((s) => { const sy = SC.syllables(s).map((x) => x.t); sylCount += sy.length; P(`| ${SOUND_TITLE(s)} | ${sy.join(", ")} |`); });
 totals.fillers += sylCount;
 P();
-P(`**{target} = a word** — the sound's words at the practice position: an SLP's homework position first, then the one chosen in Settings (\`Sona.practicePos()\`; default Beginning, and THV has no Beginning words, so all ten); any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (${wordsLine.cite}).`);
+// Every other place in a word has its own table (22 Oct 2026), asked only
+// once someone has listened to it (SYL_POS_ON; /listen.html plays each one in
+// this very line). This is the listening checklist.
+const POS_NAME = { m: "Middle of word", f: "End of word", v: "Vocalic R", b: "Blends" };
+const posTables = SC.syllableTables ? SC.syllableTables() : [];
+if (!posTables.length) fail("gamecontent.js has no syllableTables(): the syllables at every place in a word are not readable.");
+const sylOnAt = find(GC, /var SYL_POS_ON = \{/, "SYL_POS_ON");
+P(`**{target} = a syllable at another place in a word** — the place's own table (${sylOnAt.cite}): the middle of a word is vowel-sound-vowel with a hyphen, the end is vowel then the sound, vocalic R is the vowel + R sounds, blends carry their cluster. **Asked only where marked on** (\`SYL_POS_ON\`): an off place skips the syllable step, from the sound to words. Every one plays at \`/listen.html\` (${listenLine.cite}) in the line above; that page is where they are listened to before they go on. Where Echo is given a different spelling, it is shown as shown → said.`);
+P();
+P("| Place | Sound | Syllables | Asked |");
+P("|---|---|---|---|");
+let posSylCount = 0;
+posTables.forEach((t) => { posSylCount += t.items.length; P(`| ${POS_NAME[t.pos]} | ${SOUND_TITLE(t.sound)} | ${t.items.map((x) => x.say !== x.t ? x.t + " → " + x.say : x.t).join(", ")} | ${t.on ? "on" : "off"} |`); });
+totals.fillers += posSylCount;
+P();
+P(`**{target} = a word** — the sound's words at the place practised (\`Sona.soundPos()\`): an SLP's homework position first, for its own sounds, then the one chosen in Settings (default Beginning); vocalic R exists only for R, blends only for R, S and L, so another sound picked there uses the start of a word; THV has no Beginning words, so it uses all ten. Any other bank word reaches this prompt when an SLP's homework names it. The whole bank is Part D (${wordsLine.cite}).`);
 P();
 P(`**{target} = a sentence** — one of ${SENTENCE_FRAMES.length} frames with a bank word dropped in (${sentFrames.cite}): ${SENTENCE_FRAMES.map((f) => `"${f}"`).join(", ")}. The word comes from the same practice position as the word round (homework first, then Settings; default Beginning; "Mixed" opens the whole bank), so ${SENTENCE_FRAMES.length} × ${Object.values(S.WORDS).reduce((a, b) => a + b.length, 0)} = ${SENTENCE_FRAMES.length * Object.values(S.WORDS).reduce((a, b) => a + b.length, 0)} sentences are possible; not expanded here.`);
 P();
-P(`Two things for Rachel here: the frames are applied blindly, so "I have a rain" and "Here is a bathe" are reachable — the same carrier-phrase problem the word bank once had; and the sentence's own full stop survives into the prompt ("Ready? Say I see a robot., five times." — \`display\` keeps it), harmless for TTS, but a recording should drop it.`);
+P(`For Rachel: each bank word's place in a sentence is \`SENT_FORM\` (${sentForm.cite}): "an" before a vowel ("I see an egg."), nothing for a thing you don't count ("Here is milk."), "Here are" for more than one ("Here are grapes."), "the" for the one sun and moon, "my" for family ("I see my mom."), and never a sentence for a word that is not a thing ("think", "happy", "breathe", the numbers). Echo is given the sentence without its full stop ("Ready? Say I see a robot, five times.").`);
 totals.fillers += SENTENCE_FRAMES.length;
 
 P();
