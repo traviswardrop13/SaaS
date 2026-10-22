@@ -430,8 +430,10 @@ await scenario("catalog in the app", async () => {
     clean("catalog", errors);
   } finally { await context.close(); }
   // with some parked again, they sort after the playable ones and have no
-  // card on Home: no greyed-out slot, no Coming soon label
-  const withParked = await fresh("today.html", { age: "4", parked: PARK });
+  // card on Home: no greyed-out slot, no Coming soon label. In the Arcade,
+  // where the shelves show: on plain today.html (the story view) the shelves
+  // are hidden, and innerText would read none of them.
+  const withParked = await fresh("today.html?view=arcade", { age: "4", parked: PARK });
   try {
     await withParked.page.waitForFunction(() => !!window.Sona && document.querySelectorAll("#activityGroups button[data-game]").length > 0);
     const days = await withParked.page.evaluate(() => Sona.activityLibrary().groups.find((g) => g.id === "simple").games.map((x) => ({ k: x.key, parked: !!x.comingSoon })));
