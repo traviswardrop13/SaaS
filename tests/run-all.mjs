@@ -137,11 +137,26 @@ const SUITES = [
 // The failed suites are named again at the very end: CI's log runs to about
 // 7,000 lines, and a tool that can read only its last few thousand could see
 // "1 SUITE(S) FAILED" but not which one (PR #166, 29 Sep 2026).
-const bad = [];
+// Their FAIL lines are repeated there too (22 Oct 2026): the log now runs to
+// about 17,500 lines and the same tool reaches only the last 5,000, so a
+// suite that failed early named itself but not what failed in it. Each suite's
+// output is echoed whole as it ends (a suite's own lines are not interleaved
+// with another's, and nothing else changes for a reader of the full log).
+const bad = [], fails = {};
 for (const s of SUITES) {
   console.log("\n━━━ " + s + " ━━━");
-  const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: "inherit", timeout: 300000 });
-  if (r.status !== 0) { bad.push(s + (r.signal ? " (" + r.signal + ")" : "")); console.log("SUITE FAILED: " + bad[bad.length - 1]); }
+  const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: ["inherit", "pipe", "pipe"], timeout: 300000, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
+  if (r.stdout) process.stdout.write(r.stdout);
+  if (r.stderr) process.stderr.write(r.stderr);
+  if (r.status !== 0) {
+    bad.push(s + (r.signal ? " (" + r.signal + ")" : "")); console.log("SUITE FAILED: " + bad[bad.length - 1]);
+    const lines = ((r.stdout || "") + "\n" + (r.stderr || "")).split("\n").filter((l) => /^\s*(FAIL|✗|Error|TypeError|ReferenceError|AssertionError)/.test(l) || /FAILURES? \//.test(l) || /\d+ failures?\b/i.test(l));
+    fails[s] = lines.slice(0, 60).map((l) => l.length > 700 ? l.slice(0, 700) + " …" : l);
+  }
+}
+for (const s of Object.keys(fails)) {
+  console.log("\n── what failed in " + s + " ──");
+  for (const l of fails[s]) console.log(l);
 }
 console.log(bad.length ? "\n" + bad.length + " SUITE(S) FAILED: " + bad.join(", ") : "\nALL SUITES GREEN");
 process.exit(bad.length ? 1 : 0);
