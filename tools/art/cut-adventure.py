@@ -309,7 +309,95 @@ COMPOSE = {"lighthouse/e01": [
 # Placed with `--stars` (below) and looked at; design/adventure/art-notes.md
 # lists them.
 STAR = os.path.join(ROOT, "public", "assets", "crafted", "game", "star.webp")
-STARS = {}
+STARS = {
+    # Day 5: 1 drawn, 4 laid on (the red-and-white lighthouse (Day 1), at its top-left; the red-roofed house beside the lighthouse (Day 2), above its roof; the stone steps and curved causeway below them (Day 3's bridge stand-in), at the top of the steps; the grassy tip of the coast, top left of the map (Day 4: no garden or waterwheel is drawn))
+    "postboat/e04": [(0.723, 0.098, 0.050), (0.848, 0.098, 0.050), (0.815, 0.174, 0.050), (0.586, 0.091, 0.050)],
+    # Day 7: 1 drawn, 6 laid on (the little pine-tree island left of the river; the twin red-roofed house, on its roof (the house shows under the star); the top of the stone tower; the small red-roofed house right of the tower, on its roof; the green point with a pine tree, in the bend of the river; the pine trees on the rocky point below the town)
+    "frontdoor/e04": [(0.561, 0.166, 0.045), (0.754, 0.120, 0.045), (0.816, 0.099, 0.045), (0.871, 0.129, 0.045), (0.731, 0.174, 0.045), (0.810, 0.190, 0.045)],
+    # Day 8: 1 drawn, 7 laid on (the striped toy shop's roof (Day 2's place); the stone bridge's arch (Day 3's place); the pine forest left of the toy shop; the little brown hills on the sandy shore, top left of the map; the small red-roofed house right of the toy shop, at the map's right edge; the autumn tree clump on the map's right edge; the pink blossom trees on the map's right edge)
+    "lantern/e04": [(0.812, 0.103, 0.045), (0.793, 0.172, 0.045), (0.721, 0.120, 0.045), (0.640, 0.088, 0.045), (0.876, 0.139, 0.045), (0.874, 0.255, 0.045), (0.867, 0.306, 0.045)],
+}
+
+
+def add_stars(src, stars, out):
+    # PIL here only: the rest of this file runs on ImageMagick alone
+    from PIL import Image, ImageFilter
+    page = Image.open(src).convert("RGB")
+    W, H = page.size
+    star = Image.open(STAR).convert("RGBA")
+    star = star.crop(star.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox())
+    for cx, cy, fw in stars:
+        dw = max(8, round(fw * W)); dh = round(star.height * dw / float(star.width))
+        s = star.resize((dw, dh), Image.LANCZOS)
+        x, y = round(cx * W - dw / 2.0), round(cy * H - dh / 2.0)
+        pad = max(4, dw // 5)
+        # a soft brown shadow a little down and right, as a sticker casts
+        a = Image.new("L", (dw + 2 * pad, dh + 2 * pad), 0)
+        a.paste(s.getchannel("A").point(lambda v: int(v * 0.45)), (pad, pad))
+        a = a.filter(ImageFilter.GaussianBlur(max(1.5, dw * 0.05)))
+        shadow = Image.new("RGBA", a.size, (58, 34, 14, 255))
+        shadow.putalpha(a)
+        page.paste(shadow, (x - pad + round(dw * 0.03), y - pad + round(dw * 0.06)), shadow)
+        page.paste(s, (x, y), s)
+    page.save(out)
+    return out
+
+
+def page(story, part):
+    src = os.path.join(RAW_ADV, story, part + ".png")
+    os.makedirs(os.path.join(ADV, story), exist_ok=True)
+    crop = CROPS.get(story + "/" + part)
+    if crop:
+        made = os.path.join(EDIT, "%s-%s.png" % (story, part))
+        os.makedirs(EDIT, exist_ok=True)
+        x, y, w, h = crop
+        im(src, "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", made)
+        src = made
+    lay = COMPOSE.get(story + "/" + part)
+    if lay:
+        made = os.path.join(EDIT, "%s-%s-composed.png" % (story, part))
+        os.makedirs(EDIT, exist_ok=True)
+        W, H = im_size(src)
+        args = [src, "-alpha", "off"]
+        for name, cx, by, fw in lay:
+            w, h, x, y = bbox(raw_game(name))
+            dw = round(fw * W); dh = round(h * dw / float(w))
+            args += ["(", raw_game(name), "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", "-filter", "Lanczos", "-resize", "%dx%d!" % (dw, dh),
+                     ")", "-geometry", "+%d+%d" % (round(cx * W - dw / 2.0), round(by * H - dh)), "-compose", "over", "-composite"]
+        im(*args, made)
+        src = made
+    stars = STARS.get(story + "/" + part)
+    if stars:
+        os.makedirs(EDIT, exist_ok=True)
+        src = add_stars(src, stars, os.path.join(EDIT, "%s-%s-stars.png" % (story, part)))
+    return bg(src, os.path.join(ADV, story, part + ".webp"), q=84)
+
+
+def lineup(story):
+    os.makedirs(DESIGN, exist_ok=True)
+    out = os.path.join(DESIGN, "cast-%s.webp" % story)
+    im(os.path.join(RAW_ADV, story, "cast.png"), "-alpha", "off", "-filter", "Lanczos", "-resize", "1600x>", *webp(84), out)
+    return out
+
+
+JOBS = []
+for s in STORIES:
+    JOBS += [("%s-%s" % (s, p), (lambda s=s, p=p: page(s, p)), os.path.join(RAW_ADV, s, p + ".png")) for p in PAGES]
+    JOBS.append(("%s-cast" % s, (lambda s=s: lineup(s)), os.path.join(RAW_ADV, s, "cast.png")))
+    JOBS.append(("home-%s" % s, (lambda s=s: card(os.path.join(RAW_ADV, s, "home.png"), "home-" + s)), os.path.join(RAW_ADV, s, "home.png")))
+JOBS.append(("home-arcade", lambda: card(os.path.join(RAW_ADV, "arcade", "arcade.png"), "home-arcade"), os.path.join(RAW_ADV, "arcade", "arcade.png")))
+# the games' pieces: (name, recipe, width it is shrunk to)
+SPRITES = {
+    "lighthouse-ledge": 1200, "lighthouse-lamp-off": 360, "lighthouse-lamp-on": 360, "lighthouse-moon": 256, "lighthouse-cloud": 512,
+    "lighthouse-boat-tug": 320, "lighthouse-boat-row": 320, "lighthouse-boat-sail": 320, "lighthouse-boat-banana": 320,
+    "lighthouse-boat-teacup": 256, "lighthouse-boat-bathtub": 320, "lighthouse-boat-ferry": 440,
+    "lighthouse-whale": 400, "lighthouse-whale-wink": 400, "lighthouse-barrel": 200, "lighthouse-buoy": 200, "lighthouse-duckie": 256,
+    "lighthouse-wally": 256,
+    "windup-bunny": 560, "windup-frog": 560, "windup-top": 560, "windup-croc": 600, "windup-elephant": 560, "windup-hippo": 560,
+    "windup-jack-closed": 560, "windup-jack-open": 560, "windup-nightcap": 240, "windup-dial": 640, "windup-key": 256,
+    "windup-gauge": 720, "windup-musicbox": 600, "windup-crank": 400, "windup-grandpa": 360, "windup-cuckoo": 280, "windup-oilcan": 200,
+    "bridge-spiral": 256, "bridge-moss": 256, "bridge-blossom": 200, "bridge-grandma": 256, "bridge-crowd": 560, "bridge-ducks": 360,
+}
 PAIRED = set(n for ab in PAIRS for n in ab)
 for n, w in SPRITES.items():
     if n not in PAIRED:
