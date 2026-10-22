@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvConfigured, safeEqualStr } from "@/lib/slpAuth";
-import { MAX_BODY, alertNew, apply, moveAway, readEvent } from "@/lib/revenuecat";
+import { MAX_BODY, alertNew, apply, moveAway, readEvent, welcome } from "@/lib/revenuecat";
 
 /**
  * REVENUECAT'S WEBHOOK (RCHOOK1, 16 Oct 2026; lib/revenuecat.ts says what it
@@ -75,5 +75,7 @@ export async function POST(req: NextRequest) {
   if (!kvConfigured()) return fail("No data store is connected.", 503);
   const r = await apply({ ...ev, state: ev.state });
   if (r === "retry") return NextResponse.json({ ok: false, retry: true }, { status: 503 });
+  // free days just started: Rachel's welcome (once a year an address, best-effort)
+  if (r === "ok") await welcome(ev);
   return done(r);
 }

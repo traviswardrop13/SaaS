@@ -441,7 +441,8 @@ starts, renews, is cancelled or ends (`app/api/revenuecat/route.ts`,
 `lib/revenuecat.ts`). The app hands RevenueCat the parent's email (setup's
 email step), so each message names the parent, and RevenueCat's own
 dashboard shows that email instead of ANONYMOUS. Sona then stops the welcome
-series for a buyer, sends "Your free days end soon" a day or
+series for a buyer, sends Rachel's "Welcome to Sona Premium" the moment the
+free days start (WELCOME1, once a year an address), "Your free days end soon" a day or
 two before the free days end (only while they are still on them), and "We
 miss you at Sona" a day after a plan ends. A family who gave no email stays
 anonymous, and gets none of this. If the subscription later moves to

@@ -76,8 +76,9 @@ export const PLANS_KEY = "rc:plans";
 export const REMIND_KEY = "rc:remind";
 export const MISS_KEY = "rc:miss";
 export const evtKey = (id: string) => "rc:evt:" + id;
-export const sentKey = (kind: "remind" | "miss", email: string, exp: number) =>
-  kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:miss:" + email;
+export const sentKey = (kind: "welcome" | "remind" | "miss", email: string, exp: number) =>
+  kind === "remind" ? "rc:sent:remind:" + email + ":" + exp : "rc:sent:" + kind + ":" + email;
+export const WELCOME_SENT_SEC = 365 * 24 * 60 * 60; // once a year an address, however many trials
 export const uidKey = (id: string) => "rc:uid:" + id;
 /** When the subscription last left this RevenueCat customer (a TRANSFER's time), for a message about it that arrives late. */
 export const movedKey = (id: string) => "rc:moved:" + id;
@@ -322,7 +323,22 @@ type Mail = { subject: string; preview: string; paras: string[]; button: string;
  * price is Apple's and depends on the country), and no number of free days
  * (that is the App Store's too).
  */
-export const MAILS: Record<"remind" | "miss", Mail> = {
+export const MAILS: Record<"welcome" | "remind" | "miss", Mail> = {
+  // WELCOME1 (Travis, 22 Oct 2026: "build the welcome email too"): the day
+  // the free days start, so a family that just said yes hears from Rachel
+  // instead of nothing. renderMail adds the line with the free days' end date.
+  welcome: {
+    subject: "Welcome to Sona Premium",
+    preview: "Every game in Sona is open now",
+    paras: [
+      "Hi there,",
+      "Welcome to Sona Premium! Every game in Sona is open for your child now.",
+      "The best way to spend your free days: a few minutes of practice each day, then a game as the reward. Short and often beats long and rare.",
+    ],
+    button: "Open Sona",
+    link: APP_URL,
+    ps: "Questions? Just reply to this email.",
+  },
   remind: {
     subject: "Your free days end soon",
     preview: "Nothing to do if you’re keeping Sona",
@@ -351,8 +367,16 @@ export const MAILS: Record<"remind" | "miss", Mail> = {
   },
 };
 
-export function renderMail(kind: "remind" | "miss", unsubUrl: string, postal: string): { subject: string; html: string; text: string } {
-  const c = MAILS[kind];
+/** The day the free days end, as a parent reads it ("Saturday, October 25"), or "" with no end. */
+export function endDay(exp: number): string {
+  return exp ? new Date(exp).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric" }) : "";
+}
+
+export function renderMail(kind: "welcome" | "remind" | "miss", unsubUrl: string, postal: string, exp = 0): { subject: string; html: string; text: string } {
+  const base = MAILS[kind];
+  const day = kind === "welcome" ? endDay(exp) : "";
+  // the welcome's end date is the one line not fixed in MAILS
+  const c = day ? { ...base, paras: [...base.paras, `Your free days end on ${day}. We’ll send you a reminder before then, so nothing comes as a surprise.`] } : base;
   const P = 'style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#2b2b2b;"';
   const html =
     `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">` +
@@ -375,9 +399,9 @@ export function renderMail(kind: "remind" | "miss", unsubUrl: string, postal: st
 /** A Resend Idempotency-Key with no address in it (a header carries ASCII only). */
 const keyFor = (kind: string, email: string, exp: number) => `rc-${kind}-${createHash("sha256").update(email + " " + exp).digest("hex").slice(0, 32)}`;
 
-async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
+async function send(f: Fetch, cfg: NonNullable<ReturnType<typeof config>>, kind: "welcome" | "remind" | "miss", email: string, exp: number): Promise<{ ok: boolean; status: number }> {
   const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email, cfg.secret)}`;
-  const m = renderMail(kind, unsubUrl, cfg.postal);
+  const m = renderMail(kind, unsubUrl, cfg.postal, exp);
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
   try {
     const r = await f("https://api.resend.com/emails", {
@@ -526,5 +550,30 @@ export async function alertNew(ev: RcEvent, kv: Kv = kvCmd, f: Fetch = fetch): P
     console.error("[revenuecat] sale alert threw:", e instanceof Error ? e.message : String(e));
   }
   await kv(["DEL", alertKey(ev.id)]); // a later retry of this message may try again
+  return "failed";
+}
+
+/**
+ * THE WELCOME, TO THE PARENT (WELCOME1). Sent from the webhook itself, the
+ * moment RevenueCat says a family's free days started (an INITIAL_PURCHASE
+ * in its TRIAL period that `apply` acted on), under the same rules as the
+ * other two notes: only an address that joined Sona's list and never left
+ * it, once a year an address (the sent mark is the claim). Best-effort: a
+ * send that fails releases the mark and the webhook still answers 200.
+ */
+export async function welcome(ev: RcEvent, kv: Kv = kvCmd, f: Fetch = fetch): Promise<"sent" | "skip" | "failed"> {
+  if (ev.type !== "INITIAL_PURCHASE" || ev.state !== "trial" || !ev.email) return "skip";
+  const cfg = config();
+  if (!cfg) return "skip";
+  // still on the free days as Sona now holds it (a late message about a plan that already moved is not)
+  const now = parsePlan(await kv(["HGET", PLANS_KEY, ev.email]));
+  if (!now || now.s !== "trial") return "skip";
+  if (Number(await kv(["EXISTS", "nurture:0:" + ev.email])) !== 1) return "skip";
+  if ((await suppressed(ev.email, kv)) !== false) return "skip";
+  const mark = await kv(["SET", sentKey("welcome", ev.email, 0), String(Date.now()), "NX", "EX", WELCOME_SENT_SEC]);
+  if (mark !== "OK") return "skip";
+  const r = await send(f, cfg, "welcome", ev.email, ev.exp);
+  if (r.ok) return "sent";
+  await kv(["DEL", sentKey("welcome", ev.email, 0)]);
   return "failed";
 }
