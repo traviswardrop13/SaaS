@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Make it yours</title>
+  <title>Sona — Buddy Shop</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -17,10 +17,7 @@
     #preview{position:relative;border-radius:24px;overflow:hidden;height:230px;display:flex;align-items:flex-end;justify-content:center;
       box-shadow:inset 0 -2px 0 rgba(15,39,66,.06),0 10px 30px rgba(15,39,66,.08);}
     #scene{position:absolute;inset:0;font-size:30px;}
-    #scene span{position:absolute;opacity:.9;}
-    #scene .s0{top:14px;left:16px;} #scene .s1{top:22px;right:20px;font-size:24px;} #scene .s2{bottom:54px;left:24px;font-size:26px;}
-    .hero{position:relative;margin-bottom:18px;animation:bob 3.2s ease-in-out infinite;}
-    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .hero{position:relative;margin-bottom:18px;}
     #heroChar{font-size:104px;line-height:1;filter:drop-shadow(0 10px 14px rgba(0,0,0,.16));}
     #heroOutfit{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:46px;line-height:1;}
     #heroName{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:"Baloo 2";font-weight:800;
@@ -30,128 +27,338 @@
     .opt{position:relative;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 6px 9px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .05s,border-color .12s;}
     .opt:active{transform:translateY(2px);}
-    .opt.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
-    .opt .em{font-size:40px;line-height:1;height:44px;display:flex;align-items:center;}
+    .opt .em{font-size:40px;line-height:1;height:44px;display:flex;align-items:center;position:relative;}
     .opt .nm{font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--ink);}
-    .opt.locked{opacity:.7;cursor:default;}
-    .opt.locked .em{filter:grayscale(.7);}
-    .opt .soon{position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;letter-spacing:.04em;color:var(--muted);
-      background:#eef3fb;border-radius:99px;padding:2px 7px;}
-    .opt .price{position:absolute;top:6px;right:6px;font-size:10px;font-weight:800;color:var(--orange-d);background:#ffe7c8;border-radius:99px;padding:2px 7px;}
-    .opt .em{position:relative;}
-    /* backdrop swatches */
+    /* place swatches */
     .opt.bd .em{width:100%;height:46px;border-radius:12px;font-size:22px;}
     .opt.none-outfit .em{color:var(--muted);font-size:13px;font-weight:800;font-family:"Baloo 2";}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
+  <link rel="stylesheet" href="/crafted-customize.css" />
 </head>
-<body>
-  <div class="wrap">
+<!-- THE BUDDY SHOP (SHOP1, 11 Oct 2026; Travis, 9 Oct 2026: "a currency so
+     they can buy stuff like characters, and they actually BE the character in
+     the game"). The old dressing room, rebuilt: a child picks a buddy, a hat
+     and a place. What is theirs is worn with one tap and saved, as before.
+     Anything else is tried on the preview first, and only kept once they
+     choose it: a shop item for coins, by holding "Get it" for a second (a
+     keyboard or switch press confirms at once), with "Oops? Give it back" for
+     ten seconds; a Trophy Road item shows the trophies that bring it. Coins
+     come only from the daily chest and the road, and are never sold: the
+     price is the catalog's (Sona.buyItem), never this page's, and the event
+     is sent by sona.js. A household already on Sona kept everything it could
+     pick (the OWN1 sweep), so it sees nothing to get. No dialogs, no voice
+     (the tap and reward chimes only), no confetti under Reduce Motion, and no
+     "buy" or price sign in a child's words. Opened from Settings
+     (?from=settings), ✕ and Done lead back there. -->
+<body class="crafted-family family-customize">
+  <div class="wrap" id="shop">
     <header class="app">
-      <div class="brand"><span class="leo">🦜</span> Make it yours</div>
+      <div class="brand"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Buddy Shop</div>
       <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+        <span class="shop-wallet" id="wallet" role="img" aria-label="0 coins"><span class="shop-ic" data-ic="coin" aria-hidden="true"></span><b id="coinN" aria-hidden="true">0</b></span>
+        <a class="iconbtn" href="/today.html" title="Home" aria-label="Back to games" style="display:flex;align-items:center;justify-content:center;">✕</a>
       </div>
     </header>
 
-    <div id="preview">
-      <div id="scene"></div>
+    <div id="preview" aria-label="Your buddy preview">
+      <div id="scene" aria-hidden="true"></div>
+      <div class="scene-caption" id="sceneName"></div>
       <div class="hero">
         <span id="heroOutfit"></span>
-        <span id="heroChar">🦜</span>
-        <span id="heroName">Echo</span>
+        <span id="heroChar"></span>
+        <span id="heroName"></span>
       </div>
     </div>
 
-    <h2 style="margin:20px 2px 2px;">Choose your buddy</h2>
+    <!-- what is being tried on: "Get it", or where it comes from. Shown
+         only while something here isn't the child's yet, and its room is
+         kept the whole time, so nothing below it moves when it changes. -->
+    <div class="try-bar" id="tryBar" hidden>
+      <button id="getBtn" type="button" class="get-btn" hidden>
+        <span class="get-ring" aria-hidden="true"></span>
+        <span class="get-in" aria-hidden="true"><b>Get it</b><span class="get-cost"><span class="shop-ic" data-ic="coin"></span><span id="getCost">0</span></span></span>
+      </button>
+      <span class="try-badge" id="tryBadge" aria-hidden="true"></span>
+      <div class="try-copy">
+        <b class="try-name" id="tryName" hidden></b>
+        <span class="try-line" id="tryLine" role="status" aria-live="polite">Open chests to earn coins!</span>
+        <a class="cream-pill try-act" id="roadLink" href="/road.html">See the road</a>
+        <button class="cream-pill try-act" id="undoBtn" type="button" hidden>Oops? Give it back</button>
+      </div>
+    </div>
+
+    <h2 id="buddies">Choose your buddy</h2>
     <div class="grid" id="chars"></div>
 
-    <h2 style="margin:22px 2px 2px;">Add an outfit</h2>
+    <h2 id="hats">Hats</h2>
     <div class="grid" id="outfits"></div>
 
-    <h2 style="margin:22px 2px 2px;">Pick a place</h2>
+    <h2 id="places">Places</h2>
     <div class="grid" id="backdrops"></div>
 
-    <a class="btn" id="done" href="/map.html" style="margin-top:22px;">Done&nbsp;&nbsp;✓</a>
-    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px;">More buddies coming soon! 🐸🐻🦊</p>
+    <div class="customize-footer"><span id="choiceSaved" role="status" aria-live="polite">Your choices save as you go</span><a class="btn" id="done" href="/today.html">Done <span aria-hidden="true">✓</span></a></div>
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
-    var p = Sona.getProfile();
-    var sel = { character: p.character || "leo", outfit: p.outfit || "none", backdrop: p.backdrop || "sky" };
+    (function () {
+    var S = window.Sona;
+    var $ = function (id) { return document.getElementById(id); };
+    // Opened from grown-ups Settings (?from=settings): ✕ and Done lead back to
+    // Settings, not into the games. Navigation only — nothing else is read
+    // from the URL, and any other value keeps the child's way home as it was.
+    if (/[?&]from=settings(&|$)/.test(location.search)) (function () {
+      var x = document.querySelector("header .iconbtn"), d = $("done");
+      if (x) { x.href = "/settings.html"; x.title = "Settings"; x.setAttribute("aria-label", "Back to Settings"); }
+      if (d) d.href = "/settings.html";
+    })();
+    if (!S || !S.getProfile) return;
+    // An older cached sona.js has no shop: everything is the child's, as it was then.
+    var SHOP = !!(S.shopItem && S.buyItem && S.equip);
+    var RM = false; try { RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+    var KINDS = ["characters", "outfits", "backdrops"], FIELD = { characters: "character", outfits: "outfit", backdrops: "backdrop" };
+    var LISTS = { characters: S.CHARACTERS || [], outfits: S.OUTFITS || [], backdrops: S.BACKDROPS || [] };
+    var GRID = { characters: "chars", outfits: "outfits", backdrops: "backdrops" };
+    function sfx(n) { try { if (S.sfx && S.sfx[n]) S.sfx[n](); } catch (e) {} }
+    function ic(n, px) { try { return S.icon ? S.icon(n, px || 18) : ""; } catch (e) { return ""; } }
+    function paintIcons(root) { var l = (root || document).querySelectorAll("[data-ic]"); for (var i = 0; i < l.length; i++) { var m = ic(l[i].getAttribute("data-ic"), 18); if (m) l[i].innerHTML = m; } }
+    function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    // the thousands comma by hand (no regex replace: no dollar sign before a digit on a kid page)
+    function num(n) { n = String(Math.max(0, Math.floor(Number(n) || 0))); var o = ""; while (n.length > 3) { o = "," + n.slice(-3) + o; n = n.slice(0, -3); } return n + o; }
+    function coins() { try { return S.coinsNow ? S.coinsNow() : (S.getCoins ? S.getCoins() : 0); } catch (e) { return 0; } }
+    function profile() { var p = S.getProfile(); return { character: S.buddyId ? S.buddyId() : S.characterById(p.character).id, outfit: S.outfitById(p.outfit).id, backdrop: S.backdropById(p.backdrop).id }; }
+    function item(kind, id) {
+      if (SHOP) return S.shopItem(kind, id);
+      var l = LISTS[kind], it = null; for (var i = 0; i < l.length; i++) if (l[i].id === id) it = l[i];
+      return it ? { kind: kind, id: id, name: it.name, cost: null, state: "owned" } : null;
+    }
+    function find(kind, id) { var l = LISTS[kind]; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
 
-    var heroChar = document.getElementById("heroChar"),
-        heroOutfit = document.getElementById("heroOutfit"),
-        heroName = document.getElementById("heroName"),
-        previewEl = document.getElementById("preview"),
-        sceneEl = document.getElementById("scene");
+    var saved = profile();      // what the child wears (saved)
+    var trying = null;          // {kind, id}: something not theirs yet, on the preview only
+    var heroChar = $("heroChar"), heroOutfit = $("heroOutfit"), heroName = $("heroName"), previewEl = $("preview"), sceneEl = $("scene");
 
+    // Page-local artwork keeps the saved choices and shared catalog intact.
+    // A hat with its painted picture (OUTFITS[i].art) shows that instead.
+    function outfitArt(id) {
+      var it = find("outfits", id);
+      if (it && it.art) return '<img class="hat-art" src="' + esc(it.art) + '" alt="" />';
+      var paths = {
+        none:'<circle cx="32" cy="32" r="18" fill="none" stroke="#c8b69b" stroke-width="3"/><path d="m20 44 24-24" stroke="#c8b69b" stroke-width="3"/>',
+        crown:'<path d="m9 19 13 9L32 12l10 16 13-9-5 30H14Z" fill="#edc665" stroke="#bc8f35" stroke-width="2"/><rect x="14" y="45" width="36" height="8" rx="3" fill="#dba844"/><circle cx="32" cy="35" r="4" fill="#37a5a6"/><circle cx="11" cy="17" r="3" fill="#ffdf88"/><circle cx="32" cy="10" r="3" fill="#ffdf88"/><circle cx="53" cy="17" r="3" fill="#ffdf88"/>',
+        tophat:'<ellipse cx="32" cy="48" rx="27" ry="7" fill="#44365c"/><path d="M16 13q16-5 32 0l-3 32q-13 5-26 0Z" fill="#615072"/><path d="M18 35q14 4 28 0v9q-14 5-28 0Z" fill="#cca355"/><ellipse cx="32" cy="13" rx="16" ry="4" fill="#887197"/>',
+        cap:'<path d="M10 39v-6a22 22 0 0 1 44 0v6Z" fill="#3b9c9e"/><path d="M32 11c-8 6-10 15-10 28M32 11c8 6 10 15 10 28" stroke="#6ec1b9" stroke-width="2" fill="none"/><path d="M10 39c20-7 37-2 48 7-18 5-33 7-48-7Z" fill="#207980"/><circle cx="32" cy="11" r="3" fill="#247c81"/>',
+        shades:'<path d="M5 23h21l-2 16q-8 9-16 0ZM38 23h21l-3 16q-8 9-16 0Z" fill="#526477" stroke="#384757" stroke-width="3"/><path d="M26 28q6-5 12 0M1 23h4M59 23h4" stroke="#384757" stroke-width="4" fill="none"/><path d="m11 28 7 1m27-1 7 1" stroke="#a4c5cf" stroke-width="3" stroke-linecap="round"/>',
+        bow:'<path d="M30 30C10 10 4 17 10 42c4 7 12 1 20-7ZM34 30c20-20 26-13 20 12-4 7-12 1-20-7Z" fill="#de7d89" stroke="#b35772" stroke-width="2"/><rect x="26" y="25" width="12" height="15" rx="4" fill="#ed9fa5"/><path d="m26 34-7 17 12-5 4-10m4-2 7 17-12-5-4-10" fill="#ca6980"/>',
+        party:'<path d="m32 8 22 44H10Z" fill="#d5b0df" stroke="#a37cb6" stroke-width="2"/><path d="m24 24 14-5 6 11-27 9m-3 8 35-6" stroke="#faf0ce" stroke-width="6" fill="none"/><ellipse cx="32" cy="52" rx="23" ry="4" fill="#9b75b1"/><circle cx="32" cy="7" r="5" fill="#f0cc6b"/>'
+      };
+      return '<svg viewBox="0 0 64 64" aria-hidden="true">' + (paths[id] || paths.none) + '</svg>';
+    }
+    function backdropFallback(id) {
+      var cloud='<g fill="#fffaf0" opacity=".86"><ellipse cx="72" cy="47" rx="31" ry="13"/><circle cx="65" cy="39" r="17"/><circle cx="88" cy="44" r="13"/><ellipse cx="318" cy="68" rx="35" ry="12"/><circle cx="305" cy="60" r="17"/></g>';
+      var scenes={
+        sky: '<circle cx="318" cy="39" r="25" fill="#edc968"/>'+cloud+'<path d="M0 221Q95 181 203 214T400 201v39H0Z" fill="#a1cda8"/>',
+        jungle: '<path d="M0 240V82Q43 36 42 0h30Q49 73 20 106v134M400 240V72Q357 32 360 0h-25q14 77 45 99v141" fill="#9b8452"/><g fill="#55936d"><ellipse cx="38" cy="33" rx="67" ry="19" transform="rotate(-24 38 33)"/><ellipse cx="11" cy="74" rx="53" ry="17" transform="rotate(24 11 74)"/><ellipse cx="378" cy="33" rx="68" ry="19" transform="rotate(29 378 33)"/><ellipse cx="403" cy="76" rx="54" ry="18" transform="rotate(-25 403 76)"/></g><path d="M0 220q50-54 87 0 35-32 62 2 55-36 96-1 69-45 155-3v22H0" fill="#76b986"/>',
+        forest: cloud+'<g fill="#679b74"><path d="m48 24-44 107h24L0 197h96l-29-66h25Z"/><path d="m345 18-48 110h22l-29 64h110l-33-64h27Z"/></g><g fill="#a7c2a1"><path d="m128 75-31 73h15l-19 49h72l-21-49h17ZM265 49l-42 104h19l-22 49h92l-25-49h19Z"/></g><path d="M0 219q100-30 200 0t200 0v21H0Z" fill="#90b876"/>',
+        mountain: cloud+'<path d="m-28 227 131-165 107 165 105-195 125 195v13H0Z" fill="#a7bec9"/><path d="m69 105 34-43 30 38-21-9-15 13-14-11Zm211-15 35-58 32 52-22-11-17 15-10-12Z" fill="#fffaf0"/><path d="M0 226 90 145l100 81 95-71 115 73v12H0Z" fill="#6e9a92"/>',
+        space: '<rect width="400" height="240" fill="#4c4a73"/><g fill="#fff0bb"><circle cx="36" cy="32" r="2"/><circle cx="176" cy="23" r="2"/><circle cx="265" cy="49" r="2"/><circle cx="110" cy="83" r="2"/><circle cx="338" cy="160" r="2"/><circle cx="209" cy="189" r="2"/></g><circle cx="322" cy="61" r="29" fill="#dcbaa1"/><ellipse cx="322" cy="61" rx="45" ry="9" fill="none" stroke="#eee0b7" stroke-width="5" transform="rotate(-24 322 61)"/><circle cx="65" cy="185" r="19" fill="#8e98bf"/>',
+        beach: cloud+'<circle cx="323" cy="34" r="24" fill="#edca68"/><path d="M0 131q100-12 201 2t199 0v107H0Z" fill="#88c5c7"/><path d="M0 151q100-12 201 2t199 0M0 174q100-12 201 2t199 0" fill="none" stroke="#d0ede5" stroke-width="4"/><path d="M0 210q185-30 400 4v26H0Z" fill="#edd6a5"/><path d="m57 214 8-103" stroke="#a6845b" stroke-width="9"/><path d="M65 110Q20 67 9 118q26-20 56-8Zm0 0q19-53 54-20-33-1-54 20Zm0 0q41-15 56 31-29-25-56-31Z" fill="#66996f"/>'
+      };
+      return scenes[id] ? '<svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + scenes[id] + '</svg>' : "";
+    }
+    // a place: its painted picture over its drawn scene (or its colours, for
+    // a place with no drawn scene); a picture not on disk shows what is under it
+    function backdropArt(id) {
+      var b = find("backdrops", id) || LISTS.backdrops[0];
+      return '<span class="setting-scene" style="background:' + esc(b.css || "") + '">' + backdropFallback(b.id) + '<img src="/assets/crafted/customize-' + esc(b.id) + '-v2.webp" alt="" onerror="this.style.display=\'none\'" /></span>';
+    }
+    // Local crafted portraits retain the shared catalog ids and SVG fallbacks.
+    function buddyArt(id, size) { return window.SonaCraftedBuddies ? SonaCraftedBuddies.markup(id, size) : S.buddyMarkup(id, size); }
+
+    function shown() { var s = { character: saved.character, outfit: saved.outfit, backdrop: saved.backdrop }; if (trying) s[FIELD[trying.kind]] = trying.id; return s; }
     function renderPreview() {
-      var c = Sona.characterById(sel.character),
-          o = Sona.outfitById(sel.outfit),
-          b = Sona.backdropById(sel.backdrop);
-      heroChar.innerHTML = Sona.buddyMarkup(sel.character, 132);
+      var s = shown(), c = S.characterById(s.character), b = S.backdropById(s.backdrop);
+      heroChar.innerHTML = buddyArt(s.character, 132);
       heroName.textContent = c.name;
-      heroOutfit.textContent = o.emoji || "";
+      heroChar.setAttribute("data-character", c.id);
+      $("sceneName").textContent = b.name;
+      heroOutfit.innerHTML = s.outfit === "none" ? "" : outfitArt(s.outfit);
+      heroOutfit.setAttribute("data-outfit", s.outfit);
+      // a painted hat has its own place on the badge (crafted-customize.css);
+      // the drawn one (an older cached sona.js) keeps the old place
+      var oi = find("outfits", s.outfit); heroOutfit.className = oi && oi.art ? "painted" : "";
       previewEl.style.background = b.css;
-      sceneEl.innerHTML = (b.scene || []).map(function (e, i) { return '<span class="s' + i + '">' + e + '</span>'; }).join("");
+      sceneEl.innerHTML = backdropArt(s.backdrop);
     }
+    function paintWallet() { var n = coins(); $("coinN").textContent = num(n); $("wallet").setAttribute("aria-label", num(n) + (n === 1 ? " coin" : " coins")); }
 
-    function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
-
-
-    // grandfather whatever the child already has selected (don't charge for it)
-    Sona.addOwned("outfits", sel.outfit); Sona.addOwned("backdrops", sel.backdrop);
-
-    // characters: Leo free, others "coming soon" (not buyable yet)
-    function buildChars() {
-      var host = document.getElementById("chars"); host.innerHTML = "";
-      Sona.CHARACTERS.forEach(function (it) {
-        var locked = !!it.locked;
-        var el = document.createElement("div");
-        el.className = "opt" + (sel.character === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
-        el.innerHTML = '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>' + (locked ? '<span class="soon">SOON</span>' : "");
-        if (!locked) el.onclick = function () { if (window.Sona) Sona.sfx.tap(); sel.character = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); };
+    // ── the tiles ──
+    function tileLabel(it) {
+      if (it.state === "owned") return it.name + ". Yours.";
+      if (it.state === "road") return it.name + ". On the Trophy Road" + (it.at ? " at " + num(it.at) + " trophies" : "") + ".";
+      return it.name + ". " + num(it.cost) + " coins. You have " + num(coins()) + ".";
+    }
+    function tileInner(kind, it) {
+      var em;
+      if (kind === "characters") em = '<span class="em">' + buddyArt(it.id, 58) + '</span>';
+      else if (kind === "outfits") em = '<span class="em">' + outfitArt(it.id) + '</span>';
+      else em = '<span class="em">' + backdropArt(it.id) + '</span>';
+      var tag = "";
+      if (it.state === "road") {
+        tag = '<span class="tag tag-road" aria-hidden="true"><span class="shop-ic">' + ic("lock", 13) + '</span><span class="shop-ic">' + ic("trophy", 14) + '</span><b>' + (it.at ? num(it.at) : "") + '</b></span>';
+      } else if (it.state !== "owned") {
+        // the ring fills as the wallet nears the price: full when it can be got
+        var f = Math.max(0, Math.min(1, coins() / (it.cost || 1)));
+        tag = '<span class="tag tag-coins' + (f >= 1 ? " full" : "") + '" aria-hidden="true"><span class="tag-ring" style="--f:' + f.toFixed(3) + '"><span class="shop-ic">' + ic("coin", 14) + '</span></span><b>' + num(it.cost) + '</b></span>';
+      }
+      return em + '<span class="nm">' + esc(it.name) + '</span>' + tag;
+    }
+    var roomy = false;   // once the try bar has room on this visit, it keeps it
+    function buildGrid(kind) {
+      var host = $(GRID[kind]); host.innerHTML = "";
+      LISTS[kind].forEach(function (raw) {
+        var it = item(kind, raw.id); if (!it) return;
+        if (it.state !== "owned") roomy = true;
+        var el = document.createElement("button");
+        el.type = "button";
+        var worn = saved[FIELD[kind]] === it.id, tried = !!(trying && trying.kind === kind && trying.id === it.id);
+        el.className = "opt" + (kind === "outfits" && it.id === "none" ? " none-outfit" : "") + (kind === "backdrops" ? " bd" : "") + (worn ? " on" : "") + (tried ? " trying" : "") + (it.state === "owned" ? "" : it.state === "road" ? " road" : " coins");
+        el.setAttribute("data-id", it.id); el.setAttribute("data-kind", kind);
+        el.setAttribute("aria-pressed", worn ? "true" : "false");
+        el.setAttribute("aria-label", tileLabel(it));
+        el.innerHTML = tileInner(kind, it);
+        el.onclick = function () { tap(kind, it.id); };
         host.appendChild(el);
       });
     }
+    function buildAll() { KINDS.forEach(buildGrid); $("tryBar").hidden = !roomy; }
 
-    // shop grid: owned items select; locked items cost coins to unlock
-    function buildShop(elId, items, key, kind, render) {
-      var host = document.getElementById(elId); host.innerHTML = "";
-      items.forEach(function (it) {
-        var owned = true; // beta: everything's unlocked — just pick what you like
-        var el = document.createElement("div");
-        el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
-        el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">🪙 ' + it.cost + '</span>');
-        el.onclick = function () {
-          if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); return; }
-          if (coins >= it.cost) {
-            if (confirm("Unlock " + it.name + " for " + it.cost + " 🪙?")) {
-              Sona.spendCoins(it.cost); Sona.addOwned(kind, it.id); coins = Sona.getCoins(); setCoinBal();
-              if (window.Sona) { Sona.sfx.reward(); Sona.confetti({ count: 90, duration: 1600 }); }
-              sel[key] = it.id; persist(); buildShop(elId, items, key, kind, render); renderPreview();
-            }
-          } else { alert("You need " + (it.cost - coins) + " more 🪙 — practice to earn coins!"); }
-        };
-        host.appendChild(el);
-      });
+    // ── nothing moves under a finger: after the page scrolls to the preview,
+    // taps wait a moment, so the second tap of a double tap lands nowhere ──
+    var settleT = 0;
+    function settle() { var w = $("shop"); w.classList.add("settling"); clearTimeout(settleT); settleT = setTimeout(function () { w.classList.remove("settling"); }, 600); }
+    document.addEventListener("click", function (e) { if ($("shop").classList.contains("settling") && $("shop").contains(e.target)) { e.preventDefault(); e.stopPropagation(); } }, true);
+    // trying something on needs the preview and its "Get it" on screen
+    function showTry() {
+      var bar = $("tryBar").getBoundingClientRect(), pv = previewEl.getBoundingClientRect(), foot = document.querySelector(".customize-footer");
+      var bottom = window.innerHeight - (foot ? foot.getBoundingClientRect().height : 0);
+      if (bar.bottom <= bottom + 1 && pv.top >= -pv.height / 3) return;
+      var to = Math.max(0, window.pageYOffset + pv.top - 10);
+      try { window.scrollTo({ top: to, behavior: RM ? "auto" : "smooth" }); } catch (e) { window.scrollTo(0, to); }
+      settle();
     }
 
-    buildChars();
-    buildShop("outfits", Sona.OUTFITS, "outfit", "outfits", {
-      cls: function (it) { return it.id === "none" ? " none-outfit" : ""; },
-      inner: function (it) { return '<span class="em">' + (it.emoji || "None") + '</span><span class="nm">' + it.name + '</span>'; },
-    });
-    buildShop("backdrops", Sona.BACKDROPS, "backdrop", "backdrops", {
-      cls: function () { return " bd"; },
-      inner: function (it) {
-        var sc = (it.scene || [])[0] || "";
-        return '<span class="em" style="background:' + it.css + ';display:flex;align-items:center;justify-content:center;">' + sc + '</span><span class="nm">' + it.name + '</span>';
-      },
-    });
+    function saveNote(t) { $("choiceSaved").textContent = t; }
+    var mode = "idle", gotT = 0, gotName = "";
+    function tap(kind, id) {
+      sfx("tap");
+      var it = item(kind, id); if (!it) return;
+      if (it.state === "owned") {
+        trying = null;
+        if (SHOP) S.equip(kind, id); else { var patch = {}; patch[FIELD[kind]] = id; S.saveProfile(patch); }
+        saved = profile();
+        saveNote("Saved — looking good!");
+        if (mode === "try") mode = "idle";
+        buildAll(); renderPreview(); paintTry();
+        return;
+      }
+      trying = { kind: kind, id: id }; mode = "try"; clearTimeout(gotT);
+      buildAll(); renderPreview(); paintTry();
+      showTry();
+    }
 
+    // ── the try bar: idle (where coins come from), try (get it, or where it
+    // comes from) and got ("It's yours!", and ten seconds to give it back) ──
+    function badge(html) { var b = $("tryBadge"); b.innerHTML = html || ""; b.hidden = !html; }
+    function paintTry() {
+      var btn = $("getBtn"), line = $("tryLine"), road = $("roadLink"), undo = $("undoBtn"), name = $("tryName"), bar = $("tryBar");
+      holdCancel();
+      var it = (mode === "try" && trying) ? item(trying.kind, trying.id) : null;
+      if (mode === "try" && (!it || it.state === "owned")) { trying = null; mode = "idle"; it = null; }
+      btn.hidden = true; undo.hidden = true; road.hidden = true; name.hidden = true;
+      if (mode === "got") {
+        bar.className = "try-bar is-got"; badge('<span class="shop-tick">✓</span>');
+        name.hidden = false; name.textContent = gotName; line.textContent = "It's yours!"; undo.hidden = false;
+        return;
+      }
+      if (mode === "idle") {
+        bar.className = "try-bar is-idle"; badge(ic("chest", 56));
+        line.textContent = "Open chests to earn coins!"; road.hidden = false;
+        return;
+      }
+      name.hidden = false; name.textContent = it.name;
+      if (it.state === "road") {
+        bar.className = "try-bar is-road";
+        badge('<span class="road-at"><span class="shop-ic">' + ic("lock", 18) + '</span><span class="shop-ic">' + ic("trophy", 22) + '</span><b>' + (it.at ? num(it.at) : "") + '</b></span>');
+        line.textContent = "Find it on the Trophy Road!"; road.hidden = false;
+        return;
+      }
+      var have = coins(), can = have >= it.cost, f = Math.max(0, Math.min(1, have / (it.cost || 1)));
+      badge("");
+      bar.className = "try-bar is-try" + (can ? "" : " is-short");
+      btn.hidden = false; btn.disabled = !can;
+      $("getCost").textContent = num(it.cost);
+      btn.setAttribute("aria-label", "Get it. " + it.name + ", " + num(it.cost) + " coins.");
+      btn.style.setProperty("--f", can ? "1" : f.toFixed(3));
+      line.textContent = can ? "Hold to get it!" : "Open chests to earn coins!";
+      road.hidden = can;
+    }
+
+    // ── hold for a second to get it (a keyboard or switch press confirms at once) ──
+    var HOLD_MS = 1000, holdAt = 0, holdRaf = 0, holding = false, gb = $("getBtn");
+    function holdSet(f) { gb.style.setProperty("--hold", (RM ? Math.floor(f * 4) / 4 : f).toFixed(3)); }
+    function holdCancel() { holding = false; if (holdRaf) cancelAnimationFrame(holdRaf); holdRaf = 0; holdSet(0); gb.classList.remove("holding"); }
+    function holdStep() {
+      if (!holding) return;
+      var f = Math.min(1, (Date.now() - holdAt) / HOLD_MS); holdSet(f);
+      if (f >= 1) { holding = false; holdRaf = 0; get(false); return; }
+      holdRaf = requestAnimationFrame(holdStep);
+    }
+    gb.addEventListener("pointerdown", function (e) {
+      if (gb.disabled || mode !== "try" || $("shop").classList.contains("settling")) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      try { gb.setPointerCapture(e.pointerId); } catch (x) {}
+      holding = true; holdAt = Date.now(); gb.classList.add("holding");
+      holdRaf = requestAnimationFrame(holdStep);
+    });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (t) { gb.addEventListener(t, function () { if (holding) holdCancel(); }); });
+    gb.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    // a keyboard, a switch or a screen reader presses with no pointer (detail 0)
+    gb.addEventListener("click", function (e) { if (e.detail === 0 && !gb.disabled && mode === "try") get(true); });
+
+    function get(byKey) {
+      if (mode !== "try" || !trying || !SHOP) return;
+      var k = trying.kind, id = trying.id, it = item(k, id);
+      var r = S.buyItem(k, id);
+      if (!r || !r.ok) { paintWallet(); buildAll(); paintTry(); return; }
+      trying = null; saved = profile(); mode = "got"; gotName = it ? it.name : "";
+      sfx("reward");
+      if (!RM && S.confetti) { try { S.confetti({ count: 90, duration: 1600 }); } catch (e) {} }
+      paintWallet(); buildAll(); renderPreview(); paintTry();
+      saveNote("Saved — looking good!");
+      if (byKey) { try { $("undoBtn").focus(); } catch (e) {} }
+      clearTimeout(gotT); gotT = setTimeout(function () { if (mode === "got") { mode = "idle"; paintTry(); } }, 10000);
+    }
+    $("undoBtn").onclick = function () {
+      sfx("tap");
+      if (S.undoBuy) S.undoBuy();
+      clearTimeout(gotT); mode = "idle"; trying = null; saved = profile();
+      paintWallet(); buildAll(); renderPreview(); paintTry();
+      saveNote("Your choices save as you go");
+    };
+
+    paintIcons();
+    paintWallet();
+    buildAll();
     renderPreview();
+    paintTry();
+    // #buddies, #hats and #places (the road's "Try it on") open at that grid
+    if (/^#(buddies|hats|places)$/.test(location.hash)) { try { $(location.hash.slice(1)).scrollIntoView(); } catch (e) {} }
+    // coins can change in another tab (the road's chest): read them again on coming back
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) { saved = profile(); paintWallet(); buildAll(); renderPreview(); paintTry(); } });
+    })();
   </script>
 </body>
 </html>

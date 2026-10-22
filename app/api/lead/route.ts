@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
-import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
+import { contactsConfigured, planWord, upsertContact, type ListResult } from "@/lib/contacts";
+import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
+import { enroll, inAppSource, stopSeries } from "@/lib/nurture";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
  * tellCrm), the app's setup (a clinician's account email, a parent's
- * weekly-summary email) and the Speech Check.
+ * optional email step, before the price since 13 Oct 2026), a purchase's
+ * plan post (sona.js _tellPlan) and the Speech Check.
  *
  * Every lead is saved in the store first-class (the ledger below), then sent to:
- *   - KIT_API_KEY (+ optional KIT_FORM_ID): the email list, via lib/kit —
- *     clinicians tagged sona-slp, everyone else sona-parent;
+ *   - Resend's contacts (RESEND_API_KEY, a Full access key): the email list,
+ *     via lib/contacts — in the Parents, Speech therapists or Other segment,
+ *     and Started Premium once the phone says so (Kit until 16 Oct 2026);
  *   - LEAD_WEBHOOK_URL: a generic webhook. It was GoHighLevel, deleted on
  *     24 Sep 2026; remove the variable and this path goes quiet.
  *
@@ -32,8 +36,7 @@ export async function GET() {
     service: "lead",
     email: Boolean(process.env.RESEND_API_KEY),
     hook: Boolean(process.env.LEAD_WEBHOOK_URL),
-    kit: kitConfigured(),
-    kitForm: Boolean(process.env.KIT_FORM_ID),
+    list: contactsConfigured(),
   });
 }
 
@@ -56,6 +59,8 @@ export async function POST(req: NextRequest) {
     name?: string;
     role?: string;
     fbclid?: string;
+    welcome?: boolean;
+    plan?: string;
   };
   try {
     body = await req.json();
@@ -72,8 +77,8 @@ export async function POST(req: NextRequest) {
 
   /**
    * A STRANGER CANNOT FLOOD THE LIST. This door takes posts from anyone, and
-   * each one is kept and sent to Kit — so a script could fill the ledger past
-   * its cap (pushing real leads out) and stuff the Kit list with junk. Ten an
+   * each one is kept and sent to the email list — so a script could fill the
+   * ledger past its cap (pushing real leads out) and stuff the list with junk. Ten an
    * hour from one address is far more than any family or clinician sends.
    * Our own sign-up route forwards every clinician from the same few server
    * addresses, so it signs its leads and a valid signature skips the limit.
@@ -96,7 +101,7 @@ export async function POST(req: NextRequest) {
     name: child,                       // stripped below — never sent (see safeLead)
     child,
     age: body?.age != null ? String(body.age).slice(0, 4) : "",
-    practice,                          // array (for Kit etc.)
+    practice,                          // array (never sent; see safeLead)
     practice_text: practice.join(", "), // flat string — easy GHL field mapping
     summary,                           // one-line headline (good email subject/preview)
     report,                            // full readable report body — drop into the GHL email
@@ -108,15 +113,22 @@ export async function POST(req: NextRequest) {
     referrer: clamp(body?.referrer, 200),
     landing: clamp(body?.landing),
     source: typeof body?.source === "string" ? body.source.slice(0, 40) : "speech-check",
-    // Only a clinician signing up for themselves has a role, and only then
-    // does a first name travel — theirs, typed about themselves. The parent
-    // path never sets a role, so a child's name has no way onto this field.
-    // "parent" travels too since 24 Sep 2026 so the email list can tell the
-    // two apart. It is a label, not an identity; the parent's name is never
-    // asked for here and never sent.
-    role: body?.role === "slp" ? "slp" : body?.role === "parent" ? "parent" : "",
+    // WHO THEY ARE: "slp" (an SLP or SLPA), "parent", or "other" (since
+    // 25 Sep 2026 the landing page asks every visitor). A label, not an
+    // identity.
+    role: body?.role === "slp" ? "slp" : body?.role === "parent" ? "parent" : body?.role === "other" ? "other" : "",
+    // Only a clinician signing up for themselves sends a first name that
+    // travels — theirs, typed about themselves. On the parent paths the only
+    // name a caller holds is a child's, so `name` never becomes first_name
+    // there, and the landing page asks nobody for a name at all.
     first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "",
     fbclid: clamp(body?.fbclid),
+    // A PARENT STARTED SONA PREMIUM IN THE APP (5 Oct 2026): "trial" when
+    // Apple started their free days, "paid" when it charged them at once,
+    // sent by sona.js once the purchase has gone through. It puts the
+    // contact in Resend's "Started Premium" segment and stops the welcome
+    // series (lib/nurture stopSeries). Those two words only (planWord).
+    plan: planWord(body?.plan),
     at: new Date().toISOString(),
   };
 
@@ -160,21 +172,23 @@ export async function POST(req: NextRequest) {
     // because on the parent path the only name available is a child's.
     first_name: lead.first_name,
     fbclid: lead.fbclid,
+    // the grown-up's own purchase, never anything about the child
+    plan: lead.plan,
     at: lead.at,
   };
 
   const hook = process.env.LEAD_WEBHOOK_URL;
   let captured = false;
   let crm: { ok: boolean; status: number } | null = null;
-  let kit: KitResult | null = null;
+  let list: ListResult | null = null;
 
   /**
    * CAPTURED MEANS A LIST SAID YES. It used to be set the moment a fetch
    * returned, whatever the CRM answered, so a refusal read everywhere
    * downstream as a lead safely delivered. The legacy webhook (GoHighLevel,
-   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) and Kit
-   * run side by side, each on its own fuse, and captured is true only if one
-   * of them actually took the lead.
+   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) and
+   * Resend's contacts run side by side, and captured is true only if one of
+   * them actually took the lead.
    */
   const toHook = async (): Promise<void> => {
     if (!hook) return;
@@ -196,19 +210,20 @@ export async function POST(req: NextRequest) {
       clearTimeout(fuse);
     }
   };
-  const toKit = async (): Promise<void> => {
-    if (!kitConfigured()) return;
+  const toList = async (): Promise<void> => {
+    if (!contactsConfigured()) return;
     // A clinician's own first name goes with them; nobody else's does.
-    kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role) });
+    list = await upsertContact({ email: safeLead.email, firstName: safeLead.first_name, role: safeLead.role,
+      source: safeLead.source, plan: safeLead.plan });
   };
   try {
-    await Promise.all([toHook(), toKit()]);
+    await Promise.all([toHook(), toList()]);
   } catch {
     // never fail the visitor on a capture hiccup
   }
   const hookRes = crm as { ok: boolean; status: number } | null;
-  const kitRes = kit as KitResult | null;
-  captured = !!(hookRes && hookRes.ok) || !!(kitRes && kitRes.ok);
+  const listRes = list as ListResult | null;
+  captured = !!(hookRes && hookRes.ok) || !!(listRes && listRes.ok);
 
   /**
    * THE LEDGER: EVERY LEAD IS KEPT ON OUR SIDE TOO. Until 24 Sep 2026 this
@@ -236,10 +251,11 @@ export async function POST(req: NextRequest) {
         utm_content: safeLead.utm_content,
         fbclid: safeLead.fbclid,
         landing: safeLead.landing,
+        plan: safeLead.plan,
         // status 0 is a timeout or a network failure, not a refusal: the
         // webhook may never have seen it, or may have it without replying
         crm: hookRes ? (hookRes.ok ? "accepted" : hookRes.status ? "refused " + hookRes.status : "unreachable") : "not configured",
-        kit: kitRes ? (kitRes.ok ? kitRes.detail : "refused (" + kitRes.detail + ")") : "not configured",
+        list: listRes ? (listRes.ok ? listRes.detail : "refused (" + listRes.detail + ")") : "not configured",
       };
       await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)]);
       await kvCmd(["LTRIM", "leads:all", 0, 9999]);
@@ -248,5 +264,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, captured });
+  /**
+   * THE WELCOME, while the app is not ready (lib/launch.ts, 25 Sep 2026): the
+   * landing page asks for it for a parent or "other"; a clinician gets the
+   * same news in their sign-in email instead. Once per address, ever — the
+   * marker is set before sending, so a double tap or a retry cannot send two,
+   * and a failed send is not retried (the lead is kept either way). Sent after
+   * the lead is safely stored, and it never fails the visitor.
+   */
+  let welcomed = false;
+  if (!APP_READY && body?.welcome === true && (lead.role === "parent" || lead.role === "other") && kvConfigured()) {
+    try {
+      const first = await kvCmd(["SET", "launchmail:" + email.toLowerCase(), new Date().toISOString(), "NX", "EX", 31536000]);
+      if (first === "OK") welcomed = await sendWelcomeEmail(email);
+    } catch {
+      // never fail the visitor on the welcome
+    }
+  }
+
+  // THE WELCOME SERIES (lib/nurture.ts, 6 Oct 2026): now that the app is out,
+  // every grown-up who gives an email gets Rachel's welcome right away and the
+  // 5-minute email the next day — once per address, with a real unsubscribe.
+  // An email given inside the app (IN_APP_SOURCES in lib/nurture.ts) skips
+  // the App Store email and starts at the 5-minute one: they have the app.
+  if (APP_READY && kvConfigured()) {
+    try {
+      welcomed = (await enroll(email, kvCmd, fetch, Date.now(), { inApp: inAppSource(lead.source) })) || welcomed;
+    } catch {
+      // never fail the visitor on the welcome
+    }
+  }
+  // A PARENT WHO STARTED SONA PREMIUM gets no more of the welcome series
+  // (Travis, 16 Oct 2026): days 3 and 5 sell the free days they already
+  // started. The weekly progress report, if they asked for it, is separate.
+  if (safeLead.plan && kvConfigured()) {
+    try { await stopSeries(email, kvCmd); } catch { /* the next email says "already started? ignore the button" */ }
+  }
+
+  return NextResponse.json({ ok: true, captured, welcomed });
 }

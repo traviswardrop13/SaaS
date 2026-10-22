@@ -1,0 +1,88 @@
+[
+  {
+    "label": "iphone",
+    "score": 6,
+    "phase": "break",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "scroll": {
+      "width": 393,
+      "height": 852
+    },
+    "elements": {
+      "top": {
+        "x": 0,
+        "y": 0,
+        "right": 393,
+        "bottom": 123
+      },
+      "close": {
+        "x": 14,
+        "y": 71,
+        "right": 60,
+        "bottom": 117
+      },
+      "timer": {
+        "x": 224.578125,
+        "y": 71.5,
+        "right": 379,
+        "bottom": 116.5
+      },
+      "sliceHint": {
+        "x": 55.015625,
+        "y": 778.9375,
+        "right": 337.984375,
+        "bottom": 805.140625
+      }
+    },
+    "background": "url(\"http://127.0.0.1:28741/assets/crafted/fruit-market-v2.webp\")",
+    "swipes": 6,
+    "errors": [],
+    "missing": []
+  },
+  {
+    "label": "small",
+    "score": 2,
+    "phase": "wave",
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "scroll": {
+      "width": 320,
+      "height": 568
+    },
+    "elements": {
+      "top": {
+        "x": 0,
+        "y": 0,
+        "right": 320,
+        "bottom": 83
+      },
+      "close": {
+        "x": 10,
+        "y": 33,
+        "right": 53,
+        "bottom": 76
+      },
+      "timer": {
+        "x": 200.703125,
+        "y": 32,
+        "right": 310,
+        "bottom": 77
+      },
+      "sliceHint": {
+        "x": 44.796875,
+        "y": 514.921875,
+        "right": 275.203125,
+        "bottom": 536.765625
+      }
+    },
+    "background": "url(\"http://127.0.0.1:28741/assets/crafted/fruit-market-v2.webp\")",
+    "swipes": 2,
+    "errors": [],
+    "missing": []
+  }
+]

@@ -1,6 +1,8 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial), the
-// only plan since monthly was retired — with no Stripe cards (3.1.1 hygiene), the required
+// subscribe.html must show the Apple paywall — ONE plan since 5 Oct 2026, the
+// monthly product, with every figure, free day and sentence about it taken
+// from what the mocked store answers (the card itself ships with none) — with
+// no Stripe cards (3.1.1 hygiene), the required
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
@@ -35,6 +37,29 @@ page.on("pageerror", (e) => errs.push(e.message));
 // through the ?paid=1 seam; this constant is only for the handful that ask
 // what the live state actually is.
 const IS_FREE_NOW = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
+// Whether the WEBSITE sells is read the same way (Travis, 1 Oct 2026: "i dont
+// want them paying on the website": a family buys Premium only in the iPhone
+// and iPad app). Every web-card assertion below forces the web rails ON through
+// sessionStorage "sona.websalesui", so the selling state stays played whichever
+// way WEB_SALES ships, and the off state is played with it forced to "0". This
+// constant is only for the one check that asks what a plain browser does with
+// no seam at all. The NATIVE seeds never set the seam, on purpose: the Apple
+// card must not be able to read it.
+const WEB_SALES_NOW = /const WEB_SALES = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
+// What the funnel was told, by name: SonaAnalytics.track ("paywall viewed")
+// and sona.js's own track() beacon ("plan moment shown", "offer dismissed").
+// Kept in the session so a tap that navigates away does not lose the list.
+const RECORD = () => {
+  const note = (n) => { try { sessionStorage.setItem("__ev", JSON.stringify(JSON.parse(sessionStorage.getItem("__ev") || "[]").concat([String(n)]))); } catch (e) {} };
+  let sa;
+  Object.defineProperty(window, "SonaAnalytics", { configurable: true, get() { return sa; }, set(v) {
+    if (v && typeof v.track === "function") { const t = v.track; v.track = function (n) { note(n); return t.apply(this, arguments); }; }
+    sa = v;
+  } });
+  const sb = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
+  navigator.sendBeacon = function (u, b) { try { if (/\/api\/track/.test(String(u))) note(JSON.parse(b).e); } catch (e) {} return sb ? sb(u, b) : true; };
+};
+const told = (pg) => pg.evaluate(() => JSON.parse(sessionStorage.getItem("__ev") || "[]"));
 
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
@@ -43,21 +68,47 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 await page.addInitScript(() => {
   // entitlement state persists across navigations via localStorage (init
   // scripts re-run per page load and would otherwise reset the mock)
-  window.__iap = { purchases: 0, restores: 0, configured: 0 };
+  window.__iap = { purchases: 0, restores: 0, configured: 0, bought: [], asked: [] };
   const entitled = () => localStorage.getItem("__iapEntitled") === "1";
   const setEnt = (v) => localStorage.setItem("__iapEntitled", v ? "1" : "0");
   const info = () => ({ customerInfo: { entitlements: { active: entitled() ? { full: { isActive: true } } : {} } } });
+  const flag = (k) => localStorage.getItem(k) === "1";
+  const MONTHLY = "com.speaksona.app.monthly", ANNUAL = "com.speaksona.app.annual";
+  const FREE3 = () => ({ price: 0, priceString: "$0.00", period: "P3D", periodUnit: "DAY", periodNumberOfUnits: 3, cycles: 1 });
+  // The App Store, as App Store Connect has it since 5 Oct 2026: the monthly
+  // product at $9.99 with 3 free days, and the yearly one at $59.99 with 3
+  // free days, which still exists and is no longer offered. It answers every
+  // id it is asked for. Switches a test can throw:
+  //   __iapNoMonthly      the store has no monthly product
+  //   __iapMonthlyNoTrial it has one with no free days
+  //   __iapWrongProduct   it answers a request for monthly with the YEARLY product
+  //   __iapElig           what Apple says of THIS buyer's free days: "0" unknown,
+  //                       "1" not eligible, "2" eligible, "3" no offer on the
+  //                       product (unset: 2 for a product with an offer, else 3)
+  const product = (id) => {
+    if (id === ANNUAL || (id === MONTHLY && flag("__iapWrongProduct"))) return { identifier: ANNUAL, priceString: "$59.99", price: 59.99, subscriptionPeriod: "P1Y", introPrice: FREE3() };
+    if (id !== MONTHLY || flag("__iapNoMonthly")) return null;
+    return { identifier: MONTHLY, priceString: "$9.99", price: 9.99, subscriptionPeriod: "P1M", introPrice: flag("__iapMonthlyNoTrial") ? null : FREE3() };
+  };
   window.Capacitor = {
     isNativePlatform: () => true,
     Plugins: {
       Purchases: {
         configure: async () => { window.__iap.configured++; },
         getProducts: async ({ productIdentifiers }) => {
-          const id = (productIdentifiers || [])[0] || "com.speaksona.app.annual";
-          const price = id.indexOf("monthly") > -1 ? "$9.99" : "$59.99";
-          return { products: [{ identifier: id, priceString: price }] };
+          const ids = (productIdentifiers || []).slice();
+          window.__iap.asked.push(ids);
+          return { products: ids.map(product).filter(Boolean) };
         },
-        purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
+        // whether this buyer may still have the product's free days (RevenueCat's numbers)
+        checkTrialOrIntroductoryPriceEligibility: async ({ productIdentifiers }) => {
+          const out = {}, forced = localStorage.getItem("__iapElig");
+          (productIdentifiers || []).forEach((id) => { const p = product(id); out[id] = { status: forced != null ? Number(forced) : (p && p.introPrice ? 2 : 3) }; });
+          return out;
+        },
+        // records WHICH product Apple's sheet was opened on; __iapNoGrant
+        // makes Apple take the order without the entitlement arriving
+        purchaseStoreProduct: async (a) => { window.__iap.purchases++; window.__iap.bought.push(a && a.product && a.product.identifier); if (localStorage.getItem("__iapNoGrant") !== "1") setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
         // __iapFail lets a test make Apple UNREACHABLE, which is a different
         // answer from "not entitled" and must be treated differently.
@@ -65,66 +116,216 @@ await page.addInitScript(() => {
       },
     },
   };
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");   // reveal the purchase rails; grants nothing
 });
 
 // ── native subscribe: Apple paywall only, all required furniture ──
+// ONE PLAN SINCE 5 OCT 2026 (Travis: "get rid of the annual option and update
+// the copy so that it says three days free, then $9.99 a month"): the Apple
+// card sells the monthly product alone. The card SHIPS EMPTY: every figure,
+// free day and sentence on it is what Sona.planWords says for the answer
+// Sona.storePlan got from the store, so nothing typed in the page can promise
+// what the store did not. Each store state, every entry and every screen size
+// is played in pricescreentest; this holds the rules this suite has always
+// held (no promise the store did not make, the wrong product sells nothing,
+// both product ids still restore) against the new card.
+//
+// What a parent can read, by what is PAINTED (never the hidden attribute the
+// page sets), with no-break spaces read as spaces.
+const CARD = () => {
+  const g = (id) => document.getElementById(id);
+  const seen = (el) => { if (!el) return false; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0; };
+  const text = (id) => (seen(g(id)) ? g(id).innerText.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim() : "");
+  return {
+    iap: g("iapCard").style.display, state: g("iapCard").getAttribute("data-state"),
+    pick: g("pickCard").style.display, app: g("appCard").style.display, founding: getComputedStyle(g("foundingCard")).display,
+    title: text("iapTitle"), tag: text("iapTag"), price: text("iapAmt"), name: text("iapName"), under: text("iapLine"), check: text("iapCheck"), what: text("iapWhat"), note: text("iapNote"), none: text("iapNone"),
+    rows: seen(g("iapTL")) ? [...g("iapTL").children].map((li) => [li.querySelector("b").textContent, li.querySelector("p").textContent.replace(/\u00a0/g, " ")]) : [],
+    noteFirst: seen(g("iapNote")) && g("iapNote").getBoundingClientRect().bottom <= g("iapBuy").getBoundingClientRect().top && g("iapNote").getBoundingClientRect().top >= g("iapPlan").getBoundingClientRect().bottom,
+    button: text("iapBuy"), act: g("iapBuy").getAttribute("data-act"), disabled: g("iapBuy").disabled,
+    buttons: [...document.querySelectorAll("#iapCard button.go")].filter(seen).length,
+    radios: document.querySelectorAll('#iapCard [role="radio"], #iapCard [role="radiogroup"]').length,
+    paintedRadios: [...document.querySelectorAll('[role="radio"]')].filter(seen).length,
+    old: ["iapPlans", "iapPlanMo", "iapMath", "iapMathMo", "iapSave", "iapSub", "trialIntro", "tiFree", "tiDate"].filter((id) => !!g(id)),
+    msg: text("iapMsg"), line: g("planLine").textContent.replace(/\u00a0/g, " "),
+    seen: seen(g("iapCard")) ? g("iapCard").innerText.replace(/\u00a0/g, " ") : "",   // what a parent reads: nothing hidden
+    body: g("iapCard").textContent, page: document.body.innerText,
+    restore: seen(g("iapRestore")), shown: seen(g("iapCard")),
+    n: window.__iap.purchases, bought: window.__iap.bought, asked: window.__iap.asked, ev: window.__ev || [],
+    sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"),
+  };
+};
+// the same card, in Sona.planWords's own words for what the store answered
+const WORDS = () => Sona.storePlan().then((plan) => Sona.planWords(plan, { freeVersion: Sona.freeVersion() }));
+const sameWords = (c, w) => c.title === w.title && c.tag === w.tag && c.price === w.amount && c.name === w.name && c.under === w.sub && c.check === w.check.replace(/\u00a0/g, " ") && c.note === w.note.replace(/\u00a0/g, " ") &&
+  c.button === w.button && c.act === w.act && JSON.stringify(c.rows) === JSON.stringify(w.rows.map((r) => [r.when, r.text.replace(/\u00a0/g, " ")])) &&
+  c.none === (w.none ? w.none.title + " " + w.none.text : "");
+
 await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
-let t = await page.evaluate(() => ({
-  iap: document.getElementById("iapCard").style.display,
-  pick: document.getElementById("pickCard").style.display,
-  founding: getComputedStyle(document.getElementById("foundingCard")).display,
-  price: document.getElementById("iapPrice").textContent,
-  body: document.getElementById("iapCard").textContent,
-  restore: !!document.getElementById("iapRestore"),
-}));
+let t = await page.evaluate(CARD);
+let w = await page.evaluate(WORDS);
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("the live App Store price is painted onto the card", /\$59\.99/.test(t.price), String(t.price));
-ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
-  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/.test(t.body));
+ok("…nor the 'it's in the iPhone app' card, which is for browsers: this IS the app", t.app === "none", String(t.app));
+{
+  // THE CARD SHIPS WITH NO FIGURE, NO DAY COUNT AND NO "FREE". Read from the
+  // file, before any script has run: the markup between the two cards, with
+  // comments, the drawn icons and every tag (attributes included) taken out,
+  // is the text a parent would read if the store never answered.
+  const raw = readFileSync(ROOT + "/subscribe.html", "utf8");
+  const slice = raw.slice(raw.indexOf('id="iapCard"'), raw.indexOf('id="pickCard"'));
+  const typed = slice.replace(/<!--[\s\S]*?-->/g, " ").replace(/<svg[\s\S]*?<\/svg>/gi, " ").replace(/<[^>]*>/g, " ");
+  ok("the card ships with no figure, no day count and no 'free' a parent could read",
+    slice.length > 400 && !/\$|\d/.test(typed) && !/free|\bdays?\b/i.test(typed), (typed.match(/[^\n]*(\$|\d|free|\bdays?\b)[^\n]*/i) || [""])[0].trim());
+  ok("…its price is an empty span the store's answer is painted into", /<span class="oneplan-price" id="iapPrice"><\/span>/.test(raw));
+}
+ok("one plan: no radios in the card, none painted anywhere, and the old boxes and the two intro screens are gone from the page",
+  t.radios === 0 && t.paintedRadios === 0 && t.old.length === 0, JSON.stringify([t.radios, t.paintedRadios, t.old]));
+ok("one buy button", t.buttons === 1, String(t.buttons));
+ok("the card says what Sona.planWords says for the store's answer, field by field", t.state === w.state && sameWords(t, w), JSON.stringify({ card: [t.title, t.tag, t.price, t.what, t.rows, t.note, t.button], words: w }));
+ok("the store's price is painted with its period on the plan's row, the free days under its name", t.price === "$9.99/mo" && t.name === "Monthly" && t.under === "3-day free trial", JSON.stringify([t.name, t.under, t.price]));
 // Apple requires the price, period and cancellation terms on the paywall itself
-ok("yearly offer: price, trial and cancel terms all stated",
-  /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
-// Monthly was retired 18 Sep 2026. Apple's paywall must not show a product a
-// tap cannot buy, and the retirement must not quietly drag the yearly price
-// down with it — so this pins the ABSENCE of the tier and the survival of the
-// one that is left.
-ok("no retired monthly tier on the Apple paywall",
-  !/\$9\.99/.test(t.body) && !/Subscribe monthly/i.test(t.body), t.body.slice(0, 140));
+ok("required furniture: Restore + Terms of Use + Privacy + renewal terms",
+  t.restore && /Terms of Use/.test(t.seen) && /Privacy/.test(t.seen) && /Subscription auto-renews/.test(t.seen) && /\$9\.99 a month\. Cancel anytime\./.test(t.seen), t.seen.slice(0, 400));
+{
+  // the day the first charge falls is computed in the page, as a parent's
+  // phone would write it. Never a typed date.
+  const day = await page.evaluate(() => new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
+  ok("free days: no dated rows and no date at all (Travis, 6 Oct 2026), one check line, the button, all from the store",
+    t.state === "free" && t.rows.length === 0 && t.seen.indexOf(day) === -1 && t.check === "No payment today · Subscription auto-renews" && t.button === "Start practicing!", JSON.stringify([t.check, t.rows, t.button, day]));
+}
+ok("…Apple said this buyer gets them, so the small print is one plain line under the button, and no 'new subscribers' note is on the card",
+  t.note === "3 days free, then $9.99 a month. Cancel anytime." && !t.noteFirst && !/new subscribers/i.test(t.seen), JSON.stringify([t.note, t.noteFirst]));
+ok("…and nothing on the card is about a year", !/a year|\/yr|yearly|once a year|59\.99/i.test(t.seen), t.seen.slice(0, 300));
+ok("nothing on the price screen says email, remind or notify: Sona sends no reminder, so it promises none",
+  !/e-?mail|remind|notif/i.test(t.page), (t.page.match(/[^\n]*(e-?mail|remind|notif)[^\n]*/i) || [""])[0]);
+ok("the header line says the same plan", t.line === "Today: the free version. " + w.header && /Sona Premium: 3 days free, then \$9\.99 a month\./.test(t.line), t.line);
+ok("no dollar saving and no was-price on the Apple card — the store owns those figures",
+  !/119\.88|59\.89|save \$|half/i.test(t.seen), t.seen.slice(0, 200));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 // THE PLAN IS SONA PREMIUM (24 Sep 2026). With a free version, "Sona Yearly"
 // and "only if you keep Sona" read as buying Sona itself — which nobody has
 // to. The card names what it sells, the same name the Premium page uses.
-ok("the Apple card names the plan Sona Premium, never a bare 'Sona Yearly'",
-  /Sona Premium — /.test(t.body) && !/Sona Yearly/.test(t.body) && !/keep Sona(?! Premium)/.test(t.body), t.body.slice(0, 200));
+ok("the Apple card names the plan Sona Premium, never a bare 'Sona Yearly' or 'Sona Monthly'",
+  /Sona Premium/.test(t.seen) && !/Sona Yearly|Sona Monthly/.test(t.body) && !/keep Sona(?! Premium)/.test(t.body), t.body.slice(0, 200));
 
 // ── purchase → entitlement unlock → sub cached ──
 await page.evaluate(() => document.getElementById("iapBuy").click());
 await page.waitForTimeout(700);
-t = await page.evaluate(() => ({
-  n: window.__iap.purchases,
-  sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"),
-  card: document.getElementById("iapCard").style.display,
-}));
+t = await page.evaluate(CARD);
 ok("purchase drives Apple's sheet once", t.n === 1);
+ok("…on the MONTHLY product, the one plan offered", JSON.stringify(t.bought) === '["com.speaksona.app.monthly"]', JSON.stringify(t.bought));
+ok("…with the product already in hand: the store was asked for it once, and for the monthly product alone",
+  JSON.stringify(t.asked) === '[["com.speaksona.app.monthly"]]', JSON.stringify(t.asked));
 ok("entitlement unlocks the app (source: apple)", t.sub.active === true && t.sub.source === "apple");
-ok("paywall dismisses on success", t.card === "none");
+ok("the card says so, in one line, where the price was: the price, the button and Restore leave the screen",
+  t.state === "done" && t.msg === "Sona Premium is on. Welcome to Sona!" && !t.price && !t.button && t.rows.length === 0 && !t.restore, JSON.stringify([t.state, t.msg, t.price, t.button]));
+await page.waitForURL(/\/today\.html$/, { timeout: 5000 }).catch(() => {});
+ok("…and then the paywall is left behind: Home", /\/today\.html$/.test(page.url()), page.url());
 
-// The monthly BUTTON is gone, but the monthly PRODUCT ID is not: RevenueCat
-// needs it to recognise someone who bought monthly before it was retired.
-// Dropping it from sona.js would strand a paying subscriber behind a paywall.
+// BOTH PRODUCT IDS STAY IN sona.js: RevenueCat needs each to recognise
+// someone who bought it, whenever they bought it, on a restore or a
+// reinstall. Only the plan screen stopped OFFERING the yearly one.
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("the monthly product id survives for RESTORE, though nothing sells it",
+  ok("the monthly product id is in sona.js, for purchase and for RESTORE",
     /monthly: "com\.speaksona\.app\.monthly"/.test(sona),
     "an existing monthly subscriber must still be recognised on a reinstall");
-  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
-  ok("…and no surface offers it any more",
-    !/iapBuyMo|buyMonth|planMonth|iapPlanMo/.test(sub),
-    "a button that buys a retired plan is worse than no button");
+  ok("…and so is the yearly one, off sale but still recognised",
+    /annual: "com\.speaksona\.app\.annual"/.test(sona),
+    "a family who bought the yearly plan must still be recognised on a reinstall");
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok("the Apple card asks the store through Sona.storePlan and buys through Sona.buyPlan, and never names the yearly product itself",
+    /Sona\.storePlan\(/.test(sub) && /Sona\.buyPlan\(/.test(sub) && !/Sona\.iapProduct\("annual"\)/.test(sub) && !/Sona\.iapPurchase\(/.test(sub));
+  ok("…its one safety net, for a storePlan that breaks, asks for the monthly product and nothing else",
+    (sub.match(/Sona\.iapProduct\(/g) || []).length === 1 && /Sona\.iapProduct\("monthly"\)/.test(sub));
+  ok("…and there is one buy button per rail", !/iapBuyMo|buyMonth/.test(sub));
+}
+
+// ── THE STORE DECIDES WHAT THE CARD SAYS (5 Oct 2026) ──
+// The free days and the price are the monthly product's own, and whether THIS
+// buyer still gets the free days is Apple's to say. A product with no free
+// days, or a buyer Apple calls not eligible, makes the card "charged today";
+// a store with no monthly product, or one that answers with the yearly
+// product, sells nothing and shows no figure.
+{
+  const FLAGS = ["__iapNoMonthly", "__iapMonthlyNoTrial", "__iapWrongProduct", "__iapNoGrant", "__iapElig"];
+  const fresh = async (flags = {}) => {
+    await page.evaluate(({ flags, FLAGS }) => {
+      localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0");
+      FLAGS.forEach((k) => localStorage.removeItem(k));
+      Object.keys(flags).forEach((k) => localStorage.setItem(k, flags[k]));
+    }, { flags, FLAGS });
+    await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+    // read what the page reports as bought, after analytics.js has loaded
+    await page.evaluate(() => { window.__ev = []; window.__iap.bought = []; const A = window.SonaAnalytics; if (A) { A.track = (e, p) => window.__ev.push([e, p]); } });
+  };
+  const look = () => page.evaluate(CARD);
+
+  await fresh();
+  let m = await look();
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
+  m = await look();
+  ok("Apple's sheet opens on the MONTHLY product, once",
+    JSON.stringify(m.bought) === '["com.speaksona.app.monthly"]', JSON.stringify(m.bought));
+  ok("…it unlocks the app", m.sub.active === true && m.sub.source === "apple" && m.state === "done", JSON.stringify(m.sub));
+  ok("…and the sale is reported as monthly, once, never as the yearly plan",
+    m.ev.filter((e) => e[0] === "purchase completed" && e[1] && e[1].plan === "monthly" && e[1].source === "apple").length === 1 && !m.ev.some((e) => e[0] === "purchase completed" && e[1] && e[1].plan === "annual"), JSON.stringify(m.ev));
+  await page.waitForURL(/\/today\.html$/, { timeout: 5000 }).catch(() => {});
+
+  await fresh({ __iapMonthlyNoTrial: "1" });
+  m = await look(); w = await page.evaluate(WORDS);
+  ok("a monthly product with NO free days in the store: the button names the store's price, charged monthly",
+    m.state === "paid" && m.button === "Subscribe — $9.99 a month" && m.title === "Get Sona Premium" && sameWords(m, w), JSON.stringify([m.state, m.button, m.title]));
+  ok("…the free-days tag and the dated rows leave the screen: nothing on the card says 'free'",
+    !m.tag && m.rows.length === 0 && !/free|nothing to pay|no charge today/i.test(m.seen), m.seen);
+  ok("…'charged today, then every month' is what is over the button, and the header line agrees",
+    m.price === "$9.99/mo" && m.under === "Charged today" && /^Charged to your Apple ID today, then every month\. Renews unless canceled in Settings → Subscriptions\.$/.test(m.note) && /Sona Premium: \$9\.99 a month, charged today\./.test(m.line), m.note + " | " + m.line);
+
+  // The product has free days, but Apple says THIS buyer has used the offer
+  // (a family that took the yearly plan's free days: one offer per group).
+  await fresh({ __iapElig: "1" });
+  m = await look();
+  ok("a buyer Apple calls not eligible for the free days is shown 'charged today', never days Apple's sheet would not give",
+    m.state === "paid" && m.button === "Subscribe — $9.99 a month" && !m.tag && m.rows.length === 0 && !/free/i.test(m.seen), m.seen);
+  // …and when Apple cannot say, the days are shown as the product reports
+  // them, but nothing is stated as plain fact
+  await fresh({ __iapElig: "0" });
+  m = await look();
+  ok("when Apple cannot say whether this buyer gets them, the free days are for 'new subscribers', and the card says what happens otherwise",
+    m.state === "free" && m.button === "Start practicing!" && /^Only new subscribers get 3 days free\. Otherwise Apple charges \$9\.99 today\. Apple shows your exact terms before you confirm\. Cancel anytime in Settings → Subscriptions\.$/.test(m.note) &&
+    m.rows.length === 0 && /new subscribers$/.test(m.under) && !/No payment today|Nothing to pay today/.test(m.seen), JSON.stringify([m.note, m.rows]));
+  ok("…that note sits directly under the row, above the button", m.noteFirst, JSON.stringify(m.rows));
+
+  await fresh({ __iapNoMonthly: "1" });
+  m = await look(); w = await page.evaluate(WORDS);
+  ok("a store with no monthly product: no price, no free days and no yearly figure, only that Premium can't be bought right now",
+    m.state === "none" && m.none === "Sona Premium can't be bought right now. Please try again in a little while." && sameWords(m, w) && !m.price && !/\$|\d|free|a year/i.test(m.seen), m.seen);
+  ok("…the one button offers to try again, and the header line states no plan either", m.button === "Try again" && m.act === "retry" && !/\$|\d/.test(m.line), JSON.stringify([m.button, m.line]));
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
+  m = await look();
+  ok("…and a tap buys nothing else in its place: it asks the store again",
+    m.bought.length === 0 && m.sub.active !== true && m.state === "none" && m.asked.length === 2, JSON.stringify([m.bought, m.state, m.asked]));
+
+  await fresh({ __iapWrongProduct: "1" });
+  m = await look();
+  ok("a store that answers 'monthly' with the yearly product: its $59.99 and its free days never reach the card",
+    m.state === "none" && !m.price && !/59\.99|a year|free|\$/i.test(m.seen) && !/59\.99|a year/i.test(m.line), JSON.stringify([m.state, m.seen]));
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(700);
+  m = await look();
+  ok("…and the yearly plan is never sold under monthly's name", m.bought.length === 0 && m.n === 0, JSON.stringify(m.bought));
+
+  // Apple took the order but the unlock never arrived. "Nothing was charged"
+  // would be a guess, and a wrong one sends a charged family to buy again.
+  await fresh({ __iapNoGrant: "1" });
+  await page.locator("#iapBuy").click(); await page.waitForTimeout(900);
+  m = await look();
+  ok("an order Apple took without the unlock arriving is never called 'nothing was charged'",
+    !/nothing was charged/i.test(m.msg) && /Restore Purchases/.test(m.msg) && m.shown && m.state === "free", m.msg);
+  ok("…the card stays as it was, its button live again, with Restore beside it", m.button === "Start practicing!" && !m.disabled && m.restore, JSON.stringify([m.button, m.disabled, m.restore]));
+  await page.evaluate((FLAGS) => FLAGS.forEach((k) => localStorage.removeItem(k)), FLAGS);
 }
 
 // ── restore path ──
@@ -134,6 +335,8 @@ await page.evaluate(() => document.getElementById("iapRestore").click());
 await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ n: window.__iap.restores, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), msg: document.getElementById("iapMsg").textContent }));
 ok("restore unlocks + confirms", t.n === 1 && t.sub.active === true && /Restored/.test(t.msg));
+// (the card then leaves for Home by itself; let it, so the next step's page is its own)
+await page.waitForURL(/\/today\.html$/, { timeout: 5000 }).catch(() => {});
 
 // ── web-purchase hand-off: paired Stripe sub in the shell = NO paywall ──
 await page.evaluate(() => { localStorage.setItem("__iapEntitled", "0"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })); });
@@ -144,11 +347,17 @@ t = await page.evaluate(() => ({
   line: document.getElementById("planLine").textContent,
 }));
 ok("web-bought sub pairs into the shell: no paywall anywhere", t.iap !== "block" && t.pick !== "block" && /Active/.test(t.line));
-// tripwires on the funnel's app half: code entry exists on onboarding's first
-// screen, and goHome routes subscribers straight home (never the paywall)
+// tripwires on the funnel's app half. Setup asks for no move-in code (Travis,
+// 2 Oct 2026: "take off moving from another phone enter your code"): a family
+// who paid on the website gets their plan in the app by Restore with their
+// email (Settings › Account), which is what the success page now tells them.
+// And goHome routes subscribers straight home (never the paywall).
 {
   const obSrc = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("onboarding offers device-code entry", /moveLink/.test(obSrc) && /Moving from another phone/.test(obSrc));
+  const okSrc = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
+  ok("setup has no move-in code box on any screen", !/moveLink|moveSheet|Moving from another phone|Enter your code/.test(obSrc));
+  ok("…and the success page sends a web buyer to Restore by email, never to a code setup no longer takes",
+    /Grown-ups<\/strong>, then <strong>Restore<\/strong>/.test(okSrc) && !/\/api\/pair/.test(okSrc));
   ok("onboarding goHome skips paywall for subscribers", /!\(Sona\.isSubscribed&&Sona\.isSubscribed\(\)\)/.test(obSrc));
 }
 
@@ -161,52 +370,62 @@ ok("today quiet-syncs the entitlement in the shell", t.active === true && t.sour
 // ── web (no bridge): Stripe picker untouched ──
 const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");
+  sessionStorage.setItem("sona.websalesui", "1");   // the website selling: see WEB_SALES_NOW
 });
 await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
-t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
+t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display,
+  // really on screen: the card is always in the file, and innerText of a hidden
+  // card still returns its words, so the text checks below prove nothing alone
+  seen: document.getElementById("pickCard").getBoundingClientRect().height > 0 && document.getElementById("buyLife").getBoundingClientRect().height > 0,
+  app: document.getElementById("appCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
-t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
-// ONE plan on the web card too. The two figures that left with monthly
-// ($119.88, "save $59.89") were 12 x $9.99 and cannot be stated once nobody
-// can buy the plan behind them — a strike-through against an unbuyable price
-// is a fabricated anchor. The per-month reading survives on its own.
-ok("web picker states the one plan honestly",
+ok("…on screen with its button, and not the 'it's in the iPhone app' card", t.seen && t.app === "none", JSON.stringify(t));
+t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText, month: document.getElementById("planMonth").innerText }));
+// TWO ways to pay on the web card too (1 Oct 2026). The two figures that left
+// with monthly on 18 Sep ($119.88, "save $59.89") did NOT come back with it:
+// the saving is only true while the charter price lasts, so it would turn
+// false at family fifty-one. The per-month reading stands on its own.
+ok("web picker states the yearly plan honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
-ok("…with no retired monthly tier and no invented was-price",
-  !/\$9\.99/.test(t.body) && !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
+// read the monthly BOX: the yearly side of the card says "No charge today",
+// which would satisfy a "charge today" check on the whole card
+ok("…and the monthly one, in its own box: $9.99, charged today",
+  /\$9\.99\/mo/.test(t.month) && /^[^\n]*\n\s*Charged today/i.test(t.month) && !/free/i.test(t.month), JSON.stringify(t.month));
+ok("…with no was-price and no 'you save' figure",
+  !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
   t.body.slice(0, 200));
 ok("…and the honest per-month reading in its place",
   /under \$5 a month/i.test(t.body), t.body.slice(0, 200));
 
-// ── the dated trial timeline, and the promises inside it ──
-// A 3-row dated timeline is the strongest defuser of "I'll forget and get
-// billed" (Blinkist/Monarch both lead with it). The rows are only worth having
-// if every one of them is true, so this pins the SHAPE and the two claims that
-// could go false: a reminder we cannot send, and a price that is not ours.
+// ── the day they are billed, and the promise inside it ──
+// One line under the button (Travis, 2 Oct 2026: "just briefly say like what
+// day they'll be billed on the bottom"). It replaced a dated three-row
+// timeline. The line is only worth having if every word of it is true, so
+// this pins the date, the price the web card charges after the free days,
+// and the two claims that could go false: a reminder we cannot send, and a
+// charge today.
 {
   const tl = await web.evaluate(() => {
     const el = document.getElementById("webTL");
     return {
-      rows: el ? [...el.querySelectorAll(".tli")].map((r) => r.textContent.replace(/\s+/g, " ").trim()) : [],
+      line: el ? el.textContent.replace(/\s+/g, " ").trim() : "",
+      rows: el ? el.querySelectorAll(".tli").length : -1,
       prose: (document.getElementById("trialMath") || {}).style?.display,
     };
   });
-  ok("the trial is a dated 3-step timeline, not a sentence", tl.rows.length === 3, JSON.stringify(tl.rows));
-  const all = tl.rows.join(" ");
-  const dated = (tl.rows[0] || "").match(/[A-Z][a-z]+ \d{1,2}/) && (tl.rows[2] || "").match(/[A-Z][a-z]+ \d{1,2}/);
-  ok("…with real dates on the first and last rows", !!dated, JSON.stringify(tl.rows));
-  ok("…saying nothing is charged today, and naming what starts on day 3",
-    /nothing is charged today/i.test(all) && /\$59\.99/.test(all), all.slice(0, 200));
+  ok("the billing day is one line, not a timeline", tl.rows === 0 && !!tl.line, JSON.stringify(tl));
+  ok("…naming the day the free days end and the yearly price after them",
+    /^Free until [A-Z][a-z]+ \d{1,2}, then \$59\.99 a year\. Cancel anytime\.$/.test(tl.line), tl.line);
   ok("…and the prose line steps aside so the page says it once", tl.prose === "none", String(tl.prose));
   // THE LOAD-BEARING ONE. There is no trial webhook and no trial mailer in
-  // this repo: a "we'll email you before it starts" row would be a promise the
-  // code cannot keep, on the screen that takes the money.
-  ok("the timeline never promises a reminder Sona cannot send",
-    !/(email|e-mail|text|notify|remind)/i.test(all),
-    "no Stripe trial_will_end handler and no trial mailer exists — ship one FIRST, then say it: " + all.slice(0, 160));
+  // this repo: a "we'll email you before it starts" line would be a promise
+  // the code cannot keep, on the screen that takes the money.
+  ok("the billing line never promises a reminder Sona cannot send",
+    !/(email|e-mail|text|notify|remind)/i.test(tl.line),
+    "no Stripe trial_will_end handler and no trial mailer exists — ship one FIRST, then say it: " + tl.line.slice(0, 160));
 }
 await web.close();
 
@@ -215,7 +434,7 @@ await web.close();
 // covered (sona.caseplan.v1), or a free-era sweep grandfathered them
 // (earlyAdopter). The plan screen returns early for them on iOS and hides the
 // picker on the web — and nothing pinned it, so an edit that dropped either
-// check would show a covered family Apple's "Start 3 days free" sheet for
+// check would show a covered family Apple's "Start practicing!" sheet for
 // games they already have, with every suite green.
 {
   const noSale = { configure: async () => {}, getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$59.99" }] }),
@@ -225,40 +444,47 @@ await web.close();
     ["covered caseload", { "sona.slpok": "RACHEL-K4", "sona.caseplan.v1": JSON.stringify({ active: true, code: "RACHEL-K4", checked: Date.now() }) }, {}, /included through your child's speech therapist/],
     ["grandfathered", {}, { earlyAdopter: true }, /yours to keep/],
   ];
-  for (const native of [true, false]) for (const [who, local, prof, why] of families) {
+  // Played with the web rails forced on AND off, on both rails (1 Oct 2026):
+  // the "it's in the iPhone app" card is for a browser on the free version, so
+  // a family who already has every game must not meet it either way, and the
+  // app must not meet it at all.
+  for (const native of [true, false]) for (const sells of ["1", "0"]) for (const [who, local, prof, why] of families) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    await ctx.addInitScript(({ native, local, prof, fns }) => {
+    await ctx.addInitScript(({ native, sells, local, prof, fns }) => {
       if (native) {
         const P = {}; Object.keys(fns).forEach((k) => { P[k] = new Function("return (" + fns[k] + ")")(); });
         window.Capacitor = { isNativePlatform: () => true, Plugins: { Purchases: P } };
       }
       if (!sessionStorage.getItem("iap.nosale.seed")) {
         sessionStorage.setItem("iap.nosale.seed", "1");
-        ["", "2", "3", "4"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+        ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
         localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Milo", focusSounds: ["R"], onboarded: true }, prof)));
         Object.keys(local).forEach((k) => localStorage.setItem(k, local[k]));
         sessionStorage.setItem("sona.gate.v1", String(Date.now()));
         sessionStorage.setItem("sona.paidui", "1");
+        sessionStorage.setItem("sona.websalesui", sells);
       }
-    }, { native, local, prof, fns: Object.fromEntries(Object.entries(noSale).map(([k, f]) => [k, f.toString()])) });
+    }, { native, sells, local, prof, fns: Object.fromEntries(Object.entries(noSale).map(([k, f]) => [k, f.toString()])) });
     const pg = await ctx.newPage();
     for (const path of ["/subscribe.html", "/subscribe.html?first=1"]) {
       await pg.goto("http://localhost:8147" + path); await pg.waitForTimeout(800);
       const st = await pg.evaluate(() => ({
         native: Sona.isNativeApp(), premium: Sona.premium(),
         iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display,
+        app: document.getElementById("appCard").style.display,
         free: document.getElementById("freeTierCard").style.display, decline: document.getElementById("declineRow").style.display,
         line: document.getElementById("planLine").textContent,
       }));
-      const rail = (native ? "iOS" : "web") + " " + path + ": ";
+      const rail = (native ? "iOS" : "web") + (sells === "0" ? ", web sales off, " : " ") + path + ": ";
       ok(rail + "a " + who + " family with no purchase sees no Apple sheet and no plan picker",
         st.native === native && st.premium === true && st.iap !== "block" && st.pick !== "block" && st.free !== "block" && st.decline !== "block", JSON.stringify(st));
+      ok(rail + "…and is not sent to the App Store for games they already have", st.app !== "block", JSON.stringify(st));
       ok(rail + "…and is told they have Sona Premium, and why", /Sona Premium ✓/.test(st.line) && why.test(st.line), st.line);
     }
     if (!native) {
       await pg.goto("http://localhost:8147/settings.html"); await pg.waitForTimeout(800);
       const set = await pg.evaluate(() => ({ acct: document.getElementById("acct").textContent, restore: getComputedStyle(document.getElementById("restoreBox")).display }));
-      ok("Settings: a " + who + " family reads 'Sona Premium ✓' and where it came from, with no restore box",
+      ok("Settings" + (sells === "0" ? ", web sales off" : "") + ": a " + who + " family reads 'Sona Premium ✓' and where it came from, with no restore box",
         /Sona Premium ✓/.test(set.acct) && why.test(set.acct) && set.restore === "none", JSON.stringify(set));
     }
     await ctx.close();
@@ -268,7 +494,7 @@ await web.close();
   await ctx.addInitScript(() => {
     if (!sessionStorage.getItem("iap.free.seed")) {
       sessionStorage.setItem("iap.free.seed", "1");
-      ["", "2", "3", "4"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+      ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
       localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
       sessionStorage.setItem("sona.gate.v1", String(Date.now()));
       sessionStorage.setItem("sona.paidui", "1");
@@ -279,15 +505,29 @@ await web.close();
   const acct = await pg.evaluate(() => document.getElementById("acct").textContent);
   ok("Settings names a family's free version as 'daily practice and free games'",
     /free version — daily practice and free games/.test(acct) && /See Premium/.test(acct), acct);
+  // A no-card trial an older device was promised opens every game until it
+  // runs out, so Settings names it and its days left, then names its end. That
+  // was the Grown-ups pop-up's plan note on Home until 30 Sep 2026.
+  await pg.evaluate(() => localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 86400000, days: 3 })));
+  await pg.reload(); await pg.waitForTimeout(800);
+  const trialOn = await pg.evaluate(() => document.getElementById("acct").textContent);
+  ok("Settings names a running trial and its days left",
+    /free trial — 2 days left/.test(trialOn) && /See plans/.test(trialOn) && !/free version/.test(trialOn), trialOn);
+  await pg.evaluate(() => localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 })));
+  await pg.reload(); await pg.waitForTimeout(800);
+  const trialOff = await pg.evaluate(() => document.getElementById("acct").textContent);
+  ok("…and says when it has ended, beside the free version",
+    /Your free trial has ended\./.test(trialOff) && /free version — daily practice and free games/.test(trialOff) && /See Premium/.test(trialOff), trialOff);
   await ctx.close();
 }
 
 // ── the credential on the paywall says only what is verified ──
-// Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
-// true and is used. She is a Clinical Fellow — master's complete, supervised
-// fellowship year in progress — and does NOT hold ASHA's CCC. Since 23 Sep 2026
-// the copy says "licensed" without naming the fellowship (Travis's call), so
-// that is not pinned; what is pinned is that nothing claims MORE. The CCC is the
+// Rachel holds an Idaho CF licence (confirmed 1 Sep 2026). She is a Clinical
+// Fellow — master's complete, supervised fellowship year in progress — and does
+// NOT hold ASHA's CCC. Since 29 Sep 2026 (Travis) her name carries exactly that,
+// "Rachel, MS, CF-SLP", and since 1 Oct 2026 the line says it in plain words:
+// "a pediatric speech-language pathologist in her clinical fellowship". What is pinned
+// is that the credential is there and that nothing claims MORE. The CCC is the
 // claim to get right: it is a trademarked certification, it is checkable, and
 // "board-certified (CCC-SLP)" shipped once on the page that takes money.
 {
@@ -296,12 +536,17 @@ await web.close();
   ok("no CCC or board-certified claim anywhere on the paywall",
     !/\bCCC\b|board.certified|ASHA.certified/i.test(sub),
     "she does not hold ASHA's CCC — this shipped once and must never return");
-  ok("the verified licence claim is the one that is made",
-    /licen[sc]ed pediatric speech-language pathologist/i.test(sub),
-    "an Idaho CF licence makes this true — under-claiming is not a virtue when it is checkable");
+  ok("the settled line is the one that is made",
+    /a pediatric speech-language pathologist in her clinical fellowship/.test(sub),
+    "Travis, 1 Oct 2026: Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship");
+  // 29 Sep 2026: Travis reversed "leave the fellowship unsaid" — every Rachel byline on the paywall now reads "Rachel, MS, CF-SLP".
+  ok("…her name carries her credentials, MS, CF-SLP, on every Rachel byline",
+    (sub.match(/Built with Rachel/g) || []).length > 0 &&
+    (sub.match(/Built with Rachel/g) || []).length === (sub.match(/Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/g) || []).length,
+    "she is in her fellowship year — CF-SLP says so, beside the plain words");
   ok("…and nothing dresses it up as more than a licence",
     !/fully licen[sc]ed|\bcertified\b/i.test(sub),
-    "leaving the fellowship unsaid is a choice; implying she is past it is a false claim");
+    "implying she is past the fellowship is a false claim");
 }
 
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
@@ -373,19 +618,19 @@ await gatePg.addInitScript(() => {
   // seed-once: init scripts re-run on every navigation and would overwrite the
   // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem("sona.micok", "1");
   }
 });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
 ok("expired trial keeps free Slice practice available", /charge\.html\?game=arcade-slice\.html$/.test(gatePg.url()), gatePg.url());
-await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
+await gatePg.goto("http://localhost:8147/charge.html?game=arcade-stack.html"); await gatePg.waitForTimeout(700);
 ok("expired trial blocks Premium practice before its earned-game flow",
-  /today\.html\?locked=tiles$/.test(gatePg.url()), gatePg.url());
-await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
-ok("a founding family with the same expired trial still opens Premium practice", /charge\.html\?game=arcade-tiles\.html$/.test(gatePg.url()), gatePg.url());
+  /today\.html\?locked=stack$/.test(gatePg.url()), gatePg.url());
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.goto("http://localhost:8147/charge.html?game=arcade-stack.html"); await gatePg.waitForTimeout(700);
+ok("a founding family with the same expired trial still opens Premium practice", /charge\.html\?game=arcade-stack\.html$/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
@@ -444,10 +689,10 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const freshGate = await pgB.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
-    return { premium: Sona.gated(), tiles: Sona.gated("tiles"), practice: Sona.gated("practice") };
+    return { premium: Sona.gated(), stack: Sona.gated("stack"), practice: Sona.gated("practice") };
   });
   ok("…and would find Premium locked, but never practice, on the day pricing returns",
-    freshGate.premium === true && freshGate.tiles === true && freshGate.practice === false, JSON.stringify(freshGate));
+    freshGate.premium === true && freshGate.stack === true && freshGate.practice === false, JSON.stringify(freshGate));
   await ctxB.close();
 }
 
@@ -552,7 +797,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     // reason.
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({
       childName: "Nia", childAge: "6", focusSounds: ["S"], onboarded: true }));
   });
@@ -582,7 +827,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera4.v1", "done");   // isolate era three (see above)
+    localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");   // isolate era three (see above)
     localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "5", focusSounds: ["S"], onboarded: true }));
@@ -651,7 +896,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 60 * 86400000, days: 3 }));
     const out = { stamp4: localStorage.getItem("sona.freeera4.v1"), early: Sona.getProfile().earlyAdopter, era4: Sona.getProfile().freeEra4,
-      premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed, story: Sona.gated("story") };
+      premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed, story: Sona.gated("story") };
     sessionStorage.removeItem("sona.paidui");
     return out;
   });
@@ -659,20 +904,20 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   // (a) onboarded during era four: carries every earlier stamp, no era-four one
   let { c, p } = await load(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Remy", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   let r = await ask(p);
   ok("an era-four family is swept in by the era-four sweep",
     r.stamp4 === "done" && r.early === true && r.era4 === true, JSON.stringify(r));
   ok("…and holds Premium for good — available Premium games open, dead trial and all",
-    r.premium === true && r.tiles === true && r.story === false, JSON.stringify(r));
+    r.premium === true && r.stack === true && r.story === false, JSON.stringify(r));
   await c.close();
 
   // (b) household-wide, like every era before it
   ({ c, p } = await load(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "4", focusSounds: ["S"] }));
@@ -688,7 +933,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   // (c) redeemed a clinician's link before this build, setup not finished
   ({ c, p } = await load(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.slpok", "RACHEL-K4");        // what a pre-build redeem left behind
   }));
   r = await ask(p);
@@ -709,7 +954,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   // (c2) slpunlock alone is the same evidence
   ({ c, p } = await load(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.slpunlock", "1");
   }));
   r = await ask(p);
@@ -729,8 +974,105 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("a family arriving after the era-four sweep is not adopted by it — not by setup, not by a link",
     r.stamp4 === "done" && !r.early && r.premium === false, JSON.stringify(r));
   ok("…and meets Premium locked like anyone else, whenever pricing is on",
-    r.tiles === false && r.story === true, JSON.stringify(r));
+    r.stack === false && r.story === true, JSON.stringify(r));
   await c.close();
+}
+
+// ── THE FIFTH FREE ERA, KEPT — in the build that ends it ──────────────────
+// Sona went free again on 24 Sep 2026 and the paywall comes back with this
+// build (Travis, 30 Sep 2026: "we add the paywall today"). Every device
+// already onboarded on its first load of this build keeps Premium for good.
+// A clinician's link on its own is NOT this era's evidence, unlike era four's:
+// since 24 Sep a redemption is a ticket whose Premium is the clinician's
+// coverage, and that promise keeps itself. Everyone whose first load is this
+// build or later is stamped before they onboard, and pays.
+{
+  const load = async (seed) => {
+    const c = await browser.newContext(); const p = await c.newPage();
+    await p.goto("http://localhost:8147/today.html"); await p.waitForTimeout(300);
+    await p.evaluate(seed);
+    await p.reload(); await p.waitForTimeout(700);        // first load of THIS build
+    return { c, p };
+  };
+  const ask = (p) => p.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 60 * 86400000, days: 3 }));
+    const out = { stamp5: localStorage.getItem("sona.freeera5.v1"), early: Sona.getProfile().earlyAdopter, era5: Sona.getProfile().freeEra5,
+      premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed, story: Sona.gated("story"), books: Sona.bookLocked("Sid the Seagull") };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+  // what a device that first loaded during era five carries: every earlier stamp
+  const earlier = () => { localStorage.clear(); localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"].forEach((k) => localStorage.setItem(k, "done")); };
+
+  // (a) onboarded during era five
+  let { c, p } = await load(`(${earlier})(); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ivy", childAge: "6", focusSounds: ["S"], onboarded: true }));`);
+  let r = await ask(p);
+  ok("an era-five family is swept in by the era-five sweep, not by an earlier one",
+    r.stamp5 === "done" && r.early === true && r.era5 === true, JSON.stringify(r));
+  ok("…and holds Premium for good: every game and every book, dead trial and all",
+    r.premium === true && r.stack === true && r.story === false && r.books === false, JSON.stringify(r));
+  await c.close();
+
+  // (b) household-wide: a sibling with no finished setup is covered through
+  // the child who had one, and so is the next child added
+  ({ c, p } = await load(`(${earlier})();
+    localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "4", focusSounds: ["S"] }));`));
+  const sibs = await p.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    const a = Sona.premium();
+    Sona.switchKid("k2");
+    const out = { a, b: Sona.premium() };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+  ok("era five is the HOUSEHOLD's: the sibling has Premium too", sibs.a === true && sibs.b === true, JSON.stringify(sibs));
+  await c.close();
+
+  // (c) a link redeemed during era five, setup never finished: not this cohort
+  ({ c, p } = await load(`(${earlier})(); localStorage.setItem("sona.slpok", "RACHEL-K4");`));
+  r = await ask(p);
+  ok("a clinician's link alone is not era five's evidence: its Premium is the clinician's coverage",
+    r.stamp5 === "done" && !r.early && r.premium === false, JSON.stringify(r));
+  await c.close();
+
+  // (d) a family whose first load is THIS build: stamped before they onboard
+  ({ c, p } = await load(() => localStorage.clear()));
+  await p.evaluate(() => Sona.saveProfile({ childName: "Newt", childAge: "7", focusSounds: ["R"], onboarded: true }));
+  await p.reload(); await p.waitForTimeout(600);        // a later load must not re-sweep
+  r = await ask(p);
+  ok("a family arriving after the era-five sweep is not adopted by it",
+    r.stamp5 === "done" && !r.early && r.premium === false, JSON.stringify(r));
+  ok("…and meets Premium games and books locked — practice never — whenever pricing is on",
+    r.stack === false && r.story === true && r.books === true, JSON.stringify(r));
+  // the demonstration window (three days from the first practice) is not a
+  // Premium book: the shelf would otherwise lock under a new family's eyes
+  const demo = await p.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 3600000, done: 0 }));
+    localStorage.removeItem(Sona.kkey("sona.trial.v1"));
+    const out = { inDemo: !Sona.demoDone(), sid: Sona.bookLocked("Sid the Seagull"), rory: Sona.bookLocked("Rory and the Rainbow"), stack: Sona.gameAccess("stack").allowed, practice: Sona.gated("practice") };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+  ok("…and a Premium book stays locked inside the first three days too, the way a Premium game does, while the free book reads",
+    demo.inDemo && demo.sid === true && demo.rory === false && demo.stack === false && demo.practice === false, JSON.stringify(demo));
+  const kept = await p.evaluate(() => { sessionStorage.setItem("sona.paidui", "1"); const out = { practice: Sona.gated("practice"), slice: Sona.gameAccess("slice").allowed,
+    tiles: Sona.gameAccess("tiles").allowed, feed: Sona.gameAccess("feed").allowed, rory: !Sona.bookLocked("Rory and the Rainbow"), sid: !Sona.bookLocked("Sid the Seagull") };
+    sessionStorage.removeItem("sona.paidui"); return out; });
+  ok("…while the free version stays theirs: practice, Fruit Slice, Piano Tiles, Feed Echo and Rory and the Rainbow",
+    kept.practice === false && kept.slice && kept.tiles && kept.feed && kept.rory && !kept.sid, JSON.stringify(kept));
+  await c.close();
+
+  // the sweep's stamp never travels in a backup, and neither does its mark
+  const src = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("the era-five stamp is on NO_IMPORT and its mark on ERA_MARKS",
+    /const NO_IMPORT = \[[^\]]*"sona\.freeera5\.v1"/.test(src) && /const ERA_MARKS = \[[^\]]*"freeEra5"/.test(src));
+  ok("…and the sweep runs at load, after era four's",
+    /_grandfatherFreeEra4\(\); \} catch \(e\) \{\}[\s\S]{0,400}_grandfatherFreeEra5\(\); \} catch \(e\) \{\}/.test(src));
 }
 
 // ── THERE IS NO LIFETIME PRODUCT, AND THERE MUST NOT BE ONE ───────────
@@ -790,7 +1132,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       restorePurchases: async () => info(),
       getCustomerInfo: async () => { window.__iap.checks = (window.__iap.checks || 0) + 1; if (localStorage.getItem("__iapFail") === "1") throw new Error("offline"); return info(); },
     } } };
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   });
@@ -888,13 +1230,13 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
   await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Cal", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, volume: 0 }));
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
   });
   const state = () => pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
-    const out = { covered: Sona.caseCovered(), premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed,
+    const out = { covered: Sona.caseCovered(), premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed,
       plan: JSON.parse(localStorage.getItem("sona.caseplan.v1") || "null"), sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "null"),
       early: Sona.getProfile().earlyAdopter };
     sessionStorage.removeItem("sona.paidui");
@@ -913,13 +1255,13 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.slp", "RACHEL-K4"); localStorage.setItem("sona.slpticket", "TICKET-1");
   });
   let s0 = await state();
-  ok("a verified credential alone opens no Premium game", s0.premium === false && s0.tiles === false, JSON.stringify(s0));
+  ok("a verified credential alone opens no Premium game", s0.premium === false && s0.stack === false, JSON.stringify(s0));
 
   cov.calls = 0; cov.bodies = []; cov.reply = { ok: true, covered: true };
   r = await pg.evaluate(() => Sona.caseRefresh(true));
   let s1 = await state();
   ok("a covered caseload grants Premium: available Premium games open",
-    r === true && s1.covered && s1.premium && s1.tiles, JSON.stringify(s1));
+    r === true && s1.covered && s1.premium && s1.stack, JSON.stringify(s1));
   ok("…asking with the verified code and the ticket, and nothing about the child",
     cov.calls === 1 && JSON.stringify(Object.keys(cov.bodies[0] || {}).sort()) === '["code","ticket"]' &&
     cov.bodies[0].code === "RACHEL-K4" && cov.bodies[0].ticket === "TICKET-1", JSON.stringify(cov.bodies));
@@ -1001,10 +1343,11 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
   await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     sessionStorage.setItem("sona.paidui", "1");
+    sessionStorage.setItem("sona.websalesui", "1");   // the decline and the naming below belong to the web card
   });
 
   // a parent arriving with nothing recorded must see no recap at all
@@ -1057,9 +1400,10 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     heading: document.querySelector("#pickCard h2").textContent, title: document.getElementById("webTitle").textContent,
     card: document.getElementById("pickCard").innerText, line: document.getElementById("planLine").textContent,
     decline: document.getElementById("declineLink").textContent,
+    seen: document.getElementById("buyLife").getBoundingClientRect().height > 0,
   }));
   ok("the first-run offer names the plan Sona Premium — heading, card and header line",
-    /Sona Premium/.test(named.heading) && /^Sona Premium — /.test(named.title) && /Sona Premium/.test(named.line) &&
+    named.seen && /Sona Premium/.test(named.heading) && /^Sona Premium — /.test(named.title) && /Sona Premium: 3 days free/.test(named.line) &&
     !/Sona Yearly/.test(named.card) && !/keep Sona(?! Premium)/.test(named.card), JSON.stringify(named));
   ok("…and its decline keeps the free version, which is what saying no means now",
     /free version/.test(named.decline), named.decline);
@@ -1094,7 +1438,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 
   // The replay's writes are exercised below with a positive detected burst
   // and an actual completed run. Ladder gating keeps its separate source pin.
-  ok("a replay banks no ladder advancement", /S\.recordRung && !DEMO_REPLAY/.test(chg));
+  ok("a replay banks no ladder advancement", /S\.rungWin && !DEMO_REPLAY/.test(chg));
   ok("…and the replay flag is read before demoFinish can change it",
     chg.indexOf("var DEMO_REPLAY") < chg.indexOf("S.demoFinish"),
     "decided at load, or the answer flips underneath the page");
@@ -1107,7 +1451,10 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // Finish the real final-game return and chest. The input boundary is already
 // verified elsewhere; these checks isolate entitlement and replay accounting.
 {
-  for (const mode of ["entitled", "paid", "replay"]) {
+  // "weboff" is "paid" in a browser whose website does not sell (1 Oct 2026):
+  // the same finished run, and the child is NOT sent to fetch a grown-up, for
+  // there is nothing on the other side of the gate to show them.
+  for (const mode of ["entitled", "paid", "weboff", "replay"]) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
     await ctx.route("**/*", route => route.request().url().startsWith("http://localhost:8147/") ? route.continue() : route.abort());
     await ctx.addInitScript(() => { if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("No microphone in entitlement test")); });
@@ -1116,9 +1463,11 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       await pg.goto("http://localhost:8147/today.html");
       await pg.evaluate(mode => {
         localStorage.clear(); sessionStorage.clear();
-        localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+        localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
         localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
-        if (mode === "paid" || mode === "entitled") sessionStorage.setItem("sona.paidui", "1");
+        if (mode === "paid" || mode === "entitled" || mode === "weboff") sessionStorage.setItem("sona.paidui", "1");
+        if (mode === "paid" || mode === "entitled") sessionStorage.setItem("sona.websalesui", "1");
+        if (mode === "weboff") sessionStorage.setItem("sona.websalesui", "0");
         if (mode === "entitled") localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "apple", since: Date.now() }));
         if (mode === "replay") localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));
         // The final arcade round is earned but has not returned yet.
@@ -1136,6 +1485,13 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       const handoff = await pg.evaluate(() => ({ eligible: Sona.planEligible(), label: document.getElementById("runDone").textContent, spent: localStorage.getItem("sona.planmoment.v1") }));
       if (mode !== "replay") ok(mode + ": the child fetches a grown-up only when a plan follows",
         handoff.eligible === (mode === "paid") && (handoff.eligible ? /Show a grown-up/.test(handoff.label) : handoff.label === "Done") && handoff.spent === null, JSON.stringify(handoff));
+      if (mode === "weboff") {
+        const words = await pg.evaluate(() => document.getElementById("runPractice").textContent);
+        await Promise.all([pg.waitForURL(/\/today\.html$/), pg.locator("#runDone").click()]);
+        ok("weboff: 'Done' goes Home, with no grown-ups gate and nothing spent",
+          !/show them/i.test(words) && new URL(pg.url()).pathname === "/today.html" && !/gate=1/.test(pg.url()) &&
+          await pg.evaluate(() => localStorage.getItem("sona.planmoment.v1")) === null, pg.url() + " | " + words);
+      }
       if (mode === "replay") {
         const afterFinish = await pg.evaluate(() => ({ progress: Sona.getProgress(), daily: Sona.dailyInfo(), stickers: Object.keys(Sona.stickersEarned()).length }));
         ok("a replay banks no day's score, session, coins or sticker", JSON.stringify(before.progress) === JSON.stringify(afterFinish.progress) && JSON.stringify(before.daily) === JSON.stringify(afterFinish.daily) && afterFinish.stickers === 0, JSON.stringify(afterFinish));
@@ -1163,7 +1519,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await seed(); await pg.reload(); await pg.waitForTimeout(500);
@@ -1225,7 +1581,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const pg = await ctx.newPage();
   const seed = () => pg.evaluate(() => {
     localStorage.clear(); sessionStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: Date.now() }));   // session over, nobody bought
     localStorage.setItem("sona.micok", "1");
@@ -1278,9 +1634,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 
   // C. the negative control: it is the RUN that opens the door, not a wider gate
   await pg.evaluate(() => { sessionStorage.removeItem("sona.run.v1"); sessionStorage.setItem("sona.play.token", "1"); sessionStorage.setItem("sona.paidui", "1"); });
-  await pg.goto("http://localhost:8147/arcade-tiles.html?from=charge&daily=1"); await pg.waitForTimeout(900);
+  await pg.goto("http://localhost:8147/arcade-stack.html?from=charge&daily=1"); await pg.waitForTimeout(900);
   ok("with no saved run a generic token never opens an expired Premium game",
-    /today\.html\?locked=tiles$/.test(pg.url()), pg.url());
+    /today\.html\?locked=stack$/.test(pg.url()), pg.url());
 
   // D. the window: a session never finished cannot stay free forever
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
@@ -1309,18 +1665,17 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     library: !document.getElementById("libraryApp").hidden,
     adventure: Sona.adventureGames().map(key => ({ key, allowed: Sona.gameAccess(key).allowed })),
     cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ key: card.dataset.game, disabled: card.disabled, comingSoon: !!(Sona.gameAct(card.dataset.game) || {}).comingSoon, label: card.querySelector(".game-access").textContent, locked: card.dataset.locked === "true", tier: (Sona.gameAct(card.dataset.game) || {}).tier })),
-    note: (document.getElementById("planNote") || {}).innerHTML || "",
   }));
   ok("an expired family keeps the library and accessible saved adventure choices",
     home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
   const freeCards = home.cards.filter(card => !card.comingSoon && card.tier === "free"), premiumCards = home.cards.filter(card => !card.comingSoon && card.tier === "premium"), comingSoonCards = home.cards.filter(card => card.comingSoon);
-  ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length === 2 && comingSoonCards.every(card => card.disabled && /coming soon/i.test(card.label)), JSON.stringify(comingSoonCards));
+  // Peekaboo and every Say & Play game not yet rebuilt (Travis, 26 Sep 2026:
+  // "put the 20 games as coming soon") have had no card on Home since 19 Oct
+  // 2026: nothing to buy or play there, and nothing that says Coming soon
+  const parkedInCatalog = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon));
+  ok("coming-soon games are not on Home, so they offer no purchase or play action", parkedInCatalog.length >= 2 && parkedInCatalog.includes("peekaboo") && comingSoonCards.length === 0 && await pg.locator('#libraryApp [data-game="peekaboo"]').count() === 0, JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
-  // Parked titles must not inflate the available free-game promise.
-  // Keep the parent-facing explanation independent of the catalog count.
-  ok("the parent corner explains continuing free access and the Premium choice",
-    /Free games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
   if (premiumCards.length) {
     await pg.evaluate(key => document.querySelector('#activityGroups [data-game="' + key + '"]').click(), premiumCards[0].key);
     await pg.locator("#libraryUnlock").click();
@@ -1329,6 +1684,25 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     ok("a Premium choice opens the parent gate with the selected game intact",
       parentDoor.open && parentDoor.to === "/premium.html?game=" + premiumCards[0].key, JSON.stringify(parentDoor));
   }
+  // What stays free and where Premium is, said to the grown-up once they are
+  // past the gate. It was the plan note in Home's Grown-ups pop-up (#planNote)
+  // until 30 Sep 2026, when the code started going straight to Settings
+  // (Travis); Settings → Account says it now, and the kid screen never does.
+  // Keep the parent-facing explanation independent of the catalog count.
+  // The link goes to the plan screen, /subscribe.html (1 Oct 2026): the Apple
+  // card in the app, where Premium is bought now, and in a browser the page
+  // that says so. It went to /subscribe, the web checkout page, which throws
+  // the iPhone app back to Home: the one shop left had no door from Settings.
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(600);
+  ok("Home carries no plan note or Grown-ups pop-up", await pg.evaluate(() => !document.querySelector("#planNote, #sheetOvl")));
+  await pg.locator("#parentBtn").click();
+  const need = await pg.evaluate(() => window.gateNeed);
+  for (const d of need) await pg.locator("#pad button", { hasText: new RegExp("^" + d + "$") }).click();
+  await Promise.all([pg.waitForURL(/\/settings\.html$/), pg.locator("#pad button", { hasText: "✓" }).click()]);
+  await pg.waitForTimeout(600);
+  const acctAfterGate = await pg.evaluate(() => ({ text: document.getElementById("acct").textContent, html: document.getElementById("acct").innerHTML }));
+  ok("past the gate, Settings explains continuing free access and the Premium choice",
+    /free version — daily practice and free games/.test(acctAfterGate.text) && /See Premium/.test(acctAfterGate.text) && /href="\/subscribe\.html"/.test(acctAfterGate.html) && !/href="\/subscribe"/.test(acctAfterGate.html), acctAfterGate.html);
   await ctx.close();
 }
 
@@ -1338,7 +1712,8 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // already burning. At 20 downloads that is the difference between learning
 // "will parents pay" and learning nothing. These pin the new order.
 {
-  // Setup ends at the library; choosing the first game remains the family's action.
+  // Setup ends in the first game (Travis, 27 Sep 2026): from age 5 that is
+  // Fruit Slice's practice page. Never a price screen, never a trial.
   const obContext = await browser.newContext(); const obPage = await obContext.newPage();
   try {
     await obPage.goto("http://localhost:8147/onboarding.html");
@@ -1350,9 +1725,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     });
     await obPage.locator('[data-step="achieve"].on').waitFor();
     ok("onboarding waits for an explicit child handoff without starting a trial", /onboarding\.html/.test(obPage.url()) && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1")));
-    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/today\.html/);
+    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/charge\.html/);
     const destination = new URL(obPage.url());
-    ok("onboarding ends at the game library without starting practice or a trial", destination.pathname === "/today.html" && !destination.search && await obPage.locator("#libraryApp").isVisible() && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1") && !sessionStorage.getItem("sona.run.v1")), obPage.url());
+    ok("onboarding ends in the first game's practice page, not a price screen or a trial", destination.pathname === "/charge.html" && destination.searchParams.get("game") === "arcade-slice.html" && await obPage.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === "slice") && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1") && !sessionStorage.getItem("sona.run.v1")), obPage.url());
   } finally { await obContext.close(); }
 
   // DECIDING is not SHOWING. These were one function and it cost the family
@@ -1409,7 +1784,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await pg.reload(); await pg.waitForTimeout(600);
@@ -1419,22 +1794,31 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   // still be able to make the offer.
   const seq = await pg.evaluate(() => {
     // through the seam, so the contract is pinned in either pricing state —
-    // while Sona is free planEligible correctly never returns true at all
-    sessionStorage.setItem("sona.paidui", "1");
+    // while Sona is free planEligible correctly never returns true at all.
+    // And through the web-sales seam too (1 Oct 2026): this page is a plain
+    // browser, where the ask is only made while the website sells.
+    sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "1");
     const asked = [Sona.planEligible(), Sona.planEligible(), Sona.planEligible()];
     const spent = localStorage.getItem("sona.planmoment.v1");
-    sessionStorage.removeItem("sona.paidui");
-    return { asked, spent };
+    // the same three asks in a browser whose website does not sell
+    sessionStorage.setItem("sona.websalesui", "0");
+    const off = [Sona.planEligible(), Sona.planEligible(), Sona.planEligible()];
+    const offSpent = localStorage.getItem("sona.planmoment.v1");
+    sessionStorage.removeItem("sona.paidui"); sessionStorage.removeItem("sona.websalesui");
+    return { asked, spent, off, offSpent };
   });
   ok("asking three times does not spend the offer",
     JSON.stringify(seq.asked) === "[true,true,true]" && !seq.spent,
     JSON.stringify(seq));
+  ok("…and a browser that cannot sell is never told to ask, and spends nothing either",
+    JSON.stringify(seq.off) === "[false,false,false]" && !seq.offSpent,
+    JSON.stringify(seq));
 
   // …and the paywall, once it renders, spends it exactly once
   const shown = await pg.evaluate(() => {
-    sessionStorage.setItem("sona.paidui", "1");
+    sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "1");
     const r = [Sona.planShown("test"), Sona.planShown("test"), Sona.planEligible()];
-    sessionStorage.removeItem("sona.paidui");
+    sessionStorage.removeItem("sona.paidui"); sessionStorage.removeItem("sona.websalesui");
     return r;
   });
   ok("the rendered paywall is counted once, and then never asks again",
@@ -1444,9 +1828,11 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.removeItem("sona.planmoment.v1");
     return Sona.planEligible();     // no seam: whatever the switch actually says
   });
-  ok("…and the live switch decides whether the ask happens at all",
-    whileFree === !IS_FREE_NOW,
-    `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planEligible should be ${!IS_FREE_NOW}, got ${whileFree}`);
+  // Two live switches now: Sona must cost something, and (this page being a
+  // browser, not the app) the website must be selling.
+  ok("…and the live switches decide whether the ask happens at all",
+    whileFree === (!IS_FREE_NOW && WEB_SALES_NOW),
+    `FREE_MODE=${IS_FREE_NOW}, WEB_SALES=${WEB_SALES_NOW}, so in a browser planEligible should be ${!IS_FREE_NOW && WEB_SALES_NOW}, got ${whileFree}`);
 
   // REWRITTEN 24 Sep 2026. This said "a referred / pilot family is never
   // shown a price" and enrolled an SLP-code pilot to prove it. The founding
@@ -1464,7 +1850,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   // The uncovered clinician's family is a family that was never founding.
   const pilots = await pg.evaluate(() => {
     const ask = () => { localStorage.removeItem("sona.planmoment.v1"); return Sona.planEligible(); };
-    sessionStorage.setItem("sona.paidui", "1");
+    sessionStorage.setItem("sona.paidui", "1"); sessionStorage.setItem("sona.websalesui", "1");
     Sona.startPilot("ff-abc123");            // a device enrolled before the household key existed
     const founding = ask();
     Sona.startPilot("RACHEL-K4");            // same slot: the SLP-code enrolment replaces the code…
@@ -1476,7 +1862,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.caseplan.v1", JSON.stringify({ active: true, code: "RACHEL-K4", checked: Date.now() }));
     const covered = ask();
     localStorage.removeItem("sona.caseplan.v1");
-    sessionStorage.removeItem("sona.paidui");
+    sessionStorage.removeItem("sona.paidui"); sessionStorage.removeItem("sona.websalesui");
     return { founding, afterJoin, uncovered, covered };
   });
   ok("a founding pilot is never shown a price", pilots.founding === false, JSON.stringify(pilots));
@@ -1486,6 +1872,235 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("…nor a family whose clinician's caseload is covered", pilots.covered === false, JSON.stringify(pilots));
   ok("…but a clinician's family on an uncovered caseload may see the one offer", pilots.uncovered === true, JSON.stringify(pilots));
   await ctx.close();
+}
+
+// ── THE WEBSITE DOES NOT SELL (Travis, 1 Oct 2026) ─────────────
+// "i dont want them paying on the website": a family who paid on the web had
+// no cancel button, and a cancelled web plan stayed unlocked on the phone. So a
+// family buys Premium only in the iPhone and iPad app, through Apple. Every
+// check here forces the seam, so it holds whichever way WEB_SALES ships:
+//   · a browser on the free version reads where Premium is bought: no price,
+//     no free days, no charter count, no decline, no checkout or price request,
+//     and nothing counted as a paywall impression or spent as the one ask;
+//   · the selling twin, beside it, still shows the web card (and proves the
+//     recorder these checks lean on can hear the events it says are absent);
+//   · the app is untouched by the web switch, in either position;
+//   · whoever already pays through Stripe keeps "Active ✓" and their restore.
+{
+  const ERAS = () => { ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post")); };
+  const APP_STORE = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+  const read = (pg) => pg.evaluate(() => {
+    const shown = (id) => { const n = document.getElementById(id); return !!n && n.getBoundingClientRect().height > 0; };
+    const a = document.getElementById("appStoreGo");
+    return {
+      pick: document.getElementById("pickCard").style.display, buy: shown("buyLife"),
+      iap: document.getElementById("iapCard").style.display, iapBuy: shown("iapBuy"),
+      app: document.getElementById("appCard").style.display, appSeen: shown("appCard"),
+      href: a.getAttribute("href"), target: a.target, rel: a.rel, tag: a.tagName, button: a.textContent.trim(), linkSeen: shown("appStoreGo"),
+      card: document.getElementById("appCard").innerText,
+      free: document.getElementById("freeTierCard").style.display,
+      decline: document.getElementById("declineRow").style.display, declineSeen: shown("declineRow"),
+      recap: document.getElementById("recapCard").style.display,
+      line: document.getElementById("planLine").textContent,
+      offer: document.body.classList.contains("offer"), tabs: !!document.querySelector(".family-tabs") && document.querySelector(".family-tabs").getBoundingClientRect().height > 0,
+      body: document.body.innerText,
+      spent: localStorage.getItem("sona.planmoment.v1"),
+      eligible: Sona.planEligible(), native: Sona.isNativeApp(), sells: Sona.webSales(),
+    };
+  });
+
+  // 1. a browser on the free version, both positions of the seam
+  for (const sells of ["0", "1"]) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript(RECORD);
+    const pg = await ctx.newPage();
+    const perr = [], asked = [];
+    pg.on("pageerror", (e) => perr.push(e.message));
+    pg.on("request", (r) => { if (/\/api\/(checkout|charter)/.test(r.url())) asked.push(new URL(r.url()).pathname); });
+    await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+    await pg.evaluate(({ sells, eras }) => {
+      localStorage.clear(); new Function("return (" + eras + ")")()();
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+      // a finished run today, so ?first=1 has a recap to show
+      const d = Sona.localDay();
+      localStorage.setItem(Sona.kkey("sona.outcomes.v1"), JSON.stringify({ R: { days: { [d]: { a: 12, p: 9 } } } }));
+      localStorage.setItem(Sona.kkey("sona.reps.v1"), JSON.stringify({ d: d, n: 12 }));
+      sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+      sessionStorage.setItem("sona.paidui", "1");
+      sessionStorage.setItem("sona.websalesui", sells);
+    }, { sells, eras: ERAS.toString() });
+    const before = await pg.evaluate(() => Sona.planEligible());
+
+    if (sells === "0") {
+      ok("web sales off: a finished run in a browser is not a reason to fetch a grown-up", before === false, String(before));
+      for (const door of ["", "?first=1", "?from=stack", "?from=library"]) {
+        asked.length = 0;
+        await pg.goto("http://localhost:8147/subscribe.html" + door); await pg.waitForTimeout(800);
+        const v = await read(pg);
+        const at = "web sales off, /subscribe.html" + door + ": ";
+        ok(at + "no web card, no Apple card, no buy button of either kind",
+          v.native === false && v.sells === false && v.pick === "none" && !v.buy && v.iap === "none" && !v.iapBuy, JSON.stringify(v));
+        ok(at + "the card says Premium is in the iPhone and iPad app, with a real link to the App Store",
+          v.app === "block" && v.appSeen && v.linkSeen && v.tag === "A" && v.href === APP_STORE && v.target === "_blank" && /noopener/.test(v.rel) &&
+          v.button === "Get Sona on the App Store" && /Sona Premium is in the iPhone and iPad app/.test(v.card) &&
+          /You buy it there, through the App Store, and it opens there\./.test(v.card), JSON.stringify(v));
+        ok(at + "someone who already pays on the website is told the plan keeps working, and where Restore is",
+          /Already paid on speaksona\.com\? Your plan keeps working\./.test(v.card) && /Settings/.test(v.card) && /Restore/.test(v.card), v.card);
+        ok(at + "what stays free is still under it, and there is nothing to decline",
+          v.free === "block" && v.decline === "none" && !v.declineSeen, JSON.stringify(v));
+        ok(at + "the header line names Sona Premium and where it is bought, not a founding family and not a figure",
+          /^Today: the free version\. Sona Premium is bought in the iPhone and iPad app\.$/.test(v.line.trim()), v.line);
+        ok(at + "the page keeps its Settings shape: no offer dressed around a card that cannot sell",
+          !v.offer && v.tabs, JSON.stringify({ offer: v.offer, tabs: v.tabs }));
+        ok(at + "nothing a parent can read names a price, free days, the charter or a spots-left count",
+          !/\$/.test(v.body) && !/3 days free|free trial|charter|spots? left|charged today/i.test(v.body),
+          (v.body.match(/\$[^\s]*|3 days free|free trial|charter|spots? left|charged today/i) || [])[0]);
+        ok(at + "no checkout and no price is asked of the server", asked.length === 0, asked.join(", "));
+        ok(at + "the one-time ask is neither due nor spent", v.eligible === false && v.spent === null, JSON.stringify({ eligible: v.eligible, spent: v.spent }));
+        if (door === "?first=1") ok(at + "what the child just did is still told: the recap is true whatever sells", v.recap === "block", v.recap);
+      }
+      const heard = await told(pg);
+      ok("web sales off: no paywall impression, plan moment or dismissal reaches the funnel",
+        !heard.some((n) => /paywall viewed|plan moment shown|offer dismissed|InitiateCheckout/.test(n)), JSON.stringify(heard));
+      ok("…though the recap, a real thing a parent saw, is still counted", heard.includes("recap viewed"), JSON.stringify(heard));
+
+      // Settings: the links go to the plan screen, and Restore stays
+      await pg.goto("http://localhost:8147/settings.html"); await pg.waitForTimeout(800);
+      const set = await pg.evaluate(() => ({ text: document.getElementById("acct").textContent, html: document.getElementById("acct").innerHTML,
+        restore: !!document.getElementById("restoreLink"), box: !!document.getElementById("restoreBox") }));
+      ok("web sales off: Settings still names the free version, links the plan screen and keeps Restore for whoever already pays",
+        /free version — daily practice and free games/.test(set.text) && /href="\/subscribe\.html"/.test(set.html) && !/href="\/subscribe"/.test(set.html) &&
+        set.restore && set.box && !/\$/.test(set.text), JSON.stringify(set));
+
+      // a family already paying through Stripe, same browser: never the card
+      await pg.evaluate(() => localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })));
+      await pg.goto("http://localhost:8147/subscribe.html"); await pg.waitForTimeout(800);
+      const paid = await read(pg);
+      ok("web sales off: a family who already pays on the website reads 'Active ✓', and is not sent to the App Store to buy again",
+        paid.app !== "block" && !paid.appSeen && paid.pick !== "block" && /Active ✓/.test(paid.line), JSON.stringify(paid));
+      await pg.goto("http://localhost:8147/settings.html"); await pg.waitForTimeout(800);
+      const manage = await pg.evaluate(() => document.getElementById("acct").innerHTML);
+      ok("…and Settings sends their 'Manage' to the plan screen too", /Active ✓/.test(manage) && /href="\/subscribe\.html"/.test(manage) && !/href="\/subscribe"/.test(manage), manage);
+    } else {
+      // the selling twin: same family, same doors, the web card
+      ok("web sales on: a finished run in a browser may fetch a grown-up, once", before === true, String(before));
+      asked.length = 0;
+      await pg.goto("http://localhost:8147/subscribe.html?first=1"); await pg.waitForTimeout(800);
+      const v = await read(pg);
+      ok("web sales on, /subscribe.html?first=1: the web card and its button are on screen, and the app card is not",
+        v.sells === true && v.pick === "block" && v.buy && v.app === "none" && !v.appSeen && v.iap === "none", JSON.stringify(v));
+      ok("…as the offer, with a stated decline, and the price check asked", v.offer && v.decline === "block" && v.declineSeen && asked.includes("/api/charter"), JSON.stringify({ offer: v.offer, decline: v.decline, asked }));
+      ok("…and that impression is the one that is counted and spent", !!v.spent, String(v.spent));
+      await Promise.all([pg.waitForURL(/\/today\.html$/), pg.locator("#declineLink").click()]);
+      const heard = await told(pg);
+      ok("web sales on: the funnel hears the paywall, the plan moment and the dismissal",
+        heard.includes("paywall viewed") && heard.includes("plan moment shown") && heard.includes("offer dismissed"), JSON.stringify(heard));
+    }
+    ok("web sales " + (sells === "0" ? "off" : "on") + ": no pageerrors", perr.length === 0, perr.join(" | "));
+    await ctx.close();
+  }
+
+  // 2. THE APP NEVER READS THE WEB SWITCH. The same plan screen under a mocked
+  // Capacitor, a family with no Premium, the seam forced each way: the Apple
+  // card, its offer and its decline exactly as they were, and never the card
+  // that sends a browser to the App Store.
+  const store = { configure: async () => {}, getProducts: async ({ productIdentifiers }) => { const id = (productIdentifiers || [])[0]; const mo = /monthly/.test(id);
+      return { products: [{ identifier: id, priceString: mo ? "$9.99" : "$59.99", price: mo ? 9.99 : 59.99, introPrice: mo ? { price: 0, periodUnit: "DAY", periodNumberOfUnits: 3 } : null }] }; },
+    purchaseStoreProduct: async () => ({ customerInfo: { entitlements: { active: {} } } }), restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),
+    getCustomerInfo: async () => ({ customerInfo: { entitlements: { active: {} } } }) };
+  for (const sells of ["0", "1"]) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript(RECORD);
+    await ctx.addInitScript(({ sells, fns, eras }) => {
+      const P = {}; Object.keys(fns).forEach((k) => { P[k] = new Function("return (" + fns[k] + ")")(); });
+      window.Capacitor = { isNativePlatform: () => true, Plugins: { Purchases: P } };
+      if (!sessionStorage.getItem("iap.webswitch.seed")) {
+        sessionStorage.setItem("iap.webswitch.seed", "1");
+        new Function("return (" + eras + ")")()();
+        localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+        sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+        sessionStorage.setItem("sona.paidui", "1");
+        sessionStorage.setItem("sona.websalesui", sells);
+      }
+    }, { sells, fns: Object.fromEntries(Object.entries(store).map(([k, f]) => [k, f.toString()])), eras: ERAS.toString() });
+    const pg = await ctx.newPage();
+    const perr = [], asked = [];
+    pg.on("pageerror", (e) => perr.push(e.message));
+    pg.on("request", (r) => { if (/\/api\/(checkout|charter)/.test(r.url())) asked.push(new URL(r.url()).pathname); });
+    await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(600);
+    const due = await pg.evaluate(() => ({ native: Sona.isNativeApp(), sells: Sona.webSales(), premium: Sona.premium(), eligible: Sona.planEligible() }));
+    const at = "in the app, web sales forced " + (sells === "0" ? "off" : "on") + ": ";
+    ok(at + "a family on the free version is still due the one-time ask",
+      due.native === true && due.sells === (sells === "1") && due.premium === false && due.eligible === true, JSON.stringify(due));
+    await pg.goto("http://localhost:8147/subscribe.html?first=1"); await pg.waitForTimeout(900);
+    const v = await read(pg);
+    ok(at + "the Apple card is on screen with its button, as the offer, with its decline",
+      v.iap === "block" && v.iapBuy && v.offer && v.decline === "block" && v.declineSeen, JSON.stringify(v));
+    ok(at + "never the web card, and never the card that sends a browser to the App Store",
+      v.pick === "none" && !v.buy && v.app === "none" && !v.appSeen, JSON.stringify(v));
+    // This store has no way to say whether the buyer still gets the free days
+    // (no eligibility call, like an older plugin), so the line says "for new
+    // subscribers": the free days as the product reports them, not a promise.
+    ok(at + "the header line is the Apple card's own, and the price check is never asked",
+      /^Today: the free version\. Sona Premium: 3 days free for new subscribers, then \$9\.99 a month\.$/.test(v.line.trim()) && asked.length === 0, v.line + " | " + asked.join(", "));
+    const heard = await told(pg);
+    ok(at + "the Apple card is the impression, counted and spent as before",
+      !!v.spent && heard.includes("paywall viewed") && heard.includes("plan moment shown"), JSON.stringify({ spent: v.spent, heard }));
+    ok(at + "no pageerrors", perr.length === 0, perr.join(" | "));
+    await ctx.close();
+  }
+
+  // 3. trial.html, the un-gated page the receipt links to: the selling block or
+  // the app block, never both and never neither; and in BOTH, who built Sona
+  // and the restore-by-email box for a family who already pays.
+  for (const sells of ["0", "1"]) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript(({ sells, eras }) => {
+      if (!sessionStorage.getItem("iap.trialpage.seed")) {
+        sessionStorage.setItem("iap.trialpage.seed", "1");
+        new Function("return (" + eras + ")")()();
+        localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+        sessionStorage.setItem("sona.paidui", "1");
+        sessionStorage.setItem("sona.websalesui", sells);
+      }
+    }, { sells, eras: ERAS.toString() });
+    const pg = await ctx.newPage();
+    const perr = [], asked = [];
+    pg.on("pageerror", (e) => perr.push(e.message));
+    pg.on("request", (r) => { if (/\/api\/(checkout|charter)/.test(r.url())) asked.push(new URL(r.url()).pathname); });
+    await pg.goto("http://localhost:8147/trial.html"); await pg.waitForTimeout(900);
+    const tr = await pg.evaluate(() => {
+      const seen = (n) => !!n && n.getBoundingClientRect().height > 0;
+      const links = [...document.querySelectorAll("a")].filter(seen);
+      return {
+        url: location.pathname, body: document.body.innerText,
+        buy: links.some((a) => a.getAttribute("href") === "/subscribe" || /Start practicing!/.test(a.textContent)),
+        store: links.filter((a) => /apps\.apple\.com/.test(a.getAttribute("href") || "")).map((a) => a.getAttribute("href") + " | " + a.textContent.trim()),
+        restore: seen(document.getElementById("restoreLink")),
+      };
+    });
+    const at = "trial.html, web sales " + (sells === "0" ? "off" : "on") + ": ";
+    if (sells === "0") {
+      ok(at + "no price, no free days, no charter line and no button into the web checkout",
+        tr.url === "/trial.html" && !/\$/.test(tr.body) && !/3 days free|3 free days|free trial|charter|spots? left/i.test(tr.body) && !tr.buy,
+        (tr.body.match(/\$[^\s]*|3 days free|3 free days|free trial|charter|spots? left/i) || [tr.buy ? "a buy link" : ""])[0]);
+      ok(at + "it says Premium is in the iPhone and iPad app, with the way to the App Store",
+        /Sona Premium is in the iPhone and iPad app/.test(tr.body) && /it opens there/.test(tr.body) &&
+        tr.store.length === 1 && tr.store[0] === APP_STORE + " | Get Sona on the App Store", JSON.stringify(tr.store));
+      ok(at + "and asks the server for no price", asked.length === 0, asked.join(", "));
+    } else {
+      ok(at + "the page sells as it did: the price, the free days and the button",
+        tr.url === "/trial.html" && /\$59\.99/.test(tr.body) && /3 days free/i.test(tr.body) && /\$9\.99 a month/.test(tr.body) && tr.buy, tr.body.slice(0, 300));
+      ok(at + "and not the App Store card beside it", !/Sona Premium is in the iPhone and iPad app/.test(tr.body) && tr.store.length === 0, JSON.stringify(tr.store));
+    }
+    ok(at + "Rachel's line is on the page, in the settled words",
+      /Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship/.test(tr.body), tr.body.slice(0, 200));
+    ok(at + "a family who already pays can still restore by email", tr.restore && /Restore access/.test(tr.body), tr.body.slice(-400));
+    await pg.locator("#restoreLink").click();
+    ok(at + "…the email box opens", await pg.locator("#resEmail").isVisible());
+    ok(at + "no pageerrors", perr.length === 0, perr.join(" | "));
+    await ctx.close();
+  }
 }
 
 await browser.close(); srv.close();

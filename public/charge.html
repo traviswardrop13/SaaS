@@ -23,12 +23,14 @@
     .g-stack{background:linear-gradient(180deg,#2b2e6b 0%,#5b3f8f 44%,#a45fae 74%,#e17aa4 100%);}
     .g-tiles{background:linear-gradient(180deg,#231a4d 0%,#2f2266 40%,#43318c 72%,#54409e 100%);}
     .g-glide{background:linear-gradient(180deg,#3f74ab 0%,#6ea3d4 42%,#ffcf9a 78%,#ffe7c4 100%);}
+    .g-rise{background:linear-gradient(180deg,#8fc9ee 0%,#bfe3f5 50%,#d8f0c8 85%,#9fd67f 100%);}
     /* --sky-ink: readable context-text color per sky (design handoff A) */
     .g-slice{--hsh:rgba(120,50,10,.16);--tsh:rgba(200,80,20,.45);--bsh:rgba(120,50,10,.2);--sky-ink:#5c3a10;}
     .g-run{--hsh:rgba(40,80,120,.16);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);--sky-ink:#1f5e4a;}
     .g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);--sky-ink:rgba(255,255,255,.92);}
     .g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);--sky-ink:rgba(255,255,255,.92);}
     .g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);--sky-ink:rgba(255,255,255,.95);}
+    .g-rise{--hsh:rgba(40,80,120,.18);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);--sky-ink:#1f4d6b;}
     #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;}
     /* landscape rescue: same rule as the home screen — a short-wide viewport
        unlocks scrolling instead of crushing the practice card */
@@ -77,6 +79,13 @@
     #bubble{background:#fff;border-radius:20px;border-bottom-left-radius:5px;padding:12px 20px;box-shadow:0 6px 16px var(--bsh);text-align:center;max-width:86vw;}
     #bMain{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#4a2c14;line-height:1.15;}
     #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:#ef6f23;display:inline-block;padding-left:6px;}
+    /* Only the practice sound's letters are orange (the family's brief: "the
+       practice sound's letters are always orange"): paintCard() wraps them in
+       .snd through Sona.soundMark, and the rest of the word takes the bubble's
+       ink, like "Say". Two ids so it outranks crafted-games.css, which paints
+       the whole target; the orange is that sheet's own practice orange. */
+    body[data-crafted] #bMain #bTarget{color:inherit;}
+    #bTarget .snd{color:#d86a24;}
     #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:2px;}
     #gpState b{color:var(--chiptx);}
     #turnStatus{font-size:13px;font-weight:900;color:#795534;line-height:1.35;margin-bottom:5px;}
@@ -134,6 +143,10 @@
     #stand .well .fr{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:46px;height:46px;filter:drop-shadow(0 4px 5px rgba(160,60,10,.25));}
     #stand .well .fr.ghost{filter:none;opacity:.75;}
     #stand .well .fr.ghost svg *{fill:rgba(255,255,255,.16)!important;stroke:#fff!important;stroke-width:2.5!important;stroke-dasharray:5 5!important;}
+    /* each heard try drops its fruit onto the counter (27 Sep 2026): the
+       five a child says here are the first five thrown in the game */
+    #stand .well .fr.pop{animation:fruitDrop .6s cubic-bezier(.3,1.25,.5,1);}
+    @keyframes fruitDrop{0%{transform:translate(-50%,-150px) rotate(-18deg);opacity:0}25%{opacity:1}60%{transform:translate(-50%,5px) rotate(5deg)}80%{transform:translate(-50%,-7px) rotate(-2deg)}100%{transform:translate(-50%,0) rotate(0)}}
     /* run — one receding road; the buddy stands on the top filled slab */
     #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;}
     #roadCol .slab{position:relative;height:34px;border-radius:10px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);}
@@ -166,7 +179,7 @@
     }
     @media (prefers-reduced-motion:reduce){
       #micWrap::before,#micWrap::after{animation:none;opacity:.45;}
-      #reveals .pop{animation:none;}
+      #reveals .pop,#stand .well .fr.pop{animation:none;}
       #leo.cheer,#leo.think{animation:none;}
       #chestBox.tease,#chestBox.thump{animation:none;}
       #balloonEl{transition:none;}
@@ -242,6 +255,12 @@
     #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
     #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
     #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
+    /* LEVELS1: at Level 2 or 3 "Up next" names the level on a line of its own
+       ("Fruit Slice" over "Level 2"), so on a phone the level is never the
+       part an ellipsis cuts off. The words are the same: the dot between them
+       is still in the text, only not drawn. */
+    #launchBar .launch-name .launch-line{display:block;overflow:hidden;text-overflow:ellipsis;}
+    #launchBar .launch-name .launch-dot{display:none;}
     #quietOvl{background:rgba(74,44,20,.30);z-index:85;padding:20px;}
     #quietOvl .quiet-card{background:#fff7e9;max-height:calc(100dvh - 40px);overflow:auto;}
     .quiet-card img{width:160px;height:150px;object-fit:contain;}
@@ -250,8 +269,10 @@
     @media(max-height:700px){#echoCluster{margin-top:7px;}#leo{width:96px;height:96px;}#bubble{padding:8px 15px;}#gameTitle{font-size:24px;}#turtleBtn{margin-top:3px;min-height:34px;}#balloonBox{width:140px;}}
     @media(prefers-reduced-motion:reduce){#echoBuddy::before,#leo,#chestBox{animation:none!important;}}
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-practice.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="practice">
     <div id="app">
     <div id="decor"></div>
     <div id="reveals"></div>
@@ -271,7 +292,7 @@
         <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
         <div id="gpState">Say it to fill your ticket!</div>
       </div>
-      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
       <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 21C8 4 29 4 29 21Z" fill="#79bf73"/><path d="m14 20 4-10 7 7" fill="none" stroke="#398a58" stroke-width="2"/><circle cx="33" cy="20" r="5" fill="#b9d996"/><circle cx="35" cy="19" r="1" fill="#4a2c14"/><path d="M11 23v3m14-3v3M5 21h3" stroke="#398a58" stroke-width="3" stroke-linecap="round"/></svg>Hear it slooow</button>
     </div>
 
@@ -280,7 +301,7 @@
         <div id="micBtn" role="img" aria-label="Microphone off"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
       </div>
       <div id="replayLabel">Tap Echo to hear it again</div>
-      <button id="launchBar"></button>
+      <div id="launchBar" role="status"></div>
     </div>
 
   </div>
@@ -291,13 +312,13 @@
        final game launches. Earned by showing up; never purchasable, no timers. -->
   <div class="ovl" id="chestOvl" role="dialog" aria-modal="true" aria-labelledby="chestCap">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <div id="chestStage">
         <button id="chestBox" type="button" class="tease" aria-label="Open your treasure chest"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></button>
         <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
       </div>
       <div id="chestReveal" style="display:none">
-        <div id="chestStk">⭐</div>
+        <div id="chestStk"></div>
         <h2 id="chestName">Sticker!</h2>
         <button class="btn" id="chestClaim">Put it in my sticker book!</button>
         <p id="chestTmw" style="font-weight:800;font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45;">Come back tomorrow — Echo will have a new adventure ready!</p>
@@ -307,9 +328,11 @@
 
   <div class="ovl" id="micPrime">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
-      <h2>Let Echo hear you practice!</h2>
-      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practice and fill the ticket for your game.</p>
+      <!-- The same listening Echo as the games' and books' "Echo wants to hear
+           you" cards (the flat art here was the listening pose too). -->
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Let Echo hear you!</h2>
+      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen, then say it to fill your ticket.</p>
       <!-- This paragraph is a PROMISE, and it went stale: it described an upload
            that stopped existing when the cloud scorer was removed, and said so
            for months afterwards. Every verdict is decided on this phone now, so
@@ -325,7 +348,7 @@
 
   <div class="ovl" id="playedOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>You already played today!</h2>
       <p id="playedSub"></p>
       <button class="btn blue" id="playedArcade">Browse games</button>
@@ -340,7 +363,7 @@
   <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runPractice">
     <div class="ovlCard">
       <div class="run-hero">
-        <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+        <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
         <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       </div>
       <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
@@ -354,7 +377,7 @@
 
   <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-waiting.svg" alt="Echo resting" />
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="Echo resting" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="pauseTitle">Practice paused</h2>
       <p id="pauseCopy">Take your time. We'll keep your place.</p>
       <button class="btn" id="pauseResume"><span aria-hidden="true">▶</span> Resume</button>
@@ -363,6 +386,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-rewards.js"></script>
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
@@ -392,7 +417,10 @@
     var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
     var catalogMatch=/^arcade-([a-z]+)\.html$/.exec(qp.get("game")||"");
     var catalogKey=(catalogMatch&&S.gameKey(catalogMatch[1]))||"slice";
-    var catalogBlocked=!catalogDaily&&!S.gameAccess(catalogKey).allowed;
+    // The old daily run (a saved run or a typed address; Home never opens it)
+    // asks the practice gate: since 3 Oct 2026 (trial first) a family without
+    // the free version, Premium or a trial has no practice to start.
+    var catalogBlocked=catalogDaily?!!(S.gated&&S.gated("daily")):!S.gameAccess(catalogKey).allowed;
     if(catalogBlocked)S.gameBounce(catalogKey);
     $("micPromise").textContent=S.MIC_PROMISE;
     var profile=S?S.getProfile():{volume:0.8};
@@ -482,7 +510,7 @@
         var land=function(){if(landed)return;landed=true;micOpening=Math.max(0,micOpening-1);if(!micOpening)micLanded.splice(0).forEach(function(done){done();});};
         micOpening++;
         try{
-          var stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+          var stream=(S&&S.micNative&&S.micNative())?await S.micOpen({audio:true,video:false}):await navigator.mediaDevices.getUserMedia({audio:true,video:false});
           if(epoch!==practiceEpoch || practicePaused || practiceClosed || document.hidden){
             stream.getTracks().forEach(function(t){t.stop();});
             micClosedAt=performance.now(); land();
@@ -513,7 +541,7 @@
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
-    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
+    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"}, "arcade-rise.html":{e:"🎈",n:"Rise Up"} };
     ["feed","bubbles","peekaboo"].forEach(function(key){var a=S.gameAct(key);GAMES["arcade-"+key+".html"]={e:"",n:a.name,simple:true};});
     // The shared plan also paints Home's preview. Keep all ROT_LEN rounds:
     // practice progression, the ring and the chest still depend on that length.
@@ -585,10 +613,11 @@
     var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
     var ITEM=SEQ[0];
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
-    // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
-    // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
-    // NAME ("make your R sound"; letter names render cleanly) and the human
-    // recording at /coach/say/<SOUND>.mp3, when present, models the real thing.
+    // What Leo SPEAKS. TTS cannot perform every bare sound — a synthesized
+    // long "rrrr" or a popped "p" comes out mangled — so the line names the
+    // sound ("make your R sound"; letter names render cleanly), and on a
+    // sound round Rachel's recording of the sound itself takes the letter's
+    // place when it plays (soundSlot, below).
     function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
@@ -606,26 +635,56 @@
       // and the child who obeyed it at once was talking before anything was
       // listening. The turn is handed over by the glowing mic, which lights
       // only once the window can actually hear them (listenReady).
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
-      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
+      // "GO!" IS BACK, ON THE HAND-OVER ONLY (Travis, 2 Oct 2026: "i also
+      // wanna try to have the 11 labs voice say 'Go!'"). Most of these kids
+      // can't read, and nothing they could hear told them it was their turn.
+      // So every line that hands the turn over ends "… five times. Go!": the
+      // ask, a tap on Echo, the turtle, and the two retry lines below. Its
+      // "!" is the only one in the line, and every line that hands nothing
+      // over (praise, the win, the quiet screen) keeps its full stop. "Go!"
+      // is Echo's clip of its own, joined on after the line (GO, ON ITS OWN,
+      // below). Still true: the mic opens about half a second after Echo
+      // stops, so a child who answers "Go!" at once may start before it can
+      // hear; the next of their five tries is heard. If it sounds jumpy,
+      // taking it back out is one line here.
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
     }
-    // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
-    // Human model prompts: /coach/say/<SOUND>.mp3 is Rachel's own take of the
-    // whole opening line (July 2026 wording) — the prompt actually PERFORMS
-    // the sound, which TTS never can. Not yet re-voiced into Echo's voice, so
-    // the switch is off; TTS remains the fallback either way.
     // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
+    // ECHO'S WORDS, RACHEL'S SOUND (Travis, 29 Sep 2026: "use Turbo v4 for
+    // everything, but when it comes to the actual sound, like Rrrr ... swap in
+    // just for that split moment the audio of my wife"). Until then the first
+    // line of a sound round was her whole July take re-voiced into Echo's
+    // voice (/coach/say-echo/<SOUND>.mp3, the July wording) — every other line
+    // came from v4 Turbo, so that one line sounded like someone else. Now v4
+    // Turbo says every word, and where a line on a sound round names the
+    // target sound ("make your R sound") ONE recorded take of that sound
+    // plays in the letter's place: "…and make your [rrrr] sound, five times."
+    // The takes are built by tools/soundclips.mjs, every one cut from Rachel's
+    // own July recordings (2 Oct 2026: re-voicing turned her L into an "ee"
+    // and her R toward W, and v4 Turbo voiced the F; the tool has the
+    // measurements). It covers every line that names the sound: the first
+    // prompt, a tap on Echo, the turtle, and Echo's idea when it steps down to
+    // the sound. Her recordings themselves (/coach/say/) never play: only the
+    // one cut take does. If the take is missing, the whole line is spoken by
+    // TTS as before, letter and all; if the voice service is down, her whole
+    // July line plays, as it did before.
+    function soundSlot(text){
+      if(!HUMANCLIPS||!ITEM||ITEM.level!=="isolation"||typeof text!=="string")return null;
+      var mark="your "+soundName()+" sound",i=text.indexOf(mark);
+      if(i<0)return null;
+      // whole: her full July line, played only if the voice service is down
+      // (it needs no TTS, and it is what this round played before).
+      return {before:text.slice(0,i+4),clip:"/coach/say-echo/"+SOUND+"-sound.wav",after:text.slice(i+mark.length-5).trim(),whole:"/coach/say-echo/"+SOUND+".mp3"};
+    }
     function playPrompt(){
       if(mutedSpeech())return Promise.resolve();
-      // Human clips keep the same fallback line across an interruption. Delay
-      // sayLine() until fallback is needed, as a successful human clip did before.
-      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say/"+SOUND+".mp3":null;
-      return human?queueSpeech(null,false,human,sayLine):say(sayLine());
+      return say(sayLine());
     }
     var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
     var audioJobs=[],AUDIO_CANCEL={},ttsPlaying=false,_ttsN=0,audioCtx=null,speaking=false,audioSuspend=Promise.resolve();
@@ -640,7 +699,10 @@
     // for ECHO_TAIL_MS (a speaker's and a Bluetooth headset's delay). The
     // same order means Echo's own voice can never become a try, land in the
     // parent's listen-back clip, or reach the native recognizer.
-    // Echo cancellation stays on: what the pass/fail check hears is unchanged.
+    // Echo cancellation: in a browser it stays on, as it always was. In the
+    // iPhone app the mic is Sona's own (sona.js, NATIVE MIC): no echo
+    // cancelling, and nothing of Sona's plays while it is open, so there is
+    // nothing to cancel.
     // NO exceptions, not even the chime that used to mark each counted try
     // (24 Sep 2026): it rang inside the open window, and the guard that kept
     // the detector deaf to it also swallowed a quick next try ("k… k… k…"
@@ -661,6 +723,23 @@
     // practiceDelay, so a pause or close wakes it rather than being slept through.
     function micSettled(){var wait=micClosedAt+SETTLE_MS-performance.now();return wait>0?practiceDelay(wait):Promise.resolve(true);}
     var turnPhase="ready";
+    // Echo's clay pose follows the same state as the status line: talking
+    // while his voice plays, listening while the mic is open, thinking while
+    // a try is checked, cheering on a heard try and the win, resting between.
+    // The "Almost!" coaching line is said in the thinking pose, not talking:
+    // it is the kind moment, and it holds until the next try opens.
+    var ECHO_ART="/assets/crafted/echo-", echoShown="welcome", echoCoach=false;
+    var ECHO_POSES=["welcome","talk","listen","think","cheer"].map(function(p){var im=new Image();im.src=ECHO_ART+p+".webp";return im;});
+    function echoPose(){
+      var pose=turnPhase==="game"||(turnPhase==="checking"&&lastVerdict==="pass")?"cheer"
+        :echoCoach||practicePaused||turnPhase==="quiet"?"think"
+        :$("echoBuddy").classList.contains("heard")?"cheer"
+        :ttsPlaying?"talk"
+        :turnPhase==="checking"?"think"
+        :document.body.classList.contains("echo-listening")?"listen":"welcome";
+      if(pose===echoShown)return;
+      echoShown=pose;$("leo").src=ECHO_ART+pose+".webp";
+    }
     // "Your turn" and the glowing mic wait for a window that can actually hear
     // the child: mic open AND the room known (listenReady, set by tick) —
     // at once when the page already measured the room (ROOM FLOOR), after the
@@ -677,6 +756,7 @@
       document.body.classList.toggle("echo-listening",live);
       document.body.classList.toggle("echo-checking",turnPhase==="checking"&&!busy);
       $("micBtn").setAttribute("aria-label",live?"Microphone listening":"Microphone off");
+      echoPose();
     }
     function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
     function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;appSoundEnded();updateTurn();}
@@ -719,15 +799,20 @@
       audioSuspend.then(function(){if(!audioBlocked()&&ctx.state==="suspended")return ctx.resume();}).catch(function(){});
       return ctx;
     }
-    function queueSpeech(t,slow,human,makeText){
-      if((!t&&!human)||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
-      var packet={text:t,slow:!!slow,human:human,makeText:makeText,epoch:practiceEpoch};
+    function queueSpeech(t,slow){
+      if(!t||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
+      // The sound slot is read NOW, against the item on screen: Echo's idea
+      // swaps the item just before it speaks, and a line waiting in the queue
+      // must not pick up a later round's sound.
+      // A hand-over line's words and its "Go!" are asked for apart (GO, ON
+      // ITS OWN); the sound slot is found in the words.
+      var words=goSplit(t),packet={text:t,line:words,slow:!!slow,slot:soundSlot(words!=null?words:t),epoch:practiceEpoch};
       _sayN++; updateTurn();
       var run=function(){return _say1(packet);};
       _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);updateTurn();},function(){_sayN=Math.max(0,_sayN-1);updateTurn();});
       return _sayQ;
     }
-    function say(t){return queueSpeech(t,false,null,null);}
+    function say(t){return queueSpeech(t,false);}
     // ---- shared on-device TTS revision; callbacks never outlive their job. ----
     function ttsGet(key,job){return audioWait(job,function(done,cleanup){
       var db=null,ended=false;
@@ -752,10 +837,11 @@
       };
     });}
     async function speechBytes(t,job){
-      var revision=(S&&S.TTS_CACHE_VERSION)||"v8", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v9", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
+      var keep=true;
       var bytes=await audioWait(job,function(done,cleanup){
         var controller=typeof AbortController!=="undefined"?new AbortController():null;
         var timer=setTimeout(function(){job.voiceReason="timeout";done(null);},7000);
@@ -767,23 +853,127 @@
           function header(name){return r.headers&&r.headers.get?r.headers.get(name):null;}
           var provider=header("X-Sona-Voice-Provider");
           job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
+          // "0": the usual voice model was busy and this is a stand-in. Play
+          // it, never save it — saved, it would replay the old voice forever.
+          // Kept per request, not on the job: a sound slot asks for both
+          // halves of its line at once on one job.
+          keep=header("X-Sona-Voice-Keep")!=="0";
           return r.arrayBuffer();
         }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
       });
       if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
-      if(bytes)ttsPut(key,bytes,job);
+      if(bytes&&keep)ttsPut(key,bytes,job);
       return bytes;
+    }
+    // The recorded take for a slot: a WAV tools/soundclips.mjs wrote at
+    // the rate /api/tts speaks (24 kHz, mono, 16-bit, a 44-byte header), so
+    // its samples join Echo's words as they are. Anything else is refused,
+    // and the line falls back to TTS whole.
+    function clipPcm(url,job){return audioWait(job,function(done,cleanup){
+      var controller=typeof AbortController!=="undefined"?new AbortController():null;
+      var timer=setTimeout(function(){done(null);},7000);
+      cleanup(function(){clearTimeout(timer);if(controller)controller.abort();});
+      fetch(url,controller?{signal:controller.signal}:undefined).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){
+        if(!b||b.byteLength<=44||(b.byteLength-44)%2){done(null);return;}
+        var v=new DataView(b);
+        var ok=v.getUint32(0,false)===0x52494646&&v.getUint16(22,true)===1&&v.getUint32(24,true)===24000&&v.getUint16(34,true)===16&&v.getUint32(36,false)===0x64617461;
+        done(ok?b.slice(44):null);
+      }).catch(function(){done(null);});
+    });}
+    // Quiet (under −45 dBFS) trimmed from one end of a 24 kHz PCM clip,
+    // keeping 50 ms of it.
+    function trimQuiet(buf,atEnd){
+      var v=new DataView(buf),n=buf.byteLength>>1,keep=1200,floor=184,i;
+      if(atEnd){for(i=n-1;i>0&&Math.abs(v.getInt16(i*2,true))<floor;i--);return buf.slice(0,Math.min(n,i+1+keep)*2);}
+      for(i=0;i<n&&Math.abs(v.getInt16(i*2,true))<floor;i++);return buf.slice(Math.max(0,i-keep)*2);
+    }
+    // GO, ON ITS OWN (2 Oct 2026). Every hand-over line ends "… Go!"
+    // (sayLine). Asked for in the same request as the words, it would change
+    // the text of every hand-over line, so every phone's saved copy of each
+    // (ttsGet) would miss on launch day and every line would be asked for
+    // again, its words read fresh. So a line that ends " Go!" asks for its
+    // words exactly as before, and "Go!" is Echo's one shared clip
+    // (Sona.goClip, which the games use too): this page's copy or this
+    // phone's saved one, never a wait on the network after the first line of
+    // a visit (that one waits Sona.GO_WAIT_MS at most), and never the
+    // browser's robot voice. The phone joins it on the way Rachel's sound is
+    // joined (playSlot): ONE clip, so the 250 ms-and-settle quiet before the
+    // mic (ECHO_TAIL_MS, micSettled) still starts at its very end. Between
+    // them, each piece's 50 ms of kept quiet and GO_GAP more: a short breath,
+    // as the voice leaves between two sentences. No "Go!" to be had: the
+    // line plays without it.
+    var GO=" Go!", GO_GAP=4800, goWait=(S&&S.GO_WAIT_MS)||0; // 4,800 samples: 0.2 s at 24 kHz
+    function goSplit(t){return typeof t==="string"&&t.length>GO.length&&t.slice(-GO.length)===GO?t.slice(0,-GO.length):null;}
+    function joinPcm(parts){
+      var n=0,at=0,out;parts.forEach(function(p){n+=p.byteLength;});out=new Uint8Array(n);
+      parts.forEach(function(p){out.set(new Uint8Array(p),at);at+=p.byteLength;});return out;
+    }
+    // Echo's "Go!" bytes for this line, or null; AUDIO_CANCEL if the line
+    // was stopped while it was looked up.
+    function goBytes(job){
+      var wait=goWait;goWait=0;
+      return audioWait(job,function(done){
+        if(!S||!S.goClip){done(null);return;}
+        Promise.resolve(S.goClip(profile.voiceId,wait)).then(function(b){done(b&&b.byteLength?b:null);},function(){done(null);});
+      });
+    }
+    // A line's words then its "Go!", trimmed and joined: one clip; the words
+    // alone without a "Go!"; null when the words could not be had.
+    async function goLine(words,job){
+      var parts=await Promise.all([speechBytes(words,job),goBytes(job)]);
+      if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
+      if(!parts[0])return null;
+      if(!parts[1])return new Uint8Array(parts[0]);
+      return joinPcm([trimQuiet(parts[0],true),new ArrayBuffer(GO_GAP*2),trimQuiet(parts[1],false)]);
+    }
+    // One line, three pieces, played as ONE clip: Echo's words up to the
+    // sound, the recorded take, Echo's words after it. Everything is fetched
+    // first and joined, so the line plays with no gaps, pauses and resumes as
+    // one clip and slows as one for the turtle — and if any piece is missing,
+    // nothing has been said yet and the whole line falls back to TTS.
+    // If her sound is here but the voice service is not (credits, an outage,
+    // a timeout), the answer is "voice-down": the caller plays her whole July
+    // line rather than ask the same failing service for the whole line too.
+    // go: the line hands over, so its "Go!" is joined on after the words
+    // after her sound (GO, ON ITS OWN); without one, the line plays as it is.
+    async function playSlot(slot,slow,job,go){
+      var asks=[speechBytes(slot.before,job),clipPcm(slot.clip,job),speechBytes(slot.after,job)];
+      if(go)asks.push(goBytes(job));
+      var parts=await Promise.all(asks);
+      if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
+      if(parts[1]&&(!parts[0]||!parts[2]))return "voice-down";
+      if(!parts[0]||!parts[1]||!parts[2])return null;
+      // Each half arrives with its own quiet lead-in and tail; left in, the
+      // sentence stops twice around her sound. Keep 50 ms either side.
+      parts[0]=trimQuiet(parts[0],true);parts[2]=trimQuiet(parts[2],false);
+      if(parts[3])parts=[parts[0],parts[1],trimQuiet(parts[2],true),new ArrayBuffer(GO_GAP*2),trimQuiet(parts[3],false)];
+      else parts=parts.slice(0,3);
+      var words=job.voiceEvent||{},line=joinPcm(parts);
+      job.voiceEvent={source:"human",cache:words.cache,model:words.model,revision:words.revision};
+      return slow?await playSlowClip(line,job):await playPCM(line,job);
     }
     function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){
       var a=new Audio(url);a.volume=speechVolume();
       if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
       ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
-      var timer=setTimeout(function(){done(null);},15000);cleanup(function(){clearTimeout(timer);});
+      // A guard against an element that never ends, not a budget: the longest
+      // recorded line (D's July take, the voice-down fallback) runs 19 s.
+      var timer=setTimeout(function(){done(null);},30000);cleanup(function(){clearTimeout(timer);});
       a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
-      function started(){if(job.live())voiceDiagnostic(url.indexOf("/coach/say/")===0?{source:"human"}:job.voiceEvent||{source:"server"});}
+      function started(){if(job.live())voiceDiagnostic(/^\/coach\/say-echo\//.test(url)?{source:"human"}:job.voiceEvent||{source:"server"});}
       try{var promise=a.play();if(promise&&promise.then)promise.then(started,function(){job.voiceReason="playback-blocked";done(null);});else started();}catch(e){job.voiceReason="playback-blocked";done(null);}
     });}
-    function playPCM(b,job){return audioWait(job,function(done,cleanup){
+    function playPCM(b,job){
+      // iPhone media output matches the recorded models. Keep the browser's
+      // existing Web Audio path, including its gesture unlock behavior.
+      if(S.isNativeApp()){
+        if(!b.byteLength)return Promise.resolve(null);
+        var url=URL.createObjectURL(S.pcmWave(b));
+        return playMedia(url,false,job).then(function(result){URL.revokeObjectURL(url);return result;},function(error){URL.revokeObjectURL(url);throw error;});
+      }
+      return playWebPCM(b,job);
+    }
+    function playWebPCM(b,job){return audioWait(job,function(done,cleanup){
       var c=getCtx();if(!c){done(null);return;}
       var n=b.byteLength>>1;if(!n){done(null);return;}
       var ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
@@ -832,22 +1022,27 @@
         if(audioBlocked())continue;
         var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
-          if(packet.human)result=await playMedia(packet.human,false,job);
+          if(packet.slot){
+            result=await playSlot(packet.slot,packet.slow,job,packet.line!=null);
+            if(result==="voice-down")result=await playMedia(packet.slot.whole,packet.slow,job);
+          }
           if(result!==true&&result!==AUDIO_CANCEL){
-            if(packet.text==null)packet.text=packet.makeText?packet.makeText():"";
-            var bytes=await speechBytes(packet.text,job);
+            // A hand-over line: its words and its "Go!", joined (GO, ON ITS
+            // OWN). The browser's voice, if it comes to that, says the words
+            // alone: "Go!" is only ever Echo's.
+            var bytes=packet.line!=null?await goLine(packet.line,job):await speechBytes(packet.text,job);
             if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
             else if(bytes)result=packet.slow?await playSlowClip(new Uint8Array(bytes),job):await playPCM(new Uint8Array(bytes),job);
-            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
+            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.line!=null?packet.line:packet.text,packet.slow,job);
           }
-        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
+        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback((packet.line!=null?packet.line:packet.text)||"",packet.slow,job);}
         finally{job.finish();speaking=false;appSoundEnded();updateTurn();}
         if(result!==AUDIO_CANCEL||practiceTerminal)return;
       }
     }
     function saySlow(t){return new Promise(function(res){
       if(!t||mutedSpeech())return res();if(speaking)return res();if(_slowQueued)return res();_slowQueued=true;
-      queueSpeech(t,true,null,null).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
+      queueSpeech(t,true).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
     });}
     // Chimes and celebrations play into a closed mic too. sfx() is
     // synchronous, so the mic closes synchronously; every caller has already
@@ -917,6 +1112,8 @@
       '<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="#ff5470"/><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2v32Z" fill="#ff6b8a"/><ellipse cx="32" cy="20" rx="9" ry="5" fill="#58cc02"/><circle cx="26" cy="36" r="1.5" fill="#ffe4a8"/><circle cx="36" cy="40" r="1.5" fill="#ffe4a8"/><circle cx="31" cy="47" r="1.5" fill="#ffe4a8"/></svg>',
       '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="21" ry="15" fill="#ffd21c" transform="rotate(-16 32 36)"/><ellipse cx="24" cy="30" rx="5" ry="3.4" fill="#fff3b8" transform="rotate(-16 24 30)"/><ellipse cx="47" cy="26" rx="3" ry="2" fill="#8a5a2a" transform="rotate(-16 47 26)"/></svg>'
     ];
+    var CRAFT_PRACTICE_FRUIT=["watermelon","grapes","orange","strawberry","lemon"].map(function(key){var im=new Image();im.src="/assets/crafted/fruit-"+key+".webp";return im;});
+    function earnedFruit(i){var art=CRAFT_PRACTICE_FRUIT[i];return art.complete&&art.naturalWidth?'<img src="'+art.src+'" alt="" style="width:100%;height:100%;object-fit:contain">':FRUITS[i];}
     var FRUIT_OUTLINES=[
       'M5 25a27 27 0 0 0 54 0Z',
       'M20 18Q10 23 15 33Q16 42 23 43Q24 57 32 57Q40 57 41 43Q51 39 50 29Q52 17 41 18Q31 10 20 18Z',
@@ -927,7 +1124,7 @@
     function ghostFruit(i){return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="'+FRUIT_OUTLINES[i]+'" fill="none" stroke="#fff5df" stroke-width="3" stroke-linejoin="round"/></svg>';}
     var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
     // the buddy the child picked — never a hardcoded fox (handoff C §8)
-    function buddySvg(){ try{ if(S&&S.buddyMarkup) return S.buddyMarkup(profile.character||"fox",68); }catch(e){} return FOX; }
+    function buddySvg(){ try{ if(S&&S.buddyMarkup) return SonaCraftedBuddies.markup(profile.character||"fox",68); }catch(e){} return FOX; }
     // 3-circle cloud — replaces every pill-bar "cloud" on light skies
     var CLOUD='<svg viewBox="0 0 120 60"><ellipse cx="40" cy="42" rx="30" ry="15" fill="#fff"/><circle cx="56" cy="28" r="17" fill="#fff"/><circle cx="80" cy="38" r="19" fill="#fff"/></svg>';
     var COIN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/><circle cx="24" cy="22" r="3" fill="#fff" opacity=".8"/></svg>',
@@ -980,6 +1177,12 @@
              +'<i style="top:13%;left:-5%;width:34vw;max-width:160px;opacity:.75">'+CLOUD+'</i>'
              +'<i style="top:21%;right:-7%;width:40vw;max-width:185px;opacity:.6">'+CLOUD+'</i>'
              +'<i style="top:49%;left:-7%;width:30vw;max-width:140px;opacity:.45">'+CLOUD+'</i>',
+        balloon:1},
+      // Rise Up (9 Oct 2026) fills Flappy Glide's balloon: its game is a balloon rising, under a daylight sky
+      "arcade-rise.html":{cls:"g-rise",title:"RISE UP",go:"and we rise!",
+        decor:'<i style="top:13%;left:-5%;width:34vw;max-width:160px;opacity:.75">'+CLOUD+'</i>'
+             +'<i style="top:21%;right:-7%;width:40vw;max-width:185px;opacity:.6">'+CLOUD+'</i>'
+             +'<i style="top:49%;left:-7%;width:30vw;max-width:140px;opacity:.45">'+CLOUD+'</i>',
         balloon:1}
     };
     var SCENE=SCENES[GAME]||SCENES["arcade-slice.html"];
@@ -1010,7 +1213,7 @@
         html+='</div>';
       } else if(SCENE.balloon){
         html='<div id="balloonBox"><div class="hull">'+BALLOON_HULL+'</div>'
-            +'<div id="balloonEl">'+BALLOON+'<div class="pilot">'+((S&&S.buddyMarkup)?S.buddyMarkup(profile.character||"fox",34):FOX)+'</div></div></div>';
+            +'<div id="balloonEl"><img class="craft-balloon" src="/assets/crafted/balloon-practice-v2.webp" alt=""><div class="pilot">'+((S&&S.buddyMarkup)?SonaCraftedBuddies.markup(profile.character||"fox",34):FOX)+'</div></div></div>';
       }
       R.innerHTML=html;
     })();
@@ -1030,7 +1233,7 @@
         el=slots[i]; var on=i<n, was=el._on;
         if(SCENE.stand){
           el.classList.toggle("up",!on&&i===n);
-          if(on&&!was) el.innerHTML='<div class="fr pop">'+FRUITS[i]+'</div>';
+          if(on&&!was) el.innerHTML='<div class="fr pop">'+earnedFruit(i)+'</div>';
           else if(!on) el.innerHTML='<div class="fr ghost">'+ghostFruit(i)+'</div>';
         } else if(SCENE.road){
           el.classList.toggle("glass",!on);
@@ -1040,7 +1243,7 @@
           var c0=el.querySelector(".coinUp"); if(c0) c0.remove();
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.stackCol){
-          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.classList.remove("glass","up"); }
+          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.style.backgroundColor=c[0]; el.classList.remove("glass","up"); }
           else { el.style.background=""; el.classList.add("glass"); el.classList.toggle("up",i===n); }
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.keyRow){
@@ -1059,13 +1262,28 @@
       }
     }
     (function(){
-      if(!isDaily){$("ctxLine").textContent=GMETA.n;return;}
+      if(!isDaily){document.body.classList.add("practice-single");$("ctxLine").textContent=GMETA.n;return;}
       $("ctxLine").setAttribute("aria-label","Adventure, round "+Math.min(ROUNDIX+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length);
       ADVENTURE.forEach(function(key,i){var dot=document.createElement("span");dot.className="path-dot"+(i<ROUNDIX?" done":i===ROUNDIX?" current":"");dot.setAttribute("aria-hidden","true");if(i===ROUNDIX){var art=S.gameSticker(key);S.paintSticker(dot,art[0],art[1]);}$("ctxLine").appendChild(dot);});
     })();
-    // the bubble target — huge, orange, repainted on every syllable flip
+    // The bubble target, repainted on every flip (a step-down included). Only
+    // the letters that make the practice sound are orange (Sona.soundMark:
+    // one rule, every page); the rest is the bubble's ink. A bare-sound target
+    // like "rrrr" IS the sound, so it is orange whole. In a sentence only the
+    // practice word is marked: "I see a" is the frame, not the practice. Kept
+    // self-contained: voicetest3 runs this function's own source against
+    // ITEM, SOUND, S, $.
     function paintCard(){
-      $("bTarget").textContent = ITEM.level==="isolation" ? ((S&&S.soundSay)?S.soundSay(SOUND):"rrrr") : (ITEM.display||ITEM.t);
+      var iso=ITEM.level==="isolation", txt=String(iso?((S&&S.soundSay)?S.soundSay(SOUND):"rrrr"):(ITEM.display||ITEM.t));
+      var esc=function(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
+      var word=String(ITEM.word||"").toLowerCase(), info=null;
+      ((S&&S.WORDS&&S.WORDS[SOUND])||[]).forEach(function(w){ if(!info&&w.w===word)info=w; });
+      var pos=(info&&info.pos)||"", mark=function(x){ return (S&&S.soundMark)?S.soundMark(x,SOUND,pos):'<b class="snd">'+esc(x)+'</b>'; };
+      // the practice word as a whole word: "ear" must not light up inside "hear"
+      var lo=txt.toLowerCase(), at=-1, from=0, f;
+      while(word&&!iso&&(f=lo.indexOf(word,from))>=0){ if(!/[a-z]/.test(lo.charAt(f-1))&&!/[a-z]/.test(lo.charAt(f+word.length))){at=f;break;} from=f+1; }
+      $("bTarget").innerHTML = iso ? '<b class="snd">'+esc(txt)+'</b>'
+        : at>=0 ? esc(txt.slice(0,at))+mark(txt.slice(at,at+word.length))+esc(txt.slice(at+word.length)) : mark(txt);
     }
     paintCard();
     function paintReps(n){
@@ -1318,7 +1536,12 @@
     // ---- rapid-fire rep engine: one attempt can span visible mic segments. ----
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     var engineControl=null, engineAttempt=null, attemptInterrupted=false;
-    var recognitionTexts=[], recognitionRemaining=9000, recognitionState=null;
+    // How long Apple's recognizer may listen across one attempt's windows. It
+    // was 9 s, so a child who waited for Echo's 8-second nudge got about one
+    // second of it, and their tries went to the looser sound-shape check.
+    // 15 s is also the most the plugin allows one listen (SonaSpeechPlugin).
+    var REC_BUDGET=15000;
+    var recognitionTexts=[], recognitionRemaining=REC_BUDGET, recognitionState=null;
     // ---- ROOM FLOOR (24 Sep 2026) ----
     // How loud the room is when nobody is talking. Two things come from it:
     // the loudness bar a sound must clear to start a try (thr, 3x the room)
@@ -1358,6 +1581,52 @@
     // (a voice, or a hum/fan too loud to be one). Only then does a reopened
     // window with no room start in learn-first mode.
     var roomLoud=false;
+    // ── MIC NUMBERS (2 Oct 2026) ──
+    // Travis, in the iPhone app: "I have to say the word super close to the
+    // phone or else it won't seem to hear it". Before any bar moves, the
+    // numbers: with the switch on (five taps on "Account" in Settings, behind
+    // the grown-ups check, sona.micnumbers) a small box at the top of this
+    // page shows, while the mic listens, the level now, the loudest moment of
+    // the last two seconds, how loud a sound has to be to count (the bar),
+    // the room, and for each sound that cleared the bar how loud it was and
+    // whether it counted; then the frame rate, the audio rate and what the
+    // phone says it does to the mic (echo cancelling, noise suppression,
+    // automatic gain). They are the detector's own numbers, read from the
+    // same frames, in dB below full scale. It counts nothing, changes
+    // nothing, and the numbers are never saved or sent.
+    var micNums={on:false,box:null,hist:[],ev:null,last:null,stream:null,ctx:null,paintAt:0,frames:[]};
+    try{micNums.on=localStorage.getItem("sona.micnumbers")==="1";}catch(e){}
+    function micDb(x){return x>0?Math.round(20*Math.log(x)/Math.LN10)+" dB":"silent";}
+    function micNumsFrame(now,rms,thr,roomRms,repsNow,stream,ctx){
+      var m=micNums;if(!m.on)return;
+      m.stream=stream;m.ctx=ctx;
+      m.frames.push(now);while(m.frames.length&&now-m.frames[0]>1000)m.frames.shift();
+      m.hist.push({t:now,r:rms});while(m.hist.length&&now-m.hist[0].t>2000)m.hist.shift();
+      // a sound: frames over the bar, ended by eight frames under it (the
+      // detector's own end), counted if a try was counted while it lasted
+      if(thr&&rms>thr){if(!m.ev)m.ev={from:now,levels:[],reps:repsNow,quiet:0};m.ev.levels.push(rms);m.ev.quiet=0;m.ev.to=now;}
+      else if(m.ev&&++m.ev.quiet>=8){
+        var lv=m.ev.levels.slice().sort(function(a,b){return a-b;}),route=null;
+        try{var ev=window.__evid||[];route=ev.length?ev[ev.length-1]:null;}catch(e){}
+        m.last={peak:lv[lv.length-1],mid:lv[Math.floor(lv.length/2)],ms:m.ev.to-m.ev.from,counted:repsNow>m.ev.reps,route:route};
+        m.ev=null;
+      }
+      if(now-m.paintAt<200)return;
+      m.paintAt=now;
+      if(!m.box){m.box=document.createElement("div");m.box.id="micNumbers";m.box.setAttribute("aria-hidden","true");
+        m.box.style.cssText="position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 4px);z-index:9999;pointer-events:none;background:rgba(0,0,0,.78);color:#fff;font:11px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border-radius:8px;white-space:pre-wrap;";
+        document.body.appendChild(m.box);}
+      var loud=0;m.hist.forEach(function(h){if(h.r>loud)loud=h.r;});
+      var set={};try{var tr=stream&&stream.getAudioTracks()[0];set=tr&&tr.getSettings?tr.getSettings():{};}catch(e){}
+      function yn(v){return v===true?"on":v===false?"off":"?";}
+      var L=["Mic numbers (Settings: tap Account 5 times to hide)",
+        "now "+micDb(rms)+" · loudest in 2 s "+micDb(loud),
+        "counts above "+(thr?micDb(thr):"(reading the room)")+" · room "+(roomRms?micDb(roomRms):"not read yet")];
+      if(m.last)L.push("last sound: loudest "+micDb(m.last.peak)+", middle "+micDb(m.last.mid)+", "+(m.last.ms/1000).toFixed(2)+" s, "+(m.last.counted?"counted"+(m.last.route?" ("+m.last.route+")":""):"not counted"));
+      L.push(m.frames.length+" fps · "+(ctx?ctx.sampleRate:"?")+" Hz · echo cancel "+yn(set.echoCancellation)+" · noise "+yn(set.noiseSuppression)+" · auto gain "+yn(set.autoGainControl));
+      L.push(set.sonaNative?"mic: Sona's own · "+(set.sonaMode||"default")+" mode · in "+(set.sonaInput||"?")+" · out "+(set.sonaOutput||"?")+" · boost ×"+Number(set.sonaGain||1).toFixed(1)+" · chunk "+(set.sonaChunkMs||"?")+" ms · queue "+(set.sonaQueueMs||0)+" ms · gaps "+(set.sonaGaps||0)+" · restarts "+(set.sonaRestarts||0)+" · close "+(set.sonaCloseMs!=null?set.sonaCloseMs+" ms":"?"):"mic: "+((S&&S.isNativeApp&&S.isNativeApp())?"the web page's (phone-call mode)"+(set.sonaWhy?" · "+set.sonaWhy:""):"the browser's"));
+      m.box.textContent=L.join("\n");
+    }
     function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
     // The pct-th percentile of the non-zero readings (exact zeros are the
     // audio path still starting, never a room); 0 when there are none.
@@ -1430,7 +1699,7 @@
       function stop(){finish(false);}
       try{
         var ctx=getCtx(); if(!ctx){done();return;}
-        src=ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
         ev=evidenceAnalyser(ctx,src); td=new Uint8Array(an.fftSize); probe.attach(ev,ctx.sampleRate);
       }catch(e){finish(false);return;}
       roomProbe=stop;
@@ -1486,7 +1755,7 @@
       return new Promise(function(resolve){
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
-        recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
+        recognitionTexts=[]; recognitionRemaining=REC_BUDGET; recognitionState=null;
         var voiced=0,silent=0,inBurst=false,thr=0,lastRep=0,burstFrames=[];
         var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
         var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
@@ -1538,7 +1807,7 @@
             elapsed=Math.min(20000,activeMs()); engineOn=false; listenReady=false; micGo(false);
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
-            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
+            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}
             Promise.all([recorderStop(),recognitionStop()]).then(function(){
               // The mic closes at the end of EVERY window, not only before a
               // sound (24 Sep 2026): the next window reopens it into silence.
@@ -1550,7 +1819,7 @@
             });
           };
           try{
-            var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
+            var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,micStream):ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
             seg.src=src; an.fftSize=512;src.connect(an);
             var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
             var ev=evidenceAnalyser(ctx,src);
@@ -1575,7 +1844,7 @@
             // Independent recorder files cannot be concatenated into one clip.
             // Interrupted attempts retain reps/evidence but skip the keepsake.
             if(!attemptInterrupted && window.MediaRecorder && micStream){try{
-              var recorder=new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
+              var recorder=(S&&S.micRecorder)?S.micRecorder(micStream):new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
               recorder.ondataavailable=function(e){
                 if(engineAttempt===attempt && attempt.segment===seg && !attemptInterrupted && !attempt.cancelled && (!seg.closed || seg.reason==="done") && e.data && e.data.size)chunks.push(e.data);
               };
@@ -1637,12 +1906,13 @@
               }else{
                 silent++;voiced=0;
                 if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}
-                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
+                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}}
                 // A short sound (a T/K/P release, a quick "fff") is judged once
                 // it has been quiet ~130ms, or when the event closes if sooner.
                 if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
                 if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
               }
+              if(micNums.on)micNumsFrame(now,rms,thr,room&&room.rms,reps,micStream,ctx);
               seg.raf=requestAnimationFrame(tick);
             }
             // This window's own reading of the room: the page's first, if the
@@ -1716,7 +1986,7 @@
               // whole reward. A chime here would sound into the open mic.
               paintReps(reps);
               var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
-              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
+              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");echoPose();}catch(e){}
               if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
             }
             // A short sound that ended just before time ran out or Echo spoke
@@ -1800,7 +2070,9 @@
       try{
         if(S&&S.hearVerdict){
           var text=recognitionTexts.join(" ");
-          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""));
+          // The round's kind and, on a sentence round, the sentence itself: its
+          // other words ("Here is a …") are set aside, so only the target counts.
+          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""),{level:ITEM.level,frame:ITEM.level==="sentence"?String(ITEM.t||""):""});
           try{window.__hear={text:text,verdict:hv};}catch(e){}
           if(hv!=="unknown")return hv;
         }
@@ -1831,7 +2103,7 @@
         // No glowing mic here: it lights when the window is open and the room
         // measured (listenReady), not before Echo's prompt or the quiet gap.
         NEED=n||save;turnPhase="practice";updateTurn();
-        try{$("sayLbl").textContent="Say";$("leo").src="/coach/echo/echo-listening.svg";}catch(e){}
+        try{$("sayLbl").textContent="Say";echoCoach=false;echoPose();}catch(e){}
         if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
         NEED=save;
         // Even a native transcript cannot manufacture a try when the mic found
@@ -1880,7 +2152,7 @@
               if(practicePaused || practiceClosed || document.hidden)return;
               var card=$("micPrime").querySelector(".ovlCard");
               if(!card){ location.href="/today.html"; return; }
-              card.innerHTML='<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
+              card.innerHTML='<img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="this.onerror=null;this.src=\'/assets/crafted/echo-welcome.webp\'" />'
                 +'<h2>That\'s okay!</h2>'
                 +'<p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo needs to hear you to play the games — we\'ll ask again next time you\'re ready.</p>'
                 +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
@@ -1937,8 +2209,9 @@
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
       // showTurtle(true) used to live only inside the wrong-sound branch, so
       // the child who most needed to hear the model slowly had to fail first
-      // to discover the control existed. Nothing about the model changes —
-      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // to discover the control existed. The turtle replays the model's own
+      // line at 0.7x (on a sound round that includes Rachel's recorded sound,
+      // slowed with it), behind the same ttsBegin/ttsEnd speaker guard — so a
       // replay still cannot be counted as the child speaking, and saySlow's
       // own `if(speaking) return` means repeated taps cannot stack.
       showTurtle(true);
@@ -1953,13 +2226,12 @@
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(v==="pass" && useRung>=RUNG && S && S.recordRung && !DEMO_REPLAY){
-        try{
-          // KIDS1: rung wins belong to the child who earned them
-        var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
-          if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
-          else localStorage.setItem(wk,String(w));
-        }catch(e){}
+      if(v==="pass" && useRung>=RUNG && S && S.rungWin && !DEMO_REPLAY){
+        // KIDS1: rung wins belong to the child who earned them. The count is
+        // kept inside that child's progress by Sona.rungWin(); this page holds
+        // no key of its own, because a key built from the sound and rung is
+        // one kkey() cannot make per-child (sona.js, rungWin).
+        try{ S.rungWin(SOUND,useRung); }catch(e){}
       }
       if(v==="fail"){
         // The scorer really heard a different sound — the charge is NOT given
@@ -1968,17 +2240,19 @@
         // (a kid is never hard-stuck) but the stats keep the truth.
         var c=(S&&S.cue)?S.cue(SOUND):null;
         // coaching moves INTO Echo's bubble: small cue line, huge target stays,
-        // warm retry line below. Echo drops to the idle pose while he coaches.
+        // warm retry line below. Echo takes the thinking pose while he coaches.
         try{ $("sayLbl").textContent="Almost! "+(CUESHORT||"listen close")+" —"; }catch(e){}
         $("gpState").textContent="Try again — you've got this!";
-        try{ var li=$("leo"); if(li&&li.src) li.src="/coach/echo/echo-idle.svg"; }catch(e){}
+        try{ echoCoach=true; echoPose(); }catch(e){}
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
         showTurtle(true); // already on since the prompt; harmless if the round stepped down
         // Calm (24 Sep 2026): no "Hmm … !" before the tip, no "Try again!"
         // after it. The tip itself is Rachel's CUES text, word for word.
-        await say("Let's try that one again. "+tip+".");
+        // The mic opens straight after it, so it ends on the hand-over's
+        // "Go!" (2 Oct 2026, see sayLine).
+        await say("Let's try that one again. "+tip+". Go!");
         if(!(await practiceReady()))return;
         v=await burstAndVerify(3);
         if(v===null || !(await practiceReady()))return;
@@ -1999,7 +2273,8 @@
             // Calm (24 Sep 2026), and "this one" rather than "something
             // easier": the child hears an idea, not a demotion. The target
             // itself (ITEM.say||ITEM.t) is untouched.
-            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+".");
+            // A hand-over too: "… Go!" (2 Oct 2026, see sayLine).
+            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+". Go!");
             if(!(await practiceReady()))return;
             v=await burstAndVerify(3);
             if(v===null || !(await practiceReady()))return;
@@ -2056,7 +2331,7 @@
     }
     function showChestReveal(stk){
       $("chestStage").style.display="none";
-      $("chestStk").textContent=stk?stk.e:"⭐";
+      $("chestStk").innerHTML=window.SonaRewardArt?SonaRewardArt(stk?stk.id:"star"):S.icon("star",74);
       $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
       $("chestReveal").style.display="block";
       $("chestClaim").focus({preventScroll:true});
@@ -2100,7 +2375,7 @@
       if(!q){
         q=document.createElement("div");q.id="quietOvl";q.className="ovl";
         q.setAttribute("role","dialog");q.setAttribute("aria-modal","true");q.setAttribute("aria-labelledby","quietTitle");
-        q.innerHTML='<div class="ovlCard quiet-card"><img src="/coach/echo/echo-listening.svg" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
+        q.innerHTML='<div class="ovlCard quiet-card"><img src="/assets/crafted/echo-think.webp" alt="Echo" onerror="this.onerror=null;this.src=\'/assets/crafted/echo-welcome.webp\'"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
         document.body.appendChild(q);
       }
       var microphone=cause==="microphone";
@@ -2126,11 +2401,29 @@
       paintReps(NEED);
       // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
       try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
-      try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/coach/echo/echo-celebrate.svg"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
+      // The cheer keeps Echo's own size: the 110px here grew the old 100px
+      // flat SVG, and in the crafted layout it shrank him at the win.
+      try{ echoPose(); }catch(e){}
       try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
-      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
+      // Up next: the game's painted Home card, else its sticker (crafted-games.css)
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"),_card=(S.CRAFTED_CARDS||{})[GAME.replace(/^arcade-|\.html$/g,"")];
+        _lb.innerHTML='<span id="launchArt" aria-hidden="true"></span><span class="launch-text"><span class="launch-up">Up next</span><span class="launch-name"></span></span><i class="launch-go" aria-hidden="true"></i>';
+        // LEVELS1: the one place the level is named before the game (and its
+        // start card): "Fruit Slice · Level 2", only at Level 2 or 3
+        var _lv=1;try{_lv=S.playLevel?S.playLevel(GAME.replace(/^arcade-|\.html$/g,"")):1;}catch(e){_lv=1;}
+        _lb.querySelector(".launch-name").textContent=GMETA.n+(_lv>1?" \u00b7 Level "+_lv:"");
+        if(_lv>1){var _nm=_lb.querySelector(".launch-name"),_l1=document.createElement("span"),_l2=document.createElement("span"),_dot=document.createElement("span");
+          _l1.className=_l2.className="launch-line";_dot.className="launch-dot";_l1.textContent=GMETA.n;_dot.textContent=" \u00b7 ";_l1.appendChild(_dot);_l2.textContent="Level "+_lv;
+          _nm.textContent="";_nm.appendChild(_l1);_nm.appendChild(_l2);}
+        if(_card)$("launchArt").style.backgroundImage='url("/assets/crafted/home-'+_card+'.webp")';
+        else{var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]);}
+        _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
+      // The step this page ended on, and its item (a sentence hands over its
+      // practice word), so the game's say-it cards never ask below what was
+      // just asked here (Sona.gameAsk). Nothing this page asks or records changes.
+      try{ sessionStorage.setItem("sona.boost.level",ITEM.level||"isolation"); sessionStorage.setItem("sona.boost.ask",String(ITEM.word||ITEM.t||"")); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
       // Calm, and after the chime rather than on top of it (24 Sep 2026).
@@ -2157,7 +2450,7 @@
         if(!DEMO_REPLAY){
           S.dailyFinish(run.sum);
           if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
-          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);}
           if(S.episodeAdvance)S.episodeAdvance();
         }
         run.finishRecorded=true;

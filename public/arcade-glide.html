@@ -51,24 +51,50 @@
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* ── the flight's HUD, banner and card (27 Sep 2026) ── */
+    #tapHint{color:#fff!important;text-shadow:0 2px 3px rgba(120,60,20,.55);}
+    #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
+    #timer .wv{white-space:nowrap;}
+    #timer .wbar{display:block;width:60px;height:10px;border-radius:99px;background:#fbe8d6;overflow:hidden;}
+    #timer .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffb86b,#ff6b8a);transition:width .25s;}
+    #banner{position:absolute;left:0;right:0;top:17%;text-align:center;z-index:4;pointer-events:none;opacity:0;padding:0 16px;}
+    #banner .pill{display:inline-block;background:rgba(255,255,255,.95);border-radius:26px;padding:10px 26px 12px;box-shadow:0 6px 0 rgba(140,70,30,.28);}
+    #banner b{display:block;font-family:"Baloo 2";font-weight:800;font-size:38px;color:#e2621a;line-height:1.05;}
+    #banner span{display:block;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#8a6f52;margin-top:2px;}
+    #banner span:empty{display:none;}
+    #banner.in{animation:bannerIn 1.9s ease both;}
+    @keyframes bannerIn{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-12px)}}
+    @keyframes bannerFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
+    #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
+    #revHearts .wdot svg{width:20px;height:20px;}
+    @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="glide">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M32 4C18 4 11 16 11 27c0 12 11 19 17 26h8c6-7 17-14 17-26C53 16 46 4 32 4Z" fill="#ff6b6b"/><path d="M32 4c-6 0-10 12-10 23 0 12 5 19 7 26h6c2-7 7-14 7-26C42 16 38 4 32 4Z" fill="#fff4dd"/><path d="M32 4c-2 0-4 12-4 23 0 12 2 19 3 26h2c1-7 3-14 3-26C36 16 34 4 32 4Z" fill="#ffd43b"/><rect x="25" y="53" width="14" height="9" rx="3" fill="#b5875a"/></svg> <b id="score">0</b></div>
-      <div id="hudspacer"></div>
+      <div id="hudspacer"><span id="gameHearts" class="game-hearts" role="img"></span></div>
       <div id="timer" class="hudpill"></div>
     </div>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Say rrrr when Echo asks</p><span class="slowTrack"><i id="slowMeter"></i></span>
+    </div>
     <div id="flash"></div>
-    <div id="tapHint">Tap to flap! Glide through the gaps!</div>
+    <div id="tapHint">Tap to float up! Fly through the gaps!</div>
+    <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
   </div>
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-wave.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -78,7 +104,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -89,18 +115,19 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><img src="/assets/crafted/game/star.webp" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:contain"></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
+      <div class="echoWin"><img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></div>
+      <button class="btn blue" id="endCharge">Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back to the house</button>
+      <button class="btn ghost" id="endHome">Back home</button>
     </div>
   </div>
 
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -114,10 +141,22 @@
       gameEntryAllowed=true;
     })();
   </script>
+  <script>window.SLOW_HELP={phase:"fly",action:"slow the beams",earned:"Slow beams!",eligible:function(){return !falling.on;},first:6000};</script>
+  <script src="/arcade-speech-help.js"></script>
+  <script src="/arcade-sayit.js"></script>
   <script>
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
+    // LEVELS INSIDE GAMES (LEVELS1, 11 Oct 2026): the level this child plays,
+    // 1 unless they picked Level 2 or 3 and it is open (Sona.playLevel). Level
+    // 1 is the flight as it always was: its legs and numbers stay on their own
+    // lines below and a level only overrides them after. Harder levels fly
+    // more gaps, a little narrower, quicker and closer together; the balloon's
+    // float, the soft bounce, the stars and the cards never change, and after
+    // a bump the hedges are never faster or closer than Level 1's. An older
+    // cached sona.js has no levels, so the page plays Level 1.
+    var LV=(S&&S.playLevel)?S.playLevel("glide"):1; if(LV!==2&&LV!==3) LV=1;
     // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
     // On an iPhone a page holding the mic runs as a phone call: the volume
     // buttons change CALL volume and every chime is processed like a call.
@@ -128,15 +167,20 @@
     // silence, not under a chime), and the mic never opens until QUIET_MS
     // after the last sound began: the longest chime ("complete") rings about
     // 0.6 s and the rest covers speaker and Bluetooth delay, so a chime's
-    // tail can never answer the card for the child.
-    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
+    // tail can never answer the card for the child. chimeEnd (2 Oct 2026) is
+    // when the last chime asked for will have stopped ringing: Echo's voice
+    // on the say-it card waits for that, not for the mic's quiet window, so
+    // he starts as soon as the speaker is free (/arcade-sayit.js).
+    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9, chimeEnd=0;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
+    function chimeLen(n){ return window.SayIt?SayIt.chimeMs(n):600; }
     function sfx(n){
-      if(rv.st) return;
-      if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
+      if(rv.st||slowTurn) return;
+      if(rv.pending){ chimeEnd=Math.max(chimeEnd,performance.now()+60+chimeLen(n)); setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
-      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
+      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); chimeEnd=Math.max(chimeEnd,performance.now()+wait+chimeLen(n)); setTimeout(function(){ sfx(n); },wait); return; }
       quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      chimeEnd=Math.max(chimeEnd,performance.now()+chimeLen(n));
       try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
     }
 
@@ -147,6 +191,8 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Flappy Glide needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
+    // once per load, and only at Level 2 or 3: the game and the level, nothing else
+    if(tok&&LV>1){ try{ Sona.track("level played",{game:"glide",level:LV}); }catch(e){} }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -154,139 +200,355 @@
 
     // ---- game state ----
     var playing=true, score=0;
-    var BESTK="sona.best.glide", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
-    // ── lives: a crash → say your sound for a new life (3 per run) ──
-    var REV=3, reviveWait=false;
-    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
-    function crash(){
+    var BEST=0;
+    var REV=3, reviveWait=false;   // say-the-sound cards: one on each cloud rest
+
+    // ── the flight: three legs, a cloud rest between, then a fireworks landing (27 Sep 2026) ──
+    // The round Travis said yes to for Fruit Slice, as a balloon flight, with
+    // what the review of the older games found: the hardest of the six (a
+    // steady tap about every half-second, with hedges almost back to back, and
+    // a bump that stopped play). The balloon now floats and sinks slowly (a
+    // tap about every second holds it level), the gaps are wider and further
+    // apart, a hedge is a soft bounce back into the gap and never the card,
+    // and after two bumps in a leg the gaps open wider and the hedges slow.
+    // The say-it card waits on a cloud between legs; after the third the
+    // balloon lands in fireworks if the child keeps their hearts. Stars float
+    // in the gaps to catch. (Hold-to-rise, the review's other idea, changes the
+    // control, so it waits for Travis.)
+    var LEGS=[{goal:6},{goal:7},{goal:8}];
+    // Level 2 and 3 (LEVELS1): a gap more on each leg, and each leg's gap a
+    // little narrower (SHRINK). LEG_TOP is every gap of the flight: the
+    // longest row there is at this level (21, 24, 27).
+    var LEGS_L1=LEGS;
+    if(LV===2) LEGS=[{goal:7},{goal:8},{goal:9}]; else if(LV===3) LEGS=[{goal:8},{goal:9},{goal:10}];
+    var LEG_TOP=0; (function(){ for(var i=0;i<LEGS.length;i++) LEG_TOP+=LEGS[i].goal; })();
+    var SHRINK=[[0,.06,.12],[.04,.10,.16],[.08,.14,.20]][LV-1];
+    var leg=0, legGot=0, phase="fly", bumps=0, landing=null, finaleDone=false, echoT=-1e9, sparks=[];
+    var G=H*0.00028, FLAP=-H*0.0072, VMAX=H*0.0058;   // floaty: a tap about every second holds it level
+    var py=H*0.45, vy=0, px=W*0.32;
+    var gates=[], gapBase=H*0.46, gapH=gapBase, gspeed0=W*0.0026, gspeed=gspeed0, gateEvery=2900, gateMs=2000;
+    // Level 2 and 3: hedges a little quicker and closer together. Level 1's
+    // numbers are kept (GSPEED_L1, GATE_EVERY_L1): a bump goes back to them.
+    var GSPEED_L1=gspeed0, GATE_EVERY_L1=gateEvery, GATE_EVERY=[2900,2700,2500][LV-1];
+    if(LV>1){ gspeed0=GSPEED_L1*[1,1.1,1.2][LV-1]; gspeed=gspeed0; gateEvery=GATE_EVERY; }
+    var falling={on:false,t0:0}, mercyT=0;
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy rides in
+    // the basket as its round badge, clipped to a circle so no square corner
+    // shows behind the ropes (the fox too); then the flat sticker; then the
+    // dot at the draw calls below. Sizes are as before (34 px, 52 px).
+    var BID=S.buddyId?S.buddyId():(((S.getProfile&&S.getProfile())||{}).character||"fox");
+    var CB=window.SonaCraftedBuddies||null, BUDDYPIC=null, BUDDYSVG=null;
+    if(CB&&CB.image) BUDDYPIC=CB.image(BID,"portrait");
+    else if(CB&&CB.source){ BUDDYPIC=new Image(); BUDDYPIC.src=CB.source(BID)||""; }
+    if(CB&&CB.svgSrc){ (function(){ var sv=CB.svgSrc(BID); if(sv){ BUDDYSVG=new Image(); BUDDYSVG.src=sv; } })(); }
+    function drawBuddy(x,y,sz){
+      if(BUDDYPIC&&BUDDYPIC.complete&&BUDDYPIC.naturalWidth){
+        if(window.SonaCraftedBuddies&&SonaCraftedBuddies.drawCircle){ if(SonaCraftedBuddies.drawCircle(ctx,BUDDYPIC,x,y,sz)) return true; }
+        else { ctx.drawImage(BUDDYPIC,x-sz/2,y-sz/2,sz,sz); return true; }
+      }
+      if(BUDDYSVG&&BUDDYSVG.complete&&BUDDYSVG.naturalWidth){ ctx.drawImage(BUDDYSVG,x-sz/2,y-sz/2,sz,sz); return true; }
+      return false;
+    }
+
+    var HEART_MAX=3, hearts=HEART_MAX, heartHitAt=-1e9, outOfHearts=false;
+    function paintHearts(){ var e=$("gameHearts"); e.innerHTML=S.heartRow(hearts,HEART_MAX,16); e.setAttribute("aria-label",hearts+" hearts left"); }
+    function loseHeart(now){
+      if(!playing||phase!=="fly"||slowTurn||slowMs>0||now-heartHitAt<1500)return false;
+      heartHitAt=now; hearts=Math.max(0,hearts-1); paintHearts();
+      if(!hearts){ outOfHearts=true; }
+      return true;
+    }
+    // Each child keeps their own best in the visible count, never the hidden
+    // reward number. Older cached Sona scripts can still play without a store.
+    var rowN=0, rowBest=0, startBest=0, keptRow=0, saidNewBest=false;
+    var CAN_BEST=!!(S&&S.gameBest&&S.gameBestOffer);
+    try{if(CAN_BEST)startBest=S.gameBest("glide")|0;}catch(e){}
+    // Level 2 and 3 keep their own best (each level's flight has its own top)
+    if(LV>1){ startBest=0; try{ startBest=S.playBest("glide",LV)|0; }catch(e){} }
+    function rowSaid(n){return n===1?"1 gap":n+" gaps in a row";}
+    function keepBest(){
+      var n=rowBest;
+      if(LV>1){ if(n>keptRow){ keptRow=n; try{ S.playBestOffer("glide",LV,n); }catch(e){} } return; }
+      if(!CAN_BEST||n<=keptRow)return;
+      keptRow=n;try{S.gameBestOffer("glide",n);}catch(e){}
+    }
+    function bestReached(){
+      var n=rowBest;keepBest();
+      if(startBest>0&&!saidNewBest&&n>startBest){saidNewBest=true;banner("New best!",rowSaid(n));}
+    }
+    function rowUp(){rowN++;rowBest=Math.max(rowBest,rowN);bestReached();}
+    function bestLine(){
+      var n=rowBest;if(n<1)return [];
+      var did=rowSaid(n)+".";
+      if(!CAN_BEST)return [did,""];
+      if(startBest<=0)return [did,"Your best: "+n+"!"];
+      if(n>startBest)return [did,"A new best!"];
+      if(n>=LEG_TOP)return [did,"That is every gap!"];
+      if(n===startBest)return [did,"The same as your best!"];
+      return [did,"Your best: "+startBest+"."+(startBest-n<=5?" "+(startBest-n)+" away!":"")];
+    }
+    paintHearts();
+    function spawnGate(){
+      var cy=H*(0.32+Math.random()*0.34);
+      gates.push({x:W+70,cy:cy,passed:false,hit:false,star:Math.random()<0.7,gold:leg>0&&Math.random()<0.15,got:false});
+    }
+    function startLeg(i){
+      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase*(1-SHRINK[i]*(1+Math.min(.3,startBest/21*.3))); gspeed=gspeed0; if(LV>1)gateEvery=GATE_EVERY; gateMs=gateEvery-900; gates=[]; landing=null;
+      py=H*0.45; vy=0; mercyT=performance.now(); hud();
+      banner("Leg "+(i+1),"Fly through "+LEGS[i].goal+" gaps!");
+    }
+    function endLeg(){
+      phase="rest"; hud();
+      var last=leg===LEGS.length-1;
+      landing={y:H+80,ty:H*0.64,big:last,t0:performance.now()};   // a cloud floats up under the balloon
+      banner(last?"Landing time!":"Rest on a cloud!", last?"What a flight!":"Leg "+(leg+1)+" done!"); sfx("complete"); echoT=performance.now();
+      setTimeout(function(){
+        if(window.__ended||!playing) return;
+        if(last){ finaleDone=true; phase="done"; hud(); fireworks(); setTimeout(endRound,2000); }
+        else sayCard("Say \u201C"+SAYTXT+"\u201D to fly on!","none");
+      },2200);
+    }
+    function fireworks(){
+      try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      var cols=["#ff6b8a","#ffd43b","#69db7c","#4dabf7","#b197fc"];
+      for(var b=0;b<4;b++){ var cx=W*(0.2+b*0.2), cy=H*(0.2+(b%2)*0.12);
+        for(var k=0;k<22;k++){ var a=k/22*6.28, v=2+Math.random()*3; sparks.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1+b*0.15,c:cols[(b+k)%5]}); } }
+      echoT=performance.now();
+    }
+
+    // ── the HUD: this leg's gaps, then the landing ──
+    function hud(){
+      var t=$("timer");
+      if(phase==="done"||(phase==="rest"&&leg===LEGS.length-1)){ t.innerHTML='<span class="wv">Landing!</span>'; t.setAttribute("aria-label","The landing"); return; }
+      var L=LEGS[leg], got=phase==="rest"?L.goal:Math.min(legGot,L.goal);
+      t.innerHTML='<span class="wv">Leg '+(leg+1)+'</span><span class="wbar"><i style="width:'+Math.round(got/L.goal*100)+'%"></i></span>';
+      t.setAttribute("aria-label","Leg "+(leg+1)+" of 3: "+got+" of "+L.goal+" gaps");
+    }
+    var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function legDots(){ var s=""; for(var i=0;i<LEGS.length;i++) s+='<span class="wdot'+(i<=leg?' on':'')+'">'+(i<=leg?TICK:String(i+1))+'</span>'; return s; }
+    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+
+    // ── the say-it card, on a cloud between legs ──
+    // The quoted sound in its title is the practice sound's letters, in the
+    // crafted orange (.ovl h2 b): the family's brief keeps orange for those
+    // letters alone, and Sona.soundMark decides which letters they are. The
+    // title arrives as plain text, so everything else in it is escaped.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
+    function sayCard(title,snd){
       if(!playing) return;
-      playing=false; gates=[]; sfx("tap");
+      playing=false; gates=[]; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
-        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
+        $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
+        $("revHearts").innerHTML=legDots();
+        reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
     }
+    // The card's old name, from when a hedge opened it. Kept because the
+    // quiet-mic suites open the card through it.
+    function crash(){ sayCard(); }
     function doRevive(){
-      reviveWait=false; REV--; hearts();
+      if(slowTurn){finishSlowKeys(true);return;}
+      reviveWait=false; REV--; hud();
+      var life=lifeTaken(); if(life){ hearts=HEART_MAX; outOfHearts=false; paintHearts(); }
+      // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
+      try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-      py=H*0.45; vy=0; mercyT=performance.now(); playing=true; draw(); // the gated rAF died on crash — restart it
+      sfx("complete"); try{ if(!life&&!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
+      py=H*0.45; vy=0; mercyT=performance.now(); playing=true;
+      if(phase==="rest") startLeg(leg+1);
+      draw(); // the gated rAF died on the card — restart it
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
-    hearts();
 
-    var G=H*0.00052, FLAP=-H*0.0095; // floaty, kid-gentle physics
-    var py=H*0.45, vy=0, px=W*0.32;
-    var gates=[], gapH=H*0.42, gspeed=W*0.0030, spawnMs=2300; // wide gaps, slow drift
-    var falling={on:false,t0:0}, mercyT=0;
-    var RUNNER="🦊";
-    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
-    function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
-
-    try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
-
-    function spawnGate(){
-      var cy=H*(0.30+Math.random()*0.40);
-      gates.push({x:W+70,cy:cy,passed:false});
-    }
-    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing&&!falling.on) spawnGate(); },spawnMs);
-    var rampIv=setInterval(function(){ if(document.hidden)return; if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
-    
-
-    cv.addEventListener("pointerdown",function(){
-      if(!playing||falling.on)return;
+    function flap(){
+      if(!playing||falling.on||phase!=="fly")return;
       vy=FLAP; sfx("tap"); $("tapHint").style.display="none";
-    });
+    }
+    cv.addEventListener("pointerdown",flap);
+    window.addEventListener("keydown",function(e){ if(e.key===" "||e.key==="ArrowUp") flap(); });
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
-
-    // Mario-Kart fall: bonk a tower → tumble off the sky (~1.1s) → float back
-    // in on the balloon, keep gliding. Never a "you lose" screen.
+    // a hedge is a soft bounce back towards the gap, never a stop; two in a
+    // leg and the gaps open wider and the hedges slow down
+    function bump(g){
+      if(!playing||phase!=="fly"||g.hit)return;g.hit=true; mercyT=performance.now(); bumps++;rowN=0;
+      // the bump help reads Level 1's numbers: at Level 2 or 3 the hedges
+      // first come back to Level 1's speed and spacing (startLeg restores the level's)
+      if(loseHeart(mercyT)){gapH=Math.min(H*.6,gapBase*1.12);if(LV>1){gspeed=Math.min(gspeed,GSPEED_L1);gateEvery=GATE_EVERY_L1;}gspeed=Math.max(GSPEED_L1*.8,gspeed*.9);}
+      vy=(py<g.cy?1:-1)*H*0.004; py+=(py<g.cy?1:-1)*10;
+      flash("Boing!"); sfx("drop");
+      if(outOfHearts)lifeOrEnd();
+    }
     function startFall(){ falling={on:true,t0:performance.now()}; flash("WHOOOA!"); sfx("tap"); }
-
-    
-    // vector hot-air balloon (SVG → Image) that carries the buddy
     var BAL=new Image(), BALOK=false;
     BAL.onload=function(){ BALOK=true; };
     BAL.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 100 125"><path d="M50 4 C24 4 12 24 12 42 C12 62 30 74 40 84 L60 84 C70 74 88 62 88 42 C88 24 76 4 50 4" fill="#fa5252"/><path d="M50 4 C36 4 28 24 28 42 C28 62 38 74 42 84 L50 84 Z" fill="#ff8787"/><path d="M50 4 C60 4 68 24 68 42 C68 62 60 74 56 84 L50 84 Z" fill="#ffd43b"/><path d="M50 4 C46 4 42 24 42 42 C42 62 46 74 48 84 L52 84 C54 74 58 62 58 42 C58 24 54 4 50 4" fill="#fff" opacity=".22"/><path d="M40 84 L37 96 M60 84 L63 96 M50 84 L50 96" stroke="#8a5a2e" stroke-width="2.5"/><rect x="34" y="96" width="32" height="22" rx="6" fill="#a97044"/><rect x="34" y="96" width="32" height="8" rx="4" fill="#c08a5a"/><path d="M38 104 h24 M38 111 h24" stroke="#8a5a2e" stroke-width="2" opacity=".6"/></svg>');
+    var CRAFTBAL=null, balloonArt=new Image();
+    balloonArt.onload=function(){CRAFTBAL=balloonArt;};balloonArt.src="/assets/crafted/balloon-craft.webp";
+    function drawBalloon(){
+      if(CRAFTBAL){var bw=Math.max(84,Math.min(104,W*.265)),bh=bw*1170/790;
+        ctx.drawImage(CRAFTBAL,235,25,790,1170,-bw/2,22-bh,bw,bh);
+      }else{ctx.drawImage(BAL,-40,-78,80,100);}
+    }
+    // Plain wooden beams (Travis, 1 Oct 2026: "I don't like the beams as
+    // vines, I just want them to be like normal beams"): the clay wood is
+    // stretched over the live hedge's exact collision area, with a wider cap
+    // at the gap end; a flat wood colour until the picture loads.
+    var BEAMART=null,beamArt=new Image();
+    beamArt.onload=function(){BEAMART=beamArt;};beamArt.src="/assets/crafted/game/beam-body.webp";
+    function paintHedge(x,y,w,h,fromTop){
+      if(h<=0)return;
+      var capH=Math.min(22,h),capW=w+12,capY=fromTop?y:y+h-capH;
+      ctx.save();
+      ctx.shadowColor="rgba(70,44,20,.25)";ctx.shadowBlur=7;ctx.shadowOffsetX=2;ctx.shadowOffsetY=3;
+      rr(x,y,w,h,6);ctx.fillStyle="#c98a45";ctx.fill();ctx.shadowColor="transparent";
+      ctx.save();rr(x,y,w,h,6);ctx.clip();if(BEAMART)ctx.drawImage(BEAMART,x,y,w,h);ctx.restore();
+      rr(x-6,capY,capW,capH,9);ctx.fillStyle="#b97636";ctx.fill();
+      ctx.save();rr(x-6,capY,capW,capH,9);ctx.clip();if(BEAMART)ctx.drawImage(BEAMART,x-6,capY,capW,capH);
+      ctx.fillStyle="rgba(90,50,15,.18)";ctx.fillRect(x-6,capY,capW,capH);ctx.restore();
+      var shade=ctx.createLinearGradient(x,0,x+w,0);shade.addColorStop(0,"rgba(255,240,210,.18)");shade.addColorStop(.5,"rgba(0,0,0,0)");shade.addColorStop(1,"rgba(70,40,10,.22)");
+      ctx.fillStyle=shade;ctx.fillRect(x,y,w,h);ctx.restore();
+    }
     var COLW=74;
+    var ECHO=new Image(); ECHO.src="/assets/crafted/echo-welcome.webp";
+    var lastT=performance.now();
+    // the crafted cloud and star (1 Oct 2026); the drawn shapes until they load
+    var CLOUD_ART=new Image(); CLOUD_ART.src="/assets/crafted/game/cloud.webp";
+    var STAR_ART=new Image(); STAR_ART.src="/assets/crafted/game/star.webp";
+    function loaded(im){ return im.complete&&im.naturalWidth; }
+    function cloudShape(x,y,w){ if(loaded(CLOUD_ART)){ var h=w*CLOUD_ART.naturalHeight/CLOUD_ART.naturalWidth; ctx.drawImage(CLOUD_ART,x-w/2,y-h*0.6,w,h); return; } cloudShape0(x,y,w); }
+    function cloudShape0(x,y,w){ ctx.beginPath(); ctx.ellipse(x,y,w*0.5,w*0.16,0,0,7); ctx.ellipse(x-w*0.22,y-w*0.08,w*0.2,w*0.14,0,0,7); ctx.ellipse(x+w*0.12,y-w*0.12,w*0.24,w*0.17,0,0,7); ctx.fill(); }
+    function star5(x,y,r){ if(loaded(STAR_ART)){ ctx.drawImage(STAR_ART,x-r*1.25,y-r*1.25,r*2.5,r*2.5); return; } star50(x,y,r); }
+    function star50(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
     function draw(){
+      var now=performance.now(), dt=document.hidden?0:Math.min(100,now-lastT), i; lastT=now;
+      if(playing&&phase==="fly"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
+      paintSlowKeys();
+      var moving=playing&&!document.hidden,pace=phase==="fly"?slowFactor():1;
       ctx.clearRect(0,0,W,H);
-      // drifting clouds
-      ctx.fillStyle="rgba(255,255,255,.35)";
-      for(var i=0;i<5;i++){ var cx=((i*173-performance.now()*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
-      // gates (hedge towers)
-      for(var i=gates.length-1;i>=0;i--){ var g=gates[i];
-        g.x-=gspeed;
+      // The countryside already contains painted clouds; keep its open sky
+      // clear so the balloon and next safe gap remain easy to read.
+      // the next hedge on the leg's beat; the leg ends when its gaps are flown
+      if(moving&&phase==="fly"&&!falling.on){
+        gateMs+=dt*pace;
+        var toSpawn=LEGS[leg].goal-legGot-gates.filter(function(g){ return !g.passed; }).length;
+        if(gateMs>=gateEvery&&toSpawn>0){ spawnGate(); gateMs=0; }
+        if(legGot>=LEGS[leg].goal) endLeg();
+      }
+      for(i=gates.length-1;i>=0;i--){ var g=gates[i];
+        g.x-=moving?gspeed*pace:0;   // the hedges drift on by, even while the balloon rests
         if(g.x<-90){ gates.splice(i,1); continue; }
         var topH=g.cy-gapH/2, botY=g.cy+gapH/2;
-        ctx.fillStyle="#2f9e44";
-        rr(g.x-COLW/2,-12,COLW,topH+12,18); ctx.fill();
-        rr(g.x-COLW/2,botY,COLW,H-botY+12,18); ctx.fill();
-        // topiary caps + leaf dots (design 4: Flappy Glide)
-        ctx.fillStyle="#5cbf6a";
-        rr(g.x-COLW/2-5,topH-16,COLW+10,18,10); ctx.fill();
-        rr(g.x-COLW/2-5,botY-2,COLW+10,18,10); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.25)";
-        for(var di=0;di<3;di++){ ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), topH-30-((di%2)*14), 3.2, 0, 7); ctx.fill();
-          ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), botY+30+((di%2)*14), 3.2, 0, 7); ctx.fill(); }
-        // score when the gate passes the player
-        if(!g.passed && g.x<px-COLW/2){ g.passed=true; score++; $("score").textContent=score; sfx("tap"); if(score%10===0)flash(score+" GATES!"); }
-        // collide (skip during fall/mercy)
-        if(!falling.on && performance.now()-mercyT>1200 &&
-           Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)){
-          crash();
-        }
+        paintHedge(g.x-COLW/2,-12,COLW,topH+12,false);
+        paintHedge(g.x-COLW/2,botY,COLW,H-botY+12,true);
+        // a star floats in the gap: fly through it to catch it
+        if(g.star&&!g.got){ ctx.fillStyle=g.gold?"#ffd21c":"#fff6b8"; if(g.gold){ ctx.globalAlpha=0.5+0.5*Math.sin(now/120); ctx.beginPath(); ctx.arc(g.x,g.cy,24,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.fillStyle="#ffd21c"; } star5(g.x,g.cy,g.gold?16:12);
+          if(moving&&Math.abs(g.x-px)<26&&Math.abs(g.cy-py)<46){ g.got=true; score+=g.gold?3:1; $("score").textContent=rowBest; sfx(g.gold?"reward":"star"); if(g.gold){ flash("GOLDEN STAR!"); echoT=now; }
+            for(var k=0;k<10;k++){ var a=Math.random()*6.28; sparks.push({x:g.x,y:g.cy,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:1,c:g.gold?"#ffd21c":"#fff6b8"}); } } }
+        if(moving&&!g.passed && g.x<px-(COLW/2+22)){ g.passed=true; legGot++; score++; if(!g.hit)rowUp(); $("score").textContent=rowBest; hud(); if(legGot%3===0) echoT=now; }
+        if(moving&&phase==="fly"&&!falling.on&&!g.hit && now-mercyT>900 && Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)) bump(g);
       }
-      // player physics
-      if(!falling.on){
-        vy+=G; py+=vy;
-        if(py<44){ py=44; vy=0; }
-        if(py>H-120){ py=H-120; vy=FLAP*0.6; } // soft bounce off the ground — no floor deaths
+      // the cloud rest, or the landing, floats up under the balloon
+      if(landing){ if(moving)landing.y+=(landing.ty-landing.y)*0.05; ctx.fillStyle="#ffffff"; cloudShape(px+10,landing.y+40,landing.big?W*0.9:W*0.5); }
+      if(moving&&!falling.on){
+        if(phase==="fly"){ vy=Math.min(VMAX,vy+G); py+=vy;
+          if(py<44){ py=44; vy=0; }
+          if(py>H-120){ py=H-120; vy=FLAP*0.6; } }   // soft bounce off the ground — no floor deaths
+        else if(landing){ py+=(landing.y-20-py)*0.08; vy=0; }
       }
-      // player (balloon + buddy; falling = tumble)
       if(falling.on){
-        var ft=(performance.now()-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky!"); }
+        var ft=(now-falling.t0)/1100;
+        if(ft>=1){ falling.on=false; mercyT=now; py=H*0.45; vy=0; flash("Back in the sky!"); }
         else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } } else if(!drawBuddy(0,-6,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          if(BALOK){ if(!drawBuddy(0,-18,34)){ ctx.fillStyle="#b48148";ctx.beginPath();ctx.arc(0,-18,12,0,Math.PI*2);ctx.fill(); } drawBalloon(); } else { drawBuddy(0,-6,52); }
           ctx.restore(); }
       } else {
-        var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
+        var blink=(now-mercyT<900)&&phase==="fly"&&(((now/120)|0)%2===0);
         if(!blink){
-          // opaque paint before emoji: canvases modulate color glyphs by the
-          // fill's alpha, so a leftover translucent fillStyle ghosts the buddy
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          var bob=Math.sin(performance.now()/300)*3;
+          var bob=Math.sin(now/300)*3;
           ctx.save(); ctx.translate(px,py+bob); ctx.rotate(Math.max(-0.22,Math.min(0.34,vy*0.02)));
-          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } }
-          else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); if(!drawBuddy(0,10,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); } }
+          if(BALOK){ if(!drawBuddy(0,-18,34)){ ctx.fillStyle="#b48148";ctx.beginPath();ctx.arc(0,-18,12,0,Math.PI*2);ctx.fill(); } drawBalloon(); }
+          else { ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.ellipse(0,-40,27,35,0,0,Math.PI*2);ctx.fill(); drawBuddy(0,10,34); }
           ctx.restore();
         }
       }
-      requestAnimationFrame(playing?draw:function(){});
+      // Echo flies alongside
+      if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*22:Math.sin(now/420)*6, es=Math.min(56,W*0.13);
+        ctx.drawImage(ECHO,px-es*1.9,py-es*1.6+ey,es,es*1.07); }
+      // stars caught, and the landing's fireworks
+      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; if(moving){s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life-=0.02;} if(s.life<=0){ sparks.splice(i,1); continue; }
+        ctx.globalAlpha=Math.min(1,s.life); ctx.fillStyle=s.c; ctx.beginPath(); ctx.arc(s.x,s.y,3,0,7); ctx.fill(); ctx.globalAlpha=1; }
+      requestAnimationFrame((playing||slowTurn)?draw:function(){});
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-    spawnGate(); draw();
+    startLeg(0); requestAnimationFrame(draw);
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Shared short listening path for checkpoints and sound-powered help ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
-    // and closes before the revive chime. Loudness and sound-shape numbers
-    // only: nothing is recorded, nothing leaves the device, and a revive is
-    // play, never practice data.
+    // only for checkpoints or a requested help turn, after the quiet window
+    // above, and closes before a chime. Native recognition supplements the
+    // sound-shape check for help turns when available; audio stays on device.
+    // These gameplay turns never become practice data.
     var SND="R", SAYTXT="rrrr", CAN_LISTEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; if(slowTurn&&!slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"listen"); echoPose(document.querySelector("#revOvl .ovlEcho"),reviveSpeaking()?"talk":"listen"); }catch(e){} }
+    // Echo's clay pose shows what he is doing (29 Sep 2026). On the slow-down
+    // button he talks while his line and the sound play; on the say-it card
+    // (2 Oct 2026) he talks while he asks, and listens once it is the
+    // child's turn.
+    var POSE="/assets/crafted/echo-";
+    function echoPose(img,p){ if(img&&img.getAttribute("src")!==POSE+p+".webp")img.src=POSE+p+".webp"; }
+    // Held in a variable: a preload nobody holds is collected, and the pose
+    // then loads late instead of swapping in at once.
+    var POSE_KEEP=["talk","listen","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
+    // It listens while the turn's mic hears ("I'm listening…") and rests
+    // again once the turn is over.
+    var slowPaint=paintSlowKeys;
+    paintSlowKeys=function(){ slowPaint(); if(!slowTurn||slowTurn.finishing)echoPose($("slowKeys").querySelector("img"),"welcome"); };
+    // ── Echo asks on the card (2 Oct 2026) ──
+    // Travis: "there's no voice telling them to say it. Most of these kids
+    // can't read". The card used to open its mic under a line of text. Now
+    // Echo says "To keep playing, say", one take of the sound in Rachel's
+    // own voice, then "Go!", and only then the mic opens, a short tail after
+    // his last word. The voice is /arcade-sayit.js's, the same in all five
+    // round games; it waits for a mic request still settling before the
+    // speaker route starts, and stops when the card closes or the page hides
+    // (closeReviveMic). A page without the helper just listens, as before.
+    // (2 Oct 2026, review) Echo waits only for what is still sounding: a mic
+    // request still settling, the phone's switch back from a mic just closed,
+    // a chime still ringing (chimeEnd), not the mic's own quiet window. After
+    // his "Go!" the mic waits SayIt.VOICE_TAIL_MS (250 ms, the tail every
+    // listening page keeps), not QUIET_MS: that is timed from when a chime
+    // BEGINS, and after a line that has already ended it left a child who
+    // answered right on "Go!" talking to a closed mic. On the website his
+    // voice plays through this page's own context (rv.ctx), which the
+    // child's taps on the game have already woken.
+    var sayVoice=window.SayIt?SayIt.voice({
+      up:function(){ return reviveWait&&!slowTurn; },
+      ask:function(t){ return t.line(lifeCard?LIFE_LINE:SayIt.ASK).then(function(){ return t.take(); }); },
+      wait:function(){ return rv.pending||rv.st?40:Math.max(chimeEnd,micClosedAt+SETTLE_MS)-performance.now(); },
+      note:listenNote,
+      clip:function(){ return S.ALL_SOUNDS.indexOf(SND)>=0?"/coach/say-echo/"+SND+"-sound.wav":""; },
+      ctx:function(){ if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); } return rv.ctx; },
+      listen:function(spoke){ if(spoke)quietUntil=Math.max(quietUntil,performance.now()+SayIt.VOICE_TAIL_MS); openReviveMic(); }
+    }):null;
+    function speakRevive(){
+      // a sound turn still closing hands the card the speaker once it has
+      if(slowTurn){ slowTurn.cancelled=true; finishSlowKeys(false).then(function(){ if(reviveWait&&!document.hidden) speakRevive(); }); return; }
+      if(sayVoice)sayVoice.speak(); else openReviveMic();
+    }
+    function reviveSpeaking(){ return !!sayVoice&&sayVoice.speaking(); }
     function closeReviveMic(){
+      if(sayVoice)sayVoice.stop();
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
@@ -297,22 +559,35 @@
     // it is asking: the ask made on the way back finds that request still
     // pending and stands down, so without this the card waited on "Get
     // ready…" for good and only "I'm done playing" got the child out.
-    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function askAgain(){ if(micWanted()&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      if(!micWanted()||reviveSpeaking()||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true}):navigator.mediaDevices.getUserMedia({audio:true})).then(function(st){
         rv.pending--;
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        if(gen!==rv.gen||!micWanted()||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:SLOW_ASK.listen}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          // a sound heard just before the limit still earns it (2 Oct 2026,
+          // as Fruit Slice): heard, the mic stays open 550 ms more for
+          // Apple's recognizer, and the limit must not throw that try away
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt);},SLOW_ASK.listen);
+        }
+        listenFor(st,gen);
       }).catch(function(){
-        rv.pending--;
+        // a request that failed was the mic too (an iPhone records before
+        // it answers): Echo's voice waits SETTLE_MS after it, as Fruit Slice's
+        rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
-        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(gen!==rv.gen||!micWanted()||document.hidden){ askAgain(); return; }
+        if(slowTurn){slowMicFailed("Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -340,9 +615,9 @@
       try{
         if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
         if(rv.ctx.state==="suspended") rv.ctx.resume();
-        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        rv.src=(S&&S.micSource)?S.micSource(rv.ctx,st):rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){slowMicFailed("Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -352,8 +627,11 @@
         var now=performance.now();
         // belt and braces: nothing plays while this mic is open, but if a
         // sound ever did, its frames would be dropped: never judged, never
-        // part of the floor, never joined to a burst after it
-        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        // part of the floor, never joined to a burst after it. The same for
+        // a frame Sona's own mic did not hear (S.micDeaf: paused, or a gap
+        // between the phone's samples): its zeros are not the room, and
+        // the floor only goes down
+        if(now<quietUntil||(S&&S.micDeaf&&S.micDeaf(st))){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
         an.getByteTimeDomainData(td);
         var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
         var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
@@ -369,38 +647,49 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
       })();
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
-    // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    // there stays lit in a pocket, and Echo stops mid-word. Coming back to
+    // the card asks again, out loud, then listens.
+    function speechBackground(){keepBest();if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("glide",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(window.Sona&&Sona.questEnd)Sona.questEnd("glide");}catch(e){}
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("glide",isDaily?score:null);
-      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
-      var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
-      var coins=Math.min(10,(score/3)|0);
-      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      playing=false; reviveWait=false; phase="done";
+      keepBest(); var isBest=rowBest>startBest; BEST=Math.max(startBest,rowBest);
+      sfx("complete"); try{ if(!outOfHearts&&S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
-        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
+        $("endTitle").textContent="What a flight, little glider!";
+        $("endSub").textContent="On to the next game…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(score===0){
+      if(score===0&&!outOfHearts){
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
         $("endTitle").textContent="Good try! Wanna go again?";
@@ -411,15 +700,22 @@
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=isBest&&score>0?"NEW BEST! We flew SO far!":"What a flight, little glider!";
-      var _es=$("endSub"); _es.textContent=score+" pipes · Best: "+BEST; _es.className="later";
-      setTimeout(function(){ _es.classList.add("in"); },1000);
+      $("endTitle").textContent=outOfHearts?"What a flight, little glider!":finaleDone?"What a flight! You landed with fireworks!":"What a flight, little glider!";
+      var _es=$("endSub"), line=bestLine(), i, sp; _es.textContent="";
+      for(i=0;i<line.length;i++){if(!line[i])continue;if(_es.firstChild)_es.appendChild(document.createTextNode(" "));sp=document.createElement("span");sp.textContent=line[i];_es.appendChild(sp);}
+      if(_es.firstChild){_es.className="later best";setTimeout(function(){_es.classList.add("in");},1000);}
+      else{_es.className="";_es.style.display="none";}
+
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("slice").allowed?"/charge.html?game=arcade-slice.html":"/activities.html"); };
+    $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ S.finishGameTurn("glide"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){keepBest();closeReviveMic();playing=false;S.finishGameTurn("glide");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

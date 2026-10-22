@@ -112,16 +112,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   // a live campaign with no PageView and no conversion, optimising on who taps
   // an ad instead of on who turns out to be a clinician. Money, spent wrong,
   // with nothing anywhere saying so.
-  ok("the clinician page loads the pixel",
+  ok("the page the ad points at loads the pixel",
     /<script src="\/pixel\.js"><\/script>/.test(slps),
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
-  // THE ROOT IS THE FAMILY PAGE AGAIN (Travis, 22 Oct 2026), and an ad that
-  // points at speaksona.com lands there. That page is a Next page, so its
-  // pixel comes from app/layout.tsx — the same silent loss as above if it
-  // ever goes.
-  const layout = readFileSync(APP + "/app/layout.tsx", "utf8");
-  ok("the root — the family page — loads the pixel, from app/layout.tsx",
-    /<script src="\/pixel\.js" \/>/.test(layout));
 
   // A tap is not a sign-up. Firing on the click would teach the campaign to
   // buy people who open forms and abandon them.
@@ -134,13 +127,24 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("…and a brand-new clinician is marked as one",
     /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
 
+  // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
+  // it: the same regression, the same rule. PageView on load, Lead only once
+  // the server said yes, and no CompleteRegistration — a parent has no account.
+  const parents = readFileSync(ROOT + "/parents.html", "utf8");
+  ok("the parent page, where the parent ads land, loads the pixel", /<script src="\/pixel\.js"><\/script>/.test(parents));
+  const pgo = parents.slice(parents.indexOf("function go()"));
+  ok("…and fires Lead only after the server accepted the sign-up",
+    pgo.indexOf("if (!j || !j.ok)") > 0 && pgo.indexOf('sonaTrack("Lead")') > pgo.indexOf("if (!j || !j.ok)"));
+  ok("…with no parameters, and never CompleteRegistration", /sonaTrack\("Lead"\); \} catch/.test(pgo) && !/CompleteRegistration/.test(parents));
+  ok("…and the ad's own click id rides along with the lead", /"fbclid"/.test(parents) && /utm_content/.test(parents) && /\}, attrib\)\)/.test(parents));
+
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
   // that come next are a child's. These four are the grown-up marketing
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html", "try.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));

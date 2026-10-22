@@ -5,23 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Feed Echo</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
   <meta name="theme-color" content="#fff6e9" />
   <!--
     Feed Echo — the littles game (3-5, fun for everyone). Echo ASKS for a word,
-    3-8s hear it, say it, and TAP the matching picture; Echo munches it and
+    the child SAYS it, and then taps the matching picture; Echo munches it and
     grows a little — growth persists forever (sona.feed.v1), so Echo is
-    visibly bigger next week. Receptive word-picture matching IS legitimate
-    practice for littles (it's how clinic drill games like this work), and the
-    tap is the answer — no reading, no timer, no fail state.
+    visibly bigger next week. No reading, no timer, no fail state.
 
-    Privacy hard lines, same as every game: the OPTIONAL mic listens for
-    loudness only (a cheer trigger — "Echo heard you!") — nothing is recorded,
-    uploaded, scored, or logged; skipped entirely unless the mic was already
-    granted elsewhere (this page never triggers the OS prompt). Feeds come
-    from taps (real actions), never from silence.
+    THE WORD COMES FIRST (Travis, 1 Oct 2026: "all that it does is ask you to
+    click. we need to get the kid to have to say it!"). The pictures stay
+    locked until Echo hears a voice of the right kind; then the asked one
+    glows and a tap feeds it. A tap before that is a nudge, never a feed, and
+    silence never unlocks anything: the listening window closes and a mic
+    button waits for the child to try again. "Let's play" starts the round, so
+    the first ask is never silent on an iPhone, and a grown-up says yes to the
+    mic first, the way the Say & Play games ask; "Not now" goes home.
+
+    Privacy hard lines, same as every game: the mic hears loudness and sound
+    family only — nothing is recorded, uploaded, scored, or logged. A heard
+    word is one rep on the week's count (Sona.gameRep), never practice data.
   -->
   <style>
-    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; }
+    :root{ --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
     html,body{min-height:100%;background:linear-gradient(180deg,#fff6e9 0%,#ffeccb 30%,#cef0b8 56%,#a9e18f 100%);color:var(--ink);}
     #app{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));}
@@ -35,7 +41,9 @@
     #bubble{background:#fff;border-radius:18px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;box-shadow:0 6px 16px rgba(74,44,20,.12);position:relative;max-width:320px;text-align:center;line-height:1.25;}
     #bubble:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
     #bMain{font-size:16px;color:var(--ink);}
-    #bMain b{color:#ef6f23;font-size:clamp(26px,8vw,32px);padding-left:2px;}
+    /* the asked word is big and dark brown; only its sound's letters are
+       orange (.snd from Sona.soundMark, coloured by action.css) */
+    #bMain>b{color:var(--ink);font-size:clamp(26px,8vw,32px);padding-left:2px;}
     #bSub{font-family:Nunito,sans-serif;font-weight:800;font-size:12.5px;color:#8a6f52;min-height:16px;margin-top:1px;}
     #echoSpot{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:12px;}
     #mound{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:210px;height:52px;border-radius:50%;background:#8fdc7a;box-shadow:inset 0 -6px 0 rgba(90,150,60,.4);}
@@ -48,6 +56,17 @@
     @keyframes popIn{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
     #echo.munch{animation:munch .5s ease;}
     @keyframes munch{0%{transform:scale(var(--sc,1))}35%{transform:scale(calc(var(--sc,1)*1.12)) rotate(-3deg)}70%{transform:scale(calc(var(--sc,1)*.96))}100%{transform:scale(var(--sc,1))}}
+    /* PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's buddy stands on the
+       grass beside Echo, anchored to the middle of #echoSpot (which is only as
+       wide as the plate), so it sits left of Echo on every phone and clear of
+       the pictures below. Like Echo it stands behind the plate, its feet at
+       the plate's rim, so the plate's wells (the feeds counted) are never
+       covered; crafted-games.css sets its place beside the crafted Echo,
+       whose size it follows. Echo is still the one fed; the buddy only hops. */
+    #feedBuddy{position:absolute;left:auto;right:calc(50% + 62px);bottom:44px;width:46%;max-width:72px;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(120,70,10,.18));}
+    #feedBuddy:not([src]){display:none;}
+    #feedBuddy.badge{border-radius:50%;}
+    #feedBuddy.munch{animation:munch .5s ease;}
     #heard{position:absolute;top:2px;right:6px;background:#ffd21c;color:#5c4500;font-family:"Baloo 2";font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:99px;opacity:0;transform:scale(.6);transition:all .25s ease;pointer-events:none;box-shadow:0 3px 0 rgba(160,110,0,.35);}
     #heard.show{opacity:1;transform:scale(1);}
     /* cards */
@@ -56,12 +75,25 @@
     .cardBtn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(160,80,20,.22);}
     .cardBtn .e{font-size:52px;line-height:1;}
     .cardBtn .e{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,210,28,.2),rgba(255,210,28,.03) 75%);}
+    .cardBtn.speechHint{outline:4px solid #27b5b9;outline-offset:-4px;box-shadow:0 0 0 5px #c4f1df,0 6px 0 #7d9768;}
     .cardBtn .w{font-family:"Baloo 2";font-weight:800;font-size:15.5px;color:var(--ink);}
     .cardBtn.right{animation:flyIn .55s ease both;}
     @keyframes flyIn{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.1) translateY(-160px);opacity:0;}}
     .cardBtn.wrong{animation:wob .4s ease;}
     @keyframes wob{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px) rotate(-2deg)}75%{transform:translateX(7px) rotate(2deg)}}
     #hint{text-align:center;font-weight:800;font-size:13.5px;color:var(--muted);min-height:20px;margin-top:10px;}
+    /* until the word is heard the pictures wait, a little quieter */
+    #grid.locked .cardBtn{filter:saturate(.7);opacity:.82;}
+    /* no voice in the listening window: the mic waits for a tap */
+    #micBtn{position:absolute;z-index:5;right:4px;top:4px;border:none;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);box-shadow:0 5px 0 var(--act-d);display:flex;align-items:center;justify-content:center;cursor:pointer;animation:micPulse 1.6s ease-in-out infinite;}
+    #micBtn[hidden]{display:none;}
+    #micBtn svg{width:28px;height:28px;}
+    #micBtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--act-d);}
+    @keyframes micPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    .ovlEcho{width:96px;height:96px;object-fit:contain;}
+    .ovl p.small{font-size:12px;}
+    .act-pill{display:flex;align-items:center;justify-content:center;gap:10px;}
+    .act-pill svg{width:26px;height:26px;}
     /* end overlay (shared warm-card kit) */
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
@@ -82,16 +114,19 @@
     .note{position:absolute;bottom:18px;font-size:20px;opacity:0;animation:noteUp 1.6s ease-out infinite;pointer-events:none;}
     @keyframes noteUp{0%{opacity:0;transform:translateY(0) scale(.7) rotate(0deg)}20%{opacity:1}100%{opacity:0;transform:translateY(-86px) scale(1.15) rotate(14deg)}}
     @media (prefers-reduced-motion: reduce){ .uke,.note{animation:none;} .note{opacity:.7;} }
-    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;width:100%;margin-top:4px;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
-    .ghost{background:none;border:none;box-shadow:none;color:var(--muted);font-family:"Baloo 2";font-weight:800;font-size:13.5px;cursor:pointer;padding:8px;}
+    /* teal main pill, cream second choice: the one button kit (action.css) */
+    .btn{border:none;border-radius:999px;min-height:54px;padding:12px 24px;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);cursor:pointer;width:100%;margin-top:4px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
+    .ghost{background:var(--cream-card);border:2px solid var(--cream-line);box-shadow:0 5px 0 var(--cream-line);border-radius:999px;color:var(--cream-ink);font-family:"Baloo 2";font-weight:800;font-size:17px;cursor:pointer;width:100%;min-height:50px;padding:10px 20px;margin-top:4px;}
+    .ghost:active{transform:translateY(3px);box-shadow:0 2px 0 var(--cream-line);}
     #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;color:var(--ink);font-weight:800;font-size:13.5px;padding:11px 18px;border-radius:99px;box-shadow:0 8px 24px -8px rgba(120,70,10,.4);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
     #toast.show{opacity:1;}
-    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,.cardBtn.right,.cardBtn.wrong{animation:none;} }
+    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,#feedBuddy.munch,.cardBtn.right,.cardBtn.wrong,#micBtn{animation:none;} }
     @media (max-height:700px){ #echo{width:118px;height:118px;} .cardBtn .e{font-size:44px;} #stage{min-height:150px;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="feed">
   <div id="app">
     <div id="top">
       <button id="close" aria-label="Back">✕</button>
@@ -103,10 +138,12 @@
     <div id="stage">
       <span id="heard">Echo heard you! <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#f0a800"/></svg></span>
       <div id="bubble"><div id="bMain">Ready?</div><div id="bSub"></div></div>
+      <button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
       <div id="echoSpot">
         <div id="mound"></div>
-        <img id="echo" src="/coach/echo/echo-listening.svg" alt="Echo"
-             onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+        <img id="feedBuddy" alt="" aria-hidden="true" />
+        <img id="echo" src="/assets/crafted/echo-welcome.webp" alt="Echo"
+             onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
       </div>
     </div>
@@ -120,7 +157,7 @@
       <h2 id="endTitle">Yum! You fed Echo!</h2>
       <p id="endSub"></p>
       <div class="echoWin" id="concert">
-        <img src="/coach/echo/echo-celebrate.svg" alt="" />
+        <img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <span class="uke" aria-hidden><svg viewBox="0 0 64 64" style="width:44px;height:44px"><ellipse cx="24" cy="42" rx="16" ry="14" fill="#e09a5a"/><circle cx="24" cy="42" r="5.5" fill="#7a4a22"/><rect x="34" y="10" width="7" height="26" rx="3" transform="rotate(35 37 23)" fill="#8a5a30"/><rect x="44" y="4" width="9" height="8" rx="2" transform="rotate(35 48 8)" fill="#6f4522"/><path d="M14 36l20 12M13 40l20 12M12 44l19 11" stroke="#fff" stroke-width="1.1" opacity=".85"/><circle cx="17" cy="33" r="2" fill="#fff" opacity=".75"/></svg></span>
         <span class="note" style="left:22%;animation-delay:0s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
         <span class="note" style="left:70%;animation-delay:.5s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff" opacity=".85"/></svg></span>
@@ -131,16 +168,52 @@
     </div>
   </div>
 
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Feed Echo</h2>
+      <p>Say the word, then feed Echo the picture!</p>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" class="btn act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word to feed Echo.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes" type="button">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo" type="button">Not now</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-words.js"></script>
   <script>
     // Catalog access is checked before this game's resources start.
     var S=window.Sona;
     var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
     if(!feedAllowed&&S)S.gameBounce("feed");
     if(feedAllowed){
+    // "game opened" (12 Oct 2026): this game skips the practice page, so its
+    // "practice started" never fires; the game key only, never the child
+    if(!document.hidden){ try{ Sona.track("game opened",{game:"feed"}); }catch(e){} }
     function $(id){ return document.getElementById(id); }
+    // PLAY AS YOUR BUDDY (BUDDY2, 11 Oct 2026): the child's own buddy watches
+    // beside Echo (its rest pose, else its badge). On each right feed it hops
+    // and shows its own cheer picture for 900 ms; Echo's pictures are his own.
+    var FEED_BUDDY=null, buddyCheerT=0;
+    (function(){ var B=window.SonaCraftedBuddies, el=$("feedBuddy"); if(!el||!B||!B.stand) return;
+      FEED_BUDDY=B.stand(el,S.buddyId?S.buddyId():"fox",function(){ FEED_BUDDY=null; }); })();
+    function buddyMunch(){
+      var b=$("feedBuddy"); if(!b||!b.getAttribute("src")) return;
+      b.classList.remove("munch"); void b.offsetWidth; b.classList.add("munch");
+      if(FEED_BUDDY){ b.src=FEED_BUDDY.cheer; clearTimeout(buddyCheerT); buddyCheerT=setTimeout(function(){ if(FEED_BUDDY) b.src=FEED_BUDDY.rest; },900); }
+    }
     // A game sound never plays while the listening mic is open or being
     // asked for (24 Sep 2026): on an iPhone a page holding the mic runs as a
     // phone call, so a chime there is processed like a call and the volume
@@ -215,7 +288,7 @@
     function landOnPlate(w){ try{
       var wells=$("plate").querySelectorAll(".well");
       var slot=wells[Math.min(fed-1,wells.length-1)];
-      if(slot) slot.innerHTML='<span class="fd">'+((S&&S.pic)?S.pic(w.w,w.e,20):w.e)+'</span>';
+      if(slot) slot.innerHTML='<span class="fd">'+((window.SonaCraftedWords&&SonaCraftedWords.picture(w.w,20))||((S&&S.pic)?S.pic(w.w,w.e,20):w.e))+'</span>';
       $("plate").dataset.fed=fed+"/"+NEED;
     }catch(e){} }
     function pool(sound){ var ws=(S&&S.wordsFor)?(S.wordsFor(sound,"i")||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
@@ -251,7 +324,16 @@
     function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
     function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
     function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
-    function playPCM(b,generation){return new Promise(function(res){
+    function playPCM(b,generation){return S.isNativeApp()?playPhonePCM(b,generation):playWebPCM(b,generation);}
+    function playPhonePCM(b,generation){return new Promise(function(res){
+      if(!audioAllowed(generation))return res();
+      var url=URL.createObjectURL(S.pcmWave(b)),a=new Audio(url),done=false,timer;
+      a.volume=profile.volume!=null?profile.volume:0.8;ttsPlaying=true;
+      function fin(played){if(done)return;done=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}URL.revokeObjectURL(url);if(audioStop===fin)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res(played===true);}
+      audioStop=fin;a.onended=function(){fin(true);};a.onerror=function(){fin(false);};timer=setTimeout(function(){fin(false);},30000);
+      try{var played=a.play();if(played&&played.catch)played.catch(fin);}catch(e){fin();}
+    });}
+    function playWebPCM(b,generation){return new Promise(function(res){
       if(!audioAllowed(generation))return res();
       var done=false,source=null;ttsPlaying=true;
       function fin(){if(done)return;done=true;if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
@@ -279,19 +361,52 @@
       var generation=audioGeneration;
       if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
       speaking=true;
-      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+t;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v9")+"|"+t;
       // Echo waits out a mic request still being answered, then the phone's
       // switch back from a mic that has only just closed (the same SETTLE_MS
       // the chimes wait), then a chime that was waiting on it (micQuiet)
       return micQuiet().then(function(){ return ttsGet(key); }).then(function(cached){
         if(!audioAllowed(generation))return true;
-        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(){return true;});
+        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(played){return played!==false;});
+        // X-Sona-Voice-Keep "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep=true;
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(){return true;});});
+          .then(function(r){if(!r.ok)return null;keep=!(r.headers&&r.headers.get&&r.headers.get("X-Sona-Voice-Keep")==="0");return r.arrayBuffer();})
+          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;if(keep)ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(played){return played!==false;});});
       }).then(function(played){if(!played&&audioAllowed(generation))return speakFallback(t,generation);})
         .catch(function(){if(audioAllowed(generation))return speakFallback(t,generation);})
         .then(function(){if(generation===audioGeneration)speaking=false;});
+    }
+
+    // The ask, then "Go!" as its own short clip (2 Oct 2026). One request
+    // with both was a new take of every ask, fetched again on every phone on
+    // launch day with the practice word read fresh; this way the ask keeps
+    // the take each phone has saved. No "Go!" once the turn is over or a
+    // newer ask has begun. The voice tail starts at the end of the ask too,
+    // so nothing can open the mic in the moment between the two.
+    function sayGo(t){
+      var asked=target;
+      return say(t).then(function(){
+        quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
+        if(turnLive&&!heardThisTurn&&target===asked)return goLine();
+      });
+    }
+    // "Go!" is only Echo's own clip, from this page or this phone
+    // (Sona.goClip says why), and nothing when there is none: never the
+    // browser's robot voice, and never a wait on the network, except the
+    // first ask after Let's play, which waits GO_WAIT_MS at most (review, 2
+    // Oct 2026: fetched like the ask, with no time limit, every turn waited
+    // for the voice service twice while "Listen…" sat on screen).
+    var goWait=0;
+    function goLine(){
+      var generation=audioGeneration,wait=goWait;goWait=0;
+      if(!S||!S.goClip||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
+      speaking=true;   // nothing opens the mic while the clip is looked up
+      return Promise.resolve(S.goClip(profile.voiceId,wait)).then(function(b){
+        if(!b||!audioAllowed(generation))return;
+        return micQuiet().then(function(){ if(audioAllowed(generation))return playPCM(new Uint8Array(b),generation); });
+      }).catch(function(){})
+        .then(function(){ if(generation===audioGeneration)speaking=false; quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS); });
     }
 
     // ── OPTIONAL mic cheer: loudness only, only if already granted elsewhere.
@@ -316,89 +431,151 @@
     // answer given before the first quiet breath still counts once it comes.
     var FLOOR_MS=250, HEARD_MS=3000, micFloor=-1;
     function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    // Echo's clay pose (29 Sep 2026): he talks while he asks, listens while the
+    // mic can hear the child, and cheers a heard word or a munch; otherwise he
+    // rests, as before.
+    var POSE="/assets/crafted/echo-";
+    function echoPose(p){ var e=$("echo"); if(e&&e.getAttribute("src")!==POSE+p+".webp")e.src=POSE+p+".webp"; }
+    // held in a variable: a preload nobody holds is collected and loads late
+    var POSE_KEEP=["talk","listen","cheer","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
     function feedMicStop(){
-      micGen++; clearTimeout(micT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
+      echoPose("welcome");
+      micGen++; clearTimeout(micT); clearTimeout(listenT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
       try{ if(micSrc)micSrc.disconnect(); }catch(e){} micSrc=null;
       if(micStream){ try{ micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micStream=null; micClosedAt=performance.now(); }
     }
     function listenable(){ return turnLive&&!heardThisTurn&&!speaking&&!ttsPlaying&&!document.hidden&&!audioPaused; }
+    // The mic used to open only when navigator.permissions said "granted",
+    // which the iPhone app's web view does not reliably say, so on the phone
+    // the game never listened (Travis, 1 Oct 2026). The grown-up says yes at
+    // the start (micReady), so the turn asks for the mic straight away, the
+    // way the Say & Play games do.
+    var LISTEN_MS=8000, listenT=0;
     function feedMicOpen(){
       if(!listenable()||micStream||micAsking)return;
-      try{ if(localStorage.getItem("sona.micok")!=="1")return; }catch(e){ return; }
-      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!navigator.permissions||!navigator.permissions.query)return;
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ nudge(); return; }
       var wait=quietLeft();
       if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
-      var gen=++micGen, asked=false; micAsking=true;
-      navigator.permissions.query({name:"microphone"}).then(function(permission){
-        if(permission.state!=="granted"||gen!==micGen||!listenable())return null;
-        asked=true;
-        return navigator.mediaDevices.getUserMedia({audio:true,video:false});
-      }).then(function(stream){
+      var gen=++micGen; micAsking=true; hideMicBtn();
+      ((S&&S.micNative&&S.micNative())?S.micOpen({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
         micAsking=false;
-        if(!stream)return;
-        if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); return; }
+        if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); if(listenable())feedMicOpen(); return; }
         micStream=stream;
+        try{ localStorage.setItem("sona.micok","1"); }catch(e){}
         // a mic that can't be wired to a listener closes at once: left open,
         // it would hear nothing and silence every chime until the turn ended
-        try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
-        catch(e){ feedMicStop(); return; }
-        var td=new Uint8Array(an.fftSize),heard=[];
+        try{ var ctx=getCtx(),src=(S&&S.micSource)?S.micSource(ctx,stream):ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
+        catch(e){ feedMicStop(); nudge(); return; }
+        echoPose("listen"); $("bSub").textContent="Your turn! Say “"+target.w+"”";
+        // silence never unlocks a picture: the window closes and the mic waits for a tap
+        clearTimeout(listenT); listenT=setTimeout(function(){ if(gen===micGen&&turnLive&&!heardThisTurn){ feedMicStop(); nudge(); } },LISTEN_MS);
+        var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize,heard=[];
         (function tick(){
           if(gen!==micGen)return;
           // belt and braces: nothing plays while this mic is open, and if
-          // anything did, its frames would never be judged or join a burst
-          if(speaking||ttsPlaying||quietLeft()>0){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
+          // anything did, its frames would never be judged or join a burst.
+          // Nor a frame Sona's own mic did not hear (S.micDeaf: paused, or
+          // a gap between the phone's samples): zeros are not the room
+          if(speaking||ttsPlaying||quietLeft()>0||(S&&S.micDeaf&&S.micDeaf(stream))){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var now=performance.now();
-          heard.push({t:now,r:Math.sqrt(sum/td.length)});
+          var shape=null; if(S&&S.frameShape){an.getByteFrequencyData(fd);shape=S.frameShape(fd,binHz);}
+          heard.push({t:now,r:Math.sqrt(sum/td.length),s:shape});
           while(now-heard[0].t>HEARD_MS) heard.shift();
           if(now-heard[0].t>=FLOOR_MS){
             var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
             var q=p20(w); if(micFloor<0||q<micFloor) micFloor=q;
           }
           if(micFloor>=0&&!heardThisTurn&&turnLive){
-            var thr=Math.max(0.035,micFloor*3.0), voiced=0;
-            for(var j=0;j<heard.length&&voiced<4;j++) voiced=heard[j].r>thr?voiced+1:0;
+            var thr=Math.max(0.035,micFloor*3.0), voiced=0,shapeSum=null;
+            for(var j=0;j<heard.length&&voiced<4;j++){
+              if(heard[j].r>thr){
+                voiced++; var sh=heard[j].s;
+                if(sh){if(!shapeSum)shapeSum={m:0,fm:0,hm:0};shapeSum.m+=sh.m;shapeSum.fm+=sh.fm;shapeSum.hm+=sh.hm;}
+              }else{voiced=0;shapeSum=null;}
+              if(voiced>=4&&shapeSum&&shapeSum.m&&S.soundFamily){
+                var family=S.soundFamily(SOUND),cent=shapeSum.fm/shapeSum.m,high=shapeSum.hm/shapeSum.m;
+                if((family==="low"&&cent>1800&&high>.22)||(family==="hiss"&&cent<1100&&high<.10)){voiced=0;shapeSum=null;}
+              }
+            }
             if(voiced>=4){
+              // The word unlocks the pictures and shows the asked one, never a
+              // pronunciation grade: "Echo heard you", not "correct".
+              $("grid").classList.remove("locked");
+              var cards=document.querySelectorAll("#grid .cardBtn");
+              for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
+              $("bSub").textContent="Tap the glowing picture!";
               heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
-              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400);
-              feedMicStop(); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
+              try{ if(S&&S.gameRep)S.gameRep(SOUND); }catch(e){}   // one rep on the week's count, never practice data
+              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); if(turnLive&&heardThisTurn)echoPose("welcome"); },1400);
+              feedMicStop(); echoPose("cheer"); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
             }
           }
           micRaf=requestAnimationFrame(tick);
         })();
-      }).catch(function(){ micAsking=false;
-        // denied elsewhere — tap-only play, no blocker here. A request that
-        // failed after it reached the phone may already have switched it into
-        // call audio, so the next sound settles after it too.
-        if(asked)micClosedAt=Math.max(micClosedAt,performance.now()); });
+      }).catch(function(e){ micAsking=false;
+        // A request that failed after it reached the phone may already have
+        // switched it into call audio, so the next sound settles after it too.
+        micClosedAt=Math.max(micClosedAt,performance.now());
+        if(e&&e.name==="NotAllowedError"){ turnLive=false; denied(); return; }
+        nudge(); });
     }
+    // No voice in the window (or no mic right now): the mic button waits. Its
+    // tap says the word again and listens again; it never feeds Echo.
+    function nudge(){
+      if(!turnLive||heardThisTurn)return;
+      $("micBtn").hidden=false; echoPose("think");
+      $("bSub").textContent="Tap the mic, then say “"+target.w+"”";
+    }
+    function hideMicBtn(){ $("micBtn").hidden=true; }
+    $("micBtn").onclick=function(){
+      if(!turnLive||heardThisTurn||micStream||micAsking)return;
+      hideMicBtn(); echoPose("talk"); $("bSub").textContent="Listen…";
+      sayGo("Say... "+target.w+".").then(function(){
+        quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
+        feedMicOpen();
+      });
+    };
+    function denied(){ if(S&&S.micDenied)S.micDenied({back:"/today.html"}); }
 
     // ── the round: 5 feeds, no timer, no fail ──
     var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[];
     function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0,t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
     function nextTurn(){
-      feedMicStop(); heardThisTurn=false;   // Echo is about to ask: never over an open mic
+      feedMicStop(); heardThisTurn=false; hideMicBtn();   // Echo is about to ask: never over an open mic
       var ti; do{ ti=(Math.random()*TARGETS.length)|0; }while(TARGETS.length>1&&usedIdx.indexOf(ti)>=0&&usedIdx.length<TARGETS.length);
       usedIdx.push(ti); if(usedIdx.length>=TARGETS.length)usedIdx=[];
       target=TARGETS[ti];
       var opts=[target].concat(shuffle(OTHERS.slice()).slice(0,3));
       if(opts.length<2){ opts=[target].concat(TARGETS.filter(function(w){return w.w!==target.w;}).slice(0,3)); }
       shuffle(opts);
-      $("bMain").innerHTML="Where's the <b>"+target.w+"</b>?";
-      $("bSub").textContent="Say it out loud, then tap it!";
-      var g=$("grid"); g.innerHTML="";
+      // the words stay "Where's the <word>?" (the games' tests read them);
+      // only the letters that make the sound are orange. The ask holds ONE
+      // <b>, the word itself, because the word is read back by "#bMain b"
+      // (craftedarttest taps the card that matches it), so the marked letters
+      // ride in a span of the same .snd class rather than soundMark's own <b>.
+      var ask=(S&&S.soundMark)?S.soundMark(target.w,SOUND,target.pos):'<b class="snd">'+target.w+"</b>";
+      $("bMain").innerHTML="Where's the <b>"+ask.replace(/<b class="snd">([\s\S]*?)<\/b>/g,'<span class="snd">$1</span>')+"</b>?";
+      $("bSub").textContent="Listen…";
+      var g=$("grid"); g.innerHTML=""; g.classList.add("locked");
       opts.forEach(function(w){
         var b=document.createElement("button"); b.className="cardBtn"; b.type="button";
-        b.innerHTML='<span class="e">'+((S&&S.pic)?S.pic(w.w,w.e,54):w.e)+'</span><span class="w">'+w.w+"</span>";
+        b.innerHTML='<span class="e">'+((window.SonaCraftedWords&&SonaCraftedWords.picture(w.w,54))||((S&&S.pic)?S.pic(w.w,w.e,54):w.e))+'</span><span class="w">'+w.w+"</span>";
         b.onclick=function(){ pick(w,b); };
         g.appendChild(b);
       });
       turnLive=true;
-      // Calm: the ask ends on a period, not "!", which the voice reads as a
-      // burst of energy (24 Sep 2026). The practice word itself is unchanged.
-      say("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+      // Calm: the word ends on a period, not "!", which the voice reads as a
+      // burst of energy (24 Sep 2026). Then one short "Go!", which is meant to
+      // sound like one: most of these children can't read "Your turn!", so it
+      // tells them by ear (Travis, 2 Oct 2026: "i also wanna try to have the
+      // 11 labs voice say 'Go!'"). The ask is unchanged and "Go!" is its own
+      // line after it (sayGo), so every phone keeps the ask it already saved.
+      echoPose("talk");
+      sayGo("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+        // back to resting only if nothing newer (a munch, a heard word) took over
+        var e=$("echo"); if(e&&/echo-talk/.test(e.getAttribute("src")||"")) echoPose("welcome");
         // listenable() decides whether this is still somebody's turn, so an
         // older ask finishing late opens the mic for the current one
         quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
@@ -407,6 +584,14 @@
     }
     function pick(w,btn){
       if(!turnLive)return;
+      if(!heardThisTurn){
+        // the word comes first: a tap before Echo has heard it wobbles and
+        // says so, and never feeds (sfx() stays silent over an open mic)
+        btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+        $("bSub").textContent=$("micBtn").hidden?"Say “"+target.w+"” first!":"Tap the mic, then say “"+target.w+"”";
+        sfx("tap");
+        return;
+      }
       if(w.w!==target.w){
         btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
         $("bSub").textContent="Almost! Where's the "+target.w+"?";
@@ -415,11 +600,12 @@
         sfx("tap");
         return; // no fail state, no strikes — littles just try again
       }
-      turnLive=false; fed++; feedMicStop(); // the turn is over: the mic closes before the chime
+      turnLive=false; fed++; feedMicStop(); echoPose("cheer"); // the turn is over: the mic closes before the chime
       roundBump=fed*0.07;
       var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
       btn.classList.add("right"); sfx("correct");
       var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
+      buddyMunch();
       paintScale();
       landOnPlate(w);
       $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Nice one!","So tasty!","Great!"][fed%4];
@@ -479,12 +665,18 @@
     function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} ukeUntil=0; }
 
     function finish(){
-      feedMicStop();
+      feedMicStop(); $("startOvl").classList.remove("show");
       var daily=S.simpleAdventure&&S.simpleAdventure("feed",true);
+      // QUEST1: the daily adventure counts a finished round of today's game
+      try{if(S.questEnd)S.questEnd("feed");}catch(e){}
       // These discoveries are free play. Loudness alone never advances practice.
       $("endTitle").textContent="Yum! You fed Echo!";
       $("endSub").textContent="Five tasty discoveries. Concert time!";
       $("again").textContent=daily?"Keep going →":"Play again";
+      // the first game after setup ends like any other: "Play again" on top,
+      // "Back home" under it, and no price (Travis, 30 Sep 2026). Asking
+      // spends the one-time first-game mark.
+      if(!daily&&S.firstGameEnd)S.firstGameEnd("feed");
       $("endOvl").classList.add("show");
       // the chime waits out the mic's close (and any request still being
       // answered) in sfx(); the uke starts from the moment the chime really does
@@ -499,11 +691,56 @@
     $("goHome").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
     $("close").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
 
-    function backgroundFeed(){stopFeedAudio();feedMicStop();}
+    function backgroundFeed(){stopFeedAudio();feedMicStop();nudge();}
     if(S&&S.onBackground)S.onBackground(backgroundFeed);
     else{document.addEventListener("visibilitychange",function(){if(document.hidden)backgroundFeed();});window.addEventListener("pagehide",backgroundFeed);}
     paintScale();
-    nextTurn();
+    // ── the start: one tap unlocks the phone's audio, so the first ask is
+    // heard on an iPhone; then a grown-up says yes to the mic, once. "Not
+    // now" goes home: Echo needs to hear the word to eat (the same as the
+    // Say & Play games) ──
+    try{ $("startSound").textContent="Today’s sound: "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND); }catch(e){}
+    $("startOvl").classList.add("show");
+    $("startBtn").onclick=function(){ $("startOvl").classList.remove("show"); goWait=(S&&S.GO_WAIT_MS)||0; micReady().then(nextTurn); };
+    function micReady(){ return new Promise(function(done){
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ bye("Echo can’t hear here","Feed Echo needs a microphone, and this browser doesn’t have one Echo can use."); return; }
+      try{ if(localStorage.getItem("sona.micok")==="1")return done(); }catch(e){}
+      // the iPhone app's web view may never answer this question (2 Oct
+      // 2026): after a beat, no answer means ask the grown-up, rather than a
+      // Let's play that does nothing
+      var q=new Promise(function(res){
+        setTimeout(function(){ res(null); },1000);
+        try{ if(navigator.permissions&&navigator.permissions.query)Promise.resolve(navigator.permissions.query({name:"microphone"})).then(res,function(){ res(null); }); else res(null); }catch(e){ res(null); }
+      });
+      q.then(function(st){
+        if(st&&st.state==="granted"){ try{ localStorage.setItem("sona.micok","1"); }catch(e){} return done(); }
+        $("micPromise").textContent=(S&&S.MIC_PROMISE)||"";
+        $("primer").classList.add("show");
+        $("primerYes").onclick=function(){
+          if(document.hidden)return;
+          $("primer").classList.remove("show"); micAsking=true;
+          ((S&&S.micNative&&S.micNative())?S.micProbe({audio:true,video:false}):navigator.mediaDevices.getUserMedia({audio:true,video:false})).then(function(stream){
+            micAsking=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+            micClosedAt=performance.now(); try{ localStorage.setItem("sona.micok","1"); }catch(e){}
+            done();
+          }).catch(function(e){
+            micAsking=false; micClosedAt=Math.max(micClosedAt,performance.now());
+            if(e&&e.name==="NotAllowedError"){ denied(); return; }
+            done();   // no mic right now: the turn offers the mic button
+          });
+        };
+        $("primerNo").onclick=function(){ bye("That’s okay!","Echo needs to hear you to eat. We’ll ask again next time you’re ready."); };
+      });
+    }); }
+    function bye(title,text){
+      var card=$("primer").querySelector(".ovlCard");
+      card.innerHTML='<img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf(\'echo-welcome\')<0)this.src=\'/assets/crafted/echo-welcome.webp\'" /><h2></h2><p></p>'
+        +'<p class="small">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone’s Settings.</p>'
+        +'<button class="btn" id="byeBtn" type="button">Okay</button>';
+      card.querySelector("h2").textContent=title; card.querySelectorAll("p")[0].textContent=text;
+      card.querySelector("#byeBtn").onclick=function(){ stopFeedAudio(); feedMicStop(); location.href="/today.html"; };
+      $("primer").classList.add("show");
+    }
     }
   </script>
 </body>

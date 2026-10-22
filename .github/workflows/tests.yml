@@ -7,7 +7,24 @@ on:
 jobs:
   suites:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 45, not 25 (25 Sep 2026): the battery drives real audio through the
+    # practice screen and the eight games, and on this runner it takes about
+    # 27-30 minutes. At 25 the job was cancelled mid-run on main (#143) and
+    # on #146, which reads as neither pass nor fail. One job, same name, so
+    # a required check keeps matching.
+    # 75, not 45 (2 Oct 2026): it had grown to 43 minutes on main, and the
+    # say-it card's suite (sayitcardtest) took it past 45 on #190, cancelled
+    # mid-sayplaytest with every check so far passing. Room to grow, still a
+    # cap on a hung run.
+    # 90, not 75 (11 Oct 2026): the battery runs about 62 minutes on main,
+    # and trophies, the Trophy Road, the Buddy Shop, playing as your buddy,
+    # game levels and the Practice Board bring eight new suites (six drive a
+    # browser), about 15 minutes more. Without the room the job would be
+    # cancelled mid-run, which reads as neither pass nor fail.
+    # 150, not 90 (18 Oct 2026): the eighteen rebuilt Coming soon games
+    # bring eighteen browser suites, and the run on #227 was cancelled at 90
+    # minutes, still running.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

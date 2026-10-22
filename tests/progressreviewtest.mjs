@@ -59,7 +59,7 @@ async function fresh() {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(origin + '/__seed');
   await page.evaluate(() => {
-    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done');
+    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done');
     localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Milo', childAge: '7', focusSounds: ['R'], onboarded: true, weeklyGoal: 5, volume: 0, voiceOn: false, soundOn: false }));
     sessionStorage.setItem('sona.gate.v1', String(Date.now()));
   });
@@ -92,7 +92,7 @@ try {
         removed: ['sStreak', 'sSessions', 'sWords', 'sStars', 'volChip', 'volNext', 'goalCard'].filter(id => document.getElementById(id)),
         share: window.__shares.length, mic: window.__mic, overflow: document.documentElement.scrollWidth > innerWidth,
       }));
-      ok('recordings sit immediately after the narrative, then the weekly card', state.firstCards[1] === 'recordingsCard' && state.firstCards[2] === 'weekCard', state.firstCards);
+      ok('weekly practice leads the overview, followed by saved tries and the narrative', state.firstCards[0] === 'weekCard' && state.firstCards[1] === 'recordingsCard' && state.firstCards[2] === '', state.firstCards);
       ok('empty recordings show honest first/latest placeholders', /First try/.test(state.ghost) && /Latest try/.test(state.ghost) && /Milo.s first clear try gets saved here/.test(state.ghost), state.ghost);
       ok('no fake waveform or unavailable listen link', ['none', 'normal'].includes(state.wave) && !state.hear, state);
       ok('empty report has one practice action', state.actions === 1, state.actions);
@@ -122,7 +122,7 @@ try {
       ok('last-week baseline compares only this family', state.last === 'Up from 3 tries last week', state.last);
       ok('eligible accuracy uses sound checks as its denominator', /75% of sound checks/.test(state.acc) && /3 of 4 sound checks/.test(state.acc), state.acc);
       ok('clearest sound waits for enough data', /R.*75%/.test(state.clearest || ''), state.clearest);
-      ok('weekly goal replaces the day streak', /1 of 5 days this week/.test(state.week) && !/90/.test(state.week), state.week);
+      ok('weekly goal replaces the day streak', /0 of 5 days at the goal this week/.test(state.week) && !/90/.test(state.week), state.week);
       await page.getByText('More details', { exact: false }).click();
       const history = await page.locator('#recent').innerText();
       ok('history uses explicit tries, never legacy word totals', /12 tries/.test(history) && !/99|words/.test(history), history);

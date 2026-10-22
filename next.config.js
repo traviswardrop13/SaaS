@@ -40,13 +40,32 @@ const nextConfig = {
       { source: "/sona.js", headers: noStore },
       { source: "/simple-play.js", headers: noStore },
       { source: "/simple-play.css", headers: noStore },
+      { source: "/sayplay.js", headers: noStore },
+      { source: "/sayplay.css", headers: noStore },
+      { source: "/saycheck.js", headers: noStore },
+      { source: "/action.css", headers: noStore },
       { source: "/mouthcue.js", headers: noStore },
       { source: "/sona.css", headers: noStore },
+      // Pages call these by name (11 Oct 2026): the buddy helpers draw a
+      // child's buddy in the games, the four play engines take a level from
+      // the page (Hoops, Soccer and Dino a buddy too; Bubble Pop keeps Echo
+      // alone), and the Trophy Road's sheet styles its page. A
+      // cached old copy next to a fresh page is a missing method; every page
+      // checks before it calls, so it still plays, just without the new part.
+      { source: "/crafted-buddies.js", headers: noStore },
+      { source: "/hoops.js", headers: noStore },
+      { source: "/soccer.js", headers: noStore },
+      { source: "/dino.js", headers: noStore },
+      { source: "/bubbles.js", headers: noStore },
+      { source: "/crafted-road.css", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },
       { source: "/apple-touch-icon.png", headers: noStore },
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
+      { source: "/for-slps", headers: noStore },
+      { source: "/try", headers: noStore },
+      { source: "/slps", headers: noStore },
       { source: "/subscribe", headers: noStore },
       { source: "/subscribe/success", headers: noStore },
     ];
@@ -55,23 +74,24 @@ const nextConfig = {
   // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
   async rewrites() {
     return [
-      // THE ROOT IS THE FAMILY PAGE (Travis, 22 Oct 2026: "speaksona.com is
-      // only for parents. I don't want to target therapists at all"). This
-      // reverses 22 Sep 2026, when / served for-slps.html for the SLP ad. A
-      // rewrite, not a redirect, so the address bar stays speaksona.com and
-      // the page's ranking is not split across two URLs; app/families/page.tsx
-      // carries a canonical pointing at the root. /families keeps working for
-      // every link already out there. The native shell loads this root too,
-      // and that page sends it straight into the app (its inline Capacitor
-      // guard), exactly as it did before 22 Sep.
-      //
-      // for-slps.html still answers at /for-slps for clinicians who already
-      // have that link, but it is noindex and nothing on the family side
-      // links to it.
-      { source: "/", destination: "/families" },
+      // THE ROOT IS THE PARENT PAGE (Travis, 26 Sep 2026: "change it to
+      // target parents and caregivers only. not slps"). speaksona.com is where
+      // the parent ads land, so it serves that page itself rather than
+      // redirecting — a redirect costs a hop on cold paid traffic and splits
+      // the SEO. The clinician page it replaced (the root from 22 to 26 Sep)
+      // stays at /for-slps, with its own canonical.
+      { source: "/", destination: "/parents.html" },
       { source: "/for-slps", destination: "/for-slps.html" },
+      // The ad's bridge page (Travis, 9 Oct 2026): a headline, a button, the App Store.
+      { source: "/try", destination: "/try.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
-      { source: "/slp", destination: "/slp.html" },
+      { source: "/slps", destination: "/slp.html" },
+    ];
+  },
+  async redirects() {
+    return [
+      { source: "/slp", destination: "/slps", permanent: true },
+      { source: "/slp.html", destination: "/slps", permanent: true },
     ];
   },
 };

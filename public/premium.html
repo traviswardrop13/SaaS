@@ -56,12 +56,12 @@
     #previewExpire{background:#fff;color:#6a508f;border:2px solid #d8cbe9;}
     #keepFree{display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:16px;text-align:center;font-size:14px;font-weight:800;color:var(--muted);text-decoration:underline;text-underline-offset:3px;}
     .free-note{text-align:center;font-size:12px;line-height:1.55;color:var(--muted);margin:9px auto 0;max-width:365px;}
-    .books-note{font-size:12px;line-height:1.5;color:var(--muted);border-top:1px solid #e8d9c5;padding-top:18px;margin-top:25px;text-align:center;}
     #previewError{color:#9c3124;font-size:13px;line-height:1.5;margin-top:12px;}
     @media(max-width:350px){.premium-wrap{padding-left:17px;padding-right:17px;}h1{font-size:31px;}.more-card{padding:18px;}#premiumArt{width:106px;height:106px;}.premium-hero{margin-top:22px;}}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-premium">
   <main id="premiumApp" class="premium-wrap" hidden>
     <header class="premium-header"><a class="premium-back" href="/activities.html">‹ &nbsp; Library</a><span class="adult-label">For grown-ups</span></header>
     <aside id="premiumPreviewNotice" hidden><strong>Preview only.</strong> No payment, charge, or subscription. Trial controls affect this browser tab only.</aside>
@@ -77,6 +77,7 @@
         <li id="premiumGameCount">Every game in the library</li>
         <li>Simple play and arcade adventures</li>
         <li>Switch games whenever your child wants a change</li>
+        <li>Every picture book, read along with Echo, with new ones on the way</li>
       </ul>
       <div class="plan-price" id="premiumOffer">
         <p id="premiumPrice">Annual price to be confirmed</p>
@@ -90,7 +91,6 @@
     </section>
     <a id="keepFree" href="/activities.html">Keep playing free</a>
     <p class="free-note" id="premiumFreeNote">Free games stay available.</p>
-    <p class="books-note"><strong>Books are coming soon.</strong> They aren’t part of the available library yet.</p>
   </main>
   <script src="/sona.js"></script>
   <script>
@@ -107,9 +107,22 @@
       function render(){
         if(!checkGate())return;
         var plan=S.previewPlan(),allOpen=catalog.length>0&&catalog.every(function(item){return S.gameAccess(item.key).allowed;}),chosenOpen=game&&S.gameAccess(key).allowed;
+        // THE PLAN SCREEN, ONE STEP SOONER (30 Sep 2026). A grown-up who
+        // tapped "Ask a grown-up" on a locked game used to land here, read a
+        // pitch, tap "See the plan", and only then meet the price and the
+        // button. The plan screen now carries the pitch itself, opened on the
+        // game the child tapped, so an offer goes straight there. Everything
+        // else stays on this page: a family that already has Premium, a live
+        // trial, the free switch, and the local preview rehearsal.
+        if(!preview&&!S.isFree()&&!(S.premium&&S.premium())&&!allOpen){location.replace("/subscribe.html?from="+(key||"library"));return;}
         el("premiumGameCount").textContent="All "+catalog.length+" available games in the library";
-        var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;});
-        el("premiumFreeNote").textContent=freeNames.join(", ")+" stay free.";
+        // what stays free, named from the catalog and sona.js's free book
+        var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;})
+          .concat((S.FREE_BOOKS||[]).map(function(title){return "the book "+title;}));
+        el("premiumFreeNote").textContent=(freeNames.length>1?freeNames.slice(0,-1).join(", ")+" and "+freeNames[freeNames.length-1]:freeNames.join(""))+" stay free.";
+        // trial first (3 Oct 2026): a family without the free version is told
+        // nothing stays free, because nothing does
+        var freeVer=true;try{freeVer=!S.freeVersion||S.freeVersion();}catch(e){}
         el("premiumPreviewNotice").hidden=!preview;
         el("previewTrial").hidden=!preview||plan.state==="trial";
         el("previewExpire").hidden=!preview||plan.state!=="trial";
@@ -120,15 +133,17 @@
         el("premiumEyebrow").textContent=allOpen?"Ready to play":"Sona Premium";
         el("premiumTitle").textContent=allOpen?(preview?"Every game is unlocked.":"You’re all set."):game?"More to explore with "+game.name+".":"More ways to play.";
         el("premiumLead").textContent=allOpen?(preview?"Your trial preview is active. Try any game, or see what happens when the trial ends.":"Your family already has access to every game. Head back to the library and pick a favorite."):plan.state==="expired"?"The trial preview has ended. Your free games are still available, and all your practice stays with you.":"Unlock the full game library, with simple discoveries for little ones and more adventure for bigger kids.";
-        el("keepFree").textContent=allOpen?"Back to the library":"Keep playing free";
-        el("premiumFreeNote").hidden=allOpen;
+        el("keepFree").textContent=allOpen?"Back to the library":freeVer?"Keep playing free":"Not now";
+        el("premiumFreeNote").hidden=allOpen||!freeVer;
         el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
         if(!preview&&!S.isFree())paintOffer(allOpen);
         var art=S.gameSticker(key||"feed");S.paintSticker(el("premiumArt"),art[0],art[1]);
+        if(!key){el("premiumArt").innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" />';el("premiumArt").style.backgroundImage="none";el("premiumArt").style.backgroundColor="#edf2df";}
       }
       // THE REAL OFFER (24 Sep 2026). With pricing live, every locked tile on
-      // Home, "See Premium" in the parent corner and the library's unlock
-      // button land here — and the page still said "price to be confirmed"
+      // Home and the library's unlock button land here (so did "See Premium"
+      // in Home's Grown-ups pop-up, gone 30 Sep 2026) — and the page still
+      // said "price to be confirmed"
       // beside a disabled button, a dead end on the main way to buy. It now
       // hands off to /subscribe.html, which prices from /api/charter on the
       // web and from RevenueCat in the app, so no figure is typed here and
@@ -144,9 +159,24 @@
           return;
         }
         if(allOpen)return;   // a live trial: every game is already open
-        el("premiumPrice").textContent="3 days free, then one yearly plan";
-        el("premiumTerms").textContent="Daily practice and free games stay free either way.";
-        buy.disabled=false;buy.textContent="See the plan";
+        // what the plan screen sells here: in the iPhone app the monthly plan
+        // (alone from 5 Oct 2026; since 19 Oct 2026 with the yearly one beside
+        // it when the store's answer carries a yearly row, plan.year); the web
+        // card keeps both plans.
+        // In the app the plans and their free days are the store's to promise
+        // (5 Oct 2026): the line starts with what is true of every answer that
+        // sells anything (monthly is always there), and names the yearly plan
+        // or the free days only once Sona.storePlan() says this buyer really
+        // gets them (the same free time on both rows, or the line says none).
+        var inApp=!!(S.isNativeApp&&S.isNativeApp());
+        el("premiumPrice").textContent=inApp?"Month by month":"Yearly with 3 days free, or month by month";
+        if(inApp&&S.storePlan){try{S.storePlan().then(function(plan){
+          if(!plan||(plan.state!=="free"&&plan.state!=="paid"))return;
+          var y=plan.year,ft=function(p){return p&&p.state==="free"&&p.free&&p.free.text?String(p.free.text):"";},mf=ft(plan),yf=ft(y);
+          el("premiumPrice").textContent=y?(mf&&mf===yf?mf+" free, then monthly or yearly":"Monthly or yearly"):(mf?mf+" free, then month by month":"One plan, month by month");
+        });}catch(e){}}
+        el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
+        buy.disabled=false;buy.textContent="See the plans";
         buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
       }
       function simulate(state){

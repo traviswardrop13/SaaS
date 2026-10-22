@@ -30,6 +30,14 @@
     th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #F0E8DB;white-space:nowrap;}
     th{font-weight:800;color:#4A4766;background:#FBF6EE;}
     .ok{color:#0E6E7A;font-weight:800;} .bad{color:#B83A3A;font-weight:800;}
+    .msgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin:10px 0 30px;}
+    .msg{background:#fff;border:2px solid #F0E8DB;border-radius:16px;padding:12px 16px;font-size:14px;line-height:1.5;min-width:0;}
+    .msg.call{border-color:#BFE0DA;}
+    .msg .top{font-weight:800;color:#4A4766;margin-bottom:4px;}
+    .msg .kind{font-family:"Baloo 2",Nunito,sans-serif;font-size:16px;color:#2D2A4B;}
+    .msg .line{color:#4A4766;overflow-wrap:anywhere;}
+    .msg .line b{font-weight:800;}
+    .msg .text{margin:8px 0 0;padding:8px 10px;background:#FBF6EE;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;}
   </style>
 </head>
 <body>
@@ -46,13 +54,36 @@
   <div id="out" hidden>
     <div class="cards">
       <div class="card"><span class="muted">Emails captured</span><b id="nLeads">0</b></div>
-      <div class="card"><span class="muted">In Kit</span><b id="nCrm">0</b></div>
+      <div class="card"><span class="muted">In Resend</span><b id="nCrm">0</b></div>
       <div class="card"><span class="muted">Therapist accounts</span><b id="nSlp">0</b></div>
     </div>
 
-    <h2>Kit</h2>
-    <p class="muted">Sends everyone below — every captured email and every therapist account — to your Kit list, tagged therapist or parent. Safe to run again: Kit updates people it already has.</p>
-    <div class="row"><button id="kitSync">Send everyone to Kit</button><span class="muted" id="kitMsg" role="status"></span></div>
+    <!-- PREMIUM IN THE APP (RCHOOK1, 16 Oct 2026): what RevenueCat last told
+         Sona, per parent who gave the app their email. A family who gave no
+         email is not here: RevenueCat only knows them by a random id. -->
+    <h2>Premium in the app</h2>
+    <p class="muted">From RevenueCat, for parents who gave the app their email. Each person counts once, by what RevenueCat said last.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">On free days</span><b id="pTrial">0</b></div>
+      <div class="card"><span class="muted">Paying</span><b id="pPaid">0</b></div>
+      <div class="card"><span class="muted">Cancelled</span><b id="pCancelled">0</b></div>
+      <div class="card"><span class="muted">Payment problem</span><b id="pBilling">0</b></div>
+      <div class="card"><span class="muted">Ended</span><b id="pEnded">0</b></div>
+      <div class="card"><span class="muted">Moved to another device</span><b id="pMoved">0</b></div>
+    </div>
+
+    <h2>Since the new landing page</h2>
+    <p class="muted">Everyone who left an email since 25 Sep 2026, 1:20 pm Mountain, when speaksona.com started asking “I’m a…”. Each person counts once.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">People</span><b id="sAll">0</b></div>
+      <div class="card"><span class="muted">Speech therapists</span><b id="sSlp">0</b></div>
+      <div class="card"><span class="muted">Parents</span><b id="sParent">0</b></div>
+      <div class="card"><span class="muted">Other</span><b id="sOther">0</b></div>
+    </div>
+    <p class="muted" id="sNone" hidden></p>
+
+    <h2>Email list</h2>
+    <p class="muted">Every email joins your Resend contacts by itself, the moment it is given: in Parents, Speech therapists or Other, and in Started Premium once the app says they started their free days or paid. Everyone captured before 16 Oct 2026 is added a batch a day. Nothing to press: see them in Resend, under Audience.</p>
 
     <h2>Emails captured</h2>
     <p class="muted">Newest first. Kept since 24 Sep 2026 — nothing before that was stored on our side.</p>
@@ -60,11 +91,25 @@
     <div class="tw"><table id="tLeads"></table></div>
 
     <h2>Therapist accounts</h2>
-    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Kit doesn't have them yet: the Kit button above sends them, and so does their next sign-in.</p>
-    <p class="muted">Their own Premium, on their own phone, needs a work email. Someone on gmail, yahoo or the like can press "Request access"; check they're a real clinician, then Approve. Caseload: "paid" is the $79.99 plan, "grandfathered" signed up before it and is covered free forever, "none" is neither.</p>
+    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Resend doesn't have them yet: the daily run adds them, a batch a day, once Kit's unsubscribes are in.</p>
+    <p class="muted">Own Premium (every game on their own phone): therapists who signed up from 29 Sep 2026 buy it, $59.99 a year. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
     <span class="muted" id="approveMsg" role="status"></span>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
     <div class="tw"><table id="tSlp"></table></div>
+
+    <!-- MESSAGES (29 Sep 2026). Before this, a parent's or a therapist's
+         feedback and call requests reached Travis only through Slack — and
+         only if its webhook was set. Everything below is text someone typed
+         into a form, so every field is escaped before it is shown. -->
+    <h2>Messages</h2>
+    <p class="muted">Feedback: parents from “Talk to us” in the app, therapists from “Talk to Rachel” on the dashboard. Newest first. Sona stopped taking call requests on 30 Sep 2026; any sent before then still show here.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">From parents</span><b id="mParent">0</b></div>
+      <div class="card"><span class="muted">From therapists</span><b id="mSlp">0</b></div>
+      <div class="card"><span class="muted">Call requests</span><b id="mCall">0</b></div>
+    </div>
+    <span class="muted" id="msgMsg" role="status"></span>
+    <div id="msgList" class="msgs"></div>
   </div>
 </div>
 
@@ -72,7 +117,9 @@
   (function () {
     var $ = function (id) { return document.getElementById(id); };
     var DATA = null;
-    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["kit", "Kit"]];
+    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["list", "List"], ["premium", "Premium"]];
+    // RevenueCat's word for each address (lib/revenuecat.ts), in plain words
+    var PREMIUM = { trial: "free days", paid: "paying", cancelled: "cancelled", billing: "payment problem", ended: "ended", moved: "moved to another device" };
     var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "Sent to email list"],
       ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
     // The CSV carries the answer, not the button.
@@ -94,13 +141,19 @@
           // approved. A work email needs no approval, and an approved one
           // needs no second click.
           if (c[0] === "approve") {
+            // Only a 24–29 Sep account can still be approved; everyone else's
+            // own Premium is bought (or was free from the start).
+            if (r.canApprove === "no") return '<td class="' + (r.own === "none" ? "muted" : "ok") + '">' + esc(r.own || "none") + "</td>";
             if (r.workEmail === "yes") return '<td class="muted">work email</td>';
             if (r.approved === "yes") return '<td class="ok">approved</td>';
             return '<td><button class="ghost" data-approve="' + esc(r.email) + '">Approve</button></td>';
           }
           if (c[0] === "at" || c[0] === "createdAt" || c[0] === "accessRequested") v = when(v);
-          if (c[0] === "kit" && !v) v = "—";
-          var cls = (c[0] === "kit" || c[0] === "inCrm") ? (/^(added|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
+          // a lead saved before 16 Oct 2026 says what Kit answered
+          if (c[0] === "list" && !v) v = r.kit ? "Kit: " + r.kit : "—";
+          if (c[0] === "premium" && !v) v = "—";
+          var cls = (c[0] === "list" || c[0] === "inCrm") ? (/^(Kit: )?(added|updated|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"')
+            : c[0] === "premium" ? (/^(free days|paying)$/.test(String(v)) ? ' class="ok"' : "") : "";
           return "<td" + cls + ">" + esc(v) + "</td>";
         }).join("") + "</tr>";
       }).join("");
@@ -115,11 +168,37 @@
         return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
       };
       var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
-        return cols.map(function (c) { return q(r[c[0]]); }).join(",");
+        // a lead saved before 16 Oct 2026 says what Kit answered, as the table does
+        return cols.map(function (c) { return q(c[0] === "list" && !r.list && r.kit ? "Kit: " + r.kit : r[c[0]]); }).join(",");
       })).join("\n");
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([body], { type: "text/csv" }));
       a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // SINCE THE NEW LANDING PAGE (Travis, 26 Sep 2026: "how many leads since
+    // we changed the landing page? and how many chose slp v parent"). The page
+    // that asks "I'm a…" went live with #148, merged 25 Sep 2026, 13:20 MDT.
+    // People, not rows: each email counts once, with the newest answer it
+    // gave (leads arrive newest first). Someone who also came through the app
+    // or a join link keeps the answer they gave on the landing page.
+    var LANDING_SINCE = Date.parse("2026-09-25T19:20:04Z");
+    function sinceLanding(leads) {
+      var who = {}, n = { all: 0, slp: 0, parent: 0, other: 0, none: 0 };
+      leads.forEach(function (l) {
+        var e = String(l.email || "").toLowerCase();
+        if (!e || !(Date.parse(l.at || "") >= LANDING_SINCE)) return;
+        var r = l.role === "slp" || l.role === "parent" || l.role === "other" ? l.role : "";
+        if (!(e in who) || (!who[e] && r)) who[e] = r;
+      });
+      Object.keys(who).forEach(function (e) { n.all++; n[who[e] || "none"]++; });
+      return n;
+    }
+    function paintSince(leads) {
+      var n = sinceLanding(leads);
+      $("sAll").textContent = n.all; $("sSlp").textContent = n.slp; $("sParent").textContent = n.parent; $("sOther").textContent = n.other;
+      $("sNone").textContent = n.none ? "Of these, " + n.none + " came from the app, the Speech Check or a join link, and weren’t asked." : "";
+      $("sNone").hidden = !n.none;
     }
 
     function load() {
@@ -138,44 +217,76 @@
           // People, not rows: a clinician finishing setup is posted twice.
           var uniq = function (list) { var s = {}; list.forEach(function (l) { s[String(l.email || "").toLowerCase()] = 1; }); return Object.keys(s).length; };
           $("nLeads").textContent = uniq(j.leads);
-          $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
+          // everyone Resend holds, from the lead door and the daily backfill
+          $("nCrm").textContent = typeof j.inList === "number" ? j.inList : uniq(j.leads.filter(function (l) { return /^(added|updated)/.test(String(l.list || "")); }));
           $("nSlp").textContent = j.clinicians.length;
+          var plans = j.plans && typeof j.plans === "object" ? j.plans : {};
+          var n = { trial: 0, paid: 0, cancelled: 0, billing: 0, ended: 0, moved: 0 };
+          Object.keys(plans).forEach(function (e) { var s = plans[e] && plans[e].s; if (s in n) n[s]++; });
+          $("pTrial").textContent = n.trial; $("pPaid").textContent = n.paid; $("pCancelled").textContent = n.cancelled;
+          $("pBilling").textContent = n.billing; $("pEnded").textContent = n.ended; $("pMoved").textContent = n.moved;
+          j.leads.forEach(function (l) { var p = plans[String(l.email || "").trim().toLowerCase()]; l.premium = p ? PREMIUM[p.s] || "" : ""; });
+          paintSince(j.leads);
           table($("tLeads"), LEAD_COLS, j.leads);
           table($("tSlp"), SLP_COLS, j.clinicians);
           $("out").hidden = false;
+          loadMessages(key);
         })
         .catch(function () {
           $("go").disabled = false; $("go").textContent = "Show leads";
           $("err").textContent = "Network hiccup — try again.";
         });
     }
-    // THE CATCH-UP: batches of five with a pause between them, because Kit
-    // allows about 120 requests a minute and each person can cost three.
-    // When Kit says slow down, the page waits the minute it asks for.
-    function kitSync() {
-      var key = ($("key").value || "").trim();
-      var added = 0, failed = 0;
-      $("kitSync").disabled = true;
-      function step(offset) {
-        fetch("/api/founders/kit-sync", {
-          method: "POST", headers: { "Content-Type": "application/json", "x-founder-key": key },
-          body: JSON.stringify({ offset: offset }),
-        }).then(function (r) { return r.json(); }).then(function (j) {
-          if (!j || !j.ok) { $("kitMsg").textContent = (j && j.error) || "Couldn't reach Kit."; $("kitSync").disabled = false; return; }
-          (j.results || []).forEach(function (x) { if (/^added/.test(x.result)) added++; else failed++; });
-          if (j.done) {
-            $("kitMsg").textContent = "Done — " + added + " in Kit" + (failed ? ", " + failed + " failed (see the Kit column after refreshing)" : "") + ".";
-            $("kitSync").disabled = false; load(); return;
-          }
-          var wait = j.retryAfter ? j.retryAfter * 1000 : 8000;
-          $("kitMsg").textContent = j.next + " of " + j.total + " sent" + (j.retryAfter ? " — Kit asked us to slow down, waiting a minute…" : "…");
-          setTimeout(function () { step(j.next); }, wait);
-        }).catch(function () { $("kitMsg").textContent = "Network hiccup — press it again to carry on."; $("kitSync").disabled = false; });
-      }
-      $("kitMsg").textContent = "Starting…";
-      step(0);
+    // MESSAGES: parents' "Talk to us" and therapists' "Talk to Rachel", one
+    // list, newest first. Its own request, so a hiccup here never hides the
+    // leads above. Every value is typed by someone else: esc() on all of it.
+    var PREFER = { phone: "Phone call", video: "Video call", email: "Just email" };
+    var TOPIC = { dashboard: "The SLP dashboard", app: "The family app", question: "A question about Sona", affiliate: "Affiliate partnerships", general: "General" };
+    function mailto(e) {
+      e = String(e || "");
+      if (!/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(e)) return esc(e);
+      // a lone surrogate makes encodeURIComponent throw, which would take the
+      // whole list down with it — show that one address as plain text instead
+      var href; try { href = encodeURIComponent(e).replace(/%40/g, "@"); } catch (x) { return esc(e); }
+      return '<a href="mailto:' + esc(href) + '">' + esc(e) + "</a>";
     }
-    $("kitSync").onclick = kitSync;
+    function line(label, value) { return value ? '<div class="line"><b>' + esc(label) + ":</b> " + value + "</div>" : ""; }
+    function paintMessages(family, slp) {
+      var all = family.map(function (m) { m.who = m.from === "slp" ? "slp-app" : "parent"; return m; }).concat(slp.map(function (m) { m.who = "slp"; return m; }));
+      all.sort(function (a, b) { return String(b.at || "").localeCompare(String(a.at || "")); });
+      $("mParent").textContent = family.length;
+      $("mSlp").textContent = slp.length;
+      $("mCall").textContent = all.filter(function (m) { return m.kind === "call"; }).length;
+      if (!all.length) { $("msgList").innerHTML = '<p class="muted">None yet.</p>'; return; }
+      $("msgList").innerHTML = all.map(function (m) {
+        var call = m.kind === "call";
+        var who = m.who === "slp" ? "SLP" + (m.slpName ? " · " + esc(m.slpName) : "") : (m.who === "slp-app" ? "SLP" : "Parent") + (m.app === "ios" ? " · iPhone app" : m.app === "web" ? " · web" : "");
+        var chips = Array.isArray(m.chips) ? m.chips.map(function (c) { return esc(c); }).join(", ") : "";
+        var talk = call ? [PREFER[m.prefer] || "", m.availability ? "good time: " + m.availability : "", m.timezone ? "time zone: " + m.timezone : ""]
+          .filter(Boolean).map(function (s) { return esc(s); }).join(" · ") : "";
+        return '<div class="msg' + (call ? " call" : "") + '">' +
+          '<div class="top"><span class="kind">' + (call ? "Call request" : "Feedback") + "</span> · " + who + " · " + esc(when(m.at)) + "</div>" +
+          line("Reply to", m.replyEmail ? mailto(m.replyEmail) : '<span class="muted">no email given</span>') +
+          line("Topics", chips) +
+          line("About", m.who === "slp" && m.category ? esc(TOPIC[m.category] || m.category) : "") +
+          line("Code", m.who === "slp" && m.slpCode ? esc(m.slpCode) : "") +
+          line("Would recommend", m.recommend ? esc(m.recommend) : "") +
+          line("Talk by", talk) +
+          (m.text ? '<p class="text">' + esc(m.text) + "</p>" : "") +
+          "</div>";
+      }).join("");
+    }
+    function loadMessages(key) {
+      $("msgMsg").textContent = "Loading messages…";
+      fetch("/api/founders/feedback", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { $("msgMsg").textContent = (j && j.error) || "Couldn't load messages."; return; }
+          $("msgMsg").textContent = "";
+          paintMessages(Array.isArray(j.family) ? j.family : [], Array.isArray(j.slp) ? j.slp : []);
+        })
+        .catch(function () { $("msgMsg").textContent = "Couldn't load messages — refresh to try again."; });
+    }
 
     // APPROVE a clinician's own Premium without a work email. One click, then
     // the table reloads from the server, so what it shows is what was saved.

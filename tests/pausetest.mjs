@@ -29,7 +29,9 @@ async function scenario(name, fn) {
   try { await fn(); } catch (error) { ok(name + ' completes without a harness/page exception', false, error.stack); }
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-// Home legitimately mints existing practice coins; it must not change completed work.
+// Home no longer mints coins (COIN3, 11 Oct 2026: coins come only from the daily
+// chest and Trophy Road gifts); coins may still only go up here, and nothing may
+// change completed work.
 function samePractice(a, b) {
   const strip = (value) => { const x = JSON.parse(JSON.stringify(value)); delete x.coins; delete x.progress.totals.coins; return x; };
   return same(strip(a), strip(b)) && b.coins >= a.coins;
@@ -153,14 +155,17 @@ function fakeDevice(config) {
   let sona;
   Object.defineProperty(window, 'Sona', { configurable: true, get: () => sona, set(value) {
     sona = value;
-    value.speechStart = () => {
+    // The recognizer "hears" the word the round asked Apple to listen for. A fixed
+    // "rrrr" stopped passing word rounds on 28 Sep (only the word or a close version counts).
+    value.speechStart = (o) => {
+      h.heardWord = (o && o.words && o.words[0]) || 'rrrr';
       h.nativeStarts++;
       return h.nativeStartMode === 'pending' ? new Promise((resolve) => h.nativeWaiters.push(resolve)) : Promise.resolve(true);
     };
     value.speechStop = () => {
       h.nativeStops++;
       if (h.verifyMode === 'deferred') return new Promise((resolve) => h.speechWaiters.push(resolve));
-      return Promise.resolve({ text: h.verifyMode === 'unknown' ? '' : h.verifyMode === 'fail' ? 'poopoo' : 'rrrr' });
+      return Promise.resolve({ text: h.verifyMode === 'unknown' ? '' : h.verifyMode === 'fail' ? 'poopoo' : h.heardWord });
     };
     value.saveRecording = () => { h.effects.push('saveRecording'); return Promise.resolve(); };
     value.confetti = () => {};
@@ -170,11 +175,11 @@ function fakeDevice(config) {
     }
   } });
   h.resolveNativeStart = () => h.nativeWaiters.splice(0).forEach((resolve) => resolve(true));
-  h.resolveSpeech = () => { const pending = h.speechWaiters.splice(0); pending.forEach((resolve) => resolve({ text: 'rrrr' })); };
+  h.resolveSpeech = () => { const pending = h.speechWaiters.splice(0); pending.forEach((resolve) => resolve({ text: h.heardWord || 'rrrr' })); };
 
   if (!localStorage.getItem('sona.test.pauseSeed')) {
     localStorage.setItem('sona.test.pauseSeed', '1');
-    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done');
+    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done');
     if (!config.firstMic) localStorage.setItem('sona.micok', '1');
     if (config.replay) localStorage.setItem('sona.demo.v1', JSON.stringify({started:Date.now()-1000,done:Date.now()}));
     localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: false, soundOn: false, volume: 0 }));
@@ -462,6 +467,14 @@ await scenario('earned game waits for Resume and survives Home', async () => {
     await page.evaluate(() => __pauseHarness.releaseHeld());
     await page.waitForURL('**/arcade-slice.html?**');
     ok('restored handoff reaches the earned game', page.url().includes('/arcade-slice.html'));
+    // 1 Oct 2026: the hand-off also carries the step the practice page ended
+    // on and its item, so the game's say-it cards never ask below it
+    // (Sona.gameAsk). It has to survive the same trip through Home; a missing
+    // one would only mean the cards start from the sound (gameasktest).
+    await page.waitForFunction(() => window.Sona && typeof Sona.gameAsk === 'function');
+    const hand = await page.evaluate(() => { const g = (k) => sessionStorage.getItem('sona.boost.' + k); return { sound: g('sound'), level: g('level'), ask: g('ask'), bare: Sona.soundSay(g('sound')), card: Sona.gameAsk(g('sound'), 1).text }; });
+    ok('the restored handoff still carries the step practice ended on, and its item, for the game\'s cards',
+      !!hand.sound && ['isolation', 'syllable', 'word', 'sentence'].includes(hand.level) && !!hand.ask && (hand.level !== 'isolation' || hand.ask === hand.bare) && !!hand.card, hand);
     clean('earned game restore', errors);
   } finally { await context.close(); }
 });

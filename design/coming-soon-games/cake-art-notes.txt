@@ -1,0 +1,50 @@
+Birthday Cake art — 2026-10-17
+Built-in image_gen only. Minimal five recipe assets: plain cake, bowl, spoon, jug and piping bag. Existing kitchen and three fruits reused; no new background, topping library, candles or fan.
+Exports use only rectangular crops and proportional resize, WebP quality88/method6/exact alpha. No semantic or alpha edits.
+The initial elliptical bowl is not exported: the core stirring mechanic needs a strict circular top-down opening. One focused built-in camera correction was selected; all other first outputs are selected unchanged.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/cake-base-v1.webp", "dimensions": [512, 357], "mode": "RGBA", "bytes": 64210, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-42e903f7-bcb5-41cd-b2cc-60d68a573a40.png", "crop": [46, 71, 1402, 1016]}
+Prompt:
+Use case: stylized-concept
+Asset type: one isolated functional sprite for Sona's preschool Birthday Cake kitchen game.
+Style: richly painted handcrafted storybook toy art, rounded friendly forms, tactile material detail, soft dimensional shading, warm upper-left kitchen light. Complete object within frame with modest clear padding. Genuinely transparent alpha around the object. No opaque backdrop, floor, cast shadow, characters, text, UI, logos, border or frame. No extra objects.
+Subject: one plain round golden vanilla sponge cake, a single short cylindrical cake layer. Clean bare sponge all around, warm golden softly textured sides, completely empty flat pale golden sponge TOP SURFACE. It has NO icing, no frosting, cream, filling seam, glaze, fruit, decoration, candles, plate or cake stand. Gentle front-side view from slightly above: entire top is a simple broad readable horizontal ellipse, cake centered and fully visible. The top ellipse is roughly centered atimage(.50,.28), spansx.07to.93 andy.10to.44; sides extend down to aroundy.86. Ratio about4:3 landscape. Cake alone with no crumbs outside its silhouette. This top ellipse must stay plain and empty for the game to pipe its actual icing and place toppings.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/cake-spoon-v1.webp", "dimensions": [384, 251], "mode": "RGBA", "bytes": 13356, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-e2f24845-bf04-43e8-99e0-d20ae12d443c.png", "crop": [31, 30, 1509, 997]}
+Prompt:
+Use case: stylized-concept
+Asset type: one isolated functional sprite for Sona's preschool Birthday Cake kitchen game.
+Style: richly painted handcrafted storybook toy art, rounded friendly forms, tactile material detail, soft dimensional shading, warm upper-left kitchen light. Complete object within frame with modest clear padding. Genuinely transparent alpha around the object. No opaque backdrop, floor, cast shadow, characters, text, UI, logos, border or frame. No extra objects.
+Subject: exactly one plain clean wooden mixing spoon with a rounded shallow oval bowl and a long gently tapered handle, warm honey wood grain, softly rounded edges. Diagonal orientation: spoon's bowl at the UPPER LEFT, handle extends toward LOWER RIGHT. Entire spoon visible, no batter, sauce, food, flour, water, drips or marks painted onto the spoon. Readable broad spoon bowl for a physical stirring contact point. No hand or separate shadow.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/cake-jug-v1.webp", "dimensions": [384, 310], "mode": "RGBA", "bytes": 27428, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-04c34374-c4d8-41d8-b2ad-77831c0cb6e6.png", "crop": [25, 46, 1358, 1122]}
+Prompt:
+Use case: stylized-concept
+Asset type: one isolated functional sprite for Sona's preschool Birthday Cake kitchen game.
+Style: richly painted handcrafted storybook toy art, rounded friendly forms, tactile material detail, soft dimensional shading, warm upper-left kitchen light. Complete object within frame with modest clear padding. Genuinely transparent alpha around the object. No opaque backdrop, floor, cast shadow, characters, text, UI, logos, border or frame. No extra objects.
+Subject: one small cream ceramic pouring jug with subtle muted turquoise band, rounded body, loop handle on LEFT, clear projecting pouring spout on RIGHT. Gentle front-side view from slightly above, so a small level pale yellow batter surface is visible inside the top opening, but there is NO pouring stream or drip. Upright neutral idle pose, fully visible entire handle/base/spout. Spout tip should be clear and sharp enough to identify as the physical source of code-drawn liquid. No measuring marks, words, detached liquid, stand or utensils. Jug alone on true transparent background.
+
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/cake-piping-v1.webp", "dimensions": [384, 354], "mode": "RGBA", "bytes": 24862, "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-96d9c6e1-e685-4bf1-9d8b-2d934f50ad02.png", "crop": [38, 0, 1312, 1173]}
+Prompt:
+Use case: stylized-concept
+Asset type: one isolated functional sprite for Sona's preschool Birthday Cake kitchen game.
+Style: richly painted handcrafted storybook toy art, rounded friendly forms, tactile material detail, soft dimensional shading, warm upper-left kitchen light. Complete object within frame with modest clear padding. Genuinely transparent alpha around the object. No opaque backdrop, floor, cast shadow, characters, text, UI, logos, border or frame. No extra objects.
+Subject: one cream-colored soft fabric icing piping bag with a small muted turquoise tie at its wide gathered end and a short clean silver metal nozzle at the pointed end. Diagonal orientation: broad gathered bag end at UPPER RIGHT; the metal nozzle points DOWN LEFT, with the nozzle's clean open tip nearimage(.16,.84). Rounded full bag with soft fabric folds, not a rigid cone; gentle toy proportions. No icing, frosting bead, squeezed dollop, stream or food coming out of the nozzle, and no hand. Entire bag/tie/nozzle visible on true transparent background. The game will draw actual icing at the nozzle tip.
+
+Geometry normalized within the EXPORTED rectangles:
+Cake: native512x357. Visible top ellipse center approximately(.50,.296), physical radii(.48 of image width,.196 of image width). Keep runtime icing, fruit and candle bases inside this same actual ellipse. Bare cake has no frosting or decoration.
+Spoon: native384x251. Stirring contact at center of spoon bowl approximately(.18,.22). Entire handle extends down-right; no baked batter or sauce.
+Jug: native384x310. Spout tip approximately(.985,.128). Rotate the jug around its actual pouring anchor; emitted batter must start here. No baked drips or stream.
+Piping bag: native384x354. Actual metal nozzle opening approximately(.031,.967). Body extends up-right from this point. Runtime icing must begin at this exact nozzle, with no idle extrusion.
+Preserve all native aspects. Existing kitchen: game/pizza-kitchen-v1.webp800x1200. Existing fruit-strawberry/kiwi/grapes.webp each384x384 with trueRGBA; inspected and unchanged.
+Fruit alpha64 bounds: strawberry(52,38,338,358), kiwi(26,31,364,361), grapes(39,16,358,372). Grapes are one small cluster decoration.
+QA:/tmp/sona-cake-source-qa.png and/tmp/sona-cake-fruit-qa.png. All selected output alpha channels match resized generated alpha exactly.
+
+Selected top-down bowl:
+{"file": "/Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/cake-bowl-v1.webp", "dimensions": [384, 384], "bytes": 22446, "mode": "RGBA", "origin": "/Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-710ebbb1-8d56-4113-b877-6a92bcf163c5.png", "crop": [39, 39, 1215, 1215]}
+Opening center approximately(.50,.50), safe circular batter radius .37 of exported image width. Preserve its square footprint. For a stirring circle of .22 canvas width, render the bowl at least .65 canvas width to leave visible batter margin around the guide. No baked stirring marks or tool.
+Exact correction prompt:
+Use case: precise-object-edit
+Edit target: supplied cream/teal ceramic mixing bowl with yellow cake batter.
+Necessary gameplay correction: change the camera to a STRICT90-degree overhead TOP-DOWN view. The entire bowl rim and batter opening must be perfectly CIRCULAR, not elliptical, because the child traces a real circular stirring ring inside this bowl. Preserve the same cream ceramic, simple muted turquoise rim accent, pale yellow smooth level batter, soft tactile painted storybook toy style and warm light. Do not show the side wall/front/base from the previous view: look straight down into the bowl. Center the circular bowl in a square image, full complete rim visible with a modest transparent margin all around. The batter disk occupies about78% of the bowl's full diameter and is a uniform smooth pale yellow, with no baked swirling lines, ingredients, spoon, splash, powder, bubbles or separate tool. Exactly one bowl only, genuinely transparent alpha outside its complete circular rim, no backdrop, surface, cast floor shadow, text, UI or extra objects.
+Initial front-view bowl origin (not exported): exec-d8e277b0-1d17-47fc-a5b0-67986c7f1767.png.

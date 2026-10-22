@@ -7,8 +7,9 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = 'http://127.0.0.1:8196';
+const SIMPLE_SCENE = readFileSync(new URL('./fixtures/simpleplay-scene.html', import.meta.url));
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2' };
-// Bubble Pop and Peekaboo are parked in the shipped catalog. Keep exercising
+// Peekaboo is parked in the shipped catalog (Bubble Pop came back on 30 Sep 2026). Keep exercising
 // their retained engines by changing only their flags in this test server's
 // source response; the app has no runtime flag that unlocks parked games.
 function enableParkedEngineFixture(source) {
@@ -18,7 +19,7 @@ const server = createServer((req,res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT,url.pathname);
   if(url.pathname.startsWith('/api/')) { res.writeHead(503,{'content-type':'application/json'}); res.end('{}'); return; }
   if(!existsSync(file)||!statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(url.pathname==='/sona.js'?enableParkedEngineFixture(readFileSync(file,'utf8')):readFileSync(file));
+  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(url.pathname==='/sona.js'?enableParkedEngineFixture(readFileSync(file,'utf8')):url.pathname==='/arcade-peekaboo.html'?SIMPLE_SCENE:readFileSync(file));
 });
 await new Promise(resolve=>server.listen(8196,'127.0.0.1',resolve));
 const browser = await chromium.launch(launchOpts());
@@ -71,7 +72,7 @@ function fakeDevice(config) {
   }});
   if(!localStorage.getItem('sona.test.simpleSeed')){
     localStorage.setItem('sona.test.simpleSeed','1');
-    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
+    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');
     localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'4',focusSounds:['M'],onboarded:true,earlyAdopter:true,voiceOn:config.voiceOn!==false,soundOn:!!config.soundOn,volume:config.voiceOn===false?0:0.6}));
     if(config.micok)localStorage.setItem('sona.micok','1');
   }
@@ -96,7 +97,13 @@ async function voice(page){await page.evaluate(()=>{__simpleTest.voice=true;});a
 async function finishRemaining(page,game,turn=0){for(let i=turn;i<5;i++){if(await page.locator('body').getAttribute('data-phase')==='choose')await reveal(page,game,i%3);await click(page,'#nextTurn');}await page.locator('#finishPanel').waitFor();}
 function clean(game,errors){ok(game+': no runtime errors',errors.length===0,errors);}
 
-const pages=['bubbles','peekaboo'];
+// Bubble Pop left this engine on 1 Oct 2026: it was rebuilt on sayplay.js
+// ("Say it, and Echo blows bubbles"), and tests/bubblestest.mjs plays it
+// through. Peekaboo is still this engine's game, so every scenario here that
+// was Bubble Pop's alone (the late mic grant, the mic that fails to connect)
+// now runs on Peekaboo: they test the engine, not the game.
+const pages=['peekaboo'];
+ok('Bubble Pop no longer loads the simple-play engine',existsSync(ROOT+'/arcade-bubbles.html')&&!/simple-play\.(?:js|css)/.test(readFileSync(ROOT+'/arcade-bubbles.html','utf8').replace(/<!--[\s\S]*?-->/g,'')));
 const present=pages.every(game=>existsSync(ROOT+'/arcade-'+game+'.html'))&&existsSync(ROOT+'/simple-play.js');
 for(const game of pages)ok(game+': parked engine page is retained',existsSync(ROOT+'/arcade-'+game+'.html'));
 ok('shared simple-play engine ships',existsSync(ROOT+'/simple-play.js'));
@@ -218,21 +225,21 @@ if(present)for(const game of pages){
 }
 
 if(present)await scenario('late microphone grant cannot survive a pause',async()=>{
-  const {context,page,errors}=await fresh('bubbles',{micok:true,permission:'granted',micMode:'pending',voiceOn:false});
+  const {context,page,errors}=await fresh('peekaboo',{micok:true,permission:'granted',micMode:'pending',voiceOn:false});
   try{
     // 24 Sep 2026: the request used to go out at Start. It now goes out only
     // for a revealed picture (with the voice off, straight after the reveal),
     // so the pause lands on a revealed turn and Resume comes back to it.
     await click(page,'#startGame');await phase(page,'choose');await page.waitForTimeout(200);
     ok('Start alone asks for no microphone',(await resources(page)).requests===0);
-    await reveal(page,'bubbles');await page.waitForFunction(()=>__simpleTest.requests.length===1);
+    await reveal(page,'peekaboo');await page.waitForFunction(()=>__simpleTest.requests.length===1);
     await page.evaluate(()=>__simpleTest.background());await page.locator('#pausePanel').waitFor();
     await page.evaluate(()=>__simpleTest.grantPending());await page.waitForTimeout(60);
     ok('a late permission result is immediately released',(await resources(page)).live===0&&(await resources(page)).graphs===0);
     await page.evaluate(()=>{__simpleTest.micMode='deny';__simpleTest.foreground();});
     await click(page,'#resumeGame');await phase(page,'reveal');await page.waitForTimeout(60);
     await click(page,'#nextTurn');await phase(page,'choose');
-    await reveal(page,'bubbles');await click(page,'#nextTurn');await phase(page,'choose');
+    await reveal(page,'peekaboo');await click(page,'#nextTurn');await phase(page,'choose');
     ok('a denied optional microphone leaves tap play working',(await resources(page)).live===0);
     clean('late/denied optional microphone',errors);
   }finally{await context.close();}
@@ -278,19 +285,19 @@ if(present)for(const game of pages){
 // the in-flight count at -1, which the chimes read as "a request is still
 // pending": every later chime waited for it forever.
 if(present)await scenario('a mic that fails to connect leaves the chimes working',async()=>{
-  const {context,page,errors}=await fresh('bubbles',{micok:true,permission:'granted',soundOn:true,sourceThrows:1});
+  const {context,page,errors}=await fresh('peekaboo',{micok:true,permission:'granted',soundOn:true,sourceThrows:1});
   const taps=()=>page.evaluate(()=>__simpleTest.sfx.filter(n=>n==='tap').length);
   try{
-    await click(page,'#startGame');await phase(page,'choose');await reveal(page,'bubbles');
+    await click(page,'#startGame');await phase(page,'choose');await reveal(page,'peekaboo');
     await page.waitForFunction(()=>__simpleTest.sourceThrew===1);
     ok('the granted mic really failed to connect, and was released',(await resources(page)).live===0);
     await page.waitForTimeout(100);
     await click(page,'#nextTurn');await phase(page,'choose');
     const before=await taps();
-    await reveal(page,'bubbles');
+    await reveal(page,'peekaboo');
     const chimed=await page.waitForFunction(b=>__simpleTest.sfx.filter(n=>n==='tap').length>b,before,{timeout:1500}).then(()=>true,()=>false);
     ok('after a mic that could not connect, the next picture still chimes',chimed,{before,after:await taps()});
-    await click(page,'#nextTurn');await finishRemaining(page,'bubbles',2);
+    await click(page,'#nextTurn');await finishRemaining(page,'peekaboo',2);
     const finished=await page.waitForFunction(()=>__simpleTest.sfx.includes('complete'),null,{timeout:1500}).then(()=>true,()=>false);
     ok('…and the round still ends on its finish chime',finished,await page.evaluate(()=>__simpleTest.sfx));
     clean('mic fails to connect',errors);

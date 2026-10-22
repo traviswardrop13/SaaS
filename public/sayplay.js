@@ -1,0 +1,763 @@
+/* Say & Play: the engine behind the twenty say-it-to-play games
+   (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10 more games for
+   ages 5-8. keep them super simple and incorporating practice into it").
+
+   One loop, every game: a picture of the child's practice word, Echo says
+   the word, the mic opens, the child says it two times, and the game takes
+   one step (the balloon grows, the car zooms, the robot gets an arm). No
+   timer, no losing, nothing is scored, and the last step always ends on a win.
+
+   TWO TIMES (Travis, 1 Oct 2026: "ask them to say it two times. and if they
+   say it once to have it say '1 more time'"). The first saying Echo hears
+   ticks the first of two dots and shows "1 more time!" in the same frame,
+   with no sound (the mic is still open); the mic stays open for the second,
+   and only the second earns the move. One long word is one saying: the
+   second counts only after the voice has dropped away for GAP_MS, and never
+   sooner than APART_MS after the first. Echo still
+   models the word alone ("Say... rabbit."). Hoops, Soccer and Dino first
+   explain the two sayings in a separate sentence, before any target word.
+   Nothing is spoken between the two sayings or glued onto the target.
+
+   ONE GAME ASKS ONCE: game.sayTimes (1 or 2; two unless the page says 1).
+   Travis asked for two in the word games, the ones for ages 5-8 he was
+   playing (Hoops, Soccer Goal, Dino Dig). Bubble Pop, the littles' game on
+   this engine, was built to be said once, and whether a three-year-old should
+   say a word twice is Rachel's call, not this file's: its page passes 1 until
+   she says. With 1 a turn is exactly the turn it was before two times: no
+   dots, no "Say it 2 times", no "1 more time!", one saying earns the move and
+   is one rep.
+
+   Each game page (arcade-<key>.html, written by tools/gameart/build.mjs)
+   carries its drawn scene and calls SayPlay.start(game) with its steps. This
+   file owns everything else, once, so twenty games can't drift apart.
+
+   A PLAY GAME (game.play; Hoops is the first, 26 Sep 2026) is one where the
+   child does something with the move the word earned: the word brings the
+   ball, and the child shoots it. The step counts only when the game says the
+   move is done (the basket), so a word is never spent on a miss; the mic is
+   closed for all of it, and the game's own sounds go through sfx() below, so
+   they keep every quiet rule a chime keeps.
+
+   What the mic is allowed to do, same hard lines as Feed Echo and the arcade
+   keep-playing card:
+   - It hears loudness and the sound's rough shape only (voiced vs hiss). It
+     records nothing, uploads nothing and scores nothing. A spoken move is
+     PLAY, never practice data: nothing here calls logAttempt, bumpReps,
+     recordSession, recordRung, rotAdvance or awards a sticker. Each saying
+     Echo hears is one rep on the week's count (Sona.gameRep: its own ledger,
+     which no pass rate and no clinician ever sees), two for a word (one in a
+     game that asks once).
+   - Only a voice moves a game. Silence never does, and there is no tap that
+     stands in for talking: a child who doesn't speak gets the word again,
+     not a free step (that would teach that not talking works). In a play
+     game a finger plays the move, but only a move a word has earned.
+   - It is open only while it is the child's turn, never under Echo's voice
+     or a chime. On an iPhone a page holding the mic runs as a phone call, so
+     every sound waits for the mic to close and SETTLE_MS more, and the mic
+     never opens until the page has been quiet (quietUntil).
+   - It closes the moment the child's second saying is heard (the first, in a
+     game that asks once), on "Hear it", at the finish, and whenever the page
+     is hidden. */
+(function () {
+  "use strict";
+  var S = window.Sona;
+  var G = null, $ = function (id) { return document.getElementById(id); };
+  var profile = {};
+
+  // ── timings ── (the same numbers Feed Echo and simple-play.js keep)
+  var SETTLE_MS = 200, QUIET_MS = 900, VOICE_TAIL_MS = 250;
+  var FLOOR_MS = 450, HEARD_MS = 3000, LISTEN_MS = 12000, STEP_MS = 1400, FINALE_MS = 2800;
+  // A word is said SAY_TIMES times. Between two sayings the voice has to drop
+  // under the loudness bar for GAP_MS, or one long "rrraaabbit" would be both.
+  // It is timed, not counted in frames like the 5-frame burst: the listening
+  // loop runs once per screen frame (about 17 ms), and a phone in Low Power
+  // Mode draws half as many, which would double a frame count. 200 ms is about
+  // twelve frames: longer than the closed-mouth moment inside a word (the b in
+  // "rabbit", the ck in "rocket": roughly 50-150 ms), shorter than the breath
+  // a child leaves between saying a word and saying it again.
+  // APART_MS: and nothing counts as the next saying sooner than this after the
+  // one before it was heard. A word with a hard stop in the middle ("rocket",
+  // "pizza") can go quiet for longer than GAP_MS when a child says it with
+  // care, and its second half would then be the second saying. A word said
+  // again always starts later than that: the first one has to finish, and the
+  // gap has to pass. So this takes nothing from a child who says it twice fast.
+  // SAY_TIMES is two unless the game's page asks for one (game.sayTimes, read
+  // in start(); the note at the top of this file says which game and why).
+  var SAY_TIMES = 2, GAP_MS = 200, APART_MS = 450;
+  var quietUntil = 0, micClosedAt = -1e9, chimesDue = 0, chimeEnd = 0;
+  var SFX_MS = { tap: 120, correct: 400, complete: 700 };
+
+  // ── state ──
+  var phase = "boot", paused = false, step = 0, turnLive = false, heardThisTurn = false, listening = false;
+  // sayings of this turn's word heard so far. It belongs to the word, not to
+  // one opening of the mic: a tap on the mic, "Hear it" and a pause all keep it.
+  var said = 0;
+  var SOUND = "R", WORDS = [], word = null, used = [], parts = {}, stageHTML = "";
+  var introSaid=false, themed=[], themedUsed=[], roundWords=[], helpTurn=false;
+
+  function setPhase(p) { phase = p; document.body.setAttribute("data-phase", paused ? "paused" : p); publish(); }
+  // What tests read (the page's internals stay inside this closure otherwise).
+  function publish() {
+    try { window.__sayplay = { phase: phase, step: step, steps: G ? G.steps.length : 0, sound: SOUND, word: word && word.w, paused: paused, listening: listening, said: said, times: SAY_TIMES }; } catch (e) {}
+  }
+
+  // ── audio: Echo's voice (cached on this phone), chimes, and their order ──
+  var audioCtx = null, speaking = false, ttsPlaying = false, audioGeneration = 0, audioPaused = !!document.hidden, audioStop = null, audioSuspend = Promise.resolve(), instructionActive = false, instructionOwed = null;
+  function audioAllowed(generation) { return !document.hidden && !audioPaused && generation === audioGeneration; }
+  function stopAudio() {
+    audioGeneration++; audioPaused = true;
+    var stop = audioStop; audioStop = null; if (stop) stop();
+    speaking = false; ttsPlaying = false; instructionActive = false;
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+    try { if (S && S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {}
+    try { if (audioCtx && audioCtx.suspend) audioSuspend = Promise.resolve(audioCtx.suspend()).catch(function () {}); } catch (e) {}
+  }
+  // Echo's voice alone: a line playing or still on its way stops, and the
+  // chimes and the audio context are left as they are.
+  function stopVoice() {
+    audioGeneration++;
+    var stop = audioStop; audioStop = null; if (stop) stop();
+    speaking = false; ttsPlaying = false; instructionActive = false;
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+  }
+  function getCtx() {
+    if (document.hidden || audioPaused) throw new Error("Say & Play audio is paused");
+    if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
+    if (audioCtx.state === "suspended") { var generation = audioGeneration; audioSuspend.then(function () { if (audioAllowed(generation) && audioCtx.state === "suspended") return audioCtx.resume(); }).catch(function () {}); }
+    return audioCtx;
+  }
+  // iOS unlock: every game starts on a tap (the Play button), and any tap
+  // unlocks the context, so Echo is heard from the first word.
+  function unlockOnTap() {
+    function un() { if (document.hidden || paused) return; audioPaused = false; try { var c = getCtx(); var b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch (e) {} }
+    document.addEventListener("pointerdown", un, { passive: true, capture: true });
+  }
+  function ttsDB() { return new Promise(function (res, rej) { try { var r = indexedDB.open("sona-tts", 1); r.onupgradeneeded = function () { r.result.createObjectStore("clips"); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; } catch (e) { rej(e); } }); }
+  function ttsGet(k) { return ttsDB().then(function (db) { return new Promise(function (res) { var tx = db.transaction("clips"); var rq = tx.objectStore("clips").get(k); rq.onsuccess = function () { res(rq.result || null); }; rq.onerror = function () { res(null); }; }); }).catch(function () { return null; }); }
+  function ttsPut(k, buf) { ttsDB().then(function (db) { try { db.transaction("clips", "readwrite").objectStore("clips").put(buf, k); } catch (e) {} }).catch(function () {}); }
+  function volume() { var n = profile.volume == null ? 0.8 : Number(profile.volume); return isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.8; }
+  function playPCM(b, generation) {
+    return new Promise(function (res) {
+      if (!audioAllowed(generation)) return res();
+      if (S && S.mediaPCM && S.voiceAsMedia && S.voiceAsMedia()) {
+        // The iPhone app plays the voice as media (sona.js mediaPCM says why).
+        // false: it never started, so say() falls back to the browser voice.
+        var m = S.mediaPCM(b, { volume: volume() }), stopMedia = function () { m.stop(); };
+        ttsPlaying = true; audioStop = stopMedia;
+        m.done.then(function (how) { if (audioStop === stopMedia) audioStop = null; if (generation === audioGeneration) ttsPlaying = false; res(how !== "failed"); });
+        return;
+      }
+      var done = false, source = null, timer = null; ttsPlaying = true;
+      function fin() { if (done) return; done = true; clearTimeout(timer); if (audioStop === cancel) audioStop = null; if (generation === audioGeneration) ttsPlaying = false; res(); }
+      function cancel() { try { if (source) source.stop(); } catch (e) {} fin(); }
+      audioStop = cancel;
+      try {
+        var c = getCtx(), n = b.byteLength >> 1, ab = c.createBuffer(1, n, 24000), ch = ab.getChannelData(0), dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+        for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+        source = c.createBufferSource(); source.buffer = ab; var g = c.createGain(); g.gain.value = volume();
+        source.connect(g); g.connect(c.destination); source.onended = fin; source.start();
+        // A context the phone never let start would hold this turn forever
+        // (onended never fires), so the word's own length plus a beat ends it.
+        timer = setTimeout(fin, n / 24 + 1500);
+      } catch (e) { fin(); }
+    });
+  }
+  function speakFallback(t, generation) {
+    return new Promise(function (res) {
+      if (!audioAllowed(generation) || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return res();
+      var done = false, timer = null;
+      function fin() { if (done) return; done = true; clearTimeout(timer); if (audioStop === cancel) audioStop = null; if (generation === audioGeneration) ttsPlaying = false; res(); }
+      function cancel() { try { window.speechSynthesis.cancel(); } catch (e) {} fin(); }
+      audioStop = cancel;
+      try {
+        var u = new SpeechSynthesisUtterance(t); u.rate = 0.95; u.pitch = 1.05; u.volume = volume();
+        u.onend = fin; u.onerror = fin; timer = setTimeout(fin, 9000); ttsPlaying = true; window.speechSynthesis.speak(u);
+      } catch (e) { fin(); }
+    });
+  }
+  function fetchVoice(t) {
+    var ctl = window.AbortController ? new AbortController() : null, to = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : 0;
+    return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: t, voice: profile.voiceId || "", stable: true }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) return null;
+        // "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b ? { bytes: b, keep: keep } : null; });
+      }, function () { clearTimeout(to); return null; });
+  }
+  function settleLeft() { return Math.max(0, micClosedAt + SETTLE_MS - performance.now()); }
+  // Nothing starts while the phone is still answering a mic request (an
+  // iPhone is recording before getUserMedia returns), inside SETTLE_MS of a
+  // close, or before a chime that was waiting on the same mic has had its turn.
+  function micQuiet() {
+    return new Promise(function (done) {
+      (function check() {
+        if (micAsking || chimesDue > 0) { setTimeout(check, 60); return; }
+        var wait = Math.max(settleLeft(), chimeEnd - performance.now());
+        if (wait > 0) { setTimeout(check, wait); return; }
+        done();
+      })();
+    });
+  }
+  function quietLeft() { return quietUntil - performance.now(); }
+  function say(t) {
+    var generation = audioGeneration;
+    if (!t || !audioAllowed(generation) || profile.voiceOn === false || volume() === 0 || speaking) return Promise.resolve();
+    speaking = true;
+    var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v9") + "|" + t;
+    return micQuiet().then(function () { return ttsGet(key); }).then(function (cached) {
+      if (!audioAllowed(generation)) return true;
+      if (cached) return playPCM(new Uint8Array(cached), generation).then(function (ok) { return ok !== false; });
+      return fetchVoice(t).then(function (v) { if (!audioAllowed(generation)) return true; if (!v) return false; if (v.keep) ttsPut(key, v.bytes); return playPCM(new Uint8Array(v.bytes), generation).then(function (ok) { return ok !== false; }); });
+    }).then(function (played) { if (!played && audioAllowed(generation)) return speakFallback(t, generation); })
+      .catch(function () { if (audioAllowed(generation)) return speakFallback(t, generation); })
+      .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });
+  }
+  // "Go!" after the word: only Echo's own clip, from this page or this phone
+  // (Sona.goClip says why), and nothing when there is none: never the
+  // browser's robot voice, and never a wait on the network, except the first
+  // ask after Let's play, which waits GO_WAIT_MS at most (review, 2 Oct
+  // 2026: fetched like the word, every turn waited for the voice service
+  // twice, with "Listen" on screen and nothing playing).
+  var goWait = 0;
+  function sayGo() {
+    var generation = audioGeneration, wait = goWait; goWait = 0;
+    if (!S || !S.goClip || !audioAllowed(generation) || profile.voiceOn === false || volume() === 0 || speaking) return Promise.resolve();
+    speaking = true;   // nothing opens the mic while the clip is looked up
+    return Promise.resolve(S.goClip(profile.voiceId, wait)).then(function (b) {
+      if (!b || !audioAllowed(generation)) return;
+      return micQuiet().then(function () { if (audioAllowed(generation)) return playPCM(new Uint8Array(b), generation); });
+    }).catch(function () {})
+      .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });
+  }
+  // A chime never plays over an open mic. One asked for while the phone is
+  // still answering a mic request, or inside SETTLE_MS of a close, waits.
+  function sfx(n, then, due) {
+    if (document.hidden || audioPaused || micStream) { if (due) chimesDue--; return; }
+    var wait = micClosedAt + SETTLE_MS - performance.now();
+    if (micAsking || wait > 0) {
+      if (!due) chimesDue++;
+      if (!micAsking) quietUntil = Math.max(quietUntil, performance.now() + wait + QUIET_MS);
+      setTimeout(function () { sfx(n, then, true); }, micAsking ? 60 : wait); return;
+    }
+    if (due) chimesDue--;
+    quietUntil = Math.max(quietUntil, performance.now() + QUIET_MS);
+    chimeEnd = Math.max(chimeEnd, performance.now() + (SFX_MS[n] || (G && G.soundMs && G.soundMs[n]) || 400));
+    try {
+      if (profile.soundOn !== false) {
+        if (G && G.sounds && G.sounds[n]) G.sounds[n](getCtx(), volume());
+        else if (S && S.sfx && S.sfx[n]) S.sfx[n]();
+      }
+    } catch (e) {}
+    if (then) then();
+  }
+
+  // ── the mic: one short listening window per turn ──
+  var micStream = null, micAsking = false, micGen = 0, micSrc = null, micRaf = 0, micT = 0, listenT = 0, roomFloor = -1;
+  function p20(list) { var a = list.slice().sort(function (x, y) { return x - y; }); return a[Math.floor((a.length - 1) * 0.2)]; }
+  function micStop() {
+    micGen++; clearTimeout(micT); clearTimeout(listenT); if (micRaf) cancelAnimationFrame(micRaf); micRaf = 0;
+    try { if (micSrc) micSrc.disconnect(); } catch (e) {} micSrc = null;
+    if (micStream) { try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} micStream = null; micClosedAt = performance.now(); }
+    showTurn(false);
+  }
+  function listenable() { return turnLive && !heardThisTurn && !speaking && !ttsPlaying && !document.hidden && !audioPaused && !paused; }
+  // A voiced burst must also SOUND like the practice sound's family (voiced vs
+  // hiss): a clap or a squeal can't move an R child's game. Shape numbers only.
+  function famOK(shp) {
+    if (!shp || !shp.m) return true;
+    var cent = shp.fm / shp.m, high = shp.hm / shp.m, fam = (S && S.soundFamily) ? S.soundFamily(SOUND) : "any";
+    if (fam === "low") return !(cent > 1800 && high > 0.22);
+    if (fam === "hiss") return !(cent < 1100 && high < 0.10);
+    return true;
+  }
+  function micOpen() {
+    if (!listenable() || micStream || micAsking) return;
+    var wait = Math.max(quietLeft(), settleLeft());
+    if (wait > 0) { clearTimeout(micT); micT = setTimeout(micOpen, wait); return; }
+    var gen = ++micGen; micAsking = true;
+    ((S && S.micNative && S.micNative()) ? S.micOpen({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (stream) {
+      micAsking = false;
+      if (gen !== micGen || !listenable()) { try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} micClosedAt = performance.now(); if (listenable()) micOpen(); return; }
+      micStream = stream;
+      try { localStorage.setItem("sona.micok", "1"); } catch (e) {}
+      var an, td, fd, binHz;
+      try {
+        var ctx = getCtx(); micSrc = (S && S.micSource) ? S.micSource(ctx, stream) : ctx.createMediaStreamSource(stream); an = ctx.createAnalyser(); an.fftSize = 512; micSrc.connect(an);
+        td = new Uint8Array(an.fftSize); fd = new Uint8Array(an.frequencyBinCount); binHz = ctx.sampleRate / an.fftSize;
+      } catch (e) { micStop(); nudge(); return; }
+      // lastSaid: when the saying before this one was heard, in THIS opening
+      // of the mic (0: none yet; a mic that closed and reopened is its own gap)
+      var heard = [], ready = false, lastSaid = 0;
+      function giveTime() { clearTimeout(listenT); listenT = setTimeout(function () { if (gen === micGen) { micStop(); nudge(); } }, LISTEN_MS); }
+      giveTime();
+      (function tick() {
+        if (gen !== micGen) return;
+        var now = performance.now();
+        // belt and braces: nothing plays while the mic is open, and if
+        // anything did, its frames are dropped, never judged. So is a frame
+        // Sona's own mic did not hear (S.micDeaf: paused, or a gap between
+        // the phone's samples): its zeros would sink the room's level
+        if (speaking || ttsPlaying || now < quietUntil || (S && S.micDeaf && S.micDeaf(stream))) { heard = []; micRaf = requestAnimationFrame(tick); return; }
+        an.getByteTimeDomainData(td);
+        var sum = 0; for (var i = 0; i < td.length; i++) { var d = (td[i] - 128) / 128; sum += d * d; }
+        var shape = null; if (S && S.frameShape) { an.getByteFrequencyData(fd); shape = S.frameShape(fd, binHz); }
+        heard.push({ t: now, r: Math.sqrt(sum / td.length), s: shape });
+        while (now - heard[0].t > HEARD_MS) heard.shift();
+        // the room's quiet level belongs to the page and only goes down, so
+        // a child who answers the instant the mic opens isn't taken for noise
+        if (now - heard[0].t >= FLOOR_MS) {
+          var w = []; for (var k = heard.length - 1; k >= 0 && now - heard[k].t <= FLOOR_MS; k--) w.push(heard[k].r);
+          var q = p20(w); if (roomFloor < 0 || q < roomFloor) roomFloor = q;
+        }
+        if (roomFloor >= 0) {
+          if (!ready) { ready = true; showTurn(true); }
+          // armed: a burst may count now. After a saying it may not, until
+          // the level has stayed under the bar for GAP_MS (gapAt: where that
+          // quiet began), so the rest of the same word can't be the next one.
+          var thr = Math.max(0.04, roomFloor * 3), voiced = 0, shp = null, armed = !lastSaid, gapAt = 0;
+          for (var j = 0; j < heard.length; j++) {
+            var f = heard[j];
+            if (f.t <= lastSaid) continue;
+            if (f.r > thr) {
+              gapAt = 0;
+              // not yet: the rest of the same word, or its second half
+              if (!armed || (lastSaid && f.t - lastSaid < APART_MS)) continue;
+              voiced++;
+              if (f.s) { if (!shp) shp = { m: 0, fm: 0, hm: 0 }; shp.m += f.s.m; shp.fm += f.s.fm; shp.hm += f.s.hm; }
+              if (voiced >= 5) {
+                if (!famOK(shp)) { voiced = 0; shp = null; } else if (heardOne()) return;
+                // the first saying: the same mic goes on listening for the
+                // next, with a full window of its own
+                else { lastSaid = f.t; armed = false; voiced = 0; shp = null; giveTime(); }
+              }
+            } else {
+              voiced = 0; shp = null;
+              if (!armed) { if (!gapAt) gapAt = f.t; else if (f.t - gapAt >= GAP_MS) armed = true; }
+            }
+          }
+        }
+        micRaf = requestAnimationFrame(tick);
+      })();
+    }).catch(function (e) {
+      micAsking = false;
+      micClosedAt = Math.max(micClosedAt, performance.now());
+      if (e && e.name === "NotAllowedError") { turnLive = false; showTurn(false); denied(); return; }
+      nudge();
+    });
+  }
+  function denied() { setPhase("denied"); if (S && S.micDenied) S.micDenied({ back: "/today.html" }); }
+  // Echo's clay pose beside the word shows what he is doing (29 Sep 2026):
+  // talking while "Listen" is up (he is saying the word), listening while the
+  // mic can hear, cheering a heard word or a basket, thinking while he waits
+  // for a tap on the mic, and resting otherwise.
+  var POSE = "/assets/crafted/echo-", poseKeep = null;
+  function face(p) { try { var img = $("echoFace"); if (img.getAttribute("src") !== POSE + p + ".webp") img.src = POSE + p + ".webp"; } catch (e) {} }
+  // "Your turn" means the mic can hear right now, and nothing else.
+  function showTurn(on) {
+    listening = !!on; publish();
+    try {
+      document.body.setAttribute("data-listen", on ? "on" : "off");
+      $("micState").textContent = on ? (oneMore() ? MORE + "!" : "Your turn!") : (turnLive ? "Listen" : "");
+    } catch (e) {}
+    face(on ? "listen" : (turnLive ? "talk" : "welcome"));
+  }
+  // No voice in the listening window (or one saying and then none): the mic
+  // closes and waits for a tap to listen again. The tap only reopens the mic;
+  // it never moves the game, and a saying already heard is kept.
+  function nudge() {
+    if (!turnLive) return;
+    // A help ask nobody answered gives the earned move straight back: the
+    // child loses only the optional power, never what their word already
+    // won. This also covers a mic that failed to open for the help word.
+    if (helpTurn) { endHelp(); return; }
+    try { $("micState").textContent = oneMore() ? MORE + "! Tap the mic" : "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
+    face("think");
+    setPhase("nudge");
+  }
+
+  // ── the first time: a grown-up says yes to the mic ──
+  // The OS prompt rides directly on the grown-up's tap, and "Not now" never
+  // burns it (a denied OS dialog is near-unrecoverable): the game explains and
+  // goes home, and asks again next time, the same as practice does.
+  function micReady() {
+    return new Promise(function (done) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { noMic(); return; }
+      try { if (localStorage.getItem("sona.micok") === "1") return done(); } catch (e) {}
+      // The iPhone app's web view may never answer this question (2 Oct
+      // 2026): after a beat, no answer means ask the grown-up, rather than a
+      // Play button that does nothing.
+      var q = new Promise(function (res) {
+        setTimeout(function () { res(null); }, 1000);
+        try { if (navigator.permissions && navigator.permissions.query) Promise.resolve(navigator.permissions.query({ name: "microphone" })).then(res, function () { res(null); }); else res(null); } catch (e) { res(null); }
+      });
+      q.then(function (st) {
+        if (st && st.state === "granted") { try { localStorage.setItem("sona.micok", "1"); } catch (e) {} return done(); }
+        try { $("micPromise").textContent = (S && S.MIC_PROMISE) || ""; } catch (e) {}
+        $("primer").classList.add("show"); setPhase("primer");
+        $("primerYes").onclick = function () {
+          if (paused || document.hidden) return;
+          $("primer").classList.remove("show");
+          micAsking = true;
+          ((S && S.micNative && S.micNative()) ? S.micProbe({ audio: true, video: false }) : navigator.mediaDevices.getUserMedia({ audio: true, video: false })).then(function (stream) {
+            micAsking = false;
+            try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+            micClosedAt = performance.now();
+            try { localStorage.setItem("sona.micok", "1"); } catch (e) {}
+            done();
+          }).catch(function (e) {
+            micAsking = false; micClosedAt = Math.max(micClosedAt, performance.now());
+            if (e && e.name === "NotAllowedError") { denied(); return; }
+            done(); // no mic right now: the turn will offer "Tap the mic"
+          });
+        };
+        $("primerNo").onclick = function () { if (paused || document.hidden) return; notNow(); };
+      });
+    });
+  }
+  function byeCard(title, text) {
+    var card = $("primer").querySelector(".ovlCard");
+    card.innerHTML = '<img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf(\'echo-welcome\')<0)this.src=\'/assets/crafted/echo-welcome.webp\'" />'
+      + "<h2></h2><p></p>"
+      + '<p class="small">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone’s Settings.</p>'
+      + '<button class="btn" id="byeBtn">Okay</button>';
+    card.querySelector("h2").textContent = title;
+    card.querySelector("p").textContent = text;
+    card.querySelector("#byeBtn").onclick = home;
+    $("primer").classList.add("show"); setPhase("bye");
+  }
+  function notNow() { byeCard("That’s okay!", "Echo needs to hear you to play this game. We’ll ask again next time you’re ready."); }
+  function noMic() { byeCard("Echo can’t hear here", "This game needs a microphone, and this browser doesn’t have one Echo can use."); }
+
+  // ── the scene: parts the steps move, grow, show and hide ──
+  // a part may start small or turned (data-s, data-r); steps move it from there
+  function part(id) {
+    if (parts[id]) return parts[id];
+    var el = $("p-" + id), s = el ? parseFloat(el.getAttribute("data-s")) : NaN, r = el ? parseFloat(el.getAttribute("data-r")) : NaN;
+    return (parts[id] = { el: el, x: 0, y: 0, s: isFinite(s) ? s : 1, r: isFinite(r) ? r : 0 });
+  }
+  function place(p) { var m = p.el && p.el.querySelector(".pm"); if (m) m.style.transform = "translate(" + p.x + "px," + p.y + "px) rotate(" + p.r + "deg) scale(" + p.s + ")"; }
+  function fx(p, name) {
+    var a = p.el && p.el.querySelector(".pa"); if (!a) return;
+    a.setAttribute("class", "pa"); void a.getBoundingClientRect(); a.setAttribute("class", "pa fx-" + name);
+  }
+  function act(a) {
+    var p = part(a.id); if (!p.el) return;
+    if (a.a === "show") { p.el.classList.remove("hid"); p.el.classList.remove("gone"); fx(p, a.fx || "pop"); }
+    else if (a.a === "hide") { p.el.classList.add("gone"); }
+    else if (a.a === "move") { p.x = a.x; p.y = a.y; if (a.s != null) p.s = a.s; if (a.r != null) p.r = a.r; place(p); }
+    else if (a.a === "by") { p.x += a.x || 0; p.y += a.y || 0; place(p); }
+    else if (a.a === "scale") { p.s = a.s; place(p); }
+    else if (a.a === "turn") { p.r = a.r; place(p); }
+    else if (a.a === "fx") { fx(p, a.fx); }
+  }
+  var runTimers = [];
+  function run(list) {
+    (list || []).forEach(function (a) {
+      if (a.at) runTimers.push(setTimeout(function () { act(a); }, a.at)); else act(a);
+    });
+  }
+  function resetStage() {
+    runTimers.forEach(clearTimeout); runTimers = [];
+    $("stage").innerHTML = stageHTML; parts = {};
+  }
+
+  // ── words: the child's rotation sound, short picture words first ──
+  function pool(sound) {
+    var ws = (S && S.wordsFor) ? (S.wordsFor(sound, "i") || []) : [];
+    return ws.filter(function (w) { return w && w.w && w.e; }).sort(function (a, b) { return a.w.length - b.w.length; }).slice(0, 10);
+  }
+  function pickWord() {
+    if(step%3===0){
+      var theme=themed.filter(function(w){return themedUsed.indexOf(w.w)<0&&roundWords.indexOf(w.w)<0;})[0];
+      if(theme){themedUsed.push(theme.w);roundWords.push(theme.w);return theme;}
+    }
+    var fresh=WORDS.filter(function(w){return roundWords.indexOf(w.w)<0;});
+    if(fresh.length){var choice=fresh[(Math.random()*fresh.length)|0];roundWords.push(choice.w);return choice;}
+    // A short bank may need an ordinary repeat, but never repeat a theme.
+    var repeats=WORDS.filter(function(w){return themedUsed.indexOf(w.w)<0&&(!word||w.w!==word.w);});
+    if(repeats.length){var again=repeats[(Math.random()*repeats.length)|0];roundWords.push(again.w);return again;}
+    var i, tries = 0;
+    do { i = (Math.random() * WORDS.length) | 0; tries++; } while (WORDS.length > 1 && (used.indexOf(i) >= 0 || (word && WORDS[i] === word)) && tries < 40);
+    used.push(i); if (used.length >= WORDS.length) used = [];
+    return WORDS[i];
+  }
+  function paintDots() {
+    var h = ""; for (var i = 0; i < G.steps.length; i++) h += '<i class="' + (i < step ? "on" : "") + '"></i>';
+    try { $("dots").innerHTML = h; $("dots").setAttribute("aria-label", step + " of " + G.steps.length); } catch (e) {}
+  }
+  // "Say it 2 times" and its two dots, under the word. The engine puts them on
+  // the page itself: twenty pages can't drift, and a page the phone saved
+  // before today still gets them with this file. The word and the line share
+  // one box, so the word keeps its place in the panel's grid.
+  // A game that asks once gets none of it: no line, no dots, and never "1 more
+  // time" (oneMore() is false for it), so its panel is the one its page drew.
+  var MORE = "1 more time";
+  function oneMore() { return said > 0 && said < SAY_TIMES; }
+  function addTwice() {
+    if (SAY_TIMES < 2) return;
+    try {
+      var w = $("word"); if ($("twice") || !w || !w.parentNode) return;
+      var col = document.createElement("div"); col.id = "wordCol";
+      w.parentNode.insertBefore(col, w); col.appendChild(w);
+      var line = document.createElement("div"); line.id = "twice";
+      var dots = ""; for (var i = 0; i < SAY_TIMES; i++) dots += "<i></i>";
+      line.innerHTML = '<span id="twiceDots" role="img">' + dots + '</span><span id="twiceSay">Say it ' + SAY_TIMES + " times</span>";
+      col.appendChild(line);
+    } catch (e) {}
+  }
+  function paintSaid() {
+    if (SAY_TIMES < 2) return;
+    try {
+      var d = $("twiceDots").children;
+      for (var i = 0; i < d.length; i++) d[i].className = i < said ? "on" : "";
+      $("twiceDots").setAttribute("aria-label", said + " of " + SAY_TIMES);
+      $("turnPanel").setAttribute("data-said", String(said));
+    } catch (e) {}
+  }
+
+  // ── a turn: show the word, Echo says it, the child says it, the game moves ──
+  function nextTurn(same) {
+    micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
+    // a new word starts at none of two; the same word again ("Hear it", or
+    // back from a pause) keeps a saying Echo has already heard
+    if (!same || !word) { word = pickWord(); said = 0; }
+    paintSaid();
+    try {
+      $("pic").innerHTML = ((window.SonaCraftedWords && window.SonaCraftedWords.picture(word.w, 64)) || ((S && S.pic) ? S.pic(word.w, word.e, 64) : word.e));
+      // only the letters that make the sound are orange (the brief: "the r in
+      // rabbit"); an older cached sona.js without the helper colours it all
+      $("word").innerHTML = (S && S.soundMark) ? S.soundMark(word.w, SOUND, word.pos) : '<b class="snd">' + String(word.w).replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</b>";
+      $("micBtn").hidden = true;
+      $("cheer").textContent = "";
+      $("turnPanel").classList.remove("yay");
+    } catch (e) {}
+    turnLive = true; setPhase("turn"); showTurn(false);
+    // Echo models the word, alone and calm, then says "Go!" so a child who
+    // can't read hears that it is their turn (Travis, 2 Oct 2026: "i also
+    // wanna try to have the 11 labs voice say 'Go!'"). "Go!" is its own
+    // short clip after the word line, never in the same request: the word
+    // keeps the take every phone already has saved (one line with both was a
+    // new take of every word, fetched again on launch day, the word read
+    // fresh). It never waits on the network (sayGo). Then the mic opens,
+    // after the same voice tail as before.
+    var asked = word, generation=audioGeneration;
+    var lead=(!introSaid&&G.intro)?say(G.intro):Promise.resolve();
+    lead.then(function(){
+      if(!turnLive||word!==asked||!audioAllowed(generation))return;
+      introSaid=true;
+      return say("Say... " + word.w + ".");
+    }).then(function () {
+      if (turnLive && word === asked && audioAllowed(generation)) return sayGo();
+    }).then(function () {
+      if (!turnLive || word!==asked || !audioAllowed(generation)) return;
+      quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS);
+      micOpen();
+    });
+  }
+  // The voice check heard one saying of the word. The first only ticks its
+  // dot and asks for one more: all of it on screen, in this same frame, and
+  // none of it a sound, because the mic is still open and stays open (Travis,
+  // 1 Oct 2026: "there is a little delay when i say it once" — the child sees
+  // they were heard at once). The last one earns the move. True: the turn is
+  // over and the mic is closed.
+  function heardOne() {
+    if (!turnLive) return true;
+    // each saying the game asked for and heard is one rep on the week's count
+    // (Travis, 29 Sep 2026), so a word is two (one where the game asks once).
+    // Still play, never practice data (Sona.gameRep keeps its own ledger).
+    try { if (S && S.gameRep) S.gameRep(SOUND); } catch (e) {}
+    said++; paintSaid();
+    if (said >= SAY_TIMES) { gotIt(); return true; }
+    showTurn(true);
+    return false;
+  }
+  var CHEERS = ["Yes!", "You did it!", "Great talking!", "Wow!", "Nice!", "Super!"];
+  function gotIt() {
+    if (!turnLive) return;
+    heardThisTurn = true; turnLive = false; micStop(); face("cheer");
+    if (G.play) {
+      // the word earned the move; the child makes it (see moveDone)
+      try {
+        $("cheer").textContent = CHEERS[(step + 1) % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
+        $("turnPanel").classList.add("yay");
+      } catch (e) {}
+      sfx("correct");
+      setPhase("play");
+      // An optional in-game speech power reuses this same quiet word turn.
+      // It returns to the SAME move: asking for help never spends a turn or
+      // opens a second microphone alongside the engine's microphone.
+      if (helpTurn && G.play.onHelp) { helpTurn=false; showHelpBack(false); G.play.onHelp(step); replayInstruction(); }
+      else G.play.onWord(step);
+      return;
+    }
+    step++; paintDots();
+    try {
+      $("cheer").textContent = CHEERS[step % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
+      $("turnPanel").classList.add("yay");
+    } catch (e) {}
+    run(G.steps[step - 1]);
+    sfx("correct");
+    setPhase("step");
+    if (step >= G.steps.length) nextTurn._t = setTimeout(finish, STEP_MS);
+    else nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, STEP_MS);
+  }
+  // A play game's move is done (a basket): the step counts now, and the next
+  // word follows. Only the game calls this, and only in its own play phase.
+  function moveDone() {
+    if (phase !== "play" || paused) return;
+    step++; paintDots();
+    instructionOwed = null;
+    // A cooking/tool instruction belongs only to its physical move. Cancel
+    // a late fetch or playing clip before the next ask or the celebration,
+    // but only the voice: stopAudio() also stops Sona's chimes, and the
+    // game's "correct" chime for this very move has just started.
+    if (instructionActive) stopVoice();
+    if (step >= G.steps.length) finish();
+    // "step" while the next word is owed (1 Oct 2026). It stayed "play", and a
+    // page hidden in this quarter second lost the round: pause() clears the
+    // timer, and resume() takes "play" to mean the same move goes on, so the
+    // next word was never asked for and nothing on screen could bring it.
+    // resume() already reads "step" as "the next word".
+    else { setPhase("step"); nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250); }
+  }
+  function practiceHelp() {
+    if (phase !== "play" || paused || helpTurn || !G.play || !G.play.onHelp) return false;
+    helpTurn=true;
+    if (G.play.pause) G.play.pause();
+    said=0;
+    nextTurn(true);
+    showHelpBack(true);
+    return true;
+  }
+  // The way out of a help ask, with no speech needed: silence (nudge), a
+  // pause, or the "Back to the game" pill. No power and no step credit.
+  function endHelp() {
+    if (!helpTurn) return;
+    helpTurn = false; turnLive = false; said = 0;
+    micStop(); stopVoice(); clearTimeout(nextTurn._t);
+    paintSaid(); showHelpBack(false);
+    try { $("micBtn").hidden = true; $("micState").textContent = ""; $("cheer").textContent = ""; } catch (e) {}
+    face("welcome");
+    setPhase("play");
+    if (G.play && G.play.resume) G.play.resume(true);
+    replayInstruction();
+  }
+  function showHelpBack(on) {
+    var b = $("helpBack");
+    if (!b && on) {
+      try {
+        b = document.createElement("button"); b.id = "helpBack"; b.type = "button"; b.className = "cream-pill";
+        b.textContent = "Back to the game"; b.onclick = function () { if (helpTurn && !paused) endHelp(); };
+        $("turnPanel").appendChild(b);
+      } catch (e) { return; }
+    }
+    if (b) b.hidden = !on;
+  }
+  function instruct(t) {
+    // The same owner handles mechanical instructions for nonreaders. Games
+    // cannot start a voice beside a microphone or outside their play phase.
+    if (phase !== "play" || paused || turnLive || listening || micAsking || speaking || !t) return Promise.resolve();
+    var generation = audioGeneration, owed = { text:t, step:step }; instructionActive = true; instructionOwed = owed;
+    return say(t).then(function () { if (generation === audioGeneration) { instructionActive = false; if (instructionOwed === owed) instructionOwed = null; } });
+  }
+  function replayInstruction() {
+    // A background or help ask can interrupt a fetch or half-heard direction.
+    // Keep it owed to this move only; finished directions never repeat here.
+    if (instructionOwed && instructionOwed.step === step && !instructionActive) instruct(instructionOwed.text);
+  }
+  function finish() {
+    micStop(); turnLive = false; face("cheer"); setPhase("finale");
+    try { $("turnPanel").classList.add("done"); } catch (e) {}
+    run(G.finale);
+    if (G.play && G.play.finale) G.play.finale();
+    sfx("complete", function () { try { if (S && S.confetti) S.confetti({ count: 120, duration: 2000 }); } catch (e) {} });
+    clearTimeout(finish._t);
+    finish._t = setTimeout(showEnd, FINALE_MS);
+  }
+  function showEnd() {
+    if (paused) return;
+    // QUEST1: the daily adventure counts a finished round of today's game
+    try { if (S && S.questEnd) S.questEnd(G.key); } catch (e) {}
+    try { $("endTitle").textContent = G.done.title; $("endSub").textContent = G.done.sub; } catch (e) {}
+    $("endOvl").classList.add("show"); setPhase("end");
+  }
+  function again() {
+    $("endOvl").classList.remove("show");
+    try { $("turnPanel").classList.remove("done"); } catch (e) {}
+    if (G.play) G.play.reset(); else resetStage();
+    step = 0; helpTurn=false; showHelpBack(false); instructionOwed=null; paintDots(); used = []; themedUsed=[]; roundWords=[];
+    sfx("tap"); nextTurn();
+  }
+  function home() { stopAudio(); micStop(); location.href = "/today.html"; }
+
+  // ── pause: a hidden page stops everything; coming back needs one tap ──
+  function pause() {
+    stopAudio(); micStop();
+    if (phase !== "turn" && phase !== "nudge" && phase !== "step" && phase !== "finale" && phase !== "play") return;
+    paused = true; turnLive = false; clearTimeout(nextTurn._t); clearTimeout(finish._t);
+    if (G.play && G.play.pause) G.play.pause();
+    $("pauseOvl").classList.add("show"); setPhase(phase);
+  }
+  function resume() {
+    if (!paused) return;
+    paused = false; audioPaused = false; $("pauseOvl").classList.remove("show");
+    // paused during a help ask: back to the earned move, not the ask again
+    if (helpTurn && (phase === "turn" || phase === "nudge")) { endHelp(); return; }
+    if (G.play && G.play.resume) G.play.resume(phase === "play");
+    // paused with the ball in hand (or in the air): the same move goes on
+    if (phase === "play") { setPhase("play"); replayInstruction(); return; }
+    if (step >= G.steps.length) { showEnd(); return; }
+    // paused mid-turn: the same word again; paused after a step: the next one
+    nextTurn(phase !== "step");
+  }
+
+  function begin() {
+    if (phase !== "ready") return;
+    $("startOvl").classList.remove("show"); setPhase("starting");
+    goWait = (S && S.GO_WAIT_MS) || 0;   // the first "Go!" of the visit may wait for its clip
+    micReady().then(function () { if (!paused) nextTurn(); });
+  }
+  function start(game) {
+    G = game;
+    // how many times this game asks for a word: one only if its page says so
+    SAY_TIMES = G.sayTimes === 1 ? 1 : 2;
+    if (!S) return;
+    // Catalog access is checked before any mic or audio work starts.
+    if (!S.gameAccess(G.key).allowed) { document.body.hidden = true; S.gameBounce(G.key); return; }
+    profile = S.getProfile ? S.getProfile() : {};
+    // held, not thrown away: a preload nobody holds is collected and loads late
+    poseKeep = ["welcome", "talk", "listen", "cheer", "think"].map(function (p) { var i = new Image(); i.src = POSE + p + ".webp"; return i; });
+    SOUND = String((S.rotSound && S.rotSound()) || "R").toUpperCase();
+    WORDS = pool(SOUND); if (!WORDS.length) { SOUND = "R"; WORDS = pool("R"); }
+    themed=(S.gameWords?S.gameWords(G.key,SOUND):[]);
+    // Warm the separate count instruction while the child sees the start card.
+    if(G.intro&&profile.voiceOn!==false&&volume()>0){var introKey=(profile.voiceId||"echo")+"|"+(S.TTS_CACHE_VERSION||"v9")+"|"+G.intro;ttsGet(introKey).then(function(cached){if(!cached)return fetchVoice(G.intro).then(function(v){if(v&&v.keep)ttsPut(introKey,v.bytes);});});}
+    // the grown-up reads the practice sound on the start card; the bar keeps
+    // the game's name, which is all that fits beside eight dots on a phone
+    try { $("startSound").textContent = "Today’s sound: " + ((S.soundLabel) ? S.soundLabel(SOUND) : SOUND); } catch (e) {}
+    stageHTML = $("stage") ? $("stage").innerHTML : "";
+    addTwice(); paintSaid();
+    paintDots(); unlockOnTap();
+    if (G.play) G.play.init({
+      sfx: function (n) { sfx(n); },
+      done: moveDone,
+      practice: practiceHelp,
+      instruct: instruct,
+      hint: function (t) { try { $("micState").textContent = t; } catch (e) {} },
+      cheer: function (t) { try { $("cheer").textContent = t; } catch (e) {} },
+      face: face,
+    }, G.steps.length);
+    $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
+    $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
+    $("micBtn").onclick = function () {
+      if (!turnLive || paused) return;
+      $("micBtn").hidden = true; audioPaused = false; setPhase("turn"); showTurn(false); face("listen"); micOpen();
+    };
+    $("resume").onclick = resume;
+    S.onBackground(pause);
+    $("startOvl").classList.add("show"); setPhase("ready");
+  }
+  window.SayPlay = { start: start };
+})();

@@ -1,0 +1,29 @@
+Fish Tank art — current game only
+
+Built-in image_gen used. One missing physical fish actor generated; no new background or fish library. Old assets preserved.
+
+Reference inspected: public/assets/crafted/home-fishtank.webp (768x432), round friendly orange/pink clownfish and yellow goldfish. Existing game was only native inline SVG; no separate painted swimming fish existed. Reuse: public/assets/crafted/game/monster-salon-v1.webp (800x1200) as room behind code-native clear glass/water/sand/plants; no baked fish behind live actors.
+
+Exact prompt:
+Use case: stylized-concept
+Asset type: single transparent moving fish sprite for a preschool aquarium game.
+Input image: reference only for the established Sona painted toy-clownfish style, soft rounded materials and cheerful identity; do not reproduce its whole scene.
+Primary request: ONE friendly rounded orange clownfish, clean full side view, swimming horizontally and facing RIGHT. Orange body, two broad creamy white stripes, golden orange rounded tail and fins, one large bright friendly eye. A small distinct open mouth at the rightmost nose, at roughly body mid-height, suitable as the actual food catch point. Mouth must be visible unobstructed, with a dark opening. Keep the whole body and all fins in frame, centered with a small empty transparent margin.
+Style: rich soft painted children's storybook toy, warm shading, gentle sculpted volume, fine brushed texture matching the reference. Simple readable silhouette for a small phone sprite.
+Background: genuinely transparent alpha, no backdrop.
+Constraints: exactly one fish; no Echo, fishbowl, tank, water, bubbles, sand, food, cast ground shadow, sparkles, objects, border, text, label, logo, watermark. No scenery. Horizontal profile, no front-facing or diagonal pose.
+
+Origin: /Users/traviswardrop/.codex/generated_images/01a146f2-f9aa-7fe3-a1f3-001ad6fa611f/exec-87820459-d113-43b7-99f8-629fee003bdc.png
+Export: /Users/traviswardrop/.codex/worktrees/coming-soon-games/SaaS/public/assets/crafted/game/fish-swimmer-v1.webp
+Source 1536x1024 RGBA; rectangular crop (88,40,1456,952), resize to 512x341, WebP quality88 method6 exact=True. Generated alpha preserved byte-for-byte through export; outside RGB glow is transparent. No semantic image edits.
+Bytes: 31750
+Alpha>=16 bounds: (6, 5, 507, 335)
+
+Geometry: full image aspect 512/341. Right-facing fish; mouth opening center (0.941,0.602), eye center approx (0.845,0.465). Complete fish alpha within about x.012–.99,y.016–.982. Mouth catch radius around .035 image width covers dark opening; game help may use a larger clearly drawn mouth halo. Mirrored left-facing mouth is (1-.941,.602). Use the same image transform for motion, mouth and visible catch guide. Five runtime color/swim variants of this one actor are sufficient; native fallback fish stays code-owned.
+
+QA: source alpha extrema0..254; generated surrounding orange haze alpha<16. Dark composites /tmp/sona-fish-source-dark-qa.png and /tmp/sona-fish-export-dark-qa.png show clean cutout, no rectangle/ground shadow, clear mouth. All fins retained.
+
+18 Oct 2026 (the misses ladder): no new art. The help glow around the hungry
+fish and its mouth ring, the orange down-arrow showing where to let go, and the
+little gold dots around a just-fed fish are drawn in code on the canvas
+(fishtank.js feedingGuide and draw). Painted versions could drop in later.

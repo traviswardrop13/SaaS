@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { rateLimit } from "@/lib/rateLimit";
-import { CASELOAD_PLAN } from "@/lib/caseload";
+import { isClinicianPlan } from "@/lib/caseload";
 
 /**
  * Returns whether an email has bought Sona. Stripe is the source of truth, so
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         limit: 10,
       });
       const active = subs.data.some(
-        (s) => s.metadata?.plan !== CASELOAD_PLAN && (s.status === "active" || s.status === "trialing"),
+        (s) => !isClinicianPlan(s.metadata) && (s.status === "active" || s.status === "trialing"),
       );
       if (active) return NextResponse.json({ ok: true, active: true, kind: "subscription" });
     }

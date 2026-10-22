@@ -2,7 +2,9 @@ import UIKit
 import Capacitor
 
 /**
- * MainViewController — registers the local `SonaAudio` plugin with Capacitor.
+ * MainViewController — registers Sona's two local plugins with Capacitor:
+ * `SonaAudio` (the clean mic) and `SonaSpeech` (Apple's on-device listening
+ * check, which scripts/install-ios-speech.py compiles into the App target).
  *
  * WHY THIS IS NEEDED: `SonaAudioPlugin` lives in the App target (a *local*
  * plugin, not an npm package). On Capacitor 6+/8 with Swift Package Manager,
@@ -19,5 +21,6 @@ import Capacitor
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(SonaAudioPlugin())
+        bridge?.registerPluginInstance(SonaSpeechPlugin())
     }
 }

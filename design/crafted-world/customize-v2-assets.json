@@ -1,0 +1,85 @@
+{
+  "generated": "2026-09-28",
+  "tool": "built-in imagegen",
+  "reference": "references/02-fruit-stack-piano.png",
+  "source": "/Users/traviswardrop/.codex/generated_images/01a0e9e0-7ac5-7820-ab1f-6abd92556547/exec-44e48793-33a3-4cca-aaad-a24de587beab.png",
+  "sourceDimensions": {
+    "width": 1254,
+    "height": 1254
+  },
+  "prompt": "Use case: illustration-story. Asset: six landscape setting paintings for a children's crafted-world app character dressing room. Input image provides only the tactile hand-painted soft storybook materials, foliage and lighting style; do not recreate the phones or games.\nCreate one square sprite atlas with EXACTLY 6 landscape panels in a precise 2-column by 3-row grid, equal-size panels, edge-to-edge with no gutters, borders, frames, captions or text. Each panel is a complete independent 3:2 landscape scene. Canvas1536x1536; each panel768x512.\nTop LEFT Sky: sunny blue sky, fluffy cream clouds, far rolling green hills, a little grassy clearing centered at bottom. No trees in center.\nTop RIGHT Jungle: lush rounded tropical leaves and vines framing two sides, warm humid turquoise daylight, sandy clearing centered at bottom. No animals.\nMiddle LEFT Forest: woodland clearing, layered rounded trees, tiny daisies and low ferns, warm beams of sunlight, clear open central area. No animals.\nMiddle RIGHT Mountains: soft pale blue distant snowy mountains and foothills, grassy foreground clearing, clear sky. No characters.\nBottom LEFT Space: deep indigo-purple starry outer space, small crescent moon and one distant ringed planet, muted violet rounded moon-ground across bottom. No houses, spaceships, characters.\nBottom RIGHT Beach: calm turquoise ocean, pale sand, gentle waves, a palm and seashell at edge, clear center.\nAll six warm tactile painterly gouache, soft sculpted foliage, subtle canvas texture and wood-like brushed texture like the reference scene. They should feel like small handmade toy worlds, not flat vector symbols or photo-realistic renders. Keep center30% clear for an app-selected character portrait. No creatures, words, letters, UI, buttons, logos, watermarks or phones. Exactly six panels.",
+  "panels": [
+    {
+      "id": "sky",
+      "crop": {
+        "left": 2,
+        "top": 2,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-sky-v2.webp",
+      "width": 600,
+      "quality": 88
+    },
+    {
+      "id": "jungle",
+      "crop": {
+        "left": 629,
+        "top": 2,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-jungle-v2.webp",
+      "width": 600,
+      "quality": 88
+    },
+    {
+      "id": "forest",
+      "crop": {
+        "left": 2,
+        "top": 420,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-forest-v2.webp",
+      "width": 600,
+      "quality": 88
+    },
+    {
+      "id": "mountain",
+      "crop": {
+        "left": 629,
+        "top": 420,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-mountain-v2.webp",
+      "width": 600,
+      "quality": 88
+    },
+    {
+      "id": "space",
+      "crop": {
+        "left": 2,
+        "top": 838,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-space-v2.webp",
+      "width": 600,
+      "quality": 88
+    },
+    {
+      "id": "beach",
+      "crop": {
+        "left": 629,
+        "top": 838,
+        "width": 623,
+        "height": 414
+      },
+      "output": "public/assets/crafted/customize-beach-v2.webp",
+      "width": 600,
+      "quality": 88
+    }
+  ]
+}

@@ -1,0 +1,1499 @@
+[
+ {
+  "name": "hoops-gym",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "The back wall of a cozy children's indoor basketball gym, seen straight on from the court: warm cream painted wall, two rows of wooden bleachers at the bottom with a small happy crowd of round clay people in pastel shirts, triangle party bunting across the top, soft warm light. Leave the middle of the wall plain and uncluttered (a hoop will be drawn there by the game). No hoop, no basketball, no court floor, no text or numbers."
+ },
+ {
+  "name": "ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A single basketball: warm orange with dark seams, smooth clay. Centered, filling 80% of the square."
+ },
+ {
+  "name": "giant-watermelon",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One giant whole round watermelon, deep green with darker green stripes, smooth clay, a soft highlight top-left. Centered, filling 85% of the square, seen from the front."
+ },
+ {
+  "name": "fruit-market-v3",
+  "size": "1024x1536",
+  "transparent": false,
+  "ref": "tools/art/refs/fruit-market-v2-wide.webp",
+  "prompt": "Repaint the attached picture as a calmer, taller game background for a phone. Keep its sunny orange orchard world, its clay painting style, its rich colours and warm light: the clear blue sky fading to buttery gold, a few soft clouds, the small distant village with its towers and hills in the middle.\n\nFrame the sky with two BIG leafy orange trees, one on each side, with bright oranges and little white blossoms: each tree's leaves fill the outer 30% of the width on its side, from the top of the picture down to the fence, and its trunk stands about 15% in from the edge (not at the edge). The middle 40% of the width stays open sky for flying fruit.\n\nLeave out every character (no fox, no bird, no animals, no people), the wooden counter, the fruit crates, the chalkboard and the striped market stalls. Below the village, a low wooden fence with soft green orchard bushes from about 74% to 82% down, then plain soft green grass down to the bottom edge, with nothing on it. The soft blurry strips along the far left and far right edges of the attached picture are only placeholders.\n\nCalm and uncluttered, big simple shapes. No fruit in the air, no text, no letters, no frames, no UI."
+ },
+ {
+  "name": "fruit-stand",
+  "size": "1536x1024",
+  "transparent": true,
+  "ref": "public/assets/crafted/fruit-market-v2.webp",
+  "prompt": "A wide, low strip for the very bottom of a children's Fruit Slice game screen, alone on a fully transparent background, taken from the attached picture's world: its honey-gold wooden fruit counter, its smiling little orange fox and its round teal bird, in exactly the same clay style, colours and light, seen straight on from the front.\n\nThe counter: one long, low honey-wood counter running the FULL width of the picture, cut off by its left and right edges (no end posts, no legs, no corners showing). Its top is one flat, thick honey-wood plank, the ledge. Below the ledge, its front of warm vertical honey-wood planks goes all the way down to the bottom edge of the picture. Centred on the front, just under the ledge, a blank dark charcoal chalkboard sign in a thin wooden frame, about 40% of the picture's width and short, with nothing written on it. The counter, ledge and front together, fills only the bottom 22% of the picture.\n\nThe fox: in the bottom-LEFT corner, peeking over the ledge from behind the counter, a little cut off by the picture's left edge: only its ears, its happy face and its two dark-brown front paws resting on the ledge show. SMALL: about 15% of the picture's width.\n\nThe bird: in the bottom-RIGHT corner, peeking over the ledge from behind the counter the same way, a little cut off by the picture's right edge: its coral-and-golden top feathers, its face with orange beak and pink cheeks, and its wing tips on the ledge. SMALL: about 15% of the picture's width.\n\nThe ledge between the two of them is completely bare: no fruit, no crates, no baskets, nothing on it. Everything above the counter and the two characters is fully transparent: no sky, no trees, no grass, no background. Calm and simple, big shapes. No text, no letters."
+ },
+ {
+  "name": "finish-banner",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A cheerful race finish arch for a children's game: two red-and-white posts with a red banner across the top and a black-and-white checkered strip on the ground between them. The banner is plain red with no words. Front view, filling the frame width."
+ },
+ {
+  "name": "star",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One shiny golden five-point star with rounded points and a small white highlight, smooth clay, friendly. Centered, filling 85% of the square."
+ },
+ {
+  "name": "cloud",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "One soft fluffy white cloud, wide and flat-bottomed like a little platform, smooth clay with gentle blue-grey shading underneath. Filling the frame width."
+ },
+ {
+  "name": "tile-coral",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft coral red, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-purple",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft lavender purple, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-green",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft leaf green, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-blue",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, soft sky blue, smooth glossy clay, a single cream music note embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "tile-gold",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One tall rounded rectangle piano tile, shiny warm gold, smooth glossy clay, a single cream star embossed in the middle. Front view, filling the frame."
+ },
+ {
+  "name": "bubble",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big round shiny soap bubble, clear with soft rainbow sheen and a bright white highlight, empty inside, friendly and toy-like. Centered, filling 85% of the square."
+ },
+ {
+  "name": "home-bubbles",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) happily popping big shiny soap bubbles in a sunny meadow, a few bubbles floating around him. Wide, cheerful, simple background."
+ },
+ {
+  "name": "home-books",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: a small cozy stack of colourful picture books in a sunny meadow, one open book in front with a little rainbow rising out of its pages, Echo the round blue clay bird (exactly like the attached reference) peeking over the top. Wide, cheerful, simple background. The book covers and pages show only colours and simple shapes."
+ },
+ {
+  "name": "cover-peekaboo",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) peeking out from behind a little red door in a cozy cottage wall, a playful surprise. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-balloon",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) blowing up a big bright red party balloon, a few more balloons and streamers around. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-flower",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) watering a big happy sunflower growing from a flower pot with a little watering can. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-rocket",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a small round red-and-white toy rocket on a launch pad, ready to blast off under a blue sky. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-snowman",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a friendly snowman with a carrot nose and a scarf in a snowy meadow. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-train",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) waving from a little colourful toy steam train with cars carrying animal friends through green hills. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-puppy",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) giving a happy fluffy puppy a bubble bath in a small tub full of bubbles. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-stars",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a nightcap under a deep blue night sky full of glowing golden stars and a smiling moon. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-cake",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a tall colourful birthday cake with candles, sprinkles and frosting. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-gifts",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) with a pile of wrapped present boxes with bows, one box open with a bunny peeking out. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-fishtank",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) looking into a round fish tank with bright friendly fish, bubbles and seaweed. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-racecar",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) driving a little red clay race car speeding along a curvy track. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-treasure",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) on a small wooden sailboat on blue sea, sailing toward an island with a treasure chest. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-soccer",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) kicking a soccer ball toward a small goal net on green grass. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-robot",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a friendly round toy robot with glowing buttons, building it with a wrench. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-castle",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) beside a cheerful sandcastle-coloured toy castle with flags and towers. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-dino",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) with a little brush, digging up a big dinosaur fossil skeleton in sand. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-space",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a tiny round rocket flying through space past colourful planets and stars. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-pizza",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) in a chef's hat tossing a pizza covered in colourful toppings in a cozy kitchen. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "cover-monster",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a fluffy friendly purple monster wearing silly glasses and a party hat. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "beam-body",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One straight upright smooth wooden beam / post, warm honey-brown painted wood with soft clay finish, perfectly vertical, plain and even along its whole length (so it can be stretched taller), seen straight from the front, filling the frame top to bottom, no top or bottom ends visible, no leaves, no vines, no nails."
+ },
+ {
+  "name": "beam-cap",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "The rounded end cap of a wooden beam: a short, slightly wider, smooth rounded block of warm honey-brown painted wood with a soft highlight, seen straight from the front, wide and short, filling the frame width. No leaves, no vines."
+ },
+ {
+  "name": "soccer-stadium",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A cozy children's football stadium seen from the pitch, straight on: soft blue sky with two puffy clouds at the top, then three rows of stands filling the lower half with a happy crowd of round clay people in pastel shirts waving, triangle party bunting strung along the top of the stands, and a low cream advertising wall (blank, no words) running along the very bottom edge. No goal, no ball, no grass, no players, no text or numbers."
+ },
+ {
+  "name": "soccer-keeper",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "Bo, a friendly round brown teddy-bear goalkeeper standing ready, seen from the front: teal goalkeeper jersey (plain, no number), dark shorts, big yellow goalkeeper gloves held out wide at shoulder height, kind smiling face, small round ears. Full body, feet at the very bottom of the frame, filling the frame height."
+ },
+ {
+  "name": "soccer-ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A single classic football (soccer ball): white with black pentagon patches, smooth clay. Centered, filling 80% of the square."
+ },
+ {
+  "name": "dino-site",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny fossil dig site for a children's game, front view: warm peach sky with a soft round sun top right, and a big smooth sandstone cliff face in warm orange-tan that fills the middle of the picture with a few gentle horizontal rock layers, a couple of small cacti and pebbles at the edges. The middle of the cliff face is plain and open (a dinosaur skeleton will be drawn there by the game). The bottom third is flat pale sand ground. No dinosaurs, no bones, no tools, no text."
+ },
+ {
+  "name": "dino-sand",
+  "size": "1024x1024",
+  "transparent": false,
+  "prompt": "A seamless top-down texture of soft pale golden sand with tiny pebbles and gentle ripples, evenly lit, filling the whole square edge to edge. No objects, no shadows, no border."
+ },
+ {
+  "name": "dino-soil",
+  "size": "1024x1024",
+  "transparent": false,
+  "prompt": "A seamless top-down texture of slightly damp warm brown dug earth with small pebbles, evenly lit, filling the whole square edge to edge. No objects, no border."
+ },
+ {
+  "name": "dino-trex",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon T. rex, side view facing right, full body standing on its two legs, big head, tiny arms, long tail out to the left, green with a lighter belly, a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-tri",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Triceratops, side view facing right, full body on four sturdy legs, a big frill and three gentle horns, short tail to the left, soft lavender purple with a lighter belly (no orange anywhere), a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-steg",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Stegosaurus, side view facing right, full body on four legs, a row of rounded back plates and a short spiky tail to the left, soft purple with yellow plates and a lighter belly, small head with a kind smiling face and a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "dino-bronto",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon Brontosaurus, side view facing right, full body on four thick legs, a very long neck curving up with a small head on the right, long tail to the left, soft blue with a lighter belly, a kind smiling face with a round eye. Feet near the bottom of the frame, filling the frame width."
+ },
+ {
+  "name": "bubbles-sky",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A soft sunny sky for a toddlers' bubble game, portrait: pale blue sky fading lighter toward the bottom, two or three small puffy white clouds near the top, and a low gentle green grassy hill with a few tiny flowers across the bottom fifth. The middle of the sky is open and plain. No bubbles, no characters, no text."
+ },
+ {
+  "name": "bubbles-wand",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A child's bubble wand: a short wooden handle running from the bottom-left corner up to a round teal ring at the top-right, with a shimmering soap film inside the ring. Smooth clay."
+ },
+ {
+  "name": "bubbles-basket",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A wide, low, empty woven wicker picnic basket seen from the front, honey-coloured weave with a rounded rim, no handle, much wider than tall, filling the frame width. Empty, nothing inside."
+ },
+ {
+  "name": "hoops-board",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A children's basketball backboard seen straight on: a cream rectangular board with a warm wooden frame and a small orange-red square painted in the lower middle. No hoop, no net, no pole, no text. The board fills the whole frame edge to edge."
+ },
+ {
+  "name": "hoops-floor",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "The wooden floor of a cozy children's indoor basketball court, seen from where a child stands, looking toward the far wall: glossy honey-coloured wooden planks running away from the viewer and narrowing in perspective, a soft teal painted lane (key) in the middle running from the bottom edge to the far end, crisp white court lines around it, warm light reflecting softly on the wood. The top edge of the picture is where the floor meets the far wall; show only floor, no wall, no hoop, no people, no ball, no text."
+ },
+ {
+  "name": "peekaboo-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy little house front for a toddlers' peekaboo game: a cheerful pastel wall with three closed round-topped wooden doors in a row at mid height, flower boxes, soft garden in front. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "peekaboo-door",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One closed round-topped wooden door with a little round knob and a tiny heart window, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "peekaboo-door-open",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "The same round-topped wooden door frame standing wide open, showing a warm empty doorway inside, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "balloon-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny park party for toddlers: blue sky with soft clouds, green grass at the bottom, bunting strung between two trees, a picnic table at one side. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "balloon-red",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big shiny red party balloon with a curly white string hanging down. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "balloon-pump",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A cute colourful hand balloon pump, upright, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "bo-bear",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "Bo, a friendly round brown teddy bear in a small teal T-shirt, standing and waving, full body, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cheerful race track seen from behind and above, a grey road with white and red kerbs running straight up into the distance, green grass and little flags on both sides, a crowd stand far away. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "racecar-car",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A small friendly red race car with a big number-free round white circle on the side, seen from behind and slightly above, chunky wheels. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-finish",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A race finish arch with a checkered banner (no words) over the road, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "racecar-cone",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One orange traffic cone with a white stripe. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny backyard bath time scene for toddlers: a wooden fence, a small clothesline with towels, green grass, a little garden hose coiled at one side. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "puppy-dog",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A happy fluffy cream puppy sitting in a round metal washtub full of soap bubbles, front view, muddy brown splotches on its fur. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-clean",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "The same happy fluffy cream puppy sitting in a round metal washtub full of soap bubbles, front view, perfectly clean and sparkling. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "puppy-sponge",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One yellow bath sponge with a few soap bubbles. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "rocket-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A launch pad at a little space centre at dusk for a children's game: purple-blue sky with first stars, a low hill, a small launch tower on one side, the launch pad empty in the middle bottom. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "rocket-ship",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A friendly cartoon rocket ship, white with red fins and a round blue window, standing upright, no flames. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "rocket-flame",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A bright cartoon rocket exhaust flame pointing down, orange and yellow, soft and round. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "treasure-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A treasure map for a children's game, top-down: a warm parchment map with a blue sea, three small sandy islands joined by a dotted path, a palm tree on each island, a compass rose in a corner, no words. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "treasure-boat",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A small cute wooden sailboat with a white sail, seen from the side. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "treasure-chest",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A wooden treasure chest, lid open, overflowing with gold coins and colourful gems. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A snowy winter yard for toddlers: soft falling snow, snow-covered pine trees, a little cabin far away, gentle white snow ground across the bottom. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "snowman-ball",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One big round snowball, soft white with blue shading. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-hat",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A black top hat with a red band. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "snowman-done",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A finished friendly snowman with three snowballs, a black top hat, a carrot nose, coal smile, red scarf and stick arms, front view. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "Outer space for a children's game: deep friendly blue-purple sky full of soft stars, a few colourful small planets far away, a gentle nebula glow. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "space-ship",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "A small friendly cartoon rocket ship flying to the right, white with red fins, round window, a little flame at the back. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-planet-ring",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon planet with a ring, soft orange and cream. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "space-planet-green",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A friendly cartoon planet, round, green and blue like a little world. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-bg",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny garden bed for toddlers: blue sky, a white picket fence, butterflies, and a patch of dark soil in the bottom middle where a flower will grow. Portrait game background: keep the middle open and uncluttered (the game draws its pieces there). No characters unless named, no text or numbers."
+ },
+ {
+  "name": "flower-can",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A cheerful blue watering can tipping to pour, a few water drops falling from its spout. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-sprout",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "A tiny green sprout with two leaves growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "flower-bloom",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "A big happy pink flower in full bloom on a tall green stem with leaves, growing from a small soil mound. Centered, filling about 85% of the frame."
+ },
+ {
+  "name": "cover-rise",
+  "size": "1536x1024",
+  "transparent": false,
+  "prompt": "A game card picture that fills the whole frame edge to edge (no border, no frame, no rounded corners, no margin): Echo the round blue clay bird (exactly like the attached reference) holding up a round cream clay shield with a thick teal rim, pushing chunky yellow and purple toy blocks away from a shiny coral-red party balloon that floats up into a bright blue sky with a few soft clouds; the blocks tumble off to the sides. The blocks are plain smooth cubes with flat tops (no studs, no pegs, not building bricks). Wide, cheerful, simple background, the action easy to read at a small size. Keep Echo, the shield and the balloon together in the middle of the picture, the balloon just above the shield, with open sky around them."
+ },
+ {
+  "name": "rise-garden",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game, looking up past a garden into a bright morning sky. The ground is a thin strip along the very bottom edge, no taller than the bottom fifth of the picture: soft green rolling hills, a little white picket fence, round flowers and two small round trees. Everything above that strip, four fifths of the picture, is open, soft blue sky, a little paler toward the top, with two or three small puffy clouds near the left and right edges. Keep the middle and the whole upper sky open and uncluttered (the game draws its pieces there). No path, no distant hills in the sky, no balloon, no blocks, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-clouds",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game, high up among the clouds: a soft pastel sky, clear blue at the top fading to warm peach and pink lower down, big puffy clouds banked along the left and right edges and a soft bed of clouds across the very bottom. Keep the middle open and plain from top to bottom. No balloon, no blocks, no birds, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-stars",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A tall portrait background for a phone game at the very top of the sky at night: deep friendly blue at the top fading to soft violet and a warm peach glow along the bottom, small round golden stars sprinkled thinly near the edges, a round cream moon with no face in the top right corner. Keep the middle open and uncluttered. No planets, no balloon, no blocks, no characters, no text or numbers."
+ },
+ {
+  "name": "rise-balloon",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One round shiny coral-red party balloon with a soft white highlight on its upper left, a small tied knot at the bottom and a short wavy white string hanging straight down below it. No face. Seen from the front, upright and centred: the round balloon fills the top two thirds of the frame and is the widest part of the picture; the string fills the bottom third and stays narrow."
+ },
+ {
+  "name": "rise-shield",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One round flat toy shield seen straight from the front, like a thick soft clay disc: a smooth cream face, a thick rounded teal rim all the way around, a small shiny gold star in the middle and a soft highlight at the top left. Perfectly circular, centred, filling 90% of the square. No face, no letters."
+ },
+ {
+  "name": "rise-cube-yellow",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One chunky square toy building block seen straight from the front: sunny yellow clay with softly rounded edges and corners and a small raised star on its front face. A plain smooth cube with a flat top: no studs, no pegs, nothing on top. Perfectly square, not tilted, centred, filling 80% of the square."
+ },
+ {
+  "name": "rise-cube-purple",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One chunky square toy building block seen straight from the front: soft grape-purple clay with softly rounded edges and corners and a small raised circle on its front face. Perfectly square, not tilted, centred, filling 80% of the square."
+ },
+ {
+  "name": "rise-bar",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "One long smooth toy plank block, a rounded bar about five times as wide as it is tall, warm honey-brown painted wood with a soft clay finish, softly rounded ends and a lighter top edge, perfectly horizontal, seen straight from the front, filling 90% of the frame's width. Plain, no letters, no nails."
+ },
+ {
+  "name": "rise-bumpy",
+  "size": "1024x1024",
+  "transparent": true,
+  "prompt": "One round squishy toy ball covered all over in short, fat, soft bumps with rounded tips, like a sensory ball: lime-green clay with slightly darker tips and a soft highlight. Friendly and toy-like, nothing sharp or pointed, no face. Centred, filling 85% of the square."
+ },
+ {
+  "name": "as-bg-slice",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A sunny orchard fruit market: orange trees at the sides, a few juicy oranges, strawberries and a watermelon slice tumbling at the edges, a low wooden fruit counter along the bottom, warm peach and butter sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-practice",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy sunny meadow with a wooden fence and soft rolling hills, Echo (the round teal clay bird from the reference) small in the bottom left corner cheering, soft sky blue fading to cream. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-tiles",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A little theater stage at night: purple velvet curtains at both sides, golden spotlights from the top corners, a few gold stars and music notes floating at the edges, deep indigo fading lighter. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-hoops",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy children's basketball gym: warm wooden floor along the bottom, triangle bunting along the top edge, a basketball resting in a bottom corner, cream walls. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-books",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A cozy storybook nook: a few colourful picture books stacked in the bottom corners, a soft rug, a reading lamp glow, warm cream and soft green. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-home",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A playful toy world: soft clay hills, a few tiny game props at the edges (a fruit, a balloon, a piano key, a basketball), pastel butter sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-progress",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A calm sunrise garden with tiny flowers growing along the bottom like a little growth chart, soft blue and peach sky, gentle and reassuring for parents. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-rachel",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A warm soft cream and blush background with gentle light, a few small leaves and stars at the edges, calm and trustworthy. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "as-bg-jungle",
+  "size": "1024x1536",
+  "transparent": false,
+  "prompt": "A friendly sunny jungle: big tropical leaves and hanging vines at the sides, a few bananas, mangoes, pineapples and watermelon slices tucked along the bottom edge, a soft warm green and golden sky. Portrait App Store screenshot background with NO phone, NO text, NO UI: the top third is calm soft open sky/space for a headline; the center is soft and plain (a phone will be placed over it); decorative details only along the left, right and bottom edges. Soft, gentle, not busy."
+ },
+ {
+  "name": "buddy-fox-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "Pip the fox from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: bright orange fur, a white muzzle and white chest, dark brown paws and ear tips, a bushy orange tail with a white tip. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bunny-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dragon-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-cat-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bee-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-octopus-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: purple body with lilac spots, four short round tentacles as legs and two as arms. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dino-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-panda-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: white fur with black ears, black eye patches, black arms and legs, a small white tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bunny-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dragon-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-cat-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-bee-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-octopus-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: purple body with lilac spots, four short round tentacles as legs and two as arms. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-dino-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-panda-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears and tail seen from behind). Same colours as the portrait: white fur with black ears, black eye patches, black arms and legs, a small white tail. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "road-chest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "A small closed wooden treasure chest, honey wood with rounded gold corners and a round gold clasp, front view, slightly from above. Centred, about 80% of the square. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "road-bigchest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "A bigger treasure chest: teal painted wood with cream trim, rounded gold corners and a big round gold clasp, closed, front view, slightly from above. Centred, about 80% of the square. No ground, no shadow.",
+  "note": "Kept as drawn, not redrawn: an earlier pass of 11 Oct 2026 drew it with this prompt and these pictures through a scratch copy of this tool whose transparent line read \"the character alone\" where this one reads \"the object alone\" (design/crafted-world/buddies-v3.md)."
+ },
+ {
+  "name": "buddy-fox-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-fox-cheer.webp",
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "Pip the fox from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: bright orange fur, a white muzzle and white chest, dark brown paws and ear tips, a bushy orange tail with a white tip. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bunny-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-dragon-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-cat-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bee-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-octopus-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Small body with short arms and feet. Round lilac spots dot its head and tentacles, exactly as in the second picture. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-dino-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-panda-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face."
+ },
+ {
+  "name": "buddy-bunny-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-dragon-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-cat-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-bee-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-octopus-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-dino-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-panda-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Fruit Slice shows it, cut by `python3 tools/art/scene-edit.py cut fox-peek-ref`."
+ },
+ {
+  "name": "buddy-bunny-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-bunny-cheer.webp",
+   "public/assets/crafted/buddy-bunny-v2.webp"
+  ],
+  "prompt": "Miso the bunny from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: cream-white fur, pink inner ears, pink nose, rosy cheeks, a round white cotton tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-dragon-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-dragon-cheer.webp",
+   "public/assets/crafted/buddy-dragon-v2.webp"
+  ],
+  "prompt": "Ziggy the little dragon from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: mint-green body, a pale-green belly and snout, cream horns, small dark-green back spines, a short mint tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-cat-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-cat-cheer.webp",
+   "public/assets/crafted/buddy-cat-v2.webp"
+  ],
+  "prompt": "Mochi the cat from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: peach-orange fur, a white muzzle and chest, pointy peach ears with pale pink insides, a peach tail. Its four paws are peach with cream-white tips, exactly like the second picture; nothing about it is brown. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-bee-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-bee-cheer.webp",
+   "public/assets/crafted/buddy-bee-v2.webp"
+  ],
+  "prompt": "Buzz the bee from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: round yellow body with dark brown stripes, small white see-through wings, two black antennae with round tips. Its round hands resting in its lap and its two round feet are bright sunny yellow, the same yellow as its head, exactly like the hands and feet in the second picture: not brown, not black. Only its stripes and antennae are dark. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-octopus-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-octopus-cheer.webp",
+   "public/assets/crafted/buddy-octopus-v2.webp"
+  ],
+  "prompt": "Otto the octopus from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: purple body with lilac spots, four short round tentacles as legs and two as arms. Round lilac spots dot its head and tentacles, exactly as in the second picture. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-dino-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-dino-cheer.webp",
+   "public/assets/crafted/buddy-dino-v2.webp"
+  ],
+  "prompt": "Rocky the baby dinosaur from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: teal body, a pale cream belly, small cream spikes down the back, a short teal tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "buddy-panda-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-panda-cheer.webp",
+   "public/assets/crafted/buddy-panda-v2.webp"
+  ],
+  "prompt": "Bao the panda from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: white fur with black ears, black eye patches, black arms and legs, a small white tail. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "No model sheet was drawn (A1): the buddy's own cheer pose, already checked against its badge, rides along as the body reference in its place, with the badge for the face. The first picture is the fox as Block Stacker shows it, cut by `python3 tools/art/scene-edit.py cut fox-sit-ref`."
+ },
+ {
+  "name": "road-chest-open",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/road-chest.webp"
+  ],
+  "prompt": "The same chest as the attached picture, lid open, a warm golden glow and a few plain gold coins inside. The chest's body exactly the same size, angle and place in the square as in the attached picture, the open lid rising above it. No ground, no shadow."
+ },
+ {
+  "name": "road-bigchest-open",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/road-bigchest.webp"
+  ],
+  "prompt": "The same big chest as the attached picture, lid open, a golden glow, gold coins and a little rolled-up sticker inside. The chest's body exactly the same size, angle and place in the square as in the attached picture, the open lid rising above it. No ground, no shadow."
+ },
+ {
+  "name": "stack-rocket-v3",
+  "size": "1024x1536",
+  "transparent": false,
+  "ref": "tools/art/out/edit/stack-rocket-v3-in.png",
+  "mask": "tools/art/out/edit/stack-rocket-v3-mask.png",
+  "prompt": "Make the round porthole window empty: pale blue glass with a soft white shine, nothing inside. Change nothing else.",
+  "note": "A masked edit (A9): `python3 tools/art/scene-edit.py prep stack-rocket-v3` writes the picture and mask, `apply` keeps only the masked pixels of what comes back, moved by the entry's `fit` so the model's ring lands on the original's. Drawn opaque so the glass comes back solid."
+ },
+ {
+  "name": "buddy-frog-v2",
+  "size": "1024x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "A round portrait badge in exactly the style, framing and background of the attached picture: an off-white square with a painted coloured disc filling it edge to edge, a friendly clay frog head and tiny shoulders filling the disc, facing front, big happy eyes. Hops the frog: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. The disc is a pastel sky blue. Not a fox: only the frog. No text.",
+  "note": "The model drew the disc with a margin of paper (about 5% a side); cut-buddies.py cuts the square to the disc so it fills the badge edge to edge like the existing eight."
+ },
+ {
+  "name": "buddy-penguin-v2",
+  "size": "1024x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "A round portrait badge in exactly the style, framing and background of the attached picture: an off-white square with a painted coloured disc filling it edge to edge, a friendly clay penguin head and tiny shoulders filling the disc, facing front, big happy eyes. Pebble the penguin: a navy-blue head, back and little flippers, a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. The disc is a pale icy blue. Not a fox: only the penguin. No text.",
+  "note": "The model drew the disc with a margin of paper (about 5% a side); cut-buddies.py cuts the square to the disc so it fills the badge edge to edge like the existing eight."
+ },
+ {
+  "name": "buddy-lion-v2",
+  "size": "1024x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "A round portrait badge in exactly the style, framing and background of the attached picture: an off-white square with a painted coloured disc filling it edge to edge, a friendly clay lion cub head and tiny shoulders filling the disc, facing front, big happy eyes. Sunny the lion cub: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. The disc is a pale buttery yellow. Not a fox: only the lion cub. No text.",
+  "note": "The model drew the disc with a margin of paper (about 5% a side); cut-buddies.py cuts the square to the disc so it fills the badge edge to edge like the existing eight."
+ },
+ {
+  "name": "buddy-unicorn-v2",
+  "size": "1024x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/buddy-fox-v2.webp"
+  ],
+  "prompt": "A round portrait badge in exactly the style, framing and background of the attached picture: an off-white square with a painted coloured disc filling it edge to edge, a friendly clay unicorn head and tiny shoulders filling the disc, facing front, big happy eyes. Luna the unicorn: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. The disc is a pale pink. Not a fox: only the unicorn. No text.",
+  "note": "The model drew the disc with a margin of paper (about 5% a side); cut-buddies.py cuts the square to the disc so it fills the badge edge to edge like the existing eight."
+ },
+ {
+  "name": "buddy-frog-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-frog-v2.webp"
+  ],
+  "prompt": "Hops the frog from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles."
+ },
+ {
+  "name": "buddy-penguin-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-penguin-v2.webp"
+  ],
+  "prompt": "Pebble the penguin from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: a dark, dusty navy-blue head, back and little flippers (navy like #45608f, the same muted dark blue as the portrait; never a bright or royal blue), a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "The 3rd drawing. The first two came out a bright royal blue beside the badge's dusty navy (about 68, 110, 178 against 73, 99, 143); the prompt now asks for the portrait's navy by name and by #45608f. The model still draws it a little brighter (about 68, 107, 168); it reads as the same penguin, and every other penguin pose was drawn from this one."
+ },
+ {
+  "name": "buddy-lion-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-lion-v2.webp"
+  ],
+  "prompt": "Sunny the lion cub from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles."
+ },
+ {
+  "name": "buddy-unicorn-cheer",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-cheer.webp",
+   "public/assets/crafted/buddy-unicorn-v2.webp"
+  ],
+  "prompt": "Luna the unicorn from the second picture as a full-body clay toy facing us, cheering with both arms up and a big open smile, with the pose energy and soft finish of the bird in the first picture. Same face, colours and proportions as the portrait: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Small body with short arms and feet, standing up on its two back hooves like the bird in the first picture, not sitting. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "The 2nd drawing. The 1st sat down with its legs out in front, so the 900 ms swap from its standing rest pose would jump; this prompt adds \"standing up on its two back hooves … not sitting\"."
+ },
+ {
+  "name": "hat-cap",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-cap-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a teal baseball cap for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-bow",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-bow-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a pink bow for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-tophat",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-tophat-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a purple top hat with a gold band for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-shades",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-shades-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One round grey sunglasses for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-crown",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-crown-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a gold crown with a teal gem for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-party",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/hat-party-ref.png",
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a lilac party hat with cream stripes and a gold pom-pom for a small round clay toy to wear, with the shape and colours of the flat drawing in the first picture, made in the soft clay look of the second picture: front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-flowercrown",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a flower crown: a ring of small pink, yellow and white flowers with green leaves for a small round clay toy to wear, front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-sunhat",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One a wide straw sun hat with a coral ribbon for a small round clay toy to wear, front view from slightly above, centred, about 80% of the square, soft clay finish. No head, no character, no face: only the hat, alone."
+ },
+ {
+  "name": "hat-starclip",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One gold star hair clip for a small round clay toy to wear: a single chunky gold star, about the size of a big button, on a short silver hair clip behind it. Front view from slightly above, centred, about 80% of the square, soft clay finish. Not a hat, not a cap, no fabric: only the star clip. No head, no character, no face: only the clip, alone.",
+  "note": "The 2nd drawing. The 1st was a cream beanie with a small star on it, not a clip; this prompt says \"Not a hat, not a cap, no fabric\"."
+ },
+ {
+  "name": "hat-headphones",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/refs/approved-style.png"
+  ],
+  "prompt": "One pair of round teal headphones with cream ear cushions for a small round clay toy to wear, seen straight from the front as if worn: the teal band arches high over the top, and the two ear cups hang at its far left and far right ends, seen from the side as narrow upright ovals, with a wide empty gap between them where a round face would be. Centred, about 80% of the square, soft clay finish. No head, no character, no face: only the headphones, alone.",
+  "note": "The 2nd drawing. The 1st turned its ear cushions towards us, so on the badge they covered the buddy's cheeks and eyes at any size; this prompt asks for the cups seen from the side with a wide gap for a face."
+ },
+ {
+  "name": "customize-candy-v2",
+  "size": "1536x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/customize-sky-v2.webp"
+  ],
+  "prompt": "A wide children's backdrop in exactly the style and soft light of the attached picture, leaving the lower middle plain where a little character will stand: a pastel candy land: lollipop trees, gumdrop hills, a soft pink sky."
+ },
+ {
+  "name": "customize-snow-v2",
+  "size": "1536x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/customize-sky-v2.webp"
+  ],
+  "prompt": "A wide children's backdrop in exactly the style and soft light of the attached picture, leaving the lower middle plain where a little character will stand: snowy hills with pine trees, a little snowman, gentle snowfall, a pale blue sky."
+ },
+ {
+  "name": "customize-sea-v2",
+  "size": "1536x1024",
+  "transparent": false,
+  "refs": [
+   "public/assets/crafted/customize-sky-v2.webp"
+  ],
+  "prompt": "A wide children's backdrop in exactly the style and soft light of the attached picture, leaving the lower middle plain where a little character will stand: under the sea: soft blue water, sea grass, shells, a few round friendly fish, light rays from above."
+ },
+ {
+  "name": "buddy-frog-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-frog-cheer.webp",
+   "public/assets/crafted/buddy-frog-v2.webp"
+  ],
+  "prompt": "Hops the frog from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles."
+ },
+ {
+  "name": "buddy-frog-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-frog-cheer.webp",
+   "public/assets/crafted/buddy-frog-v2.webp"
+  ],
+  "prompt": "Hops the frog from the second picture, the same character as the round badge in the third picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears, mane and tail seen from behind). Same colours as the second picture: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow."
+ },
+ {
+  "name": "buddy-frog-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-frog-cheer.webp",
+   "public/assets/crafted/buddy-frog-v2.webp"
+  ],
+  "prompt": "Hops the frog from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone."
+ },
+ {
+  "name": "buddy-frog-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-frog-cheer.webp",
+   "public/assets/crafted/buddy-frog-v2.webp"
+  ],
+  "prompt": "Hops the frog from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: lime-green clay skin, a pale yellow-green tummy and chin, two big round eyes sitting up on two bumps on top of its head, a wide happy smile, rosy cheeks. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow."
+ },
+ {
+  "name": "buddy-penguin-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-penguin-cheer.webp",
+   "public/assets/crafted/buddy-penguin-v2.webp"
+  ],
+  "prompt": "Pebble the penguin from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: a dark, dusty navy-blue head, back and little flippers (navy like #45608f, the same muted dark blue as the portrait; never a bright or royal blue), a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles.",
+  "note": "The 2nd drawing, with this cheer as its body reference; the 1st was drawn from the first, brighter cheer."
+ },
+ {
+  "name": "buddy-penguin-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-penguin-cheer.webp",
+   "public/assets/crafted/buddy-penguin-v2.webp"
+  ],
+  "prompt": "Pebble the penguin from the second picture, the same character as the round badge in the third picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears, mane and tail seen from behind). Same colours as the second picture: a navy-blue head, back and little flippers, a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow.",
+  "note": "The first drawing, kept: it was drawn with this prompt and these pictures, its second picture then being the penguin's first cheer drawing (brighter blue, not shipped; the shipped cheer is the third drawing, with the darker navy asked for in its prompt). Three later drawings with the darker-navy prompt failed the eye check: one had a cat's ears, one drew a fake checkerboard behind a blurred penguin, one a grey photo. Its blue (about 74, 124, 199) sits beside the shipped rest pose's (85, 125, 180)."
+ },
+ {
+  "name": "buddy-penguin-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-penguin-cheer.webp",
+   "public/assets/crafted/buddy-penguin-v2.webp"
+  ],
+  "prompt": "Pebble the penguin from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: a dark, dusty navy-blue head, back and little flippers (navy like #45608f, the same muted dark blue as the portrait; never a bright or royal blue), a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood, no line or strip under the flippers: the bottom edge is the character's own white tummy and navy flippers. Only the character, alone.",
+  "note": "The 3rd drawing. The 1st was drawn from the first, brighter cheer; the 2nd drew a thin wooden strip under the flippers, so this prompt adds \"no line or strip under the flippers\"."
+ },
+ {
+  "name": "buddy-penguin-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-penguin-cheer.webp",
+   "public/assets/crafted/buddy-penguin-v2.webp"
+  ],
+  "prompt": "Pebble the penguin from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: a dark, dusty navy-blue head, back and little flippers (navy like #45608f, the same muted dark blue as the portrait; never a bright or royal blue), a white face and a round white tummy, a small orange beak, orange feet, rosy cheeks. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "The 2nd drawing, with this cheer as its body reference; the 1st was drawn from the first, brighter cheer."
+ },
+ {
+  "name": "buddy-lion-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-lion-cheer.webp",
+   "public/assets/crafted/buddy-lion-v2.webp"
+  ],
+  "prompt": "Sunny the lion cub from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles."
+ },
+ {
+  "name": "buddy-lion-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-lion-cheer.webp",
+   "public/assets/crafted/buddy-lion-v2.webp"
+  ],
+  "prompt": "Sunny the lion cub from the second picture, the same character as the round badge in the third picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears, mane and tail seen from behind). Same colours as the second picture: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow."
+ },
+ {
+  "name": "buddy-lion-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-lion-cheer.webp",
+   "public/assets/crafted/buddy-lion-v2.webp"
+  ],
+  "prompt": "Sunny the lion cub from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood drawn: only the character, alone."
+ },
+ {
+  "name": "buddy-lion-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-lion-cheer.webp",
+   "public/assets/crafted/buddy-lion-v2.webp"
+  ],
+  "prompt": "Sunny the lion cub from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: golden-yellow fur, a big round fluffy orange mane all around its face, small round golden ears, a cream muzzle, a little brown nose, rosy cheeks. Its four paws are golden-yellow like its body, with cream paw pads; nothing about it is brown. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow.",
+  "note": "The 2nd drawing. The 1st had the fox's dark brown paws (from the fox in the first picture), as the cat's first sit did; this prompt adds \"Its four paws are golden-yellow like its body … nothing about it is brown.\""
+ },
+ {
+  "name": "buddy-unicorn-rest",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/echo-welcome.webp",
+   "public/assets/crafted/buddy-unicorn-cheer.webp",
+   "public/assets/crafted/buddy-unicorn-v2.webp"
+  ],
+  "prompt": "Luna the unicorn from the second picture, the same character as the round badge in the third picture, as a full-body clay toy facing us, standing calmly with a friendly smile, both arms relaxed and resting down at its sides: the calm pose and soft finish of the bird in the first picture. Same face, colours and proportions as the second picture: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Small body with short arms and feet. Centred, about 85% of the square, feet at the bottom. No ground, no shadow, no confetti, no sparkles."
+ },
+ {
+  "name": "buddy-unicorn-run",
+  "size": "1024x1536",
+  "transparent": true,
+  "refs": [
+   "public/assets/crafted/fox-runner.webp",
+   "public/assets/crafted/buddy-unicorn-cheer.webp",
+   "public/assets/crafted/buddy-unicorn-v2.webp"
+  ],
+  "prompt": "Luna the unicorn from the second picture, the same character as the round badge in the third picture, as a full-body clay toy seen from directly behind, running away from us: exactly the pose, framing, size and light of the fox in the first picture (one foot lifted mid-step, arms swinging, the back of the head with one cheek just showing; ears, mane and tail seen from behind). Same colours as the second picture: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Centred, feet near the bottom, about 70% of the frame height. No ground, no shadow."
+ },
+ {
+  "name": "buddy-unicorn-peek",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-peek-ref.png",
+   "public/assets/crafted/buddy-unicorn-cheer.webp",
+   "public/assets/crafted/buddy-unicorn-v2.webp"
+  ],
+  "prompt": "Luna the unicorn from the second picture, the same character as the round badge in the third picture, peeking over a counter exactly as the fox in the first picture does: its head, the tops of its shoulders and both front paws resting side by side on the ledge, facing us with a happy smile, the same size and angle as the fox. Same face and colours as the second picture: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Its eyes are solid, opaque dark brown with white shines, exactly like the second picture's. Everything below the paws is cut off in one straight, flat, horizontal line across the bottom. No counter, no ledge, no wood, no line or strip under the hooves: the bottom edge is the character's own white fur and pink hooves. Only the character, alone.",
+  "note": "The 3rd drawing. The 1st had see-through eyes (the ground showed through them); the 2nd drew a thin wooden strip under its hooves. This prompt adds the solid eyes and \"no line or strip under the hooves\"."
+ },
+ {
+  "name": "buddy-unicorn-sit",
+  "size": "1024x1024",
+  "transparent": true,
+  "refs": [
+   "tools/art/out/edit/fox-sit-ref.png",
+   "public/assets/crafted/buddy-unicorn-cheer.webp",
+   "public/assets/crafted/buddy-unicorn-v2.webp"
+  ],
+  "prompt": "Luna the unicorn from the second picture, the same character as the round badge in the third picture, as a full-body clay toy sitting exactly as the fox in the first picture does: sitting down, facing us, both front paws resting together in front of it, a big happy smile, the same pose, angle and size. Same face, colours and proportions as the second picture: white fur, a golden spiral horn, a soft rainbow mane in pink, orange, yellow, mint and lilac, pink inside its ears, rosy cheeks, small pale-pink hooves. Centred, about 85% of the square, sitting on the bottom edge. Only the character, alone: no bench, no wood, no night sky, no background, no shadow."
+ }
+]

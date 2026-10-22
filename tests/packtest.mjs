@@ -50,21 +50,28 @@ await page.waitForTimeout(700);
 const s3 = await page.evaluate(() => window.__call.script.map((s) => s.say || (s.ask && s.ask.line)).join(" | "));
 ok("detective variant on call #3", /sound detectives/.test(s3));
 
-// 3) parent corner wins card (seed outcomes: this week 70%, last week 50%)
+// 3) weekly wins (seed outcomes: this week 70%, last week 50%)
 await page.addInitScript(() => {
   const day = (off) => { const d = new Date(); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
   const dow = (new Date().getDay() + 6) % 7;
-  const days = {}; days[day(0)] = { a: 20, p: 14 }; days[day(-(dow + 2))] = { a: 20, p: 10 };
+  const days = {}; days[day(0)] = { a: 20, p: 14, tries: 60 }; days[day(-(dow + 2))] = { a: 20, p: 10, tries: 50 };
   localStorage.setItem("sona.outcomes.v1", JSON.stringify({ R: { attempts: 40, passes: 24, firstAt: day(-9), lastAt: day(0), days } }));
 });
 await page.goto("http://localhost:8134/today.html");
 await page.waitForTimeout(1000);
-const wins = await page.evaluate(() => ({ txt: document.getElementById("wkWins").textContent, share: getComputedStyle(document.getElementById("shareWeek")).display !== "none" }));
-console.log("      wins:", wins.txt);
-ok("wins line shows reps + delta", /sounds practiced/.test(wins.txt) && /%/.test(wins.txt));
-ok("share button visible", wins.share);
-await page.evaluate(() => { document.getElementById("sheetOvl").classList.add("show"); });
-await page.screenshot({ path: OUT + "/pack-sheet.png" });
+// 29 Sep 2026: the wins line and "Share this week" left the Grown-ups pop-up
+// with the rest of the week (Travis), and on 30 Sep 2026 the pop-up itself
+// went: the code leads straight to Settings. Sona.weekWins() still exists, so
+// its count is checked at the source; Home is checked for carrying none of it.
+const wins = await page.evaluate(() => {
+  const w = window.Sona.weekWins();
+  return { reps: w.reps, acc: w.acc, accPrev: w.accPrev, onHome: !!document.querySelector("#sheetOvl, #weekCard, #wkWins, #shareWeek") };
+});
+console.log("      wins:", JSON.stringify(wins));
+// REPWEEKS1: the same reps as Home's corner (60 voiced tries), not the 20 sound checks.
+ok("weekWins counts reps + delta", wins.reps === 60 && wins.acc != null && wins.accPrev != null && wins.acc !== wins.accPrev);
+ok("Home carries no pop-up, wins line or share button", !wins.onHome);
+await page.screenshot({ path: OUT + "/pack-home.png" });
 
 // 4) buddy sprite in glide (dragon buddy instead of fox emoji)
 errs = [];
@@ -86,26 +93,29 @@ const adv = await page.evaluate(() => ({ t: document.getElementById("advTitle").
 ok("adventure tile personalized", adv.t === "Milo's Adventure" && /dragons story/.test(adv.s));
 // SOUNDS1 + BOOKS1: no book is gated behind COMING SOON, and the shelf now
 // holds the child's OWN sounds — a /r/ kid opening a /th/ book is practice
-// nobody assigned them. Every book that IS on the shelf must open.
+// nobody assigned them. Every open book on the shelf must open; since 27 Sep
+// 2026 the rest say the day they open (readtest pins the dates).
 const lib = await page.evaluate(() => {
   const shelf = document.getElementById("shelf");
   const books = [...shelf.querySelectorAll(".bookBtn")];
   const titles = books.map((b) => b.textContent);
-  books[books.length - 1].click();
+  const openOnes = books.filter((b) => !b.disabled && !b.classList.contains("locked"));   // a Premium book asks for a grown-up instead
+  openOnes[openOnes.length - 1].click();
   return {
     n: books.length,
     titles,
     soon: /COMING SOON/.test(shelf.textContent),
-    chips: document.querySelectorAll("#wbSounds .sound").length,
+    wordBox: !!document.getElementById("wordgrid"),
     open: document.getElementById("book").classList.contains("show"),
     head: document.getElementById("bkHead").textContent,
   };
 });
 ok("no book is gated behind COMING SOON", !lib.soon);
 ok("the shelf is this child's sound, not the whole catalogue",
-  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(lib.titles));
-ok("word-box sound chips are back", lib.chips >= 10);
-ok("every book on the shelf opens in the reader", lib.open, JSON.stringify({ open: lib.open, head: lib.head }));
+  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex|osie|ay)|Boo the Bat on Halloween/.test(t)), JSON.stringify(lib.titles));
+// the word box (emoji word tiles, "tap to hear") was taken off (Travis, 1 Oct 2026)
+ok("no word box on the shelf", !lib.wordBox);
+ok("every open book on the shelf opens in the reader", lib.open, JSON.stringify({ open: lib.open, head: lib.head }));
 ok("library clean", errs.length === 0);
 
 // 6) onboarding redirects into the first call

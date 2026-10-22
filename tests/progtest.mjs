@@ -31,7 +31,7 @@ const ctx = await browser.newContext({ permissions: ["microphone"], viewport: { 
 const page = await ctx.newPage();
 await page.addInitScript(() => {
   navigator.mediaDevices.getUserMedia = () => Promise.resolve(new MediaStream());
-  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
 });
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
@@ -66,12 +66,12 @@ ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 const DECK = () => ({
   ps: Sona.pathState(),
   games: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => card.dataset.game),
-  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
+  expected: (g => g.flatMap(group => group.games.filter(game => !game.comingSoon).map(game => game.key)))(Sona.activityLibrary().groups), // the playable ones only: since 19 Oct 2026 Home draws no Coming soon game
   library: !document.getElementById("libraryApp").hidden,
 });
 let pp = await page.evaluate(DECK);
 ok("Home opens the library without choosing a game", pp.library && /today\.html$/.test(page.url()), JSON.stringify(pp));
-ok("library offers every game once in the age shelves", JSON.stringify(pp.games) === JSON.stringify(pp.expected) && new Set(pp.games).size === pp.games.length, JSON.stringify(pp));
+ok("library offers every playable game once in the age shelves (no Coming soon card)", JSON.stringify(pp.games) === JSON.stringify(pp.expected) && new Set(pp.games).size === pp.games.length, JSON.stringify(pp));
 ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
 
 // ── charge free play: round 1 = isolation, header context line ──
@@ -147,7 +147,7 @@ ok("Home keeps today's real rep count", t.ring === "12", t.ring);
 ok("library leaves the current practice sound intact", t.sound === "R");
 pp = await page.evaluate(DECK);
 ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
-ok("library: mid-day still offers the complete catalog", JSON.stringify(pp.games) === JSON.stringify(pp.expected), JSON.stringify(pp));
+ok("library: mid-day still offers every playable game", JSON.stringify(pp.games) === JSON.stringify(pp.expected), JSON.stringify(pp));
 ok("Home keeps saved reps and rounds without the old star-jar menu", await page.evaluate(() => Sona.repsToday() === 12 && Sona.rotRound() === 3 && !document.getElementById("jarInfo")));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 
@@ -197,15 +197,15 @@ ok("Echo shows a visual checking state", /echo-checking/.test(chargeSrc) && /leo
 // 24 Sep 2026: the spoken line is calm now ("I have an idea. Let's try this one.").
 ok("step-down retry offers an easier same-sound target", /Let's try this one/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
 
-// ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
+// ── voice revive: "keep playing" copy + family-aware trigger in all 6 round games ──
 {
   const { readFileSync: rf } = await import("fs");
-  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide"];
+  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-rise"];
   const all = games.every((g) => {
     const src = rf(ROOT + "/" + g + ".html", "utf8");
     return src.includes("to keep playing!") && src.includes("famOK") && src.includes("Sona.frameShape");
   });
-  ok("all 5 games: revive says 'keep playing' + family-checked", all);
+  ok("all 6 round games: revive says 'keep playing' + family-checked", all);
   const sj = rf(ROOT + "/sona.js", "utf8");
   ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
 }
@@ -274,8 +274,12 @@ ok("primer shows before the mic prompt", mp.shown);
 // the sound goes), and the games/practice distinction — so those are what is
 // pinned now, in the form that is currently true. mictest.mjs guards the other
 // direction: no sending claim may come back without the mechanism.
+// Shortened on 1 Oct 2026 (Travis: "way too many words here") and again on
+// 2 Oct 2026 ("just say audio is never recorded or uploaded"): that nothing is
+// uploaded, and the one try a day kept on the phone. Not "never recorded":
+// that one try is recorded, on the phone, and the line must not deny it.
 ok("primer explains listening honestly",
-  /practice and optional voice-enabled games/.test(mp.txt) && /checked on this phone/.test(mp.txt) && /never uploads recordings/.test(mp.txt));
+  /never uploaded/.test(mp.txt) && /One try a day is saved on this phone/.test(mp.txt) && !/never recorded/i.test(mp.txt), mp.txt);
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
@@ -312,8 +316,8 @@ ok("denied state offers try-again + back", mp.retry && /Back home/.test(mp.txt))
   // loaders AND remote script hosts (Vercel Insights, esm.sh, jsDelivr, unpkg).
   // Parent/marketing/SLP surfaces are allowed analytics and are excluded.
   const PARENT_PAGES = new Set([
-    "onboarding.html", "subscribe.html", "check.html", "for-slps.html", "slp.html",
-    "slp-login.html", "settings.html", "voices.html", "progress.html", "trial.html",
+    "onboarding.html", "subscribe.html", "check.html", "for-slps.html", "parents.html", "try.html", "slp.html",
+    "slp-login.html", "settings.html", "progress.html", "trial.html", // voices.html deleted 29 Sep 2026 (one coach voice)
     "pilot.html", "privacy.html", "founders.html", "founding.html", "join.html",
     // experimental HeyGen live-avatar pages — orphaned (nothing links to them),
     // load a remote SDK, gated/removed before any kid-flow release (F4 review).
@@ -332,8 +336,18 @@ await page.evaluate(() => {
   localStorage.removeItem("sona.founder");      // the ladder sections' Premium, gone
   localStorage.removeItem("sona.slp");
   const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  // THE WEB CARD, WHICHEVER WAY THE SWITCHES SHIP. ?paid=1 in the address
+  // below is only read while Sona is free, and it says nothing about the second
+  // switch: since 1 Oct 2026 (Travis: "i dont want them paying on the
+  // website") a browser shows this card only while Sona.webSales() says yes.
+  // Both seams are session keys, set here before the page loads and taken off
+  // again after this section. Without them every click below lands on a hidden
+  // button: a 30-second wait, a throw at the top level, and nothing after this
+  // point in the file would run.
+  sessionStorage.setItem("sona.paidui", "1");
+  sessionStorage.setItem("sona.websalesui", "1");
 });
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
@@ -341,19 +355,26 @@ t = await page.evaluate(() => ({
   founding: document.getElementById("foundingCard").style.display,
   life: document.getElementById("planLife").textContent,
   line: document.getElementById("planLine").textContent,
-  cards: document.querySelectorAll("#pickCard .plan").length,
+  // counted and measured on the screen: the card is always in the file, so
+  // its markup alone would satisfy a count with the card hidden
+  cards: [...document.querySelectorAll("#pickCard .plan")].filter((n) => n.getBoundingClientRect().height > 0).length,
+  seen: document.getElementById("buyLife").getBoundingClientRect().height > 0,
+  app: document.getElementById("appCard").style.display,
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
   t.pick === "block" && t.founding === "none" && /59\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
-// ONE offer as of 18 Sep 2026: monthly was retired. A SECOND card is a dead
-// tier creeping back — and since nobody can buy monthly any more, a page that
-// still shows it would take a parent to a checkout that quietly sells them the
-// yearly plan instead.
-ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "cards=" + t.cards);
-// ONE PLAN, ONE HEADING. "Pick your plan" over a single card asked a parent
-// to choose between a thing and nothing; the heading now says what the
-// button does. And the decline sat two screens below the offer, past the
-// SLP card — it now sits directly beneath the card it declines.
+ok("…on the screen, with its button, and not the 'it's in the iPhone app' card", t.seen && t.app === "none", JSON.stringify({ seen: t.seen, app: t.app }));
+// TWO WAYS TO PAY as of 1 Oct 2026 (Travis: "add to the paywall a $10 a month
+// option ... that does not have a free trial. That's a pay today, but the
+// $59.99 has a three-day trial. And have that as the default option
+// selected"). Monthly was retired on 18 Sep and is back, sold for real: the
+// checkout honours it (caseloadtest plays the route). A THIRD box would be a
+// tier nobody approved.
+ok("TWO ways to pay exactly — the yearly plan and the monthly one", t.cards === 2, "cards=" + t.cards);
+// THE HEADING SAYS WHAT THE BUTTON DOES. On arrival the yearly plan is picked
+// and the button starts free days, so the heading says so; it is never the
+// bare "Pick your plan". And the decline sat two screens below the offer,
+// past the SLP card — it now sits directly beneath the card it declines.
 {
   const shape = await page.evaluate(() => {
     const h = document.querySelector("#pickCard h2");
@@ -361,47 +382,157 @@ ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "car
     const slpCard = !!document.getElementById("slpEntryCard");
     return { heading: h ? h.textContent.trim() : "", order, slpCard };
   });
-  ok("the plan card is headed by what the button does, not a choice that does not exist",
+  ok("the plan card is headed by what the button does on arrival: free days, the yearly plan's",
     /Start your free days/.test(shape.heading) && !/Pick your plan/.test(shape.heading), shape.heading);
   ok("…and the decline sits directly under the plan card",
     shape.order.join(">") === "pickCard>declineRow", shape.order.join(">"));
   // the SLP side is hidden (19 Sep 2026): the plan screen no longer offers it
   ok("…and the 'working with a speech therapist?' card is gone from the plan screen", !shape.slpCard);
 }
-ok("yearly card states the 3-day trial and the cancel promise",
-  /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
-// The comparison figures died with the plan they compared to: $119.88 and
-// "save $59.89" were only ever 12 x $9.99, so striking one through now would
-// anchor against a price nobody can pay. What must survive is the per-month
-// reading, which is just $59.99/12 and true on its own.
-ok("…and no fabricated anchor survives the retirement",
+// The button and its "what happens when" lines sit UNDER both plan boxes
+// since 1 Oct 2026 (one button, two plans), so the cancel promise is read
+// there, as a parent sees it: innerText, which leaves out anything hidden.
+const buyArea = await page.evaluate(() => document.querySelector("#pickCard .planbuy").innerText);
+ok("yearly card states the 3-day trial, and the cancel promise sits with the button",
+  /3 days free/i.test(t.life) && /cancel any ?time/i.test(buyArea), buyArea.slice(0, 160));
+ok("…and nothing a parent can read under that button says the monthly plan's 'charged today, then every month'",
+  !/then every month|\$9\.99 is charged/i.test(buyArea), buyArea.slice(0, 200));
+// The comparison figures did NOT come back with monthly. $119.88 really is
+// twelve months of $9.99 again, but "save $59.89" is true only while the
+// charter price lasts: at family fifty-one the yearly plan is $99.99 and the
+// saving is $19.89, so a typed saving is a number with an expiry date. What
+// must survive is the per-month reading, which is just $59.99/12.
+ok("…and no was-price or 'you save' figure rides back in with the monthly plan",
   !/119\.88/.test(t.life) && !/59\.89/.test(t.life),
-  "a strike-through with no monthly plan behind it is an invented was-price: " + t.life.slice(0, 120));
-ok("…while the honest per-month reading stays",
-  /under \$5 a month/i.test(t.life), t.life.slice(0, 120));
-// THE HEADER LINE IS PRICE COPY TOO. The card markup was cleaned up when
-// monthly was retired; #planLine was not, because the page WRITES it at
-// runtime and every check here read the card. It still said "saves $59.89 a
-// year vs $9.99/mo · Monthly: $9.99/mo, billed today" above a page with one
-// plan on it and no monthly button to find. Read what the parent reads.
-ok("the header line retired with the plan — no dead tier, no invented saving",
-  !/119\.88/.test(t.line) && !/59\.89/.test(t.line) && !/9\.99\s*\/?\s*mo/i.test(t.line) &&
-  !/\bmonthly\b/i.test(t.line),
-  "planLine: " + t.line.slice(0, 160));
-ok("…and says the one true thing about the one plan",
-  /59\.99/.test(t.line) && /3 days free/i.test(t.line), "planLine: " + t.line.slice(0, 160));
+  "the saving is only true for the first 50 families: " + t.life.slice(0, 120));
+ok("…while the honest per-month reading stays, and says it is billed once a year",
+  /under \$5 a month, billed once a year/i.test(t.life), t.life.slice(0, 120));
+// THE HEADER LINE IS PRICE COPY TOO. The page WRITES #planLine at runtime, so
+// read what the parent reads. It names both ways to pay, with what makes each
+// one different, and still carries no was-price.
+ok("the header line carries no was-price and no invented saving",
+  !/119\.88/.test(t.line) && !/59\.89/.test(t.line), "planLine: " + t.line.slice(0, 200));
+ok("…says the true thing about the yearly plan: its price and its 3 free days",
+  /59\.99/.test(t.line) && /3 days free/i.test(t.line) && /under \$5 a month<?[^.]*billed once a year/i.test(t.line), "planLine: " + t.line.slice(0, 200));
+ok("…and the true thing about the monthly one: its price, and that it is charged today",
+  /\$9\.99 a month, charged today/.test(t.line), "planLine: " + t.line.slice(0, 200));
 {
-  const gone = await page.evaluate(() => ({
-    month: !!document.getElementById("planMonth"),
-    buy: !!document.getElementById("buyMonth"),
-  }));
-  ok("the monthly card and its buy button are gone from the paywall",
-    !gone.month && !gone.buy, JSON.stringify(gone));
+  // THE MONTHLY BOX IS HONEST, AND YEARLY IS THE ONE PICKED. /\$9\.99/, with
+  // the dollar sign: a bare /9\.99/ also matches "$59.99" and "$99.99" and
+  // passed on a page with no monthly price on it at all.
+  const pay = await page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    // by what is PAINTED, never by the hidden attribute the page sets: a
+    // display rule that beats the attribute is exactly the bug to catch
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return {
+      month: g("planMonth") ? g("planMonth").innerText : null,
+      yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth") && g("planMonth").getAttribute("aria-checked"),
+      secondButton: !!g("buyMonth"), buttons: document.querySelectorAll("#pickCard button.go").length,
+      button: g("buyLife").textContent, timeline: seen(g("webTL")), payToday: seen(g("monthMath")),
+      bill: g("webTL").innerText, renewShown: seen(g("webRenew")),
+    };
+  });
+  // "Charged today", not "no free trial" (Travis, 1 Oct 2026: "dont say no
+  // free trial at the bottom"): the same fact, said as what the plan does.
+  // It must never say "free" at all — that word is the yearly plan's.
+  ok("the monthly box is honest: $9.99, charged today — and never the word 'free'",
+    !!pay.month && /\$9\.99/.test(pay.month) && /charged today/i.test(pay.month) && !/free/i.test(pay.month), JSON.stringify(pay.month));
+  ok("…and it never borrows the charter price or a spots-left number",
+    !!pay.month && !/charter|spots? left|first 50/i.test(pay.month), JSON.stringify(pay.month));
+  ok("the yearly plan is the one picked when the page opens", pay.yearPicked === "true" && pay.monthPicked === "false", JSON.stringify(pay));
+  ok("one button serves both plans — no second buy button", pay.buttons === 1 && !pay.secondButton, JSON.stringify(pay));
+  ok("on arrival the button starts free days, the billing day is showing and 'charged today' is not",
+    pay.button === "Start 3 days free" && pay.timeline && !pay.payToday, JSON.stringify(pay));
+  // ONE LINE UNDER THE BUTTON (Travis, 2 Oct 2026: "there's still too much
+  // information ... just briefly say like what day they'll be billed"): the
+  // day the free days end and the price after them, and the small print that
+  // said the same steps aside for the yearly plan.
+  ok("…in one line: free until a named day, then the yearly price, cancel anytime, and no second small print saying it again",
+    /^Free until [A-Z][a-z]+ \d{1,2}, then \$\d+\.\d\d a year\. Cancel anytime\.$/.test(pay.bill.trim()) && !pay.renewShown, JSON.stringify([pay.bill, pay.renewShown]));
+}
+{
+  // WHAT THE BUTTON SENDS. Every browser suite answers /api/* with an error,
+  // so until now nothing read what the plan screen posts to checkout: a
+  // "monthly" pick that posted "annual" would have passed everything.
+  const posts = [];
+  await page.route("**/api/checkout", (r) => { posts.push(r.request().postDataJSON()); r.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: false, error: "test: not opened" }) }); });
+  const look = () => page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    // by what is PAINTED, never by the hidden attribute the page sets: a
+    // display rule that beats the attribute is exactly the bug to catch
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return { button: g("buyLife").textContent, disabled: g("buyLife").disabled, timeline: seen(g("webTL")), noChargeToday: seen(g("trialMath")), payToday: seen(g("monthMath")),
+      area: document.querySelector("#pickCard .planbuy").innerText, renew: g("webRenew").innerText, renewShown: seen(g("webRenew")), heading: g("pickTitle").textContent,
+      yearPicked: g("planLife").getAttribute("aria-checked"), monthPicked: g("planMonth").getAttribute("aria-checked") };
+  });
+  await page.waitForFunction(() => !document.getElementById("buyLife").disabled);   // the price check has let go
+  await page.locator("#buyLife").click(); await page.waitForTimeout(250);
+  ok("with nothing touched, the button buys the yearly plan", posts.length === 1 && posts[0].plan === "annual", JSON.stringify(posts));
+  await page.locator("#planMonth").click(); await page.waitForTimeout(150);
+  let m = await look();
+  ok("picking monthly: the button names the price charged today", m.monthPicked === "true" && m.yearPicked === "false" && m.button === "Subscribe — $9.99 a month", JSON.stringify(m));
+  ok("…the free days' billing line and 'no charge today' leave the screen: nothing under the button says 'free'", !m.timeline && !m.noChargeToday && !/free|nothing is charged|no charge today/i.test(m.area), m.area.slice(0, 200));
+  ok("…and 'charged today, then every month' is what is under the button", m.payToday && /\$9\.99 is charged today, then every month/i.test(m.area), m.area.slice(0, 200));
+  ok("…the small print is the monthly plan's, on screen: charged today, $9.99 a month", m.renewShown && /charged today/i.test(m.renew) && /\$9\.99 a month/.test(m.renew) && !/3-day|a year|free/i.test(m.renew), m.renew);
+  // a family who paid on the web has no account page with a cancel button,
+  // so the new line names the way that works (the Terms say the same)
+  ok("…and it names a way to cancel that exists: an email address, not 'in your account'", /To cancel, email \S+@speaksona\.com/.test(m.renew) && !/in your account/i.test(m.renew), m.renew);
+  ok("…and the heading stops promising free days", !/free days/i.test(m.heading), m.heading);
+  await page.locator("#buyLife").click(); await page.waitForTimeout(250);
+  ok("…and the button now buys the monthly plan", posts.length === 2 && posts[1].plan === "monthly", JSON.stringify(posts));
+  await page.locator("#planLife").click(); await page.waitForTimeout(150);
+  m = await look();
+  ok("picking yearly again puts every yearly line back, and takes the monthly ones off the screen", m.yearPicked === "true" && m.button === "Start 3 days free" && m.timeline && !m.payToday && !/then every month/i.test(m.area) && !m.renewShown && /free days/i.test(m.heading), JSON.stringify(m).slice(0, 300));
+  await page.locator("#planMonth").focus(); await page.keyboard.press("Space"); await page.waitForTimeout(100);
+  const key1 = await look();
+  await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100);
+  const key2 = await look();
+  ok("the two boxes work from a keyboard: Space picks, an arrow moves", key1.monthPicked === "true" && key2.yearPicked === "true", JSON.stringify([key1.monthPicked, key2.yearPicked]));
+  await page.unroute("**/api/checkout");
 }
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",
   /Rachel/.test(t) && /speech-language pathologist/.test(t));
+// THE SAME FAMILY, WHEN THE WEBSITE DOES NOT SELL (Travis, 1 Oct 2026: "i dont
+// want them paying on the website"). The seam forced off: the web card and its
+// button are gone, and in their place the page says where Premium is bought,
+// with no figure of any kind. Nothing here clicks: there is nothing to buy.
+{
+  await page.evaluate(() => sessionStorage.setItem("sona.websalesui", "0"));
+  const posts = [];
+  await page.route("**/api/checkout", (r) => { posts.push(r.request().method()); r.fulfill({ contentType: "application/json", body: "{}" }); });
+  await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
+  const off = await page.evaluate(() => {
+    const g = (id) => document.getElementById(id);
+    const seen = (el) => !!el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 0;
+    return { pick: g("pickCard").style.display, card: seen(g("pickCard")), buy: seen(g("buyLife")), boxes: [...document.querySelectorAll("#pickCard .plan")].filter(seen).length,
+      app: g("appCard").style.display, appSeen: seen(g("appCard")), store: seen(g("appStoreGo")) ? g("appStoreGo").getAttribute("href") : "",
+      title: g("appTitle").textContent, words: g("appCard").innerText, free: g("freeTierCard").style.display, founding: g("foundingCard").style.display,
+      line: g("planLine").textContent, body: document.body.innerText, order: [...document.querySelectorAll("#appCard, #freeTierCard")].map((e) => e.id).join(">") };
+  });
+  ok("web sales off: no plan boxes and no buy button are on the screen",
+    off.pick === "none" && !off.card && !off.buy && off.boxes === 0, JSON.stringify({ pick: off.pick, card: off.card, buy: off.buy, boxes: off.boxes }));
+  ok("…the page says Sona Premium is in the iPhone and iPad app, and links the App Store",
+    off.app === "block" && off.appSeen && off.title === "Sona Premium is in the iPhone and iPad app" &&
+    off.store === "https://apps.apple.com/us/app/sona-speech/id6785755867" && /Get Sona on the App Store/.test(off.words), JSON.stringify({ app: off.app, store: off.store, title: off.title }));
+  ok("…in the settled words: bought there, opens there, practice and the free games stay free here",
+    /Premium opens every game and every book in the Sona app\. You buy it there, through the App Store, and it opens there\. Daily practice and the free games stay free here\./.test(off.words), off.words);
+  ok("…and tells someone who already paid on the website that the plan keeps working",
+    /Already paid on speaksona\.com\? Your plan keeps working\./.test(off.words), off.words);
+  ok("…with what stays free right under it, and no free-era card",
+    off.order === "appCard>freeTierCard" && off.free === "block" && off.founding === "none", JSON.stringify({ order: off.order, free: off.free, founding: off.founding }));
+  ok("…the header line says where Premium is bought, and never 'founding family'",
+    /free version/.test(off.line) && /Sona Premium is bought in the iPhone and iPad app/.test(off.line) && !/founding/i.test(off.line), off.line);
+  ok("…and no dollar figure, free-days promise or charter line is anywhere a parent can read",
+    !/\$/.test(off.body) && !/3 days free|free trial|charter|spots? left|charged today/i.test(off.body),
+    (off.body.match(/\$[^\s]*|3 days free|free trial|charter|spots? left|charged today/i) || [])[0]);
+  ok("…and nothing was sent to checkout", posts.length === 0, posts.join(","));
+  await page.unroute("**/api/checkout");
+  // the seams come off: everything after this runs on the switches as shipped
+  await page.evaluate(() => { sessionStorage.removeItem("sona.websalesui"); sessionStorage.removeItem("sona.paidui"); });
+}
 // ── practice volume: local tries and the family's own prior week only ──
 {
   const iso = new Date().toISOString().slice(0, 10);
@@ -434,7 +565,8 @@ ok("proof strip: named SLP credential above the plan",
     g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
     g.streak = g.streak || { count: 1, lastDate: d };
     localStorage.setItem("sona.progress.v1", JSON.stringify(g));
-    const out = {}; out.R = { attempts: 24, passes: 20, days: {} }; out.R.days[d] = { a: 24, p: 20 };
+    // A day logged since tries were counted (REPWEEKS1): sound checks alone are not reps.
+    const out = {}; out.R = { attempts: 24, passes: 20, tries: 24, days: {} }; out.R.days[d] = { a: 24, p: 20, tries: 24 };
     localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
     localStorage.removeItem("sona.rateask.v1");
   }, iso);
@@ -456,7 +588,7 @@ ok("proof strip: named SLP credential above the plan",
     await pg.goto("http://localhost:8131/today.html"); await pg.waitForTimeout(300);
     await pg.evaluate(() => {
       localStorage.clear();
-      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
       Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
       sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     });
@@ -475,8 +607,10 @@ ok("proof strip: named SLP credential above the plan",
       empty.cards.length > 0 && empty.cards.every((hasAction) => !hasAction), JSON.stringify(empty.cards));
     await ctx.close();
   }
+  // "Could be better" goes to Talk to us now, not a mailto (29 Sep 2026): every
+  // family note reaches the team through that one in-app page.
   ok("review pre-gate shows after real value, Bear-style fork",
-    t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
+    t.rate === "block" && /action=write-review/.test(t.yesHref) && t.noHref === "/talk.html");
   await page.evaluate(() => document.getElementById("rateX").click());
   await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(700);
   t = await page.evaluate(() => document.getElementById("rateCard").style.display);
@@ -492,7 +626,7 @@ ok("proof strip: named SLP credential above the plan",
   const fpg = await fctx.newPage();
   await fpg.goto("http://localhost:8131/today.html");
   await fpg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
     try { Sona.gateVerify(); } catch (e) {}
   });
@@ -501,8 +635,11 @@ ok("proof strip: named SLP credential above the plan",
     early: Sona.getProfile().earlyAdopter,
     pick: document.getElementById("pickCard").style.display,
     founding: document.getElementById("foundingCard").style.display,
+    app: document.getElementById("appCard").style.display,
   }));
   ok("founding family keeps the free story", f.early === true && f.pick !== "block" && f.founding !== "none");
+  // …whichever way the website's switch points: no seam here, on purpose
+  ok("…and is never sent to the App Store to buy what they were promised free", f.app !== "block", String(f.app));
   await fctx.close();
 }
 
@@ -548,6 +685,54 @@ ok("proof strip: named SLP credential above the plan",
   ok("a child who has earned nothing is still capped at earned+1",
     capped.syls.includes(capped.target), JSON.stringify(capped));
   await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
+}
+
+// ── the word step asks for the position being practised (30 Sep 2026) ──
+// It passed no position, so whatever Settings' Word position or an SLP's
+// homework said, the word step asked for start-of-word words: End-of-word
+// homework still got "rabbit". Travis: the position must actually drive the
+// practice page — homework's first, then the family's setting. A position
+// with no words for that sound falls back to start-of-word words rather than
+// an empty round. (hwtest holds the sentence step to the same rule.)
+//
+// 1 Oct 2026 (Travis: "have the options listed but to not let them select
+// other positioning because it's not built yet"): a FAMILY can pick only the
+// start of a word for now (Sona.FAMILY_POSITIONS). Homework still names its
+// own position; a family's Middle saved earlier reads as the start of a word.
+{
+  const HW = (pos) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "hwpos", title: "R at the end", note: "", sounds: ["R"], pos: "${pos}", repsPerDay: 20, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, at: Date.now() }))`;
+  const pw = await page.evaluate((hw) => {
+    const bank = (s, p) => Sona.WORDS[s].filter((w) => (w.pos || "i") === p).map((w) => w.w).join();
+    const step = (s) => (Sona.ladderContent(s, 2) || []).map((x) => x.word).join();
+    const out = { iR: bank("R", "i"), fR: bank("R", "f"), mR: bank("R", "m"), iK: bank("K", "i") };
+    out.none = { pos: Sona.practicePos(), words: step("R") };
+    eval(hw);                                          // homework: R at End
+    Sona.saveProfile({ practicePosition: "m" });       // …while the family picked Middle
+    out.hw = { pos: Sona.practicePos(), words: step("R") };
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    out.fam = { pos: Sona.practicePos(), words: step("R") };
+    Sona.saveProfile({ practicePosition: "v" });       // Vocalic R, for a sound with none
+    out.noneForK = step("K");
+    Sona.saveProfile({ practicePosition: "i" });
+    return out;
+  }, HW("f"));
+  ok("with no homework and no setting, the word step asks for start-of-word words", pw.none.pos === "i" && pw.none.words === pw.iR, JSON.stringify(pw.none));
+  ok("homework at End: every word at the word step is an End word, over the family's Middle", pw.hw.pos === "f" && pw.hw.words === pw.fR, JSON.stringify(pw.hw));
+  ok("no homework, family's old Middle setting: the word step asks for start-of-word words (Middle is not open to families yet)",
+    pw.fam.pos === "i" && pw.fam.words === pw.iR && pw.mR && pw.mR !== pw.iR, JSON.stringify(pw.fam));
+  ok("a position with no words for the sound falls back to start-of-word words", pw.noneForK === pw.iK, pw.noneForK);
+
+  // …and on the real page: round 3 of a child with words earned, homework at End
+  await page.evaluate((hw) => {
+    eval(hw);
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 2 }));
+    const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;
+    localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  }, HW("f"));
+  await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+  const onPage = await page.evaluate(() => document.getElementById("bTarget").textContent.trim());
+  ok("the practice page's word step shows an End word for End-of-word homework", pw.fR.split(",").includes(onPage), onPage);
+  await page.evaluate(() => { localStorage.removeItem(Sona.kkey("sona.homework.v1")); localStorage.removeItem(Sona.kkey("sona.today.v1")); });
 }
 
 // ── earned rung feeds the climb: stage.R=2 (words earned) stretches to the

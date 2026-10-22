@@ -6,11 +6,7 @@ import { chromium, ROOT, launchOpts } from './_env.mjs';
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT;
 const server=createServer((req,res)=>{
  let p=new URL(req.url,'http://local').pathname;
- // The root is the family page (Travis, 22 Oct 2026): app/families/page.tsx,
- // a Next page this static server cannot render. What runs in the native
- // shell is its inline guard, the first script in <main>, so serve exactly
- // that script, read from the source, in front of some page content.
- if(p==='/'){const m=readFileSync(path.join(ROOT,'..','app','families','page.tsx'),'utf8').match(/__html: `(if\(typeof window!=="undefined"&&window\.Capacitor\)[^`]*)`/);res.writeHead(m?200:500,{'content-type':'text/html'});res.end(m?'<!doctype html><html><body><main><script>'+m[1]+'</script><h1>Sona for families</h1></main></body></html>':'family guard not found');return;}
+ if(p==='/')p='/parents.html';
  if(['/slp','/slp-login','/for-slps'].includes(p))p+='.html';
  if(p.startsWith('/api/')){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(p==='/api/slp/auth/me'?{ok:true,email:'clinician@example.test',code:'test',familyKey:'fixture'}:{ok:true,clients:[]}));return;}
  const file=path.join(root,p);
@@ -41,7 +37,7 @@ async function fresh(mode,profile=true,sibling=false){
  const page=await ctx.newPage();page.setDefaultTimeout(4000);return{ctx,page,requests};
 }
 try{
- for(const route of ['/','/slp-login.html','/slp.html','/for-slps.html','/slp-login','/slp','/for-slps']){
+ for(const route of ['/','/parents.html','/slp-login.html','/slp.html','/for-slps.html','/slp-login','/slp','/for-slps']){
   const {ctx,page,requests}=await fresh('native');
   try{await page.goto(origin+route,{waitUntil:'domcontentloaded'});await page.waitForURL('**/today.html',{waitUntil:'domcontentloaded',timeout:1200}).catch(()=>{});ok('native '+route+' returns to family Home',new URL(page.url()).pathname==='/today.html',page.url());ok('native '+route+' never starts clinician API calls',requests.length===0,requests);}finally{await ctx.close();}
  }
@@ -49,17 +45,26 @@ try{
   const {ctx,page}=await fresh(config.mode,config.profile,config.sibling),dest=config.profile&&!config.sibling?'/today.html':'/onboarding.html';
   try{await page.goto(origin+'/slp-login.html',{waitUntil:'domcontentloaded'});await page.waitForURL('**'+dest,{waitUntil:'domcontentloaded',timeout:1200}).catch(()=>{});ok(JSON.stringify(config)+' resolves active family setup',new URL(page.url()).pathname===dest,page.url());}finally{await ctx.close();}
  }
- for(const mode of ['browser','web-bridge'])for(const route of ['/slp-login.html','/slp.html','/for-slps.html']){
+ for(const mode of ['browser','web-bridge'])for(const route of ['/','/parents.html','/slp-login.html','/slp.html','/for-slps.html']){
   const {ctx,page}=await fresh(mode);try{await page.goto(origin+route,{waitUntil:'domcontentloaded'});await page.waitForTimeout(100);ok(mode+' retains '+route,new URL(page.url()).pathname===route&&await page.locator('body').isVisible(),page.url());}finally{await ctx.close();}
  }
  for(const mode of ['native','browser']){
   const {ctx,page,requests}=await fresh(mode);try{
    await page.goto(origin+'/settings.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.Sona);
    const visible=await page.locator('#slpCard').isVisible();ok(mode+' settings show appropriate family/clinician controls',visible===(mode==='browser'),visible);
-   if(mode==='native'){ok('native settings make no clinician API calls',requests.length===0,requests);ok('native feedback uses family wording',!/caseload/.test(await page.locator('#fbLead').innerText()));}
+   if(mode==='native')ok('native settings make no clinician API calls',requests.length===0,requests);
    ok(mode+' retains saved role/data',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().childName==='Milo'));
   }finally{await ctx.close();}
  }
- const {ctx,page}=await fresh('native',false);try{await page.goto(origin+'/onboarding.html',{waitUntil:'domcontentloaded'});ok('native setup ignores a saved clinician draft',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));ok('native setup hides the browser clinician door',!(await page.locator('#slpLink').isVisible()));await page.locator('#slpLink').evaluate(el=>el.click());ok('a hidden clinician action cannot switch native setup',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));}finally{await ctx.close();}
+ // The feedback form moved from Settings to the "Talk to us" tab (29 Sep 2026), so its wording check moved with it.
+ for(const mode of ['native','browser']){
+  const {ctx,page,requests}=await fresh(mode);try{
+   await page.goto(origin+'/talk.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.Sona);
+   const lead=await page.locator('#fbLead').innerText();
+   if(mode==='native'){ok('native Talk to us uses family wording',!/caseload/.test(lead),lead);ok('native Talk to us makes no clinician API calls',requests.length===0,requests);}
+   else ok('a clinician in a browser gets the caseload wording on Talk to us',/caseload/.test(lead),lead);
+  }finally{await ctx.close();}
+ }
+ const {ctx,page}=await fresh('native',false);try{await page.goto(origin+'/onboarding.html',{waitUntil:'domcontentloaded'});ok('native setup ignores a saved clinician draft',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));await page.goto(origin+'/onboarding.html?slp=1',{waitUntil:'domcontentloaded'});await page.locator('#nextBtn').click();ok('the clinician\'s address in the app keeps the family setup: no clinician step, and the dashboard is named as being on the web',await page.evaluate(()=>ORDER===ORDER_PARENT&&ORDER.indexOf('email')<0&&ORDER.indexOf('slp')<0&&document.body.dataset.setupScreen==='name'&&!document.getElementById('slpAppNote').hidden));}finally{await ctx.close();}
 }finally{await browser.close();await new Promise(r=>server.close(r));}
 console.log(`${checks-bad}/${checks} native family checks passed`);process.exitCode=bad?1:0;

@@ -28,8 +28,13 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `STRIPE_SECRET_KEY` | `sk_test_…` (then `sk_live_…` for real charges) | ✅ |
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
-| `STRIPE_PRICE_ID_SLP_CASELOAD` | a yearly **$79.99** Price for Caseload Premium (below) | optional |
-| `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for Caseload Premium — only if you'd rather make it yourself (below) | optional |
+| `STRIPE_PRICE_ID_SLP_SELF` | a yearly **$59.99** Price for "Sona Premium for you" (below) | optional |
+| `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` | a yearly **$59.99** Price for "Sona Premium for your caseload" (below) | optional |
+| `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for the clinician plans — only if you'd rather make it yourself (below) | optional |
+
+`STRIPE_PRICE_ID_SLP_CASELOAD` (the old **$79.99** Price) is no longer read.
+If it is set in Vercel, it can stay or go: the code ignores it, so it can
+never charge $79.99 under a page that says $59.99.
 
 \*If unset, success/cancel redirects use the request origin, which is fine.
 
@@ -50,17 +55,28 @@ Then **push any commit** (or redeploy) so the new vars take effect.
   `customer.subscription.updated/deleted`) if you move to a real accounts DB.
   For now, live lookups via `/api/subscription` are enough to gate access.
 
-## Caseload Premium — the clinician plan (24 Sep 2026)
+## The clinician plans (24 Sep 2026; re-priced 29 Sep 2026)
 
-"Sona Premium for your caseload": **$79.99 a year, no trial**, bought by a
-clinician from their dashboard (`/slp.html#premium` → `POST /api/slp/plan`).
-Every family who joins through that clinician's link gets Premium.
+Two yearly plans, **no trial**, bought by a clinician from their dashboard
+(`/slp.html#premium`, or the Premium card in Settings → `POST /api/slp/plan`):
 
-- **Nothing to create to start selling.** Checkout uses an inline yearly price
-  (7999 USD) from `lib/caseload.ts`, the same constant every page prints. If you
-  want Stripe's product reports tidy, create a yearly $79.99 Price and set
-  `STRIPE_PRICE_ID_SLP_CASELOAD` — it must be exactly $79.99/year, or the pages
-  and the charge disagree.
+- **"Sona Premium for you", $59.99 a year** — every game on the clinician's
+  own phone or tablet. Stamped `plan: slp-self`.
+- **"Sona Premium for your caseload", $59.99 a year more** — every family who
+  joins through that clinician's link gets Premium. Sold only once the
+  clinician's own Premium is on. Stamped `plan: slp-caseload`, `addon: "1"`,
+  and bought under the same Stripe customer, so Manage billing shows both.
+
+Caseload subscriptions bought before 29 Sep 2026 ($79.99, no `addon` stamp)
+keep renewing at $79.99 and keep covering the clinician's own phone. Nothing
+to do in Stripe for them.
+
+- **Nothing to create to start selling.** Checkout uses inline yearly prices
+  (5999 USD each) from `lib/caseload.ts`, the same constants every page
+  prints. If you want Stripe's product reports tidy, create yearly $59.99
+  Prices and set `STRIPE_PRICE_ID_SLP_SELF` and
+  `STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` — each must be exactly $59.99/year, or
+  the pages and the charge disagree.
 - **The billing page cancels at period end, by construction.** The dashboard's
   **Manage billing** button (`POST /api/slp/plan/portal`) opens Stripe's
   billing portal under the caseload's OWN configuration — cancel **at the end
@@ -80,11 +96,12 @@ Every family who joins through that clinician's link gets Premium.
   it and opens the default rather than a dead button) — so a cancel there must
   not be immediate either.
 - **The stamps are the plan.** The session and the subscription carry
-  `metadata.plan = "slp-caseload"` and `metadata.slp = <clinician email>`, and
-  never `tier` — only `tier: charter` counts toward the 50 charter spots. Don't
-  edit them by hand; coverage is read from them.
-- **Web only.** There is no App Store product for this plan, and there should
-  not be one (`NATIVE.md`).
+  `metadata.plan` (`"slp-self"` or `"slp-caseload"`), `metadata.slp =
+  <clinician email>` and, on a caseload sold from 29 Sep, `metadata.addon =
+  "1"` — and never `tier`: only `tier: charter` counts toward the 50 charter
+  spots. Don't edit them by hand; coverage is read from them.
+- **Web only.** There is no App Store product for either plan, and there
+  should not be one (`NATIVE.md`).
 
 ## Notes
 

@@ -37,13 +37,55 @@ const src = readFileSync(feedSource, "utf8");
 if (!process.env.FEED_AUDIO_ONLY) {
 ok("kid page carries no tracking", !/pixel\.js|analytics\.js|fbevents|posthog/i.test(src));
 
+// THE WORD COMES FIRST (Travis, 1 Oct 2026: "we need to get the kid to have
+// to say it!"). The mic here is a stand-in: window.__mic.voice is the child
+// talking, and it is all the page can hear.
+function fakeMic() {
+  const h = window.__mic = { voice: false, opens: 0, live: 0, said: [] };
+  // what the browser's own voice was asked to say (it still speaks)
+  if (window.speechSynthesis) { const speak = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = (u) => { h.said.push(String(u.text)); return speak(u); }; }
+  navigator.mediaDevices.getUserMedia = () => { h.opens++; h.live++; const t = { kind: "audio", readyState: "live", stop() { if (this.readyState !== "ended") { this.readyState = "ended"; h.live--; } } }; return Promise.resolve({ getTracks: () => [t], getAudioTracks: () => [t] }); };
+  const AC = window.AudioContext || window.webkitAudioContext;
+  AC.prototype.createMediaStreamSource = function () { return { connect() {}, disconnect() {} }; };
+  const real = AC.prototype.createAnalyser;
+  AC.prototype.createAnalyser = function () {
+    const an = real.call(this);
+    an.getByteTimeDomainData = (d) => { for (let i = 0; i < d.length; i++) d[i] = h.voice ? (i % 2 ? 200 : 56) : 128; };
+    an.getByteFrequencyData = (d) => { d.fill(0); if (h.voice) for (let i = 1; i <= 10 && i < d.length; i++) d[i] = 220; };
+    return an;
+  };
+}
+await page.addInitScript(fakeMic);
 await page.addInitScript(() => {
   // seed once — later tests mutate the profile and reload, so never clobber
   if (!localStorage.getItem("sona.profile.v1")) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Zoe", childAge: "4", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.micok", "1");   // the grown-up said yes in setup
+    // Today's daily adventure (QUEST1) is already done, so the sticker check
+    // below is about the game itself: the adventure's own sticker is
+    // questtest's to play.
+    const d = new Date(), day = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    localStorage.setItem("sona.quest.v1", JSON.stringify({ i: 1, last: 0, done: day }));
   }
 });
-await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(1000);
+await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(600);
+const asked = () => page.evaluate(() => (document.getElementById("bMain").textContent.match(/Where's the (.+)\?/) || [])[1] || "");
+const tapCard = (word) => page.evaluate((w) => { const b = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === w); if (b) b.click(); return !!b; }, word);
+const fedNow = () => page.evaluate(() => document.getElementById("plate").dataset.fed);
+// the child says the word once the mic is listening
+async function sayWord() {
+  await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 12000 });
+  await page.waitForTimeout(450);   // past the mic's first look at the room
+  await page.evaluate(() => { window.__mic.voice = true; });
+  await page.waitForFunction(() => !document.getElementById("grid").classList.contains("locked"), null, { timeout: 3000 }).catch(() => {});
+  await page.evaluate(() => { window.__mic.voice = false; });
+}
+
+// ── "Let's play" starts it: the first ask comes from a tap ──
+ok("a start card waits for Let's play, so the first ask is never silent on a phone", await page.evaluate(() => document.getElementById("startOvl").classList.contains("show") && /Let's play/.test(document.getElementById("startBtn").textContent) && !/Where's the/.test(document.getElementById("bMain").textContent)));
+ok("…and nothing listens before it", await page.evaluate(() => window.__mic.opens === 0));
+await page.locator("#startBtn").click();
+await page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent));
 
 // ── the ask and the cards agree ──
 let t = await page.evaluate(() => ({
@@ -55,10 +97,34 @@ ok("renders 2-4 picture cards", t.cards.length >= 2 && t.cards.length <= 4, JSON
 const target1 = (t.bubble.match(/Where's the (.+)\?/) || [])[1];
 ok("the asked word is one of the cards", !!target1 && t.cards.includes(target1), t.bubble);
 ok("round starts 0/5", /0\/5/.test(t.fed));
+// Browser speech must finish before "Go!" is requested and the mic opens.
+await page.waitForFunction(() => window.__mic.live === 1, null, { timeout: 12000 });
 ok("Echo speaks the ask", ttsAsks.some((x) => new RegExp("Where is the " + target1, "i").test(x)), JSON.stringify(ttsAsks));
 // Calm, not hype (24 Sep 2026): the voice reads "!" as a burst of energy, so
-// the ask ends on a period. The practice word inside it is unchanged.
-ok("Echo's ask ends calmly, on a period", ttsAsks.length > 0 && ttsAsks.every((x) => !/!/.test(x) && /\.$/.test(x)), JSON.stringify(ttsAsks));
+// the word ends on a period. The practice word inside it is unchanged. Then
+// one "Go!", which is meant to sound like one: it tells a child who can't
+// read that it is their turn (Travis, 2 Oct 2026: "i also wanna try to have
+// the 11 labs voice say 'Go!'"). "Go!" is its own clip, never glued onto the
+// ask: one line with both was a new take of every ask, fetched again on
+// every phone, with the practice word read fresh. It is only ever Echo's own
+// voice: this voice service is down, so the browser says the ask, and no
+// "Go!" at all.
+{
+  const asks = ttsAsks.filter((x) => x !== "Go!");
+  ok("Echo's ask is unchanged: the word ends calmly on a period, with no \"!\" in it", asks.length > 0 && asks.every((x) => /^(?:Where is the ([a-z ]+)\? )?Say\.\.\. [a-z ]+\.$/i.test(x)), JSON.stringify(ttsAsks));
+  ok("…then \"Go!\", asked for as its own clip after the ask, never before it", ttsAsks.includes("Go!") && ttsAsks.indexOf("Go!") > ttsAsks.findIndex((x) => x !== "Go!") && !ttsAsks.some((x) => x !== "Go!" && /Go!/.test(x)), JSON.stringify(ttsAsks));
+  const said = await page.evaluate(() => window.__mic.said.slice());
+  ok("…and with the voice service down, never a robot \"Go!\": the browser's voice says the ask alone", said.some((x) => /^Where is the /.test(x)) && !said.includes("Go!"), JSON.stringify(said));
+}
+
+// ── the word comes first: a tap before it feeds nothing ──
+ok("the pictures wait, locked, until the word is said", await page.evaluate(() => document.getElementById("grid").classList.contains("locked")));
+await tapCard(target1);
+await page.waitForTimeout(300);
+ok("tapping the right picture before saying the word feeds nothing, and says so", /0\/5/.test(await fedNow()) && /first|Tap the mic/.test(await page.locator("#bSub").innerText()), await page.locator("#bSub").innerText());
+await sayWord();
+ok("saying it unlocks the pictures, and the asked one glows", await page.evaluate((w) => { const g = document.querySelectorAll(".speechHint"); return !document.getElementById("grid").classList.contains("locked") && g.length === 1 && g[0].querySelector(".w").textContent === w && window.__heard === 1; }, target1));
+ok("…and the word alone feeds nothing: the child still taps", /0\/5/.test(await fedNow()));
 
 // ── wrong tap: wobble + hint, never a fail, fed stays 0 ──
 const wrongIdx = t.cards.findIndex((w) => w !== target1);
@@ -75,38 +141,34 @@ if (wrongIdx >= 0) {
 
 // ── every bite VISIBLY grows Echo within the round ──
 const scaleBefore = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
-await page.evaluate(() => {
-  const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
-  const hit = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]);
-  if (hit) hit.click();
-});
+await tapCard(target1);
 await page.waitForTimeout(400);
 const scaleAfter = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
 ok("Echo grows with the bite (visible, not just banked)", scaleAfter > scaleBefore + 0.04, scaleBefore + " → " + scaleAfter);
 
-// ── feed the rest by always tapping the asked card ──
+// ── silence never unlocks a picture: the mic closes and waits for a tap ──
+await page.waitForFunction(() => /Where's the/.test(document.getElementById("bMain").textContent) && window.__mic.live === 1, null, { timeout: 12000 });
+await page.waitForTimeout(8600);
+t = await page.evaluate(() => ({ mic: !document.getElementById("micBtn").hidden, live: window.__mic.live, locked: document.getElementById("grid").classList.contains("locked"), sub: document.getElementById("bSub").textContent, fed: document.getElementById("plate").dataset.fed }));
+ok("a quiet turn closes the mic, keeps the pictures locked and shows the mic button", t.mic && t.live === 0 && t.locked && /Tap the mic/.test(t.sub) && /1\/5/.test(t.fed), JSON.stringify(t));
+await page.evaluate(() => document.getElementById("micBtn").click());   // it pulses, so a real tap, not a wait for it to hold still
+await sayWord();
+ok("…and the mic button listens again: the word still unlocks the pictures", await page.evaluate(() => !document.getElementById("grid").classList.contains("locked") && document.getElementById("micBtn").hidden));
+await tapCard(await asked());
+await page.waitForTimeout(1100);
+
+// ── feed the rest: say each word, then tap its picture ──
 for (let i = 0; i < 5; i++) {
+  const w = await asked();
+  if (!w) break;
+  await sayWord();
+  await tapCard(w);
   await page.waitForTimeout(1100);
-  const done = await page.evaluate(() => {
-    const b = document.getElementById("bMain").textContent;
-    const m = b.match(/Where's the (.+)\?/);
-    if (!m) return false;
-    const btns = [...document.querySelectorAll("#grid .cardBtn")];
-    const hit = btns.find((x) => x.querySelector(".w").textContent === m[1]);
-    if (hit) hit.click();
-    return !!hit;
-  });
-  if (!done) break;
 }
 await page.waitForTimeout(1400);
 t = await page.evaluate(() => ({
   end: document.getElementById("endOvl").classList.contains("show"),
   endSub: document.getElementById("endSub").textContent,
-
-  fedStore: JSON.parse(localStorage.getItem("sona.feed.v1") || "{}").fed || 0,
-  rot: window.Sona.rotRound(),
-  ring: window.Sona.todayRing().n,
-  stickers: Object.keys(window.Sona.stickersEarned ? window.Sona.stickersEarned() : {}).length,
 }));
 ok("5 feeds finish the round", t.end);
 // ── the ukulele concert: strumming Echo + floating notes + real plucks fired ──
@@ -117,48 +179,57 @@ t = await page.evaluate(() => ({
 }));
 ok("concert scene: Echo strums with floating notes", t.uke && t.notes >= 2);
 ok("the ukulele actually plays (plucks scheduled)", t.played);
+// Echo hops under the win sentence, and his box has to hold the whole hop: at
+// 120px he covered the middle of "discoveries" (1 Oct 2026). Measured at rest,
+// plus the hop's own reach.
+const hop = /@keyframes echoHop\{[^@]*?translateY\(-(\d+)px\) rotate\(-(\d+)deg\)/.exec(src) || [];
+const gap = await page.evaluate(([px, deg]) => {
+  const img = document.querySelector("#endOvl .echoWin img"), above = img.parentNode.previousElementSibling, was = img.style.animation;
+  img.style.animation = "none"; const r = img.getBoundingClientRect(); img.style.animation = was;
+  const a = deg * Math.PI / 180, reach = px + r.height / 2 * (Math.cos(a) + Math.sin(a) - 1), line = above.getBoundingClientRect();
+  return { above: above.id, shown: line.height > 0, reach, clear: r.top - reach - line.bottom };
+}, [+hop[1], +hop[2]]);
+ok("at the top of his hop, Echo stays clear of the sentence above him", gap.above === "endSub" && gap.shown && gap.reach >= 14 && gap.clear >= 0, JSON.stringify(gap));
 t = await page.evaluate(() => ({
-  end: document.getElementById("endOvl").classList.contains("show"),
-  endSub: document.getElementById("endSub").textContent,
   fedStore: JSON.parse(localStorage.getItem("sona.feed.v1") || "{}").fed || 0,
   rot: window.Sona.rotRound(),
   ring: window.Sona.todayRing().n,
   stickers: Object.keys(window.Sona.stickersEarned ? window.Sona.stickersEarned() : {}).length,
+  reps: window.Sona.weekReps ? window.Sona.weekReps(0) : null,
+  heard: window.__heard,
+  endSub: document.getElementById("endSub").textContent,
 }));
 ok("growth persisted (5 feeds banked)", t.fedStore === 5, "fed=" + t.fedStore);
-// SILENCE IS NEVER A REP. This run had no microphone, so Echo heard nothing —
-// tapping the right picture five times must NOT count as practice. The round
-// still ends warmly; it just doesn't advance anything.
-ok("a silent round does NOT advance the rotation or ring", t.rot === 0 && t.ring === 0, "rot=" + t.rot + " ring=" + t.ring);
+// A WORD SAID IN A GAME IS PLAY, NOT PRACTICE. Each heard word is one rep on
+// the week's count (Sona.gameRep), but the rotation, the day's ring and the
+// stickers belong to the practice page alone (the daily adventure's sticker
+// is a gift for the day, not the game's: see QUEST1).
+ok("a heard round does NOT advance the rotation or ring", t.rot === 0 && t.ring === 0, "rot=" + t.rot + " ring=" + t.ring);
 ok("…and earns no sticker", t.stickers === 0, String(t.stickers));
-ok("…and ends kindly without claiming silence was practice", /discoveries/i.test(t.endSub), t.endSub);
+ok("…but every word Echo heard is a rep on the week's count", t.heard >= 5 && (t.reps == null || t.reps >= 5), JSON.stringify({ heard: t.heard, reps: t.reps }));
+ok("…and ends kindly", /discoveries/i.test(t.endSub), t.endSub);
 ok("win copy offers the earned play celebration", /concert/i.test(t.endSub), t.endSub);
 
 // ── growth survives a reload (Echo visibly bigger) ──
 await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(900);
 t = await page.evaluate(() => document.getElementById("echo").style.transform);
-// …and the other half of the rule: a round Echo actually HEARD does count.
+// ── a grown-up's "Not now" goes home: Echo needs to hear the word to eat ──
 {
   const ctx2 = await browser.newContext();
+  await ctx2.addInitScript(fakeMic);
+  await ctx2.addInitScript(() => { if (!localStorage.getItem("seeded")) { localStorage.setItem("seeded", "1"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "4", focusSounds: ["R"], onboarded: true, voiceOn: false })); } });
   const pg2 = await ctx2.newPage();
-  await pg2.goto("http://localhost:8145/today.html");
-  await pg2.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "5", focusSounds: ["R"], onboarded: true, voiceOn: false })));
-  await pg2.goto("http://localhost:8145/arcade-feed.html?heard=5");
-  await pg2.waitForTimeout(700);
-  for (let i = 0; i < 6; i++) {
-    const hit = await pg2.evaluate(() => {
-      const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
-      if (!m) return false;
-      const btn = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]);
-      if (btn) btn.click();
-      return !!btn;
-    });
-    if (!hit) break;
-    await pg2.waitForTimeout(900);   // the bite animation has to finish before the next ask paints
-  }
-  await pg2.waitForTimeout(1500);
-  const heard = await pg2.evaluate(() => ({ rot: Sona.rotRound(), ring: Sona.todayRing().n, title: document.getElementById("endTitle").textContent }));
-  ok("a loudness-only round never advances measured practice", heard.rot === 0 && heard.ring === 0, JSON.stringify(heard));
+  await pg2.goto("http://localhost:8145/arcade-feed.html"); await pg2.waitForTimeout(500);
+  await pg2.locator("#startBtn").click();
+  await pg2.waitForTimeout(400);
+  const primer = await pg2.evaluate(() => ({ shown: document.getElementById("primer").classList.contains("show"), opens: window.__mic.opens, promise: document.getElementById("micPromise").textContent, want: Sona.MIC_PROMISE }));
+  ok("with no mic yet, a grown-up is asked first, with the shared mic promise, before the phone is", primer.shown && primer.opens === 0 && primer.promise === primer.want, JSON.stringify(primer));
+  await pg2.locator("#primerNo").click();
+  await pg2.waitForTimeout(200);
+  ok("…\"Not now\" explains Echo needs to hear the word, and offers the way home", /needs to hear you/.test(await pg2.locator("#primer").innerText()) && await pg2.evaluate(() => window.__mic.opens === 0 && !/Where's the/.test(document.getElementById("bMain").textContent)));
+  await pg2.locator("#byeBtn").click();
+  await pg2.waitForURL(/today\.html/);
+  ok("…and Okay goes home", /today\.html/.test(pg2.url()));
   await ctx2.close();
 }
 
@@ -167,16 +238,20 @@ ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test
 // Home suggests an age shelf, but never starts a game for the child.
 async function readLibrary(){return page.evaluate(()=>({
   group:document.querySelector('.activity-group').dataset.group,
-  games:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
-  playable:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
-  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming soon/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
+  games:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
+  playable:[...document.querySelectorAll('#activityGroups .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
+  comingSoon:[...document.querySelectorAll('#activityGroups .game-card')].filter(card=>card.disabled&&/coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
   hero:!!document.getElementById('goBtn'),
   trio:Sona.dailyGames()
 }));}
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 let deck=await readLibrary();
 ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
-ok("Home shows all eight titles with six playable and two coming soon",deck.games.length===8&&deck.playable.length===6&&deck.playable.includes('feed')&&JSON.stringify(deck.comingSoon)===JSON.stringify(['bubbles','peekaboo']),JSON.stringify(deck));
+// The Say & Play games are Coming soon until each is rebuilt (Travis, 26 Sep
+// 2026); the six first games, Feed Echo among them, always play.
+const PARKED=['peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
+// Since 19 Oct 2026 a Coming soon game has no card on Home at all.
+ok("Home shows the 29 titles but the parked ones: the six first games, Rise Up and any rebuilt ones, all playable, and no Coming soon card",deck.games.length===29-PARKED.length&&deck.playable.length===deck.games.length&&['feed','slice','tiles','stack','run','glide'].every(k=>deck.playable.includes(k))&&deck.comingSoon.length===0&&!PARKED.some(k=>deck.games.includes(k)),JSON.stringify(deck));
 ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));
 await page.evaluate(()=>Sona.dailyFinish(10));
 await page.reload();await page.waitForTimeout(900);deck=await readLibrary();
@@ -191,6 +266,7 @@ async function audioFixture() {
   const ctx=await browser.newContext();
   await ctx.addInitScript(()=>{
     localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'4',focusSounds:['R'],onboarded:true,voiceOn:true,soundOn:true,volume:0.8}));
+    localStorage.setItem('sona.micok','1');
     const h=window.__feedAudio={hidden:false,requests:[],sources:[],spoken:0,cancelled:0,resumes:0,suspends:0};
     Object.defineProperty(document,'hidden',{configurable:true,get:()=>h.hidden});
     h.hide=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};
@@ -209,6 +285,7 @@ async function audioFixture() {
     speechSynthesis.speak=()=>{h.spoken++;};speechSynthesis.cancel=()=>{h.cancelled++;};
   });
   const pg=await ctx.newPage();pg.setDefaultTimeout(3000);await pg.goto('http://localhost:8145/arcade-feed.html');
+  await pg.locator('#startBtn').click();
   await pg.waitForFunction(()=>__feedAudio.requests.length>0);return{ctx,pg};
 }
 for(const mode of ['pcm','fallback','late']){

@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { FREE_MODE } from "@/lib/pricing";
-import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, type Spots } from "@/lib/charter";
+// On its own line: tests/freetest.mjs pins the FREE_MODE import word for word.
+import { WEB_SALES } from "@/lib/pricing";
+import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, MONTHLY_PRICE, type Spots } from "@/lib/charter";
 
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
@@ -20,6 +22,16 @@ import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDAR
  * times in seven weeks and twice this page had to be rebuilt from scratch
  * because whoever flipped it deleted the half they were leaving. Flip the
  * boolean — do not rewrite copy, and do not delete the branch you are not in.
+ *
+ * A SECOND SWITCH, UNDER THE FIRST: `WEB_SALES` (Travis, 1 Oct 2026: "i dont
+ * want them paying on the website"). While it is false a family buys Premium
+ * only in the iPhone and iPad app, so every line here that quotes the web
+ * price — the charter line, the spots left, the per-month reading, "3 free
+ * days", the monthly plan, "secure checkout by Stripe" — is about a checkout
+ * that refuses. Each of those lines has a twin with NO dollar figure (the
+ * iPhone's price is App Store Connect's; this repo never types it), chosen by
+ * APP_ONLY below. The priced copy stays in this file whole, for the same
+ * reason as above: selling on the web again is one boolean, not a rewrite.
  *
  * Meta-ad parents of kids 4–9 on the R sound, 90%+ on phones. Mobile-first
  * single column, centered on desktop. Design: "Sunrise Storybook" handoff
@@ -51,11 +63,13 @@ const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
 // on every surface. $59.99 / 12 = $4.9991, which is why the copy reads "under
 // $5 a month" and never "$4.99 a month": the rounded figure implies $59.88 a
 // year and is not true. Do not swap one in.
-// ONE PLAN as of 18 Sep 2026. $119.88 and "save $59.89" are gone with the
-// monthly tier: both existed ONLY as 12 x $9.99, so with no monthly plan to
-// compare against, a struck-through price would be an anchor against a number
-// nobody can buy. "Under $5 a month" survives because it is just $59.99 / 12
-// ($4.9991) — true with no second plan in sight, and never written as "$4.99".
+// TWO WAYS TO PAY since 1 Oct 2026: the yearly plan this card leads with, and
+// $9.99 a month charged today (MONTHLY_PRICE, the figure checkout charges),
+// named in one plain line under it. $119.88 and "save $59.89" did NOT come
+// back with monthly: the saving is $59.89 only while the charter price lasts,
+// so it would turn false at family fifty-one. "Under $5 a month" stays because
+// it is just $59.99 / 12 ($4.9991), never written as "$4.99" — and it always
+// says "billed once a year", so it cannot be read as the monthly plan's price.
 // THE PRICE IS NOT A CONSTANT ANY MORE — it is whichever tier the next buyer
 // will actually be charged, read from the same count /api/checkout reads. The
 // charter price for the first fifty families, then the standard price. A
@@ -64,46 +78,31 @@ const APP_STORE_URL = "https://apps.apple.com/us/app/sona-speech/id6785755867";
 // old struck-through $119.88.
 const YEARLY = CHARTER_PRICE;   // the launch-era default; PricingPaid renders from `spots`
 
+// Sona has a price, and the website is not where a family pays it. The third
+// state of every line the switches decide: Premium is named, with where it is
+// bought, and no figure. (While Sona is free the free copy wins, as it always
+// has; WEB_SALES means nothing then.)
+const APP_ONLY = !FREE_MODE && !WEB_SALES;
+
 // Ad-funnel signal: the app being opened. There was an InitiateCheckout/$59.99
 // arm for the paid era; no checkout starts on this page any more, so firing it
 // would be a lie to the ad platform. A purchase made later inside the app is
 // counted there, where it happens. The payload never carries a child's name.
 const TRACKER = `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`;
 
-// THIS IS THE ROOT AGAIN (Travis, 22 Oct 2026: "speaksona.com is only for
-// parents. I don't want to target therapists at all"). next.config.js
-// rewrites / here, and /families still answers for every link already out
-// there; the canonical below tells search engines the root is the page. It
-// lives at app/families rather than app/page.tsx because the 22 Sep move
-// kept it intact here, and a rewrite needs no second copy. Every purchase
-// surface keeps BOTH pricing states — the switch has flipped a dozen times
-// and hand-editing a price into a page is the one thing CLAUDE.md forbids.
-// A family reaching it through their SLP never sees it at all.
-const META_DESCRIPTION = FREE_MODE
-  ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
-  // No figure here: metadata is fixed at build, and the price moves with the
-  // charter count. The page body prints it, per request, from that count.
-  : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.";
+// THIS IS /families NOW, not the root. speaksona.com is the clinician page
+// (Travis, 22 Sep 2026: SLPs are the channel), and this page moved rather than
+// being rewritten so that every purchase surface keeps BOTH pricing states —
+// the switch has flipped eleven times and hand-editing a price into a page is
+// the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
+// a family reaching it through their SLP never sees it at all.
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
-  description: META_DESCRIPTION,
-  alternates: { canonical: "https://speaksona.com/" },
-  // The card a link to speaksona.com shows when a parent pastes it into a
-  // group chat. The image is the family one; og-slp.png says "for SLPs".
-  openGraph: {
-    type: "website",
-    siteName: "Sona",
-    url: "https://speaksona.com/",
-    title: "Sona — R-sound practice kids actually love",
-    description: META_DESCRIPTION,
-    images: [{ url: "https://speaksona.com/og-families.png", width: 1200, height: 630, alt: "Sona — R-sound practice kids actually love" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Sona — R-sound practice kids actually love",
-    description: META_DESCRIPTION,
-    images: ["https://speaksona.com/og-families.png"],
-  },
+  description: FREE_MODE
+    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free right now: every game, every sound, no card."
+    // No figure here: metadata is fixed at build, and the price moves with the
+    // charter count. The page body prints it, per request, from that count.
+    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Daily practice is free; Premium adds every game.",
 };
 
 /* ---------- shared bits ---------- */
@@ -251,14 +250,18 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 52px/1 ${B}` }}>Free</div>
         </div>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Daily practice and free games. No card, no trial, nothing to cancel.</div>
-        <Perks items={["Daily practice that really hears every rep", "Four free games to play after practice", "Progress you can see on your phone", "Works on iPhone, iPad and in any browser"]} />
+        <Perks items={["Daily practice that really hears every rep", "Free games and a free picture book after practice", "Progress you can see on your phone", "Works on iPhone, iPad and in any browser"]} />
         <CtaButton />
         <Steps steps={[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Practice today"]]} />
       </div>
       {/* PREMIUM — an upgrade made inside the app, so this card carries the
           price and no button of its own. The figures are the tier the next
           buyer is actually charged (lib/charter.ts, the count /api/checkout
-          reads), never a literal. */}
+          reads), never a literal.
+          That is the card while the website sells. While it does not
+          (APP_ONLY), PremiumInApp stands in its place and this one is left
+          exactly as it was, unrendered, for the day it sells again. */}
+      {APP_ONLY ? <PremiumInApp /> : (
       <div style={priceCard}>
         <div style={priceBadge}>{open ? `PREMIUM · ${CHARTER_LABEL.toUpperCase()} PRICE` : "PREMIUM · EVERY GAME"}</div>
         {open && (
@@ -273,24 +276,47 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 52px/1 ${B}` }}>{price}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
         </div>
-        {/* With one plan there is nothing to compare against, so the block
-            carries the per-month reading instead of a saving — the same
-            arithmetic a parent can do in their head, and the only claim here
-            that is not a price. */}
+        {/* The block carries the yearly plan's per-month reading, not a
+            saving — the same arithmetic a parent can do in their head. The
+            monthly plan gets its own plain line under it: its price, that it
+            is charged today, and that it has no free days. */}
         <div style={{ background: "#f2fbe4", border: "2px solid #58cc02", borderRadius: 16, padding: "11px 13px", margin: "12px 0 14px" }}>
           <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>{perMonth[0].toUpperCase() + perMonth.slice(1)}</div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>Billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
-        <Perks items={["Every game in the library, for every sound", "3 days free — nothing charged before day 3", "Every new game included as it ships", "Upgrade inside the app, whenever you want"]} />
+        <div style={{ fontSize: 13, lineHeight: 1.45, fontWeight: 700, color: MUTED, margin: "-4px 0 14px" }}>Or pay month by month: {MONTHLY_PRICE} a month, charged today.</div>
+        <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books as they come out, included", "Upgrade inside the app, whenever you want"]} />
         <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade inside Sona. On the web, secure checkout by Stripe; in the iPhone and iPad app, through the App Store at the price shown there.</div>
       </div>
+      )}
       {/* Families who arrived during a free era keep it free — a grandfather
           sweep ships with every return to pricing. This line is only true
-          while those sweeps exist: _grandfatherFreeEra4() ships in the build
-          that brought Premium, and if it ever doesn't, this sentence is the
-          false claim, not the code. */}
-      <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? Every game stays free for you — nothing to pay, nothing to do.</div>
+          while those sweeps exist: _grandfatherFreeEra5() ships in the build
+          that brought the paywall back (30 Sep 2026), and if a later return
+          ever doesn't carry its own, this sentence is the false claim, not
+          the code. */}
+      <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? Every game and book stays free for you — nothing to pay, nothing to do.</div>
     </>
+  );
+}
+
+// THE PREMIUM CARD WHILE THE WEBSITE DOES NOT SELL (Travis, 1 Oct 2026: "i
+// dont want them paying on the website"). No price, no charter line, no spots
+// left, no free days and no Stripe: none of those can be had here, and the
+// iPhone's price and trial length are App Store Connect's to state. It says
+// where Premium is bought and that it opens THERE: nothing links an Apple
+// purchase to a web browser, so this card must never read as "buy in the app,
+// play on the website".
+function PremiumInApp() {
+  return (
+    <div style={priceCard}>
+      <div style={priceBadge}>PREMIUM · EVERY GAME</div>
+      <div style={{ font: `800 26px/1.15 ${B}` }}>In the iPhone and iPad app</div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 700, color: MUTED, margin: "8px 0 16px" }}>Premium is bought in the Sona app on iPhone and iPad, at the price the App Store shows. It opens every game and every book in the app.</div>
+      <Perks items={["Every game and every book, for every sound", "New games and books as they come out, included"]} />
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}><AppStoreBadge /></div>
+      <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade in the app whenever you want. Daily practice and free games stay free in any browser.</div>
+    </div>
   );
 }
 
@@ -313,50 +339,62 @@ function PricingFree() {
   );
 }
 
-// Without this, Next prerenders the page ONCE at build (it reads no request
-// data), and in a paid state the charter price and spots-left count would be
-// frozen until the next deploy — $59.99 shown long after spot 50. A minute
-// matches charterSpots()'s own memo, and keeps the root (which the iOS shell
-// loads on every launch) served from cache rather than rendered per tap.
-export const revalidate = 60;
-
 export default async function Landing() {
-  // one Stripe read per regeneration (memoised a minute), so the count is at
-  // most a couple of minutes old; /api/checkout picks the tier at purchase
-  const spots: Spots = FREE_MODE
+  // one Stripe read per render (memoised a minute); the page is no-store, so
+  // this is the truth at the moment the parent is looking at it
+  // Asked only while the website sells: free, or app-only, there is no web
+  // price to pick a tier for, and nothing below prints one.
+  const spots: Spots = (FREE_MODE || APP_ONLY)
     ? { cap: CHARTER_CAP, taken: 0, left: 0, open: false, source: "fallback", at: Date.now() }
     : await charterSpots();
   const priceNow = spots.open ? CHARTER_PRICE : STANDARD_PRICE;
   const perMonthNow = spots.open ? CHARTER_PER_MONTH : STANDARD_PER_MONTH;
+  // Three states from here down: free, app-only (APP_ONLY: Premium named with
+  // where it is bought and no figure), and the website selling (the priced
+  // lines, which never render in the other two).
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
+  ) : APP_ONLY ? (
+    <>Free: daily practice and free games, no card. Every game and book with Premium, in the iPhone and iPad app.</>
   ) : (
-    <>Free: daily practice and free games, no card. Every game with Premium — {priceNow}/yr after 3 free days.</>
+    <>Free: daily practice and free games, no card. Every game and book with Premium — {priceNow}/yr after 3 free days.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
+  ) : APP_ONLY ? (
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game and book with Premium, in the iPhone and iPad app</>
   ) : (
-    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game with Premium, {priceNow}/yr</>
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game and book with Premium, {priceNow}/yr</>
   );
   // "Under $5 a month" used to be typed here, which was only true at the
   // charter tier; the reading now comes with the tier it belongs to.
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
-    : `No card to start · Premium ${perMonthNow} · Cancel anytime`;
+    : APP_ONLY
+    ? "No card to start · Premium is bought in the iPhone and iPad app"
+    // "billed once a year" rides with it (1 Oct 2026): this page names a real
+    // $9.99-a-month plan too, and a bare "under $5 a month" reads as that.
+    : `No card to start · Premium ${perMonthNow}, billed once a year · Cancel anytime`;
   const stickyTitle = FREE_MODE ? "Free to play" : "Start free";
   const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + free games";
   const faq: [string, string][] = [
-    ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
+    ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one: Rachel, MS, CF-SLP. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
     [
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
-        : `The free version costs nothing: daily practice and free games, with no card. Premium unlocks every game for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
+        : APP_ONLY
+        ? "The free version costs nothing: daily practice and free games, plus a free picture book, with no card. Premium unlocks every game and every book. It is bought in the Sona app on iPhone and iPad, at the price the App Store shows, and it opens there."
+        : `The free version costs nothing: daily practice and free games, plus a free picture book, with no card. Premium unlocks every game and every book for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
     ],
     [
       "What do I need to start?",
       FREE_MODE
         ? "An iPhone, iPad or any browser. Open Sona, pick your child's sound, and you're playing in minutes."
+        // "inside the app" would point a browser family at a plan screen that
+        // sells nothing; name the app that does
+        : APP_ONLY
+        ? "An iPhone, iPad or any browser. Start free, pick your child's sound, and you're practicing in minutes — Premium is there in the iPhone and iPad app whenever you want it."
         : "An iPhone, iPad or any browser. Start free, pick your child's sound, and you're practicing in minutes — Premium is there inside the app whenever you want it.",
     ],
     ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
@@ -368,42 +406,6 @@ export default async function Landing() {
       <script
         dangerouslySetInnerHTML={{
           __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
-        }}
-      />
-      {/* Labels for Google and AI assistants: who makes Sona, what the app
-          is, and the Quick answers. The FAQ is built from the same `faq`
-          array the page prints, so the two can never disagree — minus the
-          cost answer, which in a paid state carries the charter price, and a
-          price copied into a search engine's cache outlives spot fifty. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
-            {
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "Sona",
-              url: "https://speaksona.com/",
-              logo: "https://speaksona.com/icon-512.png",
-              sameAs: [APP_STORE_URL],
-            },
-            { "@context": "https://schema.org", "@type": "WebSite", name: "Sona", url: "https://speaksona.com/" },
-            {
-              "@context": "https://schema.org",
-              "@type": "MobileApplication",
-              name: "Sona",
-              url: "https://speaksona.com/",
-              operatingSystem: "iOS, Web",
-              applicationCategory: "EducationalApplication",
-              description: "Daily speech-sound practice games for kids ages 4–9, built with a licensed pediatric speech-language pathologist.",
-              installUrl: APP_STORE_URL,
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "FAQPage",
-              mainEntity: faq.filter(([q]) => q !== "What does it cost?").map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
-            },
-          ]).replace(/</g, "\\u003c"),
         }}
       />
       {/* Founding link (/?ff=<code>) forwards into onboarding for server-side validation. */}
@@ -454,7 +456,7 @@ export default async function Landing() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><StarBadge s={14} />Built with a licensed SLP</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><StarBadge s={14} />Built with Rachel, MS, CF-SLP</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><Mic s={14} />Really hears every rep</span>
           </div>
         </section>
@@ -462,23 +464,23 @@ export default async function Landing() {
         {/* 2 — CREDIBILITY */}
         <section style={{ background: "#fff", padding: "30px 20px" }}>
           <div style={kicker("#46a302")}>THE COACH BEHIND IT</div>
-          <h2 style={h2}>Built with a licensed pediatric speech-language pathologist</h2>
+          <h2 style={h2}>Built with Rachel, MS, CF-SLP</h2>
           <div style={{ background: CREAM, borderRadius: 24, padding: 18, position: "relative" }}>
             <div style={{ position: "absolute", top: 14, right: 14 }}><StarBadge s={40} /></div>
-            <div style={{ font: `700 17px ${B}`, marginBottom: 10, paddingRight: 46 }}>Designed by a licensed pediatric SLP — not an algorithm</div>
+            <div style={{ font: `700 17px ${B}`, marginBottom: 10, paddingRight: 46 }}>Designed by Rachel — not an algorithm</div>
             <p style={{ margin: "0 0 14px", fontSize: 14.5, lineHeight: 1.55, fontWeight: 600 }}>
-              A licensed speech-language pathologist designed every game, cue, and level in Sona — the same step-by-step R practice used with kids 4–9, without the waitlist.
+              Every game, cue, and level in Sona is her design — the same step-by-step R practice used with kids 4–9, without the waitlist.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026), so
-                  "licensed speech-language pathologist" is TRUE and is used across the
-                  app. She is a Clinical Fellow (master's complete, supervised year in
-                  progress); since 23 Sep 2026 the copy says "licensed" without the
-                  fellowship, on Travis's call, and never implies more. What must NEVER come back is the CCC: that is ASHA's
-                  certification, she does not hold it, and "board-certified (CCC-SLP)"
-                  shipped once on this very page as a checkable false claim about a
-                  trademarked credential. Pinned in iaptest.mjs. */}
-              {["Licensed speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026) and a
+                  master's, and is in her supervised Clinical Fellowship year. Since 1 Oct
+                  2026 (Travis) the line says exactly that: "Rachel, MS, CF-SLP, a pediatric
+                  speech-language pathologist in her clinical fellowship". What must NEVER
+                  come back is the CCC: that is ASHA's certification, she does not hold
+                  it, and "board-certified (CCC-SLP)" shipped once on this very page as a
+                  checkable false claim about a trademarked credential. Pinned in
+                  iaptest.mjs and shiptest.mjs. */}
+              {["Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
@@ -548,7 +550,7 @@ export default async function Landing() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
               <svg width="36" height="36" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="4" y="13" width="29" height="23" rx="7" fill="#1cb0f6" /><path d="M33 20 L43 14 V35 L33 29 Z" fill="#0d8ecc" /><circle cx="18" cy="24.5" r="7" fill="#0d8ecc" /><circle cx="18" cy="24.5" r="3" fill="#1cb0f6" /><rect x="21" y="-4" width="6" height="56" rx="3" fill="#fff6e9" transform="rotate(42 24 24)" /><circle cx="11" cy="18" r="2.4" fill="#fff" /></svg>
-              <div><div style={{ font: `700 15.5px ${B}` }}>No camera, ever</div><div style={{ fontSize: 12.5, lineHeight: 1.5, fontWeight: 600, opacity: 0.7 }}>Sona only listens during practice, with your permission.</div></div>
+              <div><div style={{ font: `700 15.5px ${B}` }}>No camera, ever</div><div style={{ fontSize: 12.5, lineHeight: 1.5, fontWeight: 600, opacity: 0.7 }}>Sona listens only during practice and optional voice-enabled games and books, with your permission.</div></div>
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
               <svg width="36" height="36" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="11" y="3" width="24" height="42" rx="7" fill="#58cc02" /><rect x="16" y="9" width="14" height="24" rx="4" fill="#46a302" /><rect x="19" y="36.5" width="8" height="4" rx="2" fill="#46a302" /><rect x="27" y="20" width="16" height="13" rx="4" fill="#ffd21c" /><path d="M31 20 v-3 a4 4 0 0 1 8 0 v3" stroke="#e0b000" strokeWidth="3.4" fill="none" /><circle cx="16" cy="7" r="2.2" fill="#fff" /></svg>
@@ -583,7 +585,7 @@ export default async function Landing() {
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 14px" }}>{finalFootnote}</div>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}><AppStoreBadge /></div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with Rachel, MS, CF-SLP
           </div>
         </section>
       </div>

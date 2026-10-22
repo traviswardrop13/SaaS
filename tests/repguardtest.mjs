@@ -3,10 +3,18 @@
 // These fixtures reject common non-speech; they cannot establish that speech
 // came from a child rather than a nearby adult or TV using one microphone.
 // Baseline: SONATEST_PUBLIC_ROOT=/tmp/sona-c1578b4/public node tests/repguardtest.mjs
+// SONA'S OWN MIC (13 Oct 2026): inside the iPhone app the page hears the
+// phone's own mic (tests/_nativemic.mjs), with no noise suppression and no
+// auto gain. The non-speech fixtures, the loud rooms and two recorded
+// targets run again on it (config.nm), the same signals fed into the phone.
+// That half is its own suite, tests/repguardowntest.mjs (REPGUARD_MIC=own):
+// both together outgrow run-all's five minutes a suite. REPGUARD_MIC=both
+// runs everything in one go.
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, ROOT, launchOpts } from './_env.mjs';
+import { nativeMic } from './_nativemic.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT;
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
@@ -70,7 +78,14 @@ function signalDevice(config){
     const RealAudio=window.Audio;
     window.Audio=function(src){const el=new RealAudio(src);try{const node=h.shared().createMediaElementSource(el);node.connect(h.ctx.destination);}catch(e){h.audioRouteError=String(e);}return el;};
     const play=HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play=function(){h.mediaPlays++;return play.call(this);};
+    HTMLMediaElement.prototype.play=function(){
+      h.mediaPlays++;
+      // Native generated PCM now travels in a WAV media element; count that
+      // prompt too while still routing its actual samples through the room.
+      if(this.src.indexOf('blob:')===0)h.voicePlays++;
+      h.shared().resume(); // media output is independent of the app's suspended Web Audio context
+      return play.call(this);
+    };
     const start=AudioBufferSourceNode.prototype.start;
     AudioBufferSourceNode.prototype.start=function(...args){
       if(this.buffer&&this.buffer.sampleRate===24000){
@@ -126,13 +141,7 @@ function signalDevice(config){
     if(first&&config.warm&&h.floorGain)h.floorGain.gain.setValueAtTime(1,ctx.currentTime+config.warm/1000);
     // config.room: a steady room ({kind:'pink'|'white'|'hum', db}) that every
     // mic hears from the moment it opens (seeded, looped 8s).
-    if(config.room){const n=ctx.sampleRate*8,b=ctx.createBuffer(1,n,ctx.sampleRate),x=b.getChannelData(0);let st=99,b0=0,b1=0,b2=0,e=0;
-      for(let i=0;i<n;i++){st=(Math.imul(st,1664525)+1013904223)>>>0;const w=st/2147483648-1,t=i/ctx.sampleRate;
-        if(config.room.kind==='pink'){b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;}
-        else if(config.room.kind==='hum'){let v=.3*w;for(let k=1;k<=6;k++)v+=Math.sin(2*Math.PI*120*k*t)/k;x[i]=v;}
-        else x[i]=w;
-        e+=x[i]*x[i];}
-      const g=Math.pow(10,config.room.db/20)/Math.sqrt(e/n);for(let i=0;i<n;i++)x[i]*=g;
+    if(config.room){const b=ctx.createBuffer(1,ctx.sampleRate*8,ctx.sampleRate);b.getChannelData(0).set(h.roomPcm(ctx.sampleRate));
       // config.room.drop: the room is that many dB quieter from the moment
       // the page has its one reading (a fan turned down before the child's
       // turn); h.reading keeps a copy of that reading as the page took it.
@@ -140,6 +149,19 @@ function signalDevice(config){
       const src=ctx.createBufferSource();src.buffer=b;src.loop=true;connect.call(src,level);connect.call(level,destination);src.start();}
     h.ctx=ctx;h.destination=destination;h.streams.push(destination.stream);return destination.stream;
   }});
+  h.roomPcm=rate=>{const n=rate*8,x=new Float32Array(n);let st=99,b0=0,b1=0,b2=0,e=0;
+    for(let i=0;i<n;i++){st=(Math.imul(st,1664525)+1013904223)>>>0;const w=st/2147483648-1,t=i/rate;
+      if(config.room.kind==='pink'){b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=b0+b1+b2+w*.1848;}
+      else if(config.room.kind==='hum'){let v=.3*w;for(let k=1;k<=6;k++)v+=Math.sin(2*Math.PI*120*k*t)/k;x[i]=v;}
+      else x[i]=w;
+      e+=x[i]*x[i];}
+    const g=Math.pow(10,config.room.db/20)/Math.sqrt(e/n);for(let i=0;i<n;i++)x[i]*=g;
+    return x;};
+  // config.nm: the same room, into the phone's own mic instead (the fake
+  // phone runs after this script, so it is handed over from a third one)
+  h.nativeRoom=()=>{if(config.room&&window.__nm)__nm.ctl.room(h.roomPcm(48000),48000);};
+  // what is live: a synthetic stream, or the phone's own mic
+  h.micLive=()=>h.streams.some(st=>st.getTracks().some(t=>t.readyState==='live'))||!!(window.__nm&&__nm.live());
   if(config.room&&config.room.drop){const watch=setInterval(()=>{const r=window.room;if(!r||!r.bg)return;clearInterval(watch);
     h.reading={rms:r.rms,bg:Array.from(r.bg)};h.dropped=true;
     for(const level of h.roomLevels||[])level.gain.setValueAtTime(Math.pow(10,-config.room.drop/20),level.context.currentTime);},5);}
@@ -150,10 +172,10 @@ function signalDevice(config){
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
     value.speechPerm=()=>Promise.resolve(true);
-    value.speechStart=()=>{if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
+    value.speechStart=(o)=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
     // With the voice on, the fake recognizer transcribes only what it heard:
     // Echo's R, if the room ever reached it while it was running.
-    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?'rrrr':''});};
+    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?h.heardWord:''});};
     value.isNativeApp=()=>!!config.native;
     const verdict=value.hearVerdict;
     value.hearVerdict=function(...args){h.verifyCalls++;return verdict.apply(value,args);};
@@ -166,7 +188,9 @@ function signalDevice(config){
     if(!config.voice)Object.keys(value.sfx||{}).forEach(key=>{if(typeof value.sfx[key]==='function')value.sfx[key]=()=>{};});
   }});
   h.play=async kind=>{
-    const ctx=h.ctx;let buffer;
+    // on Sona's own mic there is no synthetic stream: the signal is made in
+    // a context of its own and fed into the phone (__nm.ctl.feed)
+    const own=!!(config.nm&&window.__nm),ctx=own?(h.feedCtx||(h.feedCtx=new AC({sampleRate:48000}))):h.ctx;let buffer;
     if(kind.endsWith('.mp3'))buffer=await ctx.decodeAudioData(await(await fetch('/coach/say/'+kind)).arrayBuffer());
     else{
       const duration=1.8,rate=ctx.sampleRate;buffer=ctx.createBuffer(1,Math.ceil(rate*duration),rate);const x=buffer.getChannelData(0);
@@ -187,11 +211,13 @@ function signalDevice(config){
     // Positive files contain long demonstrations. Three seconds is enough to
     // exercise the actual recorded target without an automatic round advance.
     if(buffer.duration>3){const clipped=ctx.createBuffer(buffer.numberOfChannels,Math.floor(ctx.sampleRate*3),ctx.sampleRate);for(let ch=0;ch<buffer.numberOfChannels;ch++)clipped.copyToChannel(buffer.getChannelData(ch).subarray(0,clipped.length),ch);buffer=clipped;}
+    // the phone's queue holds ~150ms: wait that out too, so the tail is heard
+    if(own){__nm.ctl.feed(buffer.getChannelData(0).slice(),buffer.sampleRate);await new Promise(r=>setTimeout(r,Math.ceil(buffer.duration*1000)+300));return buffer.duration;}
     const node=ctx.createBufferSource();node.buffer=buffer;node.connect(h.destination);h.source=node;
     await new Promise(resolve=>{let ended=false;const finish=()=>{if(ended)return;ended=true;clearTimeout(timer);node.onended=null;try{node.stop();}catch{}resolve();};const timer=setTimeout(finish,Math.ceil(buffer.duration*1000)+500);node.onended=finish;node.start();});
     node.disconnect();h.source=null;return buffer.duration;
   };
-  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
+  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');localStorage.setItem('sona.micok','1');
   localStorage.setItem('sona.profile.v1',JSON.stringify(config.voice?{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:true,soundOn:true,volume:.8}:{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:false,soundOn:false,volume:0}));
   localStorage.setItem('sona.progress.v1',JSON.stringify({sessions:[],totals:{sessions:0,words:0,stars:0,coins:0,rounds:0},streak:{count:0,lastDate:''},bySound:{},stage:{},chests:{},missed:[]}));
   sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,sum:0,scores:[],pending:false,sound:config.sound,level:1,demo:false,games:['slice','tiles','stack','run','glide']}));
@@ -199,7 +225,21 @@ function signalDevice(config){
 async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+  // A sound-alone round's prompt carries Rachel's recorded sound inside
+  // Echo's words (HUMAN_CLIPS; since 29 Sep 2026 one cut take, joined on the
+  // phone). This suite is about what the mic hears AFTER the prompt, so her
+  // recording is absent here and the calm whole TTS line stands in, as
+  // before. micquietpracticetest and chargepacingtest cover the joined line.
+  await context.route(/\/coach\/say-echo\//,route=>route.fulfill({status:404,body:''}));
   await context.addInitScript(signalDevice,{sound:'R',native:false,...config});
+  // config.nm: inside the iPhone app on Sona's own mic. The fake phone keeps
+  // this suite's own fakes (no world, no audit) and counts any getUserMedia.
+  if(config.nm){
+    // audioSession: an iPhone's navigator.audioSession (the silent switch's
+    // "transient-solo", under which WebKit would refuse its own mic)
+    await context.addInitScript(nativeMic,{mode:'new',world:false,audit:false,audioSession:true,...config.nm});
+    await context.addInitScript(()=>{const h=window.__repHarness;if(h&&h.nativeRoom)h.nativeRoom();});
+  }
   const page=await context.newPage();page.setDefaultTimeout(config.voice||config.cpu?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   // config.cpu: DevTools CPU throttling (this many times slower).
   if(config.cpu)await(await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate',{rate:config.cpu});
@@ -214,25 +254,37 @@ async function completeSegment(page){
   await page.evaluate(()=>{if(engineAttempt&&engineAttempt.segment&&!engineAttempt.segment.closed)engineAttempt.segment.finish('done');});
   await page.waitForTimeout(150);
 }
+// on Sona's own mic: never getUserMedia, and every open the phone made is closed
+const OWN=" (Sona's own mic)";
+// which mics this run covers: the web mic (the default), Sona's own, or both
+const MICS=process.env.REPGUARD_MIC==='own'?[true]:process.env.REPGUARD_MIC==='both'?[false,true]:[false],WEB=MICS.includes(false);
+// (still open: the stream the page is listening on is the phone's)
+async function ownMic(page,label,open){const p=await page.evaluate(()=>({gum:__nm.gum,opened:__nm.opened,closed:__nm.closed,live:__nm.live(),own:!!(micStream&&micStream.sonaNative),held:__nm.as.held(),sets:__nm.as.sets.length,refused:__nm.as.refused}));
+  if(open)ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia)',p.gum===0&&p.opened>=1&&p.own&&!!p.live,p);
+  else ok(label+': heard on Sona\'s own mic (the phone\'s micOpen, never getUserMedia), and it closed',p.gum===0&&p.opened>=1&&p.opened===p.closed&&!p.live,p);
+  // the silent switch: practice ran under "transient-solo", never given back
+  ok(label+': under "transient-solo" throughout (every sound follows the silent switch)',p.held==='transient-solo'&&p.sets===1&&p.refused===0,p);}
 async function close(context,page){await page.evaluate(()=>{try{window.engineControl?.cancel();}catch{}try{__repHarness.ctx?.close();}catch{}}).catch(()=>{});await context.close();}
 try{
-  for(const kind of (process.env.REPGUARD_ONLY==='positive'?[]:['silence','tone','clicks','claps','breath','white noise','hum']))await scenario(kind,async()=>{
-    const{page,context,errors}=await fresh();
+  for(const own of MICS)for(const kind of (process.env.REPGUARD_ONLY==='positive'?[]:['silence','tone','clicks','claps','breath','white noise','hum']))await scenario(kind+(own?OWN:''),async()=>{
+    const K=kind+(own?OWN:'');
+    const{page,context,errors}=await fresh(own?{nm:{}}:{});
     try{
       const before=await snapshot(page);await page.evaluate(kind=>__repHarness.play(kind),kind);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),effects:__repHarness.effects,frames:__repHarness.frames,speechFrames:__repHarness.speechFrames,metrics:__repHarness.metrics,shapeFrames:SHAPE.frames,live:__repHarness.streams.some(s=>s.getTracks().some(t=>t.readyState==='live'))}));
-      ok(kind+': no counted repetition',state.reps===0,state);
-      ok(kind+': no outcomes, totals, streak, weekly tries, recording, rung or ring change',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
-      ok(kind+': quiet state releases the synthetic mic',state.quiet&&!state.live,state);
-      ok(kind+': no script error',errors.length===0,errors);
+      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),effects:__repHarness.effects,frames:__repHarness.frames,speechFrames:__repHarness.speechFrames,metrics:__repHarness.metrics,shapeFrames:SHAPE.frames,live:__repHarness.micLive()}));
+      ok(K+': no counted repetition',state.reps===0,state);
+      ok(K+': no outcomes, totals, streak, weekly tries, recording, rung or ring change',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
+      ok(K+': quiet state releases the '+(own?'phone\'s':'synthetic')+' mic',state.quiet&&!state.live,state);
+      if(own)await ownMic(page,K);
+      ok(K+': no script error',errors.length===0,errors);
     }finally{await close(context,page);}
   });
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('native transcript without voice',async()=>{
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('native transcript without voice',async()=>{
     const{page,context}=await fresh({native:true});
     try{
       const before=await snapshot(page);await page.waitForTimeout(500);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),verifyCalls:__repHarness.verifyCalls,texts:recognitionTexts,effects:__repHarness.effects}));
-      ok('zero detected tries cannot be rescued by a matching native transcript',state.reps===0&&state.quiet&&state.verifyCalls===0&&state.texts.includes('rrrr'),state);
+      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),verifyCalls:__repHarness.verifyCalls,texts:recognitionTexts,heard:__repHarness.heardWord,effects:__repHarness.effects}));
+      ok('zero detected tries cannot be rescued by a matching native transcript',state.reps===0&&state.quiet&&state.verifyCalls===0&&state.texts.includes(state.heard),state);
       ok('native zero-try transcript cannot create saved progress or clips',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
     }finally{await close(context,page);}
   });
@@ -243,7 +295,7 @@ try{
   // ever would. The child says nothing: prompt, a tap on Echo, the turtle,
   // an unprompted prompt mid-window (the idle nudge's call), then the quiet
   // screen's line. Sona must end with zero tries, no verdict and no clip.
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('voice on: Sona hears only itself',async()=>{
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('voice on: Sona hears only itself',async()=>{
     const{page,context,errors}=await fresh({voice:true,native:true});
     try{
       const before=await snapshot(page);
@@ -273,7 +325,7 @@ try{
   // mic hisses faintly at -70dBFS, as real ones do), and a window's reading
   // can only lower it. Rachel's recorded R, from 300, 500 and 700ms after the
   // prompt: at least the 2 tries it counted before the change, at every onset.
-  if(process.env.REPGUARD_ONLY!=='positive')for(const onset of [300,500,700])await scenario('voice on: a child answering '+onset+'ms after the prompt',async()=>{
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')for(const onset of [300,500,700])await scenario('voice on: a child answering '+onset+'ms after the prompt',async()=>{
     const{page,context,errors}=await fresh({voice:true,micDelay:300,floor:-70,child:{onset}});
     try{
       await page.evaluate(()=>{NEED=100;});
@@ -297,7 +349,7 @@ try{
   //    3 x ROOM_MAX, and the window learns the room in the child's first pause.
   // At least the 2 tries this recording counted before the change, each time.
   for(const [what,cfg] of [['250ms of zeros as the mic starts',{warm:250}],['400ms of zeros as the mic starts',{warm:400}],['the child saying 1s of R during the reading',{pre:1}]])
-    for(const onset of [300,500])if(process.env.REPGUARD_ONLY!=='positive')await scenario('voice on, '+what+', child answering '+onset+'ms after the prompt',async()=>{
+    for(const onset of [300,500])if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('voice on, '+what+', child answering '+onset+'ms after the prompt',async()=>{
       const{page,context,errors}=await fresh({voice:true,micDelay:300,floor:-70,child:{onset},...cfg});
       try{
         await page.evaluate(()=>{NEED=100;});
@@ -335,7 +387,7 @@ try{
   // prints the figures; what this page adds to it is pinned below (ONE
   // READING, WHOLE) and in speechevidencetest.
   const LOUD=[['tone',-40],['hum',-32],['white noise',-32],['breath',-32]];
-  for(const [load,cfg] of [['',{}],[' on a slow phone (6x CPU, 20fps)',{cpu:6,fps:20}]])
+  for(const [load,cfg] of [['',{}],[' on a slow phone (6x CPU, 20fps)',{cpu:6,fps:20}],[OWN,{nm:{}}]].filter(([,c])=>MICS.includes(!!c.nm)))
     if(process.env.REPGUARD_ONLY!=='positive')for(const [kind,db] of LOUD)await scenario(kind+' in a loud room'+load,async()=>{
       const{page,context,errors}=await fresh({room:{kind:'pink',db},...cfg});
       try{
@@ -349,6 +401,7 @@ try{
         const want=Math.pow(10,db/20);
         ok(kind+' in a loud room'+load+': the room (~'+want.toFixed(3)+') was measured as the room',state.room>want/2&&state.room<=Math.min(.03,want*1.5),state);
         ok(kind+' in a loud room'+load+': no counted repetition and no saved change',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
+        if(cfg.nm)await ownMic(page,kind+' in a loud room'+load);
         ok(kind+' in a loud room'+load+': no script error',errors.length===0,errors);
       }finally{await close(context,page);}
     });
@@ -365,7 +418,7 @@ try{
   //    the background is still the page's reading, every bin of it;
   //  - by 8dB, clearly quieter: the background is the quieter room's own
   //    reading, a whole one.
-  if(process.env.REPGUARD_ONLY!=='positive')for(const drop of [1.5,8])await scenario('a loud room '+drop+'dB quieter by the child\'s turn',async()=>{
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')for(const drop of [1.5,8])await scenario('a loud room '+drop+'dB quieter by the child\'s turn',async()=>{
     const{page,context,errors}=await fresh({room:{kind:'pink',db:-32,drop}});
     try{
       const s=await page.evaluate(()=>{const r=__repHarness.reading,cur=typeof room!=='undefined'?room:null,bg=cur&&cur.bg?Array.from(cur.bg):[],mean=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
@@ -376,38 +429,42 @@ try{
       ok('room '+drop+'dB quieter: no script error',errors.length===0,errors);
     }finally{await close(context,page);}
   });
-  if(process.env.REPGUARD_ONLY!=='positive')for(const kind of ['pink','white','hum'])await scenario('a '+kind+' room louder than any real one',async()=>{
-    const{page,context,errors}=await fresh({room:{kind,db:-20}});
+  if(process.env.REPGUARD_ONLY!=='positive')for(const own of MICS)for(const kind of ['pink','white','hum'])await scenario('a '+kind+' room louder than any real one'+(own?OWN:''),async()=>{
+    const{page,context,errors}=await fresh({room:{kind,db:-20},...(own?{nm:{}}:{})});
+    const K='a '+kind+' room at -20dBFS'+(own?OWN:'');
     try{
       const before=await snapshot(page);await page.waitForTimeout(2500);await completeSegment(page);
       const after=await snapshot(page),state=await page.evaluate(()=>({reps,room:room&&room.rms,quiet:!!document.querySelector('#quietOvl.show')}));
-      ok('a '+kind+' room at -20dBFS is never taken for the room',state.room==null,state);
-      ok('a '+kind+' room at -20dBFS: nothing counts, nothing is saved',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
-      ok('a '+kind+' room at -20dBFS: no script error',errors.length===0,errors);
+      ok(K+' is never taken for the room',state.room==null,state);
+      ok(K+': nothing counts, nothing is saved',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
+      if(own)await ownMic(page,K);
+      ok(K+': no script error',errors.length===0,errors);
     }finally{await close(context,page);}
   });
   // Every shipped target must remain detectable. An isolated short stop may
   // legitimately score unknown; detection does not assert clinical accuracy.
-  for(const sound of ['R','S','M','THV','N','V','L','F','TH','T','P','D','G','B','K','CH','J','SH','Z']){
-    const file=sound+'-demo.mp3';
-    await scenario(file,async()=>{
-    const{page,context,errors}=await fresh({sound});
+  // (R and S again on Sona's own mic: the negatives above are not vacuous there)
+  for(const [sound,own] of ['R','S','M','THV','N','V','L','F','TH','T','P','D','G','B','K','CH','J','SH','Z'].map(x=>[x,false]).concat([['R',true],['S',true]]).filter(([,o])=>MICS.includes(o))){
+    const file=sound+'-demo.mp3',F=file+(own?OWN:'');
+    await scenario(F,async()=>{
+    const{page,context,errors}=await fresh({sound,...(own?{nm:{}}:{})});
     try{
       await page.evaluate(()=>{NEED=100;});
       const duration=await page.evaluate(file=>__repHarness.play(file),file);
       const detected=await page.evaluate(()=>({reps,frames:SHAPE.frames,signal:__repHarness.speechFrames,totalFrames:__repHarness.frames,metrics:__repHarness.metrics,shape:shapeVerdict()}));
-      console.log('CONTROL '+file+': '+detected.reps+' tries, '+detected.frames+' shape frames, '+detected.shape);
-      ok(file+': real recorded target still produces a detected try and shape evidence',detected.reps>0&&detected.frames>=(sound==='R'||sound==='S'?12:1),{duration,...detected});
+      console.log('CONTROL '+F+': '+detected.reps+' tries, '+detected.frames+' shape frames, '+detected.shape);
+      ok(F+': real recorded target still produces a detected try and shape evidence',detected.reps>0&&detected.frames>=(sound==='R'||sound==='S'?12:1),{duration,...detected});
+      if(own)await ownMic(page,F,true);
       await completeSegment(page);
       if(sound==='R'||sound==='S'){
         const state=await snapshot(page);
-        ok(file+': verified practice still logs tries and outcomes',state.reps>0&&state.week>0&&(state.outcomes[sound]?.tries||state.outcomes[sound]?.attempts||0)>0,{detected,state});
+        ok(F+': verified practice still logs tries and outcomes',state.reps>0&&state.week>0&&(state.outcomes[sound]?.tries||state.outcomes[sound]?.attempts||0)>0,{detected,state});
       }
-      ok(file+': no script error',errors.length===0,errors);
+      ok(F+': no script error',errors.length===0,errors);
     }finally{await close(context,page);}
     });
   }
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('shared attempt and recording boundaries',async()=>{
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('shared attempt and recording boundaries',async()=>{
     const{page,context}=await fresh({shared:true});
     try{
       const result=await page.evaluate(async()=>{
@@ -428,6 +485,43 @@ try{
       ok('three voiced tries remain one sound check',result.o.tries===3&&result.o.attempts===1&&result.day.tries===3&&result.day.a===1&&result.week===3,result);
       ok('two sounds cannot save two recordings for one child on one day',result.first===true&&result.second===false&&result.mine===1,result);
       ok('a sibling gets one separate daily recording',result.other===true&&result.otherCount===1&&result.originalCount===1,result);
+    }finally{await close(context,page);}
+  });
+  // A removed child's saved tries never reach a child added later (30 Sep
+  // 2026). removeKid left the clips in the device's one table, and addKid gave
+  // the next child the lowest free slot — the removed child's — so the new
+  // sibling's Progress page played, and could share, the removed child's voice.
+  if(WEB&&process.env.REPGUARD_ONLY!=='positive')await scenario('a removed child takes their saved tries',async()=>{
+    const{page,context}=await fresh({shared:true});
+    try{
+      const result=await page.evaluate(async()=>{
+        const rows=()=>new Promise(res=>{const o=indexedDB.open('sona',1);o.onupgradeneeded=()=>o.result.createObjectStore('recordings',{keyPath:'id',autoIncrement:true});o.onsuccess=()=>{const g=o.result.transaction('recordings','readonly').objectStore('recordings').getAll();g.onsuccess=()=>{o.result.close();res(g.result.map(r=>r.kid||''));};};o.onerror=()=>res(null);});
+        const settle=async(slot)=>{for(let i=0;i<20;i++){const r=await rows();if(r&&!r.includes(slot))return r;await new Promise(t=>setTimeout(t,50));}return rows();};
+        const first=await Sona.saveRecording({sound:'R',word:'rabbit',blob:new Blob(['milo'],{type:'audio/webm'})});
+        const ana=Sona.addKid('Ana','5');
+        const anaSaved=await Sona.saveRecording({sound:'S',word:'sun',blob:new Blob(['ana'],{type:'audio/webm'})});
+        const anaListed=(await Sona.listRecordings()).length;
+        const removed=Sona.removeKid(ana);
+        const left=await settle(ana);
+        const ben=Sona.addKid('Ben','6');
+        const benListed=(await Sona.listRecordings()).length;
+        Sona.switchKid('');const firstListed=(await Sona.listRecordings()).length;
+        // A device that removed a child BEFORE this build: the record has no
+        // high-water mark and the clips were left behind under the removed
+        // slot, which is the next one the list itself would give out.
+        localStorage.setItem('sona.kids.v1',JSON.stringify({active:'',list:[{slot:'',name:'Milo'}]}));
+        await new Promise(res=>{const o=indexedDB.open('sona',1);o.onsuccess=()=>{const tx=o.result.transaction('recordings','readwrite');tx.objectStore('recordings').add({sound:'S',word:'sun',date:new Date().toISOString(),kid:'k2',blob:new Blob(['orphan'],{type:'audio/webm'})});tx.oncomplete=()=>{o.result.close();res();};};});
+        const cy=Sona.addKid('Cy','4');
+        const cyListed=(await Sona.listRecordings()).length;
+        const orphan=await settle(cy);
+        return{first,ana,anaSaved,anaListed,removed,left,ben,benListed,firstListed,cy,cyListed,orphan};
+      });
+      ok('the removed child had a saved try of their own',result.first===true&&result.anaSaved===true&&result.anaListed===1,result);
+      ok('removing a child deletes their saved tries from the phone',result.removed===true&&Array.isArray(result.left)&&!result.left.includes(result.ana),result);
+      ok('…and only theirs: the first child keeps their own',result.firstListed===1&&result.left.filter(k=>k==='').length===1,result);
+      ok('a child added after a removal gets a new slot, never the removed one',result.ana==='k2'&&result.ben==='k3',result);
+      ok('…and lists no saved tries',result.benListed===0,result);
+      ok('a slot an older build left clips under is cleared before its new child sees them',result.cyListed===0&&Array.isArray(result.orphan)&&!result.orphan.includes(result.cy),result);
     }finally{await close(context,page);}
   });
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

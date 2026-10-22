@@ -50,13 +50,20 @@ await new Promise((r) => srv.listen(8191, r));
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
+// A "this must NOT appear" assertion has to read CODE, not prose. Twice now a
+// comment explaining why something was removed has tripped the check guarding
+// its removal — the tombstone is not the corpse. Strip comments first.
+const noComments = (src) => src
+  .replace(/<!--[\s\S]*?-->/g, " ")      // html
+  .replace(/\/\*[\s\S]*?\*\//g, " ")     // block
+  .replace(/(^|[^:])\/\/[^\n]*/g, "$1"); // line, without eating https://
 
 async function page() {
   const ctx = await browser.newContext();
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8191/today.html");
   await pg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done");
     Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], practicePosition: "i", dailyGoal: 15, onboarded: true });
   });
   return { ctx, pg };
@@ -82,6 +89,53 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   ok("…the word position", after.pos === "f", JSON.stringify(after));
   ok("…and the daily rep goal the jar fills to", after.goal === 40, JSON.stringify(after));
   await ctx.close();
+}
+
+// ── 1b. …and the position reaches the words the practice page asks for ──
+// practicePos() returning "f" proved only the reader. The practice page's word
+// step (ladderContent's word rung) and sentence step (gamecontent.js) each
+// chose a position of their own, and neither was this one: End-of-word
+// homework still asked for "rabbit" and "I see a rabbit." Travis, 30 Sep 2026:
+// the position must actually drive the practice page, homework first, then the
+// family's setting. The games keep start-of-word words on purpose.
+// 1 Oct 2026: a family can pick only the start of a word for now
+// (Sona.FAMILY_POSITIONS), so a Middle saved earlier asks for start-of-word
+// words; homework's own position is untouched.
+{
+  const { ctx, pg } = await page();
+  await pg.addScriptTag({ url: "/gamecontent.js" });   // charge.html loads it; today.html does not
+  const st = await pg.evaluate((c) => {
+    const at = (sound, rung) => {
+      const pos = {}; Sona.WORDS[sound].forEach((w) => { pos[w.w] = w.pos || "i"; });
+      return Sona.ladderContent(sound, Sona.LADDER.indexOf(rung)).map((x) => ({ t: x.t, word: x.word, pos: pos[x.word] }));
+    };
+    const read = (sound) => ({ pos: Sona.practicePos(), word: at(sound, "word"), sent: at(sound, "sentence") });
+    const out = { sc: !!(window.SonaContent && SonaContent.sentences) };
+    eval(c);                                         // homework: S at End; the family is on Beginning
+    out.hw = read("S");
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    Sona.saveProfile({ practicePosition: "m" });     // no homework; the family's setting says Middle, from before it was closed
+    out.fam = read("R");
+    return out;
+  }, CACHE());
+  const all = (xs, p) => xs.length > 0 && xs.every((x) => x.pos === p);
+  const show = (xs) => JSON.stringify(xs.map((x) => x.t + " [" + x.pos + "]"));
+  // a sentence built by gamecontent.js is a frame around the word; the bare
+  // word is ladderContent's fallback for a page without it, which this is not
+  const framed = (xs) => xs.every((x) => x.t !== x.word && x.t.indexOf(x.word) >= 0);
+  ok("the sentence step is gamecontent.js's, not the bare-word fallback", st.sc && framed(st.hw.sent) && framed(st.fam.sent), show(st.hw.sent));
+  ok("homework at End: every sentence is built on an End word", st.hw.pos === "f" && all(st.hw.sent, "f"), show(st.hw.sent));
+  ok("…and so is every word at the word step", all(st.hw.word, "f"), show(st.hw.word));
+  ok("no homework, family's old Middle setting: every sentence is built on a start-of-word word (Middle is not open to families yet)", st.fam.pos === "i" && all(st.fam.sent, "i"), show(st.fam.sent));
+  ok("…and so is every word at the word step", all(st.fam.word, "i"), show(st.fam.word));
+  await ctx.close();
+
+  // Feed Echo, Bubble Pop and the Say & Play games (Hoops) ask for
+  // start-of-word words whatever the setting says (Travis, 30 Sep 2026): which
+  // positions suit a three-year-old's game is a separate call, Rachel's.
+  const gameSrc = { "arcade-feed.html": /S\.wordsFor\(sound,\s*"i"\)/, "simple-play.js": /S\.wordsFor\(sound,\s*"i"\)/, "sayplay.js": /S\.wordsFor\(sound,\s*"i"\)/ };
+  const drifted = Object.keys(gameSrc).filter((f) => !gameSrc[f].test(noComments(readFileSync(ROOT + "/" + f, "utf8"))));
+  ok("the games keep start-of-word words", drifted.length === 0, "now reading another position: " + drifted.join(", "));
 }
 
 // ── 2. the date window is real in both directions ──
@@ -127,6 +181,57 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   await ctx.close();
 }
 
+// Named homework wins even when a word could be on a themed court/pit.
+{
+  const {ctx,pg}=await page();
+  const result=await pg.evaluate((cache)=>{
+    const free={hoops:Sona.gameWords("hoops","S").map(w=>w.w),dino:Sona.gameWords("dino","S").map(w=>w.w)};
+    eval(cache);
+    const assigned={hoops:Sona.gameWords("hoops","S"),soccer:Sona.gameWords("soccer","S"),dino:Sona.gameWords("dino","S"),pool:Sona.wordsFor("S","i").map(w=>w.w),unassigned:Sona.gameWords("dino","R").map(w=>w.w)};
+    localStorage.removeItem(Sona.kkey("sona.homework.v1"));
+    return {free,assigned,restored:Sona.gameWords("dino","S").map(w=>w.w)};
+  },CACHE({words:["bus","glass"]}));
+  ok("Hoops and Dino have themed words without named homework",result.free.hoops.join() === "sock"&&result.free.dino.join()==="sand,sun",JSON.stringify(result));
+  ok("named homework disables every game's themes for its assigned sound",result.assigned.hoops.length===0&&result.assigned.soccer.length===0&&result.assigned.dino.length===0&&result.assigned.pool.length===2&&result.assigned.pool.every(w=>["bus","glass"].includes(w)),JSON.stringify(result.assigned));
+  ok("homework cannot disable themes for another sound, and removing it restores themes",result.assigned.unassigned.join()==="rock"&&result.restored.join()==="sand,sun",JSON.stringify(result));
+  await ctx.close();
+}
+
+// ── 3b. the cards between a game's rounds follow the assignment too ──
+// (Travis, 1 Oct 2026: "start with isolation then ree rah roh then rot".)
+// Fruit Slice's card may now ask a syllable, then a short word. "ree" is an R
+// at the START of a syllable: when the therapist set the end of a word, or
+// "er, ar, or", that is a different target from hers. So under that homework
+// the cards skip the syllable step: the sound, then one of the homework's own
+// words if it names any. Read on the game's own page, through the one reader
+// its card calls (Sona.gameAsk). What those cards should ask is Rachel's call.
+{
+  const { ctx, pg } = await page();
+  // the grown-up picked the top step, so the word card is open to this child
+  await pg.evaluate(() => Sona.saveProfile({ gameLevel: "word" }));
+  const asks = async (over) => {
+    await pg.evaluate(over ? CACHE(over) : `localStorage.removeItem(Sona.kkey("sona.homework.v1"))`);
+    await pg.goto("http://localhost:8191/arcade-slice.html?from=charge");
+    await pg.waitForFunction(() => window.Sona && window.SonaContent);
+    return pg.evaluate(() => ({ pos: Sona.practicePos(), top: Sona.gameTop("R"), t: [0, 1, 2].map((c) => Sona.gameAsk("R", c).text) }));
+  };
+  const syl = (t) => /^r(ah|ee|oo|oh|ay)$/.test(t);
+  let a = await asks({ sounds: ["R"], pos: "f", words: ["car", "star"] });
+  ok("end-of-word homework: the game's cards stay on the sound, then ask one of the homework's own words",
+    a.pos === "f" && a.t[0] === "rrrr" && a.t[1] === "rrrr" && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
+  ok("…and never a start-of-word syllable", !a.t.some(syl), JSON.stringify(a.t));
+  a = await asks({ sounds: ["R"], pos: "v", words: null });
+  ok("\"er, ar, or\" homework that names no words: every card stays on the bare sound",
+    a.pos === "v" && a.top === 0 && a.t.join() === "rrrr,rrrr,rrrr", JSON.stringify(a));
+  a = await asks({ sounds: ["R"], pos: "i", words: ["rain"] });
+  ok("start-of-word homework keeps the syllable step, and its word card asks the homework's word, not the app's",
+    syl(a.t[1]) && a.t[2] === "rain", JSON.stringify(a));
+  a = await asks(null);
+  ok("with no homework the same child gets the app's own steps: the sound, a syllable, then rot",
+    a.pos === "i" && a.top === 2 && syl(a.t[1]) && a.t[2] === "rot", JSON.stringify(a));
+  await ctx.close();
+}
+
 // ── 4. the sync reports a TOTAL, never a delta ──
 // A retried request must not be able to inflate a child's practice, the same
 // reason mintCoins() derives from the day's count instead of incrementing.
@@ -165,13 +270,7 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
 }
 
 // ── 6. server-side contracts ──
-// A "this must NOT appear" assertion has to read CODE, not prose. Twice now a
-// comment explaining why something was removed has tripped the check guarding
-// its removal — the tombstone is not the corpse. Strip comments first.
-const noComments = (src) => src
-  .replace(/<!--[\s\S]*?-->/g, " ")      // html
-  .replace(/\/\*[\s\S]*?\*\//g, " ")     // block
-  .replace(/(^|[^:])\/\/[^\n]*/g, "$1"); // line, without eating https://
+// (noComments, defined at the top, keeps these reading code, not prose.)
 {
   const hwLib = readFileSync(ROOT + "/../lib/homework.ts", "utf8");
   const devApi = readFileSync(ROOT + "/../app/api/homework/route.ts", "utf8");

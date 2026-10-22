@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { APP_READY, LAUNCH_NOTE } from "@/lib/launch";
 
 /**
  * Magic-link auth for the free SLP master account — the app's first real login.
@@ -379,7 +380,10 @@ export async function sendMagicEmail(
           `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
           `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
           `</ol>` +
-          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com/slp-login and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
+          // While the family app is not out (lib/launch.ts), the clinician
+          // hears it here, in the email they get anyway (25 Sep 2026).
+          (APP_READY ? "" : `<p style="margin-top:22px;"><b>P.S.</b> ${LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families")}</p>`) +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
         /**
          * A PLAIN-TEXT PART, because an HTML-only email scores worse with
@@ -395,7 +399,8 @@ export async function sendMagicEmail(
           "1. Add a child - initials are enough. You pick the sound and the position.\n" +
           "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
           "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
-          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com/slp-login and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
+          (APP_READY ? "" : "P.S. " + LAUNCH_NOTE.replace(/^Sona/, "The Sona app for families") + "\n\n") +
+          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
       }),
     });
     /**
@@ -418,14 +423,15 @@ export async function sendMagicEmail(
 }
 
 /**
- * One Resend call for the two emails below. sendMagicEmail keeps its own copy
+ * One Resend call for the two emails below, and for the Practice Board's
+ * confirmation email (lib/board.ts, 11 Oct 2026). sendMagicEmail keeps its own copy
  * on purpose — its wording and its log line are pinned, and it is the sign-in
  * door. `logBody` is false for any email addressed to someone who is not a
  * Sona account holder: Resend's refusal text can quote the recipient, and a
  * parent's address must not land in a server log (it is used for one send
  * and kept nowhere).
  */
-async function resendSend(
+export async function resendSend(
   msg: { to: string; subject: string; html: string; text: string },
   label: string,
   logBody: boolean,
@@ -464,7 +470,7 @@ const FRAME = "font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;c
  * clinician MAY type the parent's email, and Sona sends this ONE email with
  * the family's join link. The address is used for this send and nothing
  * else: the invite route passes it straight here, it is never stored, never
- * logged, never sent to /api/lead or Kit — a parent joins the list only by
+ * logged, never sent to /api/lead or the email list — a parent joins the list only by
  * typing their own email under the consent line on join.html.
  *
  * NO CHILD DATA AT ALL — not even the invite's label. The label is initials a

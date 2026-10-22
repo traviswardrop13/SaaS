@@ -4,19 +4,24 @@ import { useEffect, useState } from "react";
 
 /**
  * Post-checkout confirmation. Stripe redirects here with ?session_id=… after a
- * successful subscription start. Sona is $9.99/mo or $59.99/yr with a 3-day free trial, so
- * this page's real job is defusing the one fear every trial buyer has — "I'll
- * forget and get billed" — by showing the LITERAL first-charge date off the
- * real Stripe subscription. If the read-back is unreachable we fall back to
- * honest client-side math: a 3-day trial started now ends 3 days from now.
+ * successful subscription start. Sona is the yearly plan with a 3-day free
+ * trial, or $9.99 a month charged at purchase (back on sale 1 Oct 2026), so
+ * this page's real job for a yearly buyer is defusing the one fear every
+ * trial buyer has — "I'll forget and get billed" — by showing the LITERAL
+ * first-charge date off the real Stripe subscription, and for a monthly buyer
+ * saying plainly that the first month was charged. Which of the two it is
+ * comes from Stripe's answer, never from the address.
  */
 
+// only a fallback for the conversion event's value when Stripe's answer has
+// no amount; what a parent reads always comes from Stripe
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
-// CASELOAD_PLAN in lib/caseload.ts, written out because that module is
-// server-only (Stripe, the store) and cannot ride into a client bundle.
-// tests/caseloadtest.mjs fails if the two ever differ.
+// CASELOAD_PLAN and SELF_PLAN in lib/caseload.ts, written out because that
+// module is server-only (Stripe, the store) and cannot ride into a client
+// bundle. tests/caseloadtest.mjs fails if they ever differ.
 const CASELOAD_PLAN_ID = "slp-caseload";
+const SELF_PLAN_ID = "slp-self";
 
 type Info = {
   amountCents: number | null;
@@ -42,7 +47,6 @@ export default function SubscribeSuccess() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fetched, setFetched] = useState(false);
   const [paid, setPaid] = useState(false);
-  const [appCode, setAppCode] = useState<string>("");
   const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [charter, setCharter] = useState<boolean>(false);
   const [caseload, setCaseload] = useState<boolean>(false);
@@ -50,8 +54,8 @@ export default function SubscribeSuccess() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const sessionId = q.get("session_id") || "";
-    const planQ: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
-    setPlan(planQ);
+    const planUrl: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
+    setPlan(planUrl);
     // the tier the checkout actually applied rides back on the URL; the
     // charged amount itself comes from Stripe below, so this only chooses
     // a sentence, never a number
@@ -75,10 +79,19 @@ export default function SubscribeSuccess() {
         // the server on every family device — not whichever browser this
         // session id is opened in. Nothing is written, no code is minted and
         // no purchase is reported: this was not a family's purchase.
-        if (j.plan === CASELOAD_PLAN_ID) {
+        if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID) {
           setCaseload(true);
           return;
         }
+        // WHICH PLAN, FROM STRIPE (1 Oct 2026). The address said so until
+        // now, and with monthly on sale again that is a sentence about money
+        // taken from a URL: ?plan=monthly on a yearly receipt printed
+        // "$59.99/month", and a monthly receipt opened without it told a
+        // family charged today "$0 charged". The subscription's own interval
+        // is the fact; the address only picks the words shown while this
+        // answer is on its way.
+        const planQ: "annual" | "monthly" = j.interval === "month" ? "monthly" : j.interval === "year" ? "annual" : planUrl;
+        setPlan(planQ);
         setInfo({ amountCents: j.amountCents ?? null, trialEnd: j.trialEnd ?? null, email: j.email ?? null });
         setPaid(true);
 
@@ -96,25 +109,10 @@ export default function SubscribeSuccess() {
         } catch {
           // ignore — non-blocking
         }
-        // Mint the app hand-off code: the ad funnel buys HERE, then downloads
-        // the iOS app — the move-in code carries the purchase into the app so
-        // no paywall ever shows there. Best-effort (no KV → email restore).
-        try {
-          const subStr = localStorage.getItem("sona.sub.v1");
-          if (subStr) {
-            const blob = JSON.stringify({ app: "sona", v: 1, data: { "sona.sub.v1": subStr } });
-            fetch("/api/pair", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ data: blob }),
-            })
-              .then((r) => r.json())
-              .then((p: { ok?: boolean; code?: string }) => { if (p?.ok && p.code) setAppCode(p.code); })
-              .catch(() => {});
-          }
-        } catch {
-          // ignore — non-blocking
-        }
+        // No app hand-off code any more (2 Oct 2026): the app's first screen no
+        // longer takes one (Travis: "take off moving from another phone enter
+        // your code"). The plan reaches the app through the email it was
+        // bought with: Settings › Restore, which asks Stripe.
         // Conversion events fire on a CONFIRMED purchase only. Firing them on
         // mount also meant every stray load of this URL was reported to Meta
         // as a sale, which poisons the ad optimiser as surely as it poisoned
@@ -155,8 +153,9 @@ export default function SubscribeSuccess() {
           This is a clinician&apos;s plan
         </h1>
         <p className="mt-3 max-w-md text-lg text-gray-600">
-          Sona Premium for your caseload covers the families who join through the clinician&apos;s
-          link, on their own phones. It doesn&apos;t switch Premium on in this browser.
+          A clinician&apos;s Premium reaches their own phone by a link from their dashboard,
+          and their caseload&apos;s families through the clinician&apos;s link. It doesn&apos;t
+          switch Premium on in this browser.
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <a
@@ -228,7 +227,9 @@ export default function SubscribeSuccess() {
               <div className="text-sm text-gray-600">
                 {plan === "annual"
                   ? <>Full access starts now — <strong>$0 charged</strong>.</>
-                  : <>Full access starts now — <strong>{fmtMoney(amount)}/month</strong>, cancel anytime.</>}
+                  // the monthly plan was charged at checkout: say so, with the
+                  // amount Stripe reports (the Terms promise this page shows it)
+                  : <>Full access starts now. <strong>{fmtMoney(amount)} was charged today</strong>, and again each month until you cancel.</>}
               </div>
             </div>
           </div>
@@ -239,7 +240,7 @@ export default function SubscribeSuccess() {
                 <div className="font-display font-extrabold text-gray-900">{fmtDate(trialEnd)}</div>
                 <div className="text-sm text-gray-600">
                   First charge: <strong>{fmtMoney(amount)}/year</strong> — only if you keep Sona.
-                  {charter && <> Charter price, locked in for as long as you keep it — regular price $99.99/yr.</>}
+                  {charter && plan === "annual" && <> Charter price, locked in for as long as you keep it — regular price $99.99/yr.</>}
                 </div>
               </div>
             </div>
@@ -265,25 +266,12 @@ export default function SubscribeSuccess() {
             <strong>1.</strong> Download <strong>Sona Speech</strong> on the App Store
           </li>
           <li>
-            <strong>2.</strong> Open it and tap <strong>&ldquo;Have a code?&rdquo;</strong> on the first screen
+            <strong>2.</strong> Open it and set it up for your child
           </li>
           <li>
-            <strong>3.</strong>{" "}
-            {appCode ? (
-              <>
-                Enter{" "}
-                <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
-                — your plan comes with you, and set-up happens in the app. It
-                works once and expires in 48 hours; after that your email still
-                restores it from <strong>Settings → Restore access</strong>.
-              </>
-            ) : (
-              <>
-                Enter the 6-letter code that appears here in a few seconds. If it
-                doesn&apos;t, no problem — your email works too: in the app,{" "}
-                <strong>Settings → Restore access</strong>.
-              </>
-            )}
+            <strong>3.</strong> Tap <strong>Grown-ups</strong>, then <strong>Restore</strong>, and enter{" "}
+            {info?.email ? <strong>{info.email}</strong> : <>the email you paid with</>}{" "}
+            — your plan comes with you.
           </li>
         </ol>
       </div>

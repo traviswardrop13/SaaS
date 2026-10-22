@@ -63,11 +63,13 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  keys:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
+  keys:[...document.querySelectorAll('#activityGroups .game-card')].map(t=>t.dataset.game),
+  // every catalog game but the parked ones (Home hides Coming soon, 19 Oct 2026)
+  playable:Object.keys(Sona.GAME_ACTS).filter(k=>!Sona.GAME_ACTS[k].comingSoon).length,
   title:document.querySelector('h1').textContent
 }));
 ok("Home offers games and never exposes Coach Call",
-  card.keys.length===8&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
+  card.keys.length===card.playable&&card.playable>=11&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
