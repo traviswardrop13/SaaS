@@ -22,21 +22,24 @@
   <title>Speech practice kids actually want to do — Sona</title>
   <!-- speaksona.com/for-slps. This was the root from 22 to 26 Sep 2026; the
        root is now the parent page (parents.html, Travis, 26 Sep 2026: "target
-       parents and caregivers only"), and this page stays where a clinician's
-       ad, a clinician's bookmark and the parent page's footer find it. It
-       still speaks to parents and SLPs alike (25 Sep 2026), and the one form
-       asks for an email and who they are, nothing else.
-       Indexable on purpose; the dashboard, its login and the family's
-       redemption link stay noindex — those are private surfaces.
+       parents and caregivers only"), and this page stays for a clinician who
+       already has the link or a bookmark. It still speaks to parents and SLPs
+       alike (25 Sep 2026), and the one form asks for an email and who they
+       are, nothing else.
+       NOINDEX since 22 Oct 2026 (Travis: "speaksona.com is only for parents.
+       I don't want to target therapists at all"): search engines leave it
+       out, and nothing on the parent side links to it. It still works for
+       everyone who has the address.
 
        Built from the 23 Sep 2026 design handoff. Where the handoff's copy
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
   <meta name="description" content="A few playful minutes of speech practice a day, at home. Every try is checked on the phone and no audio ever leaves the child's device. Free to start for families and speech therapists. Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." />
+  <meta name="robots" content="noindex" />
   <link rel="canonical" href="https://speaksona.com/for-slps" />
 
-  <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
-       SLPs, which means the link gets pasted into a Facebook group, a district
+  <!-- WHAT A SHARED LINK LOOKS LIKE. Clinicians who already have this link
+       still pass it around, so it gets pasted into a Facebook group, a district
        Slack and a text message — and a link with no card is a grey box with a
        URL in it. This page is static and inherits nothing from app/layout.tsx,
        so it carries its own. Absolute URLs, because a scraper resolves these

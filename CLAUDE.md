@@ -886,8 +886,10 @@ from a URL parameter: coverage is the server's answer to the enrolment ticket
 the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
 6 hours; only an authoritative answer changes anything).
 
-**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
-targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
+**THE SLP SIDE WAS THE CHANNEL, 21 Sep to 22 Oct 2026** (Travis, 21 Sep
+2026: "im keeping it free. targetting slps first"; since 22 Oct speaksona.com
+does not look for therapists at all, below, and clinicians already here keep
+everything). It was hidden on 19 Sep as "not a priority" and that
 is now reversed. **Setup itself is for parents** (Travis, 5 Oct 2026: "I want
 to take out the button of who's setting up Sona because it's just for the
 parents"): the "Who's setting up Sona?" screen of 1 Oct is gone, and the
@@ -896,14 +898,16 @@ speech therapist signs up at speaksona.com/for-slps. The clinician's own
 setup (`ORDER_SLP`) is kept, and kept tested, behind its own address,
 `/onboarding.html?slp=1`, which nothing in the app links to (in the iPhone
 app that address sets the app up for a child in a clinician's words, with no
-price, and ends on Home). `for-slps.html` is indexable and linked from the
-landing footer, and `betatest` pins that setup asks no such question. Since 24 Sep 2026 the channel can
+price, and ends on Home). `for-slps.html` is `noindex` and linked from
+nothing a parent reads since 22 Oct 2026 (below), and `betatest` pins that
+setup asks no such question. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys their own Premium and adds their
 caseload — yearly prices, never per family, never to the clinician. **Parents come first now** (Travis,
 29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
-leave the $5 a day add on"): the SLP ad keeps running and the offer sits in
-plain sight on the dashboard, but the new ads, and the work, go to parents.
+leave the $5 a day add on"): the offer sits in plain sight on the dashboard,
+and the new ads, and the work, go to parents. The SLP ad kept running until
+22 Oct 2026; stopping it is Travis's, in Meta.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
 it to target parents and caregivers only. not slps"). Its yellow is pale
@@ -923,8 +927,8 @@ once the server says yes the Lead fires, the button reads "Opening the App
 Store…" and the page leaves 150 ms later (`LEAVE_MS`, the time the pixel's
 request needs to get out). No panel and no second button come first; the
 "You're in" panel with "Get the app" is only what an iPhone visitor finds
-when they come back from the App Store. `landingtest` plays it. No Sign in in its header; the footer sends a
-speech therapist to `/for-slps`. Its pictures were cut from the ads and
+when they come back from the App Store. `landingtest` plays it. No Sign in in its header, and
+nothing on it links to `/for-slps` (22 Oct 2026, below). Its pictures were cut from the ads and
 changed only where the ads showed what the app no longer does — the STAR MODE
 gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
 FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
@@ -969,9 +973,40 @@ email and "I'm a…"** (Parent or caregiver · Speech therapist (SLP or SLPA) ·
 Other) and nothing else. The header is just Sign in (Travis, 26 Sep 2026:
 "get rid of for parents"). An SLP or SLPA also gets their dashboard account
 and sign-in email, because the iPhone app has no clinician side; everyone
-else goes to `/api/lead` with their email and role. An ad aimed at speech
-therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
-both pages.
+else goes to `/api/lead` with their email and role. `tests/landingtest.mjs`
+drives both pages.
+
+**speaksona.com is only for parents, and does not look for therapists at
+all** (Travis, 22 Oct 2026: "speaksona.com is only for parents. I don't
+want to target therapists at all"). `/for-slps` keeps working for anyone who
+has the address (clinicians already signed up, some paying for Premium), but
+it is `noindex`, out of the sitemap and `llms.txt`, and no page a parent
+reads links to it: the parent page's footer lost "For speech therapists",
+the old `/families` page its "For SLPs". The dashboard, sign-in, the
+clinician plans and every covered family are untouched; not looking for
+new therapists is not breaking the ones already here. A therapist ad, if
+one still runs, is Travis's to stop in Meta. `shiptest` and `landingtest`
+pin it.
+
+**Search engines and AI assistants** (Travis, 22 Oct 2026: a parent asking
+ChatGPT or Google how to do speech practice at home should hear about Sona).
+The site is built to be read:
+- `app/robots.ts`: every crawler welcome, the AI assistants' by name; only
+  `/api/` and `/admin/` blocked. Never block a `noindex` page there: a
+  blocked crawler never reads the noindex.
+- `app/sitemap.ts`: the root, privacy and the Terms; never an app screen or
+  a `noindex` page.
+- `app/llms.txt/route.ts`: Sona in plain text for AI assistants, every line
+  one the parent page already says. Rachel's settled line word for word, no
+  dollar figure, no count of games or books, and the cost line is the
+  parent page's own answer, chosen by `FREE_MODE` and `WEB_SALES`.
+- schema.org labels (`application/ld+json`) in `parents.html`'s head: who
+  makes Sona and what the app is, with no price.
+- `noindex`, so search sends parents to the root: `for-slps.html`,
+  `try.html`, `check.html`, `/families`, and the private surfaces below.
+Any page written to answer a parent's search ("how to practice the R sound
+at home") explains how to practice a sound, so it is Rachel's to review
+before it ships. `shiptest` pins all of it.
 
 **The app is live, and the websites send people to the App Store** (Travis,
 1 Oct 2026: "yeah send people to app store now!", with the listing checked:
@@ -1029,7 +1064,8 @@ member.
 
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
-carries a credential in the URL). Those are surfaces, not marketing.
+carries a credential in the URL). Those are surfaces, not marketing. So,
+since 22 Oct 2026, is `for-slps.html` (above).
 
 Still absent now that Premium is back (24 Sep 2026): the "working with a
 speech therapist?" card on the plan screen and the trial page; `progtest`
@@ -3071,6 +3107,19 @@ the app) is a later idea, not built; it is Rachel's to shape.
   mechanism's absence: no route but the two founder clip tools (`isolate`,
   `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
   posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
+  **Nor the browser's own speech-to-text** (22 Oct 2026): the Web Speech
+  API's `SpeechRecognition` looks local and is not (Chrome sends the audio
+  to Google, Safari to Apple). The Speech Check and the parked story reader
+  used it, so in a browser a child's words left the phone; both now judge
+  from voicing alone, `lib/speech.ts` is gone, and `mictest` fails if any
+  page uses it again. The iPhone app's on-device check is SonaSpeech, which
+  never uses Apple's servers. **For Rachel:** without it the Speech Check
+  hears only whether each word was said, never how, so its results now say
+  "Heard it" per word and "We heard <Name> say N of M words … it can't tell
+  which sounds need practice", with no "on track", "ready to practice" or
+  age verdict (its old paths stay in the code, unreachable). It is `noindex`
+  and nothing links to it. Whether it stays, and what its results may say,
+  is hers.
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
