@@ -46,7 +46,7 @@ ok("rung advance no longer daily-only", /if\(v==="pass" && useRung>=RUNG/.test(c
 // different numbers. An assertion that pins an implementation can lock a bug in.
 ok("the ladder step and the header read ONE counter",
   /var ROUNDIX = isDaily \? \(\(run\?run\.round:0\)\|0\) : \(_ringN % _runLen\);/.test(chargeSrc)
-  && /Math\.min\(ROUNDIX, RUNG\+1\)/.test(chargeSrc)
+  && /STEPS\[Math\.min\(STEPS\.length-1, stepAt\(START\)\+ROUNDIX, stepAt\(Math\.max\(RUNG,START\)\)\+1\)\]/.test(chargeSrc)
   && /Math\.min\(ROUNDIX\+1,DAILY_SEQ\.length\)/.test(chargeSrc));
 ok('pulse placeholder drops "complaint"', !/complaint/i.test(todaySrc));
 
@@ -195,7 +195,9 @@ if (bn.shown) {
 // ── retry ladder: Echo thinks while scoring; two misses step DOWN a rung ──
 ok("Echo shows a visual checking state", /echo-checking/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
 // 24 Sep 2026: the spoken line is calm now ("I have an idea. Let's try this one.").
-ok("step-down retry offers an easier same-sound target", /Let's try this one/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
+// 22 Oct 2026: the easier target is Sona.stepDown's, at the same place in the
+// word (a sentence steps down to its own word, a word to its syllable).
+ok("step-down retry offers an easier same-sound target", /Let's try this one/.test(chargeSrc) && /S\.stepDown\(ITEM,SOUND,POS\)/.test(chargeSrc));
 
 // ── voice revive: "keep playing" copy + family-aware trigger in all 6 round games ──
 {
@@ -695,10 +697,10 @@ ok("proof strip: named SLP credential above the plan",
 // with no words for that sound falls back to start-of-word words rather than
 // an empty round. (hwtest holds the sentence step to the same rule.)
 //
-// 1 Oct 2026 (Travis: "have the options listed but to not let them select
-// other positioning because it's not built yet"): a FAMILY can pick only the
-// start of a word for now (Sona.FAMILY_POSITIONS). Homework still names its
-// own position; a family's Middle saved earlier reads as the start of a word.
+// 22 Oct 2026 (Travis: "a full, in-depth, thorough build-out of word
+// positions"): every position is open to families again, saved as
+// profile.wordPosition. Homework still names its own position, and a position
+// saved in the old practicePosition (before 1 Oct) is never read.
 {
   const HW = (pos) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "hwpos", title: "R at the end", note: "", sounds: ["R"], pos: "${pos}", repsPerDay: 20, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, at: Date.now() }))`;
   const pw = await page.evaluate((hw) => {
@@ -707,25 +709,29 @@ ok("proof strip: named SLP credential above the plan",
     const out = { iR: bank("R", "i"), fR: bank("R", "f"), mR: bank("R", "m"), iK: bank("K", "i") };
     out.none = { pos: Sona.practicePos(), words: step("R") };
     eval(hw);                                          // homework: R at End
-    Sona.saveProfile({ practicePosition: "m" });       // …while the family picked Middle
+    Sona.saveProfile({ wordPosition: "m" });           // …while the family picked Middle
     out.hw = { pos: Sona.practicePos(), words: step("R") };
     localStorage.removeItem(Sona.kkey("sona.homework.v1"));
     out.fam = { pos: Sona.practicePos(), words: step("R") };
-    Sona.saveProfile({ practicePosition: "v" });       // Vocalic R, for a sound with none
+    Sona.saveProfile({ wordPosition: "i", practicePosition: "m" });   // a pick from before 1 Oct
+    out.old = { pos: Sona.practicePos(), words: step("R") };
+    Sona.saveProfile({ wordPosition: "v" });           // Vocalic R, for a sound with none
     out.noneForK = step("K");
-    Sona.saveProfile({ practicePosition: "i" });
+    Sona.saveProfile({ wordPosition: "i", practicePosition: "i" });
     return out;
   }, HW("f"));
   ok("with no homework and no setting, the word step asks for start-of-word words", pw.none.pos === "i" && pw.none.words === pw.iR, JSON.stringify(pw.none));
   ok("homework at End: every word at the word step is an End word, over the family's Middle", pw.hw.pos === "f" && pw.hw.words === pw.fR, JSON.stringify(pw.hw));
-  ok("no homework, family's old Middle setting: the word step asks for start-of-word words (Middle is not open to families yet)",
-    pw.fam.pos === "i" && pw.fam.words === pw.iR && pw.mR && pw.mR !== pw.iR, JSON.stringify(pw.fam));
+  ok("no homework, the family picked Middle: the word step asks for Middle words",
+    pw.fam.pos === "m" && pw.fam.words === pw.mR && pw.mR && pw.mR !== pw.iR, JSON.stringify(pw.fam));
+  ok("a Middle saved in the old practicePosition is never read: start-of-word words", pw.old.pos === "i" && pw.old.words === pw.iR, JSON.stringify(pw.old));
   ok("a position with no words for the sound falls back to start-of-word words", pw.noneForK === pw.iK, pw.noneForK);
 
-  // …and on the real page: round 3 of a child with words earned, homework at End
+  // …and on the real page: round 2 of a child with the sound earned, homework
+  // at End (End's syllables are not switched on yet, so round 2 is words)
   await page.evaluate((hw) => {
     eval(hw);
-    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 2 }));
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 1 }));
     const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;
     localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
   }, HW("f"));

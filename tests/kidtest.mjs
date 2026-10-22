@@ -267,7 +267,7 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
     ok("no page hands kkey() a key built at run time", built.length === 0, built.join(", "));
     const charge = readFileSync(ROOT + "/charge.html", "utf8");
     ok("the practice page counts level passes through Sona.rungWin, with no key of its own",
-      /S\.rungWin\(SOUND,useRung\)/.test(charge) && !/sona\.rungwins/.test(charge));
+      /S\.rungWin\(SOUND,useRung,POS\)/.test(charge) && !/sona\.rungwins/.test(charge));
   }
   // the comeback greeting was removed on Travis's call — nothing should write
   // its key or resurrect the overlay
@@ -305,40 +305,90 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   ok("the child card under it is headed with the selected child's name", !!head.name && head.title.trim() === "About " + head.name && head.active.indexOf(head.name) >= 0, JSON.stringify(head));
 }
 
-// ── Word position: every position is listed, only the start of a word can be
-// picked (Travis, 1 Oct 2026: "have the options listed but to not let them
-// select other positioning because it's not built yet ... make it clear that
-// it's just the initial position"). The switch is Sona.FAMILY_POSITIONS. With
-// one position open the picker has nothing to choose, so since 22 Oct 2026
-// ("simplify settings") it stays hidden and one line under the sounds says
-// what practice uses; it is still on the page, so the day a second position
-// opens it shows by itself, the closed ones greyed as "coming soon". ──
+// ── Word position: every position can be picked (Travis, 22 Oct 2026: "a
+// full, in-depth, thorough build-out of word positions … build that so it
+// works in the games"; from 1 Oct only the start of a word was open). The
+// switch is still Sona.FAMILY_POSITIONS. The family's pick is
+// profile.wordPosition; the old practicePosition is never read again, so a
+// pick saved before 1 Oct cannot come back on its own. ──
 {
-  // this child saved End of word before the others were closed
-  const before = await page.evaluate(() => { const was = Sona.getProfile().practicePosition; Sona.saveProfile({ practicePosition: "f" }); return was; });
+  const before = await page.evaluate(() => { const p = Sona.getProfile(), was = { practicePosition: p.practicePosition, wordPosition: p.wordPosition, ladderStart: p.ladderStart, focusSounds: p.focusSounds, childAge: p.childAge }; Sona.saveProfile({ practicePosition: "f", focusSounds: ["R", "S"] }); delete p.wordPosition; const q = Sona.getProfile(); delete q.wordPosition; delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); return was; });
   await page.reload(); await page.waitForTimeout(700);
-  const pos = await page.evaluate(() => {
-    const el = document.getElementById("practicePos"), box = document.getElementById("posBox"), note = document.getElementById("posNote");
+  const read = () => page.evaluate(() => {
+    const el = document.getElementById("practicePos"), st = document.getElementById("ladderStart"), note = document.getElementById("posNote"), ln = document.getElementById("ladderNote");
+    const vis = (n) => n && !n.hidden && n.getBoundingClientRect().height > 0 ? n.textContent.trim() : "";
     return {
-      open: (Sona.FAMILY_POSITIONS || []).slice(), value: el.value, saved: Sona.getProfile().practicePosition,
+      open: (Sona.FAMILY_POSITIONS || []).slice(), value: el.value, off: el.disabled, saved: Sona.getProfile().wordPosition,
       opts: [...el.options].map((o) => ({ v: o.value, off: o.disabled, text: o.textContent.trim() })),
-      boxHidden: !!box && box.hidden && el.getBoundingClientRect().height === 0 && box.contains(el),
-      note: note && !note.hidden && note.getBoundingClientRect().height > 0 ? note.textContent.trim() : "",
-      noteUnderSounds: !!note && !!(document.getElementById("sounds").compareDocumentPosition(note) & 4),
-      practice: Sona.practicePos(),
+      note: vis(note), practice: Sona.practicePos(), soundPos: Sona.soundPos("R"),
+      start: st.value, startOff: st.disabled, startSaved: Sona.getProfile().ladderStart, startOpts: [...st.options].map((o) => o.value + "=" + o.textContent.trim()).join("|"),
+      startLabel: (document.querySelector('label[for="ladderStart"]') || {}).textContent, ladderNote: vis(ln),
+      order: !!(el.compareDocumentPosition(st) & 4) && !document.getElementById("gameLevel"),
     };
   });
-  const off = pos.opts.filter((o) => o.v !== "i");
-  ok("Settings still holds all six word positions", pos.opts.map((o) => o.v).join() === "i,m,f,v,b,mix", JSON.stringify(pos.opts));
-  ok("only Beginning of word can be picked", pos.open.join() === "i" && !pos.opts[0].off && off.every((o) => o.off), JSON.stringify(pos.opts));
-  ok("each of the others says it is coming soon, and Beginning does not", off.every((o) => /coming soon$/i.test(o.text)) && !/coming soon/i.test(pos.opts[0].text), JSON.stringify(pos.opts.map((o) => o.text)));
-  ok("with only Beginning open, the picker is hidden: there is nothing to choose", pos.boxHidden, JSON.stringify(pos));
-  ok("…and one line under the sounds says practice is at the beginning of a word for now",
-    pos.note === "For now, Sona practices each sound at the beginning of a word." && pos.noteUnderSounds, JSON.stringify({ note: pos.note, under: pos.noteUnderSounds }));
-  ok("a child whose saved position was End sees Beginning selected, and practice asks for the start of a word",
-    pos.saved === "f" && pos.value === "i" && pos.practice === "i", JSON.stringify({ saved: pos.saved, value: pos.value, practice: pos.practice }));
-  await page.evaluate((was) => Sona.saveProfile({ practicePosition: was || "i" }), before);
+  let pos = await read();
+  ok("Settings lists all six word positions", pos.opts.map((o) => o.v).join() === "i,m,f,v,b,mix", JSON.stringify(pos.opts));
+  ok("all six are open: nothing says coming soon", pos.open.join() === "i,m,f,v,b,mix" && pos.opts.every((o) => !o.off && !/coming soon/i.test(o.text)), JSON.stringify(pos.opts));
+  ok("a position saved before 1 Oct (practicePosition) is never read: Beginning shows, and practice asks for the start of a word",
+    pos.value === "i" && pos.practice === "i" && !pos.saved && !pos.note, JSON.stringify({ value: pos.value, practice: pos.practice, note: pos.note }));
+  await page.selectOption("#practicePos", "f"); await page.waitForTimeout(250);
+  pos = await read();
+  ok("picking End of word saves it as wordPosition, by itself, and practice and the games read it",
+    pos.saved === "f" && pos.practice === "f" && pos.soundPos === "f" && (await page.evaluate(() => Sona.playWords("R").map((w) => w.w).join())) === "car,star,door,four,bear", JSON.stringify(pos));
+  ok("…and the line under it says the picture games use these words too", pos.note === "Games with pictures use these words too.", pos.note);
+  await page.selectOption("#practicePos", "v"); await page.waitForTimeout(250);
+  pos = await read();
+  ok("Vocalic R with R and S: the line says S practices the start of words", pos.note === "Only R has vocalic R. S practices the start of words. Games with pictures use these words too." && (await page.evaluate(() => Sona.soundPos("S"))) === "i", pos.note);
+  // a child with no R: vocalic R is greyed out, and so are blends without R, S or L
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["K"] }));
+  await page.reload(); await page.waitForTimeout(700);
+  pos = await read();
+  ok("for a child on K only, vocalic R and blends are greyed out and say whose they are",
+    pos.opts.filter((o) => o.off).map((o) => o.text).join("|") === "Vocalic R (er, ar, or…) · R only|Blends (tr, st, bl…) · R, S, L only", JSON.stringify(pos.opts));
+  ok("…while the saved pick stays as it was, and K practices the start of words", pos.saved === "v" && (await page.evaluate(() => Sona.soundPos("K"))) === "i" && /K practices the start of words/.test(pos.note), JSON.stringify({ saved: pos.saved, note: pos.note }));
+  // a four-year-old: vocalic R and blends are not given from a grown-up's pick
+  // (Sona.soundPos; Rachel's call), and Settings says so
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R"], childAge: "4" }));
+  await page.reload(); await page.waitForTimeout(700);
+  pos = await read();
+  ok("for a four-year-old, vocalic R and blends are greyed out for their age, and the line says the start of words instead",
+    pos.opts.filter((o) => o.off).map((o) => o.text).join("|") === "Vocalic R (er, ar, or…) · not for ages 2–4|Blends (tr, st, bl…) · not for ages 2–4"
+    && /^Blends and vocalic R usually come later, so .+ practices the start of words\.$/.test(pos.note) && pos.soundPos === "i" && pos.saved === "v", JSON.stringify(pos));
+  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R", "S"], wordPosition: "f", childAge: "7" }));
+  await page.reload(); await page.waitForTimeout(700);
+  // "Each day's practice starts with"
+  pos = await read();
+  ok("a second picker sits under Word position (and no game picker is back): Each day's practice starts with",
+    pos.order && pos.startLabel === "Each day’s practice starts with" && pos.startOpts === "=The sound|syllable=Syllables|word=Words|sentence=Sentences" && pos.start === "" && !pos.startSaved, JSON.stringify(pos));
+  // End's syllables ship switched off until someone has listened, so the day
+  // goes from the sound straight to end words
+  ok("its line shows the steps the practice page will really ask, at the place picked", /^R at the end of words: “rrrr”, then “(car|star|door|four|bear)”, one step each game\. Harder steps open as /.test(pos.ladderNote), pos.ladderNote);
+  await page.selectOption("#ladderStart", "word"); await page.waitForTimeout(250);
+  pos = await read();
+  ok("picking Words saves it, and the day's practice starts at words", pos.startSaved === "word" && (await page.evaluate(() => Sona.ladderStart())) === 2
+    && /^R at the end of words: “(car|star|door|four|bear)”, then “I see a (car|star|door|four|bear)”, one step each game\. A word that’s too hard steps back to “rrrr”\.$/.test(pos.ladderNote), pos.ladderNote);
+  // 320 px: every choice of both pickers reads in full while closed
+  await page.setViewportSize({ width: 320, height: 700 });
+  const fit = await page.evaluate(() => ["practicePos", "ladderStart"].map((id) => { const el = document.getElementById(id), cs = getComputedStyle(el), c = document.createElement("canvas").getContext("2d");
+    c.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    return { id, room: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 28, widths: [...el.options].filter((o) => !o.disabled).map((o) => Math.ceil(c.measureText(o.textContent.trim()).width)) }; }));
+  await page.setViewportSize({ width: 430, height: 932 });
+  ok("every open choice of both pickers can be read in full while closed, on a 320 px phone", fit.every((f) => f.room > 100 && f.widths.every((w) => w > 20 && w <= f.room)), JSON.stringify(fit));
+  // a speech therapist's homework: both pickers show what it sets, locked, and
+  // saving anything else never writes the homework's position as the family's
+  await page.evaluate(() => localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: { id: "hw1", title: "t", note: "n", sounds: ["R"], pos: "m", repsPerDay: 40, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, at: Date.now() })));
+  await page.reload(); await page.waitForTimeout(700);
+  pos = await read();
+  ok("under homework the position picker shows the homework's, locked, and says so", pos.off && pos.value === "m" && pos.practice === "m" && /^Set by the speech therapist’s homework: Middle of word\./.test(pos.note), JSON.stringify(pos));
+  ok("…and the day starts at the sound, locked, and the line says the homework climbs every step", pos.startOff && pos.start === "" && (await page.evaluate(() => Sona.ladderStart())) === 0 && /^The homework climbs every step, from the sound\. R in the middle of words: “rrrr”/.test(pos.ladderNote), pos.ladderNote);
+  await page.click('#sounds [data-s="L"]'); await page.waitForTimeout(250);
+  ok("…and changing a sound under homework keeps the family's own position and start", (await page.evaluate(() => [Sona.getProfile().wordPosition, Sona.getProfile().ladderStart].join())) === "f,word");
+  await page.click('#sounds [data-s="L"]'); await page.waitForTimeout(250);
+  await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.homework.v1")));
+  await page.evaluate((was) => { Sona.saveProfile({ focusSounds: was.focusSounds || ["R"], practicePosition: was.practicePosition, childAge: was.childAge || "" }); const q = Sona.getProfile(); if (was.wordPosition) q.wordPosition = was.wordPosition; else delete q.wordPosition; if (was.ladderStart) q.ladderStart = was.ladderStart; else delete q.ladderStart; localStorage.setItem(Sona.kkey("sona.profile.v1"), JSON.stringify(q)); }, before);
+  await page.reload(); await page.waitForTimeout(700);
 }
+
 // The day Sona.FAMILY_POSITIONS opens a second position, the picker comes back
 // by itself with the closed ones still greyed, and the line steps aside. Played
 // on its own phone, with the list widened as sona.js hands it to the page.
@@ -350,7 +400,7 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   await p3.evaluate(() => {
     localStorage.clear();
     ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
-    Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, practicePosition: "m" });
+    Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, wordPosition: "m" });
     Sona.gateVerify();
   });
   await c3.addInitScript(() => {
@@ -360,7 +410,7 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
   const two = await p3.evaluate(() => {
     const el = document.getElementById("practicePos"), box = document.getElementById("posBox"), note = document.getElementById("posNote");
     return { open: Sona.FAMILY_POSITIONS.join(), shown: !box.hidden && el.getBoundingClientRect().height > 0, value: el.value,
-      off: [...el.options].filter((o) => o.disabled).map((o) => o.value).join(), noteHidden: note.hidden && note.getBoundingClientRect().height === 0 };
+      off: [...el.options].filter((o) => o.disabled).map((o) => o.value).join(), noteHidden: !/For now/.test(note.hidden ? "" : note.textContent) };
   });
   ok("with a second position open, the picker shows by itself, the parent's saved Middle selected and the rest still greyed",
     two.open === "i,m" && two.shown && two.value === "m" && two.off === "f,v,b,mix", JSON.stringify(two));
@@ -387,9 +437,9 @@ ok("it says each child keeps their own sounds and progress", /Each child keeps t
     const k = Sona.kkey("sona.profile.v1"), raw = JSON.parse(localStorage.getItem(k)); raw.gameLevel = "isolation"; localStorage.setItem(k, JSON.stringify(raw));
   });
   await page.reload(); await page.waitForTimeout(700);
-  // Settings no longer loads the syllable lists (gamecontent.js): they were
-  // there only to paint the picker's line. The cards are read the way a
-  // round game reads them, with those lists on the page.
+  // The cards are read the way a round game reads them, with the syllable
+  // lists (gamecontent.js) on the page; Settings loads them for its practice
+  // steps line, and this adds them if it ever stops.
   const read = async () => { if (!(await page.evaluate(() => !!window.SonaContent))) await page.addScriptTag({ url: "/gamecontent.js" }); return page.evaluate(() => {
     const raw = JSON.parse(localStorage.getItem(Sona.kkey("sona.profile.v1")) || "{}");
     return {

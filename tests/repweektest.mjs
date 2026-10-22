@@ -413,7 +413,7 @@ await scenario("a syllable or word card in a game is one rep too", async () => {
   await page.evaluate(() => { localStorage.setItem("sona.freeera5.v1", "done"); localStorage.setItem("sona.progress.v1", JSON.stringify({ ladderV: 2, stage: { R: 1 } })); const p = JSON.parse(localStorage.getItem("sona.profile.v1")); Object.assign(p, { childAge: "7", volume: 0.8, voiceOn: true, gameLevel: "isolation" }); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
   await page.goto(origin + "/arcade-slice.html?from=charge");
   await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
-  const snap = () => page.evaluate(() => ({ week: Sona.weekReps(0), practice: Sona.weekReps(0, null, true), outcomes: localStorage.getItem("sona.outcomes.v1"), attempts: localStorage.getItem("sona.attempts.v1"), stage: JSON.stringify(Sona.getProgress().stage), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}")["2026-10-15"] || {} }));
+  const snap = () => page.evaluate(() => ({ week: Sona.weekReps(0), practice: Sona.weekReps(0, null, true), outcomes: localStorage.getItem("sona.outcomes.v1"), attempts: localStorage.getItem("sona.attempts.v1"), stage: JSON.stringify([Sona.getProgress().stage, Sona.getProgress().stageAt || null]), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}")["2026-10-15"] || {} }));
   const before = await snap(), asked = [];
   for (const n of [1, 2]) {
     await page.evaluate(() => { waveGot = WAVES[wave].goal; });

@@ -165,8 +165,9 @@ function fakePhone(cfg) {
     localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.6 }, cfg.profile || {})));
     // cfg.stage: a level the child has EARNED on the practice page (R: 1 is
     // Syllables cleared, which opens the short word on the cards). Since 22
-    // Oct 2026 nothing else can: the Settings picker is gone, and an old
-    // pick (profile.gameLevel) is dropped by getProfile.
+    // Oct 2026 the game picker is gone, and an old pick (profile.gameLevel)
+    // is dropped by getProfile; "Each day's practice starts with" can also
+    // lift the cards (gameasktest §9).
     if (cfg.stage) localStorage.setItem("sona.progress.v1", JSON.stringify({ ladderV: 2, stage: cfg.stage }));
     if (cfg.best) localStorage.setItem("sona.bests.v1", JSON.stringify({ slice: { n: cfg.best, at: "2026-10-01" } }));
     if (cfg.old) localStorage.setItem("sona.best.slice", cfg.old);
@@ -596,7 +597,7 @@ await scenario("the old run's card", async () => {
 const waveOver = (page) => page.evaluate(() => { waveGot = WAVES[wave].goal; });
 const cardNow = (page) => page.evaluate(() => ({ title: document.getElementById("revTitle").textContent, orange: [...document.querySelectorAll("#revTitle .snd")].map((b) => b.textContent),
   note: document.getElementById("revListen").textContent, rung: ASK && ASK.rung, text: ASK && ASK.text, pill: document.getElementById("slowSound").textContent, rev: REV, live: __f.live, media: __f.media.slice() }));
-const records = (page) => page.evaluate(() => JSON.stringify([Sona.getProgress().stage, Sona.outcomes(), localStorage.getItem("sona.attempts.v1"), Sona.repsToday()]));
+const records = (page) => page.evaluate(() => JSON.stringify([Sona.getProgress().stage, Sona.getProgress().stageAt || null, Sona.outcomes(), localStorage.getItem("sona.attempts.v1"), Sona.repsToday()]));
 const listening = (page) => page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent) && __f.live === 1, null, { timeout: 12000 });
 
 await scenario("the cards climb", async () => {

@@ -589,7 +589,30 @@
     // over. The climb is capped ONE level above the child's mastered rung, so
     // rounds end on a stretch level and two clean stretch rounds advance the
     // rung for good — a kid who can't say R alone never gets pushed to sentences.
-    var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
+    // EVERY PLACE IN THE WORD CLIMBS ON ITS OWN (22 Oct 2026). POS is the
+    // place this sound is practised at (Sona.soundPos: homework's, then the
+    // family's, with each sound's fallbacks), read ONCE here, so a homework
+    // sync mid-round cannot change the place under the child. The syllables,
+    // words and sentences are that place's, and so is the climb (RUNG).
+    var POS=(S&&S.soundPos)?S.soundPos(SOUND):"i";
+    // The day's adventure keeps the place it started at for all its rounds,
+    // as it keeps its sound: a homework sync or a Settings change between
+    // two rounds must not move the child from the end of words to the start.
+    if(isDaily&&run&&run.active){ if(run.pos&&(!S||!S.FAMILY_POSITIONS||S.FAMILY_POSITIONS.indexOf(run.pos)>=0))POS=run.pos; else{ run.pos=POS; runSave(run); } }
+    var RUNG=(S&&S.rungOf)?S.rungOf(SOUND,POS):0;
+    // START: the step the day's first round asks ("Each day's practice starts
+    // with" in Settings; 0, the sound, unless a grown-up picked a later one).
+    // A step started above counts as the child's for the stretch: they climb
+    // one past it, as they climb one past what they earned. No round asks a
+    // step with nothing in it (STEPS), so none falls back to the sound and
+    // earns that empty step on a bare "rrrr".
+    var START=(S&&S.ladderStart)?S.ladderStart():0, STEPS=(S&&S.ladderSteps)?S.ladderSteps(SOUND,POS):[0,1,2,3];
+    // STEPS: the steps this place has something to ask (Sona.ladderSteps):
+    // all four at the start of a word; the syllable step is left out where a
+    // place's syllables are not switched on yet, and the sentence step for a
+    // place no sentence can hold. The climb moves through these: stepAt(r) is
+    // the first one at or above step r.
+    function stepAt(r){ for(var k=0;k<STEPS.length;k++){ if(STEPS[k]>=r)return k; } return STEPS.length-1; }
     // ONE counter drives both the header and the ladder step, because they used
     // to read different ones. The header showed today's ring position while the
     // rung read sona.js's PERSISTENT rotation counter, so "Round 3 of 5" could
@@ -602,16 +625,22 @@
     // has to warm up from isolation rather than inherit round six's rung.
     var _ringN=0; try{ var _r0=(S&&S.todayRing)?S.todayRing():null; _ringN=_r0?(_r0.n|0):0; }catch(e){}
     var ROUNDIX = isDaily ? ((run?run.round:0)|0) : (_ringN % _runLen);
-    var useRung = Math.min(ROUNDIX, RUNG+1);
+    var useRung = STEPS[Math.min(STEPS.length-1, stepAt(START)+ROUNDIX, stepAt(Math.max(RUNG,START))+1)];
+    // The round's step is the one its items come from: an empty step walks
+    // down to the next one that has something, and the step goes with it, so
+    // a win is only ever counted at the step that was really asked.
     var ITEMS=[];
-    try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
-    if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
-    if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
+    for(var ur=useRung;ur>=0&&!ITEMS.length;ur--){ try{ ITEMS=(S.ladderContent(SOUND,ur,POS)||[]).filter(function(it){return it&&it.t;}); }catch(e){} if(ITEMS.length)useRung=ur; }
+    if(!ITEMS.length){ useRung=0; ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation",pos:""}]; }
     // ONE target per round: a single syllable said five times, never a
     // rotating drill list (see → soh → soo confused kids mid-round). The
     // shuffle still varies WHICH syllable each round gets.
     var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
     var ITEM=SEQ[0];
+    // A day that starts above the sound (START) never has a sound round, so
+    // its first round carries the mouth cue instead (sayLine). Marked on the
+    // item so sayLine reads nothing but ITEM (voicetest3 runs its source).
+    if(ITEM&&START>0&&ROUNDIX===0)ITEM.cueFirst=true;
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
     // What Leo SPEAKS. TTS cannot perform every bare sound — a synthesized
     // long "rrrr" or a popped "p" comes out mangled — so the line names the
@@ -623,7 +652,12 @@
       var times=(NUMWORD[NEED]||NEED)+" times";
       var ask;
       if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
-      else ask="say "+(ITEM.display||ITEM.t);
+      // What the VOICE is given (ITEM.say), which can be respelled from what
+      // the card shows: vocalic "ar" is given as "are", so a voice cannot
+      // swallow it or spell it out; and a sentence is said without its full
+      // stop ("Say I see a car., five times" was what the card's text made
+      // of it).
+      else ask="say "+(ITEM.say||ITEM.display||ITEM.t);
       // first prompt carries the mouth cue inline; repeats stay minimal.
       // CALM, NOT HYPED (24 Sep 2026). The voice reads "!" and "… Go!" as a
       // jump in pitch and energy, and "Ready? … Go!" on every round was the
@@ -647,7 +681,11 @@
       // stops, so a child who answers "Go!" at once may start before it can
       // hear; the next of their five tries is heard. If it sounds jumpy,
       // taking it back out is one line here.
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
+      // A day that starts above the sound never hears a sound round, so the
+      // cue rides its first round instead (ITEM.cueFirst): "Ready? Pull your
+      // tongue back and up, and say car, five times. Go!" (22 Oct 2026;
+      // cueing is Rachel's call).
+      if(!sayLine._cued && CUESHORT && (ITEM.level==="isolation"||ITEM.cueFirst)){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
       return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
     }
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
@@ -1278,7 +1316,9 @@
       var esc=function(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
       var word=String(ITEM.word||"").toLowerCase(), info=null;
       ((S&&S.WORDS&&S.WORDS[SOUND])||[]).forEach(function(w){ if(!info&&w.w===word)info=w; });
-      var pos=(info&&info.pos)||"", mark=function(x){ return (S&&S.soundMark)?S.soundMark(x,SOUND,pos):'<b class="snd">'+esc(x)+'</b>'; };
+      // the place the item is practised at first ("cake" is filed at the
+      // start and the end of K: under the end of words its k is the one)
+      var pos=ITEM.pos||(info&&info.pos)||"", mark=function(x){ return (S&&S.soundMark)?S.soundMark(x,SOUND,pos):'<b class="snd">'+esc(x)+'</b>'; };
       // the practice word as a whole word: "ear" must not light up inside "hear"
       var lo=txt.toLowerCase(), at=-1, from=0, f;
       while(word&&!iso&&(f=lo.indexOf(word,from))>=0){ if(!/[a-z]/.test(lo.charAt(f-1))&&!/[a-z]/.test(lo.charAt(f+word.length))){at=f;break;} from=f+1; }
@@ -1339,8 +1379,25 @@
       if(SHAPE.frames<12 || !(SHAPE.mag>0)) return "unknown"; // <~200ms of voice: don't judge
       var cent=SHAPE.cent/SHAPE.mag, high=SHAPE.high/SHAPE.mag;
       try{ window.__shape={cent:Math.round(cent),high:Math.round(high*100)/100,frames:SHAPE.frames}; }catch(e){}
-      if(SHAPE.low[SOUND] && cent>1800 && high>0.22) return "fail";
-      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10) return "fail";
+      // A word's OTHER sounds are in the recording too (22 Oct 2026, with
+      // every place in a word open): "star", "chair" and "sled" hiss around
+      // their R or L, and an S blend ("snake", "smile", "slay") is mostly
+      // voiced around its S. Those can never be "clearly the wrong family",
+      // so neither flag is raised for them; a bare sound is judged as before.
+      // Only the practice WORD's other letters count: never a sentence's
+      // frame ("the", "see", "is" would excuse every sentence), and never the
+      // target's own letters (the th of "mother"), which are taken out with a
+      // space, so "grew" can't close up into a soft "ge". A soft c or g is
+      // read off the whole word, and a g only where it is surely soft
+      // ("orange", "edge"): "tiger" and "girl" are hard.
+      var own={R:/r/g,L:/l/g,M:/m/g,N:/n/g,B:/b/g,D:/d/g,G:/g/g,V:/v/g,THV:/th/g}[SOUND];
+      var word=ITEM&&ITEM.level!=="isolation"?String(ITEM.word||ITEM.t||"").toLowerCase():"";
+      var other=word.replace(own||/$^/," ");
+      var soft=/c[eiy]/.test(word)||(SOUND!=="G"&&/dge|ge$/.test(word));
+      if(SHAPE.low[SOUND] && cent>1800 && high>0.22 && !soft && !/s|z|x|sh|ch|j|f|ph|th/.test(other)) return "fail";
+      // an S blend only when its other letters ARE voiced ("snake", "smile",
+      // "star"): "stop" and "ski" are as hissy as "sock", and judged as ever
+      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10 && !(ITEM&&ITEM.pos==="b"&&/[lmnrwdbgvjz]/.test(other))) return "fail";
       return "pass";
     }
 
@@ -1731,7 +1788,7 @@
       if(recognitionRemaining<=0 || !(S&&S.speechStart)) return;
       var r={startedAt:performance.now(),budget:recognitionRemaining,settled:false,stop:null,timer:null};
       recognitionState=r;
-      try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
+      try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.say||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
       catch(e){ r.pending=Promise.resolve(false); }
       r.pending=r.pending.then(function(v){r.settled=true;r.started=!!v;return v;},function(){r.settled=true;return false;});
       r.timer=setTimeout(function(){if(recognitionState===r)recognitionStop();},r.budget);
@@ -2072,7 +2129,7 @@
           var text=recognitionTexts.join(" ");
           // The round's kind and, on a sentence round, the sentence itself: its
           // other words ("Here is a …") are set aside, so only the target counts.
-          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""),{level:ITEM.level,frame:ITEM.level==="sentence"?String(ITEM.t||""):""});
+          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""),{level:ITEM.level,frame:ITEM.level==="sentence"?String(ITEM.t||""):"",pos:ITEM.pos||""});
           try{window.__hear={text:text,verdict:hv};}catch(e){}
           if(hv!=="unknown")return hv;
         }
@@ -2095,7 +2152,9 @@
     }catch(e){} }
     function logV(v){
       if(DEMO_REPLAY || reps<=0 || v==="unknown")return;
-      if(S&&S.logAttempt)S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",reps:reps,word:String(ITEM.word||ITEM.t).toLowerCase()});
+      // the step and the place go with it: a try at the sound alone or a
+      // syllable is never booked as a word at the place being practised
+      if(S&&S.logAttempt)S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",reps:reps,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level||"",pos:ITEM.pos||""});
     }
     async function burstAndVerify(n){
       var save=NEED;
@@ -2231,7 +2290,7 @@
         // kept inside that child's progress by Sona.rungWin(); this page holds
         // no key of its own, because a key built from the sound and rung is
         // one kkey() cannot make per-child (sona.js, rungWin).
-        try{ S.rungWin(SOUND,useRung); }catch(e){}
+        try{ S.rungWin(SOUND,useRung,POS); }catch(e){}
       }
       if(v==="fail"){
         // The scorer really heard a different sound — the charge is NOT given
@@ -2263,10 +2322,14 @@
           // never as demotion. The rung can't advance from down here (the
           // stretch gating above already ran), and next round returns to the
           // rotation's normal level.
-          var easier=[];
-          try{ easier=(S.ladderContent(SOUND,useRung-1)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
-          if(easier.length){
-            ITEM=easier[0];
+          // Sona.stepDown picks it at the same place in the word: a sentence
+          // steps down to its own word, a word to the syllable closest to it
+          // ("car" → "ar"), a syllable to the sound alone. It used to be the
+          // first item one step down, so "I see a bear." stepped to "car".
+          var easier=null;
+          try{ easier=S.stepDown(ITEM,SOUND,POS); }catch(e){}
+          if(easier){
+            ITEM=easier;
             paintCard();
             try{ $("sayLbl").textContent="Echo's idea — say"; }catch(e){}
             $("gpState").textContent="An easier one — you've got this!";
@@ -2423,7 +2486,9 @@
       // The step this page ended on, and its item (a sentence hands over its
       // practice word), so the game's say-it cards never ask below what was
       // just asked here (Sona.gameAsk). Nothing this page asks or records changes.
-      try{ sessionStorage.setItem("sona.boost.level",ITEM.level||"isolation"); sessionStorage.setItem("sona.boost.ask",String(ITEM.word||ITEM.t||"")); }catch(e){}
+      // And the place in the word, so a card never reuses an ask from a place
+      // a grown-up has since changed.
+      try{ sessionStorage.setItem("sona.boost.level",ITEM.level||"isolation"); sessionStorage.setItem("sona.boost.ask",String(ITEM.word||ITEM.t||"")); sessionStorage.setItem("sona.boost.pos",POS); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
       // Calm, and after the chime rather than on top of it (24 Sep 2026).
