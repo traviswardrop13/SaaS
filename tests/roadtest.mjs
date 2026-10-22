@@ -623,7 +623,7 @@ await section("the road page: game levels, fit, and what never happens", async (
     ok("…and the old cap is left in the record, only never read", (await levels(f.page)).cap === 1);
   } finally { await f.context.close(); }
   f = await fresh({ trophies: 120, levels: { cap: 1 }, extra: { "sona.road.v1": opened(1, 2) } });
-  try { await home(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.pic === "level" && c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
+  try { await homeView(f.page); const c = await cardOf(f.page); ok("…with stop 3 next, Home's card shows the level and \"Level 2 at 150 trophies.\", old cap or not", c.shown && c.pic === "level" &&c.bar === "11000" && /Level 2 at 150 trophies\.$/.test(c.label), c); } finally { await f.context.close(); }
   f = await fresh({ trophies: 120 });
   try { await road(f.page); ok("before Level 2 opens there is no Game levels panel", await f.page.locator("#levelsCard").isHidden()); } finally { await f.context.close(); }
 
