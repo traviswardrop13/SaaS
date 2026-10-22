@@ -1,5 +1,18 @@
 # Days 4–14 integration
 
+## Connected (22 Oct 2026, Claude)
+
+The eleven games are in the app as Days 4–14 of the daily story, after Days 1–3 (draft PR on `claude/new-session-ewbua4`, which holds the shared player and Days 1–3).
+
+- **The day list.** `sona.js` `STORY_DAYS` has 14 days. Days 4–14 carry `controller` (the key in `window.DailyAdventureGames`) and `page: "/story-game.html?story=<id>"`. Day 7's Sona id is `frontdoor`, because Day 3's Puzzle Bridge already owns `bridge`; its controller is still `bridge`. Every child meets the days in order, one a day, as Days 1–3 (QUEST1's scheduler, `sona.quest.v1`).
+- **One game page.** `public/story-game.html` is this fixture's body, element for element, with the same shell stylesheet: the fixture's inline style moved to `public/daily-adventures/host.css`, which both pages load after the game's own sheet. The games' words (title, start card, help pill, banner, canvas label, end card) moved out of `tests/_daily-adventure.mjs` into `public/daily-adventures/pages.js`, which the page and this test host both read. The page asks `Sona.gameAccess()` (the story's Premium rule) before it inserts the game's files, hands the controller five moves for ages 3–4 and eight for 5–8, and its end card's one button is "See what happens!" back to the story's ending (no Play again). The engine's own end card finishes the day and gives its one sticker (`Sona.questEnd`).
+- **The story around the game** is told by the shared player (`adventure.html`), in Days 1–3's format: Pelly's letter, the problem, "Let's go!", the game, the ending, a gold star. Its scenes are `public/adventures.js`, with new clay pictures in Days 1–3's style (Echo in them) in `public/assets/adventure/<id>/`, drawn by `tools/art/gen-adventure.mjs` from `tools/art/adventure-prompts.json`, and Home's picture `public/assets/crafted/home-<id>.webp`. The three acts and endings in `stories.js` are not read by any app page; the optional narration adapter (`narration.js`) is not used, so no story card interrupts a game. The games' own backgrounds and pieces are unchanged.
+- **This test host** now serves `sona.js` without any story day whose game is its fixture key, so each controller is still tested alone through the catalog gate it was verified on (in the app the same key is a story day, and Day 3 owns `bridge`).
+- `ready` is now true for all eleven records. `tests/storygametest.mjs` holds the page: its shell equal to this fixture's, entitlement before any file, mic or sound, every game booting at both ages with the first word earning its first job, and Day 4 played from "Let's go!" through all its jobs to the ending and its sticker, at both ages.
+
+The rest of this file is Codex's verification record, unchanged.
+
+
 Working branch: `codex/daily-adventures-4-14`, based on `ecc146fa`.
 Claude owns the shared daily-story player, Home, and days 1–3. This work adds isolated content and physical games. Do not replace Claude's player with the local browser fixture.
 

@@ -1,5 +1,12 @@
-/* Planning content only. Physical modules own help, progress and completion.
-   Keep every story unavailable until its game and earned ending are verified. */
+/* Codex's planning record for Days 4-14: each game's plot, both age paths'
+   goals, three acts and an ending. Physical modules own help, progress and
+   completion. Since 22 Oct 2026 the days are in the app: sona.js STORY_DAYS
+   lists them, story-game.html plays their games, and the story a child is
+   read around each game is adventures.js's (Days 1-3's format, its own
+   pictures), so no app page loads this file; the games' suites, the
+   narration adapter and the local preview still read it. `ready` is true
+   for a day whose game is connected and verified through that page
+   (tests/storygametest.mjs). */
 window.DailyAdventureStories = [
   {
     "day": 4,
@@ -85,7 +92,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day04-waterwheel-garden-v1.webp",
     "endingArt": "/assets/crafted/daily/day04-waterwheel-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 5,
@@ -168,7 +175,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day05-postboat-harbour-v1.webp",
     "endingArt": "/assets/crafted/daily/day05-postboat-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 6,
@@ -249,7 +256,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day06-moonberry-bakery-v1.webp",
     "endingArt": "/assets/crafted/daily/day06-bakery-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 7,
@@ -330,7 +337,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day07-tortoise-bridge-v1.webp",
     "endingArt": "/assets/crafted/daily/day07-bridge-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 8,
@@ -410,7 +417,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day08-glowworm-lanterns-v1.webp",
     "endingArt": "/assets/crafted/daily/day08-lantern-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 9,
@@ -491,7 +498,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day09-snowdrop-train-v1.webp",
     "endingArt": "/assets/crafted/daily/day09-trainline-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 10,
@@ -572,7 +579,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day10-patchwork-kite-v1.webp",
     "endingArt": "/assets/crafted/daily/day10-kite-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 11,
@@ -652,7 +659,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day11-sandstone-nestlift-v1.webp",
     "endingArt": "/assets/crafted/daily/day11-nestlift-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 12,
@@ -736,7 +743,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day12-lily-pad-concert-v1.webp",
     "endingArt": "/assets/crafted/daily/day12-concert-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 13,
@@ -820,7 +827,7 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day13-rooftop-seeds-v1.webp",
     "endingArt": "/assets/crafted/daily/day13-rooftops-ending-v1.webp",
-    "ready": false
+    "ready": true
   },
   {
     "day": 14,
@@ -902,6 +909,6 @@ window.DailyAdventureStories = [
     },
     "art": "/assets/crafted/daily/day14-moving-star-observatory-v1.webp",
     "endingArt": "/assets/crafted/daily/day14-observatory-ending-v1.webp",
-    "ready": false
+    "ready": true
   }
 ];

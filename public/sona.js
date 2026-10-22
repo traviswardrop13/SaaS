@@ -5345,6 +5345,11 @@
   //     gameAccess and gameBounce know the story keys by name (_storyKey).
   // Adding a story is two edits: a line here, its scenes in adventures.js.
   // Home's picture is /assets/crafted/home-<hero>.webp.
+  //   Days 4-14 (22 Oct 2026) are Codex's physical games, one shared page:
+  //   `controller` is the game's key in window.DailyAdventureGames
+  //   (/daily-adventures/<controller>.js), and story-game.html?story=<id>
+  //   plays it. Day 7's id is "frontdoor" because Day 3 already owns
+  //   "bridge"; its controller is still Codex's "bridge".
   const STORY_DAYS = [
     { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse",
       title: "The Lighthouse Sneeze",
@@ -5355,6 +5360,39 @@
     { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge",
       title: "The Puzzle Bridge",
       line: "The storm broke the bridge to Blossom Island. Build it back for the big party!" },
+    { id: "waterwheel", game: "waterwheel", controller: "waterwheel", page: "/story-game.html?story=waterwheel", hero: "waterwheel",
+      title: "The Thirsty Waterwheel Garden",
+      line: "Gardener Mouse's flowers are thirsty. Fix the troughs and get her waterwheel turning!" },
+    { id: "postboat", game: "postboat", controller: "postboat", page: "/story-game.html?story=postboat", hero: "postboat",
+      title: "The Little Island Postboat",
+      line: "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!" },
+    { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery",
+      title: "Breakfast at the Moonberry Bakery",
+      line: "Pour, stir, shape and bake breakfast buns for the bakery's morning visitors." },
+    { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor",
+      title: "Tortoise's New Front Door",
+      line: "Use a crane to finish a footbridge and help Tortoise move into his new house." },
+    { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern",
+      title: "The Glowworm Lantern Walk",
+      line: "Connect working circuits to light a woodland path and its gathering lantern." },
+    { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline",
+      title: "All Aboard for Snowdrop Valley",
+      line: "Build railway routes and guide animal passengers to their valley stops." },
+    { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite",
+      title: "The Hilltop Patchwork Kite",
+      line: "Patch, stitch and balance a giant kite made from the neighbours' painted cloth squares." },
+    { id: "nestlift", game: "nestlift", controller: "nestlift", page: "/story-game.html?story=nestlift", hero: "nestlift",
+      title: "The Sandstone Nest Lift",
+      line: "Balance a basket lift to deliver blankets and soft toys to a high nest village." },
+    { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert",
+      title: "The Lily-Pad Concert",
+      line: "Explore pond instruments, practise short musical patterns and conduct a shared concert." },
+    { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops",
+      title: "Seeds Across the Rooftops",
+      line: "Aim a seed springboard to fill rooftop planters and grow a flowering arch." },
+    { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory",
+      title: "The Moving-Star Observatory",
+      line: "Join working gear trains to move a painted sun, orbiting moon and star carousel." },
   ];
   // "adventure" is the story card itself (Home's access(), the price's ?from=)
   const STORY_KEYS = ["adventure"].concat(STORY_DAYS.map((d) => d.game));

@@ -283,6 +283,230 @@
           "prompt": "Grandma Tortoise, full body, standing upright, facing forward, smiling kindly: a very old, kind clay tortoise with a soft green face and a wrinkly smile, a rounded honey-and-brown patterned shell, a crown of little pink and white flowers on her head, round spectacles, and a little flowered hanky in one hand."
         }
       ]
+    },
+    {
+      "id": "waterwheel",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GARDENER MOUSE: Gardener Mouse, a honey-brown clay mouse (not a grey mouse) standing upright on two legs, with big round peach-pink ears, a pink nose, rosy cheeks, a long thin tail, a wide floppy straw sun hat with one white daisy tucked in its band, green dungarees with one big front pocket over a cream shirt, and little brown boots; a little taller than Echo. DUCKS: two friendly clay ducks: a mallard with a glossy green head, a thin white neck ring and a soft grey-brown body, and a speckled brown duck; both with orange bills and orange webbed feet; each about as tall as Echo. FROG: a little round bright-green clay frog with big golden eyes, a pale yellow tummy and a wide happy smile; about half Echo's height. The garden in this story is Gardener Mouse's garden on a sunny green hillside: sandy paths, low wooden flower beds, a white picket fence, a little stone spring at the top, a big chunky wooden waterwheel, open wooden water troughs (long wooden channels shaped like little slides, each with a U-shaped groove down its middle) and a small round stone-edged pond.",
+      "who": {
+        "GARDENER MOUSE": {
+          "re": "Gardener Mouse",
+          "label": "Gardener Mouse"
+        },
+        "DUCKS": {
+          "re": "\\b[Dd]ucks?\\b",
+          "label": "the two ducks"
+        },
+        "FROG": {
+          "re": "\\b[Ff]rog\\b",
+          "label": "the little frog"
+        }
+      },
+      "lineups": [
+        "waterwheel"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright sunny morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and pulls one long lemon-yellow-and-lilac striped sock out of her beak pouch, holding it up by its toe and blinking at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, one wing pointing at the sock.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "light": "day",
+          "picture": "Close up on the porch of Echo's cottage on a sunny morning. Pelly the pelican's big white wing (only her wing and the edge of her body, from the left edge) holds out a cream paper letter in the upper middle of the picture. On the letter is a child's crayon drawing of a little mouse in a straw hat beside a big wooden waterwheel, three droopy flowers and one big blue water drop: only crayon lines, no writing at all. Echo stands in front of a low wooden porch railing just left of the middle, leaning in toward the letter, eyes wide. The low wooden porch railing runs straight across the picture about two thirds of the way down.",
+          "buddy": "PEEK: the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s02.webp"
+          ]
+        },
+        "s03": {
+          "picture": "Just inside the little open wooden gate of Gardener Mouse's garden on a sunny green hillside. Sandy paths wind between low wooden flower beds where every flower hangs its head, thirsty, with pale floppy leaves. In the upper right of the middle, the small round stone-edged pond is completely empty: only dry pebbles at its bottom. At the top of the picture, the big chunky wooden waterwheel stands still beside the little stone spring, with no wooden troughs joined to it. Echo stands on the sandy path in the lower middle, just left of the middle, looking around with a worried, puzzled face, one wing on his cheek.",
+          "buddy": "on the sandy path just right of Echo: a patch of plain path, nothing on it"
+        },
+        "s04": {
+          "picture": "A close-up of the small round stone-edged pond in the garden, completely empty: dry pebbles and a few curled-up dry lily pads at its bottom. The two ducks sit side by side in the middle of the dry pond, each with a fluffy striped towel around its shoulders (one blue-and-white, one pink-and-white), looking around, puzzled and a little grumpy, as if asking where the water went. Droopy flowers lean over the pond's stone edge. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s05": {
+          "picture": "The middle of the garden in the sunshine. Gardener Mouse stands on the sandy path in the middle of the picture, beside a long low wooden flower bed of droopy daisies and tulips, and very carefully tips a teeny tiny tin watering can, no bigger than a thimble, over one droopy flower: one single drop of water falls from its spout. She is concentrating very hard, cheerful and determined, her straw hat tipped back. Echo stands on the path on the left of her and giggles behind one wing.",
+          "buddy": "on the sandy path just right of Gardener Mouse: plain path, nothing on it"
+        },
+        "s06": {
+          "picture": "Beside the big chunky wooden waterwheel, which stands still: a big messy heap of open wooden water troughs (long wooden channels shaped like little slides, each with a U-shaped groove) lies criss-crossed every which way on the sandy ground in the upper middle of the picture, with a scrubbing brush and a little bucket of soap bubbles beside it. Gardener Mouse stands on the right of the heap holding one trough, scratching her head under her straw hat with a sheepish smile. Echo stands in front of the heap, just left of the middle, looking up at it with his wings on his hips.",
+          "buddy": "on the sandy ground just right of Echo, in front of the heap: plain ground, nothing on it"
+        },
+        "s07": {
+          "picture": "A big sheet of cream paper pinned to the wooden wall of a little garden shed, filling the middle of the picture, with one simple crayon drawing and no words at all: a little stone spring at the top left, a zigzag line of wooden troughs running down from it to a big waterwheel, and blue water drops pouring from the turning wheel onto a row of happy flowers and a round pond, with big curvy arrows showing the way the water goes. No letters, no numbers. Nothing stands in front of the paper: no characters anywhere in the picture. Keep the paper in the top 85% of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "s08": {
+          "picture": "At the little stone spring at the top of the garden, clear water bubbles up behind a small closed wooden gate. Echo stands on a wide flat stone beside the spring, in the middle of the picture, holding up one end of a wooden trough with both wings, ready and smiling. Below him the garden slopes down to the still wooden waterwheel and the droopy flower beds. Gardener Mouse stands a little behind Echo on the right, holding her straw hat to her chest, hopeful, giving a thumbs-up.",
+          "buddy": "on the wide flat stone just left of Echo: plain stone, nothing on it"
+        },
+        "e01": {
+          "picture": "Gardener Mouse's garden working at last, seen from a little way off: clear water runs from the little stone spring along a line of joined wooden troughs to the big chunky wooden waterwheel, which turns with water splashing off its paddles; from the wheel, more joined troughs carry the water down into the low wooden flower beds, where every flower stands up tall and blooms pink, yellow and lilac, and into the small round stone-edged pond, now full and shining. Two little butterflies over the flowers. Echo is not in this picture, and no other character either.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "The small round stone-edged pond, full of clear shining water with lily pads. The two ducks splash into it from its far edge in the upper middle, wings up, water flying, laughing, their striped towels dropped on the stones behind them. Blooming flowers all around the pond. Echo stands on the pond's flat stone edge in the lower left of the middle, laughing as a few drops splash him.",
+          "buddy": "on the pond's flat stone edge just right of Echo: plain flat stones, nothing on them"
+        },
+        "e03": {
+          "picture": "Beside the full pond, with the big wooden waterwheel turning in the background on the left: Gardener Mouse sits on a little wooden bench in the upper left of the middle, her boots up on a flowerpot, her teeny watering can hanging on a hook beside her, smiling. In the middle of the picture, on a big lily pad at the pond's edge, the little frog is snuggled inside one long lemon-yellow-and-lilac striped sock like a sleeping bag, only its head poking out, eyes half shut, smiling. Echo stands on the sandy path right of the lily pad, pointing at the frog and laughing.",
+          "buddy": "on the sandy path just right of Echo: plain path, nothing on it"
+        },
+        "e04": {
+          "light": "indoor",
+          "picture": "Inside Echo's cozy round cottage, a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper middle of the picture, with no writing anywhere on it. A soft white puffy cloud has just drifted off the map to one side, uncovering a new place: a little green garden on a hillside, with a tiny wooden waterwheel, little rows of flowers and a round blue pond. The gold stars already on the map stay exactly as in the attached picture. A low wooden bench stands under the map; Echo stands on the left half of the bench, on tiptoe, pressing ONE new shiny gold star sticker onto the little garden with one wing, beaming.",
+          "buddy": "the right half of the bench, just right of Echo: plain wooden bench top, nothing on it",
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. In a sunny garden on a green hillside, Echo stands beside a big chunky wooden waterwheel that has stopped still, holding up one open wooden water trough with both wings, looking hopeful; beside him more wooden troughs lie in a messy heap on the sandy ground, the flowers in the low wooden beds droop their heads, thirsty, and a little stone spring bubbles at the back. Gardener Mouse stands right of the middle and tips her teeny tiny watering can over one droopy flower. Echo, the waterwheel, the troughs and Gardener Mouse are all in the middle band of the picture (their tops below 25% from the top and their bottoms above 75% from the top), Echo left of the middle and Gardener Mouse right of it. Only Echo and Gardener Mouse appear: no other characters.",
+      "chars": [
+        {
+          "key": "mouse",
+          "h": 1.2,
+          "prompt": "Gardener Mouse, full body, standing, facing forward, smiling: Gardener Mouse, a honey-brown clay mouse (not a grey mouse) standing upright on two legs, with big round peach-pink ears, a pink nose, rosy cheeks, a long thin tail, a wide floppy straw sun hat with one white daisy tucked in its band, green dungarees with one big front pocket over a cream shirt, and little brown boots; she holds a teeny tiny tin watering can, no bigger than a thimble, in one paw."
+        },
+        {
+          "key": "ducks",
+          "h": 1.0,
+          "prompt": "Two ducks standing side by side, full body, facing forward and smiling: two friendly clay ducks: a mallard with a glossy green head, a thin white neck ring and a soft grey-brown body, and a speckled brown duck; both with orange bills and orange webbed feet; the two the same size."
+        },
+        {
+          "key": "frog",
+          "h": 0.5,
+          "prompt": "A little frog, full body, sitting, facing forward, smiling: a little round bright-green clay frog with big golden eyes, a pale yellow tummy and a wide happy smile."
+        }
+      ]
+    },
+    {
+      "id": "postboat",
+      "light": "day",
+      "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. OTTER: Postmaster Otter, a sleek, friendly chocolate-brown clay otter with a cream face and chest, round whiskery cheeks, small round ears and a long thick tail, in a navy-blue peaked postmaster's cap with a little brass bell badge (no anchor) and a navy-blue jacket with two rows of shiny brass buttons; he stands upright on his back feet; about twice Echo's height. MOUSE: a small honey-brown clay mouse (brown, not grey, and only one of her) with big round pink ears, a long pink tail, a lilac dress with white dots and a tiny white apron; about as tall as Echo. HERON: a tall, thin, gentle grey-blue clay heron with long thin yellow legs, a long S-curved neck, a long pointed yellow bill, a little black feather crest at the back of his head and kind round eyes; no pouch; about two and a half times Echo's height. TURTLE: a small, young, bright-green clay turtle with a smooth, round, plain dark-green shell, big friendly eyes, chubby legs and a little orange knitted scarf; no glasses, no flowers (he is not Grandma Tortoise); about as tall as Echo. BEAVER: a chubby, cheerful honey-brown clay beaver with two big white front teeth, a round tummy, small round ears, a big flat dark-brown paddle tail with a criss-cross pattern and a little green-and-white checked neckerchief; about one and a half times Echo's height. THE POSTBOAT: the little postboat, a small turquoise wooden boat with a pointed front, a honey-wood inside with two little seats, a soft cream cloth canopy over its back half and a coil of rope at its back; no sail, no motor, no chimney; just big enough for Echo, one friend and a few parcels.",
+      "who": {
+        "OTTER": {
+          "re": "Otter",
+          "label": "Postmaster Otter"
+        },
+        "MOUSE": {
+          "re": "Mouse",
+          "label": "Mouse"
+        },
+        "HERON": {
+          "re": "Heron",
+          "label": "Heron"
+        },
+        "TURTLE": {
+          "re": "Turtle",
+          "label": "Turtle"
+        },
+        "BEAVER": {
+          "re": "Beaver",
+          "label": "Beaver"
+        },
+        "THE POSTBOAT": {
+          "re": "postboat",
+          "label": "the little postboat"
+        }
+      },
+      "lineups": [
+        "postboat"
+      ],
+      "scenes": {
+        "s01": {
+          "light": "day",
+          "picture": "A bright, breezy morning at the round blue front door of Echo's cottage (ECHO'S COTTAGE, exactly as in the attached earlier picture). Pelly the pelican stands on the left of the door and pulls a round white teapot with little blue flowers on it out of her beak pouch, a small curl of steam rising from its spout, and blinks at it in surprise. Echo stands just right of the middle on the wide doorstep, laughing, wings up.",
+          "buddy": "on the doorstep to the right of Echo, right of the door: plain step, nothing on it",
+          "also": [
+            "file:public/assets/adventure/lighthouse/s01.webp"
+          ]
+        },
+        "s02": {
+          "picture": "Close up on Echo's garden path on a bright, breezy morning. Pelly the pelican's big white wing (only her wing, from the left edge) holds up a cream paper letter in the upper middle: on it a child's crayon drawing of a little turquoise boat carrying brown parcels across blue water toward three small round islands with tiny houses; only crayon lines, no numbers, no writing at all. Echo stands on the path below the letter, left of the middle, wings up, eyes wide.",
+          "buddy": "on the garden path just right of Echo: plain path, nothing on it"
+        },
+        "s03": {
+          "picture": "A sunny morning on a long wooden jetty that reaches out into a sparkling turquoise bay dotted with little green islands and patches of tall reeds. Postmaster Otter stands on the jetty in the upper middle, beside a tall, wobbly pile of brown-paper parcels tied with string (a soft squashy one, a long thin one, a little round tin and more), waving hello with one paw. Echo stands on the jetty's wide plank deck in the lower middle, looking up at the pile, beak open in amazement. The plank deck runs across the lower third of the picture.",
+          "buddy": "on the jetty's plank deck just right of Echo: plain planks, nothing on it"
+        },
+        "s04": {
+          "picture": "A narrow channel of water between two thick walls of tall green reeds. Postmaster Otter's big, wide, round red post boat is stuck fast in the middle of the picture, squeezed between the reeds on both sides, bent reeds poking up all around it. Postmaster Otter stands in the big red boat, pushing hard on a long wooden oar, cheeks puffed out, his cap tipped over one eye, a reed tickling his nose. Silly, not worrying. Echo stands on a flat mossy rock at the water's edge in the lower left of the middle, one wing over his beak, giggling.",
+          "buddy": "on the flat mossy rock just right of Echo: plain rock, nothing on it"
+        },
+        "s05": {
+          "picture": "Close up beside a wooden jetty on calm, sparkling turquoise water: the little postboat (THE POSTBOAT) bobs in the middle of the picture, tied to a jetty post with a rope, seen from the side and a little above so its two seats show. Echo sits on the front seat of the little postboat, wings up, delighted. Behind the postboat, a patch of tall green reeds with a narrow channel of open water winding through it.",
+          "buddy": "the plain wooden back seat of the little postboat, just behind Echo, with nothing on it"
+        },
+        "s06": {
+          "picture": "Looking out across the sparkling turquoise bay on a sunny day at three little green islands. Far away in the upper left of the middle, on a small island, stands a little blue house: Mouse leans out of its round window, which has no curtains at all. In the upper right of the middle, on a second island beside a tall thatched cottage, Heron stands on one leg under one tiny grey rain cloud that rains only on him, dripping and blinking, while the sun shines everywhere else. Nearer, in the middle of the picture, on a third little island, Turtle sits beside a small empty bookshelf, yawning, holding one old book upside down. Calm water fills the bottom of the picture. Echo is not in this picture. Gentle and funny, never sad.",
+          "buddy": null
+        },
+        "s07": {
+          "picture": "At the end of the wooden jetty: a wide, flat wooden raft floats on the water in the middle of the picture, tied to the jetty with a rope, and on it lies a big new honey-wood front door with a little round window, much wider than a little boat. Beaver stands on the raft beside the new door, holding up a small chewed-up scrap of wood with a round door knob still on it, with a sheepish, toothy grin, little wood chips around his feet. Echo stands on the jetty planks in the lower left of the middle, laughing with both wings on his tummy. The jetty's plank deck runs across the lower third of the picture.",
+          "buddy": "on the jetty planks just right of Echo: plain planks, nothing on it"
+        },
+        "s08": {
+          "picture": "The little postboat (THE POSTBOAT) floats beside the wooden jetty in the middle of the picture, empty and ready, and Echo stands at its pointed front, wings out like a captain, facing the viewer. On the jetty planks on the left of the middle, Postmaster Otter gives a big paw thumbs-up beside a small pile of brown-paper parcels tied with string. Far out on the water, the wide wooden raft with the big new front door lying on it waits by a little floating jetty. Beyond, the turquoise bay, patches of tall reeds with narrow channels of open water between them, and little green islands with tiny houses. The jetty's plank deck runs across the lower third of the picture.",
+          "buddy": "on the jetty planks just right of the postboat's pointed front, right of Echo: plain planks, nothing on it"
+        },
+        "e01": {
+          "light": "afternoon",
+          "picture": "Beaver's island on a sunny afternoon: his cozy log house with a mossy green roof stands in the upper middle, and in its doorway now hangs the big new honey-wood front door with its little round window, swung wide open. Beaver stands in the doorway holding the door's round knob, with a huge toothy grin. In front of the house, at a wide wooden landing, the empty raft is tied up beside the little postboat. Echo stands in the postboat in the lower middle, cheering, wings up. Calm turquoise water across the bottom of the picture.",
+          "buddy": null
+        },
+        "e02": {
+          "picture": "Looking out across the sparkling turquoise bay on a sunny day at three little green islands, everyone happy. In the upper left of the middle, Mouse leans out of the round window of her little blue house, hanging up pretty blue-and-white checked curtains and waving. In the upper right of the middle, beside his tall thatched cottage, Heron, in a new bright yellow raincoat and yellow rain hat, splashes happily in a puddle under his one tiny grey rain cloud. Nearer, in the middle of the picture, Turtle lies on his tummy on his little island reading a brand-new picture book, his little bookshelf now full of books. Calm water fills the bottom of the picture. Echo is not in this picture.",
+          "buddy": null
+        },
+        "e03": {
+          "light": "afternoon",
+          "picture": "A sunny afternoon tea party on the wooden jetty, the turquoise bay and little islands behind. A little round table with a checked cloth and small cups stands in the upper middle. Pelly the pelican, at the left of the table, pours tea from the round white teapot with little blue flowers into a cup. Postmaster Otter, behind the table in the middle, rings a little brass hand bell, beaming. Beaver, at the right of the table, happily nibbles a long stick like a biscuit. Echo stands on the jetty planks in front of the table, left of the middle, holding up a tiny teacup, laughing. The jetty's plank deck runs across the lower third of the picture.",
+          "buddy": "on the jetty planks just right of Echo, in front of the table: plain planks, nothing on it"
+        },
+        "e04": {
+          "light": "evening",
+          "picture": "Evening inside Echo's cozy round cottage, lamp-lit: a close-up of the helper map (THE HELPER MAP, the same map as in the attached earlier picture) pinned to the wall, filling the upper two thirds of the picture, with its earlier gold stars still on it. In the blue sea at one edge of the map, a soft white cloud has just drifted away to show a cluster of tiny round green islands with little houses and a tiny turquoise boat between them. Echo flutters up in front of the map, just below the middle, pressing ONE new shiny gold star sticker onto those little islands with one wing, beaming. Plain wall and wooden floor below.",
+          "buddy": null,
+          "also": [
+            "file:public/assets/adventure/bridge/e04.webp"
+          ]
+        }
+      },
+      "home": "A wide picture for a game card. On a sparkling turquoise bay on a sunny day, Echo stands at the pointed front of the little postboat (THE POSTBOAT), wings out like a captain, with two brown-paper parcels tied with string under its cream canopy; just ahead, a narrow channel of open water winds between two patches of tall green reeds, and beyond them sit little green islands with tiny houses (a little blue house, a green-roof log house). Bright and cheerful. Echo, the postboat and the reeds are all in the middle band of the picture: their tops below 25% from the top and their bottoms above 75% from the top; the postboat left of the middle and the reed channel right of it. Only Echo appears: no other characters.",
+      "chars": [
+        {
+          "key": "otter",
+          "h": 2.0,
+          "prompt": "Postmaster Otter, full body, standing upright on his back feet, facing forward, smiling: a sleek, friendly chocolate-brown clay otter with a cream face and chest, round whiskery cheeks, small round ears and a long thick tail, in a navy-blue peaked postmaster's cap with a little brass bell badge (no anchor) and a navy-blue jacket with two rows of shiny brass buttons; one paw raised in a wave."
+        },
+        {
+          "key": "mouse",
+          "h": 0.95,
+          "prompt": "Mouse, full body, standing, facing forward, smiling: a small honey-brown clay mouse (brown, not grey) with big round pink ears, a pink nose, small pink cheeks, a long pink tail, a lilac dress with white dots and a tiny white apron."
+        },
+        {
+          "key": "heron",
+          "h": 2.5,
+          "prompt": "Heron, full body, standing on both legs, three-quarter view, smiling kindly: a tall, thin, gentle grey-blue clay heron with long thin yellow legs, a long S-curved neck, a long pointed yellow bill, a little black feather crest at the back of his head, soft pale-grey wing feathers and kind round eyes; no pouch under his bill, no clothes."
+        },
+        {
+          "key": "turtle",
+          "h": 0.9,
+          "prompt": "Turtle, full body, standing on his four chubby legs, three-quarter view, smiling: a small, young, bright-green clay turtle with a smooth, round, plain dark-green shell (no pattern), big friendly eyes, round cheeks and a little orange knitted scarf; no glasses, no flowers, no hat."
+        },
+        {
+          "key": "beaver",
+          "h": 1.5,
+          "prompt": "Beaver, full body, standing upright, facing forward, grinning: a chubby, cheerful honey-brown clay beaver with two big white front teeth, a round tummy, small round ears, little paws, a big flat dark-brown paddle tail with a criss-cross pattern showing beside him, and a little green-and-white checked neckerchief."
+        }
+      ]
     }
   ],
   "arcade": "A wide picture for a button. Echo, cheerful and waving, in the very middle of the picture, with fun game things tumbling around him in the air: a juicy watermelon slice, an orange basketball, a black-and-white piano key, a soccer ball, and a cartoon dinosaur bone. A soft, bright sky-blue background with a few puffy clouds. Echo fills the middle third of the picture's width and the middle of its height; the game things stay around him. No text.",
@@ -302,6 +526,11 @@
     }
   },
   "files": {
-    "tools/art/out/edit/lighthouse-sea.png": "the game's own night sea and harbor town: match its colors, its night light and its cottages"
+    "tools/art/out/edit/lighthouse-sea.png": "the game's own night sea and harbor town: match its colors, its night light and its cottages",
+    "public/assets/adventure/lighthouse/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican as they always look. Keep the cottage, its porch, its fence and Pelly exactly the same (Pelly's pose and what she holds are this page's own)",
+    "public/assets/adventure/lighthouse/s02.webp": "an earlier page of this story world: Pelly's wing holding out a letter at Echo's porch. Keep the porch, the letter paper and Pelly's wing looking the same (the drawing on the letter is this page's own)",
+    "public/assets/adventure/windup/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
+    "public/assets/adventure/bridge/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
+    "public/assets/adventure/bridge/e04.webp": "an earlier page of this story world: Echo's helper map on the wall of his cottage. Keep the map's paper, crayon colours and gold-star stickers looking the same (this page shows a different, newly uncovered place on it)"
   }
 }

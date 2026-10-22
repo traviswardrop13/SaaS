@@ -5,7 +5,7 @@
 // parent can see and do there:
 //   - the story card in each state: open, locked with a "Premium" tag (a tap
 //     opens the price at once, with no note), done with tomorrow's picture
-//     dark, a game day after Day 3, the game of the day on a phone that
+//     dark, a game day after Day 14, the game of the day on a phone that
 //     cannot buy; its tap is the game card's own tap (the handler pin);
 //   - moving between Home and the Arcade: the doors switch views with no
 //     reload, "‹ Home", Back and Forward, ?locked= opening the Arcade with its
@@ -29,7 +29,7 @@ async function section(label, run) { try { await run(); } catch (e) { ok(label +
 
 const SRC = readFileSync(ROOT + "/today.html", "utf8");
 const SONA = readFileSync(ROOT + "/sona.js", "utf8");
-const STORY = [...SONA.matchAll(/\{ id: "(\w+)", game: "\w+", page: "[^"]+", hero: "\w+",\s*title: "([^"]+)",\s*line: "([^"]+)" \}/g)].map((m) => ({ id: m[1], title: m[2], line: m[3] }));
+const STORY = [...SONA.matchAll(/\{ id: "(\w+)", game: "\w+",(?: controller: "\w+",)? page: "[^"]+", hero: "\w+",\s*title: "([^"]+)",\s*line: "([^"]+)" \}/g)].map((m) => ({ id: m[1], title: m[2], line: m[3] }));
 
 // ── a plain server: public/, /api/* recorded, and stubs for every page a tap
 // on Home can lead to (each only needs to be landed on) ──
@@ -115,7 +115,9 @@ const pathOf = (pg) => { const u = new URL(pg.url()); return u.pathname + u.sear
 // words a child must never read on Home
 const BAD = /coming soon|\bscores?\b|\bpoints?\b|\$\s?\d|of 14\b/i;
 
-ok("(the three story days are found in sona.js)", STORY.length === 3 && STORY.map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
+ok("(the fourteen story days are found in sona.js)", STORY.length === 14 && STORY.slice(0, 3).map((d) => d.id).join() === "lighthouse,windup,bridge", STORY);
+// the story with the longest title, for the fit (Home's card must hold it)
+const LONGEST = STORY.reduce((n, d, i) => (d.title.length > STORY[n].title.length ? i : n), 0);
 
 // ── 1. the story card's states ──
 await section("an open story", async () => {
@@ -170,7 +172,15 @@ await section("a story finished today", async () => {
   {
     const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 3, ls: 2, lk: "story", done: "TODAY", got: [] } });
     const c = await card(pg);
-    ok("Day 3 done: \"Day 3 done!\" and \"Come back tomorrow for a new adventure!\" (no Day 4 is promised)", c.title === "Day 3 done!" && c.line === "Come back tomorrow for a new adventure!" && c.done && c.go === null, c);
+    ok("Day 3 done: \"Day 3 done!\" and \"Come back tomorrow for Day 4!\"", c.title === "Day 3 done!" && c.line === "Come back tomorrow for Day 4!" && c.done && c.go === null, c);
+    ok("…with Day 4's picture, dark", c.story === STORY[3].id && (c.img === "/assets/crafted/home-" + STORY[3].id + ".webp" || c.fallback) && /brightness\(0\.15\)/.test(c.dark), c);
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 14, ls: 13, lk: "story", done: "TODAY", got: [] } });
+    const c = await card(pg);
+    ok("Day 14 done: \"Day 14 done!\" and \"Come back tomorrow for a new adventure!\" (no Day 15 is promised)", c.title === "Day 14 done!" && c.line === "Come back tomorrow for a new adventure!" && c.done && c.go === null, c);
     ok("…with tomorrow's game picture, dark", c.img === "/assets/crafted/home-glide.webp" && /brightness\(0\.15\)/.test(c.dark) && !c.story, c);
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
@@ -179,16 +189,16 @@ await section("a story finished today", async () => {
 
 await section("after the stories: the game of the day", async () => {
   {
-    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 3, last: 2, s: 3, ls: 2, lk: "story", done: "2026-01-01" } });
+    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } });
     const c = await card(pg);
-    ok("a game day after Day 3: the day's game, its line and its picture", c.title === "Sound Sprint" && c.line === "Race Echo to the beach before the waves roll in!" && c.img === "/assets/crafted/home-run.webp" && !c.story, c);
+    ok("a game day after Day 14: the day's game, its line and its picture", c.title === "Sound Sprint" && c.line === "Race Echo to the beach before the waves roll in!" && c.img === "/assets/crafted/home-run.webp" && !c.story, c);
     ok("…with no day chip and no \"Day N of 14\" anywhere", c.chip === null && !/\bday\b/i.test(c.text) && !/of 14/.test(c.aria), c);
     ok("…and a tap is that game's own tap (its practice page)", await tapTo(pg, "#questCard", /\/charge\.html\?game=arcade-run\.html$/), pg.url());
     ok("no page errors", errors.length === 0, errors);
     await ctx.close();
   }
   {
-    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 3, ls: 2, lk: "game", done: "TODAY" } });
+    const { ctx, pg, errors } = await open({ sub: true, quest: { i: 4, last: 3, s: 14, ls: 13, lk: "game", done: "TODAY" } });
     const c = await card(pg);
     ok("a game day finished today: \"All done for today!\" and \"Come back tomorrow for a new adventure!\"", c.title === "All done for today!" && c.line === "Come back tomorrow for a new adventure!" && c.done && c.go === null && c.disabled === "true", c);
     ok("no page errors", errors.length === 0, errors);
@@ -228,7 +238,7 @@ await section("after the stories: the game of the day", async () => {
     // Home's card and the story player show the same colour while a story's
     // picture loads (the card's wash, then the page's)
     const css = readFileSync(ROOT + "/crafted-home.css", "utf8"), adv = readFileSync(ROOT + "/adventures.js", "utf8");
-    const wrong = ["lighthouse", "windup", "bridge"].filter((id) => {
+    const wrong = STORY.map((d) => d.id).filter((id) => {
       const home = (css.match(new RegExp('\\.quest-art\\[data-story="' + id + '"\\]\\{background:(#[0-9a-f]{6});')) || [])[1];
       const player = (adv.match(new RegExp("\\n    " + id + ": \\{\\n      wash: \"(#[0-9a-f]{6})\"")) || [])[1];
       return !home || home !== player;
@@ -385,10 +395,10 @@ await section("Home stays quiet", async () => {
 const SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]];
 const STATES = [
   ["Day 1, open", { sub: true }],
-  ["Day 2, the longest title", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "2026-01-01", got: [] } }],
+  ["Day " + (LONGEST + 1) + ", the longest title", { sub: true, quest: { i: 0, last: 13, s: LONGEST, ls: Math.max(0, LONGEST - 1), lk: "story", done: "2026-01-01", got: [] } }],
   ["locked", { sell: true, stamp: "post" }],
   ["done", { sub: true, quest: { i: 0, last: 13, s: 1, ls: 0, lk: "story", done: "TODAY", got: [] } }],
-  ["a game day", { sub: true, quest: { i: 3, last: 2, s: 3, ls: 2, lk: "story", done: "2026-01-01" } }],
+  ["a game day", { sub: true, quest: { i: 3, last: 2, s: 14, ls: 13, lk: "story", done: "2026-01-01" } }],
   ["ages 3-4", { sub: true, age: 4 }],
   ["the founding banner", { ea: true }],
 ];

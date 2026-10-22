@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e9">
+  <title>Sona — Story game</title>
+  <link href="/fonts.css" rel="stylesheet"><link href="/sayplay.css" rel="stylesheet">
+  <link id="hostCss" href="/daily-adventures/host.css" rel="stylesheet">
+  <!--
+    THE GAME INSIDE DAYS 4-14 OF THE DAILY STORY (STORY1, 22 Oct 2026). One
+    page for eleven games: ?story=<id> names a day in sona.js's STORY_DAYS,
+    whose `controller` is Codex's physical game (window.DailyAdventureGames,
+    /daily-adventures/<controller>.js and .css) and whose words are
+    /daily-adventures/pages.js. Every word turn, the mic and its quiet rules
+    are /sayplay.js's, exactly as on Days 1-3's own pages.
+
+    What it keeps:
+    - Entitlement first: an address that is not a Days 4-14 story, or a story
+      this family cannot open, leaves before the game's files are asked for,
+      and SayPlay.start asks again before any mic or sound. The address only
+      picks the game; it never opens one.
+    - The same shell the games were verified on: this body is
+      tests/fixtures/daily-adventure.html's, with the same ids and the same
+      /daily-adventures/host.css after the game's own stylesheet
+      (storygametest holds the two equal).
+    - It hands back to the story: the end card's one button is "See what
+      happens!" to /adventure.html?part=end&story=<id>, with no Play again.
+      The day is finished by the engine's own end card (Sona.questEnd).
+    - It writes nothing of its own: no rep, coin, sticker or storage.
+  -->
+</head>
+<body hidden data-phase="boot">
+  <main id="app">
+    <canvas id="dailyCanvas" role="img" aria-label=""></canvas>
+    <header id="top"><button id="close" type="button" aria-label="Back home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button><span class="hudpill" id="ttl"></span><span id="spacer"></span><span class="hudpill" id="dots" role="img" aria-label=""></span></header>
+    <div id="dailyBanner" role="status" aria-live="polite"></div>
+    <div id="dailyControls"><button id="dailyHelp" class="act-pill" type="button" disabled aria-label=""><img src="/assets/crafted/echo-wave.webp" alt=""><span></span></button></div>
+    <section id="turnPanel" aria-live="polite"><div id="picBox"><span id="pic"></span></div><div id="word"></div><button id="hear" class="cream-pill" type="button" aria-label="Hear the word again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12 0a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hear it</span></button><div id="listenRow"><span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo"></span><span id="micState"></span><span id="cheer"></span><button id="micBtn" type="button" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div></section>
+  </main>
+  <div class="ovl" id="startOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-wave.webp" alt=""><h1 id="startTitle"></h1><p id="startCopy"></p><p id="helpCopy"></p><p class="small" id="startSound"></p><button id="startBtn" class="act-pill" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor"/></svg><span>Let's play</span></button></div></div>
+  <div class="ovl" id="primer"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt=""><h2>Let Echo hear you!</h2><p id="primerCopy"></p><p class="small" id="micPromise"></p><button class="btn" id="primerYes" type="button">Turn on Echo's ears</button><button class="ghost" id="primerNo" type="button">Not now</button></div></div>
+  <div class="ovl" id="pauseOvl"><div class="ovlCard"><img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt=""><h2>A little break</h2><p id="pauseCopy"></p><button class="btn" id="resume" type="button">Keep playing</button></div></div>
+  <div class="ovl" id="endOvl"><div class="ovlCard"><img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt=""><h2 id="endTitle"></h2><p id="endSub"></p><button class="btn" id="again" type="button">Play again</button><button class="ghost" id="goHome" type="button">Back home</button></div></div>
+  <script src="/sona.js"></script><script src="/crafted-words.js"></script><script src="/sayplay.js"></script><script src="/daily-adventures/pages.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var S = window.Sona, PAGES = window.DailyAdventurePages || {}, HOME = "/today.html";
+    function away() { try { location.replace(HOME); } catch (e) { location.href = HOME; } }
+    function $(id) { return document.getElementById(id); }
+    // which story: exactly ?story=<letters>, and only a day with a controller
+    var m = /^\?story=([a-z]+)$/.exec(location.search), day = null;
+    try { (S.STORY_DAYS || []).forEach(function (d) { if (m && d.id === m[1] && d.controller) day = d; }); } catch (e) {}
+    var copy = day && PAGES[day.controller];
+    if (!S || !window.SayPlay || !day || !copy || !/^[a-z]+$/.test(day.controller)) { away(); return; }
+    // entitlement before the game's own files are even asked for
+    try { if (!S.gameAccess(day.game).allowed) { S.gameBounce(day.game); return; } } catch (e) { away(); return; }
+
+    // the game's own words (pages.js), for a screen reader as well as the eye
+    function text(id, t) { var el = $(id); if (el) el.textContent = t || ""; }
+    document.title = "Sona — " + copy.title;
+    text("ttl", copy.title); text("startTitle", copy.title); text("dailyBanner", copy.banner);
+    text("startCopy", copy.startCopy); text("helpCopy", copy.helpCopy); text("primerCopy", copy.primerCopy); text("pauseCopy", copy.pauseCopy);
+    $("dailyCanvas").setAttribute("aria-label", copy.canvasLabel);
+    $("dots").setAttribute("aria-label", copy.progressLabel);
+    $("dailyHelp").setAttribute("aria-label", copy.helpLabel);
+    $("dailyHelp").querySelector("span").textContent = copy.helpText;
+
+    // The game's stylesheet goes BEFORE the shell's, the order the games were
+    // measured in; then its script, and only then the engine starts.
+    var css = document.createElement("link"); css.rel = "stylesheet"; css.href = "/daily-adventures/" + day.controller + ".css";
+    var host = $("hostCss"); host.parentNode.insertBefore(css, host);
+    var js = document.createElement("script"); js.src = "/daily-adventures/" + day.controller + ".js";
+    var started = false;
+    js.onerror = away;
+    js.onload = function () {
+      var game = window.DailyAdventureGames && window.DailyAdventureGames[day.controller];
+      if (started || !game) { if (!started) away(); return; }
+      started = true;
+      // ONE GAME, BOTH AGES: five moves picks a game's ages 3-4 version, eight
+      // its ages 5-8 one (Codex's contract), each move earned by the word
+      var count = S.playStyle() === "simple" ? 5 : 8, steps = [];
+      for (var i = 0; i < count; i++) steps.push([]);
+      document.body.hidden = false;
+      SayPlay.start({
+        key: day.game, title: copy.title, intro: copy.intro, steps: steps, finale: [], done: copy.done,
+        // STORY1: the end card's one button opens the story's ending; there
+        // is no Play again (the day is finished when this round ends)
+        exit: { href: "/adventure.html?part=end&story=" + day.id, label: "See what happens!" },
+        again: false,
+        play: game, sounds: game.sounds, soundMs: game.soundMs
+      });
+      // "game opened": the game key only, never the child (a bounced page is hidden)
+      if (!document.body.hidden) { try { S.track("game opened", { game: day.game }); } catch (e) {} }
+    };
+    document.body.appendChild(js);
+    // a page brought back from the browser's cache asks again who may be here
+    window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
+  })();
+  </script>
+</body>
+</html>

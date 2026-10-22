@@ -103,7 +103,10 @@ async function draw(prompt, refs, size, transparent) {
 // and Wally are drawn once, on Day 1's; Grandpa Bear and the toys on Day 2's).
 const story = (id) => P.stories.find((s) => s.id === id);
 const order = P.stories.map((s) => s.id);
-const lineups = (id) => [id, ...order.slice(0, order.indexOf(id))];
+// A story may name its own (`lineups`): Days 4-14 attach only their own, and
+// meet Pelly and Echo's cottage through a finished Day 1 page (`also`), since
+// the earlier days' raw lineups are not kept in the repo.
+const lineups = (id) => story(id).lineups || [id, ...order.slice(0, order.indexOf(id))];
 // A story's lineup: Echo, then each of its characters, trimmed to what is
 // drawn, scaled to its height (Echo = 1, 300 px) and stood bottom-aligned on
 // cream. ImageMagick, so no PIL is needed.
@@ -136,7 +139,9 @@ const why = (id, part) => CHECKS[id + "/" + part] ? `\n\nA previous drawing of t
 // Who is in a scene: the bible names each character as "NAME:"; a page that
 // does not mention one must not show it (the attached lineups show everyone).
 const WHO = { PELLY: [/Pelly/, "Pelly the pelican"], WALLY: [/Wally/, "Captain Wally"], MICE: [/\bmice\b/i, "the three mice"], "GRANDPA BEAR": [/Grandpa Bear/, "Grandpa Bear"], TOYS: [/wind-up toy|\btoys\b|bunny|elephant|hippo|jack-in-the-box/i, "the wind-up toys"], GRANDMA: [/Grandma/, "Grandma Tortoise"] };
-const absent = (s, text) => [...s.bible.matchAll(/\b([A-Z][A-Z' ]+):/g)].map((m) => m[1].trim()).filter((n) => WHO[n] && !WHO[n][0].test(text)).map((n) => WHO[n][1]);
+// A later story names its own cast's finders (`who`: NAME to { re, label }).
+const whoOf = (s, n) => s.who && s.who[n] ? [new RegExp(s.who[n].re), s.who[n].label] : WHO[n];
+const absent = (s, text) => [...s.bible.matchAll(/\b([A-Z][A-Z' ]+):/g)].map((m) => m[1].trim()).filter((n) => whoOf(s, n) && !whoOf(s, n)[0].test(text)).map((n) => whoOf(s, n)[1]);
 const placesIn = (text) => Object.values(P.places).filter((d) => text.includes(d.split(":")[0])).join("\n");
 // what each attached picture is for; `also` adds an earlier page of this
 // world ("story/part") or a sheet of the games' pieces ("sheet:<name>")

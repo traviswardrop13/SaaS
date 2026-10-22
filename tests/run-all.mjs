@@ -67,6 +67,7 @@ const SUITES = [
   "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the three stories come before the game of the day for every child, Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
   "homestorytest.mjs", // STORY1 on Home: one big story card (open, locked, done, a game day after Day 3), the Arcade and Books doors, Back and Forward, Home only reads, the play button and both doors on the first screen at five sizes
   "adventuretest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot, nothing written but seen
+  "storygametest.mjs", // STORY1 Days 4-14: the page that plays Codex's eleven games inside the story: the games' test host's shell and words, entitlement before any file, mic or sound, both ages for every game, and Day 4 played from "Let's go!" to its sticker
   "daily-contenttest.mjs", // All eleven new days require real controllers, both age paths, short story acts and actual setting/earned-ending art
   "daily-waterwheeltest.mjs", // Day 4: real water routes, gates and split flow; speech widens joins, with honest progress and safe interruptions
   "daily-postboattest.mjs", // Day 5: steer, dock, transfer parcels and tow a separate raft; speech calms water without delivering for the child

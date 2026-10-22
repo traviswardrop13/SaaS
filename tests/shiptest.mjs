@@ -41,6 +41,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   for (const f of ["lighthouse.js", "windup.js", "bridge.js", "lighthouse.css", "windup.css", "bridge.css", "adventures.js", "crafted-adventure.css", "arcade-sayit.js", "assets/adventure/voice/manifest.js"])
     ok("/" + f + " revalidates on every load (the daily story)", new RegExp('source: "/' + f.replace(/[./]/g, "\\$&") + '", headers: noStore').test(code),
       "a story page calls into it by name; an old cached copy would be missing what it calls");
+  ok("/daily-adventures/* (Days 4-14's games, their words and the shell) revalidates on every load", /source: "\/daily-adventures\/:path\*", headers: noStore/.test(code),
+    "story-game.html puts a day's game in by name; an old cached copy beside a fresh page never starts");
 
   // Every picture the story shows is on disk: a scene names its picture,
   // /assets/adventure/<story>/<art>.webp; Home and the player's start card
@@ -53,7 +55,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const A = box.window.SonaAdventures || {};
   const sonaSrc = readFileSync(APP + "/public/sona.js", "utf8");
   const daysSrc = (sonaSrc.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1];
-  const days = [...daysSrc.matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)", page: "([^"]+)", hero: "([a-z]+)"/g)].map((m) => ({ id: m[1], game: m[2], page: m[3], hero: m[4] }));
+  const days = [...daysSrc.matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)",(?: controller: "([a-z]+)",)? page: "([^"]+)", hero: "([a-z]+)"/g)].map((m) => ({ id: m[1], game: m[2], controller: m[3] || null, page: m[4], hero: m[5] }));
   ok("sona.js's STORY_DAYS lists the stories, and adventures.js holds the scenes of exactly those", days.length >= 1 && days.map((d) => d.id).sort().join() === Object.keys(A).sort().join(),
     "STORY_DAYS: " + days.map((d) => d.id).join() + " / adventures.js: " + Object.keys(A).join());
   const lost = [];
@@ -65,7 +67,10 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("every picture adventures.js names is on disk (" + scenes + " scenes)", scenes > 0 && lost.length === 0, lost.join(", "));
   const homes = days.map((d) => "public/assets/crafted/home-" + d.hero + ".webp").concat(["public/assets/crafted/home-arcade.webp"]).filter((f) => !existsSync(APP + "/" + f));
   ok("…and so is each story's Home picture, and the Arcade door's", homes.length === 0, homes.join(", "));
-  const noPage = days.filter((d) => d.page !== "/arcade-" + d.game + ".html" || !existsSync(APP + "/public" + d.page)).map((d) => d.page);
+  // Days 1-3: a page of their own; Days 4-14: the one shared page and their game's two files
+  const noPage = days.filter((d) => d.controller
+    ? d.page !== "/story-game.html?story=" + d.id || !existsSync(APP + "/public/story-game.html") || !existsSync(APP + "/public/daily-adventures/" + d.controller + ".js") || !existsSync(APP + "/public/daily-adventures/" + d.controller + ".css")
+    : d.page !== "/arcade-" + d.game + ".html" || !existsSync(APP + "/public" + d.page)).map((d) => d.page);
   ok("…and each story's game page", days.length > 0 && noPage.length === 0, noPage.join(", "));
 
   // THE RECORDED VOICE (P8). /assets/adventure/voice/manifest.js may be

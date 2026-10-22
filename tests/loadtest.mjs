@@ -143,7 +143,7 @@ for (const [game, title, art] of SKIES) {
 {
   const KID = new Set(["today.html", "activities.html", "charge.html", "library.html", "story.html", "chapter.html",
     "stickers.html", "customize.html", "road.html", "board.html", "adventure.html",
-    ...["slice", "run", "stack", "tiles", "glide", "rise", "feed", "lighthouse", "windup", "bridge"].map((g) => `arcade-${g}.html`)]);
+    ...["slice", "run", "stack", "tiles", "glide", "rise", "feed", "lighthouse", "windup", "bridge"].map((g) => `arcade-${g}.html`), "story-game.html"]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
   // and flagged every JS comparison operator in the app, so scripts and
   // comments come out first; copy set from JS is caught by the second pass on
@@ -210,7 +210,9 @@ for (const [game, title, art] of SKIES) {
   const ARCADE = ["slice", "run", "stack", "tiles", "glide", "rise"].map((g) => `arcade-${g}.html`);
   const CRAFTED_CSS = readdirSync(ROOT).filter((f) => /^crafted-.*\.css$/.test(f)).concat(["onboarding-crafted.css", "arcade-speech-help.css"]);
   // the daily story (STORY1, 22 Oct 2026): its player and its three games
-  const STORY = ["adventure.html", "arcade-lighthouse.html", "arcade-windup.html", "arcade-bridge.html", "lighthouse.css", "windup.css", "bridge.css"];
+  // and since 22 Oct 2026 Days 4-14's page, its shell and its eleven games' sheets
+  const STORY = ["adventure.html", "arcade-lighthouse.html", "arcade-windup.html", "arcade-bridge.html", "lighthouse.css", "windup.css", "bridge.css",
+    "story-game.html", "daily-adventures/host.css", ...readdirSync(ROOT + "/daily-adventures").filter((f) => /^[a-z]+\.css$/.test(f) && f !== "host.css" && f !== "narration.css").map((f) => "daily-adventures/" + f)];
   const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
     "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", ...STORY, ...CRAFTED_CSS];
   // the pages whose buttons have moved to teal; check.html and join.html are

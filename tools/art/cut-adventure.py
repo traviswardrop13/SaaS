@@ -39,6 +39,7 @@ And three that are this feature's own:
 
 Every number the games and the player fit to is in design/adventure/art-notes.md.
 """
+import json
 import os
 import subprocess
 import sys
@@ -53,7 +54,9 @@ GAME = os.path.join(CARDS, "game")
 ADV = os.path.join(ROOT, "public", "assets", "adventure")
 DESIGN = os.path.join(ROOT, "design", "adventure")
 PAGES = ["s%02d" % n for n in range(1, 9)] + ["e%02d" % n for n in range(1, 5)]
-STORIES = ["lighthouse", "windup", "bridge"]
+# every story adventure-prompts.json draws (Days 1-3, and since 22 Oct 2026
+# the Days 4-14 stories around Codex's games), in its order
+STORIES = [s["id"] for s in json.load(open(os.path.join(HERE, "adventure-prompts.json")))["stories"]]
 
 # THE TOWN. The model never painted twelve windows into the sea (it drew 6,
 # then 9), so lighthouse-sea is composed here: the sea and its empty hill

@@ -73,6 +73,11 @@ const nextConfig = {
       { source: "/crafted-adventure.css", headers: noStore },
       { source: "/arcade-sayit.js", headers: noStore },
       { source: "/assets/adventure/voice/manifest.js", headers: noStore },
+      // Days 4-14 (22 Oct 2026): story-game.html puts each day's game in by
+      // name (daily-adventures/<game>.js and .css, after pages.js's words and
+      // before host.css, the shell): an old copy of any beside a fresh page
+      // is a game that never starts.
+      { source: "/daily-adventures/:path*", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },
       { source: "/apple-touch-icon.png", headers: noStore },
       { source: "/icon-192.png", headers: noStore },
