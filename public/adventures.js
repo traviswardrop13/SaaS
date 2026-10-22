@@ -198,15 +198,15 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Here comes Pelly with the post. Oops. That's a stripy sock! Pelly, where's the other one?" },
+          line: "Here comes Pelly with a letter! Oops. That's a striped sock. Pelly, where's the other one?" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Gardener Mouse. Her flowers are thirsty, and her waterwheel has stopped!",
-                  little: "It's from Gardener Mouse. Her flowers need a drink!" } },
+                  little: "Here's the real letter, from Gardener Mouse. Her flowers need a drink!" } },
         // no buddy (on the sandy path just right of Echo, not placed)
         { art: "s03", ages: "both", buddy: null,
           line: { big: "Up the hill we go, to Gardener Mouse's garden. Oh dear. The flowers are droopy, and the pond is dry.",
-                  little: "Oh dear. Droopy flowers, and the pond is empty!" } },
+                  little: "Oh dear. Droopy flowers, an empty pond, and a wheel that won't turn!" } },
         // no buddy
         { art: "s04", ages: "big", buddy: null,
           line: "Two ducks sit in the empty pond with their towels, ready for a swim. Quack? Where's the water?" },
@@ -217,28 +217,28 @@
         // no buddy (on the sandy ground just right of Echo, in front of the heap, not placed)
         { art: "s06", ages: "both", buddy: null,
           line: { big: "She took her wooden troughs apart to scrub them. Now they're in a heap, and she can't remember how they go!",
-                  little: "The wooden troughs carry the water. Now they're all in a heap!" } },
+                  little: "The wooden troughs are slides for the water. Now they're all in a heap!" } },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
-          line: "Water runs from the spring, down the troughs, to the wheel. Splash! The wheel turns and lifts it up for the plants." },
+          line: "Water runs down the troughs to the wheel, and the wheel scoops it up for the plants. A gap? Splish! It spills out." },
         // no buddy (on the wide flat stone just left of Echo, not placed)
         { art: "s08", ages: "both", buddy: null,
-          line: { big: "Let's fit the troughs back together and open the water gate. Ready?",
-                  little: "Let's fix the troughs and let the water go. Ready?" } }
+          line: { big: "Let's fit the troughs back together, open the water gate, and get that wheel turning. Ready?",
+                  little: "Let's fix the troughs and get the wheel turning. Ready?" } }
       ],
       go: "Let's go!",
       ending: [
         // no buddy
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Whoosh! The wheel turns, the water runs, and every droopy flower stands up tall.",
-                  little: "Whoosh! The flowers get a big drink!" } },
+                  little: "Whoosh! The wheel turns, and the flowers get a big drink!" } },
         // no buddy (on the pond's flat stone edge just right of Echo, not placed)
         { art: "e02", ages: "big", buddy: null,
-          line: "The pond fills right up, and in jump the ducks. Splash! They didn't need those towels after all." },
+          line: "The pond fills right up, and in jump the ducks with a big splash. Quack, quack, hooray!" },
         // no buddy (on the sandy path just right of Echo, not placed)
         { art: "e03", ages: "both", buddy: null,
-          line: { big: "Gardener Mouse puts her feet up. And look! The little frog found Pelly's other sock. So cozy!",
-                  little: "Look! The little frog found Pelly's other sock!" } },
+          line: { big: "Gardener Mouse puts her feet up. And look! A little frog found Pelly's other sock. It makes a cozy sleeping bag!",
+                  little: "Look! A little frog found Pelly's other sock!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
           line: "Four gold stars on our helper map! And not one droopy flower left in the garden." }
@@ -262,22 +262,22 @@
                   little: "Postmaster Otter has a big pile of parcels!" } },
         // no buddy (on the flat mossy rock just right of Echo, not placed)
         { art: "s04", ages: "big", buddy: null,
-          line: "But his big post boat is too wide for the reeds. It got stuck! Squish, squelch." },
-        // no buddy (the plain wooden back seat of the little postboat, just behind Echo, with nothing on it, not placed)
+          line: "But his big red boat is too wide for the reeds. It got stuck! Squish, squelch." },
+        // no buddy (on the jetty's plank deck in the lower right, in front of the postboat, not placed)
         { art: "s05", ages: "both", buddy: null,
-          line: { big: "Good thing we have the little postboat. It's just small enough to fit through the reeds.",
+          line: { big: "Good thing Otter has a little postboat too. It fits right through the reeds!",
                   little: "Otter's big boat won't fit in the reeds. This little one will!" } },
         // no buddy
         { art: "s06", ages: "big", buddy: null,
           line: "Mouse has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!" },
-        // no buddy (on the jetty planks just right of Echo, not placed)
+        // no buddy (on the floating jetty's planks just right of Echo, not placed)
         { art: "s07", ages: "both", buddy: null,
-          line: { big: "And Beaver nibbled his own front door by mistake. Crunch! His new one is so big, it rides on a raft.",
-                  little: "Silly Beaver nibbled his own door. Crunch, crunch!" } },
-        // no buddy (on the jetty planks just right of the postboat's pointed front, right of Echo, not placed)
+          line: { big: "Then there's Beaver. He nibbled his own front door by mistake. Crunch! His new one is on that raft.",
+                  little: "Silly Beaver nibbled his door. Crunch! His new one is on a raft." } },
+        // no buddy (on the jetty planks in the lower right, right of Otter and in front of the postboat, not placed)
         { art: "s08", ages: "both", buddy: null,
-          line: { big: "Let's steer the postboat to every island, and tow Beaver's door behind us. Ready?",
-                  little: "Let's take the parcels to every island. Ready?" } }
+          line: { big: "Let's steer the little postboat to every island, and pull Beaver's raft behind us. Ready?",
+                  little: "Let's steer the boat to every island. Ready?" } }
       ],
       go: "Let's go!",
       ending: [
@@ -287,14 +287,14 @@
                   little: "Beaver's new door fits. Hooray!" } },
         // no buddy
         { art: "e02", ages: "big", buddy: null,
-          line: "Mouse hangs up her curtains. Turtle starts a new book. And Heron splashes about in his raincoat!" },
+          line: "Mouse hangs up her curtains. Turtle starts a new book. And Heron splashes in his new raincoat!" },
         // no buddy (on the jetty planks just right of Echo, in front of the table, not placed)
         { art: "e03", ages: "both", buddy: null,
           line: { big: "Tea for everyone from Pelly's teapot! And Beaver nibbles a stick, not his new door.",
                   little: "Tea for everyone from Pelly's teapot!" } },
-        // no buddy
+        // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Five gold stars on our helper map! Thank you, captain." }
+          line: "Five gold stars on our helper map! You and the little postboat did it!" }
       ]
     }
   };
