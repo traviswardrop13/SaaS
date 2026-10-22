@@ -460,7 +460,10 @@
         "e01": {
           "light": "afternoon",
           "picture": "Beaver's island on a sunny afternoon: his cozy log house with a mossy green roof stands in the upper middle, and in its doorway now hangs the big new honey-wood front door with its little round window, swung wide open. Beaver stands in the doorway holding the door's round knob, with a huge toothy grin. In front of the house, at a wide wooden landing, the empty raft is tied up beside the little postboat. Echo stands in the postboat in the lower middle, cheering, wings up. Calm turquoise water across the bottom of the picture.",
-          "buddy": null
+          "buddy": null,
+          "also": [
+            "file:tools/art/out/adventure/postboat/ref-beaver-s07.png"
+          ]
         },
         "e02": {
           "picture": "Looking out across the sparkling turquoise bay on a sunny day at three little green islands, everyone happy. In the upper left of the middle, Mouse leans out of the round window of her little blue house, hanging up pretty blue-and-white checked curtains and waving. In the upper right of the middle, beside his tall thatched cottage, Heron, in a new bright yellow raincoat and yellow rain hat, splashes happily in a puddle under his one tiny grey rain cloud. Nearer, in the middle of the picture, Turtle lies on his tummy on his little island reading a brand-new picture book, his little bookshelf now full of books. Calm water fills the bottom of the picture. Echo is not in this picture.",
@@ -469,7 +472,10 @@
         "e03": {
           "light": "afternoon",
           "picture": "A sunny afternoon tea party on the long wooden jetty by the red-roofed post shed, the turquoise bay and little islands behind. A little round table with a checked cloth and small cups stands in the upper middle. Pelly the pelican, at the left of the table, pours tea from the round white teapot with little blue flowers into a cup. Postmaster Otter, behind the table in the middle, rings a little brass hand bell, beaming. Beaver, at the right of the table, happily nibbles a long stick like a biscuit. Echo stands on the jetty planks in front of the table, left of the middle, holding up a tiny teacup, laughing. The jetty's plank deck runs across the lower third of the picture.",
-          "buddy": "on the jetty planks just right of Echo, in front of the table: plain planks, nothing on it"
+          "buddy": "on the jetty planks just right of Echo, in front of the table: plain planks, nothing on it",
+          "also": [
+            "file:tools/art/out/adventure/postboat/ref-beaver-s07.png"
+          ]
         },
         "e04": {
           "light": "evening",
@@ -1492,6 +1498,7 @@
     "public/assets/adventure/lighthouse/s02.webp": "an earlier page of this story world: Pelly's wing holding out a letter at Echo's porch. Keep the porch, the letter paper and Pelly's wing looking the same (the drawing on the letter is this page's own)",
     "public/assets/adventure/windup/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
     "public/assets/adventure/bridge/s01.webp": "an earlier page of this story world: Echo's cottage and Pelly the pelican. Keep them looking exactly the same",
-    "public/assets/adventure/bridge/e04.webp": "an earlier page of this story world: Echo's helper map on the wall of his cottage. Keep the map's paper, crayon colours and gold-star stickers looking the same (this page shows a different, newly uncovered place on it)"
+    "public/assets/adventure/bridge/e04.webp": "an earlier page of this story world: Echo's helper map on the wall of his cottage. Keep the map's paper, crayon colours and gold-star stickers looking the same (this page shows a different, newly uncovered place on it)",
+    "tools/art/out/adventure/postboat/ref-beaver-s07.png": "an earlier page of this story showing Beaver exactly as he must look: his two big white front teeth showing over his lower lip and his big flat criss-cross paddle tail. Draw Beaver like this (the place and the other characters are this page's own)"
   }
 }

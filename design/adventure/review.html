@@ -6,7 +6,7 @@
 <title>Story Art Review</title>
 <!--
   The daily stories' pictures, for Travis and Rachel to look at (STORY1,
-  22 Oct 2026). Open this file from the repo (it reads the pictures from
+  22 Oct 2026; Days 4-14 added the same day, read from sona.js's STORY_DAYS). Open this file from the repo (it reads the pictures from
   ../../public and Echo's lines from ../../public/adventures.js, so a line
   changed there shows here). Each page shows where the child's own buddy will
   stand (the dashed box: from adventures.js once its boxes are filled in,
@@ -50,31 +50,25 @@
 <body>
 <main>
   <h1>Story art review</h1>
-  <p class="lead">Every picture of the three daily stories, with the words Echo reads on it and where the child's own buddy will stand (the yellow dashed box). Ages 3-4 skip the pages marked "5-8". What a picture shows a child is Rachel's call; the look is Travis's. The orange notes are the things worth a second look.</p>
-  <nav><a href="#lighthouse">Day 1</a><a href="#windup">Day 2</a><a href="#bridge">Day 3</a><a href="#home">Home</a><a href="#cast">The cast</a><a href="#games">The games</a></nav>
+  <p class="lead">Every picture of the fourteen daily stories, with the words Echo reads on it and where the child's own buddy will stand (the yellow dashed box). Ages 3-4 skip the pages marked "5-8". What a picture shows a child is Rachel's call; the look is Travis's. The orange notes are the things worth a second look.</p>
+  <nav id="nav"><a href="#home">Home</a><a href="#cast">The cast</a><a href="#games">The games</a></nav>
   <div id="days"></div>
 
   <h2 id="home">Home's pictures</h2>
   <p class="note">The story card shows these 16:9, cropped from the middle on short phones; the Arcade button shows its picture as a square from the middle.</p>
-  <div class="wide">
-    <img src="../../public/assets/crafted/home-lighthouse.webp" alt="Day 1 on Home">
-    <img src="../../public/assets/crafted/home-windup.webp" alt="Day 2 on Home">
-    <img src="../../public/assets/crafted/home-bridge.webp" alt="Day 3 on Home">
+  <div class="wide" id="homes">
     <img src="../../public/assets/crafted/home-arcade.webp" alt="The Arcade button">
   </div>
 
   <h2 id="cast">The cast</h2>
   <p class="note">Every page was drawn against these lineups (Echo for size).</p>
-  <div class="wide">
-    <img src="cast-lighthouse.webp" alt="Pelly, Captain Wally and the three mice">
-    <img src="cast-windup.webp" alt="Grandpa Bear and the seven wind-up toys">
-    <img src="cast-bridge.webp" alt="Grandma Tortoise">
-  </div>
+  <div class="wide" id="casts"></div>
 
   <h2 id="games">The games' pictures</h2>
-  <p class="note">The games lay these over each other; transparent parts show the grey checks. Every one has a drawn stand-in in the game in case it does not load.</p>
+  <p class="note">Days 1-3's games lay these over each other; transparent parts show the grey checks. Every one has a drawn stand-in in the game in case it does not load. Days 4-14's games are Codex's (public/daily-adventures/), with their own pictures.</p>
   <div id="sprites"></div>
 </main>
+<script src="../../public/sona.js"></script>
 <script src="../../public/adventures.js"></script>
 <script>
 (function () {
@@ -101,11 +95,25 @@
     "bridge/s04": "The storm-broken bridge: holes and stones in the river.",
     "bridge/s08": "The bridge with its holes, before the game."
   };
-  var TITLES = { lighthouse: "Day 1: The Lighthouse Sneeze", windup: "Day 2: Grandpa Bear's Sleepy Toys", bridge: "Day 3: The Puzzle Bridge" };
+  // The days, their order and titles: sona.js's STORY_DAYS, the one list.
+  var DAYS = ((window.Sona && Sona.STORY_DAYS) || []).map(function (d) { return d.id; });
+  if (!DAYS.length) DAYS = ["lighthouse", "windup", "bridge"];
+  var TITLES = {};
+  ((window.Sona && Sona.STORY_DAYS) || []).forEach(function (d, i) { TITLES[d.id] = "Day " + (i + 1) + ": " + d.title; });
+  var CAST = { lighthouse: "Pelly, Captain Wally and the three mice", windup: "Grandpa Bear and the seven wind-up toys", bridge: "Grandma Tortoise" };
+  var nav = document.getElementById("nav"), homes = document.getElementById("homes"), casts = document.getElementById("casts");
+  DAYS.forEach(function (id, i) {
+    var a = document.createElement("a"); a.href = "#" + id; a.textContent = "Day " + (i + 1);
+    nav.insertBefore(a, nav.firstChild && nav.children[i] ? nav.children[i] : null);
+    var h = document.createElement("img"); h.src = "../../public/assets/crafted/home-" + id + ".webp"; h.alt = "Day " + (i + 1) + " on Home"; h.loading = "lazy";
+    homes.insertBefore(h, homes.lastElementChild);
+    var c = document.createElement("img"); c.src = "cast-" + id + ".webp"; c.alt = CAST[id] || ("Day " + (i + 1) + "'s cast"); c.loading = "lazy";
+    casts.appendChild(c);
+  });
   var A = window.SonaAdventures || {}, days = document.getElementById("days");
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  ["lighthouse", "windup", "bridge"].forEach(function (id) {
-    var h = el("h2", null, TITLES[id]); h.id = id; days.appendChild(h);
+  DAYS.forEach(function (id) {
+    var h = el("h2", null, TITLES[id] || id); h.id = id; days.appendChild(h);
     var story = A[id];
     if (!story) { days.appendChild(el("p", "note", "adventures.js did not load: the pictures only.")); }
     [["intro", "The story"], ["ending", "The ending"]].forEach(function (part) {

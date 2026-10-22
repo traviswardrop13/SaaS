@@ -461,8 +461,8 @@
     trainline: {
       wash: "#a9cbe0",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.505, y: 0.679, h: 0.18, pose: "rest" },
           line: "Pelly lands on the doorstep with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
