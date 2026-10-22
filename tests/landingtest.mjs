@@ -118,14 +118,15 @@ ok("the parent page carries the launch note", !!P_NOTE);
     return !!s && !!s.querySelector('img[src="/assets/site/echo.webp"]') && !!s.querySelector('img[src="/assets/site/hero-slice.webp"]') && !!s.querySelector('img[src="/assets/site/hero-piano.webp"]');
   }));
   ok("…and Echo's bubble says a sound", /^[a-z]+!$/.test((await page.textContent("#bubble")).trim()));
-  // A PARENT PAGE HAS NO SIGN IN (26 Sep 2026). A speech therapist finds
-  // their page, and their Sign in, from the footer.
+  // A PARENT PAGE HAS NO SIGN IN (26 Sep 2026), and since 22 Oct 2026 no
+  // way to the clinician page at all (Travis: "speaksona.com is only for
+  // parents. I don't want to target therapists at all").
   ok("the header has no Sign in: the logo and one Start free", await page.evaluate(() => {
     const h = document.querySelector("header");
     return h.querySelectorAll("a").length === 1 && !/sign in/i.test(h.textContent) && !!h.querySelector("#topGo");
   }));
   ok("…and that button waits until the hero's own form has scrolled away", !(await page.isVisible("#topGo")));
-  ok("the footer sends a speech therapist to /for-slps", await page.evaluate(() => !!document.querySelector('footer a[href="/for-slps"]')));
+  ok("nothing on the page links to the clinician page", await page.evaluate(() => !document.querySelector('a[href^="/for-slps"], a[href^="/slp"]')));
   ok("…and nothing else on the page speaks to clinicians", await page.evaluate(() => {
     const main = document.querySelector("main").innerText;
     // 29 Sep 2026: Rachel's byline now reads "MS, CF-SLP" (Travis) — her credential, not copy aimed at clinicians.

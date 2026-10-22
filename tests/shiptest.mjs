@@ -47,7 +47,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /source:\s*"\/"\s*,\s*destination:\s*"\/parents\.html"/.test(code),
     "the ad points at the root; the root has to be the page the ad promised");
   ok("…as a rewrite, so the URL stays speaksona.com", !/redirects\(\)[\s\S]*parents\.html/.test(code));
-  ok("…and the page says which URL it is", /rel="canonical" href="https:\/\/speaksona\.com\/"/.test(parents));
+  // www (22 Oct 2026): the bare domain answers a 308 to it, and a canonical
+  // should name the address that answers.
+  ok("…and the page says which URL it is", /rel="canonical" href="https:\/\/www\.speaksona\.com\/"/.test(parents) && /og:url" content="https:\/\/www\.speaksona\.com\/"/.test(parents));
   ok("the clinician page stays at /for-slps, and says that is its address",
     /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/for-slps\.html"/.test(code) &&
     /rel="canonical" href="https:\/\/speaksona\.com\/for-slps"/.test(slps) && /og:url" content="https:\/\/speaksona\.com\/for-slps"/.test(slps) &&
@@ -90,13 +92,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // 29 Sep 2026: Travis asked for "MS, CF-SLP" wherever Rachel is presented as an SLP — her byline on the parent page carries it.
   ok("…and her byline carries her credentials: Rachel Wardrop, MS, CF-SLP", /Rachel Wardrop, MS, CF-SLP &middot; Co-founder/.test(parents));
 
-  // A PARENT PAGE HAS NO SIGN IN. A speech therapist finds their own page,
-  // and its Sign in, from the footer.
+  // A PARENT PAGE HAS NO SIGN IN, and since 22 Oct 2026 no way to the
+  // clinician side at all (Travis: "speaksona.com is only for parents. I
+  // don't want to target therapists at all").
   const pHeader = (parents.match(/<header[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
   const pShown = parents.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
   ok("the parent page's header: the logo and one Start free, no Sign in",
     (pHeader.match(/<a\b/g) || []).length === 1 && /<button class="btn sm" id="topGo" type="button">Start free<\/button>/.test(pHeader) && !/Sign in|slp-login/.test(pHeader));
-  ok("…and its footer points a speech therapist at /for-slps", /<footer[\s\S]*href="\/for-slps"[\s\S]*<\/footer>/.test(parents));
+  ok("…and nothing on it links to the clinician pages", !/href="\/(for-slps|slp-login|slp\b|slps\b)/.test(pShown));
   const pForm = (parents.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
   ok("the parent page's one form: an email, one button, no 'I'm a…' and no name",
     /id="fEmail" type="email"/.test(pForm) && (pForm.match(/<button\b/g) || []).length === 1 && (pForm.match(/<input\b/g) || []).length === 1 &&
@@ -220,6 +223,79 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
   ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
     !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));
+}
+
+// ── found by search and by AI assistants, as a page for parents (22 Oct 2026) ──
+// Travis: a parent asking ChatGPT or Google how to do speech practice at home
+// should hear about Sona, and "speaksona.com is only for parents. I don't
+// want to target therapists at all". Each pin is one way that could quietly
+// stop being true.
+{
+  const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  const parents = readFileSync(APP + "/public/parents.html", "utf8");
+  const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
+  const NOINDEX = /<meta name="robots" content="noindex"/;
+  ok("the clinician page is noindex", NOINDEX.test(slps));
+  ok("…and so are the Speech Check, /try and the old /families page",
+    NOINDEX.test(readFileSync(APP + "/public/check.html", "utf8")) && NOINDEX.test(readFileSync(APP + "/public/try.html", "utf8")) &&
+    /robots: \{ index: false \}/.test(readFileSync(APP + "/app/families/page.tsx", "utf8")));
+  ok("the parent page is not", !NOINDEX.test(parents));
+  // No page a parent reads, and no email a parent gets, links to the
+  // clinician side. The clinician pages themselves are not a parent's, and
+  // neither is Settings' clinician card: it shows only for a profile set up
+  // as a clinician (role "slp", through /onboarding.html?slp=1, which nothing
+  // links to) and never in the iPhone app.
+  const CLIN = new Set(["for-slps.html", "slp.html", "slp-login.html", "settings.html"]);
+  const TO_CLIN = /href=["'](https?:\/\/(www\.)?speaksona\.com)?\/(for-slps|slp-login|slps\b|slp\.html|slp["'?#])/;
+  const fam = pages.filter((f) => !CLIN.has(f) && TO_CLIN.test(strip(readFileSync(APP + "/public/" + f, "utf8"))))
+    .concat(["app/families/page.tsx", "app/terms/page.tsx", "app/support/page.tsx", "app/privacy/page.tsx", "app/layout.tsx", "lib/nurture.ts", "lib/report.ts", "lib/revenuecat.ts"]
+      .filter((f) => existsSync(APP + "/" + f) && TO_CLIN.test(strip(readFileSync(APP + "/" + f, "utf8")))));
+  ok("no family page or family email links to the clinician side", fam.length === 0, fam.join(", "));
+
+  // robots: every crawler welcome, the AI assistants' by name, and no
+  // noindex page blocked (a blocked crawler never reads the noindex).
+  const robots = strip(readFileSync(APP + "/app/robots.ts", "utf8"));
+  ok("robots.txt names the AI assistants' crawlers", ["GPTBot", "OAI-SearchBot", "ClaudeBot", "PerplexityBot", "Google-Extended"].every((b) => robots.includes('"' + b + '"')));
+  ok("…blocks only the API and the admin pages", /const OFF = \["\/api\/", "\/admin\/"\];/.test(robots) && !/slp|join|try|families|check|founders|leads/.test(robots));
+  ok("…and points at the sitemap, on the address that answers", /sitemap: "https:\/\/www\.speaksona\.com\/sitemap\.xml"/.test(robots) &&
+    /const BASE = "https:\/\/www\.speaksona\.com";/.test(readFileSync(APP + "/app/sitemap.ts", "utf8")));
+  // sitemap: the root first, and never a page that is noindex or not a parent's.
+  const urls = (readFileSync(APP + "/app/sitemap.ts", "utf8").match(/url: `\$\{BASE\}[^`]*`/g) || []).map((u) => u.slice(13, -1));
+  ok("the sitemap starts at the root", urls[0] === "/", urls.join(" "));
+  ok("…and lists no clinician, private, noindex or app page",
+    urls.length > 1 && urls.every((u) => ["/", "/privacy.html", "/terms"].includes(u)), urls.join(" "));
+
+  // llms.txt: what an AI assistant reads about Sona. Everything the route can
+  // send is its string literals, so the whole file is scanned, comments out.
+  const llms = strip(readFileSync(APP + "/app/llms.txt/route.ts", "utf8"));
+  ok("llms.txt names Rachel in the settled words", llms.includes("Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship."));
+  ok("…speaks to parents only: no clinician, caseload or dashboard",
+    !/caseload|dashboard|clinician|for-slps|SLPA?\b(?<!CF-SLP)/.test(llms.replace(/CF-SLP/g, "")));
+  ok("…never quotes a dollar figure or a count of games or books", !/\$\s?\d/.test(llms.replace(/\$\{cost\}/g, "")) && !/\d+ (games|picture books|books)/.test(llms));
+  // The parent page's three cost answers, in order (free / app only / web
+  // sales), are llms.txt's three, chosen by the same switches in the same
+  // order. A reworded answer on either side fails, never passes empty.
+  const COST = /"(Right now, all of Sona is free[^"]*|Sona is free to download\. Sona Premium[^"]*)"/g;
+  const pCost = [...parents.matchAll(COST)].map((m) => m[1]), lCost = [...llms.matchAll(COST)].map((m) => m[1]);
+  ok("…and its cost line is the parent page's, chosen by the same switches",
+    /import \{ FREE_MODE, WEB_SALES \} from "@\/lib\/pricing"/.test(llms) &&
+    /FREE_MODE\s*\?\s*"Right now/.test(llms) && /: !WEB_SALES\s*\?\s*"Sona is free to download\. Sona Premium opens every game and every book\. You buy/.test(llms) &&
+    pCost.length === 3 && JSON.stringify(pCost) === JSON.stringify(lCost), pCost.length + " vs " + lCost.length);
+  // Its sounds line is the parent page's, which is pinned to ALL_SOUNDS above.
+  const a2 = ((parents.match(/<p class="a" id="a2"[^>]*>([^<]*)<\/p>/) || [])[1] || "").replace(/&ldquo;|&rdquo;/g, '"');
+  ok("…and its sounds line is the parent page's, word for word", a2.length > 40 && llms.includes(a2), a2);
+
+  // The labels in the page's head: they parse, they are the app, and they
+  // carry no price.
+  const ld = (parents.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) || [])[1];
+  let items = [];
+  try { items = JSON.parse(ld); } catch (e) {}
+  const app = items.find((x) => x["@type"] === "MobileApplication") || {};
+  ok("the parent page carries schema.org labels that parse", items.length === 3 && !!items.find((x) => x["@type"] === "Organization"));
+  ok("…the app's with the App Store address and Rachel's settled line",
+    app.installUrl === "https://apps.apple.com/us/app/sona-speech/id6785755867" &&
+    (app.description || "").includes("Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship."));
+  ok("…and no price, offer or rating", !/"(offers|price|aggregateRating)"/.test(ld || ""));
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──

@@ -24,6 +24,14 @@ button{border:0;background:none;cursor:pointer;}
 .rd-chips{display:flex;gap:6px;flex:none;}
 .rd-chip{display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:4px 10px 4px 7px;border-radius:15px;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb;font:800 17px/1 "Baloo 2",sans-serif;white-space:nowrap;}
 
+/* how it works: talk › trophies › chest › coins › shop, pictures first */
+.rd-how{display:flex;align-items:flex-start;justify-content:space-between;gap:2px;margin-top:12px;padding:10px 8px 8px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:0 3px 0 var(--shade);}
+.rd-how-step{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0;}
+.rd-how-pic{display:flex;align-items:center;justify-content:center;width:38px;height:38px;}
+.rd-how-pic svg{display:block;width:34px!important;height:34px!important;vertical-align:0!important;}
+.rd-how-step b{font:800 12px/1.1 Nunito,sans-serif;color:var(--muted);white-space:nowrap;}
+.rd-how-arrow{flex:none;align-self:center;margin-top:-14px;font:900 20px/1 Nunito,sans-serif;color:#d2b88f;}
+
 /* the month's notice: one line, never in the way */
 .rd-note{display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 8px 8px 14px;border-radius:18px;background:#fff8df;border:1px solid #f1dca6;font-weight:800;font-size:14px;line-height:1.35;}
 .rd-note>span{flex:1;}

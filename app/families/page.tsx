@@ -96,8 +96,12 @@ const TRACKER = `document.addEventListener("click",function(e){var a=e.target&&e
 // the switch has flipped eleven times and hand-editing a price into a page is
 // the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
 // a family reaching it through their SLP never sees it at all.
+// NOINDEX (22 Oct 2026): the root (parents.html) is the page search finds,
+// as with /try. This older page still describes the free version, which a
+// new family on an iPhone no longer starts with (TRIAL FIRST).
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
+  robots: { index: false },
   description: FREE_MODE
     ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship. Free right now: every game, every sound, no card."
     // No figure here: metadata is fixed at build, and the price moves with the
@@ -585,7 +589,7 @@ export default async function Landing() {
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 14px" }}>{finalFootnote}</div>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}><AppStoreBadge /></div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with Rachel, MS, CF-SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with Rachel, MS, CF-SLP
           </div>
         </section>
       </div>
