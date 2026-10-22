@@ -32,6 +32,76 @@ for (const f of ["crafted-buddies.js", "hoops.js", "soccer.js", "dino.js", "bubb
 const pages = readdirSync(APP + "/public").filter((f) => f.endsWith(".html"));
 ok("there are pages for the glob to cover", pages.length > 20, String(pages.length));
 
+// ── the daily story (STORY1, 22 Oct 2026): what its pages call, and what they show ──
+// The player calls SayIt.line and reads window.SonaAdventures; each story game
+// hands the engine its play script by name. A stale edge copy of any of them
+// beside a fresh page is the case the header exists to prevent; a stale voice
+// manifest would send a re-worded line to the live voice for good.
+{
+  for (const f of ["lighthouse.js", "windup.js", "bridge.js", "lighthouse.css", "windup.css", "bridge.css", "adventures.js", "crafted-adventure.css", "arcade-sayit.js", "assets/adventure/voice/manifest.js"])
+    ok("/" + f + " revalidates on every load (the daily story)", new RegExp('source: "/' + f.replace(/[./]/g, "\\$&") + '", headers: noStore').test(code),
+      "a story page calls into it by name; an old cached copy would be missing what it calls");
+
+  // Every picture the story shows is on disk: a scene names its picture,
+  // /assets/adventure/<story>/<art>.webp; Home and the player's start card
+  // show /assets/crafted/home-<hero>.webp; the Arcade door home-arcade.webp.
+  // A missing picture is the story's wash with the caption on it, never a
+  // blank page, but it is a missing page of the story all the same.
+  const vm = await import("node:vm");
+  const box = { window: {} };
+  vm.runInNewContext(readFileSync(APP + "/public/adventures.js", "utf8"), box);
+  const A = box.window.SonaAdventures || {};
+  const sonaSrc = readFileSync(APP + "/public/sona.js", "utf8");
+  const daysSrc = (sonaSrc.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1];
+  const days = [...daysSrc.matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)", page: "([^"]+)", hero: "([a-z]+)"/g)].map((m) => ({ id: m[1], game: m[2], page: m[3], hero: m[4] }));
+  ok("sona.js's STORY_DAYS lists the stories, and adventures.js holds the scenes of exactly those", days.length >= 1 && days.map((d) => d.id).sort().join() === Object.keys(A).sort().join(),
+    "STORY_DAYS: " + days.map((d) => d.id).join() + " / adventures.js: " + Object.keys(A).join());
+  const lost = [];
+  for (const [id, story] of Object.entries(A)) for (const sc of [...(story.intro || []), ...(story.ending || [])]) {
+    const f = "public/assets/adventure/" + id + "/" + sc.art + ".webp";
+    if (!/^[a-z0-9-]+$/.test(String(sc.art)) || !existsSync(APP + "/" + f)) lost.push(f);
+  }
+  const scenes = Object.values(A).reduce((n, s) => n + (s.intro || []).length + (s.ending || []).length, 0);
+  ok("every picture adventures.js names is on disk (" + scenes + " scenes)", scenes > 0 && lost.length === 0, lost.join(", "));
+  const homes = days.map((d) => "public/assets/crafted/home-" + d.hero + ".webp").concat(["public/assets/crafted/home-arcade.webp"]).filter((f) => !existsSync(APP + "/" + f));
+  ok("…and so is each story's Home picture, and the Arcade door's", homes.length === 0, homes.join(", "));
+  const noPage = days.filter((d) => d.page !== "/arcade-" + d.game + ".html" || !existsSync(APP + "/public" + d.page)).map((d) => d.page);
+  ok("…and each story's game page", days.length > 0 && noPage.length === 0, noPage.join(", "));
+
+  // THE RECORDED VOICE (P8). /assets/adventure/voice/manifest.js may be
+  // missing: then every line is the live voice. When it is there, every file
+  // it lists is on disk, is named by the hash the player computes (FNV-1a,
+  // 32-bit, of TTS_CACHE_VERSION + "|" + the line), and carries a line the
+  // story still says; and no recording sits in the folder unlisted.
+  const lines = new Set();
+  for (const story of Object.values(A)) for (const sc of [...(story.intro || []), ...(story.ending || [])]) {
+    if (typeof sc.line === "string") lines.add(sc.line); else if (sc.line) { lines.add(sc.line.big); if (sc.line.little) lines.add(sc.line.little); }
+  }
+  const ver = (sonaSrc.match(/const TTS_CACHE_VERSION = "([^"]+)"/) || [])[1];
+  const fnv = (t) => { let h = 0x811c9dc5; for (const b of Buffer.from(ver + "|" + t, "utf8")) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); };
+  const player = readFileSync(APP + "/public/adventure.html", "utf8");
+  ok("the player names a recorded line by that hash (TTS_CACHE_VERSION, FNV-1a)", !!ver && /h = 0x811c9dc5;/.test(player) && /\(\(S && S\.TTS_CACHE_VERSION\) \|\| "v9"\) \+ "\|" \+ text/.test(player) && /"\/assets\/adventure\/voice\/" \+ h \+ "\.mp3"/.test(player),
+    "the player's voiceHash() moved: re-read this check");
+  const VDIR = APP + "/public/assets/adventure/voice";
+  if (!existsSync(VDIR + "/manifest.js")) {
+    const strays = existsSync(VDIR) ? readdirSync(VDIR).filter((f) => f.endsWith(".mp3")) : [];
+    ok("no recorded voice yet: every story line is the live voice, and no recording sits there unlisted", strays.length === 0, strays.join(", "));
+  } else {
+    const vbox = { window: {} };
+    vm.runInNewContext(readFileSync(VDIR + "/manifest.js", "utf8"), vbox);
+    const files = (vbox.window.SonaAdventureVoice || {}).files || {};
+    const keys = Object.keys(files);
+    const bad = keys.filter((h) => !/^[0-9a-f]{8}$/.test(h) || fnv(files[h]) !== h || !existsSync(VDIR + "/" + h + ".mp3"));
+    ok("every recorded line in the manifest is on disk, under the hash of its own words", keys.length > 0 && bad.length === 0, bad.join(", "));
+    const stale = keys.filter((h) => !lines.has(files[h]));
+    ok("…and every one is a line the story still says (a re-worded line falls back to the live voice)", stale.length === 0, stale.map((h) => files[h]).join(" | "));
+    const strays = readdirSync(VDIR).filter((f) => f.endsWith(".mp3") && !(f.slice(0, -4) in files));
+    ok("…and no recording sits in the folder unlisted", strays.length === 0, strays.join(", "));
+    const unrecorded = [...lines].filter((t) => !files[fnv(t)]);
+    console.log("     (" + (lines.size - unrecorded.length) + " of " + lines.size + " story lines recorded" + (unrecorded.length ? "; the rest play in the live voice" : "") + ")");
+  }
+}
+
 
 // ── the root, and what a shared link looks like ──
 // THE ROOT IS FOR PARENTS (Travis, 26 Sep 2026: "change it to target parents

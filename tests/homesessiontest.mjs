@@ -1,4 +1,6 @@
-// Home is a silent game picker. Browsing preserves existing practice and access.
+// Home's Arcade is a silent game picker (since 22 Oct 2026, STORY1, Home leads
+// with today's story and the picker is one tap away, at ?view=arcade; its own
+// suite is homestorytest). Browsing preserves existing practice and access.
 // Navigation destinations are observed without starting microphone practice.
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
@@ -27,7 +29,7 @@ async function fixture(config={}){
   if(config.run)sessionStorage.setItem('sona.run.v1',JSON.stringify(config.run));
   if(config.homework)localStorage.setItem('sona.homework.v1',JSON.stringify({hw:{id:'home-goal',title:'S practice',sounds:['S'],pos:'i',repsPerDay:20,start:'2000-01-01',due:'2999-01-01',by:'Rachel, CF-SLP'},at:Date.now()}));
  },config);
- const page=await context.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(BASE+'/today.html');return {context,page,errors};
+ const page=await context.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(BASE+(config.path||'/today.html?view=arcade'));return {context,page,errors};
 }
 
 // the eight original titles, the twenty Say & Play games (26 Sep 2026) and Rise Up (9 Oct 2026)

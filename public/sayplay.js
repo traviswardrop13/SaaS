@@ -691,6 +691,11 @@
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
+  // a story's game hands back to its story instead of Home (STORY1): the end
+  // card's one button opens the story's ending. Only an address of that one
+  // shape is taken; anything else in G.exit leaves the card as it was. The ✕
+  // during play still goes Home: a child who leaves mid-game wants out.
+  function storyExit() { stopAudio(); micStop(); location.href = G.exit.href; }
 
   // ── pause: a hidden page stops everything; coming back needs one tap ──
   function pause() {
@@ -750,6 +755,13 @@
       face: face,
     }, G.steps.length);
     $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
+    if (G.exit && typeof G.exit.href === "string" && /^\/adventure\.html\?part=end&story=[a-z]+$/.test(G.exit.href)) {
+      $("goHome").onclick = storyExit; $("goHome").textContent = G.exit.label || "See what happens!";
+      $("goHome").className = "btn";            // teal, the end card's main button
+    }
+    // a story's game has no Play again: the story goes on, and another round
+    // would finish nothing (the day is already done)
+    if (G.again === false) $("again").hidden = true;
     $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
     $("micBtn").onclick = function () {
       if (!turnLive || paused) return;

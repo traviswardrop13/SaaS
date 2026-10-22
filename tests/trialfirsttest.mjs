@@ -210,6 +210,9 @@ try {
       ok("…and the Books card says Premium, not \"1 free book\"", books === "Premium", books);
       // a grey game opens the price at once (Travis, 4 Oct 2026: "I want it
       // to open automatically if they click on a game that is grayed out")
+      // (the games are behind Home's Arcade door since 22 Oct 2026, STORY1:
+      // the path a "Not now" family really takes)
+      await page.locator("#arcadeBtn").click();
       await page.locator('#activityGroups .game-card[data-game="slice"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=slice$/);
       await page.waitForFunction(() => document.body.classList.contains("offer"));
@@ -260,6 +263,7 @@ try {
     const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, intro: "free3", noGate: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator("#arcadeBtn").click();
       await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=stack$/);
       await page.waitForFunction(() => document.body.classList.contains("offer") && getComputedStyle(document.getElementById("iapCard")).display !== "none");
@@ -284,6 +288,7 @@ try {
     const { context, page, errors } = await fresh({ app: "nobuy", stamp: "post", setUp: true });
     try {
       await page.goto(BASE + "/today.html"); await page.waitForFunction(() => document.querySelectorAll(".game-card").length > 0);
+      await page.locator("#arcadeBtn").click();
       await page.locator('#activityGroups .game-card[data-game="stack"]').click();
       await page.waitForTimeout(500);
       const v = await page.evaluate(() => ({ path: location.pathname, notice: !document.getElementById("libraryNotice").hidden, msg: document.getElementById("libraryMessage").textContent }));

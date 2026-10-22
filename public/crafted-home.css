@@ -106,9 +106,10 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .featured-group[data-collection="picks"] .game-info{min-height:66px;}
 .game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}
 
-/* THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): one cream card under "Pick a
-   game!". A picture leads (the next gift, a gift waiting, or the chest),
-   beside a five-part bar filling toward it; the counts are small. The dot
+/* THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): one cream card, under Home's
+   two doors since 22 Oct 2026 (STORY1). A picture leads (the next gift, a
+   gift waiting, or the chest), beside a five-part bar filling toward it; the
+   counts are small. The dot
    that says "something is ready" is teal: orange means only the practice
    sound's letters. It is a link, never a game card, so no game's rules see it. */
 #roadCard{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;margin:-6px 0 18px;padding:9px 12px 9px 9px;border-radius:22px;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);text-decoration:none;position:relative;transition:transform .12s;}
@@ -140,20 +141,110 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 @media(max-width:350px){#roadCard{gap:9px;padding-right:9px;}.road-pic{width:54px;height:50px;}}
 @media(prefers-reduced-motion:reduce){#roadCard{transition:none;}.road-dot{animation:none;}#roadCard:active{transform:none;}}
 
-/* QUEST1: the daily adventure card (13 Oct 2026), under the Trophy Road card.
-   Done, it shows tomorrow's game dark and takes no tap. */
-#questCard{display:flex;align-items:center;gap:12px;width:100%;min-height:76px;margin:0 0 18px;padding:9px 12px 9px 9px;border-radius:22px;background:linear-gradient(#fffefb,#fff4df);border:1px solid #efdcbc;box-shadow:0 3px 0 #e6cfa6,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
+/* HOME AND THE ARCADE (STORY1, 22 Oct 2026): two views of one page. Each is
+   hidden on its wrapper only: a block's own [hidden] belongs to its painter
+   (the story card, the road card, the preview notice). */
+#libraryApp[data-view="home"] .arcade-only,#libraryApp[data-view="arcade"] .home-only{display:none;}
+#homeTitle{font:800 32px/1.08 "Baloo 2",sans-serif;letter-spacing:-.7px;color:var(--ink);margin:18px 0 13px;}
+#homeTitle:focus,#arcadeTitle:focus{outline:none;}
+/* the phone's home bar: measured by the fit, never seen */
+#homeInset{position:absolute;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;}
+
+/* THE STORY CARD (QUEST1's daily adventure card, 13 Oct 2026, made big for
+   STORY1). A 16:9 picture with the day's chip, the title large, the hook, and
+   a big round teal play button (64 px). Without Premium a small cream
+   "Premium" tag sits on the picture, like a game card's. Done, it shows
+   tomorrow's picture dark and takes no tap. */
+#questCard{position:relative;display:flex;flex-direction:column;width:100%;margin:0;padding:0;border-radius:24px;background:linear-gradient(#fffefb,#fff4df);border:1px solid #efdcbc;box-shadow:0 4px 0 #e6cfa6,0 8px 18px #6947200f;color:var(--ink);font:inherit;text-align:left;cursor:pointer;overflow:hidden;transition:transform .12s;}
 #questCard[hidden]{display:none;}
 #questCard:active{transform:translateY(2px) scale(.99);}
 #questCard.done{cursor:default;}
 #questCard.done:active{transform:none;}
-.quest-pic{flex:none;width:96px;height:54px;border-radius:14px;overflow:hidden;background:#f3e6cf;display:flex;align-items:center;justify-content:center;}
+.quest-art{position:relative;display:block;width:100%;aspect-ratio:16/9;background:#efe6d5;overflow:hidden;transition:none;}
+/* each story's wash, shown while its picture loads or if it never comes
+   (Echo stands on it): the night sea, honey wood, the morning river; the
+   same colours as each story's wash in adventures.js */
+.quest-art[data-story="lighthouse"]{background:#2b2f5e;}
+.quest-art[data-story="windup"]{background:#b9783f;}
+.quest-art[data-story="bridge"]{background:#5fb8c2;}
+.quest-pic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
 .quest-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.quest-pic svg{width:46%;height:auto;max-height:86%;}
+.quest-art.fallback .quest-pic img{width:auto;height:84%;object-fit:contain;filter:drop-shadow(0 6px 4px #1d120a33);}
+#questCard.done .quest-art{background:#2a2119;}
 #questCard.done .quest-pic img,#questCard.done .quest-pic svg{filter:brightness(.15) saturate(0);opacity:.55;}
-.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-.quest-day{font:800 13px/1.2 "Baloo 2",sans-serif;color:var(--muted);}
-.quest-line{font:800 15px/1.25 Nunito,sans-serif;color:var(--ink);}
-.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:var(--craft-teal);color:#fff;box-shadow:0 3px 0 #0b5d63;}
+.quest-chip{position:absolute;left:10px;top:10px;padding:3px 11px;border-radius:99px;background:#fffdf2f2;color:var(--ink);font:800 16px/1.25 "Baloo 2",sans-serif;box-shadow:0 1px 4px #583e2930;}
+.quest-lock{position:absolute;right:10px;bottom:10px;padding:4px 9px;border-radius:99px;background:#fff7e8f2;color:#715031;font:800 11px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2930;}
+.quest-chip[hidden],.quest-lock[hidden]{display:none;}
+.quest-body{display:flex;align-items:center;gap:12px;padding:12px 14px 14px 16px;}
+.quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.quest-title{font:800 24px/1.1 "Baloo 2",sans-serif;letter-spacing:-.4px;color:var(--ink);}
+.quest-line{font:700 14px/1.35 Nunito,sans-serif;color:var(--muted);}
+.quest-go{flex:none;display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(#239ca2,#14858d);color:#fff;box-shadow:0 4px 0 #0b5d63;}
+.quest-go svg{display:block;margin-left:3px;}
 .quest-go[hidden]{display:none;}
-@media(max-width:350px){#questCard{gap:9px;}.quest-pic{width:72px;height:46px;}.quest-line{font-size:14px;}.quest-go{width:40px;height:40px;}}
-@media(prefers-reduced-motion:reduce){#questCard{transition:none;}#questCard:active{transform:none;}}
+
+/* THE TWO DOORS: side by side, a picture and one word each, cream like the
+   road card (teal is for the one main action, the story's play button). On a
+   phone each door is a tile, its picture in a band across the top and the
+   word under it, like the Arcade's own game cards. The Arcade's painting is
+   Echo among the games' things (a watermelon, a basketball, a piano key, a
+   ball, a bone) out at its edges: a square crop kept Echo and threw the games
+   away, so a child who can't read saw two doors of Echo. A band (2:1, and no
+   flatter than 5:2 when the fit needs room) keeps them in. On an iPad the
+   picture sits beside the word at 3:2, which keeps them too. Nothing here
+   animates in size (the fit measures it). */
+#homeDoors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 16px;}
+#homeDoors>button{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:88px;padding:0;border-radius:20px;overflow:hidden;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
+#homeDoors>button:active{transform:translateY(2px) scale(.98);}
+.door-pic{position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:2/1;overflow:hidden;background:#efe6d5;transition:none;}
+.door-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.door-pic.fallback{background:#fff1d2;}
+.door-pic.fallback img{width:88%;height:88%;object-fit:contain;}
+/* the books' old sticker, if their picture never loads: whole and square in
+   the band (it fills its box and slices, which in a band left a blue strip of
+   cover); its inline style is sona.js's */
+.door-pic>.stk{position:relative!important;inset:auto!important;width:auto;height:88%;aspect-ratio:1;background:transparent!important;}
+.door-copy{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:8px 12px 10px;transition:none;}
+.door-word{font:800 22px/1.05 "Baloo 2",sans-serif;letter-spacing:-.3px;color:var(--ink);}
+/* the small line is as tall as the Books tag beside it, so the two words sit
+   level */
+.door-sub{display:flex;align-items:center;min-height:22px;font:800 11px/1.25 Nunito,sans-serif;color:var(--muted);}
+.door-tag{font-size:10px;padding:4px 7px;background:#f6e8d3;color:#775431;}
+/* the Arcade's way back: a cream pill, a second choice */
+.arcade-top{display:flex;margin-top:16px;}
+#homeBack{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 17px 8px 13px;border-radius:999px;border:1.5px solid var(--cream-line);background:var(--cream-card);box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font:800 16px/1 "Baloo 2",sans-serif;cursor:pointer;transition:transform .12s;}
+#homeBack span{font-size:22px;line-height:1;margin-top:-2px;}
+#homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
+.arcade-top+.library-intro{margin-top:12px;}
+.home-only #roadCard{margin:0 0 18px;}
+
+/* the fit's steps (fitHome in today.html): the story's picture first, then
+   the type and the gaps, then the doors' pictures, then the story's picture
+   again (the story is the day's one big thing, so it gives way last).
+   Everything a step resizes never transitions: sona.css gives every property
+   a 0.01 ms transition under Reduce Motion, and a box mid-transition reports
+   the size it WAS, so the fit measured step 2 as doing nothing, and a re-fit
+   (coming back to the front) stopped early and left the doors off screen.
+   .quest-art, .door-pic and .door-copy carry it on their own rules; a new
+   rule below adds its element here (homestorytest checks every one). */
+#homeTitle,.quest-body,.quest-title,.quest-line,#homeDoors,#trialBanner,.door-word{transition:none;}
+#libraryApp.fit1 .quest-art{aspect-ratio:2/1;}
+#libraryApp.fit2 #homeTitle{font-size:26px;margin:10px 0 8px;}
+#libraryApp.fit2 .quest-body{padding:9px 12px 10px 14px;}
+#libraryApp.fit2 .quest-title{font-size:21px;}
+#libraryApp.fit2 .quest-line{font-size:13px;line-height:1.3;}
+#libraryApp.fit2 #homeDoors{margin-top:10px;}
+#libraryApp.fit2 #trialBanner{margin-top:10px;}
+#libraryApp.fit4 .quest-art{aspect-ratio:5/2;}
+#libraryApp.fit5 .quest-art{aspect-ratio:3/1;}
+/* the doors' own steps are a phone's: an iPad's doors are rows */
+@media(max-width:599px){
+ #libraryApp.fit2 .door-copy{padding:6px 11px 8px;gap:2px;}
+ #libraryApp.fit2 .door-word{font-size:20px;}
+ #libraryApp.fit3 .door-pic{aspect-ratio:5/2;}
+}
+
+@media(min-width:600px){#homeTitle{font-size:40px;margin:24px 0 16px;}.quest-title{font-size:30px;}.quest-line{font-size:16px;}.quest-body{padding:16px 18px 18px 22px;}#homeDoors{gap:16px;margin:18px 0 20px;}#homeDoors>button{flex-direction:row;align-items:center;gap:14px;padding:8px 14px 8px 8px;}.door-pic{width:138px;height:92px;aspect-ratio:auto;border-radius:15px;}.door-copy{padding:0;gap:5px;}.door-word{font-size:26px;}.door-sub{font-size:13px;}}
+@media(max-width:350px){#homeTitle{font-size:28px;margin:14px 0 10px;}.quest-title{font-size:21px;}.quest-line{font-size:13px;}.quest-body{padding:10px 12px 12px 14px;gap:10px;}#homeDoors{gap:10px;}.door-copy{padding:7px 10px 9px;}.door-word{font-size:19px;}#libraryApp.fit2 .door-copy{padding:5px 10px 7px;}#libraryApp.fit2 .door-word{font-size:18px;}}
+@media(prefers-reduced-motion:reduce){#questCard,#homeDoors>button,#homeBack{transition:none;}#questCard:active,#homeDoors>button:active,#homeBack:active{transform:none;}}

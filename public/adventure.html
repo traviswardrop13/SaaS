@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Story</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
+  <link href="/crafted-adventure.css" rel="stylesheet">
+  <meta name="theme-color" content="#2b2f5e" />
+  <!--
+    THE DAILY STORY'S PLAYER (STORY1, 22 Oct 2026; Travis chose both age
+    groups, today's painted clay look, and the story is Premium). One page for
+    every day: Pelly's letter and the problem (the intro), then "Let's go!"
+    opens the story's own game; that game's end card brings the child back
+    here (?part=end&story=<id>) for the happy ending and the sticker its round
+    already gave. The scenes are /adventures.js; the day list (titles, Home's
+    line and picture, the game and its page) is sona.js's STORY_DAYS.
+
+    What it keeps:
+    - Entitlement first. Before any picture, sound or fetch it asks
+      Sona.storyOpen() (the books' rule: never the demonstration window), and
+      which story: no part, today's OPEN story; part=end, a finished one. Any
+      other visit leaves for Home with the body still hidden.
+    - Nothing turns by itself, and silence is never asked for: no scene asks
+      the child to speak (the game's own word turn does that). Next, or a tap
+      on the picture, turns the page; taps wait 600 ms after a scene appears,
+      so a double tap never skips one.
+    - It writes ONE thing: Sona.storySeen(id) on "Let's go!" (so coming back
+      the same day offers "Keep going"). No rep, no trophy, no coin, no
+      sticker (the round gave it), no practice data. Its two events carry the
+      game key alone, and no child's name reaches any line, request or event.
+    - Echo's voice, one line at a time: a recorded file when the voice
+      manifest lists that exact line (/assets/adventure/voice/manifest.js, a
+      script that may be missing), else the live voice through the phone's
+      shared voice cache (SayIt.line: the same store, key and voice service
+      Say & Play and the round games use), else the browser's own voice,
+      cut off at 9 s. In the iPhone app every one plays as media (Sona.mediaPCM
+      says why); on the website through this page's own Web Audio, woken by
+      the start tap. Sound off: captions only, and nothing is fetched.
+  -->
+</head>
+<body hidden>
+  <div class="adv" id="adv">
+    <div class="advstage" id="stage"></div>
+
+    <div class="advcap" id="cap" hidden>
+      <div class="advecho" aria-hidden="true"><img id="capEcho" alt="" /></div>
+      <div class="advcard">
+        <p class="advtext" id="capBox"><span id="capText" aria-live="polite"></span></p>
+        <div class="advrow">
+          <button class="cream-pill advhear" id="hearBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
+          <button class="act-pill advnext" id="nextBtn" type="button" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="act-pill advgo" id="goBtn" type="button" hidden></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="advovl" id="startOvl" hidden>
+      <div class="advbox" role="dialog" aria-labelledby="startTitle">
+        <div class="advhero"><img id="startPic" alt="" /></div>
+        <p class="advday" id="startDay"></p>
+        <h1 class="advtitle" id="startTitle"></h1>
+        <button class="act-pill advbig" id="startBtn" type="button"></button>
+        <button class="cream-pill advbig2" id="againBtn" type="button" hidden>Watch the story again</button>
+      </div>
+    </div>
+
+    <div class="advovl" id="endOvl" hidden>
+      <div class="advbox" role="dialog" aria-label="The end of the story">
+        <img class="advcheer" id="endEcho" alt="" />
+        <div class="advgots" id="gotList" role="status"></div>
+        <button class="act-pill advbig" id="homeBtn" type="button">Back home</button>
+      </div>
+    </div>
+
+    <div class="advtop">
+      <button class="cream-pill advround" id="closeBtn" type="button" aria-label="Back home">✕</button>
+      <button class="cream-pill advskip" id="skipBtn" type="button" aria-label="Skip (for grown-ups)" hidden>Skip</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/arcade-sayit.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/adventures.js"></script>
+  <script src="/assets/adventure/voice/manifest.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var S = window.Sona, A = window.SonaAdventures, HOME = "/today.html";
+    // ── timings ──
+    // LINE_WAIT_MS: Echo starts a line as soon as it is ready and waits at
+    // most this long; a line not ready by then leaves the caption, with Next
+    // glowing (it still plays if it lands while the child is on that scene
+    // and has not tapped). TAP_GUARD_MS: a scene ignores taps this long after
+    // it appears, so a double tap never skips one. MP3_START_MS: a recorded
+    // line in the app that has not started by then gives way to the live
+    // voice. SYNTH_CAP_MS: the browser's own voice is cut off here, as the
+    // books' is. CAP_OVERLAP: how far the picture's foot runs under the card.
+    var LINE_WAIT_MS = 2500, TAP_GUARD_MS = 600, MP3_START_MS = 3000, SYNTH_CAP_MS = 9000, FETCH_MS = 8000, CAP_OVERLAP = 26;
+    function away() { try { location.replace(HOME); } catch (e) { location.href = HOME; } }
+    function param(k) {
+      var m = new RegExp("[?&]" + k + "=([^&#]*)").exec(location.search);
+      try { return m ? decodeURIComponent(m[1].replace(/\+/g, " ")) : ""; } catch (e) { return ""; }
+    }
+    function dayOf(id) {
+      var L = (S && S.STORY_DAYS) || [];
+      for (var i = 0; i < L.length; i++) if (L[i].id === id) return { id: L[i].id, game: L[i].game, page: L[i].page, hero: L[i].hero, title: L[i].title, n: i + 1 };
+      return null;
+    }
+
+    // ── 1. who may be here, and which story: before any picture, sound or fetch ──
+    var mode = "", day = null, seen = false, dayNo = 1;
+    try {
+      if (!S || !S.storyOpen || !S.storyOpen() || !A) { away(); return; }
+      var part = param("part");
+      if (part === "end") {
+        day = dayOf(param("story"));
+        if (!day || !A[day.id] || !S.storyEnding || !S.storyEnding(day.id).ok) { away(); return; }
+        mode = "end"; dayNo = day.n;
+      } else if (!part) {
+        var q = S.questToday();
+        if (!q || q.kind !== "story" || q.state !== "open" || !q.story) { away(); return; }
+        day = dayOf(q.story.id);
+        if (!day || !A[day.id]) { away(); return; }
+        mode = "intro"; seen = q.seen === true; dayNo = q.day || day.n;
+      } else { away(); return; }
+    } catch (e) { away(); return; }
+
+    // the scenes this child sees: ages 3-4 skip the big-kid scenes and read
+    // the short lines
+    var data = A[day.id], little = false;
+    try { little = S.playStyle() === "simple"; } catch (e) {}
+    var run = [];
+    (mode === "end" ? data.ending : data.intro).forEach(function (sc) {
+      if (little && sc.ages === "big") return;
+      var t = typeof sc.line === "string" ? sc.line : ((little && sc.line.little) || sc.line.big);
+      run.push({ art: sc.art, src: "/assets/adventure/" + day.id + "/" + sc.art + ".webp", text: t, buddy: sc.buddy || null });
+    });
+    if (!run.length) { away(); return; }
+
+    function $(id) { return document.getElementById(id); }
+    var stage = $("stage"), cap = $("cap"), capEcho = $("capEcho"), capBox = $("capBox"), capText = $("capText");
+    var hearBtn = $("hearBtn"), nextBtn = $("nextBtn"), goBtn = $("goBtn"), skipBtn = $("skipBtn"), closeBtn = $("closeBtn");
+    var startOvl = $("startOvl"), startPic = $("startPic"), startBtn = $("startBtn"), againBtn = $("againBtn");
+    var endOvl = $("endOvl"), endEcho = $("endEcho"), gotList = $("gotList"), homeBtn = $("homeBtn");
+    document.documentElement.style.setProperty("--adv-wash", data.wash || "");
+    try { var tc = document.querySelector('meta[name="theme-color"]'); if (tc && data.wash) tc.setAttribute("content", data.wash); } catch (e) {}
+    goBtn.textContent = data.go || "Let's go!";
+    document.body.hidden = false;
+
+    function now() { return Date.now(); }
+    function rm() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+    function prof() { try { return S.getProfile() || {}; } catch (e) { return {}; } }
+    function vol() { var p = prof(), v = Number(p.volume == null ? 0.8 : p.volume); return isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8; }
+    // sound off: the family's voice switch, or a muted Sona
+    function soundOn() { var p = prof(); return p.voiceOn !== false && vol() > 0; }
+    // the iPhone app plays every line as media (sona.js mediaPCM says why)
+    var MEDIA = false;
+    try { MEDIA = !!(S.voiceAsMedia && S.voiceAsMedia() && S.mediaPCM); } catch (e) {}
+
+    // Echo's faces, held so a swap never waits on the network
+    var ECHO = {};
+    ["welcome", "talk", "cheer"].forEach(function (p) { var i = new Image(); i.src = "/assets/crafted/echo-" + p + ".webp"; ECHO[p] = i; });
+    function backup() { if (this.src.indexOf("echo-welcome") < 0) this.src = "/assets/crafted/echo-welcome.webp"; }
+    capEcho.onerror = backup; endEcho.onerror = backup;
+    function echoPose(p) { var src = "/assets/crafted/echo-" + p + ".webp"; if (capEcho.getAttribute("src") !== src) capEcho.src = src; }
+    echoPose("welcome");
+
+    // ── state, and what a test reads ──
+    var view = "", idx = -1, shownAt = 0, voice = "off", opened = false, endSent = false, celebrated = false, sized = false;
+    var played = [];
+    function pub() {
+      window.__adventure = { mode: mode, id: day.id, game: day.game, view: view, idx: idx, total: run.length, art: idx >= 0 && run[idx] ? run[idx].art : "",
+        line: idx >= 0 && run[idx] ? run[idx].text : "", voice: voice, glow: nextBtn.classList.contains("glow") || goBtn.classList.contains("glow"),
+        little: little, media: MEDIA, sound: soundOn(), seen: seen, played: played.slice() };
+    }
+
+    // ── the website's own Web Audio, woken inside a tap ──
+    var ctx = null;
+    function wake() {
+      if (MEDIA || !soundOn()) return;
+      try {
+        if (!ctx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ctx = new AC(); }
+        if (ctx.state !== "running" && ctx.state !== "closed") { var r = ctx.resume(); if (r && r.then) r.then(null, function () {}); }
+        var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0);
+      } catch (e) {}
+    }
+    document.addEventListener("pointerdown", wake, { capture: true, passive: true });
+
+    // ── Echo's lines ──
+    // A recorded line's file is named by FNV-1a (32-bit, over the UTF-8
+    // bytes, 8 hex digits) of TTS_CACHE_VERSION + "|" + the line: a line
+    // whose words change has a new name and no file, so a stale recording can
+    // never play. The manifest also carries each file's words, and a file is
+    // played only for exactly those words.
+    function voiceHash(text) {
+      var s = unescape(encodeURIComponent(((S && S.TTS_CACHE_VERSION) || "v9") + "|" + text)), h = 0x811c9dc5;
+      for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h + (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)) >>> 0; }
+      return ("0000000" + h.toString(16)).slice(-8);
+    }
+    function recordedUrl(text) {
+      try {
+        var M = window.SonaAdventureVoice, h = voiceHash(text);
+        return M && M.files && M.files[h] === text ? "/assets/adventure/voice/" + h + ".mp3" : "";
+      } catch (e) { return ""; }
+    }
+    function fetchBytes(url) {
+      return new Promise(function (res) {
+        var ctl = null, t = 0;
+        try { ctl = new AbortController(); t = setTimeout(function () { ctl.abort(); }, FETCH_MS); } catch (e) { ctl = null; }
+        fetch(url, ctl ? { signal: ctl.signal } : undefined)
+          .then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+          .then(function (b) { clearTimeout(t); res(b && b.byteLength ? b : null); }, function () { clearTimeout(t); res(null); });
+      });
+    }
+    // the live voice through the shared cache (SayIt.line: the phone's
+    // "sona-tts" store, the voice service with its time limit, and a stand-in
+    // the service marks X-Sona-Voice-Keep: 0 is played but never kept)
+    function live(text) {
+      var SI = window.SayIt;
+      if (!SI || !SI.line) return Promise.resolve({ kind: "synth" });
+      return SI.line(text).then(function (b) { return b && b.byteLength ? { kind: "pcm", bytes: b } : { kind: "synth" }; }, function () { return { kind: "synth" }; });
+    }
+    // one promise per line for the page; a line that could not load is asked
+    // for again the next time it is needed
+    var clips = {};
+    function clipFor(text) {
+      if (clips[text]) return clips[text];
+      var url = recordedUrl(text);
+      var p = url ? fetchBytes(url).then(function (b) { return b ? { kind: "mp3", bytes: b } : live(text); }) : live(text);
+      clips[text] = p;
+      p.then(function (c) { if (c.kind === "synth" && clips[text] === p) delete clips[text]; });
+      return p;
+    }
+    // Preloading: the lines from this scene on, two at a time, in scene order
+    // (the scene on screen never waits behind the queue: clipFor asks for it
+    // at once). Sound off: nothing is fetched at all.
+    var want = [], inflight = 0;
+    function preload(from) {
+      if (!soundOn()) return;
+      want = run.slice(from).map(function (sc) { return sc.text; });
+      pump();
+    }
+    function pump() {
+      while (inflight < 2 && want.length) {
+        var t = want.shift();
+        if (clips[t]) continue;
+        inflight++;
+        clipFor(t).then(function () { inflight--; pump(); });
+      }
+    }
+    // and the pictures: the next two scenes' are always on their way (held,
+    // since an Image nobody holds is thrown away)
+    var held = {};
+    function prefetchPic(i) { var sc = run[i]; if (!sc || held[sc.src]) return; var im = new Image(); im.src = sc.src; held[sc.src] = im; }
+
+    // One line at a time. stopVoice() ends the one playing (its promise
+    // settles "stopped") and any still on its way (vtok moves on).
+    var vtok = 0, playing = null, synthOn = false;
+    function stopVoice() {
+      vtok++;
+      var p = playing; playing = null;
+      if (p) { try { p.stop(); } catch (e) {} }
+      if (synthOn) { synthOn = false; try { window.speechSynthesis.cancel(); } catch (e) {} }
+    }
+    function stopAll() { stopVoice(); try { if (S.sfx && S.sfx.stop) S.sfx.stop(); } catch (e) {} }
+    function pcmMake(bytes) {
+      return function (c) {
+        var d = new DataView(bytes), n = bytes.byteLength >> 1, b = c.createBuffer(1, n, 24000), ch = b.getChannelData(0);
+        for (var i = 0; i < n; i++) ch[i] = d.getInt16(i * 2, true) / 32768;
+        return b;
+      };
+    }
+    // Web Audio on the page's context; resolves "ended", "failed" or "stopped"
+    function webPlay(make, tok) {
+      return new Promise(function (done) {
+        var c = ctx, src = null, over = false, dog = 0;
+        var me = { stop: function () { fin("stopped"); } };
+        function fin(how) {
+          if (over) return; over = true; clearTimeout(dog);
+          if (playing === me) playing = null;
+          try { if (src) { src.onended = null; src.stop(); } } catch (e) {}
+          done(how);
+        }
+        if (tok !== vtok) { done("stopped"); return; }
+        if (!c) { done("failed"); return; }
+        playing = me;
+        function go() {
+          if (over) return;
+          if (tok !== vtok) { fin("stopped"); return; }
+          if (c.state !== "running") { fin("failed"); return; }
+          try {
+            var buf = make(c), g = c.createGain();
+            src = c.createBufferSource(); src.buffer = buf; g.gain.value = vol();
+            src.connect(g); g.connect(c.destination);
+            src.onended = function () { fin("ended"); };
+            // onended is not trusted to arrive: its own length and a beat end it
+            dog = setTimeout(function () { fin("ended"); }, Math.ceil(buf.duration * 1000) + 1500);
+            src.start(0);
+          } catch (e) { fin("failed"); }
+        }
+        if (c.state === "suspended") {
+          var woke = false, once = function () { if (woke) return; woke = true; go(); };
+          try { var r = c.resume(); if (r && r.then) r.then(once, once); } catch (e) { once(); }
+          setTimeout(once, 400);
+        } else go();
+      });
+    }
+    function decode(bytes) {
+      return new Promise(function (res) {
+        var c = ctx, over = false;
+        function fin(b) { if (over) return; over = true; res(b || null); }
+        if (!c || !c.decodeAudioData) { fin(null); return; }
+        setTimeout(function () { fin(null); }, 4000);
+        // decodeAudioData takes the bytes away: decode a copy
+        try { var p = c.decodeAudioData(bytes.slice(0), fin, function () { fin(null); }); if (p && p.then) p.then(fin, function () { fin(null); }); } catch (e) { fin(null); }
+      });
+    }
+    // a recorded line in the app: an <audio> element (media); one that has
+    // not started within MP3_START_MS is let go ("failed")
+    function appMp3(bytes, tok) {
+      return new Promise(function (done) {
+        var url = null, a = null, over = false, started = false, t = 0;
+        var me = { stop: function () { fin("stopped"); } };
+        function fin(how) {
+          if (over) return; over = true; clearTimeout(t);
+          if (playing === me) playing = null;
+          try { a.onended = null; a.onerror = null; a.onplaying = null; a.pause(); a.removeAttribute("src"); a.load(); } catch (e) {}
+          try { if (url) URL.revokeObjectURL(url); } catch (e) {}
+          done(how);
+        }
+        if (tok !== vtok) { done("stopped"); return; }
+        try { url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" })); a = new Audio(url); a.volume = vol(); } catch (e) { done("failed"); return; }
+        playing = me;
+        function go() {
+          if (started || over) return; started = true; clearTimeout(t);
+          var d = Number(a.duration);
+          t = setTimeout(function () { fin("ended"); }, (isFinite(d) && d > 0 ? d * 1000 : 15000) + 1500);
+        }
+        a.onplaying = go;
+        a.onended = function () { fin("ended"); };
+        a.onerror = function () { fin(started ? "ended" : "failed"); };
+        t = setTimeout(function () { if (!started) fin("failed"); }, MP3_START_MS);
+        try { var r = a.play(); if (r && r.then) r.then(go, function () { fin(started ? "ended" : "failed"); }); else go(); } catch (e) { fin("failed"); }
+      });
+    }
+    function appPCM(bytes, tok) {
+      if (tok !== vtok) return Promise.resolve("stopped");
+      var m = S.mediaPCM(bytes, { volume: vol() }), me = { stop: function () { m.stop(); } };
+      playing = me;
+      return m.done.then(function (how) { if (playing === me) playing = null; return how; });
+    }
+    // the browser's own voice, for a line nothing else could say; cut off at
+    // SYNTH_CAP_MS so it can never run on into the next scene
+    function synth(text, tok) {
+      return new Promise(function (done) {
+        var SS = window.speechSynthesis, over = false, cap = 0;
+        var me = { stop: function () { fin("stopped"); } };
+        function fin(how) {
+          if (over) return; over = true; clearTimeout(cap);
+          if (playing === me) playing = null;
+          if (how !== "ended") { try { SS.cancel(); } catch (e) {} }
+          synthOn = false; done(how);
+        }
+        if (tok !== vtok) { done("stopped"); return; }
+        if (!SS || !window.SpeechSynthesisUtterance) { done("failed"); return; }
+        try {
+          var u = new SpeechSynthesisUtterance(text); u.rate = 0.95; u.pitch = 1.05; u.volume = vol();
+          u.onend = function () { fin("ended"); }; u.onerror = function () { fin("failed"); };
+          playing = me; synthOn = true;
+          cap = setTimeout(function () { fin("capped"); }, SYNTH_CAP_MS);
+          try { SS.cancel(); } catch (e) {}
+          SS.speak(u);
+        } catch (e) { fin("failed"); }
+      });
+    }
+    // a clip in hand, played the way this phone plays a voice; a recorded line
+    // that will not play goes to the live voice, a live one to the browser's
+    function playClip(clip, text, tok) {
+      if (tok !== vtok) return Promise.resolve("stopped");
+      played.push({ kind: clip.kind, text: text }); pub();
+      if (clip.kind === "mp3") {
+        var p = MEDIA ? appMp3(clip.bytes, tok)
+          : decode(clip.bytes).then(function (buf) { return buf && tok === vtok ? webPlay(function () { return buf; }, tok) : (tok === vtok ? "failed" : "stopped"); });
+        return p.then(function (how) {
+          if (how !== "failed" || tok !== vtok) return how;
+          return live(text).then(function (c) { return playClip(c, text, tok); });
+        });
+      }
+      if (clip.kind === "pcm") {
+        return (MEDIA ? appPCM(clip.bytes, tok) : webPlay(pcmMake(clip.bytes), tok)).then(function (how) {
+          return how === "failed" && tok === vtok ? synth(text, tok) : how;
+        });
+      }
+      return synth(text, tok);
+    }
+    function setVoice(v) {
+      voice = v;
+      var glow = v === "off" || v === "late" || v === "done";
+      nextBtn.classList.toggle("glow", glow); goBtn.classList.toggle("glow", glow);
+      echoPose(v === "speaking" ? "talk" : "welcome");
+      pub();
+    }
+    // Echo reads the scene on screen
+    function startLine() {
+      stopVoice();
+      var sc = run[idx], tok = vtok;
+      if (!sc || !soundOn()) { setVoice("off"); return; }
+      if (document.hidden) { setVoice("done"); return; }
+      setVoice("loading");
+      var late = setTimeout(function () { if (tok === vtok && voice === "loading") setVoice("late"); }, LINE_WAIT_MS);
+      clipFor(sc.text).then(function (clip) {
+        clearTimeout(late);
+        // a tap (Next, Hear it, Skip, the picture) or the page hiding has
+        // moved vtok on: this line is no longer wanted
+        if (tok !== vtok || document.hidden) return;
+        setVoice("speaking");
+        return playClip(clip, sc.text, tok).then(function () { if (tok === vtok) setVoice("done"); });
+      }).then(null, function () { if (tok === vtok) setVoice("done"); });
+    }
+
+    // ── the picture ──
+    var layer = null;
+    function layout() {
+      if (!layer) return;
+      var W = window.innerWidth, H = window.innerHeight;
+      var bottom = cap.hidden ? H : Math.min(H, cap.getBoundingClientRect().top + CAP_OVERLAP);
+      var areaH = Math.max(80, bottom), img = layer.querySelector("img.art");
+      var nw = img.naturalWidth || 800, nh = img.naturalHeight || 1200, a = nh / nw;
+      var w = W, h = W * a;
+      if (h > areaH) { h = areaH; w = h / a; }
+      var left = Math.round((W - w) / 2), top = Math.round((areaH - h) / 2);
+      w = Math.round(w); h = Math.round(h);
+      var pic = layer.querySelector(".advpic");
+      pic.style.left = left + "px"; pic.style.top = top + "px"; pic.style.width = w + "px"; pic.style.height = h + "px";
+      var edges = layer.querySelectorAll(".advedge");
+      for (var i = 0; i < edges.length; i++) { edges[i].style.top = top + "px"; edges[i].style.height = h + "px"; }
+      placeBuddy(layer);
+    }
+    function paintScene(sc) {
+      var old = layer;
+      if (old) {
+        layer = null;
+        if (rm()) old.parentNode.removeChild(old);
+        else { old.classList.add("out"); setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 420); }
+      }
+      var el = document.createElement("div");
+      el.className = "advlayer"; el.sc = sc;
+      el.innerHTML = '<div class="advblur"></div><div class="advedge up"></div><div class="advedge down"></div><div class="advpic"><img class="art" alt="" draggable="false" /></div>';
+      stage.appendChild(el); layer = el;
+      var img = el.querySelector("img.art");
+      img.onload = function () {
+        if (layer !== el) return;
+        // the blur and the edges ask for the picture only once it has come,
+        // so a picture that never comes is asked for once
+        var u = 'url("' + sc.src + '")';
+        el.querySelector(".advblur").style.backgroundImage = u;
+        var edges = el.querySelectorAll(".advedge");
+        for (var i = 0; i < edges.length; i++) edges[i].style.backgroundImage = u;
+        el.loaded = true; layout(); el.classList.add("in");
+      };
+      // a picture that fails leaves the wash and the caption: never a blank page
+      img.onerror = function () { el.failed = true; };
+      img.src = sc.src;
+      layout();
+    }
+    // The child's buddy on the picture's empty spot: { x, y, h, pose }, x the
+    // middle, y where its feet stand, h its height, each 0-1 of the picture.
+    // Decoration only (alt="", aria-hidden, no pointer). Never under the card
+    // or a button: lifted clear of the card (and of Echo's face on its edge),
+    // and left out if that would lift it more than half its height or it
+    // would meet a button. The boxes are the art notes'; at 390x844 and
+    // 768x1024 none needs a lift, and adventuretest's "buddy spots" keeps it so.
+    function feedBuddy(im, pose) {
+      var id = "fox", list = [], CB = window.SonaCraftedBuddies;
+      try { id = S.buddyId(); } catch (e) {}
+      // its pose (or that pose's own fallback), its round badge, its sticker
+      try { var s = S.buddySprite(id, pose || "rest"); if (s && s.src) list.push({ src: s.src, badge: false }); } catch (e) {}
+      try { var pt = CB && CB.source ? CB.source(id) : S.buddySprite(id, "portrait"); if (pt) list.push({ src: pt, badge: true }); } catch (e) {}
+      try { var sv = CB && CB.svgSrc ? CB.svgSrc(id) : null; if (sv) list.push({ src: sv, badge: true }); } catch (e) {}
+      var at = -1;
+      function next() {
+        at++;
+        if (at >= list.length) { im.onerror = null; im.removeAttribute("src"); im.hidden = true; return; }
+        im.classList.toggle("badge", list[at].badge); im.src = list[at].src;
+      }
+      im.onerror = next; next();
+    }
+    function hit(a, b) { return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; }
+    function placeBuddy(el) {
+      var sc = el.sc, b = sc && sc.buddy, pic = el.querySelector(".advpic"), im = el.querySelector("img.advbuddy");
+      if (!b || !el.loaded) { if (im) im.style.visibility = "hidden"; return; }
+      if (!im) {
+        im = document.createElement("img"); im.className = "advbuddy"; im.alt = ""; im.setAttribute("aria-hidden", "true"); im.draggable = false;
+        im.style.visibility = "hidden"; pic.appendChild(im);
+        im.addEventListener("load", function () { if (layer === el) placeBuddy(el); });
+        feedBuddy(im, b.pose);
+      }
+      if (im.hidden || !im.complete || !im.naturalWidth) { im.style.visibility = "hidden"; return; }
+      var PW = pic.offsetWidth, PH = pic.offsetHeight, W = window.innerWidth;
+      var bh = Math.max(1, Number(b.h) * PH), bw = bh * im.naturalWidth / im.naturalHeight;
+      var foot = Number(b.y) * PH, left = Number(b.x) * PW - bw / 2;
+      left = Math.max(4 - pic.offsetLeft, Math.min(W - 4 - pic.offsetLeft - bw, left));
+      var capTop = cap.hidden ? window.innerHeight : cap.getBoundingClientRect().top - 6;
+      // Echo's face stands on the card's top edge, and he is the caption's
+      // too: on a phone short enough that the picture is narrower than the
+      // card, a spot low on the left meets him, and the buddy stands back
+      // clear of his head the way it does of the card (a few px wider, for
+      // the drift)
+      var face = cap.hidden ? null : capEcho.getBoundingClientRect();
+      if (face && face.width && pic.offsetLeft + left < face.right + 4 && face.left - 4 < pic.offsetLeft + left + bw) capTop = Math.min(capTop, face.top - 4);
+      // the slow drift grows the picture 3.5% about a point 55% down it, so
+      // feet low in the picture end up a little lower than they start
+      var drift = rm() ? 0 : 0.035 * Math.max(0, Number(b.y) - 0.55) * PH;
+      var lift = Math.max(0, pic.offsetTop + foot + drift - capTop);
+      foot -= lift;
+      var box = { left: pic.offsetLeft + left, right: pic.offsetLeft + left + bw, top: pic.offsetTop + foot - bh, bottom: pic.offsetTop + foot };
+      var clash = lift > bh * 0.5 || !isFinite(bw);
+      [closeBtn, skipBtn].forEach(function (btn) { if (!btn.hidden && hit(box, btn.getBoundingClientRect())) clash = true; });
+      im.style.left = left + "px"; im.style.top = (foot - bh) + "px"; im.style.width = bw + "px"; im.style.height = bh + "px";
+      im.style.visibility = clash ? "hidden" : "visible";
+    }
+    // The caption card keeps one height for the whole run (the tallest line
+    // this child will read, at this width), so the picture never jumps.
+    function sizeCaption() {
+      capBox.style.minHeight = "0px";
+      var keep = capText.textContent, most = 0;
+      for (var i = 0; i < run.length; i++) { capText.textContent = run[i].text; most = Math.max(most, capBox.offsetHeight); }
+      capText.textContent = keep;
+      capBox.style.minHeight = most + "px";
+      sized = true;
+    }
+
+    // ── a scene ──
+    function show(i) {
+      stopVoice();
+      var focused = document.activeElement === nextBtn || document.activeElement === goBtn;
+      view = "scene"; idx = i; shownAt = now();
+      startOvl.hidden = true; endOvl.hidden = true; cap.hidden = false;
+      var sc = run[i], last = i === run.length - 1, goNow = mode === "intro" && last;
+      nextBtn.hidden = goNow; goBtn.hidden = !goNow; skipBtn.hidden = goNow;
+      hearBtn.hidden = !soundOn();
+      if (!sized) sizeCaption();
+      capText.textContent = sc.text;
+      paintScene(sc);
+      prefetchPic(i + 1); prefetchPic(i + 2);
+      preload(i);
+      if (focused) (goNow ? goBtn : nextBtn).focus();
+      if (mode === "end" && last && !endSent) { endSent = true; try { Sona.track("adventure ending watched", { game: day.game }); } catch (e) {} }
+      startLine();
+    }
+    function tapOk() { return now() - shownAt >= TAP_GUARD_MS; }
+    function turn() {
+      if (view !== "scene" || !tapOk()) return;
+      stopVoice();
+      if (idx < run.length - 1) show(idx + 1);
+      else if (mode === "end") showStickers();
+    }
+    function begin() {
+      wake();
+      if (mode === "intro" && !opened) { opened = true; try { Sona.track("adventure opened", { game: day.game }); } catch (e) {} }
+      show(0);
+    }
+    // the card the story opens on
+    function openCard() {
+      view = "start"; shownAt = now();
+      startPic.onerror = function () { startPic.onerror = null; startPic.className = "fallback"; startPic.src = "/assets/crafted/echo-welcome.webp"; };
+      startPic.src = "/assets/crafted/home-" + day.hero + ".webp";
+      $("startDay").textContent = "Day " + dayNo;
+      $("startTitle").textContent = day.title;
+      startBtn.textContent = mode === "end" ? "Tap to see what happens" : seen ? "Keep going" : "Tap to start";
+      againBtn.hidden = !(mode === "intro" && seen);
+      startOvl.hidden = false;
+      prefetchPic(0); prefetchPic(1); preload(0);
+      pub();
+    }
+    // the sticker card: the gift the game's round gave (read, never given here)
+    function showStickers() {
+      stopVoice();
+      view = "stickers"; shownAt = now();
+      cap.hidden = true; skipBtn.hidden = true; endOvl.hidden = false;
+      var got = [];
+      try { got = (S.storyEnding(day.id).got || []).slice(0, 2); } catch (e) {}
+      gotList.innerHTML = "";
+      got.forEach(function (g) { var p = document.createElement("p"); p.className = "advgot"; p.textContent = "You got " + g.e + " " + g.name + "!"; gotList.appendChild(p); });
+      gotList.hidden = !got.length;
+      endEcho.src = "/assets/crafted/echo-cheer.webp";
+      if (!celebrated) {
+        celebrated = true;
+        try { if (S.sfx && S.sfx.reward) S.sfx.reward(); } catch (e) {}
+        if (!rm()) { try { if (S.confetti) S.confetti({ count: 110, duration: 2200 }); } catch (e) {} }
+      }
+      homeBtn.focus();
+      pub();
+    }
+
+    // ── the controls ──
+    nextBtn.onclick = turn;
+    stage.addEventListener("click", function () {
+      // the last intro scene turns only on "Let's go!": a tap on its picture
+      // must not take a child into the game
+      if (view === "scene" && !(mode === "intro" && idx === run.length - 1)) turn();
+    });
+    hearBtn.onclick = function () { if (view !== "scene") return; wake(); startLine(); };
+    goBtn.onclick = function () {
+      if (view !== "scene" || !tapOk()) return;
+      stopAll();
+      try { S.storySeen(day.id); } catch (e) {}
+      location.href = day.page;
+    };
+    // the grown-ups' Skip: the intro to "Let's go!", the ending to its sticker
+    skipBtn.onclick = function () {
+      if (view !== "scene") return;
+      stopVoice();
+      if (mode === "intro") show(run.length - 1); else showStickers();
+    };
+    closeBtn.onclick = function () { stopAll(); location.href = HOME; };
+    startBtn.onclick = function () {
+      if (view !== "start") return;
+      // "Keep going": today's intro was already watched, straight to the game
+      if (mode === "intro" && seen) { stopAll(); location.href = day.page; return; }
+      begin();
+    };
+    againBtn.onclick = function () { if (view === "start") begin(); };
+    homeBtn.onclick = function () { if (now() - shownAt < TAP_GUARD_MS) return; stopAll(); location.href = HOME; };
+    document.addEventListener("keydown", function (e) { if (view === "scene" && e.key === "ArrowRight") { e.preventDefault(); turn(); } });
+    function refit() { if (view === "scene") { sizeCaption(); layout(); } else sized = false; }
+    window.addEventListener("resize", refit);
+    // the card's height was measured in whatever font was ready; the story's
+    // own font can wrap a line differently once it lands
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit, function () {}); } catch (e) {}
+    // A hidden page stops Echo, and coming back plays nothing until a tap on
+    // Hear it or Next: Next glows instead.
+    if (S.onBackground) S.onBackground(function () {
+      var was = voice;
+      stopAll();
+      if (view === "scene" && (was === "loading" || was === "late" || was === "speaking")) setVoice("done");
+    });
+    // a page brought back from the browser's cache asks again who may be here
+    window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
+
+    // ── the first screen ──
+    // The website plays nothing until a tap, so the story opens on its card;
+    // the iPhone app plays media without one, so a new intro starts at once.
+    // Coming back the same day offers "Keep going" in both; the ending always
+    // opens on its card.
+    if (mode === "intro" && !seen && MEDIA) begin(); else openCard();
+  })();
+  </script>
+</body>
+</html>

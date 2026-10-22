@@ -87,10 +87,11 @@ async function fresh() {
     sessionStorage.setItem('sona.gate.v1', String(Date.now()));
   });
   const open = async (file) => {
-    target = '/' + file;
+    // (the page's own path: a query, like Home's ?view=arcade, is the page's)
+    target = '/' + file.split('?')[0];
     // 'commit', then the page's own readyState: a navigation answered 204
     // leaves Playwright's load wait hanging though the page has loaded
-    await page.goto(origin + target, { waitUntil: 'commit' });
+    await page.goto(origin + '/' + file, { waitUntil: 'commit' });
     await page.waitForFunction(() => document.readyState === 'complete');
     await page.waitForTimeout(200);
   };
@@ -142,10 +143,32 @@ try {
     } finally { await context.close(); }
   });
 
-  await scenario('Home: a game card in a scrolling row', async () => {
+  // the story card leads Home since 22 Oct 2026 (STORY1): a double tap on it
+  // (a three-year-old's tap) never zooms either
+  await scenario('Home: the story card and its two doors', async () => {
     const { context, page, open } = await fresh();
     try {
       await open('today.html');
+      await page.waitForSelector('#questCard');
+      const m = await page.evaluate(([fn]) => {
+        const effective = new Function('return ' + fn)();
+        const els = ['#questCard', '#questGo', '#arcadeBtn', '#homeBooksBtn'];
+        const now = els.map(effective);
+        const sheet = document.getElementById('sonaNoZoom'); sheet.disabled = true;
+        const without = els.map(effective);
+        sheet.disabled = false;
+        return { now, without };
+      }, [effective.toString()]);
+      ok('Home\'s story card, its play button and both doors: a double tap does not zoom', m.now.every(v => v && v !== 'auto'), m.now);
+      ok('…and without the rule they would (the check has teeth)', m.without.every(v => v === 'auto'), m.without);
+    } finally { await context.close(); }
+  });
+
+  await scenario('Home: a game card in a scrolling row', async () => {
+    const { context, page, open } = await fresh();
+    try {
+      // the game cards are Home's Arcade since 22 Oct 2026 (STORY1)
+      await open('today.html?view=arcade');
       await page.waitForSelector('.game-card');
       const m = await page.evaluate(([fn]) => {
         const effective = new Function('return ' + fn)();

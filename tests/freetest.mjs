@@ -395,9 +395,10 @@ if (appFree) {
 
   // Home stays a quiet catalog. Released Premium cards name their boundary;
   // Coming soon games have no card at all (19 Oct 2026).
-  await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(800);
+  // (the catalog is Home's Arcade since 22 Oct 2026, STORY1)
+  await pg.goto("http://localhost:8211/today.html?view=arcade"); await pg.waitForTimeout(800);
   const home = await pg.evaluate(() => ({
-    heading:document.querySelector("h1").textContent,
+    heading:document.getElementById("arcadeTitle").offsetParent?document.getElementById("arcadeTitle").textContent:"",
     automatic:!!document.getElementById("goBtn"),
     run:sessionStorage.getItem("sona.run.v1"),
     kid:document.getElementById("libraryApp").innerText,

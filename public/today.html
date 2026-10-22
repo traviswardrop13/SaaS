@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Play library</title>
+  <title>Sona</title>
   <link href="/fonts.css" rel="stylesheet" />
   <link href="/sona.css" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -176,7 +176,14 @@
   <link href="/crafted-home.css" rel="stylesheet" />
 </head>
 <body>
-  <main id="libraryApp" class="library-wrap" hidden>
+  <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
+       is today's story, big, with two doors under it (Arcade: every game, as
+       this page was before; Books: the bookshelf) and the Trophy Road card.
+       Every block is built once on load, as before, and the view only
+       decides what shows (data-view, on the wrapper: a block's own hidden is
+       set by its painter, never by the view). The Arcade has an address of
+       its own, /today.html?view=arcade, so Back comes home. -->
+  <main id="libraryApp" class="library-wrap" data-view="home" hidden>
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
@@ -184,42 +191,59 @@
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
-    <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
-    <!-- THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): Home's one new thing. A
-         picture leads (the next gift, the waiting one, or the chest when it is
-         ready) beside a bar filling toward it; the counts are small, and the
-         words are in its label. It only reads (Sona.roadState): opening the
-         chest, settling the month and every event belong to the road page. -->
-    <a id="roadCard" href="/road.html" aria-label="Trophy Road" hidden>
-      <span class="road-pic" id="roadPic" aria-hidden="true"></span>
-      <span class="road-copy"><span class="road-bar" id="roadBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="road-small" id="roadSmall" aria-hidden="true"></span></span>
-      <span class="road-dot" id="roadDot" hidden></span><span class="road-go" aria-hidden="true">›</span>
-    </a>
-    <!-- THE DAILY ADVENTURE (QUEST1, 13 Oct 2026): one quest a day, a line
-         from Echo and one round of one game (Sona.questToday). Home only
-         reads it; the game's end card finishes the day. Once it is done the
-         card shows tomorrow's game, dark: never playable early. Silent. -->
-    <button id="questCard" type="button" hidden>
-      <span class="quest-pic" id="questPic" aria-hidden="true"></span>
-      <span class="quest-copy"><span class="quest-day" id="questDay"></span><span class="quest-line" id="questLine"></span></span>
-      <span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
-    </button>
-    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
-    <div id="featuredGroups"></div>
-    <div id="activityGroups"></div>
-    <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
-         the bookshelf: a twelve-page picture book for every sound, the
-         ones not out yet all opening Friday 9 Oct (the dates live in
-         library.html). The shelf opens for every family (30 Sep 2026):
-         one book is free (FREE_BOOKS in sona.js) and the rest are Premium,
-         each asking for a grown-up on the shelf the way a Premium game
-         does here. -->
-    <button id="booksCard" type="button">
-      <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones on the way.</span></span>
-      <span class="books-go" aria-hidden="true">›</span>
-    </button>
-    <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    <section class="home-only" aria-labelledby="homeTitle">
+      <h1 id="homeTitle" tabindex="-1">Today's adventure</h1>
+      <!-- THE STORY CARD (STORY1; the daily adventure card of QUEST1, 13 Oct
+           2026, made big). It only reads Sona.questToday(): on a story day
+           its tap is the game card's own tap (launch) on the story itself,
+           which opens adventure.html, or the price where Sona can sell; on a
+           game day (after the built stories, or on a phone that cannot buy
+           without Premium) it is today's game, as before. Done, it shows
+           tomorrow's picture, dark: never playable early. Silent. -->
+      <button id="questCard" type="button" hidden>
+        <span class="quest-art" id="questArt" aria-hidden="true"><span class="quest-pic" id="questPic"></span><span class="quest-chip" id="questChip" hidden></span><span class="quest-lock" id="questLock" hidden>Premium</span></span>
+        <span class="quest-body"><span class="quest-copy"><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span>
+      </button>
+      <!-- the two doors: a picture and one word each, for a child who can't
+           read yet. Books is the Books card's own door (the same handler and
+           the same tag). -->
+      <div id="homeDoors">
+        <button id="arcadeBtn" type="button"><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Arcade</span><span class="door-sub">All the games</span></span></button>
+        <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></span></button>
+      </div>
+      <!-- THE TROPHY ROAD CARD (HOME3, 11 Oct 2026). A picture leads (the
+           next gift, the waiting one, or the chest when it is ready) beside a
+           bar filling toward it; the counts are small, and the words are in
+           its label. It only reads (Sona.roadState): opening the chest,
+           settling the month and every event belong to the road page. -->
+      <a id="roadCard" href="/road.html" aria-label="Trophy Road" hidden>
+        <span class="road-pic" id="roadPic" aria-hidden="true"></span>
+        <span class="road-copy"><span class="road-bar" id="roadBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="road-small" id="roadSmall" aria-hidden="true"></span></span>
+        <span class="road-dot" id="roadDot" hidden></span><span class="road-go" aria-hidden="true">›</span>
+      </a>
+      <!-- the phone's home bar, measured (the fit keeps the doors above it) -->
+      <span id="homeInset" aria-hidden="true"></span>
+    </section>
+    <section class="arcade-only" aria-labelledby="arcadeTitle">
+      <div class="arcade-top"><button id="homeBack" type="button"><span aria-hidden="true">‹</span> Home</button></div>
+      <div class="library-intro"><div><h1 id="arcadeTitle" tabindex="-1">Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
+      <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
+      <div id="featuredGroups"></div>
+      <div id="activityGroups"></div>
+      <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
+           the bookshelf: a twelve-page picture book for every sound, the
+           ones not out yet all opening Friday 9 Oct (the dates live in
+           library.html). The shelf opens for every family (30 Sep 2026):
+           one book is free (FREE_BOOKS in sona.js) and the rest are Premium,
+           each asking for a grown-up on the shelf the way a Premium game
+           does here. -->
+      <button id="booksCard" type="button">
+        <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
+        <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones on the way.</span></span>
+        <span class="books-go" aria-hidden="true">›</span>
+      </button>
+      <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    </section>
     <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
   </main>
   <!-- LEVELS1 (11 Oct 2026): "Pick a level", once per game when a new level
@@ -266,7 +290,8 @@
     (function(){
       var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
       var notice=document.getElementById("libraryNotice"),message=document.getElementById("libraryMessage");
-      if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
+      // (the line lives on the Arcade's shelf, so the Arcade is what shows)
+      if(!S||!S.activityLibrary){app.hidden=false;app.setAttribute("data-view","arcade");host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
       var profile=S.getProfile();
       if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
       // THE OFFER, ONCE (Travis, 13 Oct 2026: "yeah, let's show the offer
@@ -284,6 +309,7 @@
         return;
       }
       app.hidden=false;
+      setView(viewOf());
       // Preview access is tab-local; real family entitlements stay untouched.
       var preview=S.libraryPreview?S.libraryPreview():false;
       document.getElementById("catalogPreviewNotice").hidden=!preview;
@@ -475,25 +501,55 @@
         games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);
         host.appendChild(section);
       });
-      // QUEST1: the daily adventure card. It only reads Sona.questToday(), and
-      // its tap is the game card's own tap (access, the price, levels). Only
+      // THE STORY CARD (QUEST1, 13 Oct 2026; STORY1, 22 Oct 2026). It only
+      // reads Sona.questToday(), and its tap is the game card's own tap
+      // (launch: access, the price, levels). On a story day the item is the
+      // story itself, "adventure" to the rules (gameAccess opens it by the
+      // books' rule), and its page is adventure.html; where Sona can sell, a
+      // family without Premium sees it with a Premium tag and the tap opens
+      // the price, as a grey game's does. A game day is today's game, and only
       // games Home shows can be on it: a parked one hides the card instead.
+      // The "Day N of 14" count is gone, so after Day 3 no child reads "Day 1
+      // of 14"; a story day's chip counts the stories. No line here promises
+      // a story that is not built, and none says "coming soon".
       var questGames={};library.groups.forEach(function(group){shown(group.games).forEach(function(game){questGames[game.key]=game;});});
+      // a story's picture (/assets/crafted/home-<hero>.webp) that has not
+      // landed, or will not load, is Echo on the story's own wash (the colour
+      // is crafted-home.css's, by data-story): never invented art, never a
+      // blank. A game's picture is its Home card, as on its shelf.
+      function questPicture(src,story){
+        var art=document.getElementById("questArt"),pic=document.getElementById("questPic");
+        pic.textContent="";art.classList.remove("fallback");art.setAttribute("data-story",story||"");
+        if(!src)return false;
+        var im=node("img");im.alt="";im.decoding="async";
+        im.onerror=function(){im.onerror=null;art.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
+        im.src=src;pic.appendChild(im);return true;
+      }
+      function gamePicture(game){
+        if(craftedCards[game.key])return questPicture("/assets/crafted/home-"+craftedCards[game.key]+".webp","");
+        questPicture("","");var st=S.gameSticker(game.key);S.paintSticker(document.getElementById("questPic"),st[0],st[1]);return true;
+      }
       function paintQuest(){
         var card=document.getElementById("questCard");if(!card)return;
         var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
-        var game=q&&questGames[q.game];
+        var story=!!(q&&q.kind==="story"&&q.story);
+        var game=story?{kind:"story",key:"adventure",name:q.story.title,go:"/adventure.html",tier:"premium"}:(q&&questGames[q.game]);
         if(!q||!game){card.hidden=true;return;}
-        var face=q.state==="done"&&q.next?questGames[q.next.game]||game:game;
-        var pic=document.getElementById("questPic");pic.textContent="";
-        if(craftedCards[face.key]){var im=node("img");im.src="/assets/crafted/home-"+craftedCards[face.key]+".webp";im.alt="";im.decoding="async";pic.appendChild(im);}
-        else{var st=S.gameSticker(face.key);S.paintSticker(pic,st[0],st[1]);}
-        var done=q.state==="done";
+        var done=q.state==="done",next=done?q.next:null,open=access(game).allowed;
+        // tomorrow, shown dark: the next story's picture, or the next game's
+        if(next&&next.kind==="story"&&next.story)questPicture(next.story.pic,next.story.id);
+        else if(next&&questGames[next.game])gamePicture(questGames[next.game]);
+        else if(story)questPicture(q.story.pic,q.story.id);
+        else gamePicture(game);
         card.classList.toggle("done",done);
-        document.getElementById("questDay").textContent=done?"Day "+q.day+" done!":"Today's adventure · Day "+q.day+" of "+q.total;
-        document.getElementById("questLine").textContent=done?"Come back tomorrow for Day "+(q.next?q.next.day:q.day+1)+"!":q.line;
+        var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
+        document.getElementById("questLock").hidden=done||open;
+        var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
+        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+"!":"Come back tomorrow for a new adventure!"):q.line;
+        document.getElementById("questTitle").textContent=title;
+        document.getElementById("questLine").textContent=line;
         document.getElementById("questGo").hidden=done;
-        card.setAttribute("aria-label",done?"Today's adventure is done. Come back tomorrow.":"Today's adventure, day "+q.day+" of "+q.total+": "+q.line+" Play "+game.name+".");
+        card.setAttribute("aria-label",done?title+" "+line:"Today's adventure"+(story?", day "+q.day+": "+title+".":": "+title+".")+" "+line+(open?" Play.":" Premium."));
         card.setAttribute("aria-disabled",done?"true":"false");
         card.onclick=function(){if(done)return;launch(game);};
         card.hidden=false;
@@ -503,14 +559,79 @@
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
       // Premium, one book is free and the rest ask for a grown-up there; the
-      // tag says which, so a parent reads "1 free book", not "Premium".
-      var booksCard=document.getElementById("booksCard");
-      // only the free books that are free on this phone (trial first: none
-      // for a family without the free version)
-      var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
-      var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
-      document.getElementById("booksTag").textContent=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
-      booksCard.onclick=function(){clearMessage();location.href="/library.html";};
+      // tag says which, so a parent reads "1 free book", not "Premium". Home's
+      // Books door and the Arcade's Books card are one door: one handler, and
+      // one painter for both tags.
+      var booksCard=document.getElementById("booksCard"),homeBooksBtn=document.getElementById("homeBooksBtn");
+      function paintBooksTags(){
+        // only the free books that are free on this phone (trial first: none
+        // for a family without the free version)
+        var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
+        var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
+        var tag=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
+        document.getElementById("booksTag").textContent=tag;document.getElementById("homeBooksTag").textContent=tag;
+      }
+      paintBooksTags();
+      function openBooks(){clearMessage();location.href="/library.html";}
+      booksCard.onclick=openBooks;homeBooksBtn.onclick=openBooks;
+      // ── the two views ──
+      // Home on a plain /today.html (every game's exit, the price's X, setup's
+      // end); the Arcade on ?view=arcade, and on ?locked= (a typed address to
+      // a grey game lands on its shelf with its note). The Arcade door pushes
+      // its address and switches at once (everything is already built); "‹
+      // Home" goes back if it was pushed, else replaces the address. Back and
+      // Forward read the address again. Nothing here writes or sends.
+      function viewOf(){return /[?&](?:view=arcade(?:[&#]|$)|locked=)/.test(location.search)?"arcade":"home";}
+      function setView(v){app.setAttribute("data-view",v);document.title=v==="arcade"?"Sona — Play library":"Sona";}
+      function showView(v,focus){
+        clearMessage();setView(v);
+        try{window.scrollTo(0,0);}catch(e){}
+        if(v==="home")fitHome();
+        if(focus){var h=document.getElementById(v==="arcade"?"arcadeTitle":"homeTitle");try{h.focus({preventScroll:true});}catch(e){}}
+      }
+      var backFocus=false;
+      document.getElementById("arcadeBtn").onclick=function(){
+        try{history.pushState({view:"arcade"},"","/today.html?view=arcade");}catch(e){}
+        showView("arcade",true);
+      };
+      document.getElementById("homeBack").onclick=function(){
+        var st=null;try{st=history.state;}catch(e){}
+        if(st&&st.view==="arcade"){backFocus=true;history.back();return;}
+        try{history.replaceState(null,"","/today.html");}catch(e){}
+        showView("home",true);
+      };
+      window.addEventListener("popstate",function(){var f=backFocus;backFocus=false;showView(viewOf(),f);});
+      // THE FIT (measured, never guessed, as the plan screen's offer is): the
+      // story card's play button and both doors are on the first screen, above
+      // the home bar. One step at a time (fit1…fit5, crafted-home.css): the
+      // story's picture gives way first (16:9 to 2:1), then the type and the
+      // gaps, then a phone's door pictures (2:1 to 5:2), then the story's
+      // picture again (5:2, 3:1). Everything a step resizes has
+      // transition:none (crafted-home.css; homestorytest reads every fit rule
+      // and checks each element), because sona.css gives every property a
+      // near-instant transition under Reduce Motion and a box mid-transition
+      // reports the size it WAS: a re-fit then stopped early and left the doors
+      // below the fold. The Trophy Road card may fall below on the smallest
+      // phones.
+      var FIT_STEPS=5;
+      function fitHome(){
+        if(app.getAttribute("data-view")!=="home")return;
+        var doors=document.getElementById("homeDoors"),go=document.getElementById("questGo"),inset=document.getElementById("homeInset");
+        var i;for(i=1;i<=FIT_STEPS;i++)app.classList.remove("fit"+i);
+        function fits(){
+          var y=window.pageYOffset||0,bar=inset?inset.offsetHeight:0,low=doors.getBoundingClientRect().bottom;
+          if(go&&go.offsetParent)low=Math.max(low,go.getBoundingClientRect().bottom);
+          return low+y<=window.innerHeight-bar-8;
+        }
+        for(i=1;i<=FIT_STEPS&&!fits();i++)app.classList.add("fit"+i);
+      }
+      fitHome();
+      // a turn or a new width fits again; a height that moves alone (Safari's
+      // bars folding away as a child scrolls) never re-lays the card out under
+      // a finger
+      var fitW=window.innerWidth;
+      window.addEventListener("resize",function(){if(window.innerWidth===fitW)return;fitW=window.innerWidth;fitHome();});
+      try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitHome);}catch(e){}
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
@@ -520,10 +641,13 @@
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
         try{paintQuest();}catch(e){}
+        fitHome();
       }});
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
-      // the crafted picture (1 Oct 2026); the old sticker only if it can't load
-      (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);})(document.getElementById("libraryBooksArt"));
+      // the crafted pictures (1 Oct 2026); the old sticker only if the books'
+      // can't load, and Echo cheering until the Arcade's own picture lands
+      [document.getElementById("libraryBooksArt"),document.getElementById("homeBooksPic")].forEach(function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);});
+      (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){im.onerror=null;host.classList.add("fallback");im.src="/assets/crafted/echo-cheer.webp";};im.src="/assets/crafted/home-arcade.webp";host.appendChild(im);})(document.getElementById("arcadePic"));
       // Cancel any previous spoken turn without changing the game voice preference.
       if(S.speakNow)S.speakNow("");
     })();

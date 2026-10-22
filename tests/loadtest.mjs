@@ -142,8 +142,8 @@ for (const [game, title, art] of SKIES) {
 // child can read counts.
 {
   const KID = new Set(["today.html", "activities.html", "charge.html", "library.html", "story.html", "chapter.html",
-    "stickers.html", "customize.html", "road.html", "board.html",
-    ...["slice", "run", "stack", "tiles", "glide", "rise", "feed"].map((g) => `arcade-${g}.html`)]);
+    "stickers.html", "customize.html", "road.html", "board.html", "adventure.html",
+    ...["slice", "run", "stack", "tiles", "glide", "rise", "feed", "lighthouse", "windup", "bridge"].map((g) => `arcade-${g}.html`)]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
   // and flagged every JS comparison operator in the app, so scripts and
   // comments come out first; copy set from JS is caught by the second pass on
@@ -209,13 +209,15 @@ for (const [game, title, art] of SKIES) {
 
   const ARCADE = ["slice", "run", "stack", "tiles", "glide", "rise"].map((g) => `arcade-${g}.html`);
   const CRAFTED_CSS = readdirSync(ROOT).filter((f) => /^crafted-.*\.css$/.test(f)).concat(["onboarding-crafted.css", "arcade-speech-help.css"]);
+  // the daily story (STORY1, 22 Oct 2026): its player and its three games
+  const STORY = ["adventure.html", "arcade-lighthouse.html", "arcade-windup.html", "arcade-bridge.html", "lighthouse.css", "windup.css", "bridge.css"];
   const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
-    "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", ...CRAFTED_CSS];
+    "library.html", "coach-call.html", ...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", ...STORY, ...CRAFTED_CSS];
   // the pages whose buttons have moved to teal; check.html and join.html are
   // grown-up pages (join's buttons are the crafted family teal on screen,
   // checked in the browser below), coach-call.html is orphaned
   const TEAL_KID = ["today.html", "charge.html", "story.html", "chapter.html", "library.html", ...ARCADE, "arcade-feed.html",
-    "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", "sona.css", ...CRAFTED_CSS];
+    "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "sayplay.css", "simple-play.css", "sona.css", ...STORY, ...CRAFTED_CSS];
   const srcOf = (f) => readFileSync(ROOT + "/" + f, "utf8");
   const craftedPage = (f) => /\.html$/.test(f) && /<body\b[^>]*\bdata-crafted=/.test(srcOf(f));
   // CSS only: a page's <style> blocks, or the whole sheet, comments stripped
@@ -316,10 +318,11 @@ for (const [game, title, art] of SKIES) {
   });
   ok("sona.css, sayplay.css and simple-play.css take the tokens from action.css instead of a second copy", noImport.length === 0, noImport.join(" | "));
   // every kid page gets its button colours from a shared sheet: /action.css
-  // (linked, or through sona.css), or the crafted layer it opts into
+  // (linked, or through sona.css or sayplay.css, whose @import the check just
+  // above holds first in each), or the crafted layer it opts into
   const links = (f, href) => [...srcOf(f).replace(/<!--[\s\S]*?-->/g, "").matchAll(/<link\b[^>]*>/gi)].some((m) => m[0].includes('href="' + href + '"') && /rel="stylesheet"/.test(m[0]));
-  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html", "road.html", "board.html"]
-    .filter((f) => !links(f, "/action.css") && !links(f, "/sona.css") && !(craftedPage(f) && links(f, "/crafted-games.css")));
+  const noSheet = [...ARCADE, "arcade-feed.html", "arcade-hoops.html", "arcade-soccer.html", "arcade-dino.html", "arcade-bubbles.html", "charge.html", "chapter.html", "story.html", "library.html", "today.html", "road.html", "board.html", ...STORY.filter((f) => /\.html$/.test(f))]
+    .filter((f) => !links(f, "/action.css") && !links(f, "/sona.css") && !links(f, "/sayplay.css") && !(craftedPage(f) && links(f, "/crafted-games.css")));
   ok("every kid page takes its action colour from a shared sheet: action.css, or the crafted layer it opts into", noSheet.length === 0, noSheet.join(" | "));
 
   // In the browser, with scripts off (so no page sends itself home), the
@@ -348,6 +351,13 @@ for (const [game, title, art] of SKIES) {
     ["customize.html", ["#getBtn"]],
     // the Practice Board (11 Oct 2026, built dark): "Home" when it is off
     ["board.html", ["#boardHome"]],
+    // the daily story (STORY1, 22 Oct 2026): the player's start, Next, "Let's
+    // go!" and "Back home"; each game's start card, mic yes, resume, the mic
+    // and its help pill (Bright beam, Oil can, Calm river)
+    ["adventure.html", ["#startBtn", "#nextBtn", "#goBtn", "#homeBtn"]],
+    ["arcade-lighthouse.html", ["#startBtn", "#primerYes", "#resume", "#micBtn", "#lhHelp"]],
+    ["arcade-windup.html", ["#startBtn", "#primerYes", "#resume", "#micBtn", "#windupHelp"]],
+    ["arcade-bridge.html", ["#startBtn", "#primerYes", "#resume", "#micBtn", "#brHelp"]],
     ["settings.html", ["button.btn:not(.ghost):not(.blue)"]],
   ];
   const notTeal = [];
@@ -355,7 +365,15 @@ for (const [game, title, art] of SKIES) {
   ok("the buttons and mics a child taps are the action teal, in the browser", notTeal.length === 0, notTeal.join(" | "));
   const SECOND = [["arcade-hoops.html", ["#goHome", "#primerNo"]], ["arcade-bubbles.html", ["#goHome", "#primerNo"]], ["arcade-soccer.html", ["#goHome", "#primerNo"]], ["arcade-dino.html", ["#goHome", "#primerNo"]], ["arcade-feed.html", ["#goHome", "#primerNo"]], ...ARCADE.map((f) => [f, ["#endHome", "#revDone"]]), ["settings.html", ["button.btn.ghost"]],
     // the bookshelf's "More books" (1 Oct 2026) opens a second shelf: a second choice
-    ["library.html", ["#moreBtn"]]];
+    ["library.html", ["#moreBtn"]],
+    // the daily story: the player's Hear it, "Watch the story again", the ✕
+    // and the grown-ups' Skip; each game's "Not now" and "Hear what to do".
+    // Not a story game's #goHome: its end card turns it into the teal "See
+    // what happens!" (sayplay.js, G.exit), and with scripts off it is not that
+    ["adventure.html", ["#hearBtn", "#againBtn", "#closeBtn", "#skipBtn"]],
+    ["arcade-lighthouse.html", ["#primerNo", "#lhHearStep"]],
+    ["arcade-windup.html", ["#primerNo", "#windupHearStep"]],
+    ["arcade-bridge.html", ["#primerNo", "#brHearStep"]]];
   const notCream = [];
   for (const [f, sels] of SECOND) for (const r of await look(f, sels)) if (r.missing || !isCream(r.bg)) notCream.push(f + " " + (r.q || r.sel) + (r.missing ? " (missing)" : ": " + r.bg.slice(0, 60)));
   ok("…and the second choice is the cream pill", notCream.length === 0, notCream.join(" | "));

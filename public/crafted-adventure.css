@@ -1,0 +1,95 @@
+/* THE DAILY STORY'S PLAYER (/adventure.html, STORY1, 22 Oct 2026).
+   A painted picture fills the screen, Echo's line sits on a cream card over
+   its foot, and the slim controls float over it, the way a book page reads.
+   Teal and cream come from action.css's tokens (never pasted here: the
+   designer's STYLE.md will move them); the only colour of the story's own is
+   its wash, set by the page from adventures.js as --adv-wash.
+
+   Every box the page measures (the picture, the buddy, the card) has no
+   transition: a box mid-transition reports where it WAS. What fades is
+   opacity alone, and under Reduce Motion nothing moves at all: pictures cut,
+   nothing drifts, Next does not pulse. */
+[hidden]{display:none!important;}
+html,body{margin:0;height:100%;}
+body{overflow:hidden;font-family:"Nunito",system-ui,sans-serif;color:var(--cream-ink);background:var(--adv-wash,var(--cream));
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
+.adv{position:fixed;inset:0;overflow:hidden;background:var(--adv-wash,var(--cream));}
+/* a soft light from above, so a scene whose picture is still on its way (or
+   never comes) is a calm colour with its caption, never a flat block */
+.adv::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 70% at 50% 18%,rgba(255,255,255,.22),rgba(255,255,255,0) 70%),linear-gradient(180deg,rgba(255,255,255,0) 55%,rgba(0,0,0,.18));}
+
+/* ── the picture: whole, at full width where the room allows, its own top
+   and bottom rows carried out to the screen's edges (sky up, ground down) ── */
+.advstage{position:absolute;inset:0;cursor:pointer;}
+.advlayer{position:absolute;inset:0;opacity:1;transition:opacity .35s ease;}
+.advlayer.out{opacity:0;}
+/* (on a wide screen the sides show this soft copy: kept dim, so a bright
+   moon in the picture is not a glow at the screen's edge) */
+.advblur{position:absolute;inset:-48px;background-size:cover;background-position:center;filter:blur(26px) saturate(1.05) brightness(.82);transform:scale(1.06);opacity:0;transition:opacity .35s ease;}
+.advedge{position:absolute;left:0;right:0;background-size:100% 100%;background-repeat:no-repeat;filter:blur(8px) saturate(1.05);opacity:0;transition:opacity .35s ease;}
+.advedge.up{transform-origin:50% 0;transform:scaleY(-12);}
+.advedge.down{transform-origin:50% 100%;transform:scaleY(-12);}
+.advpic{position:absolute;transition:none!important;transform-origin:50% 55%;}
+.advpic img.art{display:block;width:100%;height:100%;opacity:0;transition:opacity .35s ease;-webkit-user-drag:none;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(180deg,transparent,#000 4%,#000 96%,transparent);}
+.advlayer.in .advblur,.advlayer.in .advedge,.advlayer.in .advpic img.art{opacity:1;}
+/* a slow drift while Echo reads; the buddy rides with the picture */
+.advlayer.in .advpic{animation:advdrift 16s ease-out forwards;}
+@keyframes advdrift{from{transform:scale(1)}to{transform:scale(1.035)}}
+/* the child's buddy, laid over the picture's empty spot: decoration only */
+.advbuddy{position:absolute;pointer-events:none;transition:none!important;filter:drop-shadow(0 6px 6px rgba(40,24,10,.28));}
+.advbuddy.badge{border-radius:50%;}
+
+/* ── the slim controls ── */
+.advtop{position:absolute;left:0;right:0;top:0;z-index:7;display:flex;align-items:center;justify-content:space-between;
+  padding:calc(10px + env(safe-area-inset-top)) 12px 0;pointer-events:none;}
+.advtop button{pointer-events:auto;}
+.advround{width:44px;height:44px;border-radius:50%;padding:0;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none;}
+.advskip{min-height:44px;padding:0 16px;font-size:15px;flex:none;}
+
+/* ── the caption card: Echo stands behind its top edge (he comes first, so
+   the card covers his feet), the line, Hear it and Next ── */
+.advcap{position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:4;max-width:560px;margin:0 auto;transition:none!important;}
+.advecho{position:absolute;left:10px;bottom:calc(100% - 22px);width:72px;height:66px;pointer-events:none;}
+.advecho img{display:block;width:100%;height:100%;object-fit:contain;}
+.advcard{position:relative;background:var(--cream-card);border:2px solid var(--cream-line);border-radius:26px;padding:18px 14px 12px;
+  box-shadow:0 10px 26px rgba(40,24,10,.28);}
+.advtext{margin:0 0 10px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;
+  font-size:clamp(17px,5.2vw,24px);line-height:1.3;color:var(--cream-ink);text-wrap:balance;transition:none!important;}
+.advrow{display:flex;align-items:center;gap:10px;}
+.advhear{display:flex;align-items:center;gap:7px;min-height:48px;padding:0 16px;font-size:16px;flex:none;}
+.advhear svg{width:19px;height:19px;color:var(--act-d);}
+.advnext{width:64px;height:64px;border-radius:50%;padding:0;margin-left:auto;display:flex;align-items:center;justify-content:center;flex:none;}
+.advnext svg{width:30px;height:30px;}
+.advgo{flex:1;min-height:64px;margin-left:auto;padding:0 18px;font-size:24px;white-space:nowrap;}
+/* Next glows once Echo has finished (or the line is late, or the sound is off) */
+.advnext.glow,.advgo.glow{animation:advpulse 1.6s ease-in-out infinite;}
+@keyframes advpulse{0%,100%{box-shadow:0 6px 0 var(--act-d),0 0 0 0 var(--act-glow)}50%{box-shadow:0 6px 0 var(--act-d),0 0 0 12px var(--act-glow)}}
+
+/* ── the cards over the scene: the start, and the sticker at the end ── */
+.advovl{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  padding:calc(64px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));background:rgba(20,14,30,.3);}
+.advbox{box-sizing:border-box;width:100%;max-width:380px;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  background:var(--cream-card);border:2px solid var(--cream-line);border-radius:30px;padding:14px 16px 18px;box-shadow:0 18px 40px rgba(20,14,30,.35);}
+/* the story's Home picture: it gives way first on a short phone */
+.advhero{position:relative;flex:0 1 auto;width:100%;height:calc((min(100vw,380px) - 72px) * .5625);min-height:64px;border-radius:20px;overflow:hidden;background:var(--adv-wash,var(--cream));}
+.advhero img{display:block;width:100%;height:100%;object-fit:cover;}
+.advhero img.fallback{object-fit:contain;padding:8% 0;box-sizing:border-box;}
+.advday{flex:none;margin:2px 0 0;padding:3px 12px;border-radius:99px;background:var(--cream);border:2px solid var(--cream-line);
+  font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--cream-ink);}
+.advtitle{flex:none;margin:0;font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:clamp(23px,7vw,30px);line-height:1.12;color:var(--cream-ink);text-wrap:balance;}
+.advbig{flex:none;width:100%;min-height:58px;font-size:21px;padding:0 16px;}
+.advbig2{flex:none;width:100%;min-height:50px;font-size:17px;padding:0 16px;}
+.advcheer{flex:0 1 auto;width:128px;height:120px;min-height:60px;object-fit:contain;margin-top:-6px;}
+.advgot{margin:0;font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:clamp(20px,6vw,26px);line-height:1.2;color:var(--cream-ink);}
+.advgots{flex:none;display:flex;flex-direction:column;gap:6px;}
+
+button:focus-visible{outline:3px solid var(--act-d);outline-offset:3px;}
+
+@media (prefers-reduced-motion: reduce){
+  .advlayer,.advblur,.advedge,.advpic img.art{transition:none!important;}
+  .advlayer.in .advpic{animation:none!important;}
+  /* still a cue that it is time to turn, just one that holds still */
+  .advnext.glow,.advgo.glow{animation:none!important;box-shadow:0 6px 0 var(--act-d),0 0 0 7px var(--act-glow);}
+}
