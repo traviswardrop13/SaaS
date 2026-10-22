@@ -231,12 +231,15 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
   };
   const syl = (t) => /^r(ah|ee|oo|oh|ay)$/.test(t);
   let a = await asks({ sounds: ["R"], pos: "f", words: ["car", "star"] });
-  ok("end-of-word homework: the game's cards stay on the sound, then ask one of the homework's own words",
-    a.pos === "f" && a.t[0] === "rrrr" && a.t[1] === "rrrr" && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
+  // 22 Oct 2026: a place whose card syllables are not switched on has no
+  // syllable step, so the card after the sound asks a word, never the bare
+  // sound again (as the practice page goes sound → words there)
+  ok("end-of-word homework: the game's cards start on the sound, then ask the homework's own words",
+    a.pos === "f" && a.t[0] === "rrrr" && ["car", "star"].indexOf(a.t[1]) >= 0 && ["car", "star"].indexOf(a.t[2]) >= 0, JSON.stringify(a));
   ok("…and never a start-of-word syllable", !a.t.some(syl), JSON.stringify(a.t));
   a = await asks({ sounds: ["R"], pos: "v", words: null });
   ok("\"er, ar, or\" homework that names no words: no start-of-word syllable, and the word card asks vocalic R's own short word",
-    a.pos === "v" && a.top === 2 && a.t.join() === "rrrr,rrrr,bird", JSON.stringify(a));
+    a.pos === "v" && a.top === 2 && a.t.join() === "rrrr,bird,bird", JSON.stringify(a));
   a = await asks({ sounds: ["R"], pos: "i", words: ["rain"] });
   ok("start-of-word homework keeps the syllable step, and its word card asks the homework's word, not the app's",
     syl(a.t[1]) && a.t[2] === "rain", JSON.stringify(a));

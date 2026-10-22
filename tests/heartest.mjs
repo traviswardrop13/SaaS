@@ -31,6 +31,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 const page = await browser.newPage();
 await page.goto("http://localhost:8206/today.html");
 await page.waitForTimeout(500);
+// the practice page, the one place a syllable at another place is judged,
+// loads the syllable tables too: "or" for ar fails because "or" is one of them
+await page.addScriptTag({ url: "/gamecontent.js" });
+ok("the practice page loads the syllable tables it judges against", /<script src="\/gamecontent\.js/.test(readFileSync(ROOT + "/charge.html", "utf8")));
 
 // ── 1. the verdict rules, case by case ──
 const V = (t, sound, word, opts) => page.evaluate(([a, b, c, d]) => Sona.hearVerdict(a, b, c, d), [t, sound, word, opts || null]);
@@ -119,17 +123,22 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   const SYL = { level: "syllable" };
   ok('a syllable round: "wah" for rah passes', (await V("wah", "R", "rah", SYL)) === "pass");
   // 22 Oct 2026: a syllable at every place in a word. A start-of-word
-  // syllable is judged exactly as before; at another place Apple's words
-  // also pass when, run together with a vowel's h dropped, they are EXACTLY
-  // the target or its usual-error form, or a word HEAR_ALIKE lists ("are"
-  // for ar). Never "close to": a grown-up's "the" or "is a" passes nothing.
-  const MID = { level: "syllable", pos: "m" }, END = { level: "syllable", pos: "f" };
+  // syllable is judged exactly as before; at another place it has its own
+  // rule (_hearPlace): a run of Apple's words that is EXACTLY the target, its
+  // usual-error form or a HEAR_ALIKE word passes; exactly another syllable of
+  // that place fails; a word near it that carries the sound is unknown (the
+  // shape check decides); anything else fails. Never "close to" a pass.
+  const MID = { level: "syllable", pos: "m" }, END = { level: "syllable", pos: "f" }, VOC = { level: "syllable", pos: "v" }, BL = { level: "syllable", pos: "b" };
   ok('a middle syllable: "Ah rah", "Ara" and the usual error "ah wah" pass for ah-rah', (await V("Ah rah", "R", "ah-rah", MID)) === "pass" && (await V("Ara", "R", "ah-rah", MID)) === "pass" && (await V("ah wah", "R", "ah-rah", MID)) === "pass");
+  ok('…and five tries in one listen pass ("Ah-rah. Ah-rah.", "Ay ray ay ray", "Ara ara")', (await V("Ah-rah. Ah-rah.", "R", "ah-rah", MID)) === "pass" && (await V("Ay ray ay ray", "R", "ay-ray", MID)) === "pass" && (await V("Ara ara", "R", "ah-rah", MID)) === "pass");
   ok('…"Are" passes for ar, and an end syllable said exactly ("ache", "ease") passes', (await V("Are", "R", "ar", END)) === "pass" && (await V("ache", "K", "ache", END)) === "pass" && (await V("ease", "Z", "ease", END)) === "pass");
-  ok('…while "all" fails for ah-rah, "raw" for ar, "taco" for ah-kah, and a grown-up\'s "is a" for ah-sah', (await V("all", "R", "ah-rah", MID)) === "fail" && (await V("raw", "R", "ar", END)) === "fail" && (await V("taco", "K", "ah-kah", MID)) === "fail" && (await V("is a", "S", "ah-sah", MID)) === "fail");
+  ok('…a word Apple writes for a made-up syllable, carrying its sound, is unknown, never pass or fail ("Oh row", "Op", a grown-up\'s "the" for athe or "is a" for ah-sah)', (await V("Oh row", "R", "oh-roh", MID)) === "unknown" && (await V("Op", "P", "ahp", END)) === "unknown" && (await V("the", "THV", "athe", END)) === "unknown" && (await V("is a", "S", "ah-sah", MID)) === "unknown");
+  ok('…another syllable of the place fails: "or", "er" or "air" for ar, "eep" for ahp, "free" for trah', (await V("or", "R", "ar", VOC)) === "fail" && (await V("er", "R", "ar", VOC)) === "fail" && (await V("air", "R", "ar", END)) === "fail" && (await V("eep", "P", "ahp", END)) === "fail" && (await V("free", "R", "trah", BL)) === "fail");
+  ok('…and a try with no trace of the sound fails: "taco" for ah-kah and for ar, "way" for play, "too" for snoo', (await V("taco", "K", "ah-kah", MID)) === "fail" && (await V("taco", "R", "ar", VOC)) === "fail" && (await V("way", "L", "play", BL)) === "fail" && (await V("too", "S", "snoo", BL)) === "fail");
   ok('a start-of-word syllable is judged as before: "the" fails for sah, "see" (the usual error) passes for shee, "tah" for thah', (await V("the", "S", "sah", SYL)) === "fail" && (await V("see", "SH", "shee", SYL)) === "pass" && (await V("tah", "TH", "thah", SYL)) === "pass");
   ok('a blend said without its sound fails, as a word and as a syllable: "top" for stop, "tee" for tree, "tah" for trah', (await V("top", "S", "stop", { level: "word", pos: "b" })) === "fail" && (await V("tee", "R", "tree", { level: "word", pos: "b" })) === "fail" && (await V("tah", "R", "trah", { level: "syllable", pos: "b" })) === "fail" && (await V("stop", "S", "stop", { level: "word", pos: "b" })) === "pass");
   ok('a grown-up\'s "say ah-rah" is two words set aside, not one', (await V("say ah rah", "R", "ah-rah", SYL)) === "unknown");
+  ok('…but a "say Ara" Apple wrote as one word sets aside one, so the child\'s "Ah rah" after it passes and "rock" fails', (await V("say Ara Ah rah", "R", "ah-rah", MID)) === "pass" && (await V("say Ara rock", "R", "ah-rah", MID)) === "fail" && (await V("say ah rah ah rah", "R", "ah-rah", MID)) === "pass");
   ok('…"ah" is unknown', (await V("ah", "R", "rah", SYL)) === "unknown");
   ok('…"taco" FAILS', (await V("taco", "R", "rah", SYL)) === "fail");
 }

@@ -3278,15 +3278,26 @@ selected."
 - **Listening and booking.** A try at the sound alone or a syllable is never
   booked as a word place (the clinician's pass rate by position counts words
   and sentences only). A start-of-word syllable is judged exactly as before.
-  At another place a syllable try also passes when Apple's words, run
-  together with a vowel's h dropped, are EXACTLY the target or its usual-error
-  form ("Ah rah", "Ara" for ah-rah), or a word `HEAR_ALIKE` lists ("are" for
-  ar); never "close to", or a grown-up's "the" or "is a" would pass. A blend
-  said without its sound fails ("top" for stop). Not built yet: a child who
-  pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
-  (each voiced burst is a try); look at that before switching Middle on. The website's shape check no
-  longer fails an R or L word for the hiss of its other letters ("star"), nor
-  an S blend for its voiced ones.
+  At another place a syllable has its own rule (`_hearPlace`), because Apple
+  writes a made-up syllable as whatever words it can: a run of the words
+  heard, joined with a vowel's h dropped, that is EXACTLY the target, its
+  usual-error form ("Ah rah", "Ara", "ah wah" for ah-rah) or a word
+  `HEAR_ALIKE` lists ("are" for ar) passes, and every run is looked at, so
+  five tries in one listen count; exactly ANOTHER syllable of that place
+  fails ("or" or "er" for ar, "free" for trah); a word near the target that
+  carries its sound is unknown and the shape check decides ("Oh row" for
+  oh-roh, "Op" for ahp, and so a grown-up's "the" for athe); nothing near it
+  with its sound fails ("taco", "way" for play: a blend keeps its other
+  letter). Never "close to" a pass. A grown-up's "say" sets aside only the
+  words that spell the target ("say Ara" one, "say ah rah" two). A blend
+  word said without its sound fails ("top" for stop). Not built yet: a child
+  who pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
+  (each voiced burst is a try); look at that before switching Middle on. The
+  website's shape check no longer fails a practice word for the hiss of its
+  OTHER letters ("star", "chair"; a sentence by its practice word, never by
+  "the" or "see" around it; a soft c or g only where it is surely soft, so
+  "tiger", "girl" and "grew" are judged as ever), nor an S blend for its
+  voiced ones.
 - **Rachel's calls, built on defaults until she answers:** every syllable
   table, and which places are switched on; whether R's end and vocalic R are
   one climb and the sound alone counts everywhere; whether a grown-up may

@@ -471,8 +471,10 @@ ok("it says the settings below belong to the selected child", /belongs to whoeve
   await hwSet({ pos: "f", words: ["car", "star"] });
   await page.reload(); await page.waitForTimeout(700);
   g = await read();
-  ok("…and when it names words, the sound, then one of them",
-    /^For R at the end of words in Fruit Slice today: “rrrr”, then “(car|star)”\. Fruit Slice has no syllables at the end of words yet, so the cards skip them\.$/.test(g.note), g.note);
+  // with no syllable step both cards ask a word, each one of the homework's
+  // own (never a word it does not name)
+  ok("…and when it names words, the sound, then only those words",
+    /^For R at the end of words in Fruit Slice today: “rrrr”, then “(car|star)”(, then “(car|star)”)?\. Fruit Slice has no syllables at the end of words yet, so the cards skip them\.$/.test(g.note), g.note);
   await hwSet(null);
   // Ages 2 to 4: Home shows them Fruit Slice too, so the picker is hidden for
   // a reason that has to be TRUE: their cards keep the bare sound, whatever a

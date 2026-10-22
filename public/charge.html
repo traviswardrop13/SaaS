@@ -1384,11 +1384,17 @@
       // their R or L, and an S blend ("snake", "smile", "slay") is mostly
       // voiced around its S. Those can never be "clearly the wrong family",
       // so neither flag is raised for them; a bare sound is judged as before.
-      // Only the item's OTHER letters count: the target's own (the th of
-      // "mother", the g of "tiger") are taken out first.
+      // Only the practice WORD's other letters count: never a sentence's
+      // frame ("the", "see", "is" would excuse every sentence), and never the
+      // target's own letters (the th of "mother"), which are taken out with a
+      // space, so "grew" can't close up into a soft "ge". A soft c or g is
+      // read off the whole word, and a g only where it is surely soft
+      // ("orange", "edge"): "tiger" and "girl" are hard.
       var own={R:/r/g,L:/l/g,M:/m/g,N:/n/g,B:/b/g,D:/d/g,G:/g/g,V:/v/g,THV:/th/g}[SOUND];
-      var other=ITEM&&ITEM.level!=="isolation"?String(ITEM.t||"").toLowerCase().replace(own||/$^/,""):"";
-      if(SHAPE.low[SOUND] && cent>1800 && high>0.22 && !/s|z|x|sh|ch|j|f|th|c[eiy]|g[eiy]/.test(other)) return "fail";
+      var word=ITEM&&ITEM.level!=="isolation"?String(ITEM.word||ITEM.t||"").toLowerCase():"";
+      var other=word.replace(own||/$^/," ");
+      var soft=/c[eiy]/.test(word)||(SOUND!=="G"&&/dge|ge$/.test(word));
+      if(SHAPE.low[SOUND] && cent>1800 && high>0.22 && !soft && !/s|z|x|sh|ch|j|f|ph|th/.test(other)) return "fail";
       if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10 && !(ITEM&&ITEM.pos==="b")) return "fail";
       return "pass";
     }
