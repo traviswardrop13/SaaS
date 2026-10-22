@@ -154,10 +154,13 @@ const reelState=page=>page.evaluate(()=>{const f=document.getElementById('reelFr
 const toReel=async page=>{await setupWalk(page,'reel');await page.locator('[data-step="reel"].on').waitFor();};
 await scenario('the reel: real clips where the phone plays them, posters where it cannot, Home cards where a game has neither',async()=>{
  // (motion on in this scenario: under Reduce Motion the reel is one still, below)
- // the tests' browser plays no H.264 (as a phone in Low Power Mode may refuse
- // to start one): the posters, as a slideshow; here every poster is missing
- // but Fruit Slice's, so the others are their games' Home cards
- {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[['**/assets/setup/reel/*.webp',r=>r.fulfill({status:404,body:''})],['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{   // (the real posters taken away: a later route wins)
+ // a browser that plays no H.264 (as a phone in Low Power Mode may refuse to
+ // start one): the posters, as a slideshow; here every poster is missing but
+ // Fruit Slice's, so the others are their games' Home cards. Said outright
+ // (NO_H264): the Chromium these tests run on locally has no H.264, but the
+ // one CI installs does, and played the real clips here (22 Oct 2026)
+ const NO_H264=()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};};
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,init:NO_H264,routes:[['**/assets/setup/reel/*.webp',r=>r.fulfill({status:404,body:''})],['**/assets/setup/reel/slice.webp',r=>r.fulfill({status:200,contentType:'image/webp',body:WEBP})]]});try{   // (the real posters taken away: a later route wins)
   await toReel(page);await page.waitForTimeout(300);
   let s=await reelState(page);
   ok('a browser that cannot play the clips gets the posters: no video drawn, the first game\'s poster on screen',s.stills&&!s.clipShown&&JSON.stringify(s.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&!s.broken,s);
@@ -177,7 +180,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   clean('reel stills',errors);
  }finally{await context.close();}}
  // the real posters (tools/setupreel's files): a browser that plays no H.264 sees each game's own still, not its Home card
- {const {context,page,errors,requests}=await fresh({webSales:true,motion:true});try{
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,init:NO_H264});try{
   await toReel(page);
   await page.waitForFunction(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i&&i.complete;},null,{timeout:4000}).catch(()=>{});
   const s=await reelState(page),w=await page.evaluate(()=>{const i=document.querySelector('#reelFrame .reel-still.on');return i?[i.naturalWidth,i.naturalHeight]:null;});
