@@ -196,8 +196,8 @@
     waterwheel: {
       wash: "#8fbf68",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.515, y: 0.705, h: 0.145, pose: "rest" },
           line: "Here comes Pelly with a letter! Oops. That's a striped sock. Pelly, where's the other one?" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
@@ -230,17 +230,17 @@
       ending: [
         // no buddy
         { art: "e01", ages: "both", buddy: null,
-          line: { big: "Whoosh! The wheel turns, the water runs, and every droopy flower stands up tall.",
-                  little: "Whoosh! The wheel turns, and the flowers get a big drink!" } },
-        // no buddy (on the pond's flat stone edge just right of Echo, not placed)
-        { art: "e02", ages: "big", buddy: null,
+          line: { big: "Gurgle, gurgle! The wheel turns, the water runs, and every droopy flower stands up tall.",
+                  little: "Gurgle, gurgle! The wheel turns, and the flowers get a big drink!" } },
+        // buddy: on the pond's flat stone edge just right of Echo (cheer)
+        { art: "e02", ages: "big", buddy: { x: 0.6, y: 0.78, h: 0.19, pose: "cheer" },
           line: "The pond fills right up, and in jump the ducks with a big splash. Quack, quack, hooray!" },
-        // no buddy (on the sandy path just right of Echo, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the sandy path just right of Echo (cheer)
+        { art: "e03", ages: "both", buddy: { x: 0.875, y: 0.855, h: 0.18, pose: "cheer" },
           line: { big: "Gardener Mouse puts her feet up. And look! A little frog found Pelly's other sock. It makes a cozy sleeping bag!",
                   little: "Look! A little frog found Pelly's other sock!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.655, y: 0.685, h: 0.19, pose: "cheer" },
           line: "Four gold stars on our helper map! And not one droopy flower left in the garden." }
       ]
     },
@@ -249,9 +249,9 @@
     postboat: {
       wash: "#3f9fc0",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
-          line: "Pelly's here with a letter! Oops. That's a teapot. And it's still warm!" },
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },
+          line: "Pelly waddles up with a letter! Oops. That's a teapot. And it's still warm!" },
         // no buddy (on the garden path just right of Echo, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Postmaster Otter, down by the sea. He needs our help!",
@@ -260,22 +260,22 @@
         { art: "s03", ages: "both", buddy: null,
           line: { big: "Otter has parcels for everybody on the little islands. Look at that pile!",
                   little: "Postmaster Otter has a big pile of parcels!" } },
-        // no buddy (on the flat mossy rock just right of Echo, not placed)
-        { art: "s04", ages: "big", buddy: null,
+        // buddy: on the flat mossy rock just right of Echo (rest)
+        { art: "s04", ages: "big", buddy: { x: 0.48, y: 0.795, h: 0.2, pose: "rest" },
           line: "But his big red boat is too wide for the reeds. It got stuck! Squish, squelch." },
-        // no buddy (on the jetty's plank deck in the lower right, in front of the postboat, not placed)
-        { art: "s05", ages: "both", buddy: null,
-          line: { big: "Good thing Otter has a little postboat too. It fits right through the reeds!",
+        // buddy: on the jetty's plank deck in the lower right, in front of the postboat (cheer)
+        { art: "s05", ages: "both", buddy: { x: 0.7, y: 0.84, h: 0.2, pose: "cheer" },
+          line: { big: "Lucky for us, Otter has a little postboat too. It fits right through the reeds!",
                   little: "Otter's big boat won't fit in the reeds. This little one will!" } },
         // no buddy
         { art: "s06", ages: "big", buddy: null,
-          line: "Mouse has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!" },
+          line: "Mouse's little blue house has no curtains. Heron keeps getting rained on. And Turtle has read all his books, twice!" },
         // no buddy (on the floating jetty's planks just right of Echo, not placed)
         { art: "s07", ages: "both", buddy: null,
           line: { big: "Then there's Beaver. He nibbled his own front door by mistake. Crunch! His new one is on that raft.",
                   little: "Silly Beaver nibbled his door. Crunch! His new one is on a raft." } },
-        // no buddy (on the jetty planks in the lower right, right of Otter and in front of the postboat, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the jetty planks in the lower right, right of Otter and in front of the postboat (cheer)
+        { art: "s08", ages: "both", buddy: { x: 0.8, y: 0.855, h: 0.2, pose: "cheer" },
           line: { big: "Let's steer the little postboat to every island, and pull Beaver's raft behind us. Ready?",
                   little: "Let's steer the boat to every island. Ready?" } }
       ],
@@ -294,7 +294,7 @@
                   little: "Tea for everyone from Pelly's teapot!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Five gold stars on our helper map! You and the little postboat did it!" }
+          line: "Our helper map has five gold stars now! You and the little postboat did it." }
       ]
     },
 
@@ -304,11 +304,11 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly is here with a letter. Oops. That's a pinecone! What a prickly letter, Pelly." },
+          line: "Pelly is up early with a letter. Oops. That's a pinecone! What a prickly letter, Pelly." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Baker Badger. His new bakery opens this morning, and he needs more paws!",
-                  little: "It's from Baker Badger. He needs our help at his bakery!" } },
+                  little: "Here's the real letter. Baker Badger's new bakery opens today!" } },
         // no buddy (on the cobbles just left of Echo, not placed)
         { art: "s03", ages: "both", buddy: null,
           line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear brought a very big basket!",
@@ -337,7 +337,7 @@
         // no buddy
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Ta-da! Round buns, curled buns and berry buns, each in its own basket. Breakfast is ready!",
-                  little: "Ta-da! Breakfast is ready. Warm buns for everyone!" } },
+                  little: "Ta-da! Breakfast is ready. Warm buns, fresh from the oven!" } },
         // no buddy (on the counter top just right of Echo, not placed)
         { art: "e02", ages: "big", buddy: null,
           line: "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!" },
@@ -347,7 +347,7 @@
                   little: "Pelly puts a bun in her pouch. Out pops another pinecone!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Six gold stars on our helper map! And Badger gave us the very last curled bun to take home." }
+          line: "Six gold stars on our helper map! Badger even gave us the very last curled bun." }
       ]
     },
 
@@ -378,11 +378,11 @@
                   little: "Tortoise tries to carry a big piece of wood. Round and round he spins. Whoops!" } },
         // no buddy
         { art: "s07", ages: "both", buddy: null,
-          line: { big: "Good thing there's a crane! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
-                  little: "The crane lifts the wood. Turn it to fit, then down it goes. Clunk!" } },
+          line: { big: "Here's a crane to help! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
+                  little: "Here's a crane! It lifts the wood. Turn it to fit, then down it goes. Clunk!" } },
         // no buddy (on the wooden landing's planks just right of Echo, not placed)
         { art: "s08", ages: "both", buddy: null,
-          line: { big: "Let's build the bridge, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
+          line: { big: "Let's put the bridge together, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
                   little: "Let's build a bridge, then roll Tortoise's cart to his door. Ready?" } }
       ],
       go: "Let's go!",
@@ -400,7 +400,7 @@
                   little: "Pelly brings the toothbrush. It's Tortoise's! Brush, brush!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Seven gold stars on our helper map! You built a bridge to Tortoise's new front door." }
+          line: "Tortoise is home, and that makes seven gold stars on our helper map!" }
       ]
     },
 
@@ -410,7 +410,7 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly flies in with a letter! Oops. That's a carrot. Who is that for, Pelly?" },
+          line: "Pelly swoops down with a letter! Oops. That's a carrot! Somebody is going to love that." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Glowworm in the Mushroom Woods. He needs our help with his lamps tonight!",
@@ -435,7 +435,7 @@
           line: "Every light needs two cords. One takes the power in, one brings it back. Then flip the switch. Click!" },
         // no buddy (on the near sandy path just right of Echo, not placed)
         { art: "s08", ages: "both", buddy: null,
-          line: { big: "Let's plug in every cord and flip every switch, lamp by lamp, all the way to the big lantern. Ready?",
+          line: { big: "Let's plug in every cord and flip every switch, lamp by lamp, right up to the big lantern. Ready?",
                   little: "Let's plug in the cords and switch on the lamps. Ready?" } }
       ],
       go: "Let's go!",
@@ -453,7 +453,7 @@
                   little: "Pelly's carrot was for Rabbit! Crunch, crunch!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Eight gold stars on our helper map! You lit up the woods. Goodnight, Glowworm!" }
+          line: "Goodnight, Glowworm! Now there are eight gold stars on our helper map." }
       ]
     },
 
@@ -463,15 +463,15 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly flew in with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here." },
+          line: "Pelly lands on the doorstep with a letter. Oops. That's a fuzzy red mitten! Pelly, it isn't even snowing here." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Hare in snowy Snowdrop Valley. She needs help with her brand-new train!",
-                  little: "It's from Hare. She needs help with her new train!" } },
+                  little: "Here's the real letter. It's from Hare, out in the snow!" } },
         // no buddy (on the open snow just left of Echo, well below the coach and Frog, not placed)
         { art: "s03", ages: "both", buddy: null,
           line: { big: "Hare and Frog are the train crew. Here's their shiny new train. But look! There are no tracks!",
-                  little: "Hare and Frog have a shiny new train. But where are the tracks?" } },
+                  little: "Hare and Frog have a shiny new train. But it has no tracks!" } },
         // no buddy (on the snow just right of Echo, not placed)
         { art: "s04", ages: "big", buddy: null,
           line: "Hare and Frog polished the train all week. They forgot the tracks! They're still on the cart, under the snow." },
@@ -481,8 +481,8 @@
                   little: "Squirrel, Badger and the duck family all need a ride!" } },
         // no buddy (on the plain snow just right of Echo, in front of the snowdrift and well below it, not placed)
         { art: "s06", ages: "both", buddy: null,
-          line: { big: "Frog tried to carry Badger home on his back. One hop, two hops, plop! Now they're both snowy and giggling.",
-                  little: "Frog tried to carry Badger. One hop, two hops, plop! Silly Frog!" } },
+          line: { big: "Frog gave Badger a ride home on his back. One hop, two hops, plop! They landed in a snowdrift, giggling.",
+                  little: "Frog gave Badger a ride. One hop, two hops, plop! Into the snow!" } },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
           line: "Every stop has a picture sign. A sled for the hill, a little house for Badger, and a duck for the pond." },
@@ -495,18 +495,18 @@
       ending: [
         // no buddy
         { art: "e01", ages: "both", buddy: null,
-          line: { big: "Ding, ding! Everyone got to their stop. And Hare and Frog rode all the way around and back home!",
-                  little: "Ding, ding! The train is home. Hooray!" } },
+          line: { big: "Ding, ding! Everyone is at their stop. And Hare and Frog got their ride too, round the valley and home!",
+                  little: "Ding, ding! Everyone got a ride on the train!" } },
         // no buddy
         { art: "e02", ages: "big", buddy: null,
-          line: "Squirrel zooms down the hill. Badger is home in his slippers. And the ducklings splash in the pond!" },
+          line: "Down the hill zooms Squirrel! Badger waves from his door in his slippers, and the ducklings paddle in the pond." },
         // no buddy (on the front of the platform just right of Echo, not placed)
         { art: "e03", ages: "both", buddy: null,
-          line: { big: "Cocoa at the station for everyone! And here comes Pelly, wearing that red mitten as a cozy hat.",
+          line: { big: "Hot cocoa and cookies at the station! And here comes Pelly, wearing that red mitten as a cozy hat.",
                   little: "Look! Pelly is wearing the mitten as a hat!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Nine gold stars on our helper map! You built train tracks for the whole valley." }
+          line: "The whole valley can ride the train now. Nine gold stars on our helper map!" }
       ]
     },
 
@@ -516,7 +516,7 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly is back with a letter. Oops. That's an umbrella! There isn't a cloud in the sky, Pelly." },
+          line: "Pelly sails in on the breeze with a letter. Oops. That's an umbrella! How did it ever fit in her pouch?" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Goat on Breezy Hill. His giant kite needs our help!",
@@ -534,11 +534,11 @@
                   little: "The pictures aren't sewn on. Whoosh! Up they flap!" } },
         // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
         { art: "s06", ages: "both", buddy: null,
-          line: { big: "Goat tried to sew them on himself. But needles are tricky with hooves. Now he's all tangled up!",
-                  little: "Goat tried to sew. Now he's all tangled up! Silly Goat." } },
+          line: { big: "Goat grabbed a needle to sew them on. But that's tricky with hooves! Now he's wrapped up like a present.",
+                  little: "Sewing is tricky with hooves. Goat is all tangled up!" } },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
-          line: "A kite needs a ribbon tail that hangs just right. Too heavy on one side, it tips over. Even, and up it flies!" },
+          line: "A kite's tail has to hang even. Too many bows on one side, and it tips over! Spread them out, and it flies straight." },
         // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
         { art: "s08", ages: "both", buddy: null,
           line: { big: "Let's sew every picture in its place, thread the ribbons, balance the tail and fly the kite. Ready?",
@@ -548,18 +548,18 @@
       ending: [
         // no buddy (on the grass just right of Echo, not placed)
         { art: "e01", ages: "both", buddy: null,
-          line: { big: "Whoosh! Up goes the patchwork kite, straight and steady, with every picture flying high!",
+          line: { big: "Look at it go! Up goes the patchwork kite, straight and steady, with every picture flying high!",
                   little: "Up goes the kite! Every picture is flying!" } },
         // no buddy (on the grass just right of Echo, apart from the rock, not placed)
         { art: "e02", ages: "big", buddy: null,
           line: "Lamb waves up at her flower. And Beetle waves up at herself, flying high!" },
         // no buddy (on the grass just right of Echo, far below Pelly and the kite, not placed)
         { art: "e03", ages: "both", buddy: null,
-          line: { big: "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Silly Pelly!",
+          line: { big: "Pelly comes to watch. Pop! Her umbrella opens, and the breeze lifts her up like a kite. Hold on, Pelly!",
                   little: "Pop! Pelly's umbrella opens. Up she floats like a kite!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Ten gold stars on our helper map! You made every picture fly." }
+          line: "Hooray for Goat's kite, and for ten gold stars on our helper map!" }
       ]
     },
 
@@ -569,23 +569,23 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly's here with the mail! Oops. That's a wooden spoon. Are you making soup, Pelly?" },
+          line: "Pelly has the mail! Oops. That's a wooden spoon. Are you making soup, Pelly?" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
-          line: { big: "Here's the real letter. It's from Mama Swallow. She has new nests on a cliff, and she needs our help!",
-                  little: "Here's the real letter. Mama Swallow needs our help!" } },
+          line: { big: "Here's the real letter. It's from Mama Swallow. Her family is moving into new nests on a cliff!",
+                  little: "Here's the real letter. Mama Swallow is moving into new nests!" } },
         // no buddy (on the sand just right of Echo, at the foot of the cliff, not placed)
         { art: "s03", ages: "both", buddy: null,
           line: { big: "This is Sandstone Cliff, with little round nests all the way up. Mama Swallow and her chicks wave hello!",
                   little: "Look! Mama Swallow and her three chicks. Their new nests are way up high!" } },
         // no buddy
         { art: "s04", ages: "both", buddy: null,
-          line: { big: "Uh-oh! The blankets and toys are all bundled up, and the bundles are too wide for the twisty stairs.",
+          line: { big: "Uh-oh! The blankets and toys are all bundled up, and the bundles can't squeeze up the little cliff stairs.",
                   little: "Oh no! The blankets and toys are too big for the stairs!" } },
         // no buddy (on the sand just right of Echo, not placed)
         { art: "s05", ages: "both", buddy: null,
-          line: { big: "Mama Swallow tried to fly the enormous quilt up by herself. Flap, flap, flop! Now it's a quilt with feet.",
-                  little: "Mama Swallow tried to fly the big quilt up. Flop! Now it's a quilt with feet!" } },
+          line: { big: "Mama Swallow took off with the enormous quilt. Flap, flap, flop! Down it came, and now it's a quilt with feet.",
+                  little: "Flap, flap, flop! The big quilt fell on Mama Swallow. A quilt with feet!" } },
         // no buddy
         { art: "s06", ages: "big", buddy: null,
           line: "Each chick wants its own toy in bed tonight. A rabbit, a teddy bear, and a very, very long snake!" },
@@ -602,17 +602,17 @@
         // no buddy
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Swoosh! The enormous quilt slides right into the top nest. Every nest has its bundle!",
-                  little: "Swoosh! The big quilt is in the top nest. Hooray!" } },
+                  little: "Swoosh! The big quilt fits in the top nest!" } },
         // no buddy (on the picnic cloth in the lower middle, just in front of the pot, between the chicks and Echo, not placed)
         { art: "e02", ages: "big", buddy: null,
-          line: "Pelly flies in with her wooden spoon and makes berry soup for everybody. So that's what it's for!" },
+          line: "Soup's on! Pelly stirs berry soup with her wooden spoon. So that's what it was for!" },
         // no buddy
         { art: "e03", ages: "both", buddy: null,
           line: { big: "Bedtime! Each chick snuggles in its own nest with its toy. And up top, Mama Swallow is a quilt with feet again!",
                   little: "Bedtime! Each chick hugs its toy in its own nest. And look, a quilt with feet!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Eleven gold stars on our helper map! Every nest is cozy, thanks to you." }
+          line: "Eleven gold stars on our helper map! Every chick is snug in its new nest." }
       ]
     },
 
@@ -622,21 +622,21 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly brought us a letter! Oops. That's a sandwich. Pelly, were you saving that for lunch?" },
+          line: "Hello, Pelly! Is that a letter? Oops. That's a sandwich. One bite is already gone!" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
-          line: { big: "Here's the real letter. It's from Frog at Lily Pond. The pond concert is today, and he needs our help!",
+          line: { big: "Here's the real letter. It's from our friend Frog. The pond concert is today, but his band can't get started!",
                   little: "Here's the real letter. Frog's band needs our help with their concert!" } },
         // no buddy (on the mossy bank just right of Echo, not placed)
         { art: "s03", ages: "both", buddy: null,
-          line: { big: "At Lily Pond, we meet the band. Frog has a drum, Newt has a reed harp, and Duck has two little bells.",
-                  little: "Meet the pond band! Frog has a drum, Newt has a harp, and Duck has bells." } },
+          line: { big: "At Lily Pond, here's Frog with his band! He has a drum, Newt has a reed harp, and Duck has two little bells.",
+                  little: "Here's the pond band! Frog has a drum, Newt has a harp, and Duck has bells." } },
         // no buddy (on the wide flat mossy stone just right of Echo, not placed)
         { art: "s04", ages: "big", buddy: null,
           line: "Each one knows a lovely tune. Boom, boom goes the drum. Plink, plonk go the reeds. Ding, ding go the bells!" },
         // no buddy (on the near mossy bank just right of Echo, not placed)
         { art: "s05", ages: "both", buddy: null,
-          line: { big: "Nobody knows who goes first, so they all play at once. Boom, plink, ding! The bunny and mouse cover their ears.",
+          line: { big: "Nobody knows who goes first, so they all play at once. Boom, plink, ding! A bunny and a mouse cover their ears.",
                   little: "They all play at once. Boom, plink, ding! Oh dear, what a mix-up!" } },
         // no buddy (on the front of the lily pad just right of Echo, not placed)
         { art: "s06", ages: "both", buddy: null,
@@ -662,11 +662,11 @@
         // no buddy (on the mossy bank just right of Echo, in front of the row, not placed)
         { art: "e03", ages: "both", buddy: null,
           line: { big: "Pelly shares her sandwich with the band. And Newt's tail plays one last plink, right on time!",
-                  little: "Newt's silly tail plays one last plink. Hooray!" } },
+                  little: "Pelly shares her sandwich. And Newt's tail goes plink!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: { big: "Twelve gold stars on our helper map! Take a bow, conductor.",
-                  little: "Twelve gold stars on our helper map! Take a bow!" } }
+          line: { big: "Take a bow, conductor! That's twelve gold stars on our helper map.",
+                  little: "Take a bow! That's twelve gold stars on our helper map." } }
       ]
     },
 
@@ -679,16 +679,16 @@
           line: "Knock, knock! It's Pelly with a letter. Oops. That's a pancake, with butter on top! Silly Pelly." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
-          line: { big: "Here's the real letter. It's from Gardener Bird. Her rooftop gardens need seeds, and she needs our help!",
-                  little: "Here's the real letter. Gardener Bird needs help planting seeds!" } },
+          line: { big: "Here's the real letter. It's from Gardener Bird. Her rooftop gardens need seeds, and lots of them!",
+                  little: "Here's the real letter. Gardener Bird has seeds to plant!" } },
         // no buddy (on the cobbled lane just right of Echo, not placed)
         { art: "s03", ages: "both", buddy: null,
           line: { big: "Off we go to the hilltop town! Every rooftop has a planter full of soil. But nothing is growing.",
                   little: "Look at all the rooftop pots. Lots of soil, but no plants!" } },
         // no buddy (on the cobbles just right of Echo, not placed)
         { art: "s04", ages: "both", buddy: null,
-          line: { big: "The seed pods are too heavy for Gardener Bird to fly up. And her cart won't fit up the narrow stairs. Bump!",
-                  little: "The seed cart won't fit up the skinny stairs. Bump!" } },
+          line: { big: "The seed pods are too heavy for Gardener Bird to fly up. And her cart gets stuck at the narrow stairs. Bump!",
+                  little: "The seed cart gets stuck at the skinny stairs. Bump!" } },
         // no buddy (on the cobbles just right of Echo, not placed)
         { art: "s05", ages: "both", buddy: null,
           line: { big: "Gardener Bird loves watering so much, she waters everything. The stairs, the cart, and us! Sprinkle!",
@@ -708,18 +708,18 @@
       ending: [
         // no buddy
         { art: "e01", ages: "both", buddy: null,
-          line: { big: "Plop! The last seed lands. Green leaves on every rooftop, and flowers all over the old arch!",
-                  little: "Plop! Now every rooftop has a little garden. Hooray!" } },
+          line: { big: "Plop! Every seed is planted. Green leaves on every rooftop, and flowers all over the old arch!",
+                  little: "Plop! Green leaves and flowers on every rooftop!" } },
         // no buddy (on the terrace just right of Echo, not placed)
         { art: "e02", ages: "big", buddy: null,
-          line: "Gardener Bird does a happy loop under the flowery arch. Then she waters every new plant. Not us, this time!" },
+          line: "Gardener Bird loops through the flowery arch, watering every new plant. Quick, a leaf umbrella!" },
         // no buddy (on the terrace just right of Echo, in front of the table, not placed)
         { art: "e03", ages: "both", buddy: null,
-          line: { big: "Pelly flies in with more pancakes. A whole stack! A rooftop picnic for everyone. Yum!",
+          line: { big: "Out of Pelly's pouch comes a whole stack of pancakes! A rooftop picnic for everyone. Yum!",
                   little: "Pelly brought pancakes for everyone. Yum!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Thirteen gold stars on our helper map! And a little garden on every rooftop." }
+          line: "A garden on every rooftop, and thirteen gold stars on our helper map!" }
       ]
     },
 
@@ -729,7 +729,7 @@
       intro: [
         // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
         { art: "s01", ages: "both", buddy: null,
-          line: "Pelly brought us a letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!" },
+          line: "Pelly brought us another letter! Oops. That's a fluffy slipper. Pelly, you don't wear slippers!" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Owl at the Moving-Star Observatory. Her stars have stopped moving!",
@@ -762,7 +762,7 @@
         // no buddy
         { art: "e01", ages: "both", buddy: null,
           line: { big: "The sun goes up, the moon goes round, and the stars spin. And the roof opens to the real stars!",
-                  little: "The sun, the moon and the stars all move. Hooray!" } },
+                  little: "The sun goes up, and the moon and stars go round!" } },
         // no buddy
         { art: "e02", ages: "big", buddy: null,
           line: "Look at the little pictures going round! A boat, a bridge, a flower and a kite. Just like our adventures!" },
@@ -772,7 +772,7 @@
                   little: "Owl dances in her two fluffy slippers. Shuffle, shuffle!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
         { art: "e04", ages: "both", buddy: null,
-          line: "Fourteen gold stars on our helper map! The whole map is shining, all thanks to you." }
+          line: "Fourteen gold stars on our helper map, all shining bright. What a helper you've been!" }
       ]
     }
   };
