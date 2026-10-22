@@ -3,6 +3,7 @@ import UIKit
 import Capacitor
 import Speech
 import AVFoundation
+import UserNotifications
 
 /**
  * SonaSpeech — on-device speech recognition for the practice gate, and
@@ -33,6 +34,16 @@ import AVFoundation
  * code in this file (heartest pins that). Native never reopens the mic by
  * itself; every open is the page's, after its own "Go!".
  *
+ * THE TRIAL REMINDER (notifyStatus, notifyAsk, notifySchedule, notifyCancel;
+ * 22 Oct 2026, Travis: "add push notifications ... to notify them a day
+ * before their trial ends"). One LOCAL notification, scheduled on this phone
+ * by UNUserNotificationCenter: no server, no Apple push service, no device
+ * token, so nothing about the family leaves the phone for it, and the app
+ * needs no Push capability or APNs key. The page writes the words (never a
+ * child's name: sona.js, NOTIFY1) and the time; this file only asks iOS's
+ * permission and hands iOS that one request. Every method is optional: a
+ * page on an older build finds none of them and never offers a reminder.
+ *
  * Xcode side (see SPEECH_PLUGIN.md at the repo root):
  *   - Info.plist needs NSSpeechRecognitionUsageDescription (the copy must say
  *     recognition happens on the device).
@@ -50,6 +61,10 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "micPermission", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "micOpen", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "micClose", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "notifyStatus", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "notifyAsk", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "notifySchedule", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "notifyCancel", returnType: CAPPluginReturnPromise),
     ]
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -92,6 +107,11 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         nc.addObserver(self, selector: #selector(mediaReset(_:)), name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
         nc.addObserver(self, selector: #selector(wentBackground(_:)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         nc.addObserver(self, selector: #selector(wentBackground(_:)), name: UIScene.didEnterBackgroundNotification, object: nil)
+        // The trial reminder is shown even while Sona is open (below,
+        // willPresent): families play at the same time most days, and that is
+        // the time of day the reminder was set at. Capacitor stays iOS's
+        // notification delegate; it hands local notifications to this handler.
+        bridge?.notificationRouter.localNotificationHandler = self
     }
 
     /**
@@ -588,6 +608,112 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
         ]
     }
 
+    // ── the trial reminder: one local notification ──
+
+    private static let notifyVersion = 1
+
+    /** What iOS's notification setting for Sona is, in the page's words. */
+    private func notifyWord(_ status: UNAuthorizationStatus) -> String {
+        switch status {
+        case .authorized:
+            return "granted"
+        case .provisional:
+            return "provisional"                                // delivered quietly; a real ask still shows iOS's box
+        case .notDetermined:
+            return "prompt"
+        case .denied:
+            return "denied"
+        default:
+            // .ephemeral is App Clips only, and anything newer is not known
+            // to deliver: never a reason for the page to promise a reminder
+            return "denied"
+        }
+    }
+
+    /** notifyStatus() -> { status: granted | denied | prompt | provisional, v }.
+     *  Asks nothing of the family. */
+    @objc func notifyStatus(_ call: CAPPluginCall) {
+        UNUserNotificationCenter.current().getNotificationSettings(completionHandler: { settings in
+            let word = self.notifyWord(settings.authorizationStatus)
+            DispatchQueue.main.async { call.resolve(["status": word, "v": SonaSpeechPlugin.notifyVersion]) }
+        })
+    }
+
+    /** notifyAsk() -> { granted, v }. iOS's own Allow box, shown once: a
+     *  setting already answered resolves at once with that answer. Alerts and
+     *  a sound only: no badge on the app's icon, and never provisional (quiet)
+     *  or critical alerts. */
+    @objc func notifyAsk(_ call: CAPPluginCall) {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound], completionHandler: { granted, _ in
+            DispatchQueue.main.async { call.resolve(["granted": granted, "v": SonaSpeechPlugin.notifyVersion]) }
+        })
+    }
+
+    /**
+     * notifySchedule({ id, at, title, body }) -> { scheduled, reason?, v }.
+     * `at` is the moment, in ms since 1970. One notification, once, at that
+     * moment (a calendar trigger that never repeats, in this phone's time
+     * zone, so a family who travels is reminded at the same moment, not the
+     * same clock time). A request with the same id replaces the one iOS was
+     * holding (UNUserNotificationCenter's own rule), so arming again never
+     * sends two. Refused, never queued: a moment already past or more than
+     * 400 days away, an empty id or words, or a family who has not allowed
+     * notifications (scheduled: false, reason "denied").
+     */
+    @objc func notifySchedule(_ call: CAPPluginCall) {
+        let id = call.getString("id") ?? ""
+        let title = String((call.getString("title") ?? "").prefix(80))
+        let body = String((call.getString("body") ?? "").prefix(200))
+        guard !id.isEmpty, id.count <= 64, !title.isEmpty, !body.isEmpty else {
+            call.reject("a reminder needs an id, a title and words", "invalid")
+            return
+        }
+        guard let at = call.getDouble("at"), at.isFinite else {
+            call.reject("a reminder needs a moment", "invalid")
+            return
+        }
+        let when = Date(timeIntervalSince1970: at / 1000.0)
+        let ahead = when.timeIntervalSinceNow
+        guard ahead > 60, ahead < 400 * 86400 else {
+            call.reject("that moment is past or too far away", "past")
+            return
+        }
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings(completionHandler: { settings in
+            guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
+                DispatchQueue.main.async { call.resolve(["scheduled": false, "reason": "denied", "v": SonaSpeechPlugin.notifyVersion]) }
+                return
+            }
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            var parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: when)
+            parts.timeZone = TimeZone.current
+            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+            let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+            center.add(request, withCompletionHandler: { error in
+                DispatchQueue.main.async {
+                    if let e = error {
+                        call.reject("iOS refused the reminder: \(e.localizedDescription)", "refused")
+                    } else {
+                        call.resolve(["scheduled": true, "at": at, "v": SonaSpeechPlugin.notifyVersion])
+                    }
+                }
+            })
+        })
+    }
+
+    /** notifyCancel({ id }) -> { cancelled, v }. The reminder is not sent.
+     *  Safe when none is waiting. One already shown stays where the family
+     *  can see it. */
+    @objc func notifyCancel(_ call: CAPPluginCall) {
+        let id = call.getString("id") ?? ""
+        guard !id.isEmpty else { call.reject("which reminder?", "invalid"); return }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
+        call.resolve(["cancelled": true, "v": SonaSpeechPlugin.notifyVersion])
+    }
+
     // ── what iOS does to us ──
 
     @objc private func audioInterrupted(_ note: Notification) {
@@ -667,4 +793,21 @@ public class SonaSpeechPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc private func wentBackground(_ note: Notification) {
         DispatchQueue.main.async { _ = self.closeMic("background") }
     }
+}
+
+/**
+ * While Sona is open iOS shows a notification only if the app says so, and
+ * Capacitor's router says nothing unless a handler answers. The reminder is
+ * set for the time of day the trial started, which is often when the family
+ * plays: unanswered, it would vanish unseen on exactly the day it matters.
+ * Only Sona's own ids ("sona-"); anything else is left as iOS would leave it.
+ * A tap on it simply opens the app.
+ */
+extension SonaSpeechPlugin: NotificationHandlerProtocol {
+    public func willPresent(notification: UNNotification) -> UNNotificationPresentationOptions {
+        guard notification.request.identifier.hasPrefix("sona-") else { return [] }
+        return [.banner, .list, .sound]
+    }
+
+    public func didReceive(response: UNNotificationResponse) {}
 }
