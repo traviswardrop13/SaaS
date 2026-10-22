@@ -1,28 +1,28 @@
 # Daily adventures: Days 4-14
 
-This file describes the content records for eleven Premium adventures. Claude owns Days 1-3, Home, the story player and its state. The records do not own access, rotation, rewards, speech targets, scoring or completion. Physical games are being finished and verified one at a time; see `INTEGRATION.md` for their current implementation status. Planning a story does not make it playable.
+This file describes eleven Premium adventures with completed physical controllers, verified one at a time on both age paths. Claude owns Days 1-3, Home, the shared story player and its state. These records do not own access, rotation, rewards, speech targets, scoring or completion. See `INTEGRATION.md` for verification evidence and the remaining production connection.
 
-All eleven records in `public/daily-adventures/stories.js` have `ready: false`. A record's presence, narration or ending is not evidence that its physical game exists or has been verified. No current page is wired to this data by this change.
+All eleven records in `public/daily-adventures/stories.js` retain `ready: false` because connection through Claude's production player has not been verified. A computer-only review tool can run their real games, speech turns and optional narration. No production page is wired to this data by this change.
 
 ## Content contract
 
 `window.DailyAdventureStories` is an ES5-compatible array assigned once from literal data. Each record contains:
 
 - `day`, `key`, `title`, `description`: the day identity and short summary.
-- `mechanic`: the planned physical game family, not executable behavior.
+- `mechanic`: the physical game family, not executable behavior.
 - `speechHelp`: a description of useful mechanical assistance. The existing speech engine owns its target, model, score, retries and recognition. No record prescribes a clinical word, carrier phrase, repetition quota or new scoring rule.
 - `youngerGoals`: five physical objectives for ages 3-4.
 - `olderGoals`: eight physical objectives for ages 5-8.
 - `acts`: three story beats, each with a title and an array of short narrated sentences. `atYounger` is 0, 1 or 3; `atOlder` is 0, 2 or 6. These numbers describe the intended count of completed physical objectives before a beat. They do not implement or award progress. Act 1 introduces the first 1/2 objectives, Act 2 introduces the next 2/4, and Act 3 introduces the final 2/2.
 - `ending`: sentences reserved for after the final real physical achievement.
 - `done`: `{ title, sub }` copy for the completed adventure.
-- `art`: a root-relative background path. Later-day paths are planned filenames, not generated or verified assets.
+- `art`: the root-relative path of the saved setting painting.
 - `endingArt`: a root-relative painting for the earned ending. It must appear only after the actual final physical objective. The physical module and owning player enforce that condition.
 - `ready`: false until the corresponding game is finished and verified through the owning implementation.
 
 Both ages share a plot, setting, characters and earned ending. The physical module changes the size, precision, number of manipulations or spatial reasoning needed. Essential directions must be spoken and demonstrated with pictures or a moving hand; children must not need to read this text. Use the existing audio owner, so narration never competes with an open microphone.
 
-Goals below are implementation planning, not a new completion authority. The physical module must demonstrate and count the real result. Speaking can earn help, but cannot mark a goal, fill a destination, place a missing object or advance a story beat. Silence and cancelled help requests award no power or progress. No lives, fear, fail-out, forced waiting or timer-based story credit are planned.
+Goals below describe the physical implementations, not a new completion authority. The physical module demonstrates and counts the real result. Speaking can earn help, but cannot mark a goal, fill a destination, place a missing object or advance a story beat. Silence and cancelled help requests award no power or progress. No lives, fear, fail-out, forced waiting or timer-based story credit are added.
 
 ## Adventure slate
 
@@ -38,7 +38,7 @@ Goals below are implementation planning, not a new completion authority. The phy
 | 11 / `nestlift` | Bulky blankets and soft toys cannot use the stairs. Balance a lift to deliver them to the upper nests, including an enormous quilt. | Both choose stone subsets for six load masses. Younger: grouped deliveries, wider catches and steadier motion. Older: separate weighing/delivery objectives and finer docking. Each bundle needs a real stopped transfer; the quilt needs a final basket slide. | Damped beam sway and a pale landing preview. | One sandstone nest village; live beam/lift and nests, reused baskets, counterweights, five painted load cutouts and earned occupied-nest painting. |
 | 12 / `concert` | The pond musicians know separate parts but need coordinated turns. Play patterns, arrange the players and conduct their complete piece. | Both play all three instruments and choose an opening and ending. Younger: shorter phrases, broader timing and nine conducting cues. Older: five-note replies, more pitches and twelve cues. Seating and opening determine actual part order. No missed note removes a player. | Slower musical cues and a wider timing window; every note remains the child's action. | One pond scene; painted musicians, live instruments and cue/hand animations, plus an earned audience painting. |
 | 13 / `rooftops` | The seed cart cannot climb narrow rooftop stairs. Land pods in planters and grow the last climbing seeds into a flowering arch. | Both ages manually load, aim and launch into seven growing planters, including a real awning bank shot. Younger: wider mouths, gentler wind and 14 pods. Older: tighter height/wind challenges and 16 pods. The arch needs two pods then three more. Misses return to a tray without a lost life. | A visible flight arc and a temporary lull in the breeze. | One rooftop scene; springboard, pods, planters, awning, return chute and growth/arch states. |
-| 14 / `observatory` | The drive wheel turns alone. Join real gear trains to raise the sun, orbit the moon and rotate the star carousel. | Younger: large fixed axles, fewer sizes and short chains. Older: size/direction constraints and a branching drive train. Outputs must really turn. | Highlighted meshing edges and greater near-mesh snap tolerance. | One observatory scene; gears/axles, sun/moon/star mechanisms, Owl and ceiling states. Journey pictures can reuse existing story imagery. |
+| 14 / `observatory` | The drive wheel is ready but the wooden sky stays still. Join real gear trains and manually crank them to raise the sun, orbit the moon and rotate the star carousel. | Younger: grouped small/medium gear placements and five manual drive tests. Older: eight placement/drive objectives, including removing a direct gear and fitting two idlers to reverse the moon's direction. Gear ratios, overlaps and jams must affect the actual outputs; idle never completes a drive. | Highlighted meshing edges and greater near-mesh snap tolerance. | One observatory scene; gears/axles, crank, sun/moon/star mechanisms, Owl and ceiling states. Journey pictures can reuse existing story imagery. |
 
 ## Pacing and narration
 
@@ -50,12 +50,12 @@ Narration offers concrete physical directions in short sentences. Echo's help is
 
 ## Artwork status
 
-The current painted storybook style is required. Do not replace the established asset library. Completed setting, prop and earned-ending paintings are recorded in `ART-PROVENANCE.md`, with current game status in `INTEGRATION.md`. Future `art` paths are reserved filenames under `/assets/crafted/daily/`; a path in this plan does not imply the asset exists. A completed painting does not mark the adventure complete.
+The current painted storybook style is used throughout. Settings and earned-ending paintings exist for all eleven days. Their prop artwork, reused assets, retained sources and exact prompts are recorded in `ART-PROVENANCE.md`, with game verification in `INTEGRATION.md`. A completed painting alone does not mark an adventure complete.
 
 ## Content validation
 
-The original isolated content check passed for 11 records, 55 younger objectives, 88 older objectives and 33 acts. Each story has 227-238 narrated words across its three acts and ending; the longest sentence has 18 words. No child-story sentence prescribes a fixed speech target or carrier phrase. This proves content structure, not playable games or the duration target.
+The current data contains 11 records, 55 younger objectives, 88 older objectives and 33 acts. Each story has 227-255 narrated words across its three acts and ending; sentences are limited to 18 words. No child-story sentence prescribes a fixed speech target or carrier phrase. These counts describe content structure, not playable games or the duration target.
 
-`tests/daily-contenttest.mjs` is the complete-set gate. It loads the data without a browser and requires unique Days 4-14, five/eight physical objectives, three ordered acts, short sentences, an earned resolution, actual setting/ending WebP files, and loadable controllers with the shared lifecycle. It must fail until every remaining game and painting exists; planning records cannot satisfy it.
+`tests/daily-contenttest.mjs` is the complete-set gate. It loads the data without a browser and requires unique Days 4-14, five/eight physical objectives, three ordered acts, short sentences, an earned resolution, actual setting/ending WebP files, and loadable controllers with the shared lifecycle. The complete set passed 159 checks, zero failures. The absent baseline failed as expected; planning records alone cannot satisfy it.
 
 The individual browser suites exercise real physical controls, existing speech scoring and useful help, both ages, interruption and quiet-audio rules, and device fit. `INTEGRATION.md` records their current verified status separately from the shared production player and Home connection.

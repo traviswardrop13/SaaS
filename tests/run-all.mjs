@@ -64,6 +64,7 @@ const SUITES = [
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and in Settings: one tap still plays, "Pick a level" once per game when a level opens, the level badge, "Level 1 only"; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own
+  "daily-contenttest.mjs", // All eleven new days require real controllers, both age paths, short story acts and actual setting/earned-ending art
   "daily-waterwheeltest.mjs", // Day 4: real water routes, gates and split flow; speech widens joins, with honest progress and safe interruptions
   "daily-postboattest.mjs", // Day 5: steer, dock, transfer parcels and tow a separate raft; speech calms water without delivering for the child
   "daily-bakerytest.mjs", // Day 6: catch ingredients, stir, shape, bake and sort real batches; speech steadies pours and widens useful heat
@@ -73,6 +74,8 @@ const SUITES = [
   "daily-kitetest.mjs", // Day 10: fit pictures, continuously sew, thread front/back, swap real tail weights and steer balanced flight; speech steadies cloth and calms gusts
   "daily-nestlifttest.mjs", // Day 11: choose real counterweight sums, wind and brake the loaded lift, hand over each bundle and slide the quilt into its room; speech damps actual sway
   "daily-concerttest.mjs", // Day 12: strike and pluck real owned instruments, play timed phrases, arrange and conduct an earned concert; speech slows beats and widens the actual window
+  "daily-rooftopstest.mjs", // Day 13: load, aim and launch real seeds, bank off the awning and grow every planter; speech calms actual drift without planting for the child
+  "daily-observatorytest.mjs", // Day 14: true gear meshes transmit signed ratios to the sun, moon and stars; real motor work, idler correction and speech-assisted valid catches
   "daily-narrationtest.mjs", // Three spoken story acts and an ending earned through actual play, using the existing quiet audio owner
   "daily-directionstest.mjs", // Real rapid tool/rail/cart transitions retain essential owned directions; paused or finished tasks cannot leak stale cues
   "daily-storyendingtest.mjs", // A real narrated railway finish waits for the owned home cue before every ending sentence and the child's Continue

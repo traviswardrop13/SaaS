@@ -90,6 +90,24 @@ const games={
     primerCopy:'Say each word two times to get the next concert job ready.',pauseCopy:'Your concert is waiting right here.',
     intro:'Say each word two times. Try the instruments, play their patterns, and guide the pond concert.',
     done:{title:'What a lovely concert!',sub:'You played the patterns and helped the musicians perform together.'}
+  },
+  rooftops:{
+    title:'Seeds Across the Rooftops',sub:'Aim seeds into rooftop gardens',progressLabel:'0 rooftop jobs finished',
+    canvasLabel:'A seed springboard below rooftop planters, a bouncing awning and a flowering arch. Say each word two times, aim and pull the springboard, then land the seed pods in real soil.',
+    banner:'The rooftop soil is waiting.',helpText:'Calm breeze',helpLabel:'Optional extra help: say your word two times again to calm the rooftop wind and preview the next real seed flight',
+    startCopy:'Say each word two times. Aim the springboard and choose its pull to send seed pods into the rooftop planters.',helpCopy:'Stuck? Say your word again for a calmer breeze and a preview of the next flight.',
+    primerCopy:'Say each word two times to get the next rooftop job ready.',pauseCopy:'Your rooftop gardens are waiting right here.',
+    intro:'Say each word two times. Aim and pull the springboard to send seeds into rooftop soil.',
+    done:{title:'The rooftops are blooming!',sub:'You landed the seed pods and grew a flowering rooftop arch.'}
+  },
+  observatory:{
+    title:'The Moving-Star Observatory',sub:'Join the wooden sky gears',progressLabel:'0 observatory jobs finished',
+    canvasLabel:'A wooden observatory with loose gears, a drive wheel, sun lift, moon orbit and star carousel. Say each word two times, then choose gears and join real meshing teeth.',
+    banner:'The little wooden sky is still.',helpText:'Bright teeth',helpLabel:'Optional extra help: say your word two times again to highlight useful meshing edges and widen the catch near a valid gear connection',
+    startCopy:'Say each word two times. Choose and place gears to connect the sun, moon and moving stars.',helpCopy:'Stuck? Say your word again for brighter meshing edges and an easier nearby gear catch.',
+    primerCopy:'Say each word two times to get the next observatory job ready.',pauseCopy:'Your wooden sky is waiting right here.',
+    intro:'Say each word two times. Choose and place gears to move the sun, moon, and stars.',
+    done:{title:'The little sky is moving!',sub:'You connected the sun, moon and moving-star carousel.'}
   }
 };
 const htmlEscape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

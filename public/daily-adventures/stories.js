@@ -830,21 +830,21 @@ window.DailyAdventureStories = [
     "mechanic": "gear-assembly",
     "speechHelp": "Echo highlights useful meshing edges and temporarily increases the snap tolerance near a valid mesh. The child still chooses, places and connects every gear.",
     "youngerGoals": [
-      "Connect the drive wheel to the sun lift.",
-      "Fit the first gears for the moon's orbit.",
-      "Complete a gear chain that moves the moon.",
-      "Build the star carousel's first gear connection.",
-      "Connect the final gear so sun, moon and stars move together."
+      "Fit two small sun gears, then turn the drive wheel to raise the sun.",
+      "Fit the small and medium moon gears, then turn the wheel.",
+      "Fit the moon's turning route and spindle, then drive its orbit.",
+      "Fit the first star-branch gear, then turn the wheel to test it.",
+      "Fit the final star link and drive the sun, moon and stars together."
     ],
     "olderGoals": [
-      "Choose a gear that meshes with the drive wheel.",
-      "Complete the chain that raises the painted sun.",
-      "Connect the first moon-orbit axle.",
-      "Choose gear sizes that span the next gap.",
-      "Set the moon's required turning direction.",
-      "Complete the orbit chain and watch the moon travel.",
-      "Build a branch from the drive train towards the stars.",
-      "Mesh the final carousel gear while keeping all three mechanisms moving."
+      "Fit the first small sun gear and turn the drive wheel.",
+      "Fit the second sun gear, then drive the painted sun upwards.",
+      "Fit the first moon gear and test its turning motion.",
+      "Span the moon gap with medium and small gears, then test their direction.",
+      "Remove the direct gear, fit two small idlers and test the reversed direction.",
+      "Fit the moon spindle and drive the moon around its orbit.",
+      "Fit and test the medium star-branch gear.",
+      "Fit the final star link and manually drive all three sky mechanisms."
     ],
     "acts": [
       {
@@ -855,10 +855,11 @@ window.DailyAdventureStories = [
           "Owl opens the round doors of the observatory.",
           "Inside is a painted wooden sky with a little sun, a silver moon and a ring of stars.",
           "Usually they turn above the seats.",
-          "Tonight the drive wheel spins on its own.",
+          "Tonight the drive wheel is ready, but the wooden sky stays still.",
           "Several gears are still waiting on the workbench.",
           "Owl needs help joining the moving parts.",
-          "Fit a gear beside the drive wheel and watch its teeth begin to turn."
+          "Fit a gear beside the drive wheel.",
+          "Turn the round handle and watch its teeth begin to move."
         ]
       },
       {
@@ -869,7 +870,7 @@ window.DailyAdventureStories = [
           "The first chain of gears lifts the little sun above a painted hill.",
           "Now the moon needs a path around its round wooden sky.",
           "Choose gears that can reach one another and place them on the waiting axles.",
-          "Watch which pieces turn together.",
+          "Turn the drive wheel and watch which pieces move together.",
           "Echo can brighten the useful edges and help a nearby gear settle into place.",
           "Keep joining the moving pieces until the moon begins its smooth journey."
         ]
@@ -882,7 +883,8 @@ window.DailyAdventureStories = [
           "One great circle of stars remains still.",
           "Its gears must share the turning motion with the sun and moon.",
           "Follow the movement from the drive wheel and build the final connection.",
-          "When the last gear turns, the star circle begins to travel.",
+          "Turn the drive wheel after fitting the last gear.",
+          "The star circle begins to travel with the sun and moon.",
           "Painted pictures appear between its stars: a boat, a bridge, a flower and a patchwork kite.",
           "Owl opens the round ceiling shutters."
         ]
@@ -899,6 +901,7 @@ window.DailyAdventureStories = [
       "sub": "You connected the sun, moon and moving-star carousel."
     },
     "art": "/assets/crafted/daily/day14-moving-star-observatory-v1.webp",
+    "endingArt": "/assets/crafted/daily/day14-observatory-ending-v1.webp",
     "ready": false
   }
 ];
