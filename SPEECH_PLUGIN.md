@@ -1,4 +1,4 @@
-# SonaSpeech — Apple's on-device listening check, and Sona's own microphone (Xcode handoff)
+# SonaSpeech — Apple's on-device listening check, Sona's own microphone, and the trial reminder (Xcode handoff)
 
 The repo carries a local Capacitor plugin at `plugins/sona-speech`. It runs
 Apple's `SFSpeechRecognizer` with `requiresOnDeviceRecognition = true` on every
@@ -15,7 +15,9 @@ check — never a fail caused by the recognizer.
 
 Since 12 Oct 2026 the same plugin also **owns the microphone in the iPhone
 app**: `micPermission`, `micOpen` and `micClose`. See "Sona's own microphone"
-below.
+below. Since 22 Oct 2026 (iOS 1.0.9) it also sets **the trial reminder**, one
+local notification the day before the free trial ends: `notifyStatus`,
+`notifyAsk`, `notifySchedule` and `notifyCancel`. See "The trial reminder".
 
 ## It was never switched on (found 28 Sep 2026)
 
@@ -157,6 +159,57 @@ iPhone games. It comes in two halves that ship separately:
 **For Rachel:** on a silenced phone a child hears no Echo and no sound to copy
 until a grown-up flips the switch, and nothing on screen says why.
 
+## The trial reminder (22 Oct 2026, iOS 1.0.9)
+
+Travis, 22 Oct 2026: "can we add push notifications and have that be a step
+in the onboarding where we ask them to turn it on to notify them a day
+before their trial ends". It is a **local** notification: the page
+(`public/sona.js`, block NOTIFY1) picks the moment and the words, and the
+plugin hands iOS one request (`UNUserNotificationCenter`, a one-time calendar
+trigger). No server sends it, there is no device token and no Apple push
+service, and the request holds only a title and a sentence ("Sona" / "Your
+free trial ends tomorrow.", never a child's name).
+
+- `notifyStatus()` → `{ status }`: "granted", "denied", "prompt" (never
+  asked) or "provisional". Asks nothing.
+- `notifyAsk()` → `{ granted }`: iOS's own Allow box, alerts and a sound (no
+  badge). An answered setting resolves at once, with no box.
+- `notifySchedule({ id, at, title, body })`: `at` in ms since 1970. One
+  notification at that moment; the same id replaces the one waiting. A moment
+  under a minute away, past, or more than 400 days away is refused; a family
+  who has not allowed notifications gets `{ scheduled: false }`.
+- `notifyCancel({ id })`: the waiting one is not shown.
+- While Sona is open, iOS shows a notification only if the app says so. The
+  plugin answers Capacitor's router (`localNotificationHandler`) for Sona's
+  own ids ("sona-…") with a banner and the list, and **no sound**: the
+  reminder comes at the time of day the trial started, which is often when
+  the family plays, and a game's mic may be open then (iOS's chime would play
+  into it). With Sona closed it comes with its sound as usual.
+
+When the page sets it: at once after a purchase that started a free trial
+(`Sona.buyPlan`), for the trial's end in the purchase's own record (else the
+store's free time from now) minus a day, before the price page leaves; and
+once a day on an app page other than Home (`Sona.trialReminderSync`), which
+sets it afresh while the trial is on and takes it back once no free trial is
+(a paid plan, ended, or cancelled by the parent). Never within the hour,
+never in the past.
+
+**Steps on the Mac** (with the mic's steps above, if not done yet):
+1. Pull this branch's code into the checkout that owns `ios/`.
+2. `python3 scripts/install-ios-speech.py --check`, then the same without
+   `--check`. It replaces the plugin between its markers in AppDelegate.swift;
+   the script needs no change.
+3. **Nothing to enable in Xcode:** local notifications need no Push
+   Notifications capability, no APNs key, no Background Modes and no
+   Info.plist text (the Allow box is iOS's own words). Do not add the Push
+   capability for this.
+4. Version **1.0.9**, Build one higher; run on the iPhone; the checklist
+   below ("The trial reminder" items).
+
+If the build shows an error naming `NotificationHandlerProtocol` or
+`notificationRouter` (Capacitor's names for its notification router), send it
+to Claude: that line is what shows the reminder while Sona is open.
+
 ## Device test checklist — do these before submitting
 
 - [ ] Sona opens to its own screen, not a black one. Black means the
@@ -223,6 +276,31 @@ until a grown-up flips the switch, and nothing on screen says why.
       stay at music quality.
 - [ ] Settings → Privacy → Speech Recognition: toggle Sona OFF → the app keeps
       working on the spectral check alone.
+- [ ] **The trial reminder** (1.0.9). In Safari's Web Inspector console:
+      `typeof Capacitor.Plugins.SonaSpeech.notifySchedule` is "function" and
+      `Sona.notifyAvailable()` is true.
+- [ ] Delete and reinstall, then set up as a new family: after "<Name>'s
+      practice is ready" the reminder screen shows; "Turn on reminders" shows
+      iOS's Allow box once; Allow. `Sona.notifyState()` reads "granted", and
+      iPhone Settings → Notifications lists Sona with notifications allowed.
+      The price screen follows and, for a free trial, says "We'll remind you
+      the day before it ends." under the button.
+- [ ] Once more with Don't Allow: the price screen follows, and nothing on it
+      says remind.
+- [ ] A real notification, two minutes from now (a test id, so no trial is
+      touched): `Capacitor.Plugins.SonaSpeech.notifySchedule({ id:
+      "sona-test", at: Date.now() + 120000, title: "Sona", body: "Test" })`.
+      Lock the phone: it arrives, with its sound. Again with Sona open on
+      Home: it shows as a banner over the app, with NO sound. Again, then
+      `Capacitor.Plugins.SonaSpeech.notifyCancel({ id: "sona-test" })` before
+      the two minutes: nothing arrives.
+- [ ] A sandbox trial (from setup's price screen): Apple's sandbox makes free
+      days last minutes, so the day-before moment has already gone and nothing
+      is set; that is expected. `await Sona.trialReminderSync(true)` reads
+      "near" while the sandbox trial is on, and "cancelled" once it renews as a
+      paid period. `await Sona.trialReminderArm(Date.now() + 26 * 3600e3)`
+      gives true (the call working; it would show in two hours, so clear it
+      with `Capacitor.Plugins.SonaSpeech.notifyCancel({ id: "sona-trial-end" })`).
 
 ## Numbers to send Claude (same build, same phone)
 
@@ -263,7 +341,12 @@ In Safari → Develop → the iPhone → Sona → Console:
 ## App Store notes
 
 - App Privacy: no new data types — recognition is on-device and nothing is
-  collected or transmitted.
+  collected or transmitted. The trial reminder adds none either: it is set
+  and shown on the phone.
+- Review notes for 1.0.9: "During setup the app offers to turn on
+  notifications so it can remind the parent once, the day before the App
+  Store free trial ends. It is a local notification scheduled on the device;
+  there is no push service and nothing is sent to a server."
 - Review notes: mention the speech-recognition permission is used for
   child speech practice, processed entirely on device.
 
@@ -271,6 +354,8 @@ In Safari → Develop → the iPhone → Sona → Console:
 
 - No server fallback of any kind.
 - No pass/fail logic (that is `hearVerdict` in `sona.js`).
+- No push notifications: no device token, no registration with Apple's push
+  service. The one reminder is local, and its words are the page's.
 - No audio retention, and no network or file code. Each buffer goes to
   Apple's on-device recognizer and, on Sona's own mic, as a `micpcm` event
   into this phone's own web page, and nowhere else. What the page keeps (one

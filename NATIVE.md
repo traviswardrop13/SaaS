@@ -96,6 +96,42 @@ phone checklist, the gate before submitting and the off switch
 `NSMicrophoneUsageDescription` is already required (below), and the mic is
 never used in the background.
 
+## The trial reminder (22 Oct 2026, iOS 1.0.9)
+
+**What a family sees.** Near the end of setup, after "<Name>'s practice is
+ready", one screen asks "Want a reminder before your free trial ends?". "Turn
+on reminders" shows iOS's own Allow box. If they allow it and start the free
+trial, the phone shows one notification a day before the trial ends: "Sona /
+Your free trial ends tomorrow." (Travis: "notify them a day before their
+trial ends"). It comes at the time of day the trial started, and it shows even
+while Sona is open (as a silent banner then: a game's mic may be listening). Each day Sona is opened it checks the trial with
+RevenueCat: once the parent has cancelled it, or it has become a paid plan
+(a switch to the yearly plan, say), the reminder is taken back.
+
+**It is a local notification, not a push.** The phone sets it and the phone
+shows it, through Sona's own plugin (SonaSpeech: `notifyStatus`, `notifyAsk`,
+`notifySchedule`, `notifyCancel`). No server sends it, there is no device
+token, and nothing about the family leaves the phone for it. So **nothing to
+turn on in Xcode or at Apple**: no Push Notifications capability, no APNs key,
+no Background Modes, no Info.plist text (the Allow box is iOS's own words).
+"Phase 2 — Push notifications" below is a different, later thing and is not
+needed for this.
+
+**On the Mac, for 1.0.9:** `git pull`, then
+`python3 scripts/install-ios-speech.py --check` and the same without
+`--check` (it copies the new plugin in between its markers in
+AppDelegate.swift, exactly as for the mic), Version **1.0.9**, Build one
+higher, run on the iPhone, and the phone checklist in `SPEECH_PLUGIN.md`
+("The trial reminder"). The website half (the setup screen, when to set the
+reminder and its words) goes live with a normal merge; older builds have no
+reminder methods, so they never show the screen.
+
+**App Store Connect:** App Privacy has nothing new for this (nothing is
+collected). In the review notes for 1.0.9: "During setup the app offers to
+turn on notifications so it can remind the parent once, the day before the
+App Store free trial ends. It is a local notification scheduled on the
+device; there is no push service and nothing is sent to a server."
+
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
 - **Node 22+** (required by the pinned Capacitor 8 CLI)
@@ -271,6 +307,8 @@ that cannot regress out from under you.
 A pure website-in-a-box can be rejected. Your app has native value (mic-based practice; push next), which helps it pass. If review pushes back, the fix is more native features → do phase 2.
 
 ## Phase 2 — Push notifications (the retention lever; after v1 ships)
+Not needed for the trial reminder (above): that one is local and set on the
+phone. This is for messages a server sends.
 ```bash
 npm install @capacitor/push-notifications
 npx cap sync ios
