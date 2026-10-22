@@ -59,7 +59,7 @@ const DAYS = ["2026-10-05"];
 
 // A believable week for one child on R: practice-page tries (what Progress
 // and a clinician see) and sounds said inside games (Home's corner adds them).
-function seedOutcomes() {
+export function seedOutcomes() {
   const days = {};
   [[DAYS[0], 4, 3, 20]]
     .forEach(([d, a, p, tries]) => { days[d] = { a, p, tries }; });
@@ -67,25 +67,27 @@ function seedOutcomes() {
   return { R: { attempts, passes, tries: attempts * 5, firstAt: DAYS[0], lastAt: DAYS[0], days,
     byPos: { i: { a: attempts, p: passes } } } };
 }
-function seedProgress() {
+export function seedProgress() {
   const practiceDays = {};
   DAYS.forEach((d) => { practiceDays[d] = 1; });
   return { practiceDays, streak: { count: DAYS.length, lastDate: DAYS[DAYS.length - 1] }, totals: { sessions: 1, words: 20, stars: 0, coins: 0 }, stage: { R: 2 } };
 }
-function seedGameReps() {
+export function seedGameReps() {
   const g = {};
   [[DAYS[0], 10]].forEach(([d, n]) => { g[d] = { R: n }; });
   return g;
 }
 
 // ── the fake phone, installed before any page script ──
-function device(cfg) {
+// (tools/setupreel/record.mjs plays it on Playwright's virtual clock, which
+// owns Date there: cfg.ownClock leaves Date alone.)
+export function device(cfg) {
   const RealDate = Date, SHIFT = cfg.shift;
   class FrozenDate extends RealDate {
     constructor(...a) { if (a.length === 0) super(RealDate.now() + SHIFT); else super(...a); }
     static now() { return RealDate.now() + SHIFT; }
   }
-  window.Date = FrozenDate;
+  if (!cfg.ownClock) window.Date = FrozenDate;
 
   const dev = window.__dev = { voice: false, mics: 0, frozen: false, held: [] };
   // A canvas game keeps its last drawn frame while frozen: a slice trail
@@ -196,8 +198,8 @@ function device(cfg) {
 }
 
 // ── the server: public/ as it is ──
-const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", wav: "audio/wav", mp3: "audio/mpeg", json: "application/json", webmanifest: "application/manifest+json" };
-function fileFor(urlPath) {
+export const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", webp: "image/webp", woff2: "font/woff2", wav: "audio/wav", mp3: "audio/mpeg", json: "application/json", webmanifest: "application/manifest+json" };
+export function fileFor(urlPath) {
   let f = path.join(PUBLIC, decodeURIComponent(urlPath));
   if (!f.startsWith(PUBLIC)) return null;
   if (existsSync(f) && statSync(f).isDirectory()) f = path.join(f, "index.html");
