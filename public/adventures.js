@@ -408,8 +408,8 @@
     lantern: {
       wash: "#56598a",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.465, y: 0.665, h: 0.19, pose: "rest" },
           line: "Pelly swoops down with a letter! Oops. That's a carrot! Somebody is going to love that." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
@@ -444,8 +444,8 @@
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Click! The great big lantern glows gold. Every lamp shines, and the stepping stones glow like little moons!",
                   little: "Click! The big lantern glows. Every lamp is shining!" } },
-        // no buddy (the empty tree-stump seat just right of Echo, with a plain soft cushion on it and nothing else, not placed)
-        { art: "e02", ages: "big", buddy: null,
+        // buddy: the empty tree-stump seat just right of Echo, with a plain soft cushion on it and nothing else (sit)
+        { art: "e02", ages: "big", buddy: { x: 0.862, y: 0.612, h: 0.17, pose: "sit" },
           line: "Glowworm leads the walk down the shining path. Then we all sit and listen to the crickets. Chirp, chirp!" },
         // no buddy
         { art: "e03", ages: "both", buddy: null,
@@ -741,12 +741,12 @@
         // no buddy
         { art: "s04", ages: "big", buddy: null,
           line: "Owl sleeps all day, so now it's her breakfast time. At night! Good morning, Owl!" },
-        // no buddy (on the honey-wood floor just right of Echo, not placed)
-        { art: "s05", ages: "both", buddy: null,
+        // buddy: on the honey-wood floor just right of Echo (rest)
+        { art: "s05", ages: "both", buddy: { x: 0.53, y: 0.865, h: 0.155, pose: "rest" },
           line: { big: "After breakfast, look at Owl's wooden sky! A painted sun, a silver moon and a ring of golden stars.",
                   little: "Look up! A wooden sun, a moon and lots of stars." } },
-        // no buddy (on the honey-wood floor just right of Echo, in front of the left end of the platform, not placed)
-        { art: "s06", ages: "both", buddy: null,
+        // buddy: on the honey-wood floor just right of Echo, in front of the left end of the platform (rest)
+        { art: "s06", ages: "both", buddy: { x: 0.455, y: 0.795, h: 0.17, pose: "rest" },
           line: { big: "Tonight is the Sky Show. Owl turns the big wheel, but nothing moves. The gears are still in their tray!",
                   little: "Owl turns the big wheel. Nothing moves! The gears are in a pile." } },
         // no buddy
