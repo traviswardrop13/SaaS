@@ -19,7 +19,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   the table, phone on silent. Same room, same distance, for the whole set.
 - **Talk to one small child sitting next to you.** Calm, warm, unhurried. Full
   stops, not exclamation marks — the practice lines were rewritten on 24 Sep 2026 so
-  the voice does not jump. The fixed lines that still carry a "!": "I couldn't hear you! Say it big — I'm all ears!", "Go!", "Super Slice! Say", "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins!", "The end! Great listening!".
+  the voice does not jump. The fixed lines that still carry a "!": "I couldn't hear you! Say it big — I'm all ears!", "Go!", "Super Slice! Say", "Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold stars!", "The end! Great listening!".
 - **These get re-voiced afterwards** (ElevenLabs speech-to-speech). That keeps your
   pacing, stress and warmth and changes only who it sounds like — so deliver for the
   child, not for the mic. Timbre does not matter; timing and kindness do.
@@ -33,7 +33,7 @@ the word bank. **E** — what NOT to record: parked, unlinked and dead lines.
   line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file
   plays as-is, and an unlevelled one is the one sound that can still jump.
 
-Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7449) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
+Switch state right now: `HUMAN_CLIPS = true` (public/sona.js:7450) — Rachel's recorded sounds (Part A) are ON: one take of the sound plays in the letter's place in the practice prompt (C1, C2, the turtle, B3) and after the games' "…say" lines (B5); every word below is spoken through TTS.
 
 ---
 
@@ -163,25 +163,25 @@ Pinned as exactly this list with no "!" (`tests/voicetest3.mjs`).
 | B46 | chest.mp3 | Look what we found. | The treasure chest at the end of the adventure: after the child's third tap opens it, 600 ms after the tap chime, while the sticker shows. | A small wonder, like peeking into a box together. | public/charge.html:2360 |
 | B47 | adventure-end.mp3 | We finished the whole adventure. | Adventure end: when the fifth round's game hands back and the "Adventure complete!" card appears, 600 ms after its chime. | Proud and settled, winding down. | public/charge.html:2491 |
 | B48 | quiet.mp3 | I couldn't hear you! Say it big — I'm all ears! | The quiet screen: a listening window ended with nothing heard. Mic already closed. Screen: "I couldn't hear you!" / "Say it big — I'm all ears!" with Try again / Maybe later. Tapping Try again reopens the mic without re-speaking the prompt. | Gentle and playful. This is the one line that kept its "!" on 24 Sep — "Say it big" is a production cue, so give it a little lift without shouting. Any rewording is Rachel's call. | public/charge.html:2388 |
-| B49 | go.mp3 | Go! | After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7) and sound power (B5), every picture-game word (C8) and Feed Echo's asks (C6). Not the books or Sound Sprint's how-to-play. Then the mic opens. | Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call. | public/sona.js:628 (Sona.goClip; the say-it card asks for the same "Go!" at public/arcade-sayit.js:50); joined on at public/charge.html:1026 |
+| B49 | go.mp3 | Go! | After every ask that hands the child the turn, as its own short clip joined on after the words: the practice prompt and a tap on Echo (C1, C2, C3), the turtle on a sound-alone round, the retry lines (B2, B3, C5), every round game's say-it card (B5, C7) and sound power (B5), every picture-game word (C8) and Feed Echo's asks (C6). Not the books or Sound Sprint's how-to-play. Then the mic opens. | Bright and short: it hands over the turn. It was taken out on 24 Sep for sounding jumpy and is back as Travis's try (2 Oct 2026); whether it stays is his ear and Rachel's call. | public/sona.js:634 (Sona.goClip; the say-it card asks for the same "Go!" at public/arcade-sayit.js:50); joined on at public/charge.html:1026 |
 
 
 ### B5 — The round games (10)
 
-The say-it card in all six round games (one voice for all six, `arcade-sayit.js`), their shared new-life instruction, Echo's power button in all six (instruction at public/arcade-speech-help.js:39, her sound at public/arcade-speech-help.js:101), and Sound Sprint's how-to-play line. None of them is spoken while Sona's sound is off (arcade-sayit.js:302, arcade-sayit.js:302, arcade-run.html:699). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.
+The say-it card in all six round games (one voice for all six, `arcade-sayit.js`), their shared new-life instruction, Echo's power button in all six (instruction at public/arcade-speech-help.js:39, her sound at public/arcade-speech-help.js:101), and Sound Sprint's how-to-play line. None of them is spoken while Sona's sound is off (arcade-sayit.js:302, arcade-sayit.js:302, arcade-run.html:702). The lines ending in "say" are followed by the sound itself, which is Rachel's recording (Part A), never TTS.
 
 | # | File | Say this | When Echo says it | Delivery | Source |
 |---|---|---|---|---|---|
 | B50 | card-say.mp3 | To keep playing, say | The say-it card between rounds in all six round games (Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide, Rise Up): Echo says this, then Rachel's recording of the sound plays (`say-echo/<SOUND>-sound.wav`, Part A), then "Go!" (B49), then the mic opens. Screen: "Say “rrrr” for wave 2!" (each game its own words). On Fruit Slice, a card that asks a syllable or a word says one line instead of this and her recording (C7). | Friendly and plain. It runs straight into the sound, so leave it open at the end. | public/arcade-sayit.js:50; in this order at public/arcade-sayit.js:329 |
 | B51 | card-idea.mp3 | I have an idea. Let's try this one. | Fruit Slice's card, when a syllable or a word got no answer for 8 s: the mic closes, the card goes back to the sound alone, Echo says this, then Rachel's recording, then "Go!". The practice page's own words for the same move (B3). | As B3: a good idea just arrived. Not a consolation. | public/arcade-slice.html:664; said at public/arcade-slice.html:694; the step back at public/arcade-slice.html:733 |
-| B52 | card-new-life.mp3 | For a new life, say | All six round games: after the last gameplay heart is lost, the round stops on the new-life card. Echo says this, then Rachel's sound, then "Go!", then the mic. An accepted sound restores all three hearts and resumes that same round; silence restores nothing. This is separate from mid-game sound powers, which restore no hearts. | Friendly and encouraging. It runs straight into the sound, so leave it open at the end. | public/arcade-speech-help.js:55; Fruit Slice at public/arcade-slice.html:694; other cards at public/arcade-tiles.html:728, public/arcade-stack.html:527, public/arcade-run.html:772, public/arcade-glide.html:537, public/arcade-rise.html:582 |
+| B52 | card-new-life.mp3 | For a new life, say | All six round games: after the last gameplay heart is lost, the round stops on the new-life card. Echo says this, then Rachel's sound, then "Go!", then the mic. An accepted sound restores all three hearts and resumes that same round; silence restores nothing. This is separate from mid-game sound powers, which restore no hearts. | Friendly and encouraging. It runs straight into the sound, so leave it open at the end. | public/arcade-speech-help.js:55; Fruit Slice at public/arcade-slice.html:694; other cards at public/arcade-tiles.html:728, public/arcade-stack.html:527, public/arcade-run.html:775, public/arcade-glide.html:537, public/arcade-rise.html:582 |
 | B53 | power-slice.mp3 | Super Slice! Say | Fruit Slice: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. Has a "!": a little lift, not a shout. | public/arcade-slice.html:164 |
 | B54 | power-tiles.mp3 | To slow the keys, say | Piano Tiles: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-tiles.html:137 |
 | B55 | power-stack.mp3 | To slow the block, say | Block Stacker: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-stack.html:135 |
 | B56 | power-run.mp3 | To slow the course, say | Sound Sprint: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-run.html:188 |
 | B57 | power-glide.mp3 | To slow the beams, say | Flappy Glide: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-glide.html:144 |
 | B58 | power-rise.mp3 | To slow the falling blocks, say | Rise Up: Echo asks automatically during play; a tap on him asks at once too. The board keeps moving, but its sounds wait. He says each distinct reason once per visit, only marking it said after it finishes, then Rachel's sound and "Go!", then the mic. Later asks for the same reason play just the sound and "Go!". A heard try earns the power only, never a heart. A lost heart does not bring the next ask forward. | Short and bright. It runs straight into the sound, so leave it open at the end. | public/arcade-rise.html:144 |
-| B59 | sprint-howto.mp3 | Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold coins! | Sound Sprint's start card, on a child's first three races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early). | Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout. | public/arcade-run.html:619; asked for at public/arcade-run.html:640 |
+| B59 | sprint-howto.mp3 | Tap a lane to move side to side. Dodge the rocks and the cactus, and grab the gold stars! | Sound Sprint's start card, on a child's first three races: after the tap on "Let's run!" Echo says this while the card stays, and the race starts when he stops ("Skip" ends it early). | Clear and easy, one instruction at a time. Ends on a "!": a little lift, not a shout. | public/arcade-run.html:622; asked for at public/arcade-run.html:643 |
 
 ### B6 — Books (2)
 
@@ -663,7 +663,7 @@ says the whole ask as ONE line in his own voice, the syllable or word last and a
 a pause, because nothing past the bare sound is recorded; then "Go!". The line is downloaded
 before the syllable is shown; if it does not come, or will not play, the card stays on the
 sound alone and "To keep playing, say" plus Rachel's recording plays instead (B5). What a card
-asks comes from one reader, `Sona.gameAsk` (public/sona.js:1821; which voice at public/sona.js:1811):
+asks comes from one reader, `Sona.gameAsk` (public/sona.js:1821; which voice at public/sona.js:1810):
 the sound alone, then one syllable a card, then a short word, as far as that child's
 cards go. Screen: "Say “ree” for wave 2!". The card hears only a voice of the right
 kind — it cannot tell a syllable from the bare sound — and nothing here says "correct".
@@ -1511,11 +1511,11 @@ these reach a child today; if one comes back, its lines move up into B or C.
 
 ### E1 — Today's chapter (`chapter.html`, parked): 30 chapters, 210 spoken pages
 
-The chapter reader was parked on 19 Sep 2026 and stayed parked when the picture books came back (C9); `tests/day1.mjs` pins that Home has no door to it. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (public/chapter.html:124, public/chapter.html:174); "Read it to me" says the same page again (public/chapter.html:203). Tomorrow's hook is shown on the finish card, not spoken. The table is `EPISODES` (public/sona.js:1015). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.
+The chapter reader was parked on 19 Sep 2026 and stayed parked when the picture books came back (C9); `tests/day1.mjs` pins that Home has no door to it. When the page opens, each page is read aloud as it turns — the chapter's opening line, then its six beats (public/chapter.html:124, public/chapter.html:174); "Read it to me" says the same page again (public/chapter.html:203). Tomorrow's hook is shown on the finish card, not spoken. The table is `EPISODES` (public/sona.js:1021). Read as a bedtime story if they ever come back: slower than the prompts, the last line of each page landing softly.
 
 One fixed line: "You did it! Three games are unlocked." — the finish card (public/chapter.html:196). Still has its "!" — the parked pages never got the calm rewrite.
 
-**Chapter 1 — The Star That Fell** (public/sona.js:1016)
+**Chapter 1 — The Star That Fell** (public/sona.js:1022)
 
 1. You are in the meadow when the sky drops something. It lands in the tall grass with a soft whump. The grass around it starts to glow.
 2. It is a star. A small one, about the size of your two hands together. It is shaking.
@@ -1525,7 +1525,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It lifts off the grass. Just a little. Just enough to show you it wants to go home.
 7. Home is a very long way up. Echo looks at the sky, then at you. This is going to take a while.
 
-**Chapter 2 — The Bramble Path** (public/sona.js:1028)
+**Chapter 2 — The Bramble Path** (public/sona.js:1034)
 
 1. The only way out of the meadow is one narrow path. Overnight, the brambles have grown all the way across it.
 2. Thorns as long as your finger. Echo tries to squeeze through and comes back with one feather missing.
@@ -1535,7 +1535,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You go through in a line. Echo first, then you, then the star bobbing along behind.
 7. On the other side there is a noise like a hundred spoons in a hundred cups. Water. A lot of water.
 
-**Chapter 3 — The River Crossing** (public/sona.js:1040)
+**Chapter 3 — The River Crossing** (public/sona.js:1046)
 
 1. The river is wide, loud, and moving fast. There is no bridge. There is no boat. There is just you.
 2. The star floats out over the water to have a look, and the wind pushes it straight back to you.
@@ -1545,7 +1545,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Halfway across, a fish comes up beside you and just listens. Then another one. Then eleven more.
 7. You reach the far bank with wet shoes and a small crowd of fish watching you go.
 
-**Chapter 4 — The Whispering Woods** (public/sona.js:1052)
+**Chapter 4 — The Whispering Woods** (public/sona.js:1058)
 
 1. The trees here are old and standing close together. Say one word and the woods say it back to you, twice.
 2. Echo goes absolutely wild. A parrot in a place that repeats things is a parrot in heaven.
@@ -1555,7 +1555,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Something is following you and copying you. Echo stops laughing and steps in front of you.
 7. It comes out of the ferns. It is about the size of a teacup, and it is extremely fluffy.
 
-**Chapter 5 — Pip** (public/sona.js:1064)
+**Chapter 5 — Pip** (public/sona.js:1070)
 
 1. It is a baby owl. It has one feather sticking straight up off its head, and it will not stop staring at you.
 2. Echo asks its name. The owl copies the question back instead of answering it. It is learning too.
@@ -1565,7 +1565,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Echo names it Pip, on the grounds that it makes a sound like pip whenever it is pleased.
 7. Pip points a wing at the hills. There is a black opening in the rock, and the path goes straight into it.
 
-**Chapter 6 — The Cave of Echoes** (public/sona.js:1076)
+**Chapter 6 — The Cave of Echoes** (public/sona.js:1082)
 
 1. Inside the cave it is black. Not dim. Black. You cannot see your own hands in front of you.
 2. Then Pip makes one small nervous pip, and a ring of blue light spreads across the ceiling.
@@ -1575,7 +1575,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The light reaches a wall that is not rock. It is flat, and somebody has drawn on it.
 7. Hundreds of drawings. And in every single one, somebody is holding a star.
 
-**Chapter 7 — The Drawings** (public/sona.js:1088)
+**Chapter 7 — The Drawings** (public/sona.js:1094)
 
 1. The drawings go on for further than you can walk in one go. They tell a story, left to right, like a very long comic.
 2. First panel: a person in a meadow, and a star falling out of the sky. That one looks familiar.
@@ -1585,7 +1585,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. There is no drawing of what happens after the ladder. Whoever drew all this never came back to finish it.
 7. Echo is very quiet, which for a parrot is unusual. Then Echo says: well. We had better go and look.
 
-**Chapter 8 — The Cloud Ladder** (public/sona.js:1100)
+**Chapter 8 — The Cloud Ladder** (public/sona.js:1106)
 
 1. The ladder is exactly where the drawing said it would be. Rungs of white cloud, going up and up until they are too small to see.
 2. Echo tests the bottom rung with one foot. It goes straight through it. Cloud is cloud.
@@ -1595,7 +1595,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Pip refuses to fly and rides in your hood the whole way, which is somehow more tiring for you than for Pip.
 7. Near the top the air changes. It is moving. It is moving very fast.
 
-**Chapter 9 — The Windy Ridge** (public/sona.js:1112)
+**Chapter 9 — The Windy Ridge** (public/sona.js:1118)
 
 1. The top of the ladder comes out on a thin ridge of cloud, and the wind up here does not stop for a second.
 2. It pulls at your sleeves. It pulls at Echo's tail. It pulls sounds right out of the air and carries them off sideways.
@@ -1605,7 +1605,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Pip flies ahead to scout, gets blown backwards past your head, and returns to the hood without comment.
 7. Through the blur you see it. Something enormous standing out in the open sky, and the wind is going around it.
 
-**Chapter 10 — The Sky Door** (public/sona.js:1124)
+**Chapter 10 — The Sky Door** (public/sona.js:1130)
 
 1. It is a door. It is taller than a tree and it is standing in the open air with nothing holding it up.
 2. No handle. No lock. No keyhole. Carved in the middle of it, at exactly your height, there is an ear.
@@ -1615,7 +1615,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It swings open onto the night sky, closer than you have ever seen it, every star the size of a lamp.
 7. Your star leaps out of your coat and races for a gap in the pattern. And that is when you see the other gaps.
 
-**Chapter 11 — The Star Comes Back** (public/sona.js:1140)
+**Chapter 11 — The Star Comes Back** (public/sona.js:1146)
 
 1. Your star is home. It sits in its gap in the sky, blazing away, exactly the right shape for the space it left.
 2. You are about to go when it pops straight back out of the gap and lands on your shoulder.
@@ -1625,7 +1625,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Eleven. Eleven stars that fell somewhere and never got back up.
 7. Pip is already looking down through the open door. Somewhere under all that cloud, eleven lights are waiting.
 
-**Chapter 12 — The Lantern City** (public/sona.js:1152)
+**Chapter 12 — The Lantern City** (public/sona.js:1158)
 
 1. You come down out of the clouds over a city made of lanterns. Thousands of them, strung between the rooftops, glowing orange.
 2. It is night here, but nobody has noticed. In a city of lanterns, night is just when the lights look nicer.
@@ -1635,7 +1635,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It is up at the very top of the tallest post, above all the washing lines and the cats.
 7. So you start to climb. Twelve floors of ladders and roof tiles, and the light gets whiter the higher you go.
 
-**Chapter 13 — The Longest Night** (public/sona.js:1164)
+**Chapter 13 — The Longest Night** (public/sona.js:1170)
 
 1. At the top of the post, inside a glass lantern the size of a bathtub, a star is sitting with its arms around its knees.
 2. It has been in there so long that it thinks the lantern is the sky.
@@ -1645,7 +1645,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The glass cools. The star stands up. It comes over to the little door in the side and looks out at you.
 7. As it steps out, every lantern in the city dims by exactly the same amount, and for the first time in years the people below look up.
 
-**Chapter 14 — Under the Ice** (public/sona.js:1176)
+**Chapter 14 — Under the Ice** (public/sona.js:1182)
 
 1. A frozen lake, flat and grey and bigger than the city was. Under your boots you can hear the ice creak.
 2. Something down there is glowing green through the ice, about the size of a dinner plate.
@@ -1655,7 +1655,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. A hole opens, no bigger than a plate. The green light comes up through it and turns gold in the air.
 7. Three stars now. Pip's hood is getting crowded, and Pip is very clear about it.
 
-**Chapter 15 — The Music Box** (public/sona.js:1188)
+**Chapter 15 — The Music Box** (public/sona.js:1194)
 
 1. The house has been empty a long time. The attic ladder comes down when you pull it, and dust falls on all three of you.
 2. In the corner, under a sheet, something is playing. Six notes, over and over, very slowly.
@@ -1665,7 +1665,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. It has been keeping time in here for years. Nobody ever told it how to stop.
 7. So you learn the six notes and say them back, and on the last one the star steps off the spindle and into your hand.
 
-**Chapter 16 — The Orchard** (public/sona.js:1200)
+**Chapter 16 — The Orchard** (public/sona.js:1206)
 
 1. Rows and rows of trees, all the same height, all quiet. Somewhere in the middle, one branch is bent almost to the ground.
 2. On the end of it hangs a fruit the size of your head, and it is glowing faintly through the skin.
@@ -1675,7 +1675,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You wake it the polite way, which is with your voice and not with your hands.
 7. The branch springs straight the moment the fruit leaves it, and every other tree in the row shivers once, in order, all the way down.
 
-**Chapter 17 — The Ferry** (public/sona.js:1212)
+**Chapter 17 — The Ferry** (public/sona.js:1218)
 
 1. The road ends at the sea. There is a jetty, and a boat, and a very large creature asleep across the whole of it.
 2. It has whiskers like broom handles and it is snoring in a way that moves the water.
@@ -1685,7 +1685,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You share what is left of your food, and you tell it where you are going and why.
 7. It slides off the jetty without a word and floats there, waiting, with its back flat like a raft.
 
-**Chapter 18 — The Deep** (public/sona.js:1224)
+**Chapter 18 — The Deep** (public/sona.js:1230)
 
 1. Out where the water goes from green to black, the ferry stops and points its nose straight down.
 2. Far below, so far it might be your eyes making it up, there is one small light.
@@ -1695,7 +1695,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The light gets bigger. It is shut inside a shell the size of a door.
 7. You say something to the shell, the way you did to the sky door, and it opens without any fuss at all.
 
-**Chapter 19 — The Nest** (public/sona.js:1236)
+**Chapter 19 — The Nest** (public/sona.js:1242)
 
 1. On the cliffs above the beach there is a nest, and the nest is glittering.
 2. Bottle caps. Spoons. A watch. A doorknob. And near the middle, two lights that are none of those things.
@@ -1705,7 +1705,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. So you trade. You give it the shiniest thing you are carrying, which is the little brass key off the back of the music box.
 7. It takes the key, and it lets you take the two stars, and it watches you the whole way down the cliff path.
 
-**Chapter 20 — The Loose Thread** (public/sona.js:1248)
+**Chapter 20 — The Loose Thread** (public/sona.js:1254)
 
 1. Seven stars now. They ride in a loose cloud around your head, and you have stopped being able to count them without help.
 2. You are walking back towards the cloud ladder when Echo stops dead in the air.
@@ -1715,7 +1715,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. And somewhere up there a thread has come loose, and the stars have been slipping through the gap it left.
 7. The thread twitches once, all on its own, as though something at the far end of it just noticed you holding on.
 
-**Chapter 21 — Following the Thread** (public/sona.js:1264)
+**Chapter 21 — Following the Thread** (public/sona.js:1270)
 
 1. You wrap the thread around your hand and it lifts, gently, the way a kite pulls just before it goes.
 2. The ground drops away. The orchard, then the lake, then the lantern city, all of it going small underneath you.
@@ -1725,7 +1725,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. You go up through the place where the sky door was and out the other side, and there is no other side. There is just more sky.
 7. The thread ends at a stair. A spiral stair with no building around it, going up into the dark.
 
-**Chapter 22 — The Weaver's Stair** (public/sona.js:1276)
+**Chapter 22 — The Weaver's Stair** (public/sona.js:1282)
 
 1. The stair is made of the same silver as the thread, and every step gives a little under your weight, like rope.
 2. There is no rail. There is nothing to fall onto either, which Echo points out and immediately regrets pointing out.
@@ -1735,7 +1735,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The stair narrows near the top, until it is one step wide and you are going up it sideways.
 7. Then the dark opens out, and there is a room, and in the room there is a loom the size of a house.
 
-**Chapter 23 — The Weaver** (public/sona.js:1288)
+**Chapter 23 — The Weaver** (public/sona.js:1294)
 
 1. She is very old and very small, and she is sitting at the loom with her hands in her lap, not weaving.
 2. The cloth on the loom is the night sky. You are seeing it from underneath, which nobody has ever done.
@@ -1745,7 +1745,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. She has not stopped because she is tired, although she is. She has stopped because she cannot do it on her own any more.
 7. You put your seven stars down on the floor of the room, and the whole place fills up with light.
 
-**Chapter 24 — What the Loom Needs** (public/sona.js:1300)
+**Chapter 24 — What the Loom Needs** (public/sona.js:1306)
 
 1. She picks up the shuttle and holds it out to you. It is wooden, worn smooth, and lighter than it looks.
 2. She says the loom does not run on hands. It never has.
@@ -1755,7 +1755,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Her voice went a while ago. That is the night the thread came loose, and every night since has been a little darker.
 7. She puts the shuttle into your hand and closes your fingers around it, and she does not say anything else.
 
-**Chapter 25 — The Eighth Star** (public/sona.js:1312)
+**Chapter 25 — The Eighth Star** (public/sona.js:1318)
 
 1. You find the eighth star before you work out how to weave. It is tangled in the loose threads at the edge of the gap.
 2. It has been stuck there since the night it slipped, holding on so it would not fall like the others.
@@ -1765,7 +1765,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. One star back in the sky, and the smallest patch of the dark shape closes up around it.
 7. The Weaver laughs, which is a sound like a door that has not been opened in years.
 
-**Chapter 26 — The Unravelling** (public/sona.js:1324)
+**Chapter 26 — The Unravelling** (public/sona.js:1330)
 
 1. You wake up to a sound like a zip. Along the far edge of the loom, the weave is coming apart on its own.
 2. Threads are letting go one after another, faster than anybody could tie them back.
@@ -1775,7 +1775,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Then the Weaver says your name, and tells you to stop grabbing and start talking.
 7. So you do. And the threads you speak to stop moving, and hang still, and wait.
 
-**Chapter 27 — The Two in the Dark** (public/sona.js:1336)
+**Chapter 27 — The Two in the Dark** (public/sona.js:1342)
 
 1. There is a corner of the sky where three stars fell on the same night, and nothing has ever been put back.
 2. It is the darkest place you have ever stood. Darker than the cave, because in the cave there was rock to touch.
@@ -1785,7 +1785,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The second one is holding on to the first one and will not let go, so you carry the pair of them together.
 7. Coming out, you count. Two in your arms. One still missing. And no corner of the world left that you have not looked in.
 
-**Chapter 28 — The Last One** (public/sona.js:1348)
+**Chapter 28 — The Last One** (public/sona.js:1354)
 
 1. You look everywhere for the eleventh star. The Weaver studies the sky from underneath. Echo asks every bird between here and the sea.
 2. Nothing. Ten found, one gap left, and not one single idea between the four of you.
@@ -1795,7 +1795,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. The last star never went anywhere at all. It landed where the first one landed, on the same night, and it has been under the grass ever since, waiting for somebody to come back for it.
 7. It is small and it is cold, and when you pick it up it fits in one hand, exactly the way the first one did.
 
-**Chapter 29 — The Long Way Back Up** (public/sona.js:1360)
+**Chapter 29 — The Long Way Back Up** (public/sona.js:1366)
 
 1. Ten stars. You have ten stars and one spiral stair, and the stair is one step wide at the top.
 2. Echo carries two, badly. Pip carries one and will not be talked out of it.
@@ -1805,7 +1805,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 6. Then Pip picks it up again, because it is not Pip's star, and there is a sky waiting for it.
 7. At the top, the Weaver has the loom open and the shuttle ready. She has been up all night clearing the frame.
 
-**Chapter 30 — The Sky, Mended** (public/sona.js:1372)
+**Chapter 30 — The Sky, Mended** (public/sona.js:1378)
 
 1. The gap in the weave is the size of a door, and there are ten stars sitting on the floor of the room waiting to go through it.
 2. The Weaver cannot sing it shut. You already knew that. It is the reason you are the one holding the shuttle.
@@ -1817,7 +1817,7 @@ One fixed line: "You did it! Three games are unlocked." — the finish card (pub
 
 ### E2 — Your Adventure (`story.html`, parked)
 
-No page opens it: the Books page keeps its tile hidden (public/library.html:237), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:238) and on "Hear it" (public/story.html:293); then "Now you! Say... {word}!" (public/story.html:240); a heard try gets one of the five praise lines (public/story.html:264); a missed one gets the bare word again (public/story.html:273). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:83): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
+No page opens it: the Books page keeps its tile hidden (public/library.html:237), and it is gated behind `Sona.gated('story')`. Each page is read aloud when it opens (public/story.html:239) and on "Hear it" (public/story.html:294); then "Now you! Say... {word}!" (public/story.html:241); a heard try gets one of the five praise lines (public/story.html:265); a missed one gets the bare word again (public/story.html:274). The pages are normally an AI-written story from `/api/story` — unbounded text that cannot be pre-recorded. The fallback pages are 5 frames with a bank word (public/gamecontent.js:83): "Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!".
 
 ### E3 — Books: no longer parked
 
@@ -1830,7 +1830,7 @@ Every page built on this script is live (C10) or has moved to another script.
 
 ### E5 — Speech Check (`check.html`, unlinked)
 
-The ad-funnel page; nothing in the app links to it. "Say: {word}" for each of 9 words in this order (public/check.html:187): cat, goat, fish, lion, shoe, cheese, sun, rabbit, thumb. It sends no voice id, so it always uses the default voice.
+The ad-funnel page; nothing in the app links to it. "Say: {word}" for each of 9 words in this order (public/check.html:196): cat, goat, fish, lion, shoe, cheese, sun, rabbit, thumb. It sends no voice id, so it always uses the default voice.
 
 ### E6 — Coach Call (`coach-call.html`, parked): 43 lines
 
