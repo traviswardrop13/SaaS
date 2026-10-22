@@ -550,6 +550,67 @@ export async function calm(page) {
   await page.evaluate(() => { if (document.body) document.body.classList.remove("ob-settling", "price-settling"); });
 }
 
+// SETUP, WALKED BY WHAT IS ON SCREEN (22 Oct 2026). Which screens a family
+// meets depends on the family (a second child skips the questions, the email
+// step comes once a household has an address, the reminder only where the
+// iPhone can set one), so a suite walks setup the way a parent does: it reads
+// the screen showing (body[data-setup-screen]) and answers it, until the
+// screen `to` is showing or the page has left setup (the price, the first
+// game). It throws on a screen it does not know, so a new screen is taught
+// here once, not in every suite. Answers (all optional):
+//   name ("Mia"), age ("8"; "" picks none), interests ([] ids, or "skip"),
+//   therapy ("t_yes", or "skip"), sounds (["R"]), explore (true: "Not sure?
+//   Pick all sounds"), minutes ("5", or "skip"), email (none: Skip),
+//   remind ("no" | "yes"), mic ("notnow" | "ask").
+// → the screens seen, in order, ending with the one it stopped on.
+export async function setupWalk(page, to, a = {}) {
+  const seen = [];
+  const screen = () => page.evaluate(() => location.pathname === "/onboarding.html" && document.body ? document.body.dataset.setupScreen : "");
+  const tap = async (sel) => { await calm(page); await page.locator(sel).click(); };
+  for (let i = 0; i < 30; i++) {
+    let s = "";
+    try { s = await screen(); } catch (e) { return seen; }
+    if (!s) return seen;
+    if (seen[seen.length - 1] !== s) seen.push(s);
+    if (s === to) return seen;
+    if (["welcome", "problem", "reel", "rachel", "games", "ready"].includes(s)) await tap("#nextBtn");
+    else if (s === "name") {
+      await page.locator("#obName").fill(a.name == null ? "Mia" : a.name);
+      const age = a.age == null ? "8" : a.age;
+      if (age) await tap('#obAge [data-age="' + age + '"]');
+      await tap("#nextBtn");
+    } else if (s === "interests") {
+      if (a.interests === "skip") await tap("#interestsSkip");
+      else {
+        for (const v of a.interests || []) if (await page.locator('#obInterests [data-val="' + v + '"]').getAttribute("aria-pressed") !== "true") await tap('#obInterests [data-val="' + v + '"]');
+        await tap("#nextBtn");
+      }
+    } else if (s === "therapy" || s === "minutes") {
+      const v = s === "therapy" ? (a.therapy == null ? "t_yes" : a.therapy) : (a.minutes == null ? "5" : a.minutes);
+      await tap(v === "skip" ? "#" + s + "Skip" : '[data-step="' + s + '"] .ask-pick[data-val="' + v + '"]');
+    } else if (s === "sounds") {
+      if (a.explore) await tap("#obExploreSounds");
+      else {
+        const want = a.sounds || ["R"];
+        for (const b of await page.locator("#obSounds .sound").all()) {
+          const k = await b.getAttribute("data-sound"), on = (await b.getAttribute("aria-pressed")) === "true";
+          if (on !== want.includes(k)) { await calm(page); await b.click(); }
+        }
+        await tap("#nextBtn");
+      }
+    } else if (s === "updates") {
+      if (a.email) { await page.locator("#updEmail").fill(a.email); await tap("#nextBtn"); } else await tap("#updSkip");
+    } else if (s === "remind") await tap(a.remind === "yes" ? "#remindYes" : "#remindNo");
+    else if (s === "mic") await tap(a.mic === "ask" ? "#nextBtn" : "#micNotNow");
+    else throw new Error("setupWalk cannot walk on from " + s);
+    // on once the screen has changed (or the page has gone to the price or a game)
+    try { await page.waitForFunction((k) => location.pathname !== "/onboarding.html" || !document.body || document.body.dataset.setupScreen !== k, s, { timeout: 6000 }); } catch (e) {
+      if (!/destroyed|navigation|closed/i.test(String(e && e.message))) throw new Error("setupWalk: still on " + s + " after answering it");
+    }
+  }
+  throw new Error("setupWalk never reached " + to + ": " + seen.join(","));
+}
+
 // Colours, judged the way loadtest judges a strong colour: by hue, and only
 // when the colour is strong (max − min of r, g, b over 80; every hex on
 // loadtest's orange list has a spread of 165 or more). Callers pass

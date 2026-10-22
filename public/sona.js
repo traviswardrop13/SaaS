@@ -8071,8 +8071,13 @@
       if (k <= t && (!!stamps[k] || (k < GOAL_SINCE && !!pd[k]))) g++;
     });
     const s = r > 0 ? ALL_SOUNDS.filter((S) => { const by = _repDays(S, false, slot); return wd.some((k) => (by[k] || 0) > 0); }) : [];
-    const n = parseInt(p.weeklyGoal, 10);
-    return { i: id, d: d, g: g, gw: (n === 3 || n === 4 || n === 5 || n === 7) ? n : 4, r: r, p: pr, s: s };
+    // the plan's days a week ONLY when a grown-up picked them (the profile
+    // holds one: Settings, Progress, or setup before 22 Oct 2026, when it
+    // stopped asking): never goalDays()'s default 4, which the email would
+    // call "your plan" to a family that never chose it
+    const n = parseInt(p.weeklyGoal, 10), out = { i: id, d: d, g: g, r: r, p: pr, s: s };
+    if (n === 3 || n === 4 || n === 5 || n === 7) out.gw = n;
+    return out;
   }
   let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
   function reportSync(force) {

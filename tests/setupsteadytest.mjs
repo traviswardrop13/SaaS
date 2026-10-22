@@ -78,8 +78,17 @@ function phoneInit(cfg){
   const S=window.__steady={kb:{},frames:[],on:false,kbState:'down',kbh:cfg.kb};
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
-    tCard:'[data-step="therapy"]',tHead:'#therapyTitle',tYes:'#obTherapy [data-val="t_yes"]',btn:'#nextBtn',
-    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .sell-line',sPic:'.step.sell.on .sell-pic img',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child'};
+    tCard:'[data-step="interests"]',tHead:'#interestsTitle',tYes:'#obInterests [data-val="sports"]',btn:'#nextBtn',
+    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .sell-line',sPic:'.step.sell.on .toss-game, .step.sell.on .rachel-photo, .step.sell.on .reel',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
+    rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips'};
+  // AS PAINTED (22 Oct 2026): where a screen's own motion draws a picture
+  // and how see-through it is, transforms and opacity included, for the
+  // problem screen's flashcards and game and the ready screen's Echo and
+  // sparkles. Under Reduce Motion each must be drawn as it ends from the
+  // first frame (a delayed animation used to hold its first keyframe). A
+  // selector matching several (the sparkles) reads as the one most drawn.
+  const VIS={pGame:'.step.on .toss-game',pToss:'.step.on .toss-c',pCards:'.step.on .toss-a',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
+  function seen(sel){let best=null;for(const el of document.querySelectorAll(sel)){const cs=getComputedStyle(el),r=el.getBoundingClientRect(),o=+cs.opacity;const v=cs.display==='none'||r.width<2||r.height<2||cs.visibility==='hidden'?null:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),o:Math.round(o*100)/100};if(v&&(!best||v.o>best.o))best=v;}return best&&best.o>0?best:null;}
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
   // is. Null when it is not drawn (display:none, or smaller than 2 px).
@@ -95,6 +104,7 @@ function phoneInit(cfg){
     if(!S.on)return;
     const b=document.body,f={t:Math.round(performance.now()),screen:b&&b.dataset.setupScreen,kb:S.kbState,open:!!(b&&b.classList.contains('keyboard-open')),h:innerHeight,active:document.activeElement&&document.activeElement.id,settling:!!(b&&b.classList.contains('ob-settling')),r:{}};
     for(const k in SEL)f.r[k]=(k==='btn'?paint:box)(document.querySelector(SEL[k]));
+    f.v={};for(const k in VIS)f.v[k]=seen(VIS[k]);
     const foot=document.querySelector('.obfoot'),btn=document.getElementById('nextBtn');
     f.footOp=foot?+getComputedStyle(foot).opacity:1;f.btnFont=btn?getComputedStyle(btn).fontSize:'';
     S.frames.push(f);requestAnimationFrame(tick);
@@ -151,6 +161,10 @@ async function ipadWindow(page,sw=820,sh=1180){
 // an iPhone closes the keyboard whenever the box loses focus
 async function followFocus(page,D){if(await page.evaluate(()=>document.activeElement&&document.activeElement.id)!=='obName'&&await page.evaluate(()=>__steady.kbState)!=='down')await kbHide(page,D);}
 const calm=page=>page.evaluate(()=>document.body.classList.remove('ob-settling'));
+// THE NAME COMES FOURTH (22 Oct 2026): the hello, the problem, the games
+// playing and Rachel come first. To Rachel's screen, the one right before the
+// name, by the footer's button (touch, as a phone), settling between taps.
+async function toRachel(page){for(let i=0;i<4;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);if(s==='rachel')return;await calm(page);await page.tap('#nextBtn');await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}}
 const center=(page,sel)=>page.evaluate(s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},sel);
 async function tapAt(page,sel){const c=await center(page,sel);await page.touchscreen.tap(c.x,c.y);}
 // a dark band where the keyboard is, for the screenshots taken before the web view shrinks
@@ -185,7 +199,8 @@ for(const reduced of [false,true])for(const D of DEVICES){
  try{
   // the phone's own height picks the step's size (a touch screen: the classes are for phones and tablets)
   {const cls=await sizeClasses(page);ok('the phone\'s height picks the name step\'s size ('+(cls.join(' ')||'full')+')'+at,JSON.stringify(cls)===JSON.stringify(SIZES[D.w+'x'+D.h]),cls);}
-  // 1. the hello's Continue: the name step opens, focuses the box (the keyboard rises with it)
+  // 1. Rachel's Continue: the name step opens, focuses the box (the keyboard rises with it)
+  await toRachel(page);await page.waitForTimeout(500);
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');
   await page.locator('[data-step="name"].on').waitFor();
@@ -202,7 +217,7 @@ for(const reduced of [false,true])for(const D of DEVICES){
    ok('a keyboard too tall for the SE\'s own size gives the step the 4-inch size as it starts to rise, before the page shrinks'+at,pre.every(f=>f.r.seg&&f.r.label)&&post.length>0&&post.every(f=>!f.r.seg&&!f.r.label)&&JSON.stringify(cls)==='["ob-short","ob-tiny"]',{pre:pre.map(f=>[!!f.r.seg,!!f.r.label]),post:[...new Set(post.map(f=>!!f.r.seg+'/'+!!f.r.label))],cls});
    arrive=post;}
   const dA=drift(arrive);
-  {const c=firstLast(arrive,'card');ok('the name card\'s first frame is drawn at its own size, not the hello\'s'+at,!!c.same,c);}
+  {const c=firstLast(arrive,'card');ok('the name card\'s first frame is drawn at its own size, not Rachel\'s'+at,!!c.same,c);}
   ok('the name box is focused on arrival, as before (the keyboard comes up with the step)'+at,arrive.length>0&&arrive[arrive.length-1].active==='obName',arrive.length&&arrive[arrive.length-1].active);
   ok('while the keyboard rises and the app shrinks the page, the heading, the box and the age choices hold still'+at+' (worst: '+worst(dA)+')',still(dA),dA);
   // Continue: never drawn where the risen keyboard covers it, and once the page is its new size, fully above the keyboard
@@ -249,11 +264,12 @@ for(const reduced of [false,true])for(const D of DEVICES){
   const dR=drift((await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='name'),KEYS,home);
   ok('tapping the box again brings the keyboard back with nothing moving'+at+' (worst: '+worst(dR)+')',still(dR),dR);
   // 6. Continue with the keyboard up: the box lets go, the keyboard goes down,
-  // and the next question is drawn once, at the phone's full height
+  // and the next question ("What does <Name> love?") is drawn once, at the
+  // phone's full height
   await page.evaluate(()=>__steady.start());
   await page.tap('#nextBtn');await followFocus(page,D);
-  await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
-  const leave=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='therapy'&&f.r.tCard);
+  await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
+  const leave=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='interests'&&f.r.tCard);
   const dL=drift(leave,['tHead','tYes','tCard','echo']);
   {const c=firstLast(leave,'tCard');ok('the next question\'s first frame is drawn at its own size, not the name card\'s'+at,!!c.same,c);}
   // (Echo included: he is beside the question from its first frame, or, on a phone too short for him, never)
@@ -276,6 +292,7 @@ for(const reduced of [false,true])for(const D of DEVICES){
 // through the lock to the page and take focus off the box, which on a phone
 // drops the keyboard just as it rises.
 {const D=DEVICES[0],{context,page,errors}=await openPhone(D);try{
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
   const c=await center(page,'#obName'),settling=await page.evaluate(()=>document.body.classList.contains('ob-settling'));
   await page.touchscreen.tap(c.x,c.y);
@@ -295,15 +312,17 @@ for(const reduced of [false,true])for(const D of DEVICES){
 // found, and in the app.
 for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:0,bottom:0}:DEVICES[0],{context,page,errors}=await openPhone(D,{web});const on=web?' (website)':' (app)';try{
   const focus=()=>page.evaluate(()=>({active:document.activeElement&&(document.activeElement.id||document.activeElement.tagName),screen:document.body.dataset.setupScreen,settling:document.body.classList.contains('ob-settling'),age:draft.childAge}));
-  const go=await center(page,'#nextBtn');
   for(const gap of [90,300]){
+    await toRachel(page);await page.waitForTimeout(500);
+    const go=await center(page,'#nextBtn');
     await page.tap('#nextBtn');await page.waitForTimeout(gap);await page.touchscreen.tap(go.x,go.y);
     const st=await focus();
-    ok('a double tap on "Let\'s go!" ('+gap+' ms apart) leaves the name box focused, the keyboard up'+on,st.screen==='name'&&st.active==='obName',st);
+    ok('a double tap on Rachel\'s Continue ('+gap+' ms apart) leaves the name box focused, the keyboard up'+on,st.screen==='name'&&st.active==='obName',st);
     await page.waitForTimeout(500);await page.evaluate(()=>{document.activeElement.blur();});
     // back to the hello for the next go: a fresh page
     await page.reload();await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(400);
   }
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
   await page.touchscreen.tap((await center(page,'#obAge [data-age="4"]')).x,(await center(page,'#obAge [data-age="4"]')).y);
   const a=await focus();
@@ -312,7 +331,7 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
   ok('a tap on an age or on the box\'s label during the tap lock leaves the box focused, and picks nothing'+on,a.settling&&a.active==='obName'&&a.age!=='4'&&l.active==='obName',{age:a,label:l});
   // Back, twice: the name step opens with the box focused, and the second tap leaves it so
   await page.waitForTimeout(500);await page.fill('#obName','Milo');
-  await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
+  await page.tap('#nextBtn');await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
   const bk=await center(page,'#backBtn');await page.touchscreen.tap(bk.x,bk.y);await page.waitForTimeout(150);await page.touchscreen.tap(bk.x,bk.y);
   const b=await focus();
   ok('a double tap on Back opens the name step with the box focused, and keeps it so'+on,b.screen==='name'&&b.active==='obName',b);
@@ -323,6 +342,7 @@ for(const web of [true,false]){const D=web?{name:'412x839',w:412,h:839,kb:0,top:
 // tap there lets go of the name box, so the keyboard goes down and Continue
 // is in sight, as before 15 Oct 2026; in the app it keeps the box (the walk).
 {const D={name:'412x839',w:412,h:839,kb:0,top:0,bottom:0},{context,page,errors}=await openPhone(D,{web:true});try{
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
   const before=await page.evaluate(()=>document.activeElement&&document.activeElement.id);
   await page.keyboard.type('Milo');await tapAt(page,'#obAge [data-age="6"]');await page.waitForTimeout(200);
@@ -346,7 +366,7 @@ for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,
   const win=(w,h)=>cdp.send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:W.mobile?2:1,mobile:W.mobile,screenWidth:W.sw,screenHeight:W.sh,screenOrientation:(W.mobile?w>W.sw:W.sw>W.sh)?{type:'landscapePrimary',angle:90}:{type:'portraitPrimary',angle:0}});
   await win(W.w,W.h);await page.waitForTimeout(300);
   const st=()=>page.evaluate(()=>({phone:obPhone.h(),small:obPhone.small(),cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),field:Math.round(document.getElementById('obName').getBoundingClientRect().top),active:document.activeElement&&document.activeElement.id}));
-  if(W.mobile)await page.tap('#nextBtn');else await page.click('#nextBtn');
+  if(W.mobile){await toRachel(page);await page.waitForTimeout(500);await page.tap('#nextBtn');}else await page.click('#nextBtn');
   await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
   await page.focus('#obName');await page.keyboard.type('Milo');
   const before=await st();
@@ -367,6 +387,7 @@ for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,
 {const D={name:'820x1180',w:820,h:1180,kb:320,top:24,bottom:20},{context,page,errors}=await openPhone(D);try{
   D.win=await ipadWindow(page);await D.win(820,1180);
   const st=()=>page.evaluate(()=>{const r=document.getElementById('obName').getBoundingClientRect();return {cls:['ob-short','ob-tiny'].filter(c=>document.documentElement.classList.contains(c)),phone:obPhone.h(),h:innerHeight,field:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width)},label:document.querySelector('label[for="obName"]').offsetHeight,seg:document.getElementById('seg').offsetHeight,fit:{fieldTop:Math.round(r.top),agesBottom:Math.round(Math.max(...[...document.querySelectorAll('#obAge .sound')].map(b=>b.getBoundingClientRect().bottom))),btnTop:Math.round(document.getElementById('nextBtn').getBoundingClientRect().top),scroll:document.querySelector('.ob').scrollHeight-document.querySelector('.ob').clientHeight}};});
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,D);await page.waitForTimeout(400);
   const portrait=await st();
   // turned on its side, the keyboard still up: the plugin sends willShow again with the landscape keyboard
@@ -391,6 +412,7 @@ for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,
 // ms after that.
 {const L={name:'1180x820',w:1180,h:820,kb:400,top:24,bottom:20},U={w:820,h:1180,kb:320},{context,page,errors}=await openPhone(L);try{
   L.win=U.win=await ipadWindow(page);await L.win(1180,820);await page.waitForTimeout(300);
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await kbShow(page,L);await page.waitForTimeout(400);
   await page.keyboard.type('Milo');await tapAt(page,'#obAge [data-age="6"]');await page.waitForTimeout(300);
   await page.evaluate(()=>__steady.start());
@@ -403,8 +425,8 @@ for(const W of [{name:'iPhone SE in Safari',w:375,h:553,sw:375,sh:667,turn:[667,
   ok('…so Continue comes back as the window shrinks for the keyboard, not 0.9 s later ('+late+' ms after)',late!==null&&late<=250,{late,hiddenFrames:tf.filter(f=>f.footOp<0.05).length});
   await page.evaluate(()=>{__steady.start();document.getElementById('obName').addEventListener('blur',()=>{setTimeout(()=>{__steady.kbState='down';__steady.kb.keyboardWillHide();},30);},{once:true});});
   await page.tap('#nextBtn');await page.waitForTimeout(40);await U.win(820,1180);
-  await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(700);
-  const lf=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='therapy'&&f.r.tCard);
+  await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(700);
+  const lf=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen==='interests'&&f.r.tCard);
   const dL=drift(lf,['tHead','tYes','tCard','echo']),squeezed=lf.filter(f=>f.open||f.h!==1180).length;
   ok('…and Continue with the keyboard up draws the next question once, at the iPad\'s full height'+' (worst: '+worst(dL)+')',lf.length>0&&squeezed===0&&still(dL),{frames:lf.length,squeezed,dL});
   ok('no runtime errors (iPad turned upright)',errors.length===0,errors);
@@ -439,6 +461,7 @@ for(const [w,h] of [[1280,560],[1366,650],[1440,900]]){const D={name:w+'x'+h,w,h
 // layout: Continue stays exactly where it is as the box gains and loses focus.
 for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,bottom:20},{context,page,errors}=await openPhone(D);try{
   const foot=()=>page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect();return {top:Math.round(b.top*10)/10,h:innerHeight,open:document.body.classList.contains('keyboard-open'),op:+getComputedStyle(document.querySelector('.obfoot')).opacity,active:document.activeElement&&document.activeElement.id};});
+  await toRachel(page);await page.waitForTimeout(500);
   await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();await page.waitForTimeout(600);
   const before=await foot();
   await page.evaluate(h=>__steady.kb.keyboardWillShow({keyboardHeight:h}),kbh);await page.waitForTimeout(950);
@@ -456,6 +479,7 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
 // box and the age choices ride with the card and never slide on their own,
 // so the keyboard rising over the entrance is the only other motion.
 {const D=DEVICES[0],{context,page,errors}=await openPhone(D);try{
+  await toRachel(page);await page.waitForTimeout(600);
   await page.tap('#nextBtn');
   // painted boxes this time: a slide shows in where things are drawn
   const fr=await page.evaluate(()=>{const out=[],t0=performance.now();return new Promise(done=>{(function grab(){const card=document.querySelector('[data-step="name"]');if(document.body.dataset.setupScreen==='name'&&card){const r={card:card.getBoundingClientRect().top};for(const [k,s] of Object.entries({heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age6:'#obAge [data-age="6"]'})){const b=document.querySelector(s).getBoundingClientRect();r[k]=b.height>1?b.top:null;}out.push(r);}if(performance.now()-t0<650)requestAnimationFrame(grab);else done(out);})();});});
@@ -464,34 +488,70 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
   ok('no runtime errors (motion on)',errors.length===0,errors);
  }finally{await context.close();}}
 
-// THE THREE SCREENS THAT SELL HOLD STILL (19 Oct 2026). Right after the
-// therapy question: "Speech homework is hard at home.", "<Name> plays on
-// their own" with one painted game, and "Games <Name> will play". Each is
-// drawn once, at its own size, and nothing in it moves when its pictures
-// arrive, here held back half a second on purpose (each keeps its 16:9 box
-// from the first frame). With motion on and under Reduce Motion, on a big
-// phone and a 4-inch one. The app here can sell (a purchase plugin is there,
-// with nothing to call: setup asks the store only on the ready screen), so
-// the games peek is the full grid, every playable big-kid game.
+// THE SCREENS THAT SELL HOLD STILL (19 Oct 2026; rebuilt 22 Oct). "Speech
+// homework is hard at home." with its flashcards and a game, "They practice by
+// playing." with the games playing, Rachel on her own, and (after the name and
+// what the child loves) "Games <Name> will love". Each is drawn once, at its
+// own size, and nothing in it moves when its pictures arrive, here held back
+// half a second on purpose (each keeps its box from the first frame: the
+// game's 16:9, Rachel's round photo, the reel's 3:4 frame). With motion on and
+// under Reduce Motion, on a big phone and a 4-inch one. The app here can sell
+// (a purchase plugin is there, with nothing to call: setup asks the store only
+// on the ready screen), so the games are the full grid, every playable
+// big-kid game.
+// …and "<Name>'s practice is ready!" after them, Echo cheering. Each screen's
+// own motion (the flashcard tossed away and the game sliding in, from 0.55 s
+// to 1.85 s; Echo's pop and the sparkles, to 1.5 s) is watched for 2.3 s:
+// under Reduce Motion the first frame is already the last (the tossed card
+// gone, the game in place, Echo there, no sparkle), and it is the very place
+// the motion-on run ended on, on the same phone.
+const ENDS={};
+const ownMotion=(fr,ks)=>{const out={};for(const k of ks){const vs=fr.map(f=>f.v[k]),a=vs[0];out[k]={first:a,last:vs[vs.length-1],changed:vs.filter(v=>JSON.stringify(v)!==JSON.stringify(a)).length,ever:vs.some(v=>!!v)};}return out;};
 for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
  const {context,page,errors}=await openPhone(D,{reduced});const at=' at '+D.name+(reduced?' with Reduce Motion':'');
  try{
   await context.addInitScript(()=>{const C=window.Capacitor;if(C&&C.Plugins)C.Plugins.Purchases={};});
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
-  await context.route(/\/assets\/crafted\/home-[a-z]+\.webp$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
-  await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(500);
-  await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
-  await page.locator('[data-step="therapy"].on').waitFor();await page.waitForTimeout(600);
-  for(const [key,keys] of [['problem',['sCard','sHead','sLine','btn']],['alone',['sCard','sHead','sLine','sPic','btn']],['games',['sCard','sHead','sGrid','sLast','sLine','btn']]]){
+  await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
+  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sLine','sPic','btn'],'sCard',['pGame','pToss','pCards'],2300],['reel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
+   if(key==='games'){
+    // the name and what the child loves come between Rachel and the games
+    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
+    await page.fill('#obName','Milo');await page.evaluate(()=>document.activeElement&&document.activeElement.blur());await page.waitForTimeout(500);
+    await calm(page);await tapAt(page,'#obAge [data-age="6"]');await calm(page);await page.tap('#nextBtn');
+    await page.locator('[data-step="interests"].on').waitFor();await page.waitForTimeout(600);
+   }
+   if(key==='ready'){
+    // the questions between the games and the ready screen: therapy, the
+    // sounds (R, as picked), the minutes, and the email step (left empty)
+    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="therapy"].on').waitFor();
+    await calm(page);await page.tap('#obTherapy [data-val="t_yes"]');await page.locator('[data-step="sounds"].on').waitFor();
+    await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="minutes"].on').waitFor();
+    await calm(page);await page.tap('#obMinutes [data-val="10"]');await page.locator('[data-step="updates"].on').waitFor();await page.waitForTimeout(600);
+   }
    await page.evaluate(()=>__steady.start());
-   if(key==='problem')await tapAt(page,'#obTherapy [data-val="t_yes"]');else{await calm(page);await page.tap('#nextBtn');}
-   await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(1100);
-   const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r.sCard);
-   const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img')].every(i=>i.complete&&i.naturalWidth>0));
-   if(key==='games')ok('…the games peek is the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
+   await calm(page);await page.tap('#nextBtn');
+   await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
+   const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
+   const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
+   if(key==='games')ok('…the games are the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
+   if(own.length){
+    const m=ownMotion(fr,own),span=fr.length?fr[fr.length-1].t-fr[0].t:0;
+    if(key==='problem'){
+     // motion on: the toss plays and ends (the game in place, the card gone); Reduce Motion starts there
+     if(!reduced)ok('with motion on, the problem screen\'s toss plays and ends within 2.3 s: the third card tossed away, the game slid in and fully drawn'+at,span>=2000&&m.pToss.ever&&!m.pToss.last&&m.pGame.changed>0&&m.pGame.last&&m.pGame.last.o===1&&m.pCards.last&&m.pCards.last.o===1,{span,m});
+     else ok('under Reduce Motion the problem screen\'s first frame is its last, for '+span+' ms: the tossed card never drawn, the game and the two cards in place from the first frame, unchanged'+at,span>=2000&&!m.pToss.ever&&m.pGame.first&&m.pGame.first.o===1&&m.pGame.changed===0&&m.pCards.first&&m.pCards.changed===0,{span,m});
+    }else{
+     if(!reduced)ok('with motion on, Echo pops onto the ready screen and the sparkles play and end within 2.3 s'+at,span>=2000&&m.rEcho.changed>0&&m.rEcho.last&&m.rEcho.last.o===1&&m.rSpark.ever&&!m.rSpark.last,{span,m});
+     else ok('under Reduce Motion the ready screen\'s first frame is its last, for '+span+' ms: Echo there from the first frame, unchanged, no sparkle ever drawn'+at,span>=2000&&m.rEcho.first&&m.rEcho.first.o===1&&m.rEcho.changed===0&&!m.rSpark.ever,{span,m});
+    }
+    // the same phone, the same screen: Reduce Motion's first frame is where the motion ended
+    const tag=D.name+'|'+key;
+    if(!reduced)ENDS[tag]=Object.fromEntries(own.map(k=>[k,m[k].last]));
+    else if(ENDS[tag])ok('…and it is exactly where the motion-on run ended ('+key+')'+at,own.every(k=>JSON.stringify(m[k].first)===JSON.stringify(ENDS[tag][k])),{reduce:Object.fromEntries(own.map(k=>[k,m[k].first])),motion:ENDS[tag]});
+   }
    await page.waitForTimeout(200);
   }
   ok('no runtime errors (the screens that sell'+at+')',errors.length===0,errors);

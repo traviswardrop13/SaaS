@@ -136,6 +136,12 @@
     var POS=(Q.get("position")||"initial").toLowerCase();
     var NAME=(Q.get("name")||profile.childName||"").trim();
     // What the kid loves — drives the AI theming. URL wins, then profile, then a daily-rotating default.
+    // BEFORE THIS PAGE COMES BACK (it is parked today): since 22 Oct 2026
+    // setup saves profile.interests as its own ids ("sports", "music",
+    // "dinosaurs", "animals", "space", "building", "food"; onboarding.html
+    // INTERESTS), not these story themes, and profile.dailyMinutes as 5, 10
+    // or 15 (the daily goal's minutes, not a story's length). Map the ids to
+    // a theme first; older profiles still hold the old themes.
     var INTERESTS=["dragons","space","dinosaurs","mermaids","puppies","race cars","unicorns","pirates","jungle animals","robots"];
     var INTEREST=(Q.get("interest")||(profile.interests&&profile.interests[0])||profile.interest||((window.Sona&&Sona.dayNum)?INTERESTS[Sona.dayNum()%INTERESTS.length]:"dragons")).trim();
     var MINUTES=Number(Q.get("minutes"))||profile.dailyMinutes||5;

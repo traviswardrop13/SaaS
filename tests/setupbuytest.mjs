@@ -6,11 +6,12 @@
 // joins them on one fake phone that has BOTH an App Store and a microphone
 // (tests/_phone.mjs), because the hand-over between the two pages is the part
 // neither can see:
-//   - setup asks its four things (with three screens that sell Sona right
-//     after the therapy question, 19 Oct 2026), then the optional email (13 Oct 2026: before
-//     the price, so the address is on the phone when a purchase tells the
-//     list), shows "<Name>'s practice is ready", and only then the price,
-//     while the grown-up still holds the phone;
+//   - setup sells Sona (the problem, the games playing, Rachel on her own,
+//     then what the child loves and their games: 22 Oct 2026), asks its
+//     questions, then the optional email (13 Oct 2026: before the price, so
+//     the address is on the phone when a purchase tells the list), shows
+//     "<Name>'s practice is ready!", and only then the price, while the
+//     grown-up still holds the phone;
 //   - the price is ONE plan with the store's own words, and no reminder is
 //     promised (Sona sends none yet);
 //   - a purchase comes BACK to setup for the microphone and "Hand the phone
@@ -35,20 +36,27 @@ const step = (page, key) => page.locator('[data-step="' + key + '"].on').waitFor
 const text = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, " ").trim() : null; }, sel);
 
 // a parent's setup, as far as the ready screen (an address on the email step, or Skip)
-// (sold: the headings of the three screens that sell, as the parent read them)
+// (sold: the headings of the screens that sell, as the parent read them;
+// rachelLine: Rachel's line on her own screen, 22 Oct 2026)
 const sold = [];
+let rachelLine = "";
 async function toReady(page, name, email = "") {
-  sold.length = 0;
+  sold.length = 0; rachelLine = "";
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
+  for (const key of ["problem", "reel", "rachel"]) {
+    await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
+    if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
+    await tap(page, "#nextBtn");
+  }
   await step(page, "name"); await page.locator("#obName").fill(name); await tap(page, '#obAge [data-age="6"]'); await tap(page, "#nextBtn");
+  for (const key of ["interests", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "therapy"); await tap(page, '#obTherapy .ask-pick[data-val="t_yes"]');
-  for (const key of ["problem", "alone", "games"]) { await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1')); await tap(page, "#nextBtn"); }
   await step(page, "sounds");                                            // R is the picker's own first pick: tap it only if it is not on
   if ((await page.locator('#obSounds [data-sound="R"]').getAttribute("aria-pressed")) !== "true") await tap(page, '#obSounds [data-sound="R"]');
   await tap(page, "#nextBtn");
-  await step(page, "goal"); await tap(page, '#obGoal .ask-pick[data-val="5"]');
+  await step(page, "minutes"); await tap(page, '#obMinutes .ask-pick[data-val="5"]');
   await step(page, "updates");
   if (email) { await page.locator("#updEmail").fill(email); await tap(page, "#nextBtn"); } else await tap(page, "#updSkip");
   await step(page, "ready");
@@ -60,12 +68,12 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, three screens sell Sona, after the therapy question: the problem, the child playing alone, the games",
-      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "Mia plays on their own", "Games Mia will play"]), sold);
-    ok("setup ends on the ready screen: the child's name, and Rachel's line word for word",
-      (await text(page, "#readyTitle")) === "Mia's practice is ready" &&
-      (await text(page, "#readyRachel")) === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.",
-      { title: await text(page, "#readyTitle"), rachel: await text(page, "#readyRachel") });
+    ok("before the price, setup sells Sona: the problem, the games playing, Rachel, what the child loves, the games they will love",
+      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "They practice by playing.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games Mia will love"]), sold);
+    ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
+      rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
+      (await text(page, "#readyTitle")) === "Mia's practice is ready!",
+      { title: await text(page, "#readyTitle"), rachel: rachelLine });
     ok("…and nothing has asked the phone for the microphone yet", (await page.evaluate(() => window.__phone.mic.requests.length)) === 0);
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });

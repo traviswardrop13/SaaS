@@ -21,186 +21,194 @@
   <script>try{if(sessionStorage.getItem("sona.setupafter.v1")){document.documentElement.className+=" ob-resume";setTimeout(function(){document.documentElement.classList.remove("ob-resume");},2500);}}catch(e){}</script>
   <!-- SETUP ASKS ABOUT A FAMILY (5 Oct 2026), so on this page Meta's script is
        told not to read button taps by itself: left on, it sends the words on
-       every tapped button, and two of these screens' buttons are answers. -->
+       every tapped button, and some of these screens' buttons are answers. -->
   <script src="/pixel.js" data-autoconfig="off"></script>
   <script src="/analytics.js"></script>
+  <!-- Layout only. Every colour lives in onboarding-crafted.css, loaded after
+       this, so its rules win (the crafted world's one sheet for setup). -->
   <style>
-    html,body{height:100%;}
+    html,body{height:100%;min-height:0;overflow:hidden;}
     html{color-scheme:light;}
     /* ob-resume: the head script, until the page script has picked a screen.
        ob-leaving: the page script, while it sends an unpaid family back to
        the price. Under either, the markup is the raw hello with a live
-       button, so it stays hidden on plain cream. */
-    html.ob-resume body,html.ob-leaving body{background:#fff6e9!important;}
+       button, so it stays hidden (the colour is the crafted sheet's). */
     html.ob-resume .ob,html.ob-resume .obfoot,html.ob-leaving .ob,html.ob-leaving .obfoot{visibility:hidden;}
-    .ob input{-webkit-appearance:none;appearance:none;color:var(--ink);caret-color:var(--orange-d);}
-    .ob input:focus{outline:2px solid var(--orange-d);outline-offset:2px;}
-    .ob{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
-      padding:calc(14px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom));}
-    /* progress segments — gradient fill that sweeps in as each step completes */
-    .seg{display:flex;gap:6px;margin:6px 0 18px;}
-    .seg > i{position:relative;height:9px;flex:1;border-radius:99px;background:#e6eef8;overflow:hidden;}
-    .seg > i::after{content:"";position:absolute;inset:0;border-radius:inherit;
-      background:linear-gradient(90deg,var(--act-hi),var(--act)); /* one progress color family app-wide (1b) */
-      transform:scaleX(0);transform-origin:left;opacity:0;
+    html.ob-resume .hello,html.ob-leaving .hello{display:none!important;}
+    .ob{position:relative;z-index:1;height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;max-width:480px;margin:0 auto;
+      padding:calc(14px + env(safe-area-inset-top)) 22px calc(110px + env(safe-area-inset-bottom));}
+    .ob input{-webkit-appearance:none;appearance:none;scroll-margin-block:20px 120px;}
+    .seg{display:flex;gap:7px;margin:6px 0 20px;flex-shrink:0;}
+    .seg > i{position:relative;height:5px;flex:1;border-radius:99px;overflow:hidden;}
+    .seg > i::after{content:"";position:absolute;inset:0;border-radius:inherit;transform:scaleX(0);transform-origin:left;opacity:0;
       transition:transform .45s cubic-bezier(.2,.8,.3,1),opacity .25s ease;}
     .seg > i.on::after{transform:scaleX(1);opacity:1;}
-    /* mascot + speech bubble */
-    .mascot{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;}
-    .mascot .leo{font-size:64px;line-height:1;flex:0 0 auto;animation:bobnode 3s ease-in-out infinite;}
-    .bubble2{position:relative;background:#fff;border:2px solid var(--line);border-radius:18px;padding:13px 15px;
-      font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:17px;line-height:1.25;box-shadow:0 8px 22px rgba(15,39,66,.08);
-      animation:sona-slide-up .5s cubic-bezier(.2,.8,.3,1) both;will-change:transform,opacity;}
-    .bubble2:before{content:"";position:absolute;left:-9px;bottom:14px;width:16px;height:16px;background:#fff;
-      border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg);}
-    /* step swap: gentle slide/fade; re-fires each time a step becomes active */
-    .step{display:none;animation:fade .25s ease;} .step.on{display:block;animation:sona-slide-up .42s cubic-bezier(.2,.8,.3,1) both;}
-    /* A calm, bounded transition makes the parent's answers visible before
-       the explicit handoff. It never navigates away from setup by itself. */
-    #obBuild{position:fixed;inset:0;z-index:60;background:#fff6e9;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;}
+    .mascot{display:flex;align-items:center;gap:12px;margin:0 0 18px;flex-shrink:0;}
+    .bubble2{position:relative;animation:sona-slide-up .5s cubic-bezier(.2,.8,.3,1) both;}
+    .bubble2:before{content:"";position:absolute;left:-8px;bottom:16px;width:14px;height:14px;transform:rotate(45deg);}
+    /* A step slides in as ONE piece (15 Oct 2026): nothing inside it slides on
+       its own, so the words never move inside a card that is itself moving. */
+    .step{display:none;} .step.on{display:block;animation:sona-slide-up .42s cubic-bezier(.2,.8,.3,1) both;}
+    #obBuild{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;}
     #obBuild.show{display:flex;}
     #obBuildT{font-family:"Baloo 2";font-size:24px;line-height:1.25;}
     #obBuildAnswers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:340px;}
-    #obBuildAnswers span{padding:9px 13px;border-radius:14px;background:#fff;border:1px solid var(--line);font-weight:800;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;}
+    #obBuildAnswers span{padding:9px 13px;border-radius:14px;font-weight:800;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;}
     #obBuildAnswers span.on{opacity:1;transform:none;}
-    #obBuild img{width:110px;height:110px;object-fit:contain;animation:obBob 1.1s ease-in-out infinite;}
-    @keyframes obBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-    @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-    /* A step slides in as ONE piece (15 Oct 2026). Its heading and help line
-       used to slide in again on their own, a beat late, so the words moved
-       inside a card that was itself still moving, and on the name step the
-       keyboard rose over all of it. */
-    .qh{font-family:"Baloo 2";font-weight:800;font-size:22px;margin:2px 0 4px;}
-    /* big choice cards */
+    #obBuild img{width:120px;height:120px;object-fit:contain;}
+    .qh{font-family:"Baloo 2";font-weight:800;margin:2px 0 6px;}
+    /* the clinician's three choices (their own setup only) */
     .choices{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
-    .choice{display:flex;align-items:center;gap:12px;border:2px solid var(--line);background:#fff;border-radius:16px;
-      padding:14px 16px;cursor:pointer;font-weight:800;font-family:"Baloo 2";font-size:17px;
-      transition:transform .05s,border-color .2s ease,box-shadow .2s ease;}
-    .choice:active{transform:translateY(2px);}
-    /* ONE selection grammar app-wide: green (fix pack 1b) */
-    .choice{position:relative;}
-    .choice.on{border-color:var(--act);background:#e8f6f7;box-shadow:0 0 0 3px rgba(31,152,166,.16);padding-right:46px;animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
-    .choice.on::after,.bopt.on::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--act);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 var(--act-d);z-index:2;}
-    .choice.on::after{top:50%;transform:translateY(-50%);right:12px;}
-    .choice .ce{font-size:26px;transition:transform .2s cubic-bezier(.2,1.4,.4,1);}
-    .choice.on .ce{transform:scale(1.12);}
-    /* shared select "pop" — gentle scale that settles, runs once on .on */
-    @keyframes sona-pop{0%{transform:scale(1)}45%{transform:scale(1.045)}100%{transform:scale(1)}}
-    /* buddy grid */
+    .choice{position:relative;display:flex;align-items:center;gap:12px;border-radius:16px;padding:14px 16px;cursor:pointer;font-weight:800;font-family:"Baloo 2";font-size:17px;}
+    .choice.on{padding-right:46px;}
+    .choice.on::after{content:"✓";position:absolute;top:50%;right:12px;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;}
+    /* the buddy grid: built, in no order (the Buddy Shop is where a buddy is picked) */
     .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
-    .bopt{position:relative;border:2px solid var(--line);background:#fff;border-radius:18px;padding:14px 6px 10px;cursor:pointer;
-      display:flex;flex-direction:column;align-items:center;gap:4px;overflow:hidden;
-      transition:transform .05s,border-color .2s ease,box-shadow .2s ease;}
-    .bopt:not(.locked):active{transform:translateY(2px);}
-    .bopt.on{border-color:var(--act);background:#e8f6f7;box-shadow:0 0 0 3px rgba(31,152,166,.16);animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
-    .bopt.locked{opacity:.65;cursor:default;}
-    .bopt .be{font-size:38px;transition:transform .2s cubic-bezier(.2,1.4,.4,1);} .bopt .bn{font-family:"Baloo 2";font-weight:800;font-size:12px;}
-    .bopt.on .be{transform:scale(1.1);}
-    /* SOON badge → corner ribbon across the top-right of the locked card */
-    .bopt .soon{position:absolute;top:11px;right:-22px;width:78px;text-align:center;transform:rotate(45deg);
-      font-size:8px;letter-spacing:.08em;font-weight:800;color:#fff;background:linear-gradient(180deg,#7d8ca0,var(--muted));
-      border-radius:0;padding:2px 0;box-shadow:0 2px 5px rgba(15,39,66,.18);pointer-events:none;}
-    /* sound chips — smooth color/border + a small pop on select */
+    .bopt{position:relative;border-radius:18px;padding:14px 6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;overflow:hidden;}
+    .bopt .bn{font-family:"Baloo 2";font-weight:800;font-size:12px;}
+    /* sound chips */
     .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
-    .schips .sound{transition:background .2s ease,border-color .2s ease,color .2s ease,transform .05s;}
-    .schips .sound:active{transform:translateY(1px);}
+    .schips .sound.on{border-color:var(--act);color:var(--act-d);}
     #obSounds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
     #obSounds .sound{min-width:0;min-height:54px;display:flex;align-items:center;justify-content:center;padding:8px 4px;font-size:27px;line-height:1.2;}
-    #obSounds .sound[data-sound="THV"]{font-size:23px;}
-    .sound-help{margin:14px 0 0;font-size:13px;}
-    #obExploreSounds{display:block;min-height:44px;padding:8px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;}
-    .ob input{scroll-margin-block:20px 120px;}
-    body.keyboard-open .obfoot{padding-bottom:10px;}
-    body.keyboard-open .ob{padding-bottom:100px;}
-    .sound:focus-visible,.skip:focus-visible,.btn:focus-visible{outline:3px solid #795534;outline-offset:3px;}
-    [hidden]{display:none!important;}
-    body.ob-world{background:linear-gradient(180deg,#caeafb 0%,#e7f4f8 46%,#fff0d5 100%) fixed;}
-    .ob-world .step.on{text-align:center;}
-    .ob-world .qh{font-size:29px;line-height:1.2;margin:12px auto;max-width:340px;}
-    .ob-world .mascot{justify-content:center;}
-    .ob-world .mascot .leo{display:none!important;}
-    .ob-world .bubble2:before{display:none;}
-    .world-scene{position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:center;height:clamp(170px,29vh,250px);margin:14px -18px 0;overflow:hidden;}
-    .world-scene:before{content:"";position:absolute;left:-12%;right:-12%;bottom:-55px;height:95px;border-radius:50%;background:#9edab6;z-index:-1;}
-    .world-scene img{width:clamp(150px,25vh,210px);height:clamp(150px,25vh,210px);object-fit:contain;filter:drop-shadow(0 10px 12px rgba(74,44,20,.12));}
-    body[data-setup-screen="achieve"] .mascot{display:none;}
+    #obSounds .sound[data-sound="THV"]{font-size:23px;grid-column:span 2;white-space:nowrap;}
+    #obExploreSounds{display:block;min-height:44px;padding:8px 0;}
     #micNotNow{display:block;margin:14px auto 0;min-height:44px;}
-    #micStatus{font-weight:800;color:#795534;line-height:1.5;margin-top:12px;}
-    @media(prefers-reduced-motion:reduce){.step.on,.mascot .leo,#obBuild img,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
+    [hidden]{display:none!important;}
+    .vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+    /* fixed footer */
+    .obfoot{position:fixed;z-index:2;left:0;right:0;bottom:0;padding:16px 22px calc(18px + env(safe-area-inset-bottom));}
+    .obfoot .inner{max-width:436px;margin:0 auto;display:flex;gap:12px;align-items:center;}
+    .skip{background:none;border:none;font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
     /* Under Reduce Motion sona.css gives every property a 0.01 ms transition,
        and the frame a step changes was painted in the last step's layout (the
        name card 718 px tall for a frame at 390x844, then 260). Setup's steps
-       and footer take no transition at all there (15 Oct 2026). */
-    @media(prefers-reduced-motion:reduce){.ob,.ob *,.obfoot,.obfoot *{transition-property:none!important;}}
-    .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);border-color:var(--act);background:#e8f6f7;color:var(--act-d);box-shadow:0 0 0 3px rgba(31,152,166,.16);}
-    /* fixed footer */
-    .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
-      padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
-    .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
-    .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
-
-    /* Keep the welcome and the handoff inside the phone, with a separate
-       scroll region only when a keyboard or accessibility text needs room. */
-    html,body{height:100%;min-height:0;overflow:hidden;}
-    .ob{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(110px + env(safe-area-inset-bottom));}
-    body[data-setup-screen="welcome"] .ob,body[data-setup-screen="achieve"] .ob{display:flex;}
-    .ob-world .step.on{flex:1;min-height:0;display:flex;flex-direction:column;}
-    .ob-world .world-scene{flex:1;min-height:100px;max-height:220px;height:auto;margin-top:8px;}
-    body[data-setup-screen="welcome"] .world-scene{max-height:340px;}
-    .ob-world .world-scene img{width:min(42vw,180px);height:min(42vw,180px);max-height:100%;}
-    .ob-world .qh{font-size:28px;margin:8px auto;}
-    .ob-world .mascot{margin-bottom:8px;}
-    body.keyboard-open .world-scene{display:none;}
-    @media(max-height:700px){.ob-world .world-scene{max-height:150px;}.ob-world .world-scene img{width:130px;height:130px;}.ob-world .qh{font-size:24px;}.mascot{margin-bottom:10px;}#leo{width:48px!important;height:48px!important;}.bubble2{padding:9px 12px;}#obSounds .sound{min-height:44px;padding:4px;font-size:27px;}.sound-help{margin-top:8px;}}
+       and footer take no transition at all there (15 Oct 2026), and nothing
+       in setup animates: each screen's first frame is its own. */
+    @media(prefers-reduced-motion:reduce){.step.on,.bubble2,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
+    @media(prefers-reduced-motion:reduce){.ob,.ob *,.ob *::before,.ob *::after,.obfoot,.obfoot *{transition-property:none!important;}}
   </style>
   <link rel="stylesheet" href="/onboarding-crafted.css" />
 </head>
 <body class="ob-world" data-setup-screen="welcome">
+  <!-- THE HELLO IS ALIVE (Travis, 22 Oct 2026: "I want animation ... make it
+       live, animated"). The orchard WITHOUT Echo painted in (orchard-game,
+       the Fruit Slice practice page's own), so the one Echo on screen is the
+       live one: he hops onto the path, says hi, and stays, bobbing, now and
+       then waving; a cloud drifts, an orange drops from a tree, a star
+       twinkles. CSS keyframes only (transform and opacity, no script loop,
+       so a session recording holds no stream of changes). Outside .ob and
+       drawn only on the hello: nothing here loops inside a step, and none of
+       it is on any other screen. Under Reduce Motion it is all still. -->
+  <div class="hello" id="hello" aria-hidden="true">
+    <div class="hello-bg"></div>
+    <img class="hello-cloud hello-cloud-a" src="/assets/crafted/game/cloud.webp" alt="" />
+    <img class="hello-cloud hello-cloud-b" src="/assets/crafted/game/cloud.webp" alt="" />
+    <img class="hello-star" src="/assets/crafted/game/star.webp" alt="" />
+    <img class="hello-orange" src="/assets/crafted/fruit-orange.webp" alt="" />
+    <div class="hello-echo">
+      <span class="hello-shadow"></span>
+      <div class="hello-hop"><div class="hello-bob">
+        <img class="hello-pose hello-rest" src="/assets/crafted/echo-welcome.webp" alt="" />
+        <img class="hello-pose hello-wave" src="/assets/crafted/echo-wave.webp" alt="" />
+      </div></div>
+      <span class="hello-hi">Hi! I'm Echo!</span>
+    </div>
+  </div>
+
   <div class="ob">
     <div class="seg" id="seg"></div>
 
     <div class="mascot">
-      <span class="leo" id="leo" style="width:64px;height:64px;border-radius:50%;background:#dff4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:54px;height:54px;object-fit:contain;" /></span>
+      <span class="leo" id="leo"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" /></span>
       <div class="bubble2" id="bubble">Hi! I'm Echo!</div>
     </div>
 
-    <!-- welcome -->
-    <!-- SETUP IS FOUR QUESTIONS since 5 Oct 2026 (Travis, 4–5 Oct 2026:
-         "number B would be good … you can do a full reset"): the name, "Is
-         <Name> in speech therapy?", the sounds, and "How many days a week
-         will you practice?" (the second and fourth since that evening: he
-         did not like the two they replaced). Those two are one tap, each
-         with a Skip. The first changes nothing a child is given: it only
-         picks which true sentence about Sona the next screen shows, and it
-         stays on this phone. The other sets the week's goal. Then
-         "<Name>'s practice is ready" repeats back what the parent picked,
-         and its Continue saves the profile. Where Sona can sell, the price
-         comes next, while the grown-up still holds the device; the
-         microphone and the hand-off follow it, back on this page.
-         It was ten screens once, and a parent off an ad met every one before
-         their child said a word. Buddy (Pip is preselected) and interests
-         still wait, in Settings. The parent's optional email is its own
-         one-tap-skippable step before the ready screen (13 Oct 2026), not
-         one of the four questions, and so are the three screens that sell
-         Sona, right after the therapy question (19 Oct 2026).
-         THE FIRST SCREEN IS JUST A HELLO (Travis, 2 Oct 2026: "that first page
-         with the bird just have that be a fun page and then they can just
-         press a button on the bottom that says continue and then the second
-         slide is who's setting up Sona"): the orchard, Echo and Sona's name,
-         and one button. No question, and no move-in code ("take off moving
-         from another phone enter your code. I just don't want that in
-         there"): a family moving phones brings its save over in Settings ›
-         Moving to a new phone?, and one who paid on the website restores it
-         in Settings › Restore access. -->
+    <!-- SETUP, FROM SCRATCH (Travis, 22 Oct 2026: "I want to do a completely
+         new onboarding ... We want to sell the product in the onboarding ...
+         simplified, some of the slides have too many words"). A family's
+         first setup: the hello, the problem, the games playing (with Echo's
+         voice on a tap), Rachel on her own, the child's name and age, what
+         they love, the games they will love, "Is <Name> in speech therapy?",
+         the sounds, how long each day, the weekly report email, "<Name>'s
+         practice is ready!", a reminder before the free trial ends (where
+         the iPhone can set one), then the price, the microphone and the
+         hand-off. A headline and one short line a screen. Every word is a
+         default for Travis and Rachel to change.
+         THE FIRST SCREEN IS JUST A HELLO (Travis, 2 Oct 2026): one button, no
+         question and no move-in code ("take off moving from another phone
+         enter your code"): a family moving phones brings its save over in
+         Settings › Moving to a new phone?, and one who paid on the website
+         restores it in Settings › Restore access. -->
     <div class="step on" data-step="welcome">
-      <div class="welcome-brand" aria-label="Sona. Speech practice kids ask for.">Sona<span>Speech practice kids ask for.</span></div>
-      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
+      <h1 class="welcome-brand" aria-label="Sona. Speech practice kids love."><span class="welcome-name" aria-hidden="true"><span class="wl">S</span><span class="wl">o</span><span class="wl">n</span><span class="wl">a</span></span><span class="welcome-tag" aria-hidden="true">Speech practice kids love.</span></h1>
     </div>
 
+    <!-- THE PROBLEM (19 Oct 2026, three screens that sold Sona; one line now).
+         A statement, not a question: nothing to tap in it, nothing stored,
+         no progress segment. The flashcards are tossed aside once and a
+         game slides in; no loop (a step's own motion always ends). -->
+    <div class="step sell" data-step="problem">
+      <h1 class="qh" id="problemTitle" tabindex="-1">Speech homework is hard at home.</h1>
+      <p class="sell-line">Flashcards turn into fights. Play turns into practice.</p>
+      <div class="toss" aria-hidden="true">
+        <span class="toss-card toss-a">rug</span>
+        <span class="toss-card toss-b">red</span>
+        <span class="toss-card toss-c">run</span>
+        <span class="toss-game"><img src="/assets/crafted/home-fruit.webp" alt="" width="768" height="432" decoding="async" /></span>
+      </div>
+    </div>
+
+    <!-- SEE IT PLAY (Travis, 22 Oct 2026: "Do like a little clip of a few
+         games so that parents can see it, and even have like the voice say
+         your R sound"). Real play, filmed frame by frame from the games
+         themselves (tools/setupreel/record.mjs: public/assets/setup/reel/
+         <key>.mp4, and a poster <key>.webp), one after another, muted, no
+         audio track in them at all. Only the games this phone may show (the
+         games screen's rule: never a Coming soon game; where no price
+         follows, only the games this phone opens). A browser that cannot
+         play them (or a phone in Low Power Mode that refuses) sees the
+         posters as a slow slideshow, and a game with no clip yet its painted
+         Home card: never a dead frame or a broken video. Echo's voice plays
+         only on a grown-up's tap of "Hear Echo" (setup is otherwise silent),
+         and R is a stated example: the child's sound is not picked yet. -->
+    <div class="step sell" data-step="reel">
+      <h1 class="qh" id="reelTitle" tabindex="-1">They practice by playing.</h1>
+      <!-- The pictures are decoration to a screen reader (aria-hidden on each);
+           Echo's ask over them is read, before "Hear Echo" and the note that
+           R is an example. -->
+      <div class="reel-box"><div class="reel" id="reelFrame">
+        <img class="reel-still" alt="" decoding="async" aria-hidden="true" />
+        <img class="reel-still" alt="" decoding="async" aria-hidden="true" />
+        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny" aria-hidden="true"></video>
+        <video class="reel-clip" muted playsinline preload="none" disableremoteplayback x-webkit-airplay="deny" aria-hidden="true"></video>
+        <p class="reel-say"><img src="/assets/crafted/echo-talk.webp" alt="" aria-hidden="true" /><span id="reelSay">Say your rrrr sound!</span></p>
+      </div></div>
+      <div class="reel-under">
+        <button type="button" class="reel-hear" id="reelHear"><span class="reel-wave" aria-hidden="true"><i></i><i></i><i></i></span>Hear Echo</button>
+        <p class="reel-note">Example: the R sound</p>
+      </div>
+    </div>
+
+    <!-- RACHEL, ON HER OWN (Travis, 22 Oct 2026: "a bigger slide of Rachel
+         that's just like all by itself of like her credentials"). Her photo,
+         and Travis's line word for word (1 Oct 2026), shown once: its first
+         words are the heading, the rest the line under it, and the line's
+         own text is the whole sentence (the start of it is not drawn twice,
+         and a screen reader reads it once). Her card names nobody else and
+         says nothing about a plan; never CCC, "certified" or "licensed".
+         Since 5 Oct 2026 she sat in "About Sona" on the ready screen; where
+         her credential sits is hers and Travis's to change. -->
+    <div class="step sell" data-step="rachel">
+      <div class="rachel-photo"><img src="/assets/rachel-wardrop-profile.jpg" width="260" height="260" alt="Rachel Wardrop" /></div>
+      <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP,</span></h1>
+      <p class="rachel-line" id="rachelLine"><span class="vh" aria-hidden="true">Built with Rachel, MS, CF-SLP, </span>a pediatric speech-language pathologist in her clinical fellowship.</p>
+      <p class="rachel-pill">Sona co-founder</p>
+    </div>
 
     <!-- name -->
     <div class="step" data-step="name">
-      <div class="qh">Who's practicing today?</div>
+      <div class="qh">Who's practicing?</div>
       <label class="field setup-label" for="obName">First name or nickname</label>
       <input aria-describedby="nameHint" id="obName" type="text" placeholder="First name" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" />
       <!-- Not drawn since 15 Oct 2026 (the step has no room for it above the
@@ -216,21 +224,64 @@
       <p class="muted setup-hint" id="slpAppNote" hidden>Your clinician dashboard is on the web, at speaksona.com.</p>
     </div>
 
-    <!-- IN SPEECH THERAPY? (Travis, 5 Oct 2026, of "What brings you to
-         Sona?": "I don't like" it; "we could at the very least ask them if
-         they are in speech therapy or not"). One tap, or Skip. The answer is
-         the button, so the footer shows Continue only when one is already
-         held (a parent who came Back). It moves no sound, mode or goal: it
-         picks one sentence about Sona on the ready screen, and it is kept in
-         one household key that no backup, event or request carries, which is
-         why the screen can say "stays on this device". The wording is
-         Rachel's to change. ph-no-capture (REPLAY1, 15 Oct 2026): PostHog's
+    <!-- WHAT DOES <NAME> LOVE? (Travis, 22 Oct 2026: "ask them ... what their
+         kid is interested in, to help customize what games to show them").
+         Pick any, or none: Continue and Skip both go on, and nothing is
+         picked for them. The picks order the next screen's games (the games
+         a pick fits first) and are kept on the child's profile as ids; they
+         change nothing a child is asked to say. Each picture is a piece of
+         the games' own painted art. A session recording may show these
+         picks (Rachel's to know); the name in the heading is "[child]". -->
+    <div class="step" data-step="interests">
+      <h1 class="qh" id="interestsTitle" tabindex="-1">What does <span class="ph-name" id="intName">your child</span> love?</h1>
+      <div class="int-grid" id="obInterests" role="group" aria-labelledby="interestsTitle">
+        <button type="button" class="int-pick" data-val="sports" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/game/ball.webp" alt="" /></span><span class="int-name">Sports</span></button>
+        <button type="button" class="int-pick" data-val="music" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/hat-headphones.webp" alt="" /></span><span class="int-name">Music</span></button>
+        <button type="button" class="int-pick" data-val="dinosaurs" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/game/dino-trex.webp" alt="" /></span><span class="int-name">Dinosaurs</span></button>
+        <button type="button" class="int-pick" data-val="animals" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/buddy-bunny-rest.webp" alt="" /></span><span class="int-name">Animals</span></button>
+        <button type="button" class="int-pick" data-val="space" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/game/rocket-ship.webp" alt="" /></span><span class="int-name">Space</span></button>
+        <button type="button" class="int-pick" data-val="building" aria-pressed="false"><span class="int-art int-blocks"><img src="/assets/crafted/stack-block-blue-v2.webp" alt="" /><img src="/assets/crafted/stack-block-orange-v2.webp" alt="" /><img src="/assets/crafted/stack-block-yellow-v2.webp" alt="" /></span><span class="int-name">Building</span></button>
+        <button type="button" class="int-pick" data-val="food" aria-pressed="false"><span class="int-art"><img src="/assets/crafted/fruit-strawberry.webp" alt="" /></span><span class="int-name">Food</span></button>
+      </div>
+      <button type="button" class="skip ask-skip" id="interestsSkip">Skip</button>
+    </div>
+
+    <!-- GAMES <NAME> WILL LOVE: the age group's playable games, read from the
+         catalog Home reads (Sona.activityLibrary): never a Coming soon game,
+         never a typed list; both groups when no age was given. Every one
+         where the price follows (the trial opens them all); only the ones
+         this phone opens where no price can follow (the website, an app with
+         no purchase plugin). The games a pick on the last screen fits come
+         first, with a soft ring; the rest follow, each in Home's order. No
+         "Free" or "Premium" here: no surface tells a family something stays
+         free. -->
+    <div class="step sell" data-step="games">
+      <h1 class="qh" id="gamesTitle" tabindex="-1">Games <span class="ph-name" id="gamesName">your child</span> will love</h1>
+      <div class="sell-grid" id="gamesGrid"></div>
+    </div>
+
+    <!-- buddy: built and in no order (the Buddy Shop is where a buddy is
+         picked; shoptest holds what this grid offers a family) -->
+    <div class="step" data-step="buddy">
+      <div class="qh">Pick your buddy</div>
+      <p class="muted">You can change this anytime.</p>
+      <div class="bgrid" id="obBuddies"></div>
+    </div>
+
+    <!-- IN SPEECH THERAPY? (Travis, 5 Oct 2026: "we could at the very least
+         ask them if they are in speech therapy or not"). One tap, or Skip.
+         The answer is the button, so the footer shows Continue only when one
+         is already held (a parent who came Back). It moves no sound, mode or
+         goal: it picks one sentence about Sona on the ready screen, and it is
+         kept in one household key that no backup, event or request carries,
+         which is why the screen can say it stays on this phone. The wording
+         is Rachel's to change. ph-no-capture (REPLAY1, 15 Oct 2026): PostHog's
          recording is off while this screen shows (replayAt), and this block
          is an empty shape in every later picture of the page, so a pressed
          answer left in it after Back never travels. -->
     <div class="step ph-no-capture" data-step="therapy">
       <h1 class="qh" id="therapyTitle" tabindex="-1">Is your child in speech therapy?</h1>
-      <p class="muted ask-help">One tap. Your answer stays on this device.</p>
+      <p class="muted ask-help">Your answer stays on this phone.</p>
       <div class="ask" id="obTherapy" role="group" aria-labelledby="therapyTitle">
         <button type="button" class="ask-pick" data-val="t_yes" aria-pressed="false">Yes</button>
         <button type="button" class="ask-pick" data-val="t_none" aria-pressed="false">No</button>
@@ -239,61 +290,9 @@
       <button type="button" class="skip ask-skip" id="therapySkip">Skip</button>
     </div>
 
-    <!-- SETUP SELLS SONA BEFORE THE PRICE (Travis, 19 Oct 2026: "go, yes to
-         1 2 3", to a parent-funnel review: a problem screen, a "your kid
-         plays it alone" screen and a peek at the games). Three screens right
-         after the speech therapy question, each a statement with Continue
-         and Back: nothing to answer, nothing stored, no progress segment (they
-         are not questions; Travis took two question screens out on 5 Oct
-         2026 because he did not like them). Only where the therapy question is
-         asked: a family's first setup, never a second child, a clinician or a
-         child already set up. Every spot that shows the child's name is a
-         ph-name (REPLAY1: recorded as "[child]"). The first is the screen a
-         therapy answer lands on, so it is never recorded (replayHold). The
-         words are defaults for Travis and Rachel to change. -->
-    <div class="step sell" data-step="problem">
-      <h1 class="qh" id="problemTitle" tabindex="-1">Speech homework is hard at home.</h1>
-      <p class="muted sell-line">Worksheets and flashcards turn into a fight. Kids practice when it feels like play.</p>
-    </div>
-    <!-- one painted Home card of the age group's first game, the one setup
-         hands the child (Feed Echo for ages 2–4, Fruit Slice from 5 or with no
-         age): decoration, the words say it all -->
-    <div class="step sell" data-step="alone">
-      <h1 class="qh" id="aloneTitle" tabindex="-1"><span class="ph-name" id="aloneName">Your child</span> plays on their own</h1>
-      <p class="muted sell-line">Echo says a word. <span class="ph-name" id="aloneName2">Your child</span> says it out loud, and that&rsquo;s how the game moves. Just hand over the phone.</p>
-      <div class="sell-pic" aria-hidden="true"><img id="alonePic" alt="" width="768" height="432" decoding="async" /></div>
-    </div>
-    <!-- the age group's playable games, read from the catalog Home reads
-         (Sona.activityLibrary): never a Coming soon game, never a typed list;
-         both groups when no age was given. Every one where the price follows
-         (the trial opens them all); only the ones this phone opens where no
-         price can follow (the website, an app with no purchase plugin). No
-         "Free" or "Premium" here: since trial first no surface tells a family
-         something stays free. -->
-    <div class="step sell" data-step="games">
-      <h1 class="qh" id="gamesTitle" tabindex="-1">Games <span class="ph-name" id="gamesName">your child</span> will play</h1>
-      <div class="sell-grid" id="gamesGrid"></div>
-      <p class="muted sell-line">Saying words out loud is how every game is played.</p>
-    </div>
-
-    <!-- buddy -->
-    <div class="step" data-step="buddy">
-      <div class="qh">Pick your buddy</div>
-      <p class="muted">You can change this anytime.</p>
-      <div class="bgrid" id="obBuddies"></div>
-    </div>
-
-    <!-- interests (themes the games + daily practice) -->
-    <div class="step" data-step="interests">
-      <div class="qh">What does <span class="ph-name" id="intName">your child</span> love? <svg viewBox="0 0 64 64" style="width:20px;height:20px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></div>
-      <p class="muted">We wrap their practice sounds in what they love — so the games feel made just for them. Pick one or a few.</p>
-      <div class="bgrid" id="obInterests"></div>
-    </div>
-
     <!-- sounds -->
     <div class="step" data-step="sounds">
-      <div class="qh">Pick your sounds</div>
-      <p class="muted">Choose your practice sounds.</p>
+      <div class="qh">Which sounds?</div>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
       <div id="obExploreOption">
         <button type="button" class="skip" id="obExploreSounds">Not sure? Pick all sounds</button>
@@ -301,41 +300,38 @@
       <p class="muted sound-help">Sona practices — it doesn't test or diagnose.</p>
     </div>
 
-    <!-- HOW MANY DAYS A WEEK (Travis, 5 Oct 2026: "choose whether they want
-         to practice three days a week or five days a week or every day"; it
-         took the place of "How does practice go at home now?"). One tap, as
-         the question before it. Unlike that one it is a real setting: the
-         pick is the child's weekly goal (profile.weeklyGoal), the one
-         Settings shows, and Skip leaves that goal as it was. How much
-         practice to ask for is Rachel's to rule on. -->
-    <div class="step" data-step="goal">
-      <h1 class="qh" id="goalTitle" tabindex="-1">How many days a week will you practice?</h1>
-      <p class="muted ask-help">Pick what fits real life. You can change it in Settings.</p>
-      <div class="ask" id="obGoal" role="group" aria-labelledby="goalTitle">
-        <button type="button" class="ask-pick" data-val="3" aria-pressed="false">3 days a week</button>
-        <button type="button" class="ask-pick" data-val="5" aria-pressed="false">5 days a week</button>
-        <button type="button" class="ask-pick" data-val="7" aria-pressed="false">Every day</button>
+    <!-- HOW LONG EACH DAY? (Travis, 22 Oct 2026: "more so like how many
+         minutes per day"; 5, 10 or 15). It took the place of "How many days a
+         week will you practice?". One tap, or Skip. A real setting: the pick
+         is the child's daily goal in reps (MINUTE_REPS below: 5 minutes is
+         the 30 reps every family had by default), the one Home's goal and
+         Settings show, and the minutes are kept beside it. Skip leaves both
+         as they were; the days a week stay the profile's (4 for a family
+         never asked). How much practice a family is asked for is Rachel's to
+         rule on, and so is that table. -->
+    <div class="step" data-step="minutes">
+      <h1 class="qh" id="minutesTitle" tabindex="-1">How long each day?</h1>
+      <div class="ask ask-big" id="obMinutes" role="group" aria-labelledby="minutesTitle">
+        <button type="button" class="ask-pick" data-val="5" aria-pressed="false">5 min</button>
+        <button type="button" class="ask-pick" data-val="10" aria-pressed="false">10 min</button>
+        <button type="button" class="ask-pick" data-val="15" aria-pressed="false">15 min</button>
       </div>
-      <button type="button" class="skip ask-skip" id="goalSkip">Skip</button>
+      <button type="button" class="skip ask-skip" id="minutesSkip">Skip</button>
     </div>
 
     <!-- THE EMAIL COMES BEFORE THE PRICE (Travis, 13 Oct 2026: "also move
-         the email box before the price"). It sat on the hand-off, after the
-         price, so a parent who closed the price was never asked and Sona
-         could never write to them. Its own step, not a box on the ready
-         screen: there it pushed Continue off a small phone and put the
-         keyboard over Rachel's block. Optional (empty or Skip go on), asked
-         once per family and only while the household has no parent email,
-         and not one of the four questions (no progress segment). Travis's
+         the email box before the price"). Optional (empty or Skip go on),
+         asked once per family and only while the household has no parent
+         email, and not one of the questions (no progress segment). Travis's
          consent line is on screen before anything is sent; the address is
-         posted once, by saveSetup(), when the parent leaves the ready
-         screen. No child's name on this screen, so none can ride along.
+         posted once, by saveSetup(), when the parent leaves the ready screen
+         (or the reminder after it). No child's name on this screen, so none
+         can ride along.
          THE WEEKLY PROGRESS REPORT (Travis, 15 Oct 2026: "i want the setup
-         page to say get the weekly progress report", and no "Optional.
-         Rachel's tips…" line under it). The heading is the ask, and it is
-         true: an address given here sets profile.weeklyReport, and the phone
-         then sends a few numbers a week for the report (sona.js REPORT1,
-         lib/report.ts). The label still says it is optional. -->
+         page to say get the weekly progress report"). The heading is the
+         ask, and it is true: an address given here sets
+         profile.weeklyReport, and the phone then sends a few numbers a week
+         for the report (sona.js REPORT1, lib/report.ts). -->
     <div class="step" data-step="updates">
       <h1 class="qh" id="updTitle" tabindex="-1">Get the weekly progress report</h1>
       <label class="field setup-label" for="updEmail">Your email (optional)</label>
@@ -345,55 +341,59 @@
       <button type="button" class="skip ask-skip" id="updSkip">Skip</button>
     </div>
 
-    <!-- "<NAME>'S PRACTICE IS READY" (5 Oct 2026). It repeats back what the
-         parent picked (the name, the age group if one was given, the sounds)
-         and says nothing they did not tell us: never the word "plan", a
-         recommendation, a result or an age norm, because nothing in Sona is
-         an evaluation. Under "About Sona", apart from the child's picks, sit
-         one sentence about Sona for each question answered, and who built
-         it: Rachel's photo and Travis's line, word for word (1 Oct 2026:
-         "Built with Rachel, MS, CF-SLP, a pediatric speech-language
-         pathologist in her clinical fellowship"). Her own screen, which sat
-         right before the microphone from 29 Sep, left the parent path for
-         this block; every family on the parent path sees it, the browser
-         clinician setup never does. This screen's Continue is where the
-         profile is saved. It replaced the 2-second "Building…" beat for
-         parents. -->
-    <!-- ph-no-capture (REPLAY1): this screen repeats the speech therapy
+    <!-- "<NAME>'S PRACTICE IS READY!" (5 Oct 2026; Echo cheering since 22 Oct).
+         It repeats back what the parent picked (the age group if one was
+         given, the sounds, the minutes a day) and says nothing they did not
+         tell us: never the word "plan", a recommendation, a result or an age
+         norm, because nothing in Sona is an evaluation. Under it, one true
+         sentence about Sona for the therapy answer, and the line that Sona
+         does not test or diagnose. Rachel has her own screen since 22 Oct
+         2026. Where no reminder screen follows, this screen's Continue is
+         where the profile is saved.
+         ph-no-capture (REPLAY1): this screen repeats the speech therapy
          answer (#readyLines), and its size alone would tell it, so no
          recording ever holds it; recording is also off while it shows -->
     <div class="step ph-no-capture" data-step="ready">
+      <div class="ready-echo" aria-hidden="true"><i class="spark spark-a"></i><i class="spark spark-b"></i><i class="spark spark-c"></i><img src="/assets/crafted/echo-cheer.webp" alt="" /></div>
       <h1 class="qh" id="readyTitle" tabindex="-1"></h1>
       <ul class="ready-chips" id="readyChips" aria-label="What you told us"></ul>
-      <p class="muted ready-note">You can change sounds anytime in Settings.</p>
-      <section class="ready-about" aria-labelledby="readyAboutHead">
-        <h2 class="ready-kicker" id="readyAboutHead">About Sona</h2>
-        <ul class="ready-lines" id="readyLines" hidden></ul>
-        <div class="ready-rachel">
-          <img class="ready-rachel-photo" src="/assets/rachel-wardrop-profile.jpg" width="112" height="112" alt="Rachel Wardrop" />
-          <p class="ready-rachel-line" id="readyRachel">Built with Rachel, <span class="nobr">MS, CF-SLP</span>, a pediatric <span class="nobr">speech-language</span> pathologist in her clinical fellowship.</p>
-        </div>
-        <p class="muted ready-hedge">Sona practices — it doesn't test or diagnose.</p>
-      </section>
+      <ul class="ready-lines" id="readyLines" hidden></ul>
+      <p class="muted ready-hedge">Sona practices — it doesn't test or diagnose.</p>
+    </div>
+
+    <!-- A REMINDER BEFORE THE FREE TRIAL ENDS (Travis, 22 Oct 2026: "can we
+         add push notifications and have that be a step in the onboarding
+         where we ask them to turn it on to notify them a day before their
+         trial ends"). Only in an iPhone build that can set one
+         (Sona.notifyAvailable), only while iOS has never been asked
+         (Sona.notifyState "prompt") and only where the price follows. "Turn
+         on reminders" opens iOS's own Allow box; either answer, or "Not now",
+         goes on to the price, and nothing is set here: the reminder is set
+         only once a free trial really starts (sona.js NOTIFY1). Leaving this
+         screen is leaving setup's questions: the profile is saved then. The
+         words are Travis's and Rachel's to change. -->
+    <div class="step" data-step="remind">
+      <h1 class="qh" id="remindTitle" tabindex="-1">Want a reminder before your free trial ends?</h1>
+      <p class="muted remind-line">One notification, the day before.</p>
+      <button type="button" class="btn remind-yes" id="remindYes">Turn on reminders</button>
+      <button type="button" class="remind-no" id="remindNo">Not now</button>
     </div>
 
     <!-- The permission belongs to the grown-up's tap, before the handoff. -->
     <div class="step" data-step="mic">
-      <div class="qh">Let Echo hear you</div>
-      <p class="muted">Turn on the mic so Echo can hear <span class="ph-name" id="micName">your child</span>.</p>
-      <p class="muted" id="micPromise" style="margin-top:14px;font-size:13px;line-height:1.55;"></p>
+      <div class="mic-echo" aria-hidden="true"><img src="/assets/crafted/echo-listen.webp" alt="" /></div>
+      <div class="qh" id="micTitle">Let Echo hear <span class="ph-name" id="micName">your child</span></div>
+      <p class="muted" id="micPromise"></p>
       <p id="micStatus" role="status" aria-live="polite"></p>
       <button type="button" class="skip" id="micNotNow">Not now</button>
     </div>
-
-    <!-- daily goal -->
 
     <!-- The child takes over only when the grown-up is ready. No email box
          here since 13 Oct 2026: it comes before the price, on its own step. -->
     <div class="step" data-step="achieve">
       <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span class="ph-name" id="achName">your child</span>!</div>
-      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
-      <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
+      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-wave.webp" alt="" /></div>
+      <div id="obSlpCred" hidden></div>
     </div>
 
     <!-- slp -->
@@ -437,7 +437,7 @@
            free now is free for every family, link or not. -->
       <p class="muted">Your email creates your clinician account — the code and family key that connect families to your dashboard, which shows how they are practicing. Daily practice and free games are free for every family. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:12px;" />
-      <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
+      <p id="emErr" style="display:none;font-weight:800;font-size:13px;margin-top:8px;"></p>
       <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
       <!-- The Practice Board line (11 Oct 2026) speaks of it only as something
            Sona may offer, and says what is true for THIS reader: a phone
@@ -452,11 +452,14 @@
   <div class="obfoot">
     <div class="inner">
       <button class="skip" id="backBtn" style="display:none;">← Back</button>
-      <button class="btn" id="nextBtn" style="flex:1;">Let's go!</button>
+      <button class="btn" id="nextBtn" style="flex:1;">Get started</button>
     </div>
   </div>
 
   <script src="/sona.js"></script>
+  <!-- Echo's line on "Hear Echo" (the reel): SayIt.line fetches it once and
+       keeps it in the phone's own voice cache, the one the games share. -->
+  <script src="/arcade-sayit.js"></script>
   <script>
     // THE NAME STEP IS SIZED BY THE PHONE, NEVER BY THE KEYBOARD (15 Oct
     // 2026: "the onboard feels jumpy especially on the page where i put the
@@ -562,16 +565,31 @@
       return true;
     })();
     var p = Sona.getProfile();
-    // AFTER THE PRICE (5 Oct 2026). Where Sona can sell, the ready screen's
-    // Continue saves the profile and leaves for the price, and a buyer comes
-    // back to THIS page for the microphone and the hand-off. A tab-only marker
-    // (Sona.setupAfter) says so. It picks a screen and grants nothing: whether
-    // a family still owes the price is read from Sona.trialFirst() each time.
+    // AFTER THE PRICE (5 Oct 2026). Where Sona can sell, leaving the ready
+    // screen (or the reminder screen after it) saves the profile and goes to
+    // the price, and a buyer comes back to THIS page for the microphone and
+    // the hand-off. A tab-only marker (Sona.setupAfter) says so. It picks a
+    // screen and grants nothing: whether a family still owes the price is
+    // read from Sona.trialFirst() each time.
     var AFTER=false; try{ AFTER=!!(p.onboarded&&Sona.setupAfter&&Sona.setupAfter()); }catch(e){}
     var SLOT=""; try{ Sona.kids().forEach(function(k){ if(k.active) SLOT=k.slot||""; }); }catch(e){}   // "" is the first child
     // saved: the profile is real (no Back into the questions, no draft).
     // leaving: on the way to the price, or asking the store first.
     var saved=false, leaving=false, wallP=null, seenSteps={};
+    // What a child may love (22 Oct 2026), and the games each one fits: the
+    // games screen shows the fitting ones first. Ids, never words, so a
+    // profile, a draft and a recording hold no free text. The pairs are
+    // defaults for Travis to change.
+    var INTERESTS=["sports","music","dinosaurs","animals","space","building","food"];
+    var INTEREST_GAMES={sports:["hoops","soccer"],music:["tiles"],dinosaurs:["dino"],animals:["run","feed"],space:["rise","glide","bubbles"],building:["stack"],food:["slice","feed"]};
+    // HOW LONG EACH DAY (22 Oct 2026): the minutes a parent picks, as the
+    // daily goal in reps (about 6 a minute: 5 minutes is the 30 reps that
+    // were every family's default). Rachel's table to change, and hers to
+    // rule on where it bites: one table for every age, so a 2-4 year old
+    // can be set to 90 reps a day (about 18 Feed Echo or Bubble Pop rounds
+    // before the chest opens). A second child is not asked and keeps 30
+    // (Travis's call whether to ask).
+    var MINUTE_REPS={"5":30,"10":60,"15":90};
     var draft = {
       childName: p.childName || "",
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
@@ -583,7 +601,9 @@
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
-      interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
+      // only this list's ids: an older profile's story themes ("dragons") are
+      // kept on the profile and never shown here
+      interests: (p.interests && p.interests.length) ? p.interests.filter(function(i){return INTERESTS.indexOf(i)>-1;}) : [],
       // WHY they chose the general path, when they said so. The CONTENT path
       // for "I'm not sure" is the play path — mode stays "play", because five
       // other files read mode === "play" and a third value would quietly file
@@ -591,22 +611,19 @@
       // that option exists to avoid. This is only the reason, kept for the
       // funnel: how many parents arrive not knowing where to start.
       pathReason: p.pathReason || "",
-      // childAge was assigned further down, after the draft literal, which put
-      // it outside anything that walks the draft's own keys — including the
-      // restore below, which silently dropped it. Declared here so the object
-      // is the whole scratchpad, not most of it.
       childAge: p.childAge ? String(p.childAge) : "",
-      // The two one-tap answers (an id from Sona.SETUP_WHY / SETUP_HOME, or
-      // "" for a skip). Never seeded from the profile or from the saved
-      // household answers: they are asked once, and no profile holds them.
-      therapy: "", goal: "",
+      // The two one-tap answers (an id from Sona.SETUP_THERAPY, a minutes
+      // value, or "" for a skip). Never seeded from the profile or from the
+      // saved household answers: they are asked once, and no profile holds
+      // the first.
+      therapy: "", minutes: "",
     };
 
     // PARTIAL SETUP SURVIVES AN INTERRUPTION. draft lived in memory only, so a
     // phone call, a locked screen or a stray back-swipe at step seven threw
     // away everything a parent had typed and started them at the top. It is
-    // written on every step and cleared the moment the profile is saved (the
-    // ready screen's Continue) — it is a scratchpad, never a profile, and
+    // written on every step and cleared the moment the profile is saved
+    // (leaving the ready screen) — it is a scratchpad, never a profile, and
     // nothing reads it but this page.
     var DRAFTKEY = "sona.obdraft.v1";
     (function () {
@@ -621,13 +638,14 @@
         // An explicit list, not Object.keys(held): this reads a value off
         // disk, and a draft is not allowed to introduce fields of its own.
         ["childName","childAge","character","role","mode","focusSounds",
-         "slpEvaluated","goals","email","interests","pathReason","therapy","goal"].forEach(function (k) {
+         "slpEvaluated","goals","email","interests","pathReason","therapy","minutes"].forEach(function (k) {
           if (held[k] !== undefined && held[k] !== null) draft[k] = held[k];
         });
       } catch (e) {}
     })();
     // …and an answer is one of the fixed ids, or nothing
-    if((Sona.SETUP_THERAPY||[]).indexOf(draft.therapy)<0)draft.therapy=""; if(["3","5","7"].indexOf(draft.goal)<0)draft.goal="";
+    if((Sona.SETUP_THERAPY||[]).indexOf(draft.therapy)<0)draft.therapy=""; if(!MINUTE_REPS.hasOwnProperty(draft.minutes))draft.minutes="";
+    draft.interests=(Array.isArray(draft.interests)?draft.interests:[]).filter(function(i,n,a){return INTERESTS.indexOf(i)>-1&&a.indexOf(i)===n;});
     // A restored clinician draft must not start clinician setup in the family
     // app. (Not on the way back from the price: a clinician who set the app
     // up for a child is role "slp" in the saved profile, and must stay one or
@@ -641,34 +659,79 @@
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
     // Parents choose sounds directly, or explore the existing all-sounds path.
-    // Clinicians keep their separate browser-only setup. The two one-tap
-    // questions are asked once per family and never of a clinician: Settings
-    // → Add a child sends a returning parent back through setup, and the
-    // second child goes from the name to the sounds to the ready screen.
-    // The email step ("updates", 13 Oct 2026) rides with them, and only while
-    // the household has no parent email (Sona.parentEmail): never twice.
+    // Clinicians keep their separate browser-only setup. The questions are
+    // asked once per family and never of a clinician: Settings → Add a child
+    // sends a returning parent back through setup, and the second child goes
+    // from the name to the sounds to the ready screen. The email step
+    // ("updates", 13 Oct 2026) rides with them, and only while the household
+    // has no parent email (Sona.parentEmail): never twice.
     // ONE array, rewritten in place: four suites hold ORDER===ORDER_PARENT.
     var SECOND=false; try{ SECOND=Sona.kids().length>1; }catch(e){}
     var ASKED=false;  try{ ASKED=!!(Sona.setupAsks&&Sona.setupAsks().asked); }catch(e){}
     var ORDER_PARENT=[];
-    // The three screens that sell Sona (19 Oct 2026) follow the therapy
-    // question, and only for a family not set up yet: a child already set up
-    // walking setup again (Back from the first game) is not sold to again.
-    var SELL_STEPS=["problem","alone","games"];
+    // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the
+    // games playing, Rachel, then (once the name is in) what the child loves
+    // and the games they will love. Only for a family not set up yet: a child
+    // already set up walking setup again (Back from the first game) is not
+    // sold to again.
+    var SELL_FIRST=["problem","reel","rachel"],SELL_AFTER=["interests","games"];
+    // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
+    // the iPhone can set a reminder, iOS has never been asked, and the price
+    // follows (remindMay: what the page knows at once, and what the order is
+    // built from). It asks "Want a reminder before your free trial ends?",
+    // so it is shown only to a family the store says WILL be offered free
+    // days (remindDue, read as the ready screen is left): an Apple ID that
+    // already had the free days (a reinstall, a second iPad) is charged
+    // today, and must never be told about a trial it will not get. The
+    // store's answer is asked as the ready screen shows (remindAsk, below);
+    // no answer by the time the parent leaves the ready screen means no
+    // reminder screen: it is never asked on a guess. A store that found a
+    // purchase meanwhile skips it too (trialFirst is then false). Asking
+    // only such a family (rather than words that assume no trial) is a
+    // default Travis did not pick: his call to change.
+    function remindMay(){try{return draft.role!=="slp"&&!!(Sona.notifyAvailable&&Sona.notifyAvailable()&&Sona.notifyState&&Sona.notifyState()==="prompt"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
+    // the store's Plan (Sona.storePlan), once it has answered; null until then
+    var remindPlan=null,remindP=null,REMIND_WAIT_MS=2500;
+    // A free trial for THIS buyer, on the row the price screen picks as it
+    // opens (the yearly row when the store offers it, else the monthly one):
+    // storePlan's "free" is a product with free days AND a buyer Apple has not
+    // called ineligible (a definite "not eligible" is "paid": charged today).
+    function remindFree(plan){try{var pick=plan&&(plan.year||plan);return !!(pick&&pick.state==="free"&&pick.free);}catch(e){return false;}}
+    function remindDue(){return remindMay()&&remindFree(remindPlan);}
+    // Asked ONCE, as the ready screen shows (beside wallAsk): the store's plan
+    // and, where sona.js has it (NOTIFY1), iOS's own answer about
+    // notifications (Sona.notifyRefresh: notifyState alone is a guess on a
+    // page that has not heard from iOS yet). → a Promise that resolves once
+    // both have answered, or REMIND_WAIT_MS (2.5 s, setupWall's bound) after
+    // the ask, whichever is first; never rejects. A plan that answers later
+    // (or changes: storePlan's onLate, a late "not eligible") is still kept.
+    // Not asked at all, and not remembered, when no reminder may follow.
+    function remindAsk(){
+      if(remindP)return remindP;
+      if(!remindMay()||!Sona.storePlan)return Promise.resolve();
+      remindP=new Promise(function(done){
+        var left=2,t=setTimeout(done,REMIND_WAIT_MS);
+        function one(){if(--left<=0){clearTimeout(t);done();}}
+        function heard(pl){if(pl&&typeof pl==="object")remindPlan=pl;}
+        try{Promise.resolve(Sona.storePlan({onLate:heard})).then(heard,function(){}).then(one);}catch(e){one();}
+        try{if(!Sona.notifyRefresh)one();else Promise.resolve(Sona.notifyRefresh()).then(null,function(){}).then(one);}catch(e){one();}
+      });
+      return remindP;
+    }
     function setParentOrder(){
       var asks=!SECOND&&!ASKED&&draft.role!=="slp";   // once per family, never of a clinician
       var mail=false;try{mail=asks&&!(Sona.parentEmail&&Sona.parentEmail());}catch(e){}
       var sell=asks&&!p.onboarded;
-      var o=asks?["welcome","name","therapy"].concat(sell?SELL_STEPS:[],["sounds","goal"],mail?["updates"]:[],["ready","mic"])
+      var o=asks?["welcome"].concat(sell?SELL_FIRST:[],["name"],sell?SELL_AFTER:[],["therapy","sounds","minutes"],mail?["updates"]:[],["ready"],sell&&remindMay()?["remind"]:[],["mic"])
                 :["welcome","name","sounds","ready","mic"];
       ORDER_PARENT.length=0; Array.prototype.push.apply(ORDER_PARENT,o);
     }
     setParentOrder();
     // SETUP IS FOR PARENTS (Travis, 5 Oct 2026: "I want to take out the button
     // of who's setting up Sona because it's just for the parents"). The
-    // "Who's setting up Sona?" screen is gone: the hello goes straight to the
-    // child's name. A speech therapist signs up at speaksona.com/for-slps;
-    // the clinician's own setup below is still here for a browser that opens
+    // "Who's setting up Sona?" screen is gone: the hello goes straight on. A
+    // speech therapist signs up at speaksona.com/for-slps; the clinician's
+    // own setup below is still here for a browser that opens
     // /onboarding.html?slp=1 (never the iPhone app, which has no clinician
     // screens: NATIVE.md), so that path and its tests are not lost.
     // (In the app the same address gives the old in-app variant: a child set up
@@ -687,31 +750,33 @@
     // The marker is for the parent order only, and a marker that is not valid
     // for this child, this tab and this profile is thrown away.
     if(AFTER&&ORDER!==ORDER_PARENT)AFTER=false; if(!AFTER){try{if(Sona.setupAfterClear)Sona.setupAfterClear();}catch(e){}}
+    // Echo's bubble, where he stands beside a question (onboarding-crafted.css
+    // says which screens show him). The words are Travis's to change.
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
-      who:     "Hi! I'm Echo!",
       name:    "Nice to meet you!",
       therapy: "I'm glad you're here!",
-      problem: "Let me show you how it works!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
       sounds:  "Let's pick our sounds!",
-      goal: "Whatever you pick, I\u2019ll keep the week on track!",
       updates: "Want a weekly report?",
+      remind:  "I'll give you a heads-up!",
       achieve: "Here's what's ahead!",
       slp:     "Almost done!",
       email:   "One last thing!",
       mic:     "Let's hear you!",
     };
-    var CTA = { email: "Continue", updates: "Continue", mic: "Turn on Echo's ears" };
+    var CTA = { welcome: "Get started", email: "Continue", updates: "Continue", mic: "Turn on Echo's ears" };
     var idx = ORDER === ORDER_SLP ? ORDER.indexOf("name") : 0;
 
     var segEl = document.getElementById("seg");
-    // A parent's QUESTIONS get a segment each: four for a first child (name,
-    // therapy, sounds, goal), two for a second child or a clinician in the app.
-    // The hello, "who", the three screens that sell, the optional email
-    // step, the ready screen, the microphone and the hand-off take none. The browser clinician keeps a segment a step.
-    var ASKS={name:1,therapy:1,sounds:1,goal:1};
+    // A parent's QUESTIONS get a segment each: five for a first child (name,
+    // what they love, therapy, sounds, minutes), four for a child walking
+    // setup again, two for a second child or a clinician in the app. The
+    // hello, the screens that sell, the optional email step, the ready
+    // screen, the reminder, the microphone and the hand-off take none. The
+    // browser clinician keeps a segment a step.
+    var ASKS={name:1,interests:1,therapy:1,sounds:1,minutes:1};
     function askKeys(){return ORDER.filter(function(k){return ASKS[k];});}
     function paintSeg(){segEl.innerHTML="";var count=ORDER===ORDER_PARENT?askKeys().length:ORDER.length-1;for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i"));}
     function paintProgress(key){
@@ -726,9 +791,11 @@
     document.querySelectorAll(".step").forEach(function(s){ steps[s.dataset.step]=s; });
     var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
-    var micBusy=false, micGeneration=0, finished=false;
+    var micBusy=false, micGeneration=0, finished=false, asking=false;
     document.getElementById("micPromise").textContent=Sona.MIC_PROMISE||"";
-    function updateNext(){nextBtn.disabled=micBusy||leaving||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy||leaving;}
+    // asking: an answer from outside the page is awaited (iOS's Allow box,
+    // or the store's word before the reminder screen)
+    function updateNext(){nextBtn.disabled=micBusy||leaving||asking||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy||leaving||asking;}
     function stopSetupTracks(stream){try{if(stream)stream.getTracks().forEach(function(track){track.stop();});}catch(e){}}
     function cancelSetupMic(){micGeneration++;micBusy=false;if(!finished)updateNext();}
     function requestSetupMic(){
@@ -767,14 +834,14 @@
     }
     document.getElementById("micNotNow").onclick=function(){if(finished)return;cancelSetupMic();afterMic();};
     // The microphone is the last step before the hand-off and the first game.
-    // By now the profile is saved (the ready screen's Continue), so finish()
+    // By now the profile is saved (leaving the ready screen), so finish()
     // only shows the hand-off.
     function afterMic(){if(finished)return;if(idx<ORDER.length-1){idx++;render();}else finish();}
     if(Sona.onBackground)Sona.onBackground(cancelSetupMic);
     else {document.addEventListener("visibilitychange",function(){if(document.hidden)cancelSetupMic();});window.addEventListener("pagehide",cancelSetupMic);}
 
     function mascotMarkup(id) {
-      if (id === "leo") return '<img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      if (id === "leo") return '<img src="/assets/crafted/echo-welcome.webp" alt="Echo" />';
       return Sona.buddyMarkup(id, 64);
     }
 
@@ -796,11 +863,6 @@
       var first=bg.querySelector(".bopt:not(.locked)");
       if(first){ first.classList.add("on"); draft.character=mine[0].id; }
     }
-    // kit icons replace the last chrome emoji (fix pack 1b/1e) — the emoji in
-    // the HTML stays as the fallback if the icon kit is ever missing
-    (function(){ try{
-      document.querySelectorAll("[data-ic]").forEach(function(n){ var m=Sona.icon(n.dataset.ic,26); if(m) n.innerHTML=m; });
-    }catch(e){} })();
     (function(){
       var el=document.createElement("div"); el.className="bopt";
       el.innerHTML='<span class="be">'+((window.Sona&&Sona.icon&&Sona.icon("star",30))||"⭐")+'</span><span class="bn">Surprise me</span>';
@@ -813,44 +875,25 @@
       };
       bg.appendChild(el);
     })();
-    // Which mascot stands beside the bubble is decided by the STEP, in
-    // render() — see mascotForStep(). It used to be painted once at load from
-    // draft.character, which is Pip the fox for anyone who has not chosen, so
-    // a fox delivered Echo's own "Hi! I'm Echo!" — the two-mascots-in-one-flow
-    // problem the Aug 10 review flagged. Profile state can't decide it either:
-    // DEFAULT_PROFILE.character is "fox", so a family who never reached the
-    // buddy step is indistinguishable from one who picked Pip.
 
-    // interests (themes for AI Story Adventures). Keep in sync with today.html / story.html.
-    var INTEREST_OPTS = [
-      {id:"dragons",e:"🐉"},{id:"space",e:"🚀"},{id:"dinosaurs",e:"🦕"},{id:"mermaids",e:"🧜‍♀️"},
-      {id:"puppies",e:"🐶"},{id:"kittens",e:"🐱"},{id:"unicorns",e:"🦄"},{id:"race cars",e:"🏎️"},
-      {id:"pirates",e:"🏴‍☠️"},{id:"jungle animals",e:"🐵"},{id:"robots",e:"🤖"},{id:"superheroes",e:"🦸"}
-    ];
-    var selInterests = new Set(draft.interests);
-    var ig = document.getElementById("obInterests");
-    // designed interest stickers (board §10, ob-* defs); emoji stays the fallback
-    var INTEREST_ART={
-      "dragons":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-dragon\"><path d=\"M20 20 12 7 27 13Z\" fill=\"#ffe9c9\"></path><path d=\"M44 20 52 7 37 13Z\" fill=\"#ffe9c9\"></path><path d=\"M28 12l4-7 4 7Z\" fill=\"#2e8f54\"></path><circle cx=\"32\" cy=\"36\" r=\"20\" fill=\"#43b96e\"></circle><ellipse cx=\"32\" cy=\"44\" rx=\"11\" ry=\"8\" fill=\"#a8e8bd\"></ellipse><circle cx=\"28\" cy=\"43\" r=\"1.8\" fill=\"#2e8f54\"></circle><circle cx=\"36\" cy=\"43\" r=\"1.8\" fill=\"#2e8f54\"></circle><path d=\"M26 49q6 4 12 0\" stroke=\"#2e8f54\" stroke-width=\"2.5\" fill=\"none\" stroke-linecap=\"round\"></path><ellipse cx=\"25\" cy=\"32\" rx=\"4.5\" ry=\"5.5\" fill=\"#fff\"></ellipse><circle cx=\"25.5\" cy=\"33\" r=\"2.2\" fill=\"#2b2a4a\"></circle><ellipse cx=\"39\" cy=\"32\" rx=\"4.5\" ry=\"5.5\" fill=\"#fff\"></ellipse><circle cx=\"38.5\" cy=\"33\" r=\"2.2\" fill=\"#2b2a4a\"></circle><circle cx=\"24\" cy=\"24\" r=\"2.4\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "space":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-rocket\"><path d=\"M20 42l-8 12 13-4Z\" fill=\"#ff5c5c\"></path><path d=\"M44 42l8 12-13-4Z\" fill=\"#ff5c5c\"></path><path d=\"M32 5c9 7 12 22 8 41H24c-4-19-1-34 8-41Z\" fill=\"#f0f0f5\"></path><path d=\"M32 5c5 4 8 10 9 17H23c1-7 4-13 9-17Z\" fill=\"#ff5c5c\"></path><circle cx=\"32\" cy=\"31\" r=\"6\" fill=\"#4db3f2\"></circle><circle cx=\"32\" cy=\"31\" r=\"6\" fill=\"none\" stroke=\"#d0d5dd\" stroke-width=\"2\"></circle><path d=\"M26 46q6 12 12 0-6 4-12 0Z\" fill=\"#ffb100\"></path><circle cx=\"27\" cy=\"15\" r=\"2.2\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "dinosaurs":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-dino\"><path d=\"M12 46q-7 0-8-8\" stroke=\"#63d6a3\" stroke-width=\"8\" fill=\"none\" stroke-linecap=\"round\"></path><path d=\"M42 44q3-20 8-28\" stroke=\"#63d6a3\" stroke-width=\"11\" fill=\"none\" stroke-linecap=\"round\"></path><circle cx=\"50\" cy=\"15\" r=\"7\" fill=\"#63d6a3\"></circle><rect x=\"16\" y=\"50\" width=\"6\" height=\"9\" rx=\"3\" fill=\"#3cae7d\"></rect><rect x=\"33\" y=\"50\" width=\"6\" height=\"9\" rx=\"3\" fill=\"#3cae7d\"></rect><ellipse cx=\"28\" cy=\"46\" rx=\"17\" ry=\"11\" fill=\"#63d6a3\"></ellipse><circle cx=\"24\" cy=\"44\" r=\"2.5\" fill=\"#3cae7d\"></circle><circle cx=\"33\" cy=\"48\" r=\"2\" fill=\"#3cae7d\"></circle><circle cx=\"39\" cy=\"42\" r=\"2\" fill=\"#3cae7d\"></circle><circle cx=\"52\" cy=\"14\" r=\"1.8\" fill=\"#2b2a4a\"></circle><circle cx=\"22\" cy=\"39\" r=\"2.4\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "mermaids":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-mermaid\"><circle cx=\"16\" cy=\"16\" r=\"2.5\" fill=\"#a5e3f5\"></circle><circle cx=\"46\" cy=\"10\" r=\"2.8\" fill=\"#a5e3f5\"></circle><circle cx=\"49\" cy=\"22\" r=\"2\" fill=\"#a5e3f5\"></circle><path d=\"M32 6q9 12 5 26l-5 9-5-9q-4-14 5-26Z\" fill=\"#4dc6b8\"></path><path d=\"M32 40q-4 12-15 15 8-11 10-17Z\" fill=\"#4dc6b8\"></path><path d=\"M32 40q4 12 15 15-8-11-10-17Z\" fill=\"#4dc6b8\"></path><path d=\"M25 22q7 5 14 0\" stroke=\"#2e9d92\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"></path><path d=\"M26 30q6 5 12 0\" stroke=\"#2e9d92\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"></path><circle cx=\"28\" cy=\"14\" r=\"2.2\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "puppies":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-puppy\"><ellipse cx=\"13\" cy=\"32\" rx=\"6.5\" ry=\"11\" fill=\"#8a5a2a\" transform=\"rotate(12 13 32)\"></ellipse><ellipse cx=\"51\" cy=\"32\" rx=\"6.5\" ry=\"11\" fill=\"#8a5a2a\" transform=\"rotate(-12 51 32)\"></ellipse><circle cx=\"32\" cy=\"36\" r=\"19\" fill=\"#e0a368\"></circle><circle cx=\"40\" cy=\"25\" r=\"5\" fill=\"#c9885a\"></circle><ellipse cx=\"32\" cy=\"45\" rx=\"10.5\" ry=\"7.5\" fill=\"#f7f3ee\"></ellipse><ellipse cx=\"32\" cy=\"41.5\" rx=\"3.6\" ry=\"2.8\" fill=\"#4a2c14\"></ellipse><path d=\"M28.5 49.5h7v2q-3.5 4-7 0Z\" fill=\"#ff8fa3\"></path><circle cx=\"25\" cy=\"32\" r=\"2.6\" fill=\"#3d2a1a\"></circle><circle cx=\"39\" cy=\"32\" r=\"2.6\" fill=\"#3d2a1a\"></circle><circle cx=\"19\" cy=\"40\" r=\"3\" fill=\"#ffb98a\"></circle><circle cx=\"45\" cy=\"40\" r=\"3\" fill=\"#ffb98a\"></circle><circle cx=\"25\" cy=\"24\" r=\"2.4\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "kittens":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-kitten\"><path d=\"M15 24 13 9l14 7Z\" fill=\"#f7f3ee\"></path><path d=\"M18 21l-1-8 7 3.5Z\" fill=\"#ffb9c8\"></path><path d=\"M49 24 51 9 37 16Z\" fill=\"#f7f3ee\"></path><path d=\"M46 21l1-8-7 3.5Z\" fill=\"#ffb9c8\"></path><circle cx=\"32\" cy=\"38\" r=\"18\" fill=\"#f7f3ee\"></circle><path d=\"M28 22v6M32 21v7M36 22v6\" stroke=\"#c3ccd8\" stroke-width=\"2.5\" stroke-linecap=\"round\"></path><circle cx=\"25\" cy=\"36\" r=\"2.6\" fill=\"#3d2a1a\"></circle><circle cx=\"39\" cy=\"36\" r=\"2.6\" fill=\"#3d2a1a\"></circle><path d=\"M29.5 42h5l-2.5 3.2Z\" fill=\"#ff8fa3\"></path><path d=\"M27 47q5 3.5 10 0\" stroke=\"#c3ccd8\" stroke-width=\"2\" fill=\"none\" stroke-linecap=\"round\"></path><line x1=\"10\" y1=\"38\" x2=\"20\" y2=\"39.5\" stroke=\"#c3ccd8\" stroke-width=\"2\" stroke-linecap=\"round\"></line><line x1=\"10\" y1=\"45\" x2=\"20\" y2=\"44\" stroke=\"#c3ccd8\" stroke-width=\"2\" stroke-linecap=\"round\"></line><line x1=\"54\" y1=\"38\" x2=\"44\" y2=\"39.5\" stroke=\"#c3ccd8\" stroke-width=\"2\" stroke-linecap=\"round\"></line><line x1=\"54\" y1=\"45\" x2=\"44\" y2=\"44\" stroke=\"#c3ccd8\" stroke-width=\"2\" stroke-linecap=\"round\"></line><circle cx=\"21\" cy=\"43\" r=\"3\" fill=\"#ffd6c9\"></circle><circle cx=\"43\" cy=\"43\" r=\"3\" fill=\"#ffd6c9\"></circle><circle cx=\"24\" cy=\"29\" r=\"2.2\" fill=\"#fff\" opacity=\".9\"></circle></g></svg>",
-      "unicorns":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-unicorn\"><path d=\"M32 3l5.5 17h-11Z\" fill=\"#ffd21c\"></path><path d=\"M28.2 14.5l7.6-1.4M29.8 9.5l4.6-.9\" stroke=\"#f0a800\" stroke-width=\"1.8\" stroke-linecap=\"round\"></path><path d=\"M20 22l-1-9 8 6Z\" fill=\"#f7f3ee\"></path><path d=\"M44 22l1-9-8 6Z\" fill=\"#f7f3ee\"></path><circle cx=\"32\" cy=\"38\" r=\"18\" fill=\"#f7f3ee\"></circle><circle cx=\"16\" cy=\"28\" r=\"5.5\" fill=\"#ff8fa3\"></circle><circle cx=\"13\" cy=\"37\" r=\"4.5\" fill=\"#c79bf0\"></circle><circle cx=\"48\" cy=\"28\" r=\"5.5\" fill=\"#a5e3f5\"></circle><circle cx=\"51\" cy=\"37\" r=\"4.5\" fill=\"#ff8fa3\"></circle><ellipse cx=\"32\" cy=\"47\" rx=\"9\" ry=\"6\" fill=\"#ffeef4\"></ellipse><circle cx=\"28.5\" cy=\"47\" r=\"1.7\" fill=\"#e59ab8\"></circle><circle cx=\"35.5\" cy=\"47\" r=\"1.7\" fill=\"#e59ab8\"></circle><circle cx=\"25\" cy=\"37\" r=\"2.6\" fill=\"#2b2a4a\"></circle><circle cx=\"39\" cy=\"37\" r=\"2.6\" fill=\"#2b2a4a\"></circle><circle cx=\"25\" cy=\"29\" r=\"2.2\" fill=\"#fff\" opacity=\".9\"></circle></g></svg>",
-      "race cars":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-racecar\"><line x1=\"4\" y1=\"26\" x2=\"14\" y2=\"26\" stroke=\"#b3b9c4\" stroke-width=\"2.5\" stroke-linecap=\"round\"></line><line x1=\"2\" y1=\"33\" x2=\"12\" y2=\"33\" stroke=\"#b3b9c4\" stroke-width=\"2.5\" stroke-linecap=\"round\"></line><rect x=\"50\" y=\"20\" width=\"9\" height=\"4\" rx=\"2\" fill=\"#d63a5a\"></rect><line x1=\"54\" y1=\"24\" x2=\"54\" y2=\"31\" stroke=\"#d63a5a\" stroke-width=\"2.5\"></line><path d=\"M6 44q0-6 7-7l9-1.5 6.5-8q1.5-2 4-2h8q2.5 0 3.5 2l3.5 8 8 1.5q6 1 6 7v1q0 3-3 3H9q-3 0-3-3Z\" fill=\"#ff5c5c\"></path><path d=\"M30 27l4.5-5.5h5l2.5 5.5Z\" fill=\"#cfeaff\"></path><rect x=\"10\" y=\"40\" width=\"44\" height=\"3\" fill=\"#fff\" opacity=\".85\"></rect><circle cx=\"26\" cy=\"35\" r=\"4.6\" fill=\"#fff\"></circle><text x=\"26\" y=\"38.5\" text-anchor=\"middle\" font-family=\"'Baloo 2'\" font-weight=\"800\" font-size=\"9\" fill=\"#ff5c5c\">1</text><circle cx=\"19\" cy=\"47\" r=\"6.5\" fill=\"#2b2a4a\"></circle><circle cx=\"19\" cy=\"47\" r=\"2.8\" fill=\"#b3b9c4\"></circle><circle cx=\"45\" cy=\"47\" r=\"6.5\" fill=\"#2b2a4a\"></circle><circle cx=\"45\" cy=\"47\" r=\"2.8\" fill=\"#b3b9c4\"></circle><circle cx=\"14\" cy=\"34\" r=\"2\" fill=\"#fff\" opacity=\".8\"></circle></g></svg>",
-      "pirates":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-pirate\"><rect x=\"12\" y=\"6\" width=\"4.5\" height=\"52\" rx=\"2.25\" fill=\"#b5875a\"></rect><path d=\"M16.5 10q19 5 38 0-4 11 0 22-19-5-38 0Z\" fill=\"#3d3d3d\"></path><circle cx=\"35\" cy=\"20\" r=\"6\" fill=\"#fff\"></circle><rect x=\"32.4\" y=\"25.5\" width=\"5.2\" height=\"3\" rx=\"1.5\" fill=\"#fff\"></rect><circle cx=\"33\" cy=\"19\" r=\"1.5\" fill=\"#3d3d3d\"></circle><circle cx=\"37.5\" cy=\"19\" r=\"1.5\" fill=\"#3d3d3d\"></circle><line x1=\"28\" y1=\"30.5\" x2=\"43\" y2=\"36.5\" stroke=\"#fff\" stroke-width=\"3\" stroke-linecap=\"round\"></line><line x1=\"43\" y1=\"30.5\" x2=\"28\" y2=\"36.5\" stroke=\"#fff\" stroke-width=\"3\" stroke-linecap=\"round\"></line><circle cx=\"23\" cy=\"15\" r=\"2\" fill=\"#fff\" opacity=\".35\"></circle></g></svg>",
-      "jungle animals":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-monkey\"><circle cx=\"13\" cy=\"32\" r=\"7\" fill=\"#b5875a\"></circle><circle cx=\"13\" cy=\"32\" r=\"3.2\" fill=\"#e0b98a\"></circle><circle cx=\"51\" cy=\"32\" r=\"7\" fill=\"#b5875a\"></circle><circle cx=\"51\" cy=\"32\" r=\"3.2\" fill=\"#e0b98a\"></circle><circle cx=\"32\" cy=\"36\" r=\"18\" fill=\"#b5875a\"></circle><circle cx=\"25\" cy=\"31\" r=\"7\" fill=\"#e0b98a\"></circle><circle cx=\"39\" cy=\"31\" r=\"7\" fill=\"#e0b98a\"></circle><ellipse cx=\"32\" cy=\"43\" rx=\"11\" ry=\"8\" fill=\"#e0b98a\"></ellipse><circle cx=\"25\" cy=\"31.5\" r=\"2.4\" fill=\"#2b2a4a\"></circle><circle cx=\"39\" cy=\"31.5\" r=\"2.4\" fill=\"#2b2a4a\"></circle><circle cx=\"29\" cy=\"42\" r=\"1.7\" fill=\"#8a5a2a\"></circle><circle cx=\"35\" cy=\"42\" r=\"1.7\" fill=\"#8a5a2a\"></circle><path d=\"M27 47q5 4 10 0\" stroke=\"#8a5a2a\" stroke-width=\"2.5\" fill=\"none\" stroke-linecap=\"round\"></path><circle cx=\"25\" cy=\"23\" r=\"2.2\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "robots":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-robot\"><line x1=\"32\" y1=\"12\" x2=\"32\" y2=\"20\" stroke=\"#9fb4d9\" stroke-width=\"3\"></line><circle cx=\"32\" cy=\"9\" r=\"3.5\" fill=\"#ff5c5c\"></circle><rect x=\"10\" y=\"28\" width=\"5\" height=\"12\" rx=\"2.5\" fill=\"#7d94bd\"></rect><rect x=\"49\" y=\"28\" width=\"5\" height=\"12\" rx=\"2.5\" fill=\"#7d94bd\"></rect><rect x=\"14\" y=\"20\" width=\"36\" height=\"30\" rx=\"8\" fill=\"#9fb4d9\"></rect><circle cx=\"24\" cy=\"33\" r=\"5\" fill=\"#fff\"></circle><circle cx=\"40\" cy=\"33\" r=\"5\" fill=\"#fff\"></circle><circle cx=\"24\" cy=\"33\" r=\"2.2\" fill=\"#2b2a4a\"></circle><circle cx=\"40\" cy=\"33\" r=\"2.2\" fill=\"#2b2a4a\"></circle><rect x=\"25\" y=\"42\" width=\"14\" height=\"3.5\" rx=\"1.75\" fill=\"#fff\" opacity=\".85\"></rect><circle cx=\"20\" cy=\"25\" r=\"2.2\" fill=\"#fff\" opacity=\".75\"></circle></g></svg>",
-      "superheroes":"<svg viewBox=\"0 0 64 64\" style=\"width:42px;height:42px\"><g id=\"ob-hero\"><path d=\"M32 5l19 6v15q0 17-19 27-19-10-19-27V11Z\" fill=\"#4db3f2\"></path><path d=\"M32 11l13.5 4.2V29q0 13-13.5 20-13.5-7-13.5-20V15.2Z\" fill=\"#2a8fd4\"></path><path d=\"M35.5 17l-10 14h6.5l-3 12 10.5-14h-6.5Z\" fill=\"#ffd21c\"></path><circle cx=\"24\" cy=\"13\" r=\"2.2\" fill=\"#fff\" opacity=\".8\"></circle></g></svg>"
-    };
-    INTEREST_OPTS.forEach(function(it){
-      var el=document.createElement("div");
-      el.className="bopt"+(selInterests.has(it.id)?" on":"");
-      el.innerHTML='<span class="be">'+(INTEREST_ART[it.id]||('<span style="font-size:34px;">'+it.e+'</span>'))+'</span><span class="bn" style="text-transform:capitalize;">'+it.id+'</span>';
-      el.onclick=function(){ Sona.sfx.tap(); if(selInterests.has(it.id)) selInterests.delete(it.id); else selInterests.add(it.id); el.classList.toggle("on"); };
-      ig.appendChild(el);
+    // What the child loves: any number of tiles, each a toggle. A tap writes
+    // the draft and nothing else.
+    var intHost=document.getElementById("obInterests");
+    function paintInterests(){intHost.querySelectorAll(".int-pick").forEach(function(b){b.setAttribute("aria-pressed",String(draft.interests.indexOf(b.dataset.val)>-1));});}
+    intHost.querySelectorAll(".int-pick").forEach(function(b){
+      b.onclick=function(){
+        if(finished||saved||ORDER[idx]!=="interests")return;
+        try{Sona.sfx.tap();}catch(e){}
+        var v=b.dataset.val,at=draft.interests.indexOf(v);
+        if(at>-1)draft.interests.splice(at,1);else draft.interests.push(v);
+        paintInterests();saveDraft();
+      };
     });
+    paintInterests();
+    document.getElementById("interestsSkip").onclick=function(){
+      if(finished||saved||leaving||ORDER[idx]!=="interests"||settling())return;
+      try{Sona.sfx.tap();}catch(e){}draft.interests=[];paintInterests();saveDraft();settle();idx++;render();
+    };
 
     // R starts selected; a parent can change it or pick all sounds ("Not sure? Pick all sounds").
     var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
@@ -864,9 +907,6 @@
       b.onclick=function(){Sona.sfx.tap();if(selSounds.has(s))selSounds.delete(s);else selSounds.add(s);b.classList.toggle("on",selSounds.has(s));b.setAttribute("aria-pressed",String(selSounds.has(s)));draft.mode="speech";draft.pathReason="";draft.focusSounds=Array.from(selSounds);saveDraft();updateNext();};
       sc.appendChild(b);
     });
-
-    // Weekly goal days: single select, default four.
-    var goalVal = String(Sona.goalDays ? Sona.goalDays() : (p.weeklyGoal || 4));
 
     // Skipping target selection keeps the existing general play order. It
     // does not assess the child or infer practice targets from their age.
@@ -883,7 +923,7 @@
       var slp=draft.role==="slp";
       try{
         var nq=document.querySelector('[data-step="name"] .qh');
-        if(nq) nq.textContent = slp ? "Which child is this for?" : "Who's practicing today?";
+        if(nq) nq.textContent = slp ? "Which child is this for?" : "Who's practicing?";
         var sq=document.querySelector('[data-step="slp"] .qh');
         if(sq) sq.textContent = slp ? "Goals for this child" : "Has your child seen a speech therapist?";
         var sw=document.getElementById("obSlp");
@@ -931,39 +971,26 @@
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
     var updEl=document.getElementById("updEmail"),updMsg=document.getElementById("updMsg"); updEl.value=draft.email;
 
-    // Echo hosts onboarding — every bubble is Echo speaking. The child's buddy
-    // takes the slot from the buddy step onward, which is the first moment the
-    // pick is theirs rather than a default.
-    // The buddy step is deferred now, so there is no point in the flow where
-    // the mascot should become the child's buddy: Echo hosts setup end to end,
-    // and Pip (the preselected default) shows up on Home where they can change
-    // it. indexOf("buddy") is -1 against both live orders, which would have
-    // made every step render the buddy — hence the explicit rule.
+    // Echo hosts setup end to end (the buddy step is in no order), so the
+    // mascot beside a question is always Echo.
     function mascotForStep(key){
       var seen = ORDER.indexOf("buddy") > -1 && ORDER.indexOf(key) >= ORDER.indexOf("buddy");
       var want = seen ? mascotMarkup(draft.character) : mascotMarkup("leo");
       if (leo.innerHTML !== want) leo.innerHTML = want;
     }
 
-    // Who is setting this up: the second screen's two answers (Travis, 1 Oct
-    // 2026; its own page since 2 Oct). Either goes straight on. A speech therapist in a browser gets the
-    // clinician setup; the iPhone app never opens clinician screens
-    // (NATIVE.md), so there they set the app up for a child the way a parent
-    // would, in a clinician's words ("Which child is this for?"), and are told
-    // their dashboard is on the web.
-
     // One true sentence ABOUT SONA per answer, never one about the child
     // (nothing in Sona is an evaluation). Each is a claim about what practice
     // with Sona is, so the words are Rachel's to change.
     // Three answers since 16 Oct 2026 (Travis: "add a no so there's yes, no,
-    // and then not yet"): t_no, which read "Not right now", reads "Not yet",
-    // and "No" (t_none) is new. Both say the same sentence.
+    // and then not yet"): t_no reads "Not yet", and "No" (t_none) says the
+    // same sentence.
     var READY_THERAPY={t_yes:"Sona is practice for the days between speech visits.",t_none:"Sona is practice you can do at home.",t_no:"Sona is practice you can do at home."};
     // A DOUBLE TAP NEVER LANDS ON THE NEXT SCREEN. A one-tap answer swaps the
     // screen under the finger, and the second tap of a double tap used to
     // answer a question the parent had not read yet (or, on the ready screen,
     // ask the phone for the microphone). EVERY tap that changes the step
-    // calls this first (therapy, goal, Continue, Back, Explore, ready → mic,
+    // calls this first (an answer, Continue, Back, Skip, Explore, ready → mic,
     // mic → hand-off): for 450 ms the steps and the footer take no tap
     // (onboarding-crafted.css).
     // Called again, it starts the half second again (whenRoomy() draws a
@@ -997,22 +1024,22 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,name:1,therapy:1,problem:1,alone:1,games:1,sounds:1,goal:1,updates:1,ready:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,problem:1,reel:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
-    // reason, the sounds, the goal or the profile.
+    // reason, the sounds or the profile.
     function wireAsk(key,hostId,skipId){
       var go=function(val){if(finished||saved||leaving||ORDER[idx]!==key)return;try{Sona.sfx.tap();}catch(e){}draft[key]=val;saveDraft();settle();idx++;render();};
       document.getElementById(hostId).querySelectorAll(".ask-pick").forEach(function(b){b.onclick=function(){go(b.dataset.val);};});
       document.getElementById(skipId).onclick=function(){go("");};
     }
-    wireAsk("therapy","obTherapy","therapySkip");wireAsk("goal","obGoal","goalSkip");
+    wireAsk("therapy","obTherapy","therapySkip");wireAsk("minutes","obMinutes","minutesSkip");
     // The email step's Skip: no address, box cleared, on to the ready screen.
     // Nothing is sent from this step at all (saveSetup() posts, once).
     document.getElementById("updSkip").onclick=function(){
       if(finished||saved||leaving||ORDER[idx]!=="updates"||settling())return;
-      draft.email="";updEl.value="";updMsg.textContent="";updEl.style.borderColor="";
+      draft.email="";updEl.value="";updMsg.textContent="";updEl.classList.remove("needed");
       try{Sona.sfx.tap();}catch(e){}saveDraft();settle();idx++;whenRoomy(render);
     };
     // The ready screen, built ONLY from what the parent gave us: textContent
@@ -1020,14 +1047,14 @@
     // question that was skipped, was not asked, or was a clinician's setup.
     function paintReady(){
       var nm=(nameEl.value||draft.childName||"").trim();
-      document.getElementById("readyTitle").textContent=nm?nm+"'s practice is ready":"Practice is ready";
+      document.getElementById("readyTitle").textContent=nm?nm+"'s practice is ready!":"Practice is ready!";
       var chips=document.getElementById("readyChips");chips.innerHTML="";
       function chip(t){var li=document.createElement("li");li.textContent=t;chips.appendChild(li);}
       var age=Number(draft.childAge);
       if(age>=2&&age<=4)chip("Ages 2–4");else if(age>=5&&age<=6)chip("Ages 5–6");else if(age>=7)chip("Ages 7+");
       var labels=Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;});
       chip(draft.mode==="play"?"Every sound, easiest first":(labels.length===1?"Sound: ":"Sounds: ")+labels.join(" · "));
-      if(draft.goal&&ORDER.indexOf("goal")>-1)chip(draft.goal==="7"?"Every day":draft.goal+" days a week");
+      if(ORDER.indexOf("minutes")>-1&&MINUTE_REPS[draft.minutes])chip(draft.minutes+" min a day");
       var lines=document.getElementById("readyLines");lines.innerHTML="";
       if(draft.role!=="slp")[["therapy",READY_THERAPY]].forEach(function(pr){
         var t=ORDER.indexOf(pr[0])>-1&&pr[1][draft[pr[0]]];
@@ -1035,24 +1062,25 @@
       });
       lines.hidden=!lines.children.length;
     }
-    // THE THREE SCREENS THAT SELL (19 Oct 2026). The name goes into ph-name
-    // spans by textContent only (REPLAY1). The games are the catalog's: the
-    // groups Home shows (Sona.activityLibrary), only the games a child can
-    // open (no Coming soon), each with its painted Home card
-    // (Sona.CRAFTED_CARDS). Which group is the age picked on the name step,
-    // read from the draft (the profile is saved only on the ready screen):
-    // ages 2–4 Simple play, 5 and up Arcade, both when no age was given.
-    // "Games <Name> will play" must be true for THIS phone: where the price
-    // follows (Sona.trialFirst, read the way the ready screen reads it) the
-    // trial opens every game, so all of them are shown; where no price can
-    // follow (the website, so every Android family, and an app build with no
-    // purchase plugin) only the games this phone opens are, since nothing
-    // there can open the rest. Premium, a trial or a covered caseload open
-    // every game either way (Sona.gameAccess).
-    var SELL={problem:1,alone:1,games:1},sellPainted=null;
+    // THE GAMES (19 Oct 2026; ordered by what the child loves since 22 Oct).
+    // The name goes into ph-name spans by textContent only (REPLAY1). The
+    // games are the catalog's: the groups Home shows (Sona.activityLibrary),
+    // only the games a child can open (no Coming soon), each with its painted
+    // Home card (Sona.CRAFTED_CARDS). Which group is the age picked on the
+    // name step, read from the draft (the profile is saved only on the ready
+    // screen): ages 2–4 Simple play, 5 and up Arcade, both when no age was
+    // given. "Games <Name> will love" must be true for THIS phone: where the
+    // price follows (Sona.trialFirst, read the way the ready screen reads it)
+    // the trial opens every game, so all of them are shown; where no price
+    // can follow (the website, so every Android family, and an app build
+    // with no purchase plugin) only the games this phone opens are, since
+    // nothing there can open the rest. Premium, a trial or a covered caseload
+    // open every game either way (Sona.gameAccess).
+    var SELL={problem:1,reel:1,rachel:1,games:1},sellPainted=null;
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
     function sellOpens(key,all){if(all)return true;try{return !Sona.gameAccess||!!Sona.gameAccess(key).allowed;}catch(e){return true;}}
+    function loved(key){return draft.interests.some(function(i){return (INTEREST_GAMES[i]||[]).indexOf(key)>-1;});}
     function sellGroups(style,all){
       var lib=null;try{lib=Sona.activityLibrary&&Sona.activityLibrary();}catch(e){}
       var out=[];
@@ -1066,35 +1094,28 @@
       });
       return out;
     }
+    function cardSrc(key){var cards=Sona.CRAFTED_CARDS||{};return cards[key]?"/assets/crafted/home-"+cards[key]+".webp":"";}
     function cardArt(host,key){
-      var cards=(Sona.CRAFTED_CARDS)||{};
-      if(cards[key]){var im=document.createElement("img");im.src="/assets/crafted/home-"+cards[key]+".webp";im.alt="";im.width=768;im.height=432;im.decoding="async";host.appendChild(im);return;}
+      var src=cardSrc(key);
+      if(src){var im=document.createElement("img");im.src=src;im.alt="";im.width=768;im.height=432;im.decoding="async";host.appendChild(im);return;}
       try{var st=Sona.gameSticker(key);Sona.paintSticker(host,st[0],st[1]);}catch(e){}
     }
     function paintSell(){
       var nm=(nameEl.value||draft.childName||"").trim();
-      document.getElementById("aloneName").textContent=nm||"Your child";
-      document.getElementById("aloneName2").textContent=nm||"Your child";
       document.getElementById("gamesName").textContent=nm||"your child";
-      var style=sellStyle(),all=sellsAll(),painted=style+"|"+all;
+      var style=sellStyle(),all=sellsAll(),painted=style+"|"+all+"|"+draft.interests.join(",");
       if(sellPainted===painted)return;          // unchanged: no flicker of pictures already drawn
       sellPainted=painted;
       var groups=sellGroups(style,all);
-      // the picture: the game setup hands the child, Sona.firstGameKey's rule
-      // (Feed Echo for 2–4, Fruit Slice otherwise) on the age in the draft,
-      // since firstGameKey reads the profile, which is not saved yet
-      var want=style==="simple"?"feed":"slice",leadKey=null,pic=document.getElementById("alonePic"),cards=Sona.CRAFTED_CARDS||{};
-      groups.forEach(function(g){g.games.forEach(function(x){if(x.key===want)leadKey=want;});});
-      if(!leadKey){var lead=groups.filter(function(g){return g.id===(style||"arcade");})[0]||groups[0];leadKey=lead&&lead.games[0]&&lead.games[0].key;}
-      if(leadKey&&cards[leadKey])pic.src="/assets/crafted/home-"+cards[leadKey]+".webp";
-      pic.parentNode.hidden=!(leadKey&&cards[leadKey]);
       var grid=document.getElementById("gamesGrid");grid.innerHTML="";grid.classList.toggle("both",groups.length>1);
       groups.forEach(function(g){
         if(groups.length>1){var k=document.createElement("p");k.className="sell-kicker";k.textContent=g.label;grid.appendChild(k);}
-        var list=document.createElement("ul");list.className="sell-games"+(g.games.length<=2?" two":"");
+        // the games a pick fits first, each part in Home's own order
+        var games=g.games.filter(function(x){return loved(x.key);}).concat(g.games.filter(function(x){return !loved(x.key);}));
+        var list=document.createElement("ul");list.className="sell-games"+(games.length<=2?" two":"");
         list.setAttribute("aria-label",groups.length>1?g.label:"Games");
-        g.games.forEach(function(game){
-          var li=document.createElement("li");li.dataset.game=game.key;
+        games.forEach(function(game){
+          var li=document.createElement("li");li.dataset.game=game.key;if(loved(game.key))li.className="loved";
           var art=document.createElement("span");art.className="sell-art";art.setAttribute("aria-hidden","true");cardArt(art,game.key);li.appendChild(art);
           var n=document.createElement("span");n.className="sell-name";n.textContent=game.name;li.appendChild(n);
           list.appendChild(li);
@@ -1102,6 +1123,127 @@
         grid.appendChild(list);
       });
     }
+
+    // THE REEL (22 Oct 2026). The games this phone may show (the games
+    // screen's own rule, both age groups: the age is not asked yet), in a
+    // fixed order for a parent's first look, each a clip of real play
+    // (public/assets/setup/reel/<key>.mp4, made by tools/setupreel/record.mjs)
+    // with its poster. Two videos take turns: one plays while the next
+    // loads, and they cross-fade as a clip ends. Off this screen, or with the
+    // page hidden, nothing plays. A browser that cannot play the clips (the
+    // tests' Chromium has no H.264), or one that refuses to start them (an
+    // iPhone in Low Power Mode), gets the posters instead, changing every few
+    // seconds, and a game whose clip or poster is missing shows its painted
+    // Home card. Never a black frame and never a broken video.
+    // UNDER REDUCE MOTION NOTHING MOVES HERE EITHER (the 22 Oct 2026 review):
+    // the first game's poster, still, with no clip started and no slideshow
+    // (read each time the screen opens, so a setting changed meanwhile counts).
+    var REEL_ORDER=["slice","hoops","tiles","bubbles","soccer","dino","feed","stack","run","glide","rise"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=3200;
+    var reel=(function(){
+      var frame=document.getElementById("reelFrame"),vids=frame.querySelectorAll(".reel-clip"),stills=frame.querySelectorAll(".reel-still");
+      var list=null,at=0,mode="",live=false,cur=0,timer=0;
+      function calmOnly(){try{return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){return false;}}
+      function clips(){
+        var keys=[];sellGroups("",sellsAll()).forEach(function(g){g.games.forEach(function(x){keys.push(x.key);});});
+        return REEL_ORDER.filter(function(k){return keys.indexOf(k)>-1;}).concat(keys.filter(function(k){return REEL_ORDER.indexOf(k)<0;}));
+      }
+      function canPlay(){try{var v=vids[0];return !!(v.canPlayType&&v.canPlayType('video/mp4; codecs="avc1.640028"'));}catch(e){return false;}}
+      // a still: the clip's poster, else the game's Home card (never a broken picture)
+      function still(img,key){
+        img.classList.remove("card","gone");img.onerror=function(){
+          if(img.dataset.key!==key)return;
+          var c=cardSrc(key);if(c&&img.getAttribute("src")!==c){img.classList.add("card");img.src=c;}else img.classList.add("gone");
+        };
+        img.dataset.key=key;img.src=REEL_DIR+key+".webp";
+      }
+      function show(el){Array.prototype.forEach.call(frame.querySelectorAll(".reel-still,.reel-clip"),function(n){n.classList.toggle("on",n===el);});}
+      function stillsMode(){
+        if(mode==="stills")return;mode="stills";frame.classList.add("stills");
+        Array.prototype.forEach.call(vids,function(v){try{v.pause();v.removeAttribute("src");v.load();}catch(e){}});
+        still(stills[0],list[at]);cur=0;show(stills[0]);
+        if(live)tickStills();
+      }
+      function tickStills(){
+        clearTimeout(timer);
+        if(!live||mode!=="stills"||list.length<2||calmOnly())return;
+        var next=stills[1-cur];still(next,list[(at+1)%list.length]);
+        timer=setTimeout(function(){if(!live||mode!=="stills")return;at=(at+1)%list.length;cur=1-cur;show(stills[cur]);tickStills();},REEL_STILL_MS);
+      }
+      function load(v,key){v.dataset.key=key;v.poster=REEL_DIR+key+".webp";v.preload="auto";v.src=REEL_DIR+key+".mp4";try{v.load();}catch(e){}}
+      function play(v){
+        var r;try{v.muted=true;r=v.play();}catch(e){stillsMode();return;}
+        if(r&&r.then)r.then(null,function(){if(live&&mode==="video")stillsMode();});
+      }
+      function ended(){
+        if(!live||mode!=="video"||this!==vids[cur])return;
+        at=(at+1)%list.length;cur=1-cur;var v=vids[cur];
+        if(v.dataset.key!==list[at])load(v,list[at]);
+        show(v);play(v);
+        load(vids[1-cur],list[(at+1)%list.length]);
+      }
+      Array.prototype.forEach.call(vids,function(v){
+        v.addEventListener("ended",ended);
+        v.addEventListener("error",function(){if(live&&mode==="video"&&v===vids[cur])stillsMode();});
+      });
+      return {
+        start:function(){
+          if(live)return;live=true;
+          var still0=calmOnly();
+          if(!list){list=clips();if(!list.length){frame.classList.add("empty");return;}mode=!still0&&canPlay()?"video":"";if(!mode){stillsMode();return;}load(vids[0],list[0]);if(list.length>1)load(vids[1],list[1]);show(vids[0]);}
+          if(mode==="video"){if(still0){stillsMode();return;}play(vids[cur]);}else tickStills();
+        },
+        stop:function(){
+          if(!live)return;live=false;clearTimeout(timer);
+          Array.prototype.forEach.call(vids,function(v){try{v.pause();}catch(e){}});
+        }
+      };
+    })();
+    // the say-it pill: only the sound's letters orange (Sona.soundMark)
+    (function(){try{var s=Sona.soundSay?Sona.soundSay("R"):"rrrr";document.getElementById("reelSay").innerHTML="Say your "+((window.Sona&&Sona.soundMark)?Sona.soundMark(s,"R"):s.replace(/[&<>"]/g,""))+" sound!";}catch(e){}})();
+
+    // "HEAR ECHO" (Travis, 22 Oct 2026: "even have like the voice say your R
+    // sound"; setup was silent by his 24 Sep rule, and this one tap is the
+    // exception). Echo's own line, a breath, then Rachel's one take of the R
+    // sound (/coach/say-echo/R-sound.wav, her voice, never a voice guessing
+    // at it), joined into ONE recording and started by ONE Sona.mediaPCM
+    // call inside the grown-up's tap, so it plays in the iPhone app and on
+    // the website alike. Both pieces are fetched as the selling screens
+    // start, and the line is kept in the phone's voice cache. A line not in
+    // yet: her take alone. Sona's sound off (or its volume at 0): nothing.
+    // Never the browser's robot voice, never "Go!", and no microphone opens
+    // on this screen. Leaving the screen stops it. How the sound is cued is
+    // Rachel's to rule on.
+    var reelVoice=(function(){
+      var LINE="Say your sound with me!",TAKE="/coach/say-echo/R-sound.wav",GAP_MS=200,RATE=24000;
+      var lineBytes=null,takeBytes=null,lineAsked=false,takeAsked=false,now=null;
+      var hear=document.getElementById("reelHear");
+      function volume(){var pr={};try{pr=Sona.getProfile()||{};}catch(e){}if(pr.voiceOn===false)return 0;var v=Number(pr.volume);return pr.volume==null||!isFinite(v)?0.8:Math.max(0,Math.min(1,v));}
+      // the PCM inside her WAV (its "data" chunk: 24 kHz, 16-bit, mono, as Echo's lines are)
+      function pcmOf(buf){
+        try{var dv=new DataView(buf),i=12;while(i+8<=buf.byteLength){var id=String.fromCharCode(dv.getUint8(i),dv.getUint8(i+1),dv.getUint8(i+2),dv.getUint8(i+3)),n=dv.getUint32(i+4,true);if(id==="data")return new Uint8Array(buf,i+8,Math.min(n,buf.byteLength-i-8)&~1);i+=8+n+(n&1);}}catch(e){}
+        return null;
+      }
+      function warm(){
+        if(!volume())return;
+        if(!lineAsked&&window.SayIt&&SayIt.line){lineAsked=true;SayIt.line(LINE).then(function(b){if(b&&b.byteLength)lineBytes=new Uint8Array(b,0,b.byteLength&~1);else lineAsked=false;},function(){lineAsked=false;});}
+        if(!takeAsked){takeAsked=true;fetch(TAKE).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){takeBytes=b&&pcmOf(b);if(!takeBytes)takeAsked=false;},function(){takeAsked=false;});}
+      }
+      function stop(){if(now){var h=now;now=null;try{h.stop();}catch(e){}}hear.classList.remove("playing");}
+      function play(){
+        var vol=volume();stop();
+        if(!vol||!Sona.mediaPCM||!takeBytes){warm();return;}
+        var gap=new Uint8Array(Math.round(RATE*GAP_MS/1000)*2),parts=lineBytes?[lineBytes,gap,takeBytes]:[takeBytes],size=0,off=0;
+        parts.forEach(function(x){size+=x.byteLength;});
+        var buf=new Uint8Array(size);parts.forEach(function(x){buf.set(x,off);off+=x.byteLength;});
+        var h;try{h=Sona.mediaPCM(buf,{volume:vol});}catch(e){h=null;}
+        if(!h)return;now=h;hear.classList.add("playing");
+        Promise.resolve(h.done).then(function(){if(now===h){now=null;hear.classList.remove("playing");}});
+      }
+      hear.onclick=function(){if(ORDER[idx]!=="reel"||settling())return;play();};
+      return {warm:warm,stop:stop};
+    })();
+    document.addEventListener("visibilitychange",function(){if(document.hidden){reel.stop();reelVoice.stop();}else if(ORDER[idx]==="reel"&&!finished)reel.start();});
+
     // "Does this Apple ID already have Premium?", asked of the store ONCE,
     // from the moment the ready screen shows, so a paying family who
     // reinstalled goes on to the microphone and not to a price
@@ -1123,11 +1265,12 @@
     // up, so a tap on Yes, No or Not yet is never recorded. Never for a
     // clinician's own setup, and never again once the hand-off is reached.
     // Two more locks (the second review, 15 Oct 2026):
-    //  - the screen a therapy answer lands on is not recorded either: Yes,
-    //    No, Not yet and Skip sit inside the step, so a double tap's second
-    //    tap, or a mouse moving on from where it clicked, would be recorded
-    //    at the answer's place. Recording comes back on the screen after it,
-    //    reached by the footer, which is in the same place on every screen;
+    //  - the screen a therapy answer lands on (the sounds, since 22 Oct) is
+    //    not recorded either: Yes, No, Not yet and Skip sit inside the step,
+    //    so a double tap's second tap, or a mouse moving on from where it
+    //    clicked, would be recorded at the answer's place. Recording comes
+    //    back on the screen after it, reached by the footer, which is in the
+    //    same place on every screen;
     //  - a child already set up walking setup again (Back from the first
     //    game, a second visit) is never recorded: whoever holds the phone
     //    may be the child. The hand-off also ends recording for the whole tab
@@ -1144,6 +1287,9 @@
       }catch(e){}
     }
 
+    // the hello's intro plays once a page load; coming Back to it, Echo is already there
+    // HELLO_BTN_MS: when the intro's button has faded in (its 1.3 s delay and 0.45 s fade)
+    var helloSeen=false,helloWaited=false,HELLO_BTN_MS=1750;
     function render(){
       var key=ORDER[idx];
       replayAt(key,false);
@@ -1155,6 +1301,14 @@
       // screen must not open part-way down where the last one was left
       var sc0=document.querySelector(".ob"); if(sc0) sc0.scrollTop=0;
       document.body.dataset.setupScreen=key;document.body.classList.toggle("ob-world",key==="welcome");paintProgress(key);
+      var intro=key==="welcome"&&!helloSeen;
+      document.body.classList.toggle("hello-intro",intro);if(key!=="welcome"&&idx>0)helloSeen=true;
+      // "Get started" fades in last (onboarding-crafted.css): until it is
+      // there it takes no tap, so a finger on an empty-looking spot never
+      // starts setup (never under Reduce Motion, where it is there at once)
+      if(intro&&!helloWaited){helloWaited=true;var rm=false;try{rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
+        if(!rm){document.body.classList.add("hello-wait");setTimeout(function(){document.body.classList.remove("hello-wait");},HELLO_BTN_MS);}}
+      if(!intro)document.body.classList.remove("hello-wait");
       mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
@@ -1165,18 +1319,22 @@
       if(key==="name") nameEl.focus();
       // A held answer shows pressed, and only then does the footer offer
       // Continue (onboarding-crafted.css reads body.ob-answered).
-      if(key==="therapy"||key==="goal"){document.getElementById(key==="therapy"?"obTherapy":"obGoal").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
-      document.body.classList.toggle("ob-answered",(key==="therapy"||key==="goal")&&!!draft[key]);
-      if(key==="ready"){paintReady();wallAsk();}
-      // the three screens that sell are painted together on the first, so the
-      // pictures of the next two are on their way before they are needed
-      if(SELL[key])paintSell();
+      if(key==="therapy"||key==="minutes"){document.getElementById(key==="therapy"?"obTherapy":"obMinutes").querySelectorAll(".ask-pick").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.val===draft[key]));});}
+      document.body.classList.toggle("ob-answered",(key==="therapy"||key==="minutes")&&!!draft[key]);
+      if(key==="ready"){paintReady();wallAsk();remindAsk();}
+      if(key==="remind"){["remindYes","remindNo"].forEach(function(id){var b=document.getElementById(id);b.disabled=false;b.removeAttribute("aria-busy");b.textContent=id==="remindYes"?"Turn on reminders":"Not now";});}
+      // the games are painted with the screens that sell, so their pictures
+      // are on their way before the screen that shows them
+      if(SELL[key]||key==="interests")paintSell();
+      if(key==="problem"||key==="reel")reelVoice.warm();
+      if(key==="reel")reel.start();else{reel.stop();reelVoice.stop();}
+      if(key==="interests")paintInterests();
       // Nothing to type on these, so a screen reader is taken to the heading.
       // the question names the child once a name is typed (a heading, never a button's words)
       if(key==="therapy"){var tn=(nameEl.value||draft.childName||"").trim();document.getElementById("therapyTitle").textContent=tn?"Is "+tn+" in speech therapy?":"Is your child in speech therapy?";}
       // The email step's heading, never its box: a double tap must not raise the keyboard.
-      if(key==="updates"){updEl.value=draft.email||"";updMsg.textContent="";updEl.style.borderColor="";}
-      if(key==="therapy"||key==="goal"||key==="ready"||SELL[key]){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
+      if(key==="updates"){updEl.value=draft.email||"";updMsg.textContent="";updEl.classList.remove("needed");}
+      if(key==="therapy"||key==="minutes"||key==="ready"||key==="remind"||key==="interests"||SELL[key]){try{document.getElementById(key+"Title").focus({preventScroll:true});}catch(e){}}
       if(key==="updates"){try{document.getElementById("updTitle").focus({preventScroll:true});}catch(e){}}
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
@@ -1191,22 +1349,39 @@
     }
 
     function next(){
-      if(finished||micBusy||leaving||settling())return;
+      if(finished||micBusy||leaving||asking||settling())return;
       var key=ORDER[idx];
       // the question's two answers are its only way on: Continue is hidden
       // there, and a stray press must not pick "parent" for them
       if(key==="who")return;
-      // …and on the two one-tap questions Continue only keeps an answer
-      // already held; with none, a stray press does nothing
-      if((key==="therapy"||key==="goal")&&!draft[key])return;
-      if(key==="ready"){leaveReady();return;}
+      // …and on the one-tap questions Continue only keeps an answer already
+      // held; with none, a stray press does nothing. The reminder screen's
+      // own two buttons are its only way on.
+      if((key==="therapy"||key==="minutes")&&!draft[key])return;
+      if(key==="remind")return;
+      if(key==="ready"){
+        if(ORDER[idx+1]!=="remind"||!remindMay()){leaveReady();return;}
+        // The reminder screen waits on the store's answer (and iOS's), asked
+        // as this screen showed: usually long in hand by now; if not, the
+        // button reads "One moment…" until it is, 2.5 s after the ask at
+        // most. Then the reminder screen, or (no free trial for this buyer,
+        // or no answer) on as if it were not there.
+        asking=true;try{Sona.sfx.tap();}catch(e){}
+        nextBtn.textContent="One moment…";nextBtn.setAttribute("aria-busy","true");updateNext();
+        remindAsk().then(function(){
+          asking=false;
+          if(finished||leaving||ORDER[idx]!=="ready"){updateNext();return;}
+          if(remindDue()){settle();idx++;render();return;}
+          leaveReady(null,true);
+        });
+        return;
+      }
       if(key==="mic"){requestSetupMic();return;}
-      if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
-      if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
+      if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.classList.add("needed"); return; } nameEl.classList.remove("needed"); }
       if(key==="sounds"){if(selSounds.size===0)return;draft.mode="speech";draft.pathReason="";}
       // the email step: empty goes on as a Skip; a wrong-looking address stays, with one line
-      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(ue&&!/^\S+@\S+\.\S+$/.test(ue)){ updEl.style.borderColor="#ef6f23"; updMsg.textContent="That email doesn't look right."; return; } draft.email=ue; updMsg.textContent=""; }
-      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
+      if(key==="updates"){ var ue=(updEl.value||"").trim(); if(ue&&!/^\S+@\S+\.\S+$/.test(ue)){ updEl.classList.add("needed"); updMsg.textContent="That email doesn't look right."; return; } updEl.classList.remove("needed"); draft.email=ue; updMsg.textContent=""; }
+      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.classList.add("needed"); var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
       // it plays from finish() now, and only in the browser clinician's setup:
@@ -1226,7 +1401,7 @@
       setTimeout(function(){d.remove();done();},2000);
     }
     function back(){
-      if(idx<=0||micBusy||finished||saved||leaving) return;
+      if(idx<=0||micBusy||finished||saved||leaving||asking) return;
       // Back from the email step keeps what was typed, so coming forward again
       // shows it; it is only ever checked by Continue and thrown away by Skip
       if(ORDER[idx]==="updates") draft.email=(updEl.value||"").trim();
@@ -1252,14 +1427,13 @@
     }
 
     // THE PROFILE IS SAVED WHEN THE PARENT LEAVES THE READY SCREEN (5 Oct
-    // 2026), before the price and before the microphone: the price screen
-    // names the child, and a family who quits on it must find Home, not a
-    // setup that forgot them. It used to be saved on the way out of the
-    // microphone step, by finish(). Once only: a second call does nothing.
+    // 2026; or the reminder screen after it, 22 Oct), before the price and
+    // before the microphone: the price screen names the child, and a family
+    // who quits on it must find Home, not a setup that forgot them. Once
+    // only: a second call does nothing.
     function saveSetup(){
       if(saved)return;saved=true;
       draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
-      draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
       // NO GRANT IS WRITTEN HERE ANY MORE (24 Sep 2026). This used to set
       // earlyAdopter from slpVerified(), so a verified clinician's link made a
@@ -1278,40 +1452,40 @@
         childAge: draft.childAge || "",
         character: draft.character,
         focusSounds: draft.focusSounds,
-        interests: draft.interests,
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
-        dailyMinutes: 5,
-        // the pick, when this walk asked for one (the same test the ready
-        // screen's chip uses); else the goal this child's profile already
-        // has, which for a newly added child is the default
-        weeklyGoal: (ORDER.indexOf("goal")>-1&&parseInt(draft.goal, 10)) || parseInt(goalVal, 10) || 4,
+        // The days a week are no longer asked (22 Oct 2026), so nothing
+        // here writes weeklyGoal: a profile keeps the one a grown-up picked
+        // (Settings, Progress, an older setup), and one that never had one
+        // reads as 4 days (Sona.goalDays) without the weekly report calling
+        // that "your plan" (REPORT1 sends a plan only when one is set).
         email: draft.email || "",
         pathReason: draft.pathReason || "",
         onboarded: true,
       };
+      // what the child loves, when this walk asked (else the profile keeps
+      // what it had, an older setup's story themes included)
+      if(ORDER.indexOf("interests")>-1)prof.interests=draft.interests.slice();
+      // the minutes a day, when this walk asked and the parent picked: the
+      // daily goal in reps with them. Skip leaves both as they were.
+      if(ORDER.indexOf("minutes")>-1&&MINUTE_REPS[draft.minutes]){prof.dailyMinutes=Number(draft.minutes);prof.dailyGoal=MINUTE_REPS[draft.minutes];}
       // a parent who gave the email step an address asked for the weekly
       // progress report: weeklyReport is what sona.js REPORT1 reads (only an
       // address given under that heading sends a child's numbers);
       // weeklyEmail is kept as the hand-off kept it, and nothing reads it
       if(draft.role!=="slp"&&draft.email&&ORDER.indexOf("updates")>-1){prof.weeklyEmail=true;prof.weeklyReport=true;}
       Sona.saveProfile(prof);
-      // The two one-tap answers go to ONE household key and nowhere else (the
-      // profile above gets no field for them: the profile is what a clinician
-      // share reads). Written only when the questions were on this path, so
+      // The therapy answer goes to ONE household key and nowhere else (the
+      // profile above gets no field for it: the profile is what a clinician
+      // share reads). Written only when the question was on this path, so
       // the key existing is what stops a family being asked twice.
       try{if(ORDER.indexOf("therapy")>-1&&draft.role!=="slp"&&Sona.setupAsksSave)Sona.setupAsksSave({therapy:draft.therapy||""});}catch(e){}
       // the scratchpad has done its job; a stale draft must never shadow a
       // real profile on a later visit
       clearDraft();
-      // NO TRIAL IS STARTED HERE ANY MORE. Finishing setup used to start a
-      // silent 3-day clock, so it was already burning while the parent read
-      // the next screen — and a family who opened Sona on Friday and came
-      // back on Tuesday had "used" a trial they never saw. What they get
-      // instead is the free demonstration: one complete run, then the offer.
-      // A subscription trial now starts only where a trial can honestly
-      // start, inside a verified purchase.
+      // NO TRIAL IS STARTED HERE. A subscription trial starts only where a
+      // trial can honestly start, inside a verified purchase.
       // A Lead is an email we can reach. Finishing setup without one is a
       // registration, not a lead — counting it as one told the ad account it
       // had 26 leads when the CRM had almost none (24 Sep 2026).
@@ -1354,7 +1528,9 @@
       }
     }
 
-    // THE READY SCREEN'S CONTINUE. It saves the profile and marks this tab
+    // LEAVING SETUP'S QUESTIONS: the ready screen's Continue, or (where it
+    // follows) either button on the reminder screen; btn is the button that
+    // was tapped. It saves the profile and marks this tab
     // (Sona.setupAfterMark: "left ready for this child"; written for every
     // family on the parent order, so a reload on the microphone comes back to
     // the microphone and the profile is never saved twice). Then:
@@ -1364,11 +1540,14 @@
     //    stamp, or, if the store found a purchase, straight on;
     //  · everyone else goes on to the microphone here, with no reload.
     // Whether a price is due is read from Sona.trialFirst() at the instant of
-    // going, so the store's answer counts even if it came late.
-    function leaveReady(){
+    // going, so the store's answer counts even if it came late. quiet: the
+    // tap's chime already rang (the ready screen's Continue, which waited on
+    // the store before coming here).
+    function leaveReady(btn,quiet){
       if(leaving||finished)return;
+      var b=btn||nextBtn;
       var due=false;try{due=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
-      leaving=true;try{Sona.sfx.tap();}catch(e){}
+      leaving=true;if(!quiet){try{Sona.sfx.tap();}catch(e){}}
       // no Back from here: the profile is about to be saved, and a Back left
       // painted beside "One moment…" looks live and does nothing
       backBtn.style.display="none";
@@ -1387,9 +1566,33 @@
         leaving=false;settle();idx=ORDER.indexOf("mic");render();   // settle(): the same button is now "Turn on Echo's ears"
       }
       if(!due){go();return;}                                    // no price possible: no wait, no label change
-      nextBtn.textContent="One moment…";nextBtn.setAttribute("aria-busy","true");updateNext();
+      b.textContent="One moment…";b.setAttribute("aria-busy","true");if(b!==nextBtn)b.disabled=true;updateNext();
       wallAsk().then(go,go);setTimeout(go,3000);
     }
+    // The reminder screen's two ways on. "Turn on reminders" opens iOS's own
+    // Allow box first (Sona.notifyAsk), then goes on whatever the answer;
+    // "Not now" goes on at once. Neither sets a reminder: that waits for a
+    // free trial to really start. While iOS's box is up both buttons and Back
+    // are still. A bridge that never answers (NOTIFY1 itself gives up only
+    // after 60 s) holds the screen REMIND_ASK_MS at most, then it goes on to
+    // the price as if the parent had answered; the late answer, if one ever
+    // comes, is kept by sona.js and moves nothing here.
+    // (not refused once saved: a price that never loaded brings this screen
+    // back after 8 seconds, and its buttons must try again)
+    var REMIND_ASK_MS=12000;
+    function remindGo(b,ask){
+      if(finished||leaving||asking||ORDER[idx]!=="remind"||settling())return;
+      var other=document.getElementById(b.id==="remindYes"?"remindNo":"remindYes");
+      if(!ask){other.disabled=true;leaveReady(b);return;}
+      asking=true;b.disabled=other.disabled=true;updateNext();try{Sona.sfx.tap();}catch(e){}
+      var r=null;try{r=Sona.notifyAsk&&Sona.notifyAsk();}catch(e){r=null;}
+      var on=false;
+      function go(){if(on)return;on=true;clearTimeout(t);asking=false;if(ORDER[idx]==="remind")leaveReady(b,true);else updateNext();}
+      var t=setTimeout(go,REMIND_ASK_MS);
+      Promise.resolve(r).then(null,function(){}).then(go);
+    }
+    document.getElementById("remindYes").onclick=function(){remindGo(this,true);};
+    document.getElementById("remindNo").onclick=function(){remindGo(this,false);};
     // Back from the price in a browser can hand this page back from memory,
     // still "leaving": load it again so it decides from what is stored.
     window.addEventListener("pageshow",function(e){if(e.persisted&&saved&&!finished)location.reload();});
@@ -1399,11 +1602,10 @@
     // clinician after the build beat. It asks for nothing: the email came
     // before the price (the "updates" step, 13 Oct 2026), so a family back
     // from a purchase, a second child or a family already asked meets no box.
-    // It settles like every other step change. Since 5 Oct 2026 nothing
-    // stands between the microphone and this card for a parent (the 2-second
-    // build beat used to), so without the pause a double tap on "Turn on
-    // Echo's ears", on a phone that answers the microphone ask at once, landed
-    // on "Let's play!" and opened the game past the hand-off.
+    // It settles like every other step change: nothing stands between the
+    // microphone and this card for a parent, so without the pause a double
+    // tap on "Turn on Echo's ears", on a phone that answers the microphone ask
+    // at once, landed on "Let's play!" and opened the game past the hand-off.
     function showHandoff(){
         // the child is about to hold the phone: the recording ends first (REPLAY1)
         replayDone=true;try{sessionStorage.setItem("sona.replayoff.v1","1");}catch(e){}try{if(window.SonaAnalytics&&SonaAnalytics.replay)SonaAnalytics.replay(false);}catch(e){}
@@ -1444,7 +1646,8 @@
           location.href=first;
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
-        // Setup and menus stay quiet; spoken coaching belongs inside games.
+        // Setup and menus stay quiet; spoken coaching belongs inside games
+        // (the reel's "Hear Echo", on a grown-up's tap, is the one exception).
     }
 
     // finish() means "save if not yet saved, then show the hand-off". A parent
@@ -1477,7 +1680,7 @@
         saved=true;
         var owes=false;try{owes=draft.role!=="slp"&&!!(Sona.trialFirst&&Sona.trialFirst());}catch(e){}
         if(owes){
-          // the page under the guard is raw markup with a live "Let's go!": keep it hidden until we are gone
+          // the page under the guard is raw markup with a live "Get started": keep it hidden until we are gone
           leaving=true;document.documentElement.classList.add("ob-leaving");
           location.replace("/subscribe.html?setup=1");
           // the price never loaded: show the ready screen, whose Continue tries again

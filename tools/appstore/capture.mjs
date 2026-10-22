@@ -496,12 +496,12 @@ SCENES.progress = async (devName) => {
 SCENES.rachel = async (devName) => {
   const s = await open(devName, "/onboarding.html", { fresh: true });
   const { page } = s;
-  // Since 5 Oct 2026 (setup option B) Rachel sits on "<Name>'s practice is
-  // ready", under About Sona; walk setup to it whatever questions come first
+  // Since 22 Oct 2026 Rachel has her own screen again, before the child's
+  // name; walk setup to it whatever comes first
   await until(page, () => document.body.dataset.setupScreen === "welcome", 15000);
   for (let i = 0; i < 12; i++) {
     const scr = await page.evaluate(() => document.body.dataset.setupScreen);
-    if (scr === "ready") break;
+    if (scr === "rachel") break;
     if (scr === "name") { await page.locator("#obName").fill("Mia"); const a = page.locator('#obAge [data-age="8"]'); if (await a.count()) await a.click(); }
     if (scr === "sounds") { const r = page.locator('#obSounds [data-sound="R"]'); if ((await r.getAttribute("aria-pressed")) !== "true") await r.click(); }
     await page.waitForTimeout(650);
@@ -510,9 +510,10 @@ SCENES.rachel = async (devName) => {
     else await page.locator(".step.on button:visible").first().click();
     await page.waitForTimeout(650);
   }
-  await page.locator('[data-step="ready"].on').waitFor();
-  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".ready-rachel-photo") && document.querySelector(".ready-rachel-photo").decode().catch(() => {})]));
-  await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => a.finish()));
+  await page.locator('[data-step="rachel"].on').waitFor();
+  await page.evaluate(() => Promise.all([document.fonts.ready, document.querySelector(".rachel-photo img") && document.querySelector(".rachel-photo img").decode().catch(() => {})]));
+  // (a step's own motion always ends; a loop, if one ever came in, is left be)
+  await page.locator(".step.on").evaluate((el) => el.getAnimations({ subtree: true }).forEach((a) => { if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.finish(); }));
   await page.waitForTimeout(500);
   await shot(page, devName, "rachel");
   return s;
