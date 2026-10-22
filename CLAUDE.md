@@ -184,7 +184,9 @@ changing one. What follows from the rule:
     child says it, the game moves; with the painted Home card of the game
     setup hands the child), and **"Games <Name> will play"** (a grid of the
     age group's playable games from the catalog, never a Coming soon one;
-    where no price follows, only the games that phone opens). Statements
+    where no price follows, only the games that phone opens; since 22 Oct
+    2026 a peek: Home's first nine, or three little-kid and six big-kid
+    games with no age, each group's rest counted as "and 7 more"). Statements
     with Continue and Back: nothing asked or stored (Travis took out two
     question screens on 5 Oct), no progress segment, only on a family's
     first setup (never a clinician's, a second child or a re-walk). The
