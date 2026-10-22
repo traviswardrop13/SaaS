@@ -1384,7 +1384,10 @@
       // their R or L, and an S blend ("snake", "smile", "slay") is mostly
       // voiced around its S. Those can never be "clearly the wrong family",
       // so neither flag is raised for them; a bare sound is judged as before.
-      var other=ITEM&&ITEM.level!=="isolation"?String(ITEM.t||"").toLowerCase():"";
+      // Only the item's OTHER letters count: the target's own (the th of
+      // "mother", the g of "tiger") are taken out first.
+      var own={R:/r/g,L:/l/g,M:/m/g,N:/n/g,B:/b/g,D:/d/g,G:/g/g,V:/v/g,THV:/th/g}[SOUND];
+      var other=ITEM&&ITEM.level!=="isolation"?String(ITEM.t||"").toLowerCase().replace(own||/$^/,""):"";
       if(SHAPE.low[SOUND] && cent>1800 && high>0.22 && !/s|z|x|sh|ch|j|f|th|c[eiy]|g[eiy]/.test(other)) return "fail";
       if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10 && !(ITEM&&ITEM.pos==="b")) return "fail";
       return "pass";
@@ -1433,12 +1436,6 @@
     // as before rather than guess. Only numbers are read; nothing extra is
     // recorded.
     var EVID={broadHz:1200, overtones:3, voicedMs:45, sibDb:8, sibMs:150, minMs:45, shortMs:1000, quietMs:130, changeDb:4.5, spanMs:800, edgeMs:30};
-    // A middle-of-word syllable has a beat in it ("ah-rah"): a child who
-    // pauses at the hyphen has said ONE try, not two, so while one is asked
-    // its two halves join across a gap of up to 400 ms (22 Oct 2026). Every
-    // other try ends after 130 ms of quiet, as before; the lines that read
-    // EVID.quietMs are unchanged (speechevidencetest runs them verbatim).
-    (function(base){ try{ Object.defineProperty(EVID,"quietMs",{enumerable:true,get:function(){ return typeof ITEM!=="undefined"&&ITEM&&ITEM.level==="syllable"&&ITEM.pos==="m"?400:base; }}); }catch(e){} })(EVID.quietMs);
     function speechEvidence(){
       var an=null,off=false,rate=48000,binHz=46.875,etd=null,efd=null,cal=[],calAt=-1e9,bgDb=null,cur=null;
       function db(p){ return p>0 ? 4.342944819*Math.log(p) : -Infinity; }

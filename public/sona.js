@@ -7362,48 +7362,27 @@
       .replace(/[^a-z' ]+/g, " ").split(/\s+/)
       .map((t) => t.replace(/^'+|'+$/g, "")).filter(Boolean);
   }
-  // A SYLLABLE IS NOT A WORD (22 Oct 2026, with a syllable for every place in
-  // a word: "ar", "ah-rah", "trah"). Apple writes what it hears as words, so a
-  // good "ah-rah" comes back "Ah rah", "Ara" or just "Rah", and a good "ar"
-  // comes back "Are". A try passes when, with a vowel's h dropped on both
-  // sides, the words heard (one at a time, or all run together) are:
-  //   - one HEAR_ALIKE lists for the target (the words Apple writes for it);
-  //   - or within one letter of the target or its usual-error form ("wah"
-  //     for rah, "we" for ree), no more than two letters longer, and carrying
-  //     the sound or its usual error. The last part of a middle syllable
-  //     ("rah" of "ah-rah") counts as the target too.
-  // Everything else fails: "taco" for kah (a K, but nowhere near), "rock" for
-  // rah, a blend said without its sound ("tah" for trah). Never the end-of-
-  // word errors (HEAR_SUBS_END): their "" matches every word. Filler alone is
-  // unknown, as on every round. Which words are alike is Rachel's to change.
+  // A SYLLABLE AT ANOTHER PLACE IN A WORD (22 Oct 2026: "ah-rah", "ar",
+  // "trah"). Apple writes such a try as words: "Ah rah", "Ara", "Are". A
+  // start-of-word syllable is judged exactly as before; at any other place,
+  // after the usual checks, a try also passes when the words heard, run
+  // together and with a vowel's h dropped, are EXACTLY the target or one of
+  // its usual-error forms ("Ah rah", "Ara", "Ah wah" for ah-rah), or a word
+  // HEAR_ALIKE lists for it ("Are" for ar). Exactly, never "close to": a
+  // grown-up's "is a" or "the" must not pass anything. Which words are alike
+  // is Rachel's to change.
   const HEAR_ALIKE = {
-    rah: ["raw"], ree: ["re", "rhee"], roo: ["rue", "roux", "ru"], roh: ["row", "roe", "rho"], ray: ["re"],
     ar: ["are", "r"], or: ["ore", "oar"], air: ["heir", "err"], ear: ["ere"],
     kray: ["cray"], grew: ["grue"], clue: ["klue"], flee: ["flea"], ski: ["skee"],
   };
-  function _hearSyllable(tokens, content, word, S2, dropped) {
+  function _hearPlace(tokens, content, word, S2, dropped) {
     const flat = (x) => String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1");
-    const whole = word.replace(/[^a-z-]/g, ""), w = flat(whole), last = flat(whole.split("-").pop());
-    const targets = [w].concat(last && last !== w ? [last] : []);
-    const alike = (HEAR_ALIKE[whole.replace(/-/g, "")] || []).map(flat);
-    const subs = HEAR_SUBS[S2] || [];
-    const cands = content.map(flat).concat(tokens.length > 1 ? [flat(tokens.join(""))] : []).filter(Boolean);
+    const whole = word.replace(/[^a-z-]/g, ""), w = whole.replace(/-/g, "");
+    const forms = _hearVariants(w, S2).map(flat).concat((HEAR_ALIKE[w] || []).map(flat));
     const gone = dropped.map(flat);
-    for (let i = 0; i < cands.length; i++) {
-      const c = cands[i];
-      if (gone.indexOf(c) >= 0) continue;
-      if (alike.indexOf(c) >= 0) return "pass";
-      for (let k = 0; k < targets.length; k++) {
-        const tg = targets[k];
-        // the target's usual-error forms, never one that doubles a letter the target lacks
-        const forms = _hearVariants(tg, S2).map(flat).filter((f) => !/(.)\1/.test(f) || /(.)\1/.test(tg));
-        if (c.length > tg.length + 2 || !forms.some((f) => f === c || _hearNear(c, f, 1))) continue;
-        let carries = Object.keys(_hearSpots(c, S2)).length > 0;
-        for (let j = 0; !carries && j < subs.length; j++) carries = !!subs[j] && tg.indexOf(subs[j]) < 0 && c.indexOf(subs[j]) >= 0;
-        if (carries) return "pass";
-      }
-    }
-    return "fail";
+    const cands = content.map(flat).concat(tokens.length > 1 ? [flat(tokens.join(""))] : []);
+    for (let i = 0; i < cands.length; i++) if (cands[i] && gone.indexOf(cands[i]) < 0 && forms.indexOf(cands[i]) >= 0) return true;
+    return false;
   }
   /**
    * hearVerdict(transcript, sound, word, opts?) → "pass" | "fail" | "unknown"
@@ -7469,7 +7448,6 @@
       return "fail";
     }
     const dropped = opts.pos === "b" ? _hearDrop(w, S2) : [];
-    if (opts.level === "syllable") return _hearSyllable(tokens, content, String(word || "").toLowerCase(), S2, dropped);
     const vars = _hearVariants(w, S2);
     const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
     for (let i = 0; i < content.length; i++) {
@@ -7489,6 +7467,7 @@
       for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
       if (carries && _hearNear(t, w, near)) return "pass";
     }
+    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && _hearPlace(tokens, content, String(word || "").toLowerCase(), S2, dropped)) return "pass";
     return "fail";
   }
 

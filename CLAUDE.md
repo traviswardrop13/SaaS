@@ -3277,10 +3277,14 @@ selected."
   names some, `Sona.sylPos`). The books stay start-of-word.
 - **Listening and booking.** A try at the sound alone or a syllable is never
   booked as a word place (the clinician's pass rate by position counts words
-  and sentences only). On a syllable round Apple's words are compared run
-  together, with a vowel's h dropped and `HEAR_ALIKE` ("are" for ar); a clear
-  word not close still fails ("taco" for kah, "rock" for rah). A blend said
-  without its sound fails ("top" for stop). The website's shape check no
+  and sentences only). A start-of-word syllable is judged exactly as before.
+  At another place a syllable try also passes when Apple's words, run
+  together with a vowel's h dropped, are EXACTLY the target or its usual-error
+  form ("Ah rah", "Ara" for ah-rah), or a word `HEAR_ALIKE` lists ("are" for
+  ar); never "close to", or a grown-up's "the" or "is a" would pass. A blend
+  said without its sound fails ("top" for stop). Not built yet: a child who
+  pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
+  (each voiced burst is a try); look at that before switching Middle on. The website's shape check no
   longer fails an R or L word for the hiss of its other letters ("star"), nor
   an S blend for its voiced ones.
 - **Rachel's calls, built on defaults until she answers:** every syllable
