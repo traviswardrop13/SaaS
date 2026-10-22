@@ -34,6 +34,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { chromium, ROOT, launchOpts, OUT } from "./_env.mjs";
+import { servePark } from "./_parked.mjs";
 
 let fails = 0;
 function ok(label, pass, detail = "") { if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
@@ -208,6 +209,8 @@ await section("who never sees the sheet", async () => {
 
   f = await fresh({ trophies: 800 });
   try {
+    // none is parked since 22 Oct 2026; Peekaboo is parked again here
+    await servePark(f.context, ROOT);
     await home(f.page);
     const grey = card(f.page, "stack");
     ok("a Premium game this family has not opened is greyed", (await grey.getAttribute("data-locked")) === "true");

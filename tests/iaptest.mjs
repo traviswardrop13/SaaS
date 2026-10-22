@@ -15,6 +15,7 @@
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { parkedSona } from "./_parked.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2" };
 const srv = createServer((req, res) => {
@@ -1658,9 +1659,14 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("…but never underneath a run in progress", win.midRun === false, JSON.stringify(win));
 
   // E. Home keeps its free library games; Premium choices ask a grown-up.
+  // None is parked since 22 Oct 2026, so Home here is served a sona.js with
+  // four parked again (tests/_parked.mjs), for the Coming soon check below.
   await seed();
   await pg.evaluate(() => { sessionStorage.setItem("sona.paidui", "1"); try { Sona.markStoryRead(); } catch (e) {} });
+  const parkedSrc = parkedSona(readFileSync(ROOT + "/sona.js", "utf8")), servedParked = (route) => route.fulfill({ contentType: "application/javascript; charset=utf-8", body: parkedSrc });
+  await pg.route("**/sona.js*", servedParked);
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(900);
+  await pg.unroute("**/sona.js*", servedParked);
   const home = await pg.evaluate(() => ({
     library: !document.getElementById("libraryApp").hidden,
     adventure: Sona.adventureGames().map(key => ({ key, allowed: Sona.gameAccess(key).allowed })),
@@ -1669,8 +1675,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("an expired family keeps the library and accessible saved adventure choices",
     home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
   const freeCards = home.cards.filter(card => !card.comingSoon && card.tier === "free"), premiumCards = home.cards.filter(card => !card.comingSoon && card.tier === "premium"), comingSoonCards = home.cards.filter(card => card.comingSoon);
-  // Peekaboo and every Say & Play game not yet rebuilt (Travis, 26 Sep 2026:
-  // "put the 20 games as coming soon") have had no card on Home since 19 Oct
+  // A parked game (Peekaboo here) has had no card on Home since 19 Oct
   // 2026: nothing to buy or play there, and nothing that says Coming soon
   const parkedInCatalog = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(k => Sona.GAME_ACTS[k].comingSoon));
   ok("coming-soon games are not on Home, so they offer no purchase or play action", parkedInCatalog.length >= 2 && parkedInCatalog.includes("peekaboo") && comingSoonCards.length === 0 && await pg.locator('#libraryApp [data-game="peekaboo"]').count() === 0, JSON.stringify(comingSoonCards));

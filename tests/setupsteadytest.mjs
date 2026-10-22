@@ -490,7 +490,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(1100);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r.sCard);
    const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img')].every(i=>i.complete&&i.naturalWidth>0));
-   if(key==='games')ok('…the games peek is the full grid here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length));
+   if(key==='games')ok('…the games peek is the full nine here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Math.min(9,Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length)));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
    await page.waitForTimeout(200);
   }
