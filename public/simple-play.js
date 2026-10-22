@@ -70,7 +70,7 @@
   }
   function prepareTargets() {
     sound = S.rotSound ? S.rotSound() : "";
-    targets = (S.playWords && sound ? S.playWords(sound) || [] : []).filter(function (w) { return w && w.w && w.e; })
+    targets = S.playPool && sound ? S.playPool(sound, 8) || [] : (S.playWords && sound ? S.playWords(sound) || [] : []).filter(function (w) { return w && w.w && w.e; })
       .sort(function (a, b) { return a.w.length - b.w.length; }).slice(0, 8);
     return targets.length > 0;
   }

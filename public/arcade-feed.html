@@ -292,7 +292,8 @@
       $("plate").dataset.fed=fed+"/"+NEED;
     }catch(e){} }
     // at the place in the word the child practises (Sona.playWords, 22 Oct 2026)
-    function pool(sound){ var ws=(S&&S.playWords)?(S.playWords(sound)||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
+    // eight, evenly from every place under Mixed (Sona.playPool)
+    function pool(sound){ if(S&&S.playPool) return S.playPool(sound,8)||[]; var ws=(S&&S.playWords)?(S.playWords(sound)||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
     var TARGETS=pool(SOUND);
     if(!TARGETS.length){ SOUND="R"; TARGETS=pool("R"); }
     var OTHERS=[];

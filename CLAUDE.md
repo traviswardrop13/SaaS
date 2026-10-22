@@ -1990,8 +1990,9 @@ on the same play-game hook as Hoops. What it keeps:
   `crafted-bubbles.css`'s background); the word pictures are Feed Echo's.
 - **Nothing is practice data**; each heard word is one rep on the week's
   count, a pop is nothing. **For Rachel:** the ask is the engine's "Say...
-  <word>." with start-of-word words for the child's sound, and "heard" is a
-  voice of the right broad kind, exactly as in Hoops.
+  <word>." with words of the place in the word the child practises (see
+  "Word positions and the practice steps"), and "heard" is a voice of the
+  right broad kind, exactly as in Hoops.
 `simple-play.js` now runs only its test fixture (Peekaboo moved to
 `sayplay.js` on 16 Oct 2026), and the old engine's tests stay on it. `bubblestest` (its own suite: the three other played games already fill
 most of a suite's five minutes) plays a whole round, the smallest phone, the
@@ -3275,7 +3276,9 @@ selected."
   the sound alone.
 - **The games follow the place.** Hoops, Soccer Goal, Dino Dig, Bubble Pop,
   Feed Echo and every sayplay.js game ask that place's words
-  (`Sona.playWords`; `GAMES_FOLLOW_POS` is the one switch back); the
+  (`Sona.playWords`; `GAMES_FOLLOW_POS` is the one switch back), their few
+  short picture words taken evenly from every place under Mixed
+  (`Sona.playPool`: the shortest ten of all were never a middle word); the
   start-of-word themes only at the start of a word; Feed Echo's wrong pictures
   never carry the practice sound (`Sona.hasSound`) and are never a word of its
   own bank. Fruit Slice's cards: see "Games ask for more than the sound"

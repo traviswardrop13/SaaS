@@ -242,6 +242,17 @@ const words = (S, s, p) => S.WORDS[s].filter((w) => (w.pos || "i") === p).map((w
   ok("…and the start-of-word themes stay out (a themed \"rock\" would undo an end-of-word round)", f.gameWords("dino", "R").length === 0 && at("i").S.gameWords("dino", "R").map((w) => w.w).join() === "rock");
   ok("…once each (cake)", at("mix").S.playWords("K").filter((w) => w.w === "cake").length === 1);
   ok("…and GAMES_FOLLOW_POS is the one switch back to start-of-word words", f.GAMES_FOLLOW_POS === true);
+  // the games keep a few short picture words (ten, eight for the littles):
+  // under Mixed they come evenly from every place, or the shortest ten were
+  // never a middle word or an R blend; one place is still its n shortest
+  const mixR = at("mix").S.playPool("R", 10), places = new Set(mixR.map((w) => w.pos));
+  ok("…under Mixed a game's ten words come from every place (R: start, middle, end, vocalic, blends)", mixR.length === 10 && ["i", "m", "f", "v", "b"].every((p) => places.has(p)), mixR.map((w) => w.w + "/" + w.pos).join(" "));
+  const mixS = at("mix").S.playPool("S", 8);
+  ok("…and Feed Echo's eight too (S: a middle word and a blend)", mixS.some((w) => w.pos === "m") && mixS.some((w) => w.pos === "b"), mixS.map((w) => w.w + "/" + w.pos).join(" "));
+  ok("…while one place is its ten shortest picture words, as before", ["R", "S", "L", "K"].every((x) => f.playPool(x, 10).map((w) => w.w).join() === f.playWords(x).filter((w) => w.e).sort((a, b) => a.w.length - b.w.length).slice(0, 10).map((w) => w.w).join()));
+  for (const [file, n] of [["sayplay.js", 10], ["arcade-feed.html", 8], ["simple-play.js", 8]]) {
+    ok("…and " + file + " takes its pool from it", new RegExp("S\\.playPool\\([^)]*" + n + "\\)").test(readFileSync(ROOT + "/" + file, "utf8")));
+  }
   ok("a word carries the sound by its spelling, and an x is a k and an s", f.hasSound("glass", "S") && f.hasSound("fox", "K") && f.hasSound("fox", "S") && !f.hasSound("cat", "S") && !f.hasSound("ball", "R"));
   const feed = readFileSync(ROOT + "/arcade-feed.html", "utf8");
   ok("Feed Echo's wrong pictures never carry the practice sound, nor are a word of its own bank (Z's s in nose, rose)", /!\(S\.hasSound&&S\.hasSound\(w\.w,SOUND\)\)/.test(feed) && /OWN\[w\.w\]/.test(feed));

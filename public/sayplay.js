@@ -467,7 +467,9 @@
   // At the place in the word the child practises (Sona.playWords, 22 Oct
   // 2026): an end-of-word child is asked "car", never "rabbit". The themed
   // words (Sona.gameWords) are all start-of-word, so they come only then.
+  // Ten of them, evenly from every place under Mixed (Sona.playPool).
   function pool(sound) {
+    if (S && S.playPool) return S.playPool(sound, 10) || [];
     var ws = (S && S.playWords) ? (S.playWords(sound) || []) : [];
     return ws.filter(function (w) { return w && w.w && w.e; }).sort(function (a, b) { return a.w.length - b.w.length; }).slice(0, 10);
   }
