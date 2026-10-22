@@ -500,8 +500,8 @@
         // no buddy
         { art: "e02", ages: "big", buddy: null,
           line: "Down the hill zooms Squirrel! Badger waves from his door in his slippers, and the ducklings paddle in the pond." },
-        // no buddy (on the front of the platform just right of Echo, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the front of the platform just right of Echo (rest)
+        { art: "e03", ages: "both", buddy: { x: 0.5, y: 0.735, h: 0.175, pose: "rest" },
           line: { big: "Hot cocoa and cookies at the station! And here comes Pelly, wearing that red mitten as a cozy hat.",
                   little: "Look! Pelly is wearing the mitten as a hat!" } },
         // buddy: the right half of the bench, just right of Echo (cheer)
@@ -689,8 +689,8 @@
         { art: "s04", ages: "both", buddy: null,
           line: { big: "The seed pods are too heavy for Gardener Bird to fly up. And her cart gets stuck at the narrow stairs. Bump!",
                   little: "The seed cart gets stuck at the skinny stairs. Bump!" } },
-        // no buddy (on the cobbles just right of Echo, not placed)
-        { art: "s05", ages: "both", buddy: null,
+        // buddy: on the cobbles just right of Echo (rest)
+        { art: "s05", ages: "both", buddy: { x: 0.535, y: 0.86, h: 0.14, pose: "rest" },
           line: { big: "Gardener Bird loves watering so much, she waters everything. The stairs, the cart, and us! Sprinkle!",
                   little: "Gardener Bird waters everything. Even us! Sprinkle, sprinkle!" } },
         // buddy: on the cobbles just right of Echo (rest)
@@ -717,8 +717,8 @@
         { art: "e03", ages: "both", buddy: { x: 0.53, y: 0.845, h: 0.17, pose: "cheer" },
           line: { big: "Out of Pelly's pouch comes a whole stack of pancakes! A rooftop picnic for everyone. Yum!",
                   little: "Pelly brought pancakes for everyone. Yum!" } },
-        // no buddy (the right half of the bench, just right of Echo, not placed)
-        { art: "e04", ages: "both", buddy: null,
+        // buddy: the right half of the bench, just right of Echo (cheer)
+        { art: "e04", ages: "both", buddy: { x: 0.74, y: 0.7, h: 0.2, pose: "cheer" },
           line: "A garden on every rooftop, and thirteen gold stars on our helper map!" }
       ]
     },
