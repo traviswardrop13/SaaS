@@ -685,8 +685,8 @@
         { art: "s03", ages: "both", buddy: { x: 0.65, y: 0.805, h: 0.21, pose: "rest" },
           line: { big: "Off we go to the hilltop town! Every rooftop has a planter full of soil. But nothing is growing.",
                   little: "Look at all the rooftop pots. Lots of soil, but no plants!" } },
-        // no buddy (on the cobbles just right of Echo, not placed)
-        { art: "s04", ages: "both", buddy: null,
+        // buddy: on the cobbles just right of Echo (rest)
+        { art: "s04", ages: "both", buddy: { x: 0.565, y: 0.75, h: 0.16, pose: "rest" },
           line: { big: "The seed pods are too heavy for Gardener Bird to fly up. And her cart gets stuck at the narrow stairs. Bump!",
                   little: "The seed cart gets stuck at the skinny stairs. Bump!" } },
         // buddy: on the cobbles just right of Echo (rest)

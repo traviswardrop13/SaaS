@@ -167,13 +167,14 @@ s07: null, e01: null, e02: null,
 s01: { x: 0.44, y: 0.715, h: 0.18, pose: "rest" },   // on the doorstep LEFT of Echo, between Pelly's fence and Echo (Echo took the right of the step; the strip right of him is too narrow and cuts the octopus at the edge), as Day 1's s01
 s02: { x: 0.365, y: 0.655, h: 0.115, pose: "peek" }, // peeking over the porch railing LEFT of Echo, under the letter (Echo leans on the right of the railing, as Day 1's s02); kept small so it clears the post knob, Echo's wing and the letter
 s03: { x: 0.65, y: 0.805, h: 0.21, pose: "rest" },   // on the cobbled lane just right of Echo
+s04: { x: 0.565, y: 0.75, h: 0.16, pose: "rest" },   // on the cobbles in front, between Gardener Bird and Echo, below the cart
 s05: { x: 0.535, y: 0.86, h: 0.14, pose: "rest" },   // on the cobbles in front, between Gardener Bird and Echo, just under the watering can (Echo stands at the right edge, so the prompt's spot right of him has no room); feet a little in front of the two birds'
 s06: { x: 0.625, y: 0.845, h: 0.15, pose: "rest" },  // on the cobbles in front, between the springboard's end and Echo's feet (no room right of Echo, who is at the right edge)
 s08: { x: 0.665, y: 0.85, h: 0.15, pose: "rest" },   // on the cobbles in front, between the springboard's end and Echo's feet (no room right of Echo, who is at the right edge)
 e02: { x: 0.645, y: 0.82, h: 0.19, pose: "cheer" },  // on the terrace just right of Echo, under the flowery arch
 e03: { x: 0.53, y: 0.845, h: 0.17, pose: "cheer" },  // on the terrace just right of Echo, in front of the table, feet level with Echo's
 e04: { x: 0.74, y: 0.7, h: 0.2, pose: "cheer" },     // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head and arms reach the map's lower edge and cover no star or place (only cobbles)
-s04: null, s07: null, e01: null,
+s07: null, e01: null,
 // Day 14: observatory
 s01: { x: 0.4, y: 0.7, h: 0.17, pose: "rest" },      // on the doorstep LEFT of Echo, between Pelly and Echo (right of Echo is only a sliver of step at the picture's edge)
 s02: { x: 0.365, y: 0.585, h: 0.12, pose: "peek" },  // peeking over the railing's top rail LEFT of Echo, between the left post and Echo (Echo sits on the railing, and right of him are the slipper and the end post); its head just under the letter
