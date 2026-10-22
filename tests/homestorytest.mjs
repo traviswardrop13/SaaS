@@ -268,14 +268,26 @@ await section("the views", async () => {
 // tap landed on whatever the new view put under the finger, Today's first
 // pick, and opened a game the child never picked, or the price) ──
 await section("a double tap", async () => {
-  // at 430x932 the door's middle is over Today's first pick in the Arcade
+  // at 430x932 the Arcade puts Today's picks where the door was. The spot is
+  // found on the page, not assumed: a few pixels of font (CI's headless
+  // Chromium) moved a gap under the door's middle.
   for (const vp of [{ width: 430, height: 932 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
     const at = vp.width + "x" + vp.height + ": ";
     const { ctx, pg, errors } = await open({ sub: true, viewport: vp });
     const b = await pg.locator("#arcadeBtn").boundingBox();
-    const under = await pg.evaluate(([x, y]) => { const app = document.getElementById("libraryApp"); app.setAttribute("data-view", "arcade"); const e = document.elementFromPoint(x, y); const card = e && e.closest(".game-card, a, button"); app.setAttribute("data-view", "home"); return card ? (card.id || card.className) : null; }, [b.x + b.width / 2, b.y + b.height / 2]);
+    const spot = await pg.evaluate((r) => {
+      const app = document.getElementById("libraryApp"); app.setAttribute("data-view", "arcade");
+      let found = null;
+      for (let i = 1; i <= 7 && !found; i++) for (let j = 1; j <= 7 && !found; j++) {
+        const x = r.x + (r.width * j) / 8, y = r.y + (r.height * i) / 8, e = document.elementFromPoint(x, y), card = e && e.closest(".game-card, a, button");
+        if (card) found = { x, y, under: card.id || card.className };
+      }
+      app.setAttribute("data-view", "home");
+      return found || { x: r.x + r.width / 2, y: r.y + r.height / 2, under: null };
+    }, b);
+    const under = spot.under;
     if (vp.width === 430) ok(at + "(a game card sits where the door was, so this is the real case)", !!under, under);
-    await pg.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2); await pg.waitForTimeout(700);
+    await pg.mouse.dblclick(spot.x, spot.y); await pg.waitForTimeout(700);
     ok(at + "a double tap on the Arcade door opens the Arcade and nothing under the finger (" + under + " sits there)", pathOf(pg) === "/today.html?view=arcade" && (await view(pg)) === "arcade" && (await pg.evaluate(() => document.getElementById("levelOvl") ? document.getElementById("levelOvl").hidden !== false || !document.getElementById("levelOvl").offsetParent : true)), { url: pg.url(), under });
     const card = pg.locator("#activityGroups .game-card:not([disabled])").first();
     await card.click(); await pg.waitForURL((u) => new URL(u).pathname !== "/today.html", { timeout: 3000 }).catch(() => {});

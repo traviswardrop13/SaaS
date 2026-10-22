@@ -112,6 +112,10 @@
     #trialBanner .tb-echo{width:46px;height:46px;flex:0 0 auto;object-fit:contain;}
     #trialBanner #trialMsg{flex:1;}
     #trialBanner .tb-pill{flex:0 0 auto;background:linear-gradient(180deg,var(--act-hi),var(--act));color:#fff;border-radius:999px;padding:8px 13px;font-family:"Baloo 2";font-size:13px;box-shadow:0 3px 0 var(--act-d);white-space:nowrap;}
+    /* Under 360 px the pill left the sentence a column about 85 px wide,
+       four to six lines tall, and pushed Home's two doors off a 320x568
+       screen. The whole banner is the button, so the pill steps aside. */
+    @media(max-width:359px){#trialBanner .tb-pill{display:none;}}
     .pulse-echo{display:block;width:84px;height:84px;margin:-6px auto 2px;object-fit:contain;}
     .pulseChip.on{background:linear-gradient(180deg,var(--act-hi),var(--act))!important;color:#fff!important;border-color:var(--act-d)!important;}
 
