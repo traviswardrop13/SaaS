@@ -7390,7 +7390,7 @@
   const HEAR_ELSE = { R: ["er", "err", "ur"] };
   // Apple writes a syllable that sounds like a letter as the letter ("E C"
   // for ee-see): read it as the letter's name
-  const HEAR_LETTER = { b: "bee", c: "see", d: "dee", e: "ee", f: "ef", g: "jee", j: "jay", k: "kay", l: "el", m: "em", n: "en", o: "oh", p: "pee", r: "ar", s: "es", t: "tee", u: "you", v: "vee", z: "zee" };
+  const HEAR_LETTER = { b: "bee", c: "see", d: "dee", e: "ee", f: "ef", g: "jee", h: "aitch", j: "jay", k: "kay", l: "el", m: "em", n: "en", o: "oh", p: "pee", r: "ar", s: "es", t: "tee", u: "you", v: "vee", z: "zee" };
   function _hearFlat(x) { return String(x).replace(/[^a-z]/g, "").replace(/([aeiou])h(?![aeiou])/g, "$1"); }
   // a consonant SOUND is left once a silent final e and a w or y that only
   // ends a vowel ("owe", "ow", "ay") are set aside
@@ -7399,7 +7399,22 @@
     const tokens = heard.map((t) => (t.length === 1 && HEAR_LETTER[t]) || t);
     const said = (t) => !HEAR_FILLER[t] || Object.keys(_hearSpots(t, S2)).length > 0;
     const w = word.replace(/[^a-z]/g, ""), wf = _hearFlat(w);
-    const forms = _hearVariants(w, S2).map(_hearFlat).concat((HEAR_ALIKE[w] || []).map(_hearFlat)).filter(_hearHasCons);
+    // the sounds a usual error turns this one into ("ay-say" is a fine
+    // S-for-SH try at ay-shay)
+    const errs = (HEAR_SUBS[S2] || []).map((x) => x.toUpperCase()).concat((HEAR_SUBS[S2] || []).indexOf("th") >= 0 ? ["THV"] : []);
+    const SC = _gameContent(), table = [], elsewhere = [];
+    try {
+      (SC && SC.syllableTables ? SC.syllableTables() : []).forEach((tb) => {
+        tb.items.forEach((it) => {
+          if (tb.sound === S2 && tb.pos === pos) table.push(it.t, it.say);
+          else if (tb.sound !== S2 && errs.indexOf(tb.sound) < 0) elsewhere.push(_hearFlat(it.t));
+        });
+      });
+    } catch (e) {}
+    // a usual-error form spelled like ANOTHER sound's syllable is that
+    // syllable ("ache", ch for the g of age, is K's), never this one's
+    const all = _hearVariants(w, S2).map(_hearFlat).concat((HEAR_ALIKE[w] || []).map(_hearFlat));
+    const forms = all.filter((f) => _hearHasCons(f) && (f === wf || elsewhere.indexOf(f) < 0));
     const gone = dropped.map(_hearFlat);
     const parts = Math.max(1, word.split(/[-\s]+/).filter(Boolean).length);
     // Can the words heard be covered, in order, by tries of one to `parts`
@@ -7418,12 +7433,6 @@
       return reach[tokens.length] === 2;
     };
     if (covered((r) => forms.indexOf(r) >= 0 && gone.indexOf(r) < 0)) return "pass";
-    const SC = _gameContent(), table = [];
-    try {
-      (SC && SC.syllableTables ? SC.syllableTables() : []).forEach((tb) => {
-        if (tb.sound === S2 && tb.pos === pos) tb.items.forEach((it) => { table.push(it.t, it.say); });
-      });
-    } catch (e) {}
     if (S2 === "R" && (pos === "v" || pos === "f")) table.push.apply(table, HEAR_ELSE.R);
     const others = gone.slice();
     table.forEach((t) => {
@@ -7435,13 +7444,21 @@
     // are not a try at the blend (c and k are one sound: "klue" for clue)
     const subs = HEAR_SUBS[S2] || [], kk = (x) => x.replace(/c/g, "k");
     const partner = pos === "b" ? kk((w.match(/^[^aeiouy]+/) || [""])[0].replace(new RegExp(HEAR_SPELL[S2] || "$^", "g"), "")) : "";
+    // an R or L melted into the vowel at the end is a vowel to Apple ("E"
+    // for ear, "Eye" for ire): never a pass, but a try for the shape check
+    // (filler aside: a grown-up's "is a" is still no try at ar)
+    const melts = (pos === "f" || pos === "v") && !!HEAR_SUBS_END[S2];
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i], f = _hearFlat(t);
       if (!said(t) || gone.indexOf(f) >= 0) continue;
-      if (partner && partner.split("").some((c) => kk(t).indexOf(c) < 0)) continue;
+      if (melts && f && !_hearHasCons(f)) return "unknown";
       // the target's own spelling counts even where the sound's usual
-      // letters miss it (the k of "ache")
-      let carries = forms.indexOf(f) >= 0 || Object.keys(_hearSpots(t, S2)).length > 0;
+      // letters miss it (the k of "ache", "aches")
+      const own = all.some((x) => x && f.indexOf(x) === 0) || Object.keys(_hearSpots(t, S2)).length > 0;
+      // a word carrying only a usual error must keep the blend's other
+      // letter ("way" is no try at play; "three" for free has its r)
+      if (!own && partner && partner.split("").some((c) => kk(t).indexOf(c) < 0)) continue;
+      let carries = own;
       for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
       if (carries) return "unknown";
     }
@@ -7481,10 +7498,11 @@
     // "say Ara" one), so a child's own try right after it is kept
     const parts = Math.max(1, String(word || "").split(/[-\s]+/).filter(Boolean).length);
     const wf = _hearFlat(String(word || "").toLowerCase());
-    // "ay-say", a middle syllable, is said with a "say" of its own (the
-    // start of a word keeps its old rule, "say" included)
+    // "ay-say", a middle syllable, is said with a "say" of its own, and so
+    // is "ay-shay" with its usual error (the start of a word keeps its old
+    // rule, "say" included)
     const mine = {};
-    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && opts.pos !== "mix") String(word || "").toLowerCase().split(/[-\s]+/).forEach((x) => { mine[x] = 1; });
+    if (opts.level === "syllable" && opts.pos && opts.pos !== "i" && opts.pos !== "mix") String(word || "").toLowerCase().split(/[-\s]+/).forEach((x) => { mine[x] = 1; _hearVariants(x, S2).forEach((v) => { mine[v] = 1; }); });
     const said = [];
     for (let i = 0; i < tokens.length; i++) {
       if ((tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") && !mine[tokens[i]]) {

@@ -3291,9 +3291,11 @@ selected."
   play: a blend keeps its other letter). Anything else is unknown and the
   shape check decides, as it did before Apple's listener: a word with the
   sound in it ("Oh row" for oh-roh, "Itchy" for ee-chee, "two" for oo-too,
-  "Year" for ear, a grown-up's "the" for athe; "rabbit" for ah-rah too). A
-  try with its sound melted away is never a pass here ("ah" or "owe" is a
-  vowel). A grown-up's "say" sets aside only the words that spell the target
+  "Year" for ear, a grown-up's "the" for athe; "rabbit" for ah-rah too; an R
+  or L melted into the vowel at the end, "E" for ear; a blend with its sound
+  but not its other letter, "Three" for free). A try with its sound melted
+  away is never a pass here ("ah" or "owe" is a vowel), nor a usual error
+  spelled like another sound's syllable ("Ache" for age is K's). A grown-up's "say" sets aside only the words that spell the target
   ("say Ara" one, "say ah rah" two), and is never the "say" of "ay-say". A
   blend word said without its sound fails ("top" for stop). Not built yet: a child
   who pauses at a middle syllable's hyphen ("ah … rah") is counted two tries
