@@ -372,16 +372,16 @@
         // no buddy
         { art: "s05", ages: "big", buddy: null,
           line: "Oh no, there's no bridge! The new one is still in pieces, all in a big pile by the water." },
-        // no buddy (on the plain grass just right of Echo, well away from the plank, not placed)
-        { art: "s06", ages: "both", buddy: null,
+        // buddy: on the plain grass just right of Echo, well away from the plank (rest)
+        { art: "s06", ages: "both", buddy: { x: 0.415, y: 0.8, h: 0.18, pose: "rest" },
           line: { big: "Tortoise tries to carry a long plank on his shell. Round and round he spins! Whoa, whoops!",
                   little: "Tortoise tries to carry a big piece of wood. Round and round he spins. Whoops!" } },
         // no buddy
         { art: "s07", ages: "both", buddy: null,
           line: { big: "Here's a crane to help! Hook the wood, lift it, turn it to fit, and lower it onto its glowing spot.",
                   little: "Here's a crane! It lifts the wood. Turn it to fit, then down it goes. Clunk!" } },
-        // no buddy (on the wooden landing's planks just right of Echo, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the wooden landing's planks just right of Echo (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.49, y: 0.74, h: 0.15, pose: "rest" },
           line: { big: "Let's put the bridge together, roll Tortoise's cart to his green door, and ring his doorbell. Ready?",
                   little: "Let's build a bridge, then roll Tortoise's cart to his door. Ready?" } }
       ],
@@ -391,8 +391,8 @@
         { art: "e01", ages: "both", buddy: { x: 0.2, y: 0.79, h: 0.19, pose: "cheer" },
           line: { big: "Ding-dong! Tortoise's cart rolls across our new bridge, all the way to his green door.",
                   little: "Ding-dong! Tortoise's cart made it to his green door!" } },
-        // no buddy (the plain patch of round rug just right of Echo, nothing on it, not placed)
-        { art: "e02", ages: "big", buddy: null,
+        // buddy: the plain patch of round rug just right of Echo, nothing on it (rest)
+        { art: "e02", ages: "big", buddy: { x: 0.885, y: 0.76, h: 0.19, pose: "rest" },
           line: "Chair by the window, books on the shelf, blanket on the bed. Tortoise does a happy dance, a very slow one!" },
         // no buddy (on the stone path just right of Echo, not placed)
         { art: "e03", ages: "both", buddy: null,
@@ -468,8 +468,8 @@
         { art: "s02", ages: "both", buddy: { x: 0.365, y: 0.585, h: 0.125, pose: "peek" },
           line: { big: "Here's the real letter. It's from Hare in snowy Snowdrop Valley. She needs help with her brand-new train!",
                   little: "Here's the real letter. It's from Hare, out in the snow!" } },
-        // no buddy (on the open snow just left of Echo, well below the coach and Frog, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the open snow just left of Echo, well below the coach and Frog (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.185, y: 0.805, h: 0.15, pose: "rest" },
           line: { big: "Hare and Frog are the train crew. Here's their shiny new train. But look! There are no tracks!",
                   little: "Hare and Frog have a shiny new train. But it has no tracks!" } },
         // no buddy (on the snow just right of Echo, not placed)
@@ -582,8 +582,8 @@
         { art: "s04", ages: "both", buddy: null,
           line: { big: "Uh-oh! The blankets and toys are all bundled up, and the bundles can't squeeze up the little cliff stairs.",
                   little: "Oh no! The blankets and toys are too big for the stairs!" } },
-        // no buddy (on the sand just right of Echo, not placed)
-        { art: "s05", ages: "both", buddy: null,
+        // buddy: on the sand just right of Echo (rest)
+        { art: "s05", ages: "both", buddy: { x: 0.575, y: 0.78, h: 0.19, pose: "rest" },
           line: { big: "Mama Swallow took off with the enormous quilt. Flap, flap, flop! Down it came, and now it's a quilt with feet.",
                   little: "Flap, flap, flop! The big quilt fell on Mama Swallow. A quilt with feet!" } },
         // no buddy
@@ -592,8 +592,8 @@
         // no buddy (on the sand just right of the post's foot, not placed)
         { art: "s07", ages: "big", buddy: null,
           line: "Here's the basket lift! A bundle in one basket, stones with just as many dots in the other. Then up it goes!" },
-        // no buddy (on the sand between Echo and the flat rock with the stones, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the sand between Echo and the flat rock with the stones (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.405, y: 0.85, h: 0.185, pose: "rest" },
           line: { big: "Let's balance each bundle with stones, wind it up, up, up, and pop it into its nest. Ready?",
                   little: "Here's a basket lift! Let's carry the blankets and toys up to the nests. Ready?" } }
       ],
@@ -693,14 +693,14 @@
         { art: "s05", ages: "both", buddy: null,
           line: { big: "Gardener Bird loves watering so much, she waters everything. The stairs, the cart, and us! Sprinkle!",
                   little: "Gardener Bird waters everything. Even us! Sprinkle, sprinkle!" } },
-        // no buddy (on the cobbles just right of Echo, not placed)
-        { art: "s06", ages: "big", buddy: null,
+        // buddy: on the cobbles just right of Echo (rest)
+        { art: "s06", ages: "big", buddy: { x: 0.625, y: 0.845, h: 0.15, pose: "rest" },
           line: "Beside the cart stands a springboard for seed pods. Pop one in the cup, pull the spring, and boing! Up it flies." },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
           line: "One planter hides under a little roof. So we bounce a pod off the striped awning. Boing, plop!" },
-        // no buddy (on the cobbles just right of Echo, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the cobbles just right of Echo (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.665, y: 0.85, h: 0.15, pose: "rest" },
           line: { big: "Let's aim the springboard, send a seed pod to every rooftop planter, and make the old arch bloom. Ready?",
                   little: "Boing! This springboard sends seeds up high. Let's fill every rooftop pot. Ready?" } }
       ],
