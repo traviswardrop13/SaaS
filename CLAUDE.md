@@ -1483,7 +1483,7 @@ Pelly's letter (Pelly the pelican always pulls the wrong thing out of her
 beak pouch first: a fish, a rubber duck, a banana; never "Penny", who is
 the penguin of *Penny's Pebble Party*) → the problem → "Let's
 go!" → the game → "See what happens!" → the ending → the sticker → a gold
-star on Echo's helper map. Three days are built:
+star on Echo's helper map. Fourteen days are built, one a day, in order:
 - **Day 1, "The Lighthouse Sneeze":** Captain Wally the walrus sneezes the
   lamp out; the child is the light and finds seven lost boats in the fog
   (**Light the Way**, key `lighthouse`).
@@ -1493,6 +1493,18 @@ star on Echo's helper map. Three days are built:
 - **Day 3, "The Puzzle Bridge":** the storm broke the bridge to Blossom
   Island; the child fits the stones back for Grandma Tortoise's 100th
   birthday (**Puzzle Bridge**, key `bridge`).
+- **Days 4-14 (22 Oct 2026), each around one of Codex's physical games**
+  (Travis: "connect these adventures to the shared daily player and Days
+  1-3"; then, of Codex's painted art, "this is way too ai", and he chose
+  new story pictures in this clay look, with Echo, the games' own pictures
+  kept): Day 4 "The Thirsty Waterwheel Garden" (`waterwheel`), 5 "The Little
+  Island Postboat" (`postboat`), 6 "Breakfast at the Moonberry Bakery"
+  (`bakery`), 7 "Tortoise's New Front Door" (`frontdoor`), 8 "The Glowworm
+  Lantern Walk" (`lantern`), 9 "All Aboard for Snowdrop Valley"
+  (`trainline`), 10 "The Hilltop Patchwork Kite" (`kite`), 11 "The Sandstone
+  Nest Lift" (`nestlift`), 12 "The Lily-Pad Concert" (`concert`), 13 "Seeds
+  Across the Rooftops" (`rooftops`), 14 "The Moving-Star Observatory"
+  (`observatory`). See "Days 4-14: Codex's games in the story" below.
 
 Each has a version for ages 3-4 (`Sona.playStyle() === "simple"`: the scenes
 marked for both ages, the short lines, a six-word game) and one for 5-8 (eight
@@ -1501,7 +1513,8 @@ buddy a child picked is in every game and in 24 of the 36 pictures (the
 others, a view out of a window, a letter, a crowd's back, have no spot for
 it), laid over the painting in a pose that already exists, never painted in
 and never under a finger.
-- **Files.** The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
+- **Files.** (Days 4-14's own are under "Days 4-14: Codex's games in the
+  story" below.) The day list is ONE copy in `sona.js`, `STORY_DAYS` (inside the
   QUEST1 block): id, game, page, hero, Home's title and line. (The same tag,
   STORY1, also marks the older episode engine: `sona.js`'s "the daily run is
   an EPISODE" block, `storytest` and the parked `story.html`; they are not
@@ -1725,8 +1738,11 @@ line a child hears):
 - Day 2's finger move (the spec's alternative was cloud-sheep herding).
 - A phone that cannot buy gets the game of the day; a family who keeps the
   free version on a phone that can buy sees the story locked.
-- After Day 3 the card is the game of the day again, "Today's adventure" with
-  no day number, until Day 4 exists; every child starts at Day 1.
+- After Day 14 the card is the game of the day again, "Today's adventure"
+  with no day number; every child starts at Day 1. The stories are told once:
+  a "two-week rotation" that starts again at Day 1 after Day 14 would be one
+  change in `questToday()`, and is his call (today a finished story is never
+  on Home again, and the game of the day goes on for good).
 - The story games are only inside the stories, and a finished story is not
   on Home again.
 - Under Reduce Motion both games hold still: Light the Way's boats stay on
@@ -1746,8 +1762,69 @@ line a child hears):
   `design/adventure/review.html`, and listen to the recorded lines with Rachel
   once they exist.
 
+**Days 4-14: Codex's games in the story** (22 Oct 2026). Codex built eleven
+physical games (`public/daily-adventures/<key>.js` and `.css`,
+`window.DailyAdventureGames[key]`, each with its own suite `daily-<key>test`
+on its test host `tests/fixtures/daily-adventure.html`; Codex's record of
+them is `design/daily-adventures/INTEGRATION.md`, the plan `STORY-PLAN.md`).
+Claude joined them to the story:
+- **One page for all eleven games, `public/story-game.html?story=<id>`.**
+  `STORY_DAYS` gives each of Days 4-14 a `controller` (its key in
+  `DailyAdventureGames`) and that page. Day 7's id is `frontdoor`, because
+  Day 3 owns `bridge`; its controller is still Codex's `bridge`. The page asks
+  `gameAccess()` before it puts the game's files on the page, so a family
+  without the story, an unknown id or anything after `?story=<id>` goes Home
+  before any file, mic or sound; it hands the game five moves for ages 3-4
+  and eight for 5-8 (the games' contract: ages 3-4 say FIVE words a day here,
+  six on Days 1-3); its end card's one button is "See what happens!" to the
+  story's ending, with no Play again; the engine's end card finishes the day
+  (`questEnd`). It writes nothing of its own.
+- **One shell, one copy of the words.** The page's body is the test host's,
+  element for element, and both load `public/daily-adventures/host.css`
+  after the game's own sheet (the order every fit was measured in); every
+  game's words (title, start card, help pill, banner, canvas label, end card)
+  are `public/daily-adventures/pages.js`, which the page and the test host
+  both read. `storygametest` holds the two bodies equal. The test host serves
+  `sona.js` without any story day whose game is its key, so a game is still
+  tested alone through the catalog gate it was verified on. A game relabels
+  its own help pill while playing (pages.js's `helpText` is only its first
+  paint).
+- **The story around each game is Days 1-3's format, in `adventures.js`:**
+  Pelly's letter (a new wrong thing every day: a striped sock, a teapot, a
+  pinecone, a toothbrush, a carrot, a mitten, an umbrella, a wooden spoon, a
+  sandwich, a pancake, a fluffy slipper), the problem, "Let's go!", the game,
+  the ending, and a gold star ("Four gold stars on our helper map!" up to
+  fourteen; the map page is a close-up of the one new star, since no drawing
+  can be trusted to count stars). Eight scenes and four endings for 5-8, six
+  and three for 3-4, every line under the story-line rules. Pictures in
+  `public/assets/adventure/<id>/`, Home's `home-<id>.webp`, drawn by
+  `tools/art/gen-adventure.mjs` from `adventure-prompts.json` (a later story
+  names its own `lineups` and `who`; every opening page is told it shows
+  the problem, not the fix) and checked page by page before cutting.
+  One cast across the run: Day 9's Frog is Day 12's drummer, Day 9's Badger
+  is Day 6's Baker Badger off duty; Gardener Mouse (Day 4) and Mouse (Day 5)
+  look different; Day 7's Tortoise is not Day 3's Grandma Tortoise.
+- **Not used in the app:** Codex's three acts and endings in `stories.js`
+  (its planning record, now `ready: true`) and the narration adapter
+  `narration.js` (story cards that would stop a game at its 2nd and 6th
+  word): no app page loads either; their suites still run. No story card
+  interrupts a game.
+- **For Rachel:** every line a child hears, in the PR body; the eleven games'
+  directions (`voicedoc` B7-B8, 113 lines), among them a few to look at:
+  Rooftops' "The gutter brings every missed seed back", Postboat's "Steer
+  beside the right dock", Concert's "Your sounds are safe" (in a speech app),
+  Nest Lift's "Hold Up to lift"; ages 3-4 say five words, not six; the games
+  ask the child's own sound like every Say & Play game (no story words in
+  `GAME_WORDS` for Days 4-14).
+- **For Travis:** the two-week rotation (above); repeats only the games could
+  change (two bridge days, 3 and 7; two new front doors, 5 and 7; "too big
+  for the stairs" on 11 and 13); the games' own pictures stay Codex's painted
+  look beside the clay story pages; every new character and joke the stories
+  invented (each story's notes, in the PR).
+
 `storycoretest` (the rules in `sona.js`, the offer, the hand-back),
-`homestorytest` (Home), `adventuretest` (the player), `lighthousetest` (run as
+`homestorytest` (Home), `adventuretest` (the player), `storygametest` (Days
+4-14's page and Day 4 played through), `lighthousetest` (run as
 `lighthouseplaytest`, `lighthousehelptest`, `lighthousefittest`),
 `winduptest` and `bridgetest` (run as `bridgeplaytest`, `bridgelittletest`,
 `bridgefittest`) play it; `shiptest` checks every picture and the voice
