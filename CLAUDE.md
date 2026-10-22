@@ -1729,13 +1729,13 @@ talked and watched; nothing let them *play*. Each comes back **one at a
 time**, rebuilt as a real game — what the child sees, what their finger does
 and what saying the word does, agreed with Travis in plain words first, then
 played by him on his phone — by taking `comingSoon` off its own line in
-`GAME_ACTS`. Hoops, Soccer Goal and Dino Dig are back; seventeen are still
-parked, and with Peekaboo that is the eighteen in the queue below. Home lists
+`GAME_ACTS`. Hoops, Soccer Goal and Dino Dig came back first; the other
+seventeen, with Peekaboo, are the eighteen below, all open since 22 Oct 2026. Home lists
 playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
 
-**The eighteen rebuilt by Codex, still parked** (Travis, 16 Oct 2026, to
+**The eighteen rebuilt by Codex, open since 22 Oct 2026** (Travis, 16 Oct 2026, to
 Codex: build the Coming soon games one at a time, each with its own finger
 play and a real reason to talk; then, to Claude: "i jsut want you to finihs
 rhe job"). Race Car, Treasure Map, Robot Builder, Castle Builder, Space Trip,
@@ -1743,8 +1743,11 @@ Pizza Chef and Monster Makeover (5-8), and Balloon Party, Grow a Flower,
 Rocket Blast, Build a Snowman, Choo-Choo Train, Puppy Bath, Bedtime Stars,
 Birthday Cake, Surprise Boxes, Fish Tank and Peekaboo (3-4) are each a real
 played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
-`arcade-<key>.html`, its own suite `tests/<game>test.mjs`). All eighteen keep
-`comingSoon: true` until Travis plays each on his phone. What every one holds:
+`arcade-<key>.html`, its own suite `tests/<game>test.mjs`). **All eighteen
+opened at once** (Travis, 22 Oct 2026: "turn on all 18 games and email about
+them at 8am"), all Premium, on Home and on `parents.html`'s strip (29 games),
+instead of one at a time after he played each. No game is parked now; the
+parking still works (`freetest` parks one in the page to prove it). What every one holds:
 - **The word (said two times) earns each step; the finger makes it.** No
   progress before the word, silence earns nothing, `api.done()` once a step.
 - **Every round ends without speaking again** (the Hoops rule). Misses make

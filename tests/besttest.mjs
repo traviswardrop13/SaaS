@@ -259,9 +259,9 @@ await section("never practice data", async () => {
 // ── 4. Home's tag ─────────────────────────────────────────────────────────
 for (const vp of [{ width: 375, height: 812 }, { width: 320, height: 568 }]) {
   await section("Home at " + vp.width, async () => {
-    // Milo has played the two free games and, once, two Premium ones and a
-    // parked one; his family has no Premium now, so the two are greyed, and
-    // the parked one has no card on Home at all (19 Oct 2026).
+    // Milo has played the two free games and, once, three Premium ones (one
+    // of them, Peekaboo, while it was still parked); his family has no
+    // Premium now, so all three are greyed.
     const { context, page, errors } = await fresh({ ...vp, bests: { tiles: { n: 38, at: "2026-10-02" }, slice: { n: 17, at: "2026-10-02" }, stack: { n: 13, at: "2026-09-20" }, run: { n: 570, at: "2026-09-20" }, peekaboo: { n: 4, at: "2026-09-20" } } });
     try {
       await home(page);
@@ -275,7 +275,9 @@ for (const vp of [{ width: 375, height: 812 }, { width: 320, height: 568 }]) {
       ok(w + "the card's own label says it too: \"… Your best: 38.\"", tiles.every((c) => /^Piano Tiles\. .*Your best: 38\.$/.test(c.aria)) && slice.every((c) => /^Fruit Slice\. .*Your best: 17\.$/.test(c.aria)), [tiles[0] && tiles[0].aria, slice[0] && slice[0].aria]);
       const greyed = list.filter((c) => c.locked && !c.disabled);
       ok(w + "a greyed Premium game carries no tag, whatever the child once did in it", by(greyed, "stack").length >= 1 && by(greyed, "run").length >= 1 && greyed.every((c) => c.text === null && !/best/i.test(c.aria) && /Ask a grown-up/.test(c.aria)), greyed.filter((c) => c.text !== null));
-      ok(w + "a Coming soon game is not on Home at all, so its best shows nowhere", by(list, "peekaboo").length === 0 && list.every((c) => !c.disabled) && !/peekaboo/i.test(await page.evaluate(() => document.getElementById("libraryApp").innerText)), list.filter((c) => c.disabled || c.key === "peekaboo"));
+      // Peekaboo was parked when he played it; since 22 Oct 2026 it is a
+      // Premium game like the rest, so it is greyed with no tag.
+      ok(w + "a game he played while it was Coming soon is greyed with no tag now that it is Premium", by(greyed, "peekaboo").length >= 1 && by(greyed, "peekaboo").every((c) => c.text === null) && list.every((c) => !c.disabled), by(list, "peekaboo"));
       ok(w + "a game never played shows nothing at all", list.filter((c) => !c.locked && !c.disabled && ["tiles", "slice"].indexOf(c.key) < 0).every((c) => c.text === null && !/best/i.test(c.aria)), list.filter((c) => c.text !== null).map((c) => c.key));
       ok(w + "Home has no sideways scroll", (await overflow(page)) <= 1, await overflow(page));
       const words = await page.evaluate(() => document.getElementById("libraryApp").innerText);
@@ -309,7 +311,7 @@ await section("Home: who sees a tag", async () => {
     const list = await cards(f.page);
     ok("a Premium game the family has opened carries its tag", by(list, "stack").every((c) => c.text === "Best 13" && !c.locked) && by(list, "run").every((c) => c.text === "Best 570") && by(list, "stack").length >= 1, by(list, "stack"));
     ok("the longest number still sits whole on a 320px picture, clear of the badge", by(list, "hoops").length >= 1 && by(list, "hoops").every((c) => c.text === "Best 99999" && c.inside && c.oneLine && c.clearOfBadge), by(list, "hoops"));
-    ok("…and a Coming soon game is still nowhere on Home", by(list, "peekaboo").length === 0 && list.every((c) => !c.disabled), by(list, "peekaboo"));
+    ok("…and a game once played while Coming soon carries its tag now it is open", by(list, "peekaboo").length >= 1 && by(list, "peekaboo").every((c) => c.text === "Best 4" && !c.locked) && list.every((c) => !c.disabled), by(list, "peekaboo"));
     ok("…with no sideways scroll or page errors", (await overflow(f.page)) <= 1 && f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 
