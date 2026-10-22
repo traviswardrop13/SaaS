@@ -302,8 +302,8 @@
     bakery: {
       wash: "#cc8b43",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.45, y: 0.685, h: 0.19, pose: "rest" },
           line: "Pelly is up early with a letter. Oops. That's a pinecone! What a prickly letter, Pelly." },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
@@ -313,8 +313,8 @@
         { art: "s03", ages: "both", buddy: null,
           line: { big: "The neighbors are already lining up at the Moonberry Bakery. Grandpa Bear brought a very big basket!",
                   little: "Everyone is hungry, but there are no buns yet. Rumble, rumble go their tummies!" } },
-        // no buddy (on the counter top just right of Echo, not placed)
-        { art: "s04", ages: "big", buddy: null,
+        // buddy: on the counter top just right of Echo (rest)
+        { art: "s04", ages: "big", buddy: { x: 0.865, y: 0.775, h: 0.165, pose: "rest" },
           line: "Inside, every tray is empty. Badger is so excited about his new bakery, his paws won't stop wiggling!" },
         // no buddy
         { art: "s05", ages: "both", buddy: null,
@@ -324,8 +324,8 @@
         { art: "s06", ages: "both", buddy: null,
           line: { big: "The recipe is all pictures. Pour to the line, stir, then shape round buns, curled buns and berry buns.",
                   little: "The recipe is all pictures. Pour it, stir it, shape the buns!" } },
-        // no buddy (on the counter top just right of Echo, not placed)
-        { art: "s07", ages: "big", buddy: null,
+        // buddy: on the counter top just right of Echo (rest)
+        { art: "s07", ages: "big", buddy: { x: 0.905, y: 0.8, h: 0.17, pose: "rest" },
           line: "Sniff, sniff. Grandpa Bear's nose is squished on the window. Not yet, Grandpa Bear. We haven't even started!" },
         // no buddy (on the counter top just right of the mixing bowl, not placed)
         { art: "s08", ages: "both", buddy: null,
@@ -341,8 +341,8 @@
         // no buddy (on the counter top just right of Echo, not placed)
         { art: "e02", ages: "big", buddy: null,
           line: "Badger opens the door, and in come the neighbors. Good thing Grandpa Bear brought that very big basket!" },
-        // no buddy (on the wooden floor just left of Echo, not placed)
-        { art: "e03", ages: "both", buddy: null,
+        // buddy: on the wooden floor just left of Echo (cheer)
+        { art: "e03", ages: "both", buddy: { x: 0.555, y: 0.765, h: 0.19, pose: "cheer" },
           line: { big: "Pelly flies in for breakfast too. She tucks a bun in her pouch, and out pops another pinecone. Bonk!",
                   little: "Pelly puts a bun in her pouch. Out pops another pinecone!" } },
         // no buddy (the right half of the bench, just right of Echo, not placed)
@@ -514,15 +514,15 @@
     kite: {
       wash: "#8cc3e3",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },
           line: "Pelly sails in on the breeze with a letter. Oops. That's an umbrella! How did it ever fit in her pouch?" },
         // no buddy (PEEK, not placed)
         { art: "s02", ages: "both", buddy: null,
           line: { big: "Here's the real letter. It's from Goat on Breezy Hill. His giant kite needs our help!",
                   little: "Here's the real letter. Goat's giant kite needs our help!" } },
-        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the grass just right of Echo, nearer the front than Goat and apart from him (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.56, y: 0.825, h: 0.2, pose: "rest" },
           line: { big: "Up on windy Breezy Hill, Goat shows us his giant kite. All his friends painted pictures for it!",
                   little: "Goat shows us his giant kite. His friends painted pictures for it!" } },
         // no buddy (on the grass just right of Echo, nearer the front than the rock, not placed)
@@ -532,22 +532,22 @@
         { art: "s05", ages: "both", buddy: null,
           line: { big: "But the pictures aren't sewn on yet. Whoosh! Every time the wind blows, up they flip and flap.",
                   little: "The pictures aren't sewn on. Whoosh! Up they flap!" } },
-        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
-        { art: "s06", ages: "both", buddy: null,
+        // buddy: on the grass just right of Echo, nearer the front than Goat and apart from him (rest)
+        { art: "s06", ages: "both", buddy: { x: 0.47, y: 0.85, h: 0.2, pose: "rest" },
           line: { big: "Goat grabbed a needle to sew them on. But that's tricky with hooves! Now he's wrapped up like a present.",
                   little: "Sewing is tricky with hooves. Goat is all tangled up!" } },
         // no buddy
         { art: "s07", ages: "big", buddy: null,
           line: "A kite's tail has to hang even. Too many bows on one side, and it tips over! Spread them out, and it flies straight." },
-        // no buddy (on the grass just right of Echo, nearer the front than Goat and apart from him, not placed)
-        { art: "s08", ages: "both", buddy: null,
+        // buddy: on the grass just right of Echo, nearer the front than Goat and apart from him (rest)
+        { art: "s08", ages: "both", buddy: { x: 0.61, y: 0.855, h: 0.19, pose: "rest" },
           line: { big: "Let's sew every picture in its place, thread the ribbons, balance the tail and fly the kite. Ready?",
                   little: "Let's sew on the pictures, add the ribbon tail and fly! Ready?" } }
       ],
       go: "Let's go!",
       ending: [
-        // no buddy (on the grass just right of Echo, not placed)
-        { art: "e01", ages: "both", buddy: null,
+        // buddy: on the grass just right of Echo (cheer)
+        { art: "e01", ages: "both", buddy: { x: 0.87, y: 0.815, h: 0.19, pose: "cheer" },
           line: { big: "Look at it go! Up goes the patchwork kite, straight and steady, with every picture flying high!",
                   little: "Up goes the kite! Every picture is flying!" } },
         // no buddy (on the grass just right of Echo, apart from the rock, not placed)
@@ -674,15 +674,15 @@
     rooftops: {
       wash: "#8cc0dc",
       intro: [
-        // no buddy (on the doorstep to the right of Echo, right of the door, not placed)
-        { art: "s01", ages: "both", buddy: null,
+        // buddy: on the doorstep to the right of Echo, right of the door (rest)
+        { art: "s01", ages: "both", buddy: { x: 0.44, y: 0.715, h: 0.18, pose: "rest" },
           line: "Knock, knock! It's Pelly with a letter. Oops. That's a pancake, with butter on top! Silly Pelly." },
-        // no buddy (PEEK, not placed)
-        { art: "s02", ages: "both", buddy: null,
+        // buddy: peeking over the stretch of the railing's top edge just right of Echo, with nothing behind it but the background, so a little character can peek over the railing there (peek)
+        { art: "s02", ages: "both", buddy: { x: 0.365, y: 0.655, h: 0.115, pose: "peek" },
           line: { big: "Here's the real letter. It's from Gardener Bird. Her rooftop gardens need seeds, and lots of them!",
                   little: "Here's the real letter. Gardener Bird has seeds to plant!" } },
-        // no buddy (on the cobbled lane just right of Echo, not placed)
-        { art: "s03", ages: "both", buddy: null,
+        // buddy: on the cobbled lane just right of Echo (rest)
+        { art: "s03", ages: "both", buddy: { x: 0.65, y: 0.805, h: 0.21, pose: "rest" },
           line: { big: "Off we go to the hilltop town! Every rooftop has a planter full of soil. But nothing is growing.",
                   little: "Look at all the rooftop pots. Lots of soil, but no plants!" } },
         // no buddy (on the cobbles just right of Echo, not placed)
@@ -710,8 +710,8 @@
         { art: "e01", ages: "both", buddy: null,
           line: { big: "Plop! Every seed is planted. Green leaves on every rooftop, and flowers all over the old arch!",
                   little: "Plop! Green leaves and flowers on every rooftop!" } },
-        // no buddy (on the terrace just right of Echo, not placed)
-        { art: "e02", ages: "big", buddy: null,
+        // buddy: on the terrace just right of Echo (cheer)
+        { art: "e02", ages: "big", buddy: { x: 0.645, y: 0.82, h: 0.19, pose: "cheer" },
           line: "Gardener Bird loops through the flowery arch, watering every new plant. Quick, a leaf umbrella!" },
         // no buddy (on the terrace just right of Echo, in front of the table, not placed)
         { art: "e03", ages: "both", buddy: null,

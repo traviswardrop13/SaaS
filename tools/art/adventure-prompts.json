@@ -7,7 +7,8 @@
     "afternoon": "a warm, soft late afternoon: a pale peach-and-butter sky, long gentle shadows, every color warm and clear (no harsh glare, no sparkles)",
     "sunset": "a soft peach-and-lilac sunset, warm and gentle, every face clearly lit (no harsh glare, no sparkles)",
     "indoor": "a warm honey-colored morning light pouring in through a big round window, cozy and bright (no harsh glare, no sparkles)",
-    "evening": "a cozy lamp-lit evening indoors, warm and soft, every face clearly lit (no harsh glare, no sparkles)"
+    "evening": "a cozy lamp-lit evening indoors, warm and soft, every face clearly lit (no harsh glare, no sparkles)",
+    "dusk": "a soft woodland dusk: the sky fading from lilac to deep blue, gentle cool moonlight on every face so each one is clearly and warmly readable; NO lamp, lantern, window or candle is lit anywhere (the only glow in the whole picture is the little glowworm's tail), no harsh glare, no sparkles"
   },
   "places": {
     "cottage": "ECHO'S COTTAGE: a small round clay cottage with cream walls, a round sky-blue front door, round windows with soft yellow frames, a domed straw-colored thatched roof, a little wooden porch with two wide steps, and a low white picket fence along a garden path with flowers.",
@@ -718,7 +719,7 @@
     },
     {
       "id": "lantern",
-      "light": "sunset",
+      "light": "dusk",
       "bible": "PELLY: Pelly the pelican, a big white clay pelican (a real pelican, not a duck) with a very long, straight peach-orange bill, longer than her head, and a big, soft, lumpy peach pouch hanging under it, a small round light-blue postal cap with a little white envelope badge (no anchor), no scarf, and a brown leather mail satchel across her body; about twice Echo's height. GLOWWORM: Glowworm, a small, chubby, cheerful clay glowworm (a soft little bug shaped like a round caterpillar; not a snake, not a snail, no shell, no wings, no clothes) with a pale butter-yellow body made of four round segments, a big round head with big glossy eyes, small pink cheeks and a wide smile, two thin antennae with little round tips, six tiny legs, and a round tail end that glows a soft warm golden yellow like a little night-light; about half Echo's height when he sits up, and about as long as Echo is tall. RABBIT: Rabbit, a fluffy, cheerful caramel-brown clay rabbit (a real rabbit, not a white bunny and not a wind-up toy: no key, no jacket, no drum, no scarf) with long upright ears with pink insides, a cream muzzle and tummy, a pink nose, a round white fluffy tail and big soft back feet, in a cozy plum-purple knitted jumper with a little orange-and-green knitted carrot on its front; he stands upright on his back feet; about one and a half times Echo's height. HEDGEHOG: Hedgehog, a small, round, friendly clay hedgehog with soft, smooth, rounded chestnut-brown spines (soft-looking, never sharp), a cream face and tummy, a shiny black button nose, tiny round ears, small pink paws and a tiny cherry-red knitted bobble hat with a white bobble; she stands upright on her back feet; about as tall as Echo. The woods in this story are the Mushroom Woods at dusk: soft mossy tree trunks, rounded teal-green leaves, ferns, little ordinary woodland mushrooms, a pale sandy earthen path that winds between them, and a lavender-blue evening sky with the last warm peach light. The lights along the path all look like this: little mushroom lamps (each a wide, rounded, ribbed honey-wood mushroom cap on two short wooden posts over a round wooden base, with a small round glass light between the posts where it glows, about as tall as Echo, with a tiny wooden switch lever at its foot), round flat stepping stones set into the path that glow softly like little moons only when lit, one small honey-wood power box with two round sockets on its front at the start of the path, soft thick lamp cords (some honey-yellow, some teal) with a round wooden plug at each end, and one great big lantern at the end of the path, a classic honey-wood lantern with a rounded rectangular frame, a short handle loop and a big glass window, about twice Echo's height, hanging from a low mossy branch over a small circle of tree-stump seats, with a few little mushroom lamps standing around the circle. Unlit, every lamp and the big lantern have dark grey glass with no glow at all.",
       "who": {
         "GLOWWORM": {
@@ -779,14 +780,17 @@
           "buddy": "on the near sandy path just right of Echo: plain path, nothing on it"
         },
         "e01": {
+          "light": "night",
           "picture": "The whole lamp path in the Mushroom Woods, seen from a little way up, now shining at dusk under a deep lavender-blue sky: every little mushroom lamp glows warm butter-yellow, the round stepping stones glow softly like little moons, and neat honey-yellow and teal cords run tidily along the side of the path, lamp to lamp, from the small honey-wood power box near the start of the path, left of the middle and well above the bottom of the picture. At the end of the path, in the upper middle, the great big lantern shines bright gold from its low mossy branch, filling the circle of tree-stump seats beneath it with warm golden light, and the little mushroom lamps around the circle glow too. Echo is not in this picture, and no other character either. The near path runs across the lower third of the picture.",
           "buddy": null
         },
         "e02": {
+          "light": "night",
           "picture": "Under the great big lantern, shining warm gold from its low mossy branch near the top of the picture, in the Mushroom Woods at dusk: a small circle of tree-stump seats, each with a soft round cushion, with little glowing mushroom lamps standing around the circle. Rabbit sits on a stump on the left, ears up, smiling, listening. Glowworm curls up happily on top of a glowing little mushroom lamp just right of Rabbit, his tail end glowing. Hedgehog sits on a stump left of the middle, paws on her tummy, smiling. Echo sits on a stump just right of the middle, eyes half closed, a happy listening smile, one wing cupped by his ear. Glowing stepping stones lead to the circle from the front. Warm golden light on every face. The mossy ground runs across the lower third of the picture.",
           "buddy": "the empty tree-stump seat just right of Echo, with a plain soft cushion on it and nothing else"
         },
         "e03": {
+          "light": "night",
           "picture": "Under the great big lantern, shining warm gold, in the Mushroom Woods at dusk, everyone laughing. Pelly the pelican has just landed on the left of the circle of tree-stump seats and holds out the big orange carrot with its leafy green top. Rabbit, in the middle, happily munches the end of the carrot, cheeks full. On the right, Glowworm, on top of a glowing little mushroom lamp, pops up with one last tiny hiccup, his tail end flashing, and Hedgehog laughs beside him. Echo stands in the lower middle, just left of the middle, laughing, wings up. The mossy ground runs across the lower third of the picture.",
           "buddy": null
         },
