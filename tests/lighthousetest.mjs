@@ -297,6 +297,24 @@ try{
   ok('the pill is greyed while the beam is on, with its bar showing',await page.locator('#lhHelp').isDisabled()&&await page.locator('#lhPower').isVisible());
   await advance(page,10300);s=await lh(page);ok('the beam lasts ten seconds, then the pill is ready again',s.power===0&&!s.fogClear&&s.pool.r<r0*1.2&&await page.locator('#lhHelp').isEnabled(),s);
   ok('the boat is still found by the finger',await findBoat(page));ok('the step counts',await stepTo(page,1));
+  // a double tap where the pill and "Back to the game" overlap (22 Oct 2026:
+  // the second tap of a double tap on the pill landed on "Back to the game"
+  // and cancelled the help, and the other way round asked again)
+  {await sayWord(page);await advance(page,600);
+   const pill=await page.evaluate(()=>{const r=document.getElementById('lhHelp').getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height};});
+   await page.locator('#lhHelp').click();await until(page,()=>__sayplay.listening);
+   const back=await page.evaluate(()=>{const r=document.getElementById('helpBack').getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height};});
+   await page.locator('#helpBack').click();await advance(page,600);
+   const x0=Math.max(pill.x,back.x),x1=Math.min(pill.x+pill.w,back.x+back.w),y0=Math.max(pill.y,back.y),y1=Math.min(pill.y+pill.h,back.y+back.h);
+   ok('(on this phone the pill and "Back to the game" overlap, so this is the real case)',x1-x0>8&&y1-y0>8,{pill,back});
+   const P={x:(x0+x1)/2,y:(y0+y1)/2},under=()=>page.evaluate(([x,y])=>{const e=document.elementFromPoint(x,y);return e&&(e.closest('#helpBack')?'back':e.closest('#lhHelp')?'pill':e.id||e.tagName);},[P.x,P.y]);
+   await page.mouse.click(P.x,P.y);const u1=await under();await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
+   ok('a double tap on Bright beam asks for the help and keeps asking (its second tap, on "Back to the game", does nothing)',u1==='back'&&s.sp.phase==='turn'&&s.lh.paused&&await page.locator('#helpBack').isVisible(),{u1,s});
+   await page.mouse.click(P.x,P.y);const u2=await under();await page.mouse.click(P.x,P.y);await advance(page,300);s=await both(page);
+   ok('a double tap on "Back to the game" goes back to the game and does not ask again',u2==='pill'&&s.sp.phase==='play'&&!s.lh.paused&&!(await page.locator('#helpBack').isVisible()),{u2,s});
+   await advance(page,600);await page.mouse.click(P.x,P.y);await until(page,()=>__sayplay.listening);s=await both(page);
+   ok('…and a tap there half a second later asks again, as ever',s.sp.phase==='turn',s);
+   await page.locator('#helpBack').click();await advance(page,300);}
   const q=await quietAudit(page);ok('help asks never sound into an open microphone',q.leaks===0&&q.live===0&&q.overlap===0,q);
   ok('help: no runtime errors',errors.length===0,errors);await context.close();
  }

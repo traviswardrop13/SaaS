@@ -358,9 +358,9 @@ try{
   for(let n=0;n<20;n++)await page.keyboard.press('ArrowDown');await page.keyboard.press(' ');ok('…and winds it',await stepped(page,1));
   // one arrow press, then the focus goes elsewhere (22 Oct 2026: the key hold
   // stayed on, the Oil can stayed greyed and no finger could wind)
-  await sayWord(page);await page.keyboard.press('ArrowRight');s=await st(page);const k0=s.w.turns;
+  await sayWord(page);await page.keyboard.press('ArrowRight');s=await st(page);const k0=s.w.turns,n0=s.w.tries;
   await page.evaluate(()=>document.getElementById('windupDial').blur());await advance(page,100);s=await st(page);
-  ok('the dial losing focus drops the key hold: the Oil can is back, nothing let go, the winding kept',!s.w.keyHeld&&s.w.tries===0&&Math.abs(s.w.turns-k0)<1e-9&&await page.locator('#windupHelp').isEnabled(),s.w);
+  ok('the dial losing focus drops the key hold: the Oil can is back, nothing let go, the winding kept',!s.w.keyHeld&&s.w.tries===n0&&Math.abs(s.w.turns-k0)<1e-9&&await page.locator('#windupHelp').isEnabled(),{n0,w:s.w});
   await page.locator('#windupDial').focus();await page.keyboard.press('ArrowRight');
   await circle(page,0.5,{lift:false});s=await st(page);ok('a finger takes the dial over from the arrow keys and winds',!s.w.keyHeld&&s.w.turns>k0+0.2,s.w);
   await page.mouse.up();await advance(page,40);

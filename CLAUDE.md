@@ -1656,7 +1656,10 @@ Two ladders climb side by side: misses (a wider star, then the key catches in
 it, then any let-go past 30% wakes the toy) and seconds without a quarter
 turn (arrows and a moving dot, then rubbing winds, then any drag winds).
 Help pill: "Oil can" (every circle counts double and the star is wide for
-10 s). End card: "The parade is on!" / "You woke up every toy."
+10 s). One finger owns the dial: a circling finger keeps it, but a touch that
+has not moved for 0.3 s gives way to a new one, with no try (a resting thumb
+used to own it for as long as it stayed down), and the dial losing focus
+drops an arrow-key hold. End card: "The parade is on!" / "You woke up every toy."
 
 **Puzzle Bridge** (Day 3, `bridge.js`, `BRIDGE1`). The bridge is drawn by
 the canvas, one sandstone body from the near bank to Blossom Island on
@@ -2086,7 +2089,12 @@ played game on `sayplay.js`'s play hook (`public/<game>.js`, a hand-written
   earns a power on top. **It can always be left:** silence, a pause, or the
   "Back to the game" pill gives the earned move straight back with no power
   (`endHelp` in `sayplay.js`, added because Codex's version froze the game
-  until the child spoke). `sayplaytest`'s "help ask" scenario pins it.
+  until the child spoke). `sayplaytest`'s "help ask" scenario pins it. The
+  pill and "Back to the game" sit in the same place, so a tap within half a
+  second of either switch on the very spot the switching tap touched does
+  nothing (22 Oct 2026: a double tap on the pill asked and cancelled at
+  once; `helpDoubleTap`): a tap elsewhere, a key and silence are never held
+  back. `lighthousetest`'s help part plays it.
 - **A cheer before the next word:** the step counts about 1.15 s after the
   success, so its chime is heard (a step finished mid-direction stops only
   Echo's voice, `stopVoice`).
