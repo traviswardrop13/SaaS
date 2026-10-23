@@ -1,9 +1,10 @@
-// REPWEEKS1: the week's reps in Home's top corner (Travis, 28 Sep 2026). One
-// count everywhere: Home's corner and Progress read the same voiced tries,
+// REPWEEKS1: the week's reps (Travis, 28 Sep 2026). One count everywhere:
+// Home's corner and Progress read the same voiced tries,
 // never the number of sound checks, and legacy days that only hold sound
-// checks add nothing. The corner only reads, sets no target, and a tap on it
-// meets the grown-ups gate before landing on Progress, where the week, the
-// daily goal and the line saying what a rep is live. Settings' "Reps, week by
+// checks add nothing. Since 23 Oct 2026 (FOUND1) the corner is the gift
+// button: its ring is today toward the daily goal and its spoken label says
+// the number; it only reads, and a tap opens the Trophy Road. Progress, behind
+// the grown-ups check, keeps the week, the daily goal and what a rep is. Settings' "Reps, week by
 // week" card went on 22 Oct 2026 (Travis: "simplify settings ... the minimum
 // viable features"); the count it drew, Sona.repWeeks, is still pinned here at
 // the source, edge by edge, and Settings is held to having no such card.
@@ -55,7 +56,7 @@ async function fresh({ at, tz = "America/Denver", width = 375 } = {}) {
   return { context, page, errors };
 }
 async function seed(page, out) { await page.evaluate((o) => { if (o) localStorage.setItem("sona.outcomes.v1", JSON.stringify(o)); else localStorage.removeItem("sona.outcomes.v1"); }, out); }
-async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.getElementById("repPillN")); await page.waitForTimeout(150); }
+async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.getElementById("giftBtn") && /reps today/.test(document.getElementById("giftBtn").getAttribute("aria-label") || "")); await page.waitForTimeout(150); }
 // Progress and Settings sit behind the grown-ups gate; the gate is passed here
 // as it would be (passGate drives the real one below).
 async function progress(page) { await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent && document.getElementById("dailyGoalPick").options.length); await page.waitForTimeout(150); }
@@ -134,31 +135,30 @@ await scenario("the one count", async () => {
   await context.close();
 });
 
-await scenario("Home's corner", async () => {
+await scenario("Home's gift button", async () => {
+  // FOUND1 (23 Oct 2026): the reps count in this corner became the gift
+  // button's ring (today toward the daily goal, which opens today's chest);
+  // the number is in its spoken label, and grown-ups read it on Progress.
   const { context, page, errors } = await fresh({ at: THU });
   await seed(page, HISTORY);
   const before = await page.evaluate(() => Object.keys(localStorage).filter((k) => /rep|week/i.test(k)));
   await home(page);
   const s = await page.evaluate(() => {
-    const box = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height }; };
-    const pill = document.getElementById("repPill");
+    const box = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height, w: r.width }; };
+    const btn = document.getElementById("giftBtn");
     return {
-      n: document.getElementById("repPillN").textContent, unit: document.getElementById("repPillUnit").textContent,
-      aria: pill.getAttribute("aria-label"), inHeader: !!pill.closest(".library-header"), tag: pill.tagName,
-      pill: box("repPill"), gear: box("parentBtn"), buddy: box("buddyBtn"),
+      aria: btn.getAttribute("aria-label"), fill: document.getElementById("giftRing").style.getPropertyValue("--fill"), inHeader: !!btn.closest(".library-header"), tag: btn.tagName, href: btn.getAttribute("href"),
+      pill: box("giftBtn"), gear: box("parentBtn"), buddy: box("buddyBtn"), old: !!document.getElementById("repPill"),
       label: getComputedStyle(document.querySelector(".library-label")).display,
-      labelClipped: (() => { const l = document.querySelector(".library-label"); return l.scrollWidth > l.clientWidth + 1; })(),
       firstH1: document.querySelector("h1").textContent,
     };
   });
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /rep|week/i.test(k)));
-  ok("the corner shows today toward the daily goal", s.n === "14/30" && s.unit === "reps today", s);
-  ok("its name says the number and where a grown-up can see more", /^14 of 30 reps today\. For grown-ups: see your reps\.$/.test(s.aria) && !/week by week/.test(s.aria), s.aria);
-  ok("it is a real button with a full-size tap target", s.tag === "BUTTON" && s.pill.h >= 44, s);
-  ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l && s.pill.t >= s.gear.t - 1 && s.pill.b <= s.gear.b + 1, s);
-  ok("on a phone the 'Sona' wordmark steps aside for the count and the Grown-ups button", s.label === "none", s);
-  // Home leads with today's story since 22 Oct 2026 (STORY1); "Pick a game!"
-  // heads the Arcade, one tap away
+  ok("the ring shows today toward the daily goal (14 of 30), and no count is drawn", s.fill === "47" && !s.old, s);
+  ok("its name says the number: \"Trophy Road. 14 of 30 reps today.\" (then what waits on the road)", /^Trophy Road\. 14 of 30 reps today\.(?: |$)/.test(s.aria), s.aria);
+  ok("it is a link to the Trophy Road with a full-size tap target", s.tag === "A" && s.href === "/road.html" && s.pill.h >= 44 && s.pill.w >= 44, s);
+  ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l, s);
+  ok("on a phone the 'Sona' wordmark steps aside for the buttons", s.label === "none", s);
   ok("the page's first heading is Today's adventure", s.firstH1 === "Today's adventure", s.firstH1);
   ok("Home stores nothing new about reps or weeks", JSON.stringify(before) === JSON.stringify(keys), { before, keys });
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -166,11 +166,11 @@ await scenario("Home's corner", async () => {
   for (const width of [320, 360, 390, 430, 768]) {
     await page.setViewportSize({ width, height: 812 }); await page.waitForTimeout(100);
     const fit = await page.evaluate(() => {
-      const p = document.getElementById("repPill").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect();
+      const p = document.getElementById("giftBtn").getBoundingClientRect(), g = document.getElementById("parentBtn").getBoundingClientRect(), b = document.getElementById("buddyBtn").getBoundingClientRect();
       const l = document.querySelector(".library-label");
-      return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45, label: getComputedStyle(l).display, clipped: l.scrollWidth > l.clientWidth + 1 };
+      return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 49, label: getComputedStyle(l).display, clipped: l.scrollWidth > l.clientWidth + 1 };
     });
-    ok(width + "px: the count, buddy and gear fit side by side on screen", fit.apart && fit.inside && fit.oneLine && (await overflow(page)) <= 1, fit);
+    ok(width + "px: the gift button, buddy and gear fit side by side on screen", fit.apart && fit.inside && fit.oneLine && (await overflow(page)) <= 1, fit);
     ok(width + "px: the 'Sona' wordmark is either whole or gone, never cut off", fit.label === "none" || !fit.clipped, fit);
     if (width === 320) await page.screenshot({ path: OUT + "/repweek-home-320.png" });
     if (width === 768) { ok("a wide screen has room for the wordmark too", fit.label !== "none" && !fit.clipped, fit); await page.screenshot({ path: OUT + "/repweek-home-768.png" }); }
@@ -184,11 +184,11 @@ await scenario("Monday morning", async () => {
   // after midnight. The count must be the new week's, not last week's.
   const { context, page, errors } = await fresh({ at: Date.UTC(2026, 9, 19, 5, 50) }); // Sun 18 Oct 23:50 MDT
   await seed(page, only({ "2026-10-12": { a: 2, p: 1, tries: 40 }, "2026-10-18": { a: 3, p: 2, tries: 80 } })); await home(page);
-  ok("Sunday night shows today's 80 and goal met", await page.evaluate(() => document.getElementById("repPillN").textContent === "80"));
+  ok("Sunday night shows today's 80 and goal met", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "80"));
   await page.evaluate(() => { window.__jump = 20 * 60 * 1000; sessionStorage.setItem("sona.test.clockJump",String(window.__jump)); document.dispatchEvent(new Event("visibilitychange")); });
-  await page.waitForFunction(() => window.Sona && Sona.localDay() === "2026-10-19" && document.getElementById("repPillN")?.textContent === "0/30");
-  const s = await page.evaluate(() => ({ n: document.getElementById("repPillN").textContent, day: Sona.localDay(), aria: document.getElementById("repPill").getAttribute("aria-label") }));
-  ok("back in front after midnight, the corner starts the new week at 0", s.day === "2026-10-19" && s.n === "0/30" && /^0 of 30 reps today/.test(s.aria), s);
+  await page.waitForFunction(() => window.Sona && Sona.localDay() === "2026-10-19" && (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "0/30");
+  const s = await page.evaluate(() => ({ n: (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})(), day: Sona.localDay(), aria: document.getElementById("giftBtn").getAttribute("aria-label"), fill: document.getElementById("giftRing").style.getPropertyValue("--fill") }));
+  ok("back in front after midnight, the ring starts the new day empty", s.day === "2026-10-19" && s.n === "0/30" && /^Trophy Road\. 0 of 30 reps today/.test(s.aria) && s.fill === "0", s);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -217,24 +217,19 @@ await scenario("the Grown-ups button", async () => {
   await context.close();
 });
 
-await scenario("a tap on the corner", async () => {
+await scenario("a tap on the gift button, and the week on Progress", async () => {
   const { context, page, errors } = await fresh({ at: THU });
   await seed(page, HISTORY); await home(page);
-  await page.click("#repPill");
-  const gate = await page.evaluate(() => ({ shown: document.getElementById("gateOvl").classList.contains("show"), url: location.pathname }));
-  ok("a tap meets the grown-ups gate and goes nowhere yet", gate.shown && gate.url === "/today.html", gate);
-  await page.click("#gateClose");
-  ok("Never mind leaves the child on Home", await page.evaluate(() => !document.getElementById("gateOvl").classList.contains("show") && location.pathname === "/today.html"));
-  await page.click("#repPill"); await passGate(page);
-  // Since 22 Oct 2026 the corner leads to Progress: the week's tries, the
-  // days a week, the daily goal and what a rep is are all there.
-  await page.waitForURL(/\/progress\.html$/);
+  // FOUND1: the button is the child's way to the Trophy Road, with no check
+  await page.click("#giftBtn");
+  await page.waitForURL(/\/road\.html$/);
+  ok("a tap on the gift button opens the Trophy Road, with no grown-ups check", /\/road\.html$/.test(page.url()), page.url());
+  // the week's count is the grown-ups' (Progress, behind the check)
+  await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now())));
+  await page.goto(origin + "/progress.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("volReps").textContent === "28" && document.getElementById("dailyGoalPick").options.length);
   const s = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, goal: document.getElementById("dailyGoalPick").value, days: !!document.querySelector("#wkGoalPick .gbtn.on"), note: !!document.querySelector("#weekCard .rw-note") }));
-  ok("the right answer lands on Progress, not Settings", /\/progress\.html$/.test(page.url()), page.url());
-  ok("…on the week's 28 tries, beside the days a week, the daily goal and what a rep is", s.tries === "28" && s.goal === "30" && s.days && s.note, s);
-  // (The parent code that could stand in for the words went on 30 Sep 2026;
-  // gatecheck pins that a code saved before then is never asked for.)
+  ok("Progress has the week's 28 tries, beside the days a week, the daily goal and what a rep is", s.tries === "28" && s.goal === "30" && s.days && s.note, s);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -307,14 +302,14 @@ await scenario("behind, tied, one rep, brand new, and wrong clocks", async () =>
   ok("one rep: a first counted week, this one, with no best yet", s.now === 1 && s.last === 0 && s.best === null && !s.newBest && s.since === "2026-10-12" && s.bars === "2026-10-12:1*", s);
   ok("…and Progress counts 1 try", (await readProgress(page)).tries === "1");
   await home(page);
-  ok("Home's corner shows no reps today when the week's one was Tuesday", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30" && document.getElementById("repPillUnit").textContent === "reps today"));
+  ok("Home's corner shows no reps today when the week's one was Tuesday", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "0/30" && (/ Goal met\./.test(document.getElementById("giftBtn").getAttribute("aria-label")||"")?"Goal met":"reps today") === "reps today"));
 
   await seed(page, null); await progress(page);
   s = await readWeeks(page);
   ok("a brand-new child: 0, no best and no first counted week", s.now === 0 && s.last === 0 && s.best === null && s.since === null && !s.newBest, s);
   ok("…and Progress counts 0 tries", (await readProgress(page)).tries === "0");
   await home(page);
-  ok("Home's corner shows 0 for a brand-new child", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30" && document.getElementById("repPillUnit").textContent === "reps today"));
+  ok("Home's corner shows 0 for a brand-new child", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "0/30" && (/ Goal met\./.test(document.getElementById("giftBtn").getAttribute("aria-label")||"")?"Goal met":"reps today") === "reps today"));
 
   await seed(page, only({ "2026-09-15": { a: 20, p: 10 }, "2026-10-13": { a: 5, p: 3 } })); await progress(page);
   s = await readWeeks(page);
@@ -332,11 +327,11 @@ await scenario("behind, tied, one rep, brand new, and wrong clocks", async () =>
   s = await readWeeks(page);
   ok("a big week counts every rep", s.now === 1234, s);
   await home(page);
-  ok("Home's corner keeps today separate from a large Tuesday count", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30"));
+  ok("Home's corner keeps today separate from a large Tuesday count", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "0/30"));
   // The thousands comma lives on in the one place a count that big is drawn
   // for a child's day: Home's corner, once the goal is met.
   await seed(page, only({ "2026-10-15": { a: 3, p: 2, tries: 1234 } })); await home(page);
-  ok("a big day gets a thousands comma in Home's corner", await page.evaluate(() => document.getElementById("repPillN").textContent === "1,234" && document.getElementById("repPillUnit").textContent === "Goal met"));
+  ok("a big day gets a thousands comma in Home's corner", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "1,234" && (/ Goal met\./.test(document.getElementById("giftBtn").getAttribute("aria-label")||"")?"Goal met":"reps today") === "Goal met"));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -362,8 +357,8 @@ await scenario("sounds said in games are reps too", async () => {
   await page.evaluate(() => localStorage.setItem("sona.gamereps.v1", JSON.stringify({ "2026-10-15": { R: 3, S: 2 }, "2026-10-07": { R: 4 }, "2026-09-10": { R: 9 } })));
   await home(page);
   const before = await page.evaluate(() => localStorage.getItem("sona.outcomes.v1"));
-  let r = await page.evaluate(() => ({ now: Sona.weekReps(0), last: Sona.weekReps(-1), s: Sona.weekReps(0, "S"), pill: document.getElementById("repPillN").textContent }));
-  ok("the week counts 33 and Home today counts 19 toward 30", r.now === 33 && r.pill === "19/30", r);
+  let r = await page.evaluate(() => ({ now: Sona.weekReps(0), last: Sona.weekReps(-1), s: Sona.weekReps(0, "S"), pill: (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() }));
+  ok("the week counts 33 and Home's ring today counts 19 toward 30", r.now === 33 && r.pill === "19/30", r);
   ok("last week adds its game reps too; a date before reps were counted adds none", r.last === 22, r);
   ok("one sound's count includes its game reps", r.s === 7, r);
   await page.evaluate(() => { Sona.gameRep("r"); Sona.gameRep("R"); Sona.gameRep("X"); Sona.gameRep(""); });
@@ -469,13 +464,13 @@ await scenario("each child keeps their own week", async () => {
   await seed(page, HISTORY); await home(page);
   await page.evaluate(() => Sona.addKid("Ana", 4));
   await home(page);
-  const second = await page.evaluate(() => ({ n: document.getElementById("repPillN").textContent, reps: Sona.weekReps(0) }));
+  const second = await page.evaluate(() => ({ n: (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})(), reps: Sona.weekReps(0) }));
   ok("a second child starts at 0, not the first child's 28", second.n === "0/30" && second.reps === 0, second);
   await progress(page);
   ok("Progress names the selected child, and her week starts at 0", await page.evaluate(() => document.getElementById("title").textContent === "Ana's progress" && document.getElementById("rwWho").textContent === "Ana" && document.getElementById("volReps").textContent === "0" && Sona.repWeeks(8).thisWeek === 0));
   await page.evaluate(() => Sona.switchKid(""));
   await home(page);
-  ok("switching back shows the first child's 28 again", await page.evaluate(() => document.getElementById("repPillN").textContent === "14/30"));
+  ok("switching back shows the first child's 28 again", await page.evaluate(() => (function(){var m=/(\d[\d,]*) of (\d[\d,]*) reps today\.( Goal met\.)?/.exec(document.getElementById("giftBtn").getAttribute("aria-label")||"");return m?(m[3]?m[1]:m[1]+"/"+m[2]):"";})() === "14/30"));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

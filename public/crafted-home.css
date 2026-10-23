@@ -106,40 +106,27 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .featured-group[data-collection="picks"] .game-info{min-height:66px;}
 .game-new{position:absolute;left:6px;bottom:6px;padding:3px 6px;border-radius:99px;background:#fffdf2eb;color:var(--ink);font:800 9px/1.2 Nunito,sans-serif;box-shadow:0 1px 4px #583e2918;}
 
-/* THE TROPHY ROAD CARD (HOME3, 11 Oct 2026): one cream card, under Home's
-   two doors since 22 Oct 2026 (STORY1). A picture leads (the next gift, a
-   gift waiting, or the chest), beside a five-part bar filling toward it; the
-   counts are small. The dot
-   that says "something is ready" is teal: orange means only the practice
-   sound's letters. It is a link, never a game card, so no game's rules see it. */
-#roadCard{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;margin:-6px 0 18px;padding:9px 12px 9px 9px;border-radius:22px;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);text-decoration:none;position:relative;transition:transform .12s;}
-#roadCard[hidden]{display:none;}
-#roadCard:active{transform:translateY(2px) scale(.99);}
-.road-pic{flex:none;display:flex;align-items:center;justify-content:center;width:62px;height:56px;}
-.road-art{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.road-art>img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 2px #5a3a1428);}
-.road-ic{display:inline-flex;flex:none;}
-.road-ic svg{display:block;vertical-align:0!important;}
-.road-coins .road-ic{margin:0 -9px;filter:drop-shadow(0 2px 1px #8a5a0033);}
-.road-coins .road-ic:nth-child(2){margin-bottom:10px;}
-.road-stk>span{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:#fff;border:3px dashed #e6cf98;}
-.road-level{flex-direction:column;}
-.road-lvpics{display:flex;gap:2px;width:100%;height:30px;border-radius:8px;overflow:hidden;}
-.road-lvpics i{flex:1;background:#efe6d5 center/cover no-repeat;}
-.road-level b{position:absolute;left:50%;bottom:0;transform:translateX(-50%);min-width:26px;padding:0 5px;border-radius:9px;background:#fffdf7;border:2px solid var(--craft-teal);font:800 18px/1.1 "Baloo 2",sans-serif;text-align:center;}
-.road-place{border-radius:12px;background:#cfe8c0 center/cover no-repeat;}
-.road-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
-.road-bar{display:flex;gap:4px;}
-.road-bar i{flex:1;height:12px;border-radius:99px;background:#eadcc6;box-shadow:inset 0 1px 2px #9b79312a;}
-.road-bar i.on{background:linear-gradient(#ffe17a,#f2b10a);box-shadow:inset 0 -1px 0 #c98f00;}
-.road-small{display:flex;align-items:center;gap:4px;font:800 14px/1 "Baloo 2",sans-serif;color:var(--muted);white-space:nowrap;}
-.road-small .road-ic:nth-of-type(2){margin-left:8px;}
-.road-dot{position:absolute;top:7px;left:58px;width:11px;height:11px;border-radius:50%;background:var(--craft-teal);box-shadow:0 0 0 2px #fffdf7;animation:roadDot 2s ease-in-out infinite;}
-.road-dot[hidden]{display:none;}
-.road-go{flex:none;font-family:Nunito,sans-serif;color:#927455;font-size:28px;line-height:1;font-weight:600;}
-@keyframes roadDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-@media(max-width:350px){#roadCard{gap:9px;padding-right:9px;}.road-pic{width:54px;height:50px;}}
-@media(prefers-reduced-motion:reduce){#roadCard{transition:none;}.road-dot{animation:none;}#roadCard:active{transform:none;}}
+/* YOUR GAMES (FOUND1, 23 Oct 2026): the games a child's finished stories
+   left behind, under Home's two doors (where the Trophy Road card was: the
+   road is the gift button in the top bar now). One row that scrolls
+   sideways, newest first, each tile the story's Home picture at 16:9 with
+   its game's name; the one found today wears a teal "New!" (orange means
+   only the practice sound's letters). A picture that will not load is Echo
+   on a plain wash, never a blank tile. */
+#foundRow{margin:0 0 18px;}
+#foundRow[hidden]{display:none;}
+#foundTitle{margin:0 0 8px;font:800 18px/1.1 "Baloo 2",sans-serif;color:var(--ink);}
+#foundList{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:2px 2px 8px;margin:0 -2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+#foundList::-webkit-scrollbar{display:none;}
+.found-tile{flex:none;display:flex;flex-direction:column;width:clamp(128px,38vw,176px);min-height:44px;padding:0;border-radius:18px;overflow:hidden;scroll-snap-align:start;background:linear-gradient(#fffefb,#fff7e9);border:1px solid #efe2ce;box-shadow:0 3px 0 #e9d8bb,0 6px 14px #6947200d;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
+.found-tile:active{transform:translateY(2px) scale(.98);}
+.found-pic{position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;background:#efe6d5;}
+.found-pic img{display:block;width:100%;height:100%;object-fit:cover;}
+.found-pic.fallback img{width:auto;height:88%;margin:4% auto 0;object-fit:contain;}
+.found-new{position:absolute;top:6px;left:6px;padding:3px 8px;border-radius:999px;background:var(--craft-teal);color:#fff;font:800 12px/1.2 "Baloo 2",sans-serif;box-shadow:0 2px 0 #0e6b70;}
+.found-tile.fresh{border-color:var(--craft-teal);box-shadow:0 3px 0 #0e6b7055,0 0 0 2px var(--craft-teal),0 6px 14px #6947200d;}
+.found-name{display:block;padding:7px 10px 9px;font:800 15px/1.15 "Baloo 2",sans-serif;}
+@media(prefers-reduced-motion:reduce){.found-tile{transition:none;}.found-tile:active{transform:none;}}
 
 /* HOME AND THE ARCADE (STORY1, 22 Oct 2026): two views of one page. Each is
    hidden on its wrapper only: a block's own [hidden] belongs to its painter
@@ -228,7 +215,6 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #homeBack span{font-size:22px;line-height:1;margin-top:-2px;}
 #homeBack:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cream-line);}
 .arcade-top+.library-intro{margin-top:12px;}
-.home-only #roadCard{margin:0 0 18px;}
 
 /* the fit's steps (fitHome in today.html): the story's picture first, then
    the type and the gaps, then the doors' pictures, then the story's picture

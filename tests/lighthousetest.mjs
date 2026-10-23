@@ -176,7 +176,8 @@ try{
    const a=(await lh(page)).target;await advance(page,2000);const s=await lh(page);
    ok('with motion on, the sailboat drifts',!s.still&&s.target.key==='sail'&&a.drifting&&s.target.drifting&&Math.hypot(s.target.sx-a.sx,s.target.sy-a.sy)>3,{a,b:s.target,still:s.still});
    ok('motion on: no runtime errors',errors.length===0,errors);await context.close();}
-  ok('the page hands back to the story and has no Play again',/exit: \{ href: "\/adventure\.html\?part=end&story=lighthouse", label: "See what happens!" \}/.test(html)&&/again: false/.test(html)&&/Lighthouse\.setLittle\(little\)/.test(html),null);
+  ok('the page hands back to the story and has no Play again',/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=lighthouse", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html)&&/Lighthouse\.setLittle\(little\)/.test(html),null);
+  ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("lighthouse"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "lighthouse" \}\)/.test(html));
  }
 
  // ── struggle: the ladder climbs with seconds of searching and with decoys,

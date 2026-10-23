@@ -1741,7 +1741,8 @@ already exists, never painted in and never under a finger.
   or `ACTIVITY_KEYS` (`Sona.gameKey("lighthouse") === ""`): on no shelf, in
   no picks row, in no setup grid, in no website game count, with no level
   and no Best. A finished story is not on Home again (its ending still opens
-  by address).
+  by address), but **its game is** (FOUND1, below): Home's "Your games" row
+  plays it again.
 - **Departures from the spec, kept:** the player does not load `saycheck.js`
   (`SayCheck.say` cannot say when a line starts, which the 2.5 s rule needs,
   so the page plays `SayIt.line`'s bytes itself); Day 3's e02 is ages 5-8
@@ -1861,8 +1862,8 @@ line a child hears):
   a "two-week rotation" that starts again at Day 1 after Day 14 would be one
   change in `questToday()`, and is his call (today a finished story is never
   on Home again, and the game of the day goes on for good).
-- The story games are only inside the stories, and a finished story is not
-  on Home again.
+- A finished story is not on Home again; its game is, in "Your games"
+  (FOUND1).
 - Under Reduce Motion both games hold still: Light the Way's boats stay on
   their spots (the teacup's peek is a cut) and Puzzle Bridge's stones do not
   swim.
@@ -1944,6 +1945,52 @@ Claude joined them to the story:
   look beside the clay story pages; every new character and joke the stories
   invented (each story's notes, in the PR).
 
+**FOUND1: every story leaves its game behind** (23 Oct 2026; Travis asked
+for "things to unlock so that kids want to be coming back every single day
+... I want to unlock like games, like a mystery game", then "you can make
+the executive decision and start going"). Four reviewers (kid pull,
+simplicity, fairness to kids, reuse) each came back with this one idea:
+- **Your games.** Under Home's two doors, once a story is finished: the
+  games the child's finished stories left, newest first, each its story's
+  Home picture and its game's `name` (`STORY_DAYS`, short: "Light the Way",
+  "Waterwheel", "Bridge Builder"…); the one found today wears a teal "New!".
+  A tap plays it again: `again`, the story's page with `?again=1` (Days 1-3's
+  own pages) or `&again=1` (`story-game.html`). `Sona.storyFound()` is the
+  list (read only; nothing new stored: finished stories are `s`, per child,
+  in backups); `Sona.storyReplay(id)` says whether one may be played, by the
+  story's rule (`storyOpen()`). Without it there is no row at all, never a
+  grey tile (a tap on one would open the price in front of a child).
+- **A replay is a game like any other:** Play again and Back home, no
+  hand-back to the story, and its round finishes nothing (`questEnd` answers
+  only today's open story). Its page sends "story game replayed" `{ game }`
+  in place of "game opened". A replay address for a story not finished yet
+  goes Home before anything is put on the page: that game is still the
+  story's surprise. Still not in the catalog: no shelf, picks row, setup
+  grid, website count, level or Best.
+- **Tomorrow's game is the mystery:** a finished day's card still shows
+  tomorrow's story picture dark, and now says "Come back tomorrow for Day N
+  and a new game!". The same order for every child, never random, never
+  bought.
+- **The ending says where the game went:** the sticker card adds the game's
+  Home picture and "New game on Home: <name>!" (read only).
+- **The gift button** took the place of the reps count in the top corner and
+  the Trophy Road card (see "Trophies, coins and the Trophy Road").
+- **Executive calls, Travis's to change:** story games stay on Home; the
+  reps count left Home for the ring (grown-ups lost a one-tap path to
+  Progress: it is Grown-ups, then the Progress tab); the doors stay (the
+  plan's one row with "All games" and "Books" as tiles was not built).
+  **Not built yet:** new stories after Day 14 (about one a week, and holiday
+  stories that show only in their month, whose games stay once found: a
+  holiday-only game needs a line in the Terms, which promise Premium "every
+  new game"), and the Arcade's own-age-first shelf with "More games".
+- **For Rachel:** replaying a story game means more sayings of the child's
+  sound (play, never practice data); whether that wants a limit is hers. A
+  child the phone cannot hear can never finish a story, so never finds its
+  game; whether a grown-up may finish it for them is hers too.
+`homestorytest` (the row), `storycoretest` (the list and the replay rule),
+`storygametest` (every replay page), `adventuretest` (the ending's line),
+`roadtest` and `repweektest` (the gift button) play it.
+
 `storycoretest` (the rules in `sona.js`, the offer, the hand-back),
 `homestorytest` (Home), `adventuretest` (the player), `storygametest` (Days
 4-14's page and Day 4 played through), `lighthousetest` (run as
@@ -1966,10 +2013,11 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   (`#questCard`, see "Daily story (STORY1)": a 16:9 picture, "Day N", the
   title, the hook line, a 64 px teal play button, a "Premium" tag without
   it; done: tomorrow's picture dark, "Day 1 done!" and "Come back tomorrow for
-  Day 2!", or "Come back tomorrow for a new adventure!"), two doors
-  (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
+  Day 2 and a new game!", or "Come back tomorrow for a new adventure!"), two
+  doors (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
   **Books**, `home-books.webp` and the Books card's own tag, one handler for
-  both), then the Trophy Road card. On a phone the doors are tiles with the
+  both), then "Your games" (FOUND1, below; only once a story is finished).
+  The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
   picture as a 2:1 band on top (the Arcade picture's game things sit at its
   edges, so it is never cut to a square); on an iPad, rows with a 3:2
   picture. The card's tap stays exactly
@@ -1995,7 +2043,7 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   picture to 2:1, tighter type, a phone's door pictures to 5:2, the story
   picture to 5:2, then 3:1): the play button and both doors are on the first
   screen at 320×568, 375×667, 390×844, 430×932 and 768×1024, every button at
-  least 44 px; the Trophy Road card may fall below on the smallest. With the
+  least 44 px; "Your games" may fall below on the smallest. With the
   real pictures only the founding banner on a 320×568 phone needs all five
   (3:1 trims Echo's feathers and feet in Day 1's picture).
 
@@ -2007,8 +2055,8 @@ speaks nothing, and its source never says `questEnd`, comments included.
 There is no old adventure-map Home or menu narration. Voice remains inside
 deliberate game/practice sessions. Parent settings, progress, profiles,
 earned coins (now visible on the Trophy Road, and spent in the Buddy Shop),
-homework and entitlement sync remain available. Home has one Trophy Road card
-under the two doors (read-only); the Arcade's cards carry a level badge on
+homework and entitlement sync remain available. Home's way to the Trophy
+Road is the gift button in the top bar (read-only, FOUND1); the Arcade's cards carry a level badge on
 their picture, and a level sheet opens only from a tap (see "Trophies, coins
 and the Trophy Road" and "Levels inside games"). `homestorytest` pins Home;
 `activitytest`, `fittest`, `homepickstest` and the rest play the Arcade.
@@ -2914,8 +2962,10 @@ card between rounds said the bare sound. What is built is the first slice:
 three lists and `kidtest` that Settings has no picker and an old pick is
 dropped.
 
-**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows today toward the daily goal, and a
-tap on it opens the grown-ups check, then Progress; Progress keeps sound practice apart from play. (Settings
+**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner showed today toward the daily goal, and a
+tap on it opened the grown-ups check, then Progress, until 23 Oct 2026: it is the gift button's ring now
+(FOUND1), with the number in its spoken label, and grown-ups read it on Progress (Grown-ups, then the
+Progress tab); Progress keeps sound practice apart from play. (Settings
 kept an eight-week chart and the best week until 22 Oct 2026, when the
 Settings simplification took the card out; the rep line and the daily goal
 moved to Progress.) One count, `Sona.repWeeks`/`weekReps`:
@@ -3201,10 +3251,13 @@ Clash Royale").** A child's practice now fills a road of gifts they can see.
   opened", "road gift opened", "month gift opened") are sent by `sona.js` and
   carry nothing: no stop or step number (a stop is a lifetime trophy count),
   no coins.
-- **Home's one card** (`#roadCard`, under Home's two doors): the next gift's
-  picture (or the waiting one, or the chest when it is ready) and a five-part
-  bar; the counts are small and the words are in its label; a teal dot when
-  something is ready. It only reads `Sona.roadState()`; a tap goes to the road.
+- **Home's gift button** (`#giftBtn`, in the top bar since 23 Oct 2026,
+  FOUND1; it replaced the Trophy Road card under the doors and the reps count
+  in the corner): a ring filling toward today's goal (the goal is what opens
+  today's chest) and a teal dot when the chest is ready or a gift waits; the
+  words are in its label ("Trophy Road. 12 of 30 reps today. A gift is
+  waiting."). It only reads `Sona.dayGoal()` and `Sona.roadState()`; a tap
+  goes to the road, with no grown-ups check.
 - **Test seeds may set `sona.trophy.v1` directly** (`{v:1, t, d, dn, m, mn}`)
   rather than replay weeks of reps. `trophytest` pins the economy (no browser);
   `roadtest` plays Home's card, the road page and the sticker book.

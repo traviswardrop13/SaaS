@@ -483,6 +483,9 @@ await section("ending", async () => {
   const card = await pg.evaluate(() => ({ lines: [...document.querySelectorAll("#gotList .advgot")].map((p) => p.textContent), cap: !document.getElementById("cap").hidden, skip: !document.getElementById("skipBtn").hidden, chimes: window.__chimes, view: __adventure.view }));
   ok("the sticker card shows the sticker today's round gave, read from the record", r && r.stickers.length === 1 && got.length === 1 && JSON.stringify(card.lines) === JSON.stringify(["You got " + got[0].e + " " + got[0].name + "!"]), { card, got });
   ok("…with one reward chime, no caption and no Skip", stickerSfx && JSON.stringify(card.chimes) === '["reward"]' && !card.cap && !card.skip && card.view === "stickers", card);
+  // FOUND1 (23 Oct 2026): the story leaves its game behind, on Home's row
+  const fl = await pg.evaluate(() => { const l = document.getElementById("foundLine"), im = document.getElementById("foundPic"); return { shown: !l.hidden && l.getBoundingClientRect().height > 0, text: document.getElementById("foundText").textContent, img: new URL(im.getAttribute("src") || "", location.href).pathname, inBox: !!l.closest(".advbox") }; });
+  ok("…and the card says the game is on Home now, with its Home picture", fl.shown && fl.inBox && fl.text === "New game on Home: Light the Way!" && fl.img === "/assets/crafted/home-lighthouse.webp", fl);
   await nap(pg, 650);
   await pg.click("#homeBtn");
   ok("\"Back home\" goes Home", await landed(pg, "/today.html"), pg.url());

@@ -94,17 +94,20 @@
     .library-label{flex:1;}
     #buddyBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
     #buddyBtn{background:#ffe5b1;overflow:hidden;}
-    /* REPWEEKS1: the week's reps, top right beside the Grown-ups button, in
-       that button's crafted style. The daily count keeps climbing after the
-       goal is met; the full week remains behind the gate, one tap away.
-       Phones drop the "Sona" wordmark rather than squeeze the count or the
-       Grown-ups door; only a screen wide enough for all four shows it. */
-    #repPill{display:flex;align-items:center;gap:5px;flex:none;min-height:44px;margin-left:auto;padding:5px 11px 5px 8px;border:1px solid #efe2ce;border-radius:15px;background:linear-gradient(#fffefb,#fff7e9);box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;color:var(--ink);cursor:pointer;text-align:left;}
-    #repPill .rep-ic{display:flex;width:20px;height:20px;flex:none;}
-    #repPill .rep-ic svg{width:20px;height:20px;}
-    .rep-copy{display:flex;flex-direction:column;align-items:flex-start;}
-    #repPillN{font-family:"Baloo 2",sans-serif;font-size:18px;font-weight:800;line-height:1;}
-    .rep-unit{font-size:10px;font-weight:800;line-height:1.2;color:var(--muted);white-space:nowrap;}
+    /* FOUND1: the gift button, top right beside the Grown-ups button. A
+       ring (a conic gradient, --fill from 0 to 100) fills toward today's
+       goal; the dot says the road has something to open. Phones drop the
+       "Sona" wordmark rather than squeeze the buttons. */
+    #giftBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;width:48px;height:48px;margin-left:auto;border-radius:50%;text-decoration:none;color:var(--ink);transition:transform .12s;}
+    #giftBtn:active{transform:translateY(2px) scale(.96);}
+    .gift-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--act) calc(var(--fill,0)*1%),#eadcc6 0);box-shadow:0 3px 0 #e9d8bb,0 5px 13px #6947200b;}
+    .gift-ring::after{content:"";position:absolute;inset:5px;border-radius:50%;background:linear-gradient(#fffefb,#fff7e9);}
+    .gift-ic{position:relative;display:flex;width:26px;height:26px;}
+    .gift-ic svg{display:block;width:26px;height:26px;}
+    .gift-dot{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--act);box-shadow:0 0 0 2.5px #fffdf7;animation:giftDot 2s ease-in-out infinite;}
+    .gift-dot[hidden]{display:none;}
+    @keyframes giftDot{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+    @media(prefers-reduced-motion:reduce){#giftBtn{transition:none;}#giftBtn:active{transform:none;}.gift-dot{animation:none;}}
     .library-label{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
     @media(max-width:459px){.library-label{display:none;}}
     /* founding banner (feedback invite — never pricing) */
@@ -191,7 +194,7 @@
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
       <span class="library-label">Sona</span>
-      <button id="repPill" type="button" aria-label="Reps today"><span class="rep-ic" data-ic="bolt" aria-hidden="true"></span><span class="rep-copy"><span id="repPillN">0</span><span class="rep-unit" id="repPillUnit">reps today</span></span></button>
+      <a id="giftBtn" href="/road.html" aria-label="Trophy Road"><span class="gift-ring" id="giftRing" aria-hidden="true"></span><span class="gift-ic" id="giftIc" aria-hidden="true"></span><span class="gift-dot" id="giftDot" hidden></span></a>
       <button id="parentBtn" type="button" aria-label="Grown-ups"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><img class="tb-echo" src="/assets/crafted/echo-wave.webp" alt="" onerror="this.src='/assets/crafted/echo-welcome.webp'"><span id="trialMsg"></span><span class="tb-pill" aria-hidden="true">Share an idea</span></a>
@@ -215,16 +218,16 @@
         <button id="arcadeBtn" type="button"><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Arcade</span><span class="door-sub">All the games</span></span></button>
         <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></span></button>
       </div>
-      <!-- THE TROPHY ROAD CARD (HOME3, 11 Oct 2026). A picture leads (the
-           next gift, the waiting one, or the chest when it is ready) beside a
-           bar filling toward it; the counts are small, and the words are in
-           its label. It only reads (Sona.roadState): opening the chest,
-           settling the month and every event belong to the road page. -->
-      <a id="roadCard" href="/road.html" aria-label="Trophy Road" hidden>
-        <span class="road-pic" id="roadPic" aria-hidden="true"></span>
-        <span class="road-copy"><span class="road-bar" id="roadBar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="road-small" id="roadSmall" aria-hidden="true"></span></span>
-        <span class="road-dot" id="roadDot" hidden></span><span class="road-go" aria-hidden="true">›</span>
-      </a>
+      <!-- YOUR GAMES (FOUND1, 23 Oct 2026): every story leaves its game
+           behind. The games this child's finished stories left, newest
+           first, each its Home picture and name; a tap plays it again (its
+           page's ?again=1). The one found today says "New!". Only where the
+           story's rule opens them (Sona.storyReplay); never a grey tile, so
+           a family without the story sees no row at all. It only reads. -->
+      <section id="foundRow" aria-labelledby="foundTitle" hidden>
+        <h2 id="foundTitle">Your games</h2>
+        <div id="foundList"></div>
+      </section>
       <!-- the phone's home bar, measured (the fit keeps the doors above it) -->
       <span id="homeInset" aria-hidden="true"></span>
     </section>
@@ -549,7 +552,8 @@
         var chip=document.getElementById("questChip");chip.textContent=story?"Day "+q.day:"";chip.hidden=!story||done;
         document.getElementById("questLock").hidden=done||open;
         var title=done?(story?"Day "+q.day+" done!":"All done for today!"):(story?q.story.title:game.name);
-        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+"!":"Come back tomorrow for a new adventure!"):q.line;
+        // FOUND1: tomorrow's story brings a new game, still a dark shape here
+        var line=done?(next&&next.kind==="story"?"Come back tomorrow for Day "+next.day+" and a new game!":"Come back tomorrow for a new adventure!"):q.line;
         document.getElementById("questTitle").textContent=title;
         document.getElementById("questLine").textContent=line;
         document.getElementById("questGo").hidden=done;
@@ -559,6 +563,33 @@
         card.hidden=false;
       }
       try{paintQuest();}catch(e){var qc=document.getElementById("questCard");if(qc)qc.hidden=true;}
+      // FOUND1: Your games, the games this child's finished stories left
+      // behind, newest first (the one found today says "New!"). Read only;
+      // shown only where the story's rule opens them (storyReplay asks it
+      // again at the tap), so a family without the story sees no row, never
+      // a grey tile that would open the price in front of a child.
+      function paintFound(){
+        var row=document.getElementById("foundRow"),list=document.getElementById("foundList");if(!row||!list)return;
+        var found=[];try{found=(S.storyFound&&S.storyReplay)?S.storyFound().filter(function(d){return S.storyReplay(d.id);}):[];}catch(e){found=[];}
+        list.textContent="";
+        if(!found.length){row.hidden=true;return;}
+        var q=null;try{q=S.questToday?S.questToday():null;}catch(e){q=null;}
+        var fresh=(q&&q.kind==="story"&&q.state==="done"&&q.story)?q.story.id:"";
+        found.slice().reverse().forEach(function(d){
+          var b=node("button","found-tile");b.type="button";b.setAttribute("data-story",d.id);
+          var pic=node("span","found-pic");pic.setAttribute("aria-hidden","true");pic.setAttribute("data-story",d.id);
+          var im=node("img");im.alt="";im.decoding="async";
+          im.onerror=function(){im.onerror=null;pic.classList.add("fallback");im.src="/assets/crafted/echo-welcome.webp";};
+          im.src=d.pic;pic.appendChild(im);
+          if(d.id===fresh){pic.appendChild(node("span","found-new","New!"));b.classList.add("fresh");}
+          b.appendChild(pic);b.appendChild(node("span","found-name",d.name));
+          b.setAttribute("aria-label",d.name+"."+(d.id===fresh?" New!":"")+" Play again.");
+          b.onclick=function(){if(!(S.storyReplay&&S.storyReplay(d.id))){paintFound();return;}clearMessage();tapChime();location.href=d.again;};
+          list.appendChild(b);
+        });
+        row.hidden=false;
+      }
+      try{paintFound();}catch(e){var fr=document.getElementById("foundRow");if(fr)fr.hidden=true;}
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
@@ -655,6 +686,7 @@
         if(library.picks&&S.localDay&&S.localDay()!==library.picks.day){location.reload();return;}
         paintBests();
         try{paintQuest();}catch(e){}
+        try{paintFound();}catch(e){}
         fitHome();
       }});
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
@@ -713,91 +745,42 @@
       $("gateOvl").classList.add("show");
     }
     $("parentBtn").onclick=function(){ sfx("tap"); openGate(); };
-    // The child's daily goal keeps counting after it is met. It is read on
-    // load and whenever Home returns to the front, including after midnight.
-    // The same tap still opens the grown-up check, then Progress, where the
-    // week's reps and the daily goal are (Settings' week-by-week card went on
-    // 22 Oct 2026).
-    // Older cached sona.js keeps its weekly count until the new reader arrives.
+    // THE GIFT BUTTON (FOUND1, 23 Oct 2026; Travis: "simplify the homepage",
+    // and "make the executive decision"). It took the place of two things:
+    // the reps count in this corner (REPWEEKS1) and the Trophy Road card
+    // under the doors (HOME3). A ring fills as today's reps climb toward the
+    // daily goal, which is what opens today's chest, and a teal dot shows
+    // when the chest is ready or a gift waits on the road. A tap goes to the
+    // road page, which opens chests, settles months and sends every event.
+    // The count itself is for grown-ups now: Progress (behind the check)
+    // has today's reps and the week's, and the ring's spoken label says it.
+    // It only reads (Sona.dayGoal, Sona.roadState), on load and whenever
+    // Home comes back to the front, so a new day empties the ring. An older
+    // cached sona.js with no daily goal shows the ring empty.
     // repNum builds the thousands comma by hand: progtest scans this page's
     // source for a dollar sign before a digit, which a regex replace needs.
     function repNum(n){n=String(Math.max(0,Math.floor(Number(n)||0)));var o="";while(n.length>3){o=","+n.slice(-3)+o;n=n.slice(0,-3);}return n+o;}
-    function paintReps(){
-      var state=null,n=0; try{if(S&&S.dayGoal)state=S.dayGoal();}catch(e){}
-      if(state){
-        n=state.n;
-        $("repPillN").textContent=state.done?repNum(n):repNum(n)+"/"+repNum(state.goal);
-        $("repPillUnit").textContent=state.done?"Goal met":"reps today";
-        $("repPill").setAttribute("aria-label",repNum(n)+" of "+repNum(state.goal)+" reps today."+(state.done?" Goal met.":"")+" For grown-ups: see your reps.");
-      }else{
-        try{n=(S&&S.weekReps)?S.weekReps(0):0;}catch(e){}
-        $("repPillN").textContent=repNum(n);
-        $("repPillUnit").textContent=(n===1?"rep":"reps")+" this week";
-        $("repPill").setAttribute("aria-label",repNum(n)+(n===1?" rep":" reps")+" this week. For grown-ups: see your reps.");
-      }
+    function paintGift(){
+      var btn=$("giftBtn");if(!btn)return;
+      var g=null,st=null;
+      try{if(S&&S.dayGoal)g=S.dayGoal();}catch(e){g=null;}
+      try{if(S&&S.trophyState&&S.roadState)st=S.roadState();}catch(e){st=null;}
+      var f=(g&&g.goal>0)?Math.max(0,Math.min(1,g.n/g.goal)):0;if(g&&g.done)f=1;
+      $("giftRing").style.setProperty("--fill",String(Math.round(f*100)));
+      btn.classList.toggle("full",f>=1);
+      var chest=!!(st&&st.chest&&st.chest.ready),wait=st?Math.max(0,st.waiting|0):0;
+      $("giftDot").hidden=!(chest||wait>0);
+      var label="Trophy Road.";
+      if(g)label+=" "+repNum(g.n)+" of "+repNum(g.goal)+" reps today."+(g.done?" Goal met.":"");
+      if(chest)label+=" Your chest is ready.";else if(wait>0)label+=wait===1?" A gift is waiting.":" "+wait+" gifts are waiting.";
+      btn.setAttribute("aria-label",label);
+      var ic=$("giftIc");if(ic&&!ic.firstChild){try{ic.innerHTML=(S&&S.icon)?S.icon("gift",26):"";}catch(e){}}
     }
-    paintReps();
-    // ── the Trophy Road card (HOME3). It reads Sona.roadState() and nothing
-    // else, on load and when Home comes back to the front (a reload on a
-    // restored page already repaints it): the chest when today's is ready,
-    // else a gift waiting on the road, else the next gift with the bar filling
-    // toward it. It never opens a chest, settles a month or sends an event: a
-    // tap goes to the road page, which does those. An older cached sona.js has
-    // no trophies, and then the card stays hidden.
-    function roadIcon(name,px){var s=document.createElement("span");s.className="road-ic";s.innerHTML=(S&&S.icon)?S.icon(name,px||16):"";return s;}
-    function roadImg(src,fallback){var im=new Image();im.alt="";im.decoding="async";im.onerror=function(){var p=im.parentNode;if(p){p.removeChild(im);p.appendChild(roadIcon(fallback,44));}};im.src=src;return im;}
-    function roadArt(stop){
-      var box=document.createElement("span"),g=null,i;box.className="road-art";
-      if(stop.big){box.appendChild(roadImg("/assets/crafted/road-bigchest.webp","chest"));return box;}
-      for(i=0;i<stop.gift.length;i++){if(!stop.gift[i].land){g=stop.gift[i];break;}}
-      if(!g)g=stop.gift[0]||{};
-      var it=g.buddy?["characters",g.buddy]:g.hat?["outfits",g.hat]:g.place?["backdrops",g.place]:null;
-      if(it&&it[0]==="characters"&&window.SonaCraftedBuddies){box.innerHTML=SonaCraftedBuddies.markup(it[1],48);return box;}
-      if(it&&it[0]==="backdrops"){box.className="road-art road-place";box.style.backgroundImage='url("/assets/crafted/customize-'+it[1]+'-v2.webp")';return box;}
-      // a hat shows its painted picture (OUTFITS[i].art), else a gift
-      if(it){var hat=null;((S&&S.OUTFITS)||[]).forEach(function(o){if(o.id===it[1])hat=o;});if(hat&&hat.art){box.appendChild(roadImg(hat.art,"gift"));return box;}box.appendChild(roadIcon("gift",44));return box;}
-      if(g.level){
-        box.className="road-art road-level";var pics=document.createElement("span");pics.className="road-lvpics";
-        var cards=(S&&S.CRAFTED_CARDS)||{};["slice","tiles","hoops"].forEach(function(k){var e=document.createElement("i");if(cards[k])e.style.backgroundImage='url("/assets/crafted/home-'+cards[k]+'.webp")';pics.appendChild(e);});
-        box.appendChild(pics);var b=document.createElement("b");b.textContent=String(g.level);box.appendChild(b);return box;
-      }
-      if(g.sticker){box.className="road-art road-stk";var d=document.createElement("span");d.appendChild(roadIcon("star",30));box.appendChild(d);return box;}
-      box.className="road-art road-coins";var n=g.coins|0,k=n>=40?3:n>=15?2:1;for(i=0;i<k;i++)box.appendChild(roadIcon("coin",30));return box;
-    }
-    function paintRoad(){
-      var card=$("roadCard");if(!card)return;
-      var st=null;try{if(S&&S.trophyState&&S.roadState)st=S.roadState();}catch(e){st=null;}
-      if(!st){card.hidden=true;return;}
-      var pic=$("roadPic"),bars=$("roadBar").children,fill=5,label="Trophy Road. "+repNum(st.trophies)+(st.trophies===1?" trophy. ":" trophies. ")+repNum(st.coins)+(st.coins===1?" coin. ":" coins. ");
-      pic.textContent="";
-      if(st.chest&&st.chest.ready){
-        var ch=document.createElement("span");ch.className="road-art";ch.appendChild(roadImg("/assets/crafted/road-"+(st.chest.big?"bigchest":"chest")+".webp","chest"));pic.appendChild(ch);
-        label+="Your chest is ready.";
-      }else if(st.waiting>0){
-        if(st.lowestWaiting)pic.appendChild(roadArt(S.roadStop(st.lowestWaiting)));
-        else{var gb=document.createElement("span");gb.className="road-art";gb.appendChild(roadIcon("gift",44));pic.appendChild(gb);}
-        label+=st.waiting===1?"A gift is waiting.":st.waiting+" gifts are waiting.";
-      }else{
-        var nx=S.roadStop(st.next.n),prev=st.stop>0?S.roadStop(st.stop).at:0,lv=0;
-        pic.appendChild(roadArt(nx));
-        fill=Math.floor(Math.max(0,Math.min(1,(st.trophies-prev)/Math.max(1,nx.at-prev)))*5+1e-9);
-        nx.gift.forEach(function(g){if(g.level)lv=g.level;});
-        label+=lv?"Level "+lv+" at "+repNum(nx.at)+" trophies.":"Next gift at "+repNum(nx.at)+" trophies.";
-      }
-      for(var i=0;i<bars.length;i++)bars[i].className=i<fill?"on":"";
-      var sm=$("roadSmall");sm.textContent="";
-      sm.appendChild(roadIcon("trophy",15));sm.appendChild(document.createTextNode(repNum(st.trophies)));
-      sm.appendChild(roadIcon("coin",15));sm.appendChild(document.createTextNode(repNum(st.coins)));
-      $("roadDot").hidden=!((st.chest&&st.chest.ready)||st.waiting>0);
-      card.setAttribute("aria-label",label);
-      card.hidden=false;
-    }
-    // a card that can't paint hides itself, and never stops the rest of Home
-    function paintRoadSafe(){ try{ paintRoad(); }catch(e){ var rc=$("roadCard"); if(rc)rc.hidden=true; } }
-    paintRoadSafe();
-    $("roadCard").addEventListener("click",function(){ sfx("tap"); });
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden){ paintReps(); paintRoadSafe(); } });
-    $("repPill").onclick=function(){ sfx("tap"); openGate(function(){ location.href="/progress.html"; }); };
+    // a button that can't paint keeps its link, and never stops the rest of Home
+    function paintGiftSafe(){ try{ paintGift(); }catch(e){} }
+    paintGiftSafe();
+    $("giftBtn").addEventListener("click",function(){ sfx("tap"); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden) paintGiftSafe(); });
     (function(){
       var pad=$("pad"); var keys=[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"];
       keys.forEach(function(kk){

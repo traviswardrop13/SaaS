@@ -84,6 +84,10 @@ body{overflow:hidden;font-family:"Nunito",system-ui,sans-serif;color:var(--cream
 .advcheer{flex:0 1 auto;width:128px;height:120px;min-height:60px;object-fit:contain;margin-top:-6px;}
 .advgot{margin:0;font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:clamp(20px,6vw,26px);line-height:1.2;color:var(--cream-ink);}
 .advgots{flex:none;display:flex;flex-direction:column;gap:6px;}
+/* FOUND1: the story's game, now on Home's row: its Home picture and a line */
+.advfound{flex:none;display:flex;align-items:center;gap:12px;margin:0;padding:8px 14px 8px 8px;border-radius:18px;background:var(--cream-card);border:1.5px solid var(--cream-line);font-weight:800;font-size:16px;line-height:1.25;color:var(--cream-ink);text-align:left;}
+.advfound[hidden]{display:none;}
+.advfound img{flex:none;width:96px;height:54px;border-radius:12px;object-fit:cover;}
 
 button:focus-visible{outline:3px solid var(--act-d);outline-offset:3px;}
 

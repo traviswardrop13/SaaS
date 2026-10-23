@@ -5345,53 +5345,54 @@
   //     shelf, in no picks row, in no setup grid and in no game count.
   //     gameAccess and gameBounce know the story keys by name (_storyKey).
   // Adding a story is two edits: a line here, its scenes in adventures.js.
-  // Home's picture is /assets/crafted/home-<hero>.webp.
+  // Home's picture is /assets/crafted/home-<hero>.webp. `name` is its game's
+  // name, short enough for a tile on Home's row of found games (FOUND1).
   //   Days 4-14 (22 Oct 2026) are Codex's physical games, one shared page:
   //   `controller` is the game's key in window.DailyAdventureGames
   //   (/daily-adventures/<controller>.js), and story-game.html?story=<id>
   //   plays it. Day 7's id is "frontdoor" because Day 3 already owns
   //   "bridge"; its controller is still Codex's "bridge".
   const STORY_DAYS = [
-    { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse",
+    { id: "lighthouse", game: "lighthouse", page: "/arcade-lighthouse.html", hero: "lighthouse", name: "Light the Way",
       title: "The Lighthouse Sneeze",
       line: "Captain Wally sneezed out the lighthouse lamp! Help the little boats get home." },
-    { id: "windup", game: "windup", page: "/arcade-windup.html", hero: "windup",
+    { id: "windup", game: "windup", page: "/arcade-windup.html", hero: "windup", name: "Wind-Up Toys",
       title: "Grandpa Bear's Sleepy Toys",
       line: "Grandpa Bear's toys are fast asleep. Wake them up for the Toy Parade!" },
-    { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge",
+    { id: "bridge", game: "bridge", page: "/arcade-bridge.html", hero: "bridge", name: "Puzzle Bridge",
       title: "The Puzzle Bridge",
       line: "The storm broke the bridge to Blossom Island. Build it back for the big party!" },
-    { id: "waterwheel", game: "waterwheel", controller: "waterwheel", page: "/story-game.html?story=waterwheel", hero: "waterwheel",
+    { id: "waterwheel", game: "waterwheel", controller: "waterwheel", page: "/story-game.html?story=waterwheel", hero: "waterwheel", name: "Waterwheel",
       title: "The Thirsty Waterwheel Garden",
       line: "Gardener Mouse's flowers are thirsty. Fix the troughs and get her waterwheel turning!" },
-    { id: "postboat", game: "postboat", controller: "postboat", page: "/story-game.html?story=postboat", hero: "postboat",
+    { id: "postboat", game: "postboat", controller: "postboat", page: "/story-game.html?story=postboat", hero: "postboat", name: "Postboat",
       title: "The Little Island Postboat",
       line: "Otter's big boat is stuck in the reeds. Take the parcels in the little postboat!" },
-    { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery",
+    { id: "bakery", game: "bakery", controller: "bakery", page: "/story-game.html?story=bakery", hero: "bakery", name: "Bakery",
       title: "Breakfast at the Moonberry Bakery",
       line: "Baker Badger's new bakery opens today, and every tray is empty. Let's bake breakfast!" },
-    { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor",
+    { id: "frontdoor", game: "frontdoor", controller: "bridge", page: "/story-game.html?story=frontdoor", hero: "frontdoor", name: "Bridge Builder",
       title: "Tortoise's New Front Door",
       line: "Tortoise is moving today! Build a bridge to his new house and roll his cart across." },
-    { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern",
+    { id: "lantern", game: "lantern", controller: "lantern", page: "/story-game.html?story=lantern", hero: "lantern", name: "Lantern Walk",
       title: "The Glowworm Lantern Walk",
       line: "Glowworm's hiccups popped out the lamp plugs! Light up the woods for his lantern walk." },
-    { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline",
+    { id: "trainline", game: "trainline", controller: "trainline", page: "/story-game.html?story=trainline", hero: "trainline", name: "Valley Train",
       title: "All Aboard for Snowdrop Valley",
       line: "The new valley train has no tracks! Lay the tracks and take everyone to their stop." },
-    { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite",
+    { id: "kite", game: "kite", controller: "kite", page: "/story-game.html?story=kite", hero: "kite", name: "Patchwork Kite",
       title: "The Hilltop Patchwork Kite",
       line: "Goat's giant kite isn't sewn yet. Stitch it, balance it, and fly it high!" },
-    { id: "nestlift", game: "nestlift", controller: "nestlift", page: "/story-game.html?story=nestlift", hero: "nestlift",
+    { id: "nestlift", game: "nestlift", controller: "nestlift", page: "/story-game.html?story=nestlift", hero: "nestlift", name: "Nest Lift",
       title: "The Sandstone Nest Lift",
       line: "Mama Swallow's bundles won't fit up the stairs. Balance the basket lift and carry them up!" },
-    { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert",
+    { id: "concert", game: "concert", controller: "concert", page: "/story-game.html?story=concert", hero: "concert", name: "Pond Concert",
       title: "The Lily-Pad Concert",
       line: "Frog, Newt and Duck all play at once. Be their conductor at the pond concert!" },
-    { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops",
+    { id: "rooftops", game: "rooftops", controller: "rooftops", page: "/story-game.html?story=rooftops", hero: "rooftops", name: "Seed Launcher",
       title: "Seeds Across the Rooftops",
       line: "No seeds on the rooftops yet! Help Gardener Bird send them up with her springboard." },
-    { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory",
+    { id: "observatory", game: "observatory", controller: "observatory", page: "/story-game.html?story=observatory", hero: "observatory", name: "Star Machine",
       title: "The Moving-Star Observatory",
       line: "Owl's wooden sun, moon and stars won't move. Fit the gears and turn the big wheel!" },
   ];
@@ -5412,7 +5413,25 @@
   // a copy, so no page can change the list by changing what it was handed
   function _storyInfo(n) {
     const d = STORY_DAYS[n]; if (!d) return null;
-    return { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line, pic: "/assets/crafted/home-" + d.hero + ".webp", day: n + 1 };
+    return { id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line, pic: "/assets/crafted/home-" + d.hero + ".webp", day: n + 1,
+      name: d.name, again: d.page + (d.page.indexOf("?") >= 0 ? "&" : "?") + "again=1" };
+  }
+  // FOUND1 (23 Oct 2026; Travis: "unlock like games, like a mystery game",
+  // and "you can make the executive decision"): every story leaves its game
+  // behind. The stories this child has finished, in order, each a copy with
+  // `again`, the address that plays its game once more (a round that
+  // finishes nothing: Play again, Back home, no hand-back to the story).
+  // Read only, and nothing new is stored: finished stories are `s`, so a
+  // brother or sister has found only their own, and a backup brings them.
+  // Its game opens by the story's rule (gameAccess: storyOpen), and Home
+  // shows the row only where that rule opens them.
+  function storyFound() {
+    try { const st = _questSt(), out = []; for (let n = 0; n < st.s; n++) out.push(_storyInfo(n)); return out; } catch (e) { return []; }
+  }
+  // the one found game a replay address may play: its story finished, and
+  // its game open to this child (story-game.html and the three story pages)
+  function storyReplay(id) {
+    try { return storyOpen() && storyFound().some((d) => d.id === id); } catch (e) { return false; }
   }
   function _questSt() {
     const v = load(QUESTKEY, {}) || {}, SL = STORY_DAYS.length;
@@ -8773,5 +8792,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, storyFound, storyReplay, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

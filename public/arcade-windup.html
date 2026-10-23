@@ -151,15 +151,22 @@
       el._held = held;   // held, not thrown away: an unheld preload is collected and loads late
     })();
 
+    // FOUND1: Home's row plays a found game once more (?again=1): Play again
+    // and Back home, no hand-back (its story is over), and its round
+    // finishes nothing (questEnd answers only today's open story). A replay
+    // address of a story not finished yet goes Home: that game is still the
+    // story's surprise.
+    var replay = location.search === "?again=1";
+    if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("windup"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "windup", title: "Wind-Up Toys", intro: INTRO, steps: little ? STEPS6 : STEPS8, finale: [],
       done: { title: "The parade is on!", sub: "You woke up every toy." },
       // the story's ending follows the game (sayplay.js takes only this address's shape)
-      exit: { href: "/adventure.html?part=end&story=windup", label: "See what happens!" },
-      again: false, play: W, sounds: sounds, soundMs: soundMs
+      exit: replay ? undefined : { href: "/adventure.html?part=end&story=windup", label: "See what happens!" },
+      again: replay ? undefined : false, play: W, sounds: sounds, soundMs: soundMs
     });
     // "game opened": the game key only, never the child, once the page is shown
-    if (!document.body.hidden) { try { S.track("game opened", { game: "windup" }); } catch (e) {} }
+    if (!document.body.hidden) { try { S.track(replay ? "story game replayed" : "game opened", { game: "windup" }); } catch (e) {} }
   })();
   </script>
 </body>

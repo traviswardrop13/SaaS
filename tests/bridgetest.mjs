@@ -187,7 +187,8 @@ try{
   ok('nothing the game shows or says is unkind',said.filter(t=>BAN.test(t)).length===0,said.filter(t=>BAN.test(t)));
   ok('Echo\'s directions are the spec\'s, one a step, each under 120 characters',STEP_LINES.concat(LITTLE_LINES).every(l=>js.includes(JSON.stringify(l))&&l.length<=120),null);
   const html=readFileSync(path.join(ROOT,'arcade-bridge.html'),'utf8');
-  ok('the page hands back to the story and has no Play again',/exit: \{ href: "\/adventure\.html\?part=end&story=bridge", label: "See what happens!" \}/.test(html)&&/again: false/.test(html)&&/Bridge\.setLittle\(little\)/.test(html),null);
+  ok('the page hands back to the story and has no Play again',/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=bridge", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html)&&/Bridge\.setLittle\(little\)/.test(html),null);
+  ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("bridge"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "bridge" \}\)/.test(html));
   ok('the page asks the two start lines, word for word',html.includes(JSON.stringify(INTRO_BIG))&&html.includes(JSON.stringify(INTRO_LITTLE)),null);
  }
 

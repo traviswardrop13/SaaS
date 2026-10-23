@@ -5,6 +5,8 @@
 //   - the source: one shell for both (the same body and the same host.css as
 //     tests/fixtures/daily-adventure.html, the games' words one copy in
 //     pages.js), ES5, nothing written, the hand-back and no Play again;
+//   - a found game played again from Home's row (FOUND1, ?again=1): only a
+//     story finished, as its own key, Play again and Back home, its event;
 //   - the day list: every Days 4-14 day is a story day with a controller, a
 //     page, words, a Home picture and scenes, and no key is anyone else's;
 //   - every one of those pictures decodes, at the size it is laid out at;
@@ -37,8 +39,8 @@ const PAGES = run("daily-adventures/pages.js").DailyAdventurePages;
 const RECORDS = run("daily-adventures/stories.js").DailyAdventureStories;
 const A = run("adventures.js").SonaAdventures;
 // the day list as sona.js writes it (each entry's own fields, read off the source)
-const DAYS = [...((SONA.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)",(?: controller: "([a-z]+)",)? page: "([^"]+)", hero: "([a-z]+)",\s*title: ("[^"\n]*"),\s*line: ("[^"\n]*") \}/g)]
-  .map((m) => ({ id: m[1], game: m[2], controller: m[3] || null, page: m[4], hero: m[5], title: JSON.parse(m[6]), line: JSON.parse(m[7]) }));
+const DAYS = [...((SONA.match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)", game: "([a-z]+)",(?: controller: "([a-z]+)",)? page: "([^"]+)", hero: "([a-z]+)",(?: name: ("[^"\n]*"),)?\s*title: ("[^"\n]*"),\s*line: ("[^"\n]*") \}/g)]
+  .map((m) => ({ id: m[1], game: m[2], controller: m[3] || null, page: m[4], hero: m[5], name: m[6] ? JSON.parse(m[6]) : null, title: JSON.parse(m[7]), line: JSON.parse(m[8]) }));
 const LATER = DAYS.filter((d) => d.controller);
 const CATALOG = [...((SONA.match(/const GAME_ACTS = \{([\s\S]*?)\n  \};/) || ["", ""])[1]).matchAll(/^\s{4}([a-z]+):/gm)].map((m) => m[1]);
 const noComments = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
@@ -66,10 +68,12 @@ await section("source", async () => {
   ok("…in ES5: no arrow, let, const, class or template", !/=>|\blet\s|\bconst\s|\bclass\s|`/.test(code));
   const WRITES = ["gameRep", "logAttempt", "bumpReps", "addCoins", "mintCoins", "awardSticker", "awardNextSticker", "questEnd", "storySeen", "recordSession", "localStorage", "sessionStorage", "indexedDB", "saveProfile", "Math.random", "fetch("];
   ok("it writes nothing of its own: no rep, coin, sticker, quest end or storage (the engine's end card finishes the day)", WRITES.every((w) => !code.includes(w)), WRITES.filter((w) => code.includes(w)));
-  ok("the address only picks the game: exactly ?story=<letters>, and only a day with a controller", /\/\^\\\?story=\(\[a-z\]\+\)\$\/\.exec\(location\.search\)/.test(code) && /d\.controller\) day = d/.test(code));
+  ok("the address only picks the game: exactly ?story=<letters>, or that and &again=1 (FOUND1), and only a day with a controller", /\/\^\\\?story=\(\[a-z\]\+\)\(&again=1\)\?\$\/\.exec\(location\.search\)/.test(code) && /d\.controller\) day = d/.test(code));
+  ok("…a replay only of a story this child has finished (storyReplay), else Home, before anything is put on the page", /if \(replay && !\(S\.storyReplay && S\.storyReplay\(day\.id\)\)\) \{ away\(\); return; \}/.test(code) && code.indexOf("S.storyReplay(day.id)") < code.indexOf('document.createElement("script")'));
+  ok("…and a replay is a game like any other: Play again and Back home, no hand-back, its own event", /if \(replay\) \{ delete cfg\.exit; delete cfg\.again; \}/.test(code) && /replay \? "story game replayed" : "game opened"/.test(code));
   ok("entitlement is asked before the game's files are put on the page", code.indexOf("gameAccess(day.game)") > 0 && code.indexOf("gameAccess(day.game)") < code.indexOf('document.createElement("script")'));
   ok("the end card hands back to the story's ending, and there is no Play again", /exit: \{ href: "\/adventure\.html\?part=end&story=" \+ day\.id, label: "See what happens!" \}/.test(code) && /again: false/.test(code));
-  ok("the engine is given the day's own game key, so its end card finishes that day (Day 7's is frontdoor, never Codex's bridge, which is Day 3's)", /SayPlay\.start\(\{\s*key: day\.game,/.test(code) && !/key: day\.controller/.test(code));
+  ok("the engine is given the day's own game key, so its end card finishes that day (Day 7's is frontdoor, never Codex's bridge, which is Day 3's)", /var cfg = \{\s*key: day\.game,/.test(code) && /SayPlay\.start\(cfg\)/.test(code) && !/key: day\.controller/.test(code));
   ok("five moves for ages 3-4, eight for 5-8 (the games' contract)", /S\.playStyle\(\) === "simple" \? 5 : 8/.test(code));
   ok("the body starts hidden, and the kid viewport meta (no zoom on a double tap)", /<body hidden data-phase="boot">/.test(PAGE) && /maximum-scale=1, user-scalable=no, viewport-fit=cover/.test(PAGE));
 });
@@ -133,6 +137,9 @@ await section("locked", async () => {
     ["Day 1's id (its game has its own page, not this one)", {}, "/story-game.html?story=lighthouse"],
     ["Codex's key for Day 7, which is no story id", {}, "/story-game.html?story=bridge"],
     ["anything after the story", {}, "/story-game.html?story=waterwheel&from=x"],
+    ["a replay of a story not finished yet (that game is still the story's surprise)", {}, "/story-game.html?story=waterwheel&again=1"],
+    ["a replay address with anything after it", { seed: { "sona.quest.v1": JSON.stringify({ s: 5, ls: 4, lk: "story", done: "2026-01-01" }) } }, "/story-game.html?story=waterwheel&again=1&x=1"],
+    ["a replay without Premium, story finished", { premium: false, seed: { "sona.quest.v1": JSON.stringify({ s: 5, ls: 4, lk: "story", done: "2026-01-01" }) } }, "/story-game.html?story=waterwheel&again=1"],
     ["no story at all", {}, "/story-game.html"],
   ];
   for (const [label, cfg, url] of cases) {
@@ -170,6 +177,35 @@ await section("boot", async () => {
     const first = await sayWord(page);
     ok(`…the first word, said two times, earns the first job`, first && await page.evaluate(() => __sayplay.phase === "play" && Sona.weekReps(0) === 2), await page.evaluate(() => ({ phase: __sayplay.phase, reps: Sona.weekReps(0) })));
     ok(`…and no page error`, errors.length === 0, errors);
+    await context.close();
+  }
+});
+
+// ── 3b. FOUND1: a found game played again from Home's row ──
+await section("replay", async () => {
+  const FOUND = { "sona.quest.v1": JSON.stringify({ s: 14, ls: 13, lk: "story", done: "2026-01-01" }) };
+  const pages = [["waterwheel", "/story-game.html?story=waterwheel&again=1"], ["frontdoor", "/story-game.html?story=frontdoor&again=1"], ["lighthouse", "/arcade-lighthouse.html?again=1"], ["windup", "/arcade-windup.html?again=1"], ["bridge", "/arcade-bridge.html?again=1"]];
+  for (const [id, url] of pages) {
+    const { context, page, errors } = await phone({ seed: FOUND });
+    const beacons = [];
+    page.on("request", (r) => { if (/\/api\/track/.test(r.url())) { try { beacons.push(JSON.parse(r.postData() || "{}")); } catch (e) {} } });
+    await context.addInitScript(() => { let sp; Object.defineProperty(window, "SayPlay", { configurable: true, get: () => sp, set: (v) => { sp = v; const start = v && v.start; if (start) v.start = function (o) { window.__start = { key: o && o.key, exit: !!(o && o.exit), again: o ? o.again : null }; return start.apply(this, arguments); }; } }); });
+    await page.goto(srv.base + url);
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
+    const ready = await until(page, () => window.__sayplay && __sayplay.phase === "ready", 6000);
+    await page.clock.runFor(500);
+    const s = await page.evaluate(() => ({ start: window.__start, again: document.getElementById("again").hidden, home: document.getElementById("goHome").textContent, q: localStorage.getItem("sona.quest.v1") }));
+    ok(id + ": a found game plays again as its own key, with no hand-back", ready && s.start && s.start.key === id && !s.start.exit && s.start.again !== false, s);
+    ok("…its end card is Play again and Back home, never \"See what happens!\"", !s.again && s.home === "Back home", s);
+    ok("…its page sends \"story game replayed\" with the game key only", beacons.some((b) => b.e === "story game replayed" && b.p && b.p.game === id && Object.keys(b.p).length === 1) && !beacons.some((b) => b.e === "game opened"), beacons.map((b) => b.e));
+    ok("…and opening it changed no story record", s.q === FOUND["sona.quest.v1"], s.q);
+    ok("…and no page error", errors.length === 0, errors);
+    await context.close();
+  }
+  {
+    const { context, page } = await phone({});
+    await page.goto(srv.base + "/arcade-windup.html?again=1").catch(() => {});
+    ok("a Days 1-3 replay of a story not finished goes Home, with no mic", await landed(page, "/today.html") && (await page.evaluate(() => window.__quiet ? __quiet.requests : -1)) === 0, page.url());
     await context.close();
   }
 });

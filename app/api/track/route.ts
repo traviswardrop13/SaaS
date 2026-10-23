@@ -51,6 +51,9 @@ const EVENTS = new Set([
   // story's own page, never by Home. Each carries the story's game key only.
   "adventure opened",          // the story's intro started
   "adventure ending watched",  // the story's last ending scene showed
+  // FOUND1 (23 Oct 2026): a found story game played again from Home's row,
+  // sent by that game's page (the story's game key only), never by Home.
+  "story game replayed",
   "road gift opened",
   "month gift opened",
   // The Buddy Shop (11 Oct 2026, SHOP1): sent by sona.js when a child gets a

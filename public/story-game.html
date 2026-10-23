@@ -49,11 +49,16 @@
     var S = window.Sona, PAGES = window.DailyAdventurePages || {}, HOME = "/today.html";
     function away() { try { location.replace(HOME); } catch (e) { location.href = HOME; } }
     function $(id) { return document.getElementById(id); }
-    // which story: exactly ?story=<letters>, and only a day with a controller
-    var m = /^\?story=([a-z]+)$/.exec(location.search), day = null;
+    // which story: exactly ?story=<letters>, and only a day with a controller;
+    // "&again=1" (FOUND1) is Home's row playing a found game once more
+    var m = /^\?story=([a-z]+)(&again=1)?$/.exec(location.search), day = null;
     try { (S.STORY_DAYS || []).forEach(function (d) { if (m && d.id === m[1] && d.controller) day = d; }); } catch (e) {}
     var copy = day && PAGES[day.controller];
     if (!S || !window.SayPlay || !day || !copy || !/^[a-z]+$/.test(day.controller)) { away(); return; }
+    // a replay only of a story this child has finished: an unfound game is
+    // still a story's surprise, so its replay address goes Home
+    var replay = !!m[2];
+    try { if (replay && !(S.storyReplay && S.storyReplay(day.id))) { away(); return; } } catch (e) { away(); return; }
     // entitlement before the game's own files are even asked for
     try { if (!S.gameAccess(day.game).allowed) { S.gameBounce(day.game); return; } } catch (e) { away(); return; }
 
@@ -83,16 +88,21 @@
       var count = S.playStyle() === "simple" ? 5 : 8, steps = [];
       for (var i = 0; i < count; i++) steps.push([]);
       document.body.hidden = false;
-      SayPlay.start({
+      var cfg = {
         key: day.game, title: copy.title, intro: copy.intro, steps: steps, finale: [], done: copy.done,
         // STORY1: the end card's one button opens the story's ending; there
         // is no Play again (the day is finished when this round ends)
         exit: { href: "/adventure.html?part=end&story=" + day.id, label: "See what happens!" },
         again: false,
         play: game, sounds: game.sounds, soundMs: game.soundMs
-      });
+      };
+      // FOUND1: a found game played again is a game like any other: Play
+      // again and Back home, no hand-back (its story is over). Its round
+      // finishes nothing: questEnd answers only today's open story.
+      if (replay) { delete cfg.exit; delete cfg.again; }
+      SayPlay.start(cfg);
       // "game opened": the game key only, never the child (a bounced page is hidden)
-      if (!document.body.hidden) { try { S.track("game opened", { game: day.game }); } catch (e) {} }
+      if (!document.body.hidden) { try { S.track(replay ? "story game replayed" : "game opened", { game: day.game }); } catch (e) {} }
     };
     document.body.appendChild(js);
     // a page brought back from the browser's cache asks again who may be here

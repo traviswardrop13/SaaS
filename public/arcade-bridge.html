@@ -187,6 +187,13 @@
     try { document.getElementById("startLine").textContent = line; } catch (e) {}
     try { document.getElementById("dots").setAttribute("aria-label", "0 of " + (little ? 6 : 8)); } catch (e) {}
     try { if (little) document.getElementById("brStone").setAttribute("aria-label", "The stone. Arrow keys slide it. Enter lets go."); } catch (e) {}
+    // FOUND1: Home's row plays a found game once more (?again=1): Play again
+    // and Back home, no hand-back (its story is over), and its round
+    // finishes nothing (questEnd answers only today's open story). A replay
+    // address of a story not finished yet goes Home: that game is still the
+    // story's surprise.
+    var replay = location.search === "?again=1";
+    if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("bridge"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "bridge", title: "Puzzle Bridge",
       intro: little ? "Say each word two times to call a stone up. Then slide it into the hole with the same shape." : "Say each word two times to call a stone up. Then turn it and slide it into its hole. Tap Calm river for extra help.",
@@ -194,14 +201,14 @@
       done: { title: "The bridge is whole again!", sub: "Every stone is back where it belongs." },
       // STORY1: the end card's one button opens the story's ending; there is
       // no Play again (the day is finished when this round ends)
-      exit: { href: "/adventure.html?part=end&story=bridge", label: "See what happens!" },
-      again: false,
+      exit: replay ? undefined : { href: "/adventure.html?part=end&story=bridge", label: "See what happens!" },
+      again: replay ? undefined : false,
       play: window.Bridge,
       sounds: { rise: sound("rise"), turn: sound("turn"), thunk: sound("thunk"), bonk: sound("bonk"), roar: sound("roar"), calm: sound("calm"), sparkle: sound("sparkle") },
       soundMs: { rise: 620, turn: 300, thunk: 340, bonk: 320, roar: 1020, calm: 670, sparkle: 820 }
     });
     // "game opened": the game key only, never the child (a bounced page is hidden)
-    if (!document.body.hidden) { try { Sona.track("game opened", { game: "bridge" }); } catch (e) {} }
+    if (!document.body.hidden) { try { Sona.track(replay ? "story game replayed" : "game opened", { game: "bridge" }); } catch (e) {} }
   })();
   </script>
 </body>
