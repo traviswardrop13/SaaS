@@ -390,8 +390,10 @@ changing one. What follows from the rule:
     (`Sona.notifyRefresh`, NOTIFY1: `notifyState` alone is a guess on a page
     that has not heard from iOS), both feature-checked and bounded together
     at 2.5 s (`remindAsk`). Leaving ready shows the reminder screen only when
-    the row the price screen picks on arrival (the yearly one when offered,
-    else the monthly) is `"free"`: a product with free days and a buyer
+    the monthly row is `"free"` (the one trial on the card since 23 Oct
+    2026, though the price screen now opens on the one payment: a parent
+    may still pick monthly; whether setup should ask at all now is
+    Travis's call): a product with free days and a buyer
     Apple has not called ineligible (a definite "not eligible" is `"paid"`),
     **and the store is sure of it** (`plan.sure`, the price line's own test
     in `trialReminderOn`: a "new subscribers" row may charge today, and the
@@ -545,9 +547,9 @@ changing one. What follows from the rule:
   for new subscribers", no "No payment today", and the "Only new subscribers
   …" note between the row and the button. **"No ads, ever" is a promise:**
   Sona shows a child no ads; do not add one without taking the line off.
-  **Since 19 Oct 2026 the yearly plan is a second row above this one**
-  (below, "TWO PLANS ON THE IPHONE AGAIN"), **and since 22 Oct 2026 the one
-  payment a third row under it** (below, "ONE PAYMENT, A THIRD ROW").
+  **Since 23 Oct 2026 the card is two rows: the one payment on top,
+  picked, and this monthly row under it** (below, "TWO ROWS: THE ONE
+  PAYMENT ON TOP"); the yearly row of 19 Oct is no longer sold.
 - **"Not now" goes to Home with everything locked:** every game and book is
   "Premium" and the Books card says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
@@ -749,7 +751,30 @@ both cards; `firstgametest` keeps both boxes and the button on the first
 screen at seven phone sizes with the charter line showing, and re-prices
 every yearly figure when the price check answers late.
 
-**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026,
+**TWO ROWS: THE ONE PAYMENT ON TOP, PICKED (23 Oct 2026)** (Travis, with a
+screenshot of three rows: "We need to get rid of the yearly option. I just
+want two payment options, and I want one payment to be the one on the top
+that's auto-selected"). This replaces the yearly row below and the pick
+under "ONE PAYMENT, A THIRD ROW".
+- **No yearly row:** `IAP_SELL_YEARLY = false` in `sona.js` (beside
+  `IAP_PRODUCTS`) stops `storePlan` asking for the yearly product even when
+  RevenueCat's offering lists it, so `plan.year` is always null and no page
+  (the price screen, the Premium page, setup's reminder ask) shows a year.
+  `IAP_PRODUCTS.annual` stays for restore; `true` brings the row back by the
+  offering, as built on 19 Oct. Taking the yearly package out of the
+  offering in RevenueCat is tidy but not needed.
+- **The one payment on top, picked when the screen opens**, monthly under
+  it (`kindsOf` and the markup's order in `subscribe.html`;
+  `APPLE.pick` starts at `"lifetime"`). With no one-payment row the card is
+  monthly alone, as before; one that arrives late on such a card comes in
+  unpicked, and one that goes away while picked takes the pick to monthly.
+  So the card opens charging today ("Get Sona Premium — $59.99", "One
+  payment · No subscription"); the free trial is one tap away on Monthly.
+- **Travis's to know:** setup's reminder screen still asks when monthly is a
+  sure free trial, though the card now opens on the one payment; and the
+  funnel's "paywall viewed" now counts the one payment as the plan shown.
+
+**TWO PLANS ON THE IPHONE AGAIN, AND A 7-DAY TRIAL** (Travis, 19 Oct 2026, until 23 Oct 2026,
 "yes" to a funnel expert's review: one plan leaves a parent only "buy or
 don't buy"; two let them compare; 3 days is too tight to see a child use it).
 This replaces "one plan, no pick" below.
@@ -808,9 +833,10 @@ lifetime"). Apple's card can show a third row, under monthly.
   check line "One payment · No subscription", the button "Get Sona Premium —
   $59.99" and the small print "One payment of $59.99. No subscription."
   Never "lifetime", "free", "Best value", a trial or a renewal (planwordstest).
-- **The pick:** yearly, monthly, then the one payment, top to bottom; yearly
-  picked on arrival (monthly without a yearly row), **never the one
-  payment**; a row that arrives on a card a parent is reading comes in
+- **The pick (until 23 Oct 2026; now see "TWO ROWS: THE ONE PAYMENT ON
+  TOP"):** yearly, monthly, then the one payment, top to bottom; yearly
+  picked on arrival (monthly without a yearly row), never the one
+  payment; a row that arrives on a card a parent is reading comes in
   unpicked, and one that goes away while picked takes the pick to monthly
   (`take()` keeps the row the parent was reading while it is there). The fit
   holds for every row picked (`APPLE.others`, `APPLE.alt(kind)`), so a tap on

@@ -7,7 +7,10 @@
 // and the store returns it (scenario 2b; anything else is the monthly row
 // alone, exactly as before), and since 22 Oct 2026 the one payment (a
 // non-consumable, "lifetime" to the store and never to a parent) a third row
-// by the same rule (scenario 2c). Two functions in sona.js own everything a
+// by the same rule (scenario 2c). Since 23 Oct 2026 the yearly row is not
+// sold (IAP_SELL_YEARLY; Travis: "get rid of the yearly option"): the store
+// is never asked for it, and its rules are played on a sona.js served with
+// the switch on. Two functions in sona.js own everything a
 // price screen may say about any of them:
 //   Sona.storePlan()  turns the store's answers (the product, whether THIS
 //                     buyer may still have the free days, whether this Apple
@@ -53,11 +56,19 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // The clock is paused at local noon on Monday 5 October 2026 and moves only
 // when a case says so, so "at 4,000 ms and not before 3,900" is exact.
 const BLANK = base + "/__blank.html";
-const { context, page, errors, requests } = await open(browser, base, { app: "buy" });
+const PH = await open(browser, base, { app: "buy" });
+const { context, page, errors, requests } = PH;
+// The yearly row stopped selling on 23 Oct 2026 (IAP_SELL_YEARLY in sona.js;
+// Travis: "get rid of the yearly option. I just want two payment options").
+// Its code stays for the day it comes back, so the checks of its rules run on
+// a sona.js served with the switch on: YEARLY_ON while they run, or
+// cfg.sellYearly for one load.
+let YEARLY_ON = false;
 await page.clock.install({ time: new Date(NOON) });
 await page.clock.pauseAt(new Date(NOON));
 await page.goto(BLANK);
 async function load(cfg = {}, path = "/__blank.html") {
+  PH.sellYearly(YEARLY_ON || !!cfg.sellYearly);
   await page.evaluate((c) => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem("__phoneCfg", JSON.stringify(c)); }, cfg);
   await page.goto(base + path);
 }
@@ -140,6 +151,21 @@ try {
 
   // ── 2b. THE YEARLY ROW (19 Oct 2026): only when RevenueCat's current
   // offering lists the yearly product AND the store returns it ──
+  await scenario("the yearly row, as shipped: never asked for", async () => {
+    // an offering that lists the yearly product (and one that lists all
+    // three): no yearly row, and the store is never asked for it. Read from
+    // the switch, never pinned to its value: switched on, this is the
+    // scenario below
+    const off = /\n  const IAP_SELL_YEARLY = false;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
+    if (!off) ok("(IAP_SELL_YEARLY is on in sona.js: the yearly row is sold, as \"the yearly row\" plays)", true);
+    else for (const offering of ["both", "all"]) {
+      const p = await planFor({ store: STORES.monthlyFree, offering }), r = await rec();
+      ok("as shipped, an offering that lists " + (offering === "both" ? "yearly and monthly" : "all three") + ": no yearly row, and the store is never asked for the yearly product nor about its free days",
+        !!p && p.state === "free" && p.kind === "monthly" && p.year === null && (offering === "all") === !!p.life &&
+        !r.asked.some((ids) => ids.indexOf(IDS.annual) > -1) && !r.eligIds.some((ids) => ids.indexOf(IDS.annual) > -1), [brief(p), r.asked, r.eligIds]);
+    }
+  });
+  YEARLY_ON = true;
   await scenario("the yearly row", async () => {
     const yb = (p) => p && p.year ? { state: p.year.state, kind: p.year.kind, id: p.year.id, price: p.year.price, per: p.year.per, free: p.year.free && p.year.free.text, sure: p.year.sure, best: p.year.best } : null;
     let p = await planFor({ store: STORES.monthlyFree, offering: "both" });
@@ -256,6 +282,7 @@ try {
   // ── 2c. THE ONE-PAYMENT ROW (22 Oct 2026, Travis: "ok go build it all";
   // "i dont wanna say lifetime"): a non-consumable, offered only when
   // RevenueCat's current offering lists it AND the store returns it ──
+  YEARLY_ON = false;
   await scenario("the one-payment row", async () => {
     const lb = (p) => p && p.life ? { state: p.life.state, kind: p.life.kind, id: p.life.id, price: p.life.price, per: p.life.per, free: p.life.free, sure: p.life.sure } : null;
     const LIFE = { state: "paid", kind: "lifetime", id: IDS.lifetime, price: "$59.99", per: "once", free: null, sure: false };
@@ -277,7 +304,8 @@ try {
     w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan, {})));
     ok("…and the monthly row beside it is word for word what it was alone", w.name === "Monthly" && w.amount === "$9.99/mo" && w.sub === "3-day free trial" && w.button === "Start practicing!" && w.tag === "", w);
 
-    // all three
+    // all three, the yearly row switched back on
+    YEARLY_ON = true;
     p = await planFor({ store: STORES.monthlyFree, offering: "all" });
     r = await rec();
     ok("the offering lists all three: a yearly row and a one-payment row beside monthly, each from its own product, the offering read once",
@@ -292,6 +320,7 @@ try {
     ok("…and one cheaper than the year takes the tag away too", !!p && !!p.year && p.year.best === false && !!p.life, [brief(p), p && p.year && p.year.best]);
     p = await planFor({ store: STORES.monthlyFree, offering: ["monthly", "annual"] });
     ok("…while yearly and monthly alone keep Best value exactly as before", !!p && !!p.year && p.year.best === true && p.life === null, [brief(p), p && p.year && p.year.best]);
+    YEARLY_ON = false;
     // the store's figure, verbatim
     p = await planFor({ store: { monthly: { price: "$9.99", free: "P3D" }, lifetime: { price: "US$1,299.00" } }, offering: ["monthly", "lifetime"] });
     w = await page.evaluate(() => Sona.storePlan().then((plan) => Sona.planWords(plan.life, {})));
@@ -304,7 +333,7 @@ try {
     // SAFETY: anything but an offering that lists it, and a store that has it, is the card as before
     for (const [label, cfg] of [
       ["the offering lists the monthly package alone (the fake's default)", {}],
-      ["the offering lists yearly and monthly only", { offering: "both" }],
+      ["the offering lists yearly and monthly only (the yearly row switched on)", { offering: "both", sellYearly: true }],
       ["getOfferings is missing", { offering: "missing" }],
       ["getOfferings is missing on a bridge that answers every name", { offering: "missing", bridge: "proxy" }],
       ["getOfferings throws", { offering: "throw" }],
@@ -1215,10 +1244,10 @@ try {
     // 2026 the one payment, but only behind RevenueCat's offering: nothing
     // about either comes before _offered(P), read once for both
     const behind = sp.indexOf("_offered(P)"), offers = src.slice(src.indexOf("function _offered("), src.indexOf("function _lifePlan("));
-    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, with monthly's eligibility call unchanged, and names the yearly product and the one payment only after RevenueCat's offering listed them",
+    ok("storePlan asks through iapProduct(\"monthly\"), the call real phones already use, with monthly's eligibility call unchanged, and names the yearly product and the one payment only after RevenueCat's offering listed them (the yearly one only while IAP_SELL_YEARLY is on: 23 Oct 2026)",
       /iapProduct\("monthly"\)/.test(sp) && !/getProducts|getOfferings/.test(sp) && /checkTrialOrIntroductoryPriceEligibility\(\{ productIdentifiers: \[id\] \}\)/.test(sp) &&
       behind > 0 && !/annual|lifetime/.test(sp.slice(0, behind)) && sp.split("_offered(P)").length === 2 && sp.indexOf('iapProduct("annual")') > behind && sp.indexOf('iapProduct("lifetime")') > behind &&
-      /if \(!o\.annual \|\| a\.yr !== undefined\) return noYear\(\);/.test(sp) && /if \(!o\.lifetime \|\| a\.lf !== undefined\) return noLife\(\);/.test(sp), sp.slice(0, 200));
+      /if \(!IAP_SELL_YEARLY \|\| !o\.annual \|\| a\.yr !== undefined\) return noYear\(\);/.test(sp) && /if \(!o\.lifetime \|\| a\.lf !== undefined\) return noLife\(\);/.test(sp), sp.slice(0, 200));
     ok("…and the offering counts only when its CURRENT offering lists each product among its packages (by the product's own id), and a broken one lists neither",
       /typeof P\.getOfferings !== "function"/.test(offers) && /r\.current/.test(offers) && /availablePackages/.test(offers) && /pk\.product\.identifier === id/.test(offers) &&
       /has\(IAP_PRODUCTS\.annual\)/.test(offers) && /has\(IAP_PRODUCTS\.lifetime\)/.test(offers) && /\(\) => \(\{ annual: false, lifetime: false \}\)\)/.test(offers), offers.slice(0, 300));

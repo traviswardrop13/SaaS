@@ -125,21 +125,24 @@ await scenario("a family that can buy", async () => {
   } finally { await context.close(); }
 });
 
-// THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, so the price
-// has a third row. A parent who picks it is charged once, comes back to
-// setup for the microphone and the hand-off, and the list hears "paid".
+// THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, and since
+// 23 Oct 2026 it is the top row, picked when the price opens (Travis: "I
+// just want two payment options, and I want one payment to be the one on the
+// top that's auto-selected"); the yearly product the offering also lists is
+// not sold. A parent who taps the button as it opens is charged once, comes
+// back to setup for the microphone and the hand-off, and the list hears "paid".
 await scenario("a family that buys the one payment", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant", offering: "all" });
   try {
     await toReady(page, "Ava", "ava.mom@example.com");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
-    await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
-    const rows = await page.evaluate(() => ["iapYear", "iapPlan", "iapLife"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
-    ok("the price has three rows, yearly picked, the one payment last and unpicked, and it never says lifetime",
-      rows.every(Boolean) && rows[0][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[2][2]) && !/lifetime/i.test(await text(page, "body")), rows);
-    await tap(page, "#iapLife");
-    ok("…picked: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
+    await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 12000 });
+    const rows = await page.evaluate(() => ["iapYear", "iapLife", "iapPlan"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
+    ok("the price has two rows, the one payment on top and picked, Monthly under it, no yearly row, and it never says lifetime",
+      rows[0] === null && !!rows[1] && !!rows[2] && rows[1][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[1][2]) &&
+      await page.evaluate(() => document.getElementById("iapLife").getBoundingClientRect().bottom <= document.getElementById("iapPlan").getBoundingClientRect().top) && !/lifetime/i.test(await text(page, "body")), rows);
+    ok("…as it opens: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
       (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
     await tap(page, "#iapBuy");
     await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });

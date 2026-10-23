@@ -93,6 +93,11 @@
 //              seed carries it, as every seed carries the era stamps
 //   safeArea   { top, bottom }: px swapped in for env(safe-area-inset-*) in
 //              every served .html and .css (desktop Chromium reports zero)
+//   sellYearly true: serve a sona.js with IAP_SELL_YEARLY on, so the yearly
+//              row shows again where the offering lists it (Travis, 23 Oct
+//              2026: "get rid of the yearly option"; the card sells the one
+//              payment and monthly). Read by open(), not by the init script:
+//              open()'s sellYearly(on) changes it between loads
 //   remind     true | false | "throw": Sona.trialReminderOn (NOTIFY1, 22 Oct
 //              2026: will this phone show its own heads-up the day before a
 //              free trial ends?) is replaced by one that answers true only
@@ -516,9 +521,20 @@ export async function open(browser, base, cfg = {}, viewport = { width: 390, hei
   // own route (a stubbed Home, a held price page) answers before this one is
   // asked, and "never requests subscribe.html" has to see those too
   context.on("request", (req) => { requests.push({ url: req.url(), method: req.method(), body: req.postData() }); });
+  // the yearly row (sellYearly): the card stopped selling it on 23 Oct 2026
+  // (IAP_SELL_YEARLY in sona.js), and its code stays for the day it comes
+  // back, so a suite can still serve a sona.js with the switch on. Per load:
+  // the returned sellYearly(on) changes it for this context's next requests.
+  const live = { sellYearly: !!cfg.sellYearly };
   await context.route("**/*", async (route) => {
     const url = route.request().url();
     if (!url.startsWith(base + "/")) return route.abort();
+    if (live.sellYearly && new URL(url).pathname === "/sona.js") {
+      const res = await route.fetch(), src = await res.text(), on = src.replace("const IAP_SELL_YEARLY = false;", "const IAP_SELL_YEARLY = true;");
+      // already on: as it is. Renamed: no sona.js at all, so the suite fails loudly
+      if (on === src && !/\n  const IAP_SELL_YEARLY = true;/.test(src)) { console.error("_phone.mjs: sona.js has no `const IAP_SELL_YEARLY` switch to turn on"); return route.abort(); }
+      return route.fulfill({ response: res, body: on });
+    }
     // Desktop Chromium has zero safe-area insets. Swap in the device's real
     // ones so a footer collision is exercised, not hidden.
     if (cfg.safeArea && /\.(html|css)$/.test(new URL(url).pathname)) {
@@ -537,7 +553,7 @@ export async function open(browser, base, cfg = {}, viewport = { width: 390, hei
   page.setDefaultTimeout(8000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  return { context, page, errors, requests };
+  return { context, page, errors, requests, sellYearly: (on) => { live.sellYearly = !!on; } };
 }
 
 // R6 pauses taps for about half a second after a setup step changes
