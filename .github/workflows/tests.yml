@@ -24,7 +24,11 @@ jobs:
     # 150, not 90 (18 Oct 2026): the eighteen rebuilt Coming soon games
     # bring eighteen browser suites, and the run on #227 was cancelled at 90
     # minutes, still running.
-    timeout-minutes: 150
+    # 200, not 150 (23 Oct 2026): the daily story's Days 4-14 bring eleven
+    # game suites and storygametest, and the run on #241 took 148 of its 150
+    # minutes; the replay parts (FOUND1) add about three more. Without the
+    # room the job is cancelled mid-run, which reads as neither pass nor fail.
+    timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
