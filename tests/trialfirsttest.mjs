@@ -225,13 +225,18 @@ try {
         return b ? { k, locked: b.dataset.locked, label: (b.querySelector(".game-access") || {}).textContent } : { k, missing: true }; }), FREE4);
       ok("\"Not now\" goes Home with Fruit Slice, Piano Tiles, Feed Echo and Bubble Pop locked, each marked Premium, none \"Free\"",
         h.every((c) => c.locked === "true" && c.label === "Premium"), h);
-      const books = await page.evaluate(() => document.getElementById("booksTag").textContent);
-      ok("…and the Books card says Premium, not \"1 free book\"", books === "Premium", books);
+      // Home's Books door is the one way to the books since 23 Oct 2026 (the
+      // Arcade's Books card went: Travis, "no books in there"), so its tag is
+      // the one that must not promise a free book to a family who owes the price
+      const books = await page.evaluate(() => { const t = document.getElementById("homeBooksTag"); return t ? t.textContent : null; });
+      ok("…and Home's Books door says Premium, not \"1 free book\"", books === "Premium", books);
       // a grey game opens the price at once (Travis, 4 Oct 2026: "I want it
       // to open automatically if they click on a game that is grayed out")
       // (the games are behind Home's Arcade door since 22 Oct 2026, STORY1:
       // the path a "Not now" family really takes)
       await page.locator("#arcadeBtn").click(); await page.waitForTimeout(550); // Home ignores a tap for half a second after a view switch (a double tap)
+      const shelf = await page.evaluate(() => ({ view: document.getElementById("libraryApp").dataset.view, card: !!document.getElementById("booksCard"), books: document.querySelectorAll("#libraryApp .book-card").length }));
+      ok("…and the Arcade it opens holds games only: no Books card and no book in any row (23 Oct 2026)", shelf.view === "arcade" && !shelf.card && shelf.books === 0, shelf);
       await page.locator('#activityGroups .game-card[data-game="slice"]').click();
       await page.waitForURL(/\/subscribe\.html\?from=slice$/);
       await page.waitForFunction(() => document.body.classList.contains("offer"));

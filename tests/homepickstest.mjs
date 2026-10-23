@@ -1,5 +1,10 @@
 // HOME PICKS: local-calendar choices are silent, read-only, relevant to the
-// active child, and honest about which releases are new.
+// active child, and honest about which releases are new. Since 23 Oct 2026
+// (Travis: "organize the arcade so that there are no books in there ... I
+// only want either today's picks or limited time ... have 2 games listed
+// there") the Arcade has ONE row above its shelves, Today's picks: two games
+// of the child's own age group, never a book. What's new and Limited time are
+// gone, and the books are behind Home's Books door alone.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
@@ -45,6 +50,10 @@ try {
   const first = await fixture();
   const ready = await first.page.evaluate(() => typeof Sona.homePicks === "function" && !!Sona.activityLibrary().picks);
   ok("Home supplies its read-only calendar picks contract", ready);
+  // the library hands Home its shelves and the one picks row, and no
+  // "featured" rows any more (What's new and Limited time, gone 23 Oct 2026)
+  const contract = await first.page.evaluate(() => { const lib = Sona.activityLibrary(); return { keys: Object.keys(lib).sort(), picks: { id: lib.picks.id, name: lib.picks.name, tag: lib.picks.tag } }; }).catch((e) => ({ error: e.message }));
+  ok("the library is shelves plus one Today's picks row, with no What's new or Limited time", JSON.stringify(contract.keys) === JSON.stringify(["groups", "picks", "recommended"]) && contract.picks && contract.picks.id === "picks" && contract.picks.name === "Today's picks" && contract.picks.tag === "Changes daily", contract);
   await first.ctx.close();
   if (ready) {
     for (const config of [
@@ -58,33 +67,59 @@ try {
     ]) await scenario(config.name, async () => {
       const { ctx, page, errors } = await fixture(config);
       try {
-        const result = await page.evaluate(({ age, sounds, premium, free }) => {
+        // ages 2-4 are Simple play, everyone else the Arcade (Sona.playStyle)
+        const group = (config.age || 8) < 5 ? "simple" : "arcade";
+        const result = await page.evaluate(({ group }) => {
           const before = JSON.stringify(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)]));
-          let stable = true, safe = true, relevant = true, useful = true, alternates = true, unique = true, varied = false, avoidsRepeat = true;
-          let prior = [], priorJSON = ""; const seenBooks = {}, seenGames = {};
+          let stable = true, safe = true, relevant = true, useful = true, unique = true, varied = false, avoidsRepeat = true;
+          let prior = [], priorJSON = ""; const seenGames = {}, lanes = [{}, {}], books = [];
           for (let i = 0; i < 400; i++) {
             const day = new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10), picks = Sona.homePicks(day), second = Sona.homePicks(day);
             stable = stable && JSON.stringify(picks) === JSON.stringify(second);
             unique = unique && picks.length === 2 && picks[0].key !== picks[1].key;
-            const ordinal = Date.parse(day + "T00:00:00Z") / 86400000;
-            alternates = alternates && (ordinal % 2 === 0 ? picks[0].kind === "book" : picks.every((p) => p.kind !== "book"));
             let locked = 0;
-            picks.forEach((p) => {
-              if (p.kind === "book") { seenBooks[p.key] = true; safe = safe && !/halloween/.test(p.slug); relevant = relevant && (!sounds.length || sounds.indexOf(p.sound) >= 0); locked += Sona.bookLocked(p.name) ? 1 : 0; }
-              else { seenGames[p.key] = true; const a = Sona.GAME_ACTS[p.key]; safe = safe && !!a && !a.comingSoon && !a.season && a.available !== false; relevant = relevant && a.group === (age < 5 ? "simple" : "arcade"); locked += Sona.gameAccess(p.key).allowed ? 0 : 1; }
+            picks.forEach((p, n) => {
+              // a book (or anything the game catalog doesn't know) is never a pick
+              const a = Sona.GAME_ACTS[p.key];
+              if (p.kind === "book" || !a) { books.push(day + " " + p.key); return; }
+              seenGames[p.key] = true; lanes[n][p.key] = true;
+              safe = safe && !a.comingSoon && a.available !== false; relevant = relevant && a.group === group; locked += Sona.gameAccess(p.key).allowed ? 0 : 1;
             });
-            if (premium || free) useful = useful && locked <= 1;
-            if (i && premium && age >= 5) avoidsRepeat = avoidsRepeat && picks.every((p) => !prior.includes(p.key));
+            useful = useful && locked <= 1;
+            avoidsRepeat = avoidsRepeat && (!i || picks.every((p) => !prior.includes(p.key)));
             const current = JSON.stringify(picks.map((p) => p.key)); if (priorJSON && current !== priorJSON) varied = true; priorJSON = current; prior = picks.map((p) => p.key);
           }
           const after = JSON.stringify(Object.keys(localStorage).sort().map((k) => [k, localStorage.getItem(k)]));
-          return { stable, safe, relevant, useful, alternates, unique, varied, avoidsRepeat, readonly: before === after, books: Object.keys(seenBooks), games: Object.keys(seenGames) };
-        }, { age: config.age || 8, sounds: config.sounds, premium: config.premium !== false, free: !!config.free });
+          // the child's own shelf as Home draws it: every finished game of the group
+          const shelf = Sona.activityLibrary().groups.filter((g) => g.id === group)[0].games.filter((g) => !g.comingSoon && g.available !== false).map((g) => g.key).sort();
+          return { stable, safe, relevant, useful, unique, varied, avoidsRepeat, readonly: before === after, books, games: Object.keys(seenGames).sort(), shelf, lanesApart: !Object.keys(lanes[0]).some((k) => lanes[1][k]) };
+        }, { group });
         ok(config.name + ": same-day choices are stable and reading never saves state", result.stable && result.readonly, result);
-        ok(config.name + ": two distinct choices alternate book/game and two games", result.unique && result.alternates && result.varied, result);
-        ok(config.name + ": only finished, nonseasonal choices in the child's sounds and age group", result.safe && result.relevant, result);
-        ok(config.name + ": an open family never gets two grey choices", result.useful, result);
-        if (config.premium !== false && (config.age || 8) >= 5) ok(config.name + ": larger unlocked pools avoid yesterday's picks", result.avoidsRepeat, result);
+        ok(config.name + ": two distinct games every day, never a book, changing from day to day", result.unique && !result.books.length && result.varied, result);
+        ok(config.name + ": only finished games of the child's own age group", result.safe && result.relevant, result);
+        if (config.premium !== false || config.free) ok(config.name + ": an open family never gets two grey choices", result.useful, result);
+        if (config.premium !== false) {
+          // 23 Oct 2026: both shelves are big enough now (13 little-kid games,
+          // 16 big-kid), so the littles are held to this too
+          ok(config.name + ": larger unlocked pools avoid yesterday's picks", result.avoidsRepeat, result);
+          ok(config.name + ": every game on the child's own shelf takes its turn as a pick", JSON.stringify(result.games) === JSON.stringify(result.shelf), result);
+        }
+        // one pick from each half of the shelf, so the two never match; only
+        // the free version's swap (neither choice opens) may cross the halves
+        if (!config.free) ok(config.name + ": the two picks come from the two halves of the shelf", result.lanesApart, result);
+        // What the child sees: one row of the two picks (no book card, no
+        // Books card, no What's new or Limited time), then their own age
+        // group's shelf first (Travis, 23 Oct 2026: "if they're young, 3 to 4,
+        // have simple play show up higher, and vice versa").
+        const seen = await page.evaluate(() => {
+          const rows = Array.from(document.querySelectorAll("#featuredGroups > section"));
+          return {
+            rows: rows.map((r) => r.dataset.collection), cards: rows.length ? Array.from(rows[0].querySelectorAll(".game-card")).map((c) => c.dataset.game) : [],
+            today: Sona.homePicks().map((p) => p.key), books: document.querySelectorAll(".book-card,#booksCard,#libraryBooksArt,#booksTag,#booksLine,#booksHeading").length,
+            shelves: Array.from(document.querySelectorAll("#activityGroups .activity-group")).map((g) => g.dataset.group),
+          };
+        });
+        ok(config.name + ": the Arcade shows one row of today's two games, no books, then the child's own shelf first", JSON.stringify(seen.rows) === '["picks"]' && JSON.stringify(seen.cards) === JSON.stringify(seen.today) && seen.cards.length === 2 && !seen.books && seen.shelves[0] === group && seen.shelves.length === 2, seen);
         ok(config.name + ": no Home page errors", !errors.length, errors);
       } finally { await ctx.close(); }
     });
@@ -108,47 +143,93 @@ try {
         ok("names never seed picks, sibling slots do, and an absent family id stays absent", got.nameIndependent && got.siblingsDiffer && got.noIdCreated, got);
       } finally { await ctx.close(); }
     });
-    await scenario("sound and homework precedence", async () => {
+    // Sounds and homework only ever chose the BOOK pick (23 Oct 2026: the
+    // picks are games now), so neither may move the two games, before or
+    // after an assignment's due day, and neither may bring a book back.
+    await scenario("sounds and homework never change the picks", async () => {
       const { ctx, page } = await fixture({ sounds: ["S"], homework: { sounds: ["R"], start: "2026-10-01", due: "2026-10-31" } });
       try {
         const got = await page.evaluate(() => {
-          const books = (start, count) => Array.from({ length: count }, (_, i) => Sona.homePicks(new Date(Date.UTC(2026, 9, start + i)).toISOString().slice(0, 10))).flat().filter((p) => p.kind === "book");
-          return { active: books(1, 30).map((p) => p.sound), expired: books(32, 14).map((p) => p.sound) };
+          const series = () => Array.from({ length: 45 }, (_, i) => Sona.homePicks(new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10)));
+          const flat = (s) => JSON.stringify(s.map((d) => d.map((p) => p.key)));
+          const homework = series();
+          localStorage.removeItem("sona.homework.v1");
+          const sounds = series(), profile = JSON.parse(localStorage.getItem("sona.profile.v1"));
+          profile.focusSounds = ["K", "L"]; localStorage.setItem("sona.profile.v1", JSON.stringify(profile));
+          const others = series();
+          const books = [homework, sounds, others].flat(2).filter((p) => p.kind === "book" || !Sona.GAME_ACTS[p.key]).map((p) => p.key);
+          return { same: flat(homework) === flat(sounds) && flat(sounds) === flat(others), books, sample: JSON.parse(flat(homework)).slice(0, 3) };
         });
-        ok("active homework leads book picks, then the family's sounds return after its due day", got.active.length > 0 && got.active.every((s) => s === "R") && got.expired.length > 0 && got.expired.every((s) => s === "S"), got);
+        ok("homework and the child's sounds never change the two games, and never bring a book", got.same && !got.books.length, got);
       } finally { await ctx.close(); }
     });
     await scenario("honest release dates", async () => {
       const { ctx, page } = await fixture();
       try {
+        // the real catalog first, across the October book releases and the
+        // Halloween season that used to fill What's new and Limited time: no
+        // book ever, and New only on a game released 0-29 days before the day
+        const real = await page.evaluate(() => Array.from({ length: 90 }, (_, i) => {
+          const day = new Date(Date.UTC(2026, 8, 15 + i)).toISOString().slice(0, 10), at = Date.parse(day + "T00:00:00Z");
+          return Sona.homePicks(day).map((p) => { const a = Sona.GAME_ACTS[p.key], r = a && a.releasedOn ? Date.parse(a.releasedOn + "T00:00:00Z") : NaN; return { day, key: p.key, book: p.kind === "book" || !a, isNew: p.isNew, due: r <= at && at - r < 30 * 86400000 }; });
+        }).flat());
+        ok("the October book releases and the Halloween season bring no book, and no game is called New without a real release date", real.length === 180 && real.every((p) => !p.book && p.isNew === p.due), real.filter((p) => p.book || p.isNew !== p.due));
         const got = await page.evaluate(() => {
           Object.keys(Sona.GAME_ACTS).forEach((key) => { if (!Sona.GAME_ACTS[key].comingSoon) Sona.GAME_ACTS[key].releasedOn = "2026-10-01"; });
           return { day29: Sona.homePicks("2026-10-30"), day30: Sona.homePicks("2026-10-31"), before: Sona.homePicks("2026-09-30") };
         });
-        ok("New ends after day 29 and never labels a future release", got.day29.filter((p) => p.kind !== "book").every((p) => p.isNew) && got.day30.every((p) => !p.isNew) && got.before.every((p) => !p.isNew), got);
-        const books = await page.evaluate(() => Array.from({ length: 90 }, (_, i) => {
-          const day = new Date(Date.UTC(2026, 8, 15 + i)).toISOString().slice(0, 10);
-          return Sona.homePicks(day).filter((p) => p.kind === "book").map((p) => ({ day, slug: p.slug, isNew: p.isNew }));
-        }).flat());
-        const dated = ["rosie-red-wagon", "ray-lost-ring"], recent = books.filter((b) => dated.includes(b.slug) && b.day >= "2026-10-01" && b.day <= "2026-10-30");
-        ok("existing covers have no invented New badge and real book releases expire", recent.length > 0 && recent.every((b) => b.isNew) && books.filter((b) => !dated.includes(b.slug) || b.day >= "2026-10-31").every((b) => !b.isNew), books);
+        ok("New ends after day 29 and never labels a future release", got.day29.length === 2 && got.day29.every((p) => p.isNew) && got.day30.every((p) => !p.isNew) && got.before.every((p) => !p.isNew), got);
       } finally { await ctx.close(); }
+      // Peekaboo carries the catalog's one real release date (21 Sep 2026):
+      // a little one's pick of it is New through 20 Oct, then plain
+      const little = await fixture({ age: 4, sounds: ["P"] });
+      try {
+        const peek = await little.page.evaluate(() => {
+          const date = Sona.GAME_ACTS.peekaboo && Sona.GAME_ACTS.peekaboo.releasedOn;
+          const seen = Array.from({ length: 60 }, (_, i) => { const day = new Date(Date.UTC(2026, 8, 21 + i)).toISOString().slice(0, 10); return Sona.homePicks(day).filter((p) => p.key === "peekaboo").map((p) => ({ day, isNew: p.isNew })); }).flat();
+          return { date, recent: seen.filter((p) => p.day <= "2026-10-20"), later: seen.filter((p) => p.day > "2026-10-20") };
+        });
+        if (peek.date === "2026-09-21") ok("a real game release is New for its first 30 days and plain after", peek.recent.length > 0 && peek.recent.every((p) => p.isNew) && peek.later.length > 0 && peek.later.every((p) => !p.isNew), peek);
+      } finally { await little.ctx.close(); }
     });
-    await scenario("320px mixed row and labels", async () => {
+    // A free family's row at 320 px (23 Oct 2026: two games, no book cover
+    // to square up against): the two cards sit side by side in one row with
+    // the shelves' wide pictures, nothing scrolls sideways, and each label
+    // says what a tap does.
+    await scenario("320px row of two games and labels", async () => {
       const { ctx, page, errors } = await fixture({ premium: false, free: true });
       try {
-        const mixedDay = await page.evaluate(() => { for (let i = 1; i <= 10; i++) { const d = "2026-10-" + String(i).padStart(2, "0"); if (Sona.homePicks(d)[0].kind === "book" && Sona.homePicks(d)[0].name === "Rory and the Rainbow") return d; } return ""; });
-        await page.clock.setFixedTime(new Date(mixedDay + "T12:00:00Z")); await page.reload();
-        const row = page.locator('[data-collection="picks"]');
-        const shape = await row.evaluate((el) => {
-          const cards = Array.from(el.querySelectorAll(".game-card")), art = cards.map((c) => c.querySelector(".game-art").getBoundingClientRect());
-          return { title: el.querySelector("h2").textContent, count: cards.length, book: cards[0].classList.contains("book-card"), label: cards[0].getAttribute("aria-label"), free: cards[0].querySelector(".game-access").textContent, arts: art.map((r) => ({ w: r.width, h: r.height })), overflow: Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) > innerWidth + 1 };
+        const measure = () => page.evaluate(() => {
+          const el = document.querySelector('[data-collection="picks"]'), grid = el.querySelector(".featured-grid"), cards = Array.from(grid.querySelectorAll(".game-card"));
+          const box = cards.map((c) => c.getBoundingClientRect()), row = el.getBoundingClientRect(), art = cards.map((c) => c.querySelector(".game-art").getBoundingClientRect());
+          return {
+            title: el.querySelector("h2").textContent, tag: el.querySelector(".shelf-tag").textContent, count: cards.length, book: cards.some((c) => c.classList.contains("book-card")),
+            sideBySide: box.length === 2 && Math.abs(box[0].top - box[1].top) < 1 && box[0].right <= box[1].left && box[0].left >= row.left && box[1].right <= row.right,
+            scrolls: grid.scrollWidth > grid.clientWidth + 1, overflow: Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) > innerWidth + 1,
+            arts: art.map((r) => ({ w: r.width, h: r.height, ratio: r.width / r.height })),
+            labels: cards.map((c) => ({ key: c.dataset.game, name: Sona.GAME_ACTS[c.dataset.game] && Sona.GAME_ACTS[c.dataset.game].name, aria: c.getAttribute("aria-label"), access: c.querySelector(".game-access").textContent, locked: c.dataset.locked, allowed: Sona.gameAccess(c.dataset.game).allowed })),
+          };
         });
-        ok("320px mixed picks use matching square art without sideways overflow", shape.count === 2 && shape.book && !shape.overflow && shape.arts.every((r) => Math.abs(r.w - r.h) < 2), shape);
-        ok("free book badge and spoken label are useful, with no undefined text", shape.free === "Free" && !/undefined/.test(shape.label) && shape.title === "Today's picks", shape);
+        const wide = (s) => s.count === 2 && !s.book && s.sideBySide && !s.scrolls && !s.overflow && s.arts.every((r) => Math.abs(r.ratio - 1.8) < 0.05) && Math.abs(s.arts[0].w - s.arts[1].w) < 1;
+        const shape = await measure();
+        ok("320px picks are two games side by side, with the shelves' wide art and no sideways scroll", wide(shape), shape);
+        // open: "Free" or "Included"; grey: "Premium", and the tap's promise
+        const honest = (l) => !!l.name && l.aria.startsWith(l.name + ". ") && !/undefined|  /.test(l.aria) && (l.allowed ? /^(Free|Included)$/.test(l.access) && l.aria.includes(" " + l.access + ".") && l.locked === "false" : l.access === "Premium" && l.aria.includes("Premium. Ask a grown-up to unlock.") && l.locked === "true");
+        ok("free and Premium badges and spoken labels are honest, with no undefined text", shape.title === "Today's picks" && shape.tag === "Changes daily" && shape.labels.every(honest) && shape.labels.some((l) => l.access === "Free"), shape);
         ok("the gift button keeps a full tap target", await page.locator("#giftBtn").evaluate((e) => e.getBoundingClientRect().height >= 44 && e.getBoundingClientRect().width >= 44));
         if (process.env.HOME_PICK_SHOT) await page.screenshot({ path: process.env.HOME_PICK_SHOT });
-        ok("mixed Home has no page errors", !errors.length, errors);
+        // two across at every width, an iPad's too: never a sideways strip
+        await page.setViewportSize({ width: 768, height: 1024 });
+        const ipad = await measure();
+        ok("on an iPad the picks are still two games side by side, with no sideways scroll", wide(ipad), ipad);
+        ok("the picks row has no page errors", !errors.length, errors);
+        // the books' one door now: Home's Books door, with the shelf's tag
+        // (this family keeps the free version, so one book is free)
+        await page.setViewportSize({ width: 320, height: 568 });
+        await page.goto(origin + "/today.html"); await page.waitForFunction(() => !!window.Sona);
+        const door = await page.evaluate(() => ({ tag: document.getElementById("homeBooksTag").textContent, card: !!document.getElementById("booksCard"), books: document.querySelectorAll(".book-card").length }));
+        await page.locator("#homeBooksBtn").click(); await page.waitForURL("**/library.html", { waitUntil: "commit" });
+        ok("Home's Books door is the way to the bookshelf, tagged 1 free book, with no Books card left", door.tag === "1 free book" && !door.card && !door.books && new URL(page.url()).pathname === "/library.html", { door, url: page.url() });
       } finally { await ctx.close(); }
     });
     // FOUND1 (23 Oct 2026): the daily count is the gift button's ring and

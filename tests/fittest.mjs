@@ -81,27 +81,61 @@ for (const [dev, w, h] of PORTRAIT) {
 
 // The library (Home's Arcade since 22 Oct 2026, STORY1; Home's own first
 // screen is measured by homestorytest) is intentionally taller than a phone.
-// Its final game and parked book shelf must be genuinely reachable, with no
-// fixed action covering them.
+// Its final game and the end of the page must be genuinely reachable, with
+// no fixed action covering them. Since 23 Oct 2026 the Arcade is games only
+// (Travis: "organize the arcade so that there are no books in there"): the
+// Books card that used to end it is gone, so the page now ends on its last
+// shelf and the age note, and the bookshelf's one way in is Home's Books
+// door, which must still be reachable and tappable on the smallest phone.
 {
   const page = await browser.newPage({viewport:{width:320,height:568}});
   await page.addInitScript(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({childName:"Leo",childAge:"4",focusSounds:["P"],onboarded:true,voiceOn:false}));
   });
   await measure(page,"today.html?view=arcade");
+  // reachable = on screen after scrolling to it, and the point a finger
+  // lands on is the thing itself, not a fixed bar or notice over it
+  const reach = (loc) => loc.evaluate(e => {
+    const r=e.getBoundingClientRect(), hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+    return {visible:r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,reachable:hit===e||e.contains(hit),overflowX:document.documentElement.scrollWidth-innerWidth};
+  });
+  // Simple play now lays out two to a row like the Arcade shelf (23 Oct
+  // 2026; every little-kid card was a full-width row before). A four-year-old
+  // sees it first, so its first two cards must share a row and each keep a
+  // real touch area at 320 px, and a lone last card stretches across.
+  const simple = await page.evaluate(() => {
+    const shelf=document.querySelector('#activityGroups .activity-group[data-group="simple"]');
+    const cards=shelf?[...shelf.querySelectorAll(".game-card")].map(c=>{const r=c.getBoundingClientRect();return{t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)};}):[];
+    const grid=shelf&&shelf.querySelector(".game-grid");
+    return {first:(document.querySelector("#activityGroups .activity-group")||{}).dataset?.group,n:cards.length,a:cards[0],b:cards[1],last:cards[cards.length-1],gridW:grid?Math.round(grid.getBoundingClientRect().width):0};
+  });
+  ok("small portrait today: Simple play, first for a four-year-old, shows two games a row, each a usable touch area",
+    simple.first==="simple"&&simple.n>=2&&Math.abs(simple.a.t-simple.b.t)<=1&&[simple.a,simple.b].every(c=>c.w>=120&&c.h>=80&&c.w<simple.gridW*0.6),JSON.stringify(simple));
+  ok("small portrait today: …and a lone last Simple play card spans the row", simple.n%2===0||simple.last.w>=simple.gridW-1,JSON.stringify(simple));
   const cards = page.locator("#activityGroups .game-card");
   const last = cards.last();
   await last.scrollIntoViewIfNeeded();
-  const target = await last.evaluate(button => {
-    const r=button.getBoundingClientRect(), hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-    return {visible:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,reachable:hit===button||button.contains(hit),overflowX:document.documentElement.scrollWidth-innerWidth};
-  });
+  const target = await reach(last);
   ok("small portrait today: the final game can be reached and tapped", target.visible&&target.reachable,JSON.stringify(target));
   ok("small portrait today: no sideways overflow",target.overflowX<=1,JSON.stringify(target));
-  await page.locator("#booksCard").scrollIntoViewIfNeeded();
-  ok("small portrait today: the Books card is reachable",await page.locator("#booksCard").isVisible());
+  // the age note is the page's last line now that no Books card follows it
+  const note = page.locator("#libraryApp .age-note");
+  await note.scrollIntoViewIfNeeded();
+  const end = await reach(note);
+  ok("small portrait today: the end of the Arcade (its age note) is reachable, nothing fixed over it", end.visible&&end.reachable,JSON.stringify(end));
+  ok("small portrait today: the Arcade has no Books card and no book anywhere in it",
+    await page.locator("#booksCard, #libraryApp .book-card").count()===0);
   const heading=await page.locator(".library-intro h1").boundingBox();
   ok("small portrait today: content scrolls rather than clipping below the fold", heading.y<0,JSON.stringify(heading));
+  // Home's Books door, the bookshelf's one way in: reachable and tappable at
+  // 320×568, and a tap opens the bookshelf
+  await measure(page,"today.html");
+  const door = page.locator("#homeBooksBtn");
+  await door.scrollIntoViewIfNeeded();
+  const dr = await reach(door);
+  ok("small portrait Home: the Books door is reachable and tappable", dr.visible&&dr.reachable&&dr.overflowX<=1,JSON.stringify(dr));
+  await Promise.all([page.waitForURL(/\/library\.html$/,{timeout:5000}).catch(()=>{}), door.click()]);
+  ok("small portrait Home: …and a tap on it opens the bookshelf", /\/library\.html$/.test(page.url()), page.url());
   await page.close();
 }
 

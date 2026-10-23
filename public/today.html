@@ -60,22 +60,10 @@
     .game-access{font-size:10px;line-height:1.3;font-weight:800;color:#3f6630;background:#eaf3dd;padding:3px 7px;border-radius:99px;}
     .game-access.premium{color:#665093;background:#efe9f9;}
     .featured-group{background:#f1e9fb;border:1px solid #e5d9f5;border-radius:26px;padding:17px 15px 15px;margin:20px 0 26px;}
-    .featured-group[data-collection="seasonal"]{background:#ffe9cc;border-color:#f5d9b1;}
-    .featured-grid{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 15px)/2);gap:15px;overflow-x:auto;padding:1px 1px 8px;scroll-snap-type:x proximity;}
-    .featured-grid .game-card{scroll-snap-align:start;box-shadow:0 4px 0 #ded0ef;}
+    .featured-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;padding:1px 1px 8px;}
+    .featured-grid .game-card{box-shadow:0 4px 0 #ded0ef;}
     .featured-group .shelf-heading h2{font-size:22px;}
     .featured-group .shelf-tag{background:#fff9;color:#665093;}
-    #booksCard{display:flex;align-items:center;gap:15px;width:100%;padding:18px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;box-shadow:0 4px 0 #cfe0d9;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
-    #booksCard:active{transform:translateY(3px) scale(.99);}
-    .book-art{position:relative;display:block;width:76px;height:86px;flex:none;}
-    .book-art>.stk{background:transparent!important;}
-    .book-art>img{width:100%;height:100%;object-fit:cover;border-radius:14px;}
-    .books-copy{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
-    .books-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
-    #booksHeading{font-family:"Baloo 2",sans-serif;font-size:23px;line-height:1.2;font-weight:800;}
-    #booksLine{font-size:13px;line-height:1.5;color:#536b62;max-width:300px;}
-    #booksCard .shelf-tag{background:#fff9;color:#536b62;}
-    .books-go{flex:none;font-size:30px;line-height:1;color:#536b62;}
     .age-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;margin:25px 12px 0;}
     #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
     #catalogPreviewNotice strong{display:block;}
@@ -87,8 +75,8 @@
     #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
     #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .library-wrap.has-message{padding-bottom:145px;}
-    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{grid-auto-columns:calc((100% - 44px)/3);gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
-    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksCard{gap:10px;}.book-art{width:60px;height:72px;}}
+    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}}
     @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
     :root{--label:#a17c4a;--track:#f0e4d2;--orange-d:#ef6f23;}
     .library-label{flex:1;}
@@ -187,10 +175,10 @@
 </head>
 <body>
   <!-- HOME AND THE ARCADE (STORY1, 22 Oct 2026): one page, two views. Home
-       is today's story, big, with two doors under it (Arcade: every game, as
-       this page was before; Books: the bookshelf), then "Your games" once a
-       story is finished (FOUND1); the Trophy Road is the gift button in the
-       top bar.
+       is today's story, big, with two doors under it (Arcade: every game,
+       and only games since 23 Oct 2026; Books: the bookshelf), then "Your
+       games" once a story is finished (FOUND1); the Trophy Road is the gift
+       button in the top bar.
        Every block is built once on load, as before, and the view only
        decides what shows (data-view, on the wrapper: a block's own hidden is
        set by its painter, never by the view). The Arcade has an address of
@@ -217,8 +205,8 @@
         <span class="quest-body"><span class="quest-copy"><span class="quest-title" id="questTitle"></span><span class="quest-line" id="questLine"></span></span><span class="quest-go" id="questGo" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span></span>
       </button>
       <!-- the two doors: a picture and one word each, for a child who can't
-           read yet. Books is the Books card's own door (the same handler and
-           the same tag). -->
+           read yet. Books is the one way to the bookshelf: the Arcade has no
+           Books card since 23 Oct 2026. -->
       <div id="homeDoors">
         <button id="arcadeBtn" type="button"><span class="door-pic" id="arcadePic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Arcade</span><span class="door-sub">All the games</span></span></button>
         <button id="homeBooksBtn" type="button"><span class="door-pic" id="homeBooksPic" aria-hidden="true"></span><span class="door-copy"><span class="door-word">Books</span><span class="shelf-tag door-tag" id="homeBooksTag">Free</span></span></button>
@@ -242,18 +230,10 @@
       <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
       <div id="featuredGroups"></div>
       <div id="activityGroups"></div>
-      <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
-           the bookshelf: a twelve-page picture book for every sound, the
-           ones not out yet all opening Friday 9 Oct (the dates live in
-           library.html). The shelf opens for every family (30 Sep 2026):
-           one book is free (FREE_BOOKS in sona.js) and the rest are Premium,
-           each asking for a grown-up on the shelf the way a Premium game
-           does here. -->
-      <button id="booksCard" type="button">
-        <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-        <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones on the way.</span></span>
-        <span class="books-go" aria-hidden="true">›</span>
-      </button>
+      <!-- THE ARCADE IS GAMES ONLY (Travis, 23 Oct 2026: "organize the
+           arcade so that there are no books in there"): Today's picks (two
+           games), then the two shelves, the child's own age group's first.
+           The books are behind Home's Books door. -->
       <p class="age-note">Ages are a guide. Explore any game that fits.</p>
     </section>
     <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
@@ -349,9 +329,6 @@
       document.getElementById("libraryMessageClose").onclick=clearMessage;
       unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       // Home stays quiet. Practice begins only after a child picks a game.
-      // a book card opens it on the bookshelf,
-      // whose own rules decide free, Premium or not out yet
-      function bookAccess(game){var ok=!(S.bookLocked&&S.bookLocked(game.name)),free=!!(S.bookFree&&S.bookFree(game.name));return {allowed:ok,tier:game.tier,reason:ok?(free?"free":"book"):"premium"};}
       // HIDDEN UNTIL IT OPENS (Travis, 19 Oct 2026, from a parent-funnel
       // review: the greyed "Coming soon" cards cluttered Home and pushed
       // parents away). A game parked as Coming soon has no card anywhere on
@@ -360,10 +337,11 @@
       // catalog line. A typed address to one still bounces here with "<Game>
       // is coming soon" (showLocked, below), so the parked game is still read
       // from the catalog; it is only never drawn.
-      function parked(game){return game.kind!=="book"&&!!(game.comingSoon||access(game).reason==="coming-soon");}
-      function shown(games){return (games||[]).filter(function(game){return !parked(game);});}
+      function parked(game){return !!(game.comingSoon||access(game).reason==="coming-soon");}
+      // (no book card anywhere in the Arcade since 23 Oct 2026: an older
+      // cached sona.js may still hand Today's picks a book, and it is left out)
+      function shown(games){return (games||[]).filter(function(game){return game.kind!=="book"&&!parked(game);});}
       function launch(game){
-        if(game.kind==="book"){clearMessage();location.href=game.go;return;}
         if(!access(game).allowed){
           // a grey game opens the price at once where Sona can sell (Travis,
           // 4 Oct 2026); a Coming soon one (only a typed address now), or a
@@ -468,35 +446,34 @@
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         // "Free" means open as free HERE: since 3 Oct 2026 (trial first) a
         // free-tier game is Premium's for a family without the free version
-        var grant=game.kind==="book"?bookAccess(game):access(game),tier=(grant.reason==="free-mode"||grant.reason==="free")?"free":game.tier==="free"?"premium":game.tier;
-        if(game.kind==="book")button.classList.add("book-card");
+        var grant=access(game),tier=(grant.reason==="free-mode"||grant.reason==="free")?"free":game.tier==="free"?"premium":game.tier;
         // (a parked game never gets here: shown() leaves it off every row)
         var label=tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.dataset.locked=grant.allowed?"false":"true";
-        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub||"A picture book with Echo.")+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock.")+(game.isNew?" New.":""));
+        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub||"")+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock.")+(game.isNew?" New.":""));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");
-        if(game.kind==="book"){
-          var cover=node("img","crafted-card-image");cover.src=game.cover;cover.alt="";cover.decoding="async";cover.loading="lazy";art.appendChild(cover);
-        }else if(craftedCards[game.key]){
+        if(craftedCards[game.key]){
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
         }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
         if(game.isNew)art.appendChild(node("span","game-new","New"));
         button.appendChild(art);
-        if(game.kind!=="book"&&grant.allowed){var best={button:button,art:art,key:game.key,label:button.getAttribute("aria-label")};bestCards.push(best);paintBest(best);}
+        if(grant.allowed){var best={button:button,art:art,key:game.key,label:button.getAttribute("aria-label")};bestCards.push(best);paintBest(best);}
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
         info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),label));
         var arrow=node("span","game-arrow","›");arrow.setAttribute("aria-hidden","true");info.appendChild(arrow);button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
-      // Daily choices replace the old New row; a recent release carries its
-      // own honest badge. Limited-time choices keep their existing row.
-      // A cached sona.js without picks still paints its original shelves.
-      var hasPicks=library.picks&&library.picks.games&&library.picks.games.length;
-      var collections=hasPicks?[library.picks].concat((library.featured||[]).filter(function(c){return c.id!=="new";})):(library.featured||[]);
+      // ONE ROW ABOVE THE SHELVES (Travis, 23 Oct 2026: "I only want either
+      // today's picks or limited time ... have 2 games listed there, and then
+      // go directly to either simple play or arcade"): Today's picks, two
+      // games of the child's own age group; a recent release carries its own
+      // honest badge. What's new and Limited time are gone (an older cached
+      // sona.js may still send them, and they are not drawn).
+      var collections=library.picks?[library.picks]:[];
       collections.forEach(function(collection){
-        var games=shown(collection.games);if(!games.length)return;
+        var games=shown(collection.games).slice(0,2);if(!games.length)return;
         var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
         var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
-        top.appendChild(node("span","shelf-tag",collection.tag||(collection.id==="new"?"Just added":"Here for a little while")));section.appendChild(top);
+        if(collection.tag)top.appendChild(node("span","shelf-tag",collection.tag));section.appendChild(top);
         var grid=node("div","featured-grid");games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
       });
       // Each age group's shelf holds only games a child can see a way into
@@ -603,20 +580,20 @@
       // BOOKS: the shelf opens for every family (30 Sep 2026). Without
       // Premium, one book is free and the rest ask for a grown-up there; the
       // tag says which, so a parent reads "1 free book", not "Premium". Home's
-      // Books door and the Arcade's Books card are one door: one handler, and
-      // one painter for both tags.
-      var booksCard=document.getElementById("booksCard"),homeBooksBtn=document.getElementById("homeBooksBtn");
+      // Books door is the one way to it (the Arcade's Books card went on 23
+      // Oct 2026).
+      var homeBooksBtn=document.getElementById("homeBooksBtn");
       function paintBooksTags(){
         // only the free books that are free on this phone (trial first: none
         // for a family without the free version)
         var freeBooks=(S.FREE_BOOKS||[]).filter(function(t){return !S.bookFree||S.bookFree(t);}).length;
         var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
         var tag=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
-        document.getElementById("booksTag").textContent=tag;document.getElementById("homeBooksTag").textContent=tag;
+        document.getElementById("homeBooksTag").textContent=tag;
       }
       paintBooksTags();
       function openBooks(){clearMessage();location.href="/library.html";}
-      booksCard.onclick=openBooks;homeBooksBtn.onclick=openBooks;
+      homeBooksBtn.onclick=openBooks;
       // ── the two views ──
       // Home on a plain /today.html (every game's exit, the price's X, setup's
       // end); the Arcade on ?view=arcade, and on ?locked= (a typed address to
@@ -707,7 +684,7 @@
       var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       // the crafted pictures (1 Oct 2026); the old sticker only if the books'
       // can't load, and Echo cheering until the Arcade's own picture lands
-      [document.getElementById("libraryBooksArt"),document.getElementById("homeBooksPic")].forEach(function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);});
+      (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){host.innerHTML="";S.paintSticker(host,"pt-book","sky");};im.src="/assets/crafted/home-books.webp";host.appendChild(im);})(document.getElementById("homeBooksPic"));
       (function(host){var im=new Image();im.className="crafted-card-image";im.alt="";im.decoding="async";im.onerror=function(){im.onerror=null;host.classList.add("fallback");im.src="/assets/crafted/echo-cheer.webp";};im.src="/assets/crafted/home-arcade.webp";host.appendChild(im);})(document.getElementById("arcadePic"));
       // Cancel any previous spoken turn without changing the game voice preference.
       if(S.speakNow)S.speakNow("");
