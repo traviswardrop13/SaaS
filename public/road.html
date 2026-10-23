@@ -35,6 +35,23 @@
         <span class="rd-chip" id="chipCoin" role="img" aria-label="0 coins"><span class="rd-ic" data-ic="coin" aria-hidden="true"></span><b id="coinN" aria-hidden="true">0</b></span>
       </span>
     </header>
+    <!-- HOW IT WORKS (Travis, 22 Oct 2026: "how I actually earn coins" was
+         confusing). One row of pictures, read left to right: talk, and the
+         words fill trophies; trophies reach the goal and open the chest; the
+         chest gives coins; coins buy buddies in the shop. Pictures lead (most
+         of these children can't read yet); the one-word labels are for the
+         grown-up reading it out, and the whole sentence is the row's label. -->
+    <div class="rd-how" id="howRow" role="img" aria-label="Talk to earn trophies. Reach your goal to open today's chest. The chest gives coins. Spend coins in the Buddy Shop.">
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="mic"></span><b>Talk</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="trophy"></span><b>Trophies</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="chest"></span><b>Chest</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" data-ic="coin"></span><b>Coins</b></span>
+      <span class="rd-how-arrow" aria-hidden="true">›</span>
+      <span class="rd-how-step" aria-hidden="true"><span class="rd-how-pic" id="howShop"></span><b>Shop</b></span>
+    </div>
     <p class="rd-note" id="rolledNote" role="status" hidden><span id="rolledText"></span><button id="rolledOk" type="button" aria-label="OK">✕</button></p>
 
     <section class="rd-hero" id="hero" aria-labelledby="landName">
@@ -131,12 +148,6 @@
       function imgArt(src,fallback,cls){var a=el("span","ga"+(cls?" "+cls:"")),im=new Image();im.alt="";im.decoding="async";im.onerror=function(){a.textContent="";a.innerHTML=fallback||"";};im.src=src;a.appendChild(im);return a;}
       function chestArt(big,open){return imgArt("/assets/crafted/road-"+(big?"bigchest":"chest")+(open?"-open":"")+".webp",ic("chest",64));}
       function landArt(id){var l=null;(S.ROAD_LANDS||[]).forEach(function(x){if(x.id===id)l=x;});var a=el("span","ga ga-place");if(l)a.style.backgroundImage=landBg(l);return a;}
-      // under a grown-up's "Level 1 only" a level gift is never shown or
-      // celebrated: the levels stay shut for that child, and the road says
-      // nothing that isn't true for them
-      var CAP=false;
-      function capRead(){try{CAP=!!(S.playLevelInfo&&S.playLevelInfo("slice").cap);}catch(e){CAP=false;}}
-      function shown(gs){return CAP?gs.filter(function(g){return !g.level;}):gs;}
       function itemOf(g){var k=g.buddy?"characters":g.hat?"outfits":g.place?"backdrops":"";return k?{kind:k,id:g.buddy||g.hat||g.place}:null;}
       function catalogName(kind,id){var l=kind==="characters"?S.CHARACTERS:kind==="outfits"?S.OUTFITS:S.BACKDROPS,n="";(l||[]).forEach(function(x){if(x.id===id)n=x.name;});return n;}
       function itemArt(kind,id){
@@ -152,12 +163,12 @@
         return landArt(g.land);
       }
       // a stop's one picture: a Big Chest's chest, else its first gift
-      function mainArt(s){if(s.big)return chestArt(true,false);var gs=shown(s.gift).filter(function(g){return !g.land;});return giftArt(gs[0]||s.gift[0]);}
+      function mainArt(s){if(s.big)return chestArt(true,false);var gs=s.gift.filter(function(g){return !g.land;});return giftArt(gs[0]||s.gift[0]);}
       function giftWords(g){var it=itemOf(g);if(it)return catalogName(it.kind,it.id)||"a new friend";if(g.level)return "Level "+g.level+" in every game";if(g.coins)return g.coins+" coins";if(g.sticker)return "a sticker";return "";}
-      function stopWords(s){var w=shown(s.gift).map(giftWords).filter(Boolean);var list=w.length>1?w.slice(0,-1).join(", ")+" and "+w[w.length-1]:(w[0]||"a gift");return s.big?"a big chest with "+list:list;}
+      function stopWords(s){var w=s.gift.map(giftWords).filter(Boolean);var list=w.length>1?w.slice(0,-1).join(", ")+" and "+w[w.length-1]:(w[0]||"a gift");return s.big?"a big chest with "+list:list;}
       // the small chips beside a stop's picture: everything inside, shown before it opens
       function alsoChips(s){
-        var box=el("span","rd-also"),gs=shown(s.gift).filter(function(g){return !g.land;}),skip=s.big?-1:0;
+        var box=el("span","rd-also"),gs=s.gift.filter(function(g){return !g.land;}),skip=s.big?-1:0;
         gs.forEach(function(g,i){
           if(i===skip)return;
           var m=el("span","rd-mini"),it=itemOf(g);
@@ -263,8 +274,8 @@
         }
       }
       // GAME LEVELS (LEVELS1): how a child changes a game's level after the
-      // first pick, for every released game this family can open; gone under
-      // a grown-up's "Level 1 only" (then only one level is open)
+      // first pick, for every released game this family can open; gone while
+      // only one level is open
       function paintLevels(){
         var card=$("levelsCard"),host=$("levelRows"),open=1;
         try{open=S.playLevelsOpen?S.playLevelsOpen():1;}catch(e){open=1;}
@@ -273,7 +284,7 @@
         Object.keys(S.PLAY_LEVEL_LINES).forEach(function(key){
           var a=null;try{a=S.gameAccess?S.gameAccess(key):null;}catch(e){}
           if(!a||!a.allowed)return;
-          var info=S.playLevelInfo(key);if(!info||!info.levels||info.levels.length<2||info.cap)return;
+          var info=S.playLevelInfo(key);if(!info||!info.levels||info.levels.length<2)return;
           var name=(S.GAME_ACTS&&S.GAME_ACTS[key]&&S.GAME_ACTS[key].name)||key;
           var row=el("div","rd-lvrow");row.setAttribute("role","group");row.setAttribute("aria-label",name);
           var art=el("span","rd-lvart"),pic=el("i");pic.setAttribute("aria-hidden","true");if(CARDS[key])pic.style.backgroundImage='url("/assets/crafted/home-'+CARDS[key]+'.webp")';art.appendChild(pic);art.appendChild(el("span","",name));row.appendChild(art);
@@ -314,7 +325,7 @@
       function seenRolled(){if(!rolledShown)return;rolledShown=false;try{if(S.roadRolledSeen)S.roadRolledSeen();}catch(e){}}
       $("rolledOk").onclick=function(){sfx("tap");seenRolled();$("rolledNote").hidden=true;};
       function render(){
-        capRead();st=S.roadState();
+        st=S.roadState();
         paintHead();paintHero();paintChest();paintMonth();paintRoad();paintLevels();paintLinks();paintRolled();
       }
 
@@ -404,9 +415,9 @@
       function openStop(n){
         var s=S.roadStop(n);if(!s)return;
         sfx("tap");
-        if(s.big){chestFlow(true,function(){var r=S.roadOpen(n);return r&&r.ok?shown(r.gifts).map(revealOf):null;});return;}
+        if(s.big){chestFlow(true,function(){var r=S.roadOpen(n);return r&&r.ok?r.gifts.map(revealOf):null;});return;}
         var r=S.roadOpen(n);if(!r||!r.ok){render();return;}
-        showOvl();sfx("reward");party();reveal(shown(r.gifts).map(revealOf));
+        showOvl();sfx("reward");party();reveal(r.gifts.map(revealOf));
       }
       function openStep(n){
         var s=(S.MONTH_STEPS||[]).filter(function(x){return x.n===n;})[0];if(!s)return;
@@ -422,6 +433,8 @@
       try{var bp=S.boardFlush?S.boardFlush():null;if(bp&&bp.then)bp.then(paintLinks,function(){});}catch(e){}
       paintIcons();
       var face=$("shopFace");if(face&&BUD)face.innerHTML=BUD.markup(BID,30);
+      // the strip's last step is the child's own buddy: what the coins are for
+      var hs=$("howShop");if(hs){if(BUD)hs.innerHTML=BUD.markup(BID,34);else hs.innerHTML=ic("gift",34);}
       if(BUD&&BUD.stand)BUD.stand($("heroBuddy"),BID);
       else{var hb=$("heroBuddy");try{hb.src=S.buddySprite(BID,"portrait");hb.className="rd-buddy badge";}catch(e){hb.hidden=true;}}
       $("road").hidden=false;

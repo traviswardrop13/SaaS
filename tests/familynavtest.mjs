@@ -174,23 +174,47 @@ try {
   // on the practice page's mic-level box, and five more turn it off. It sits
   // behind the grown-ups check because the iPhone app keeps its own storage
   // and has no address bar for ?debug=1. One tap, or four, does nothing.
-  await scenario('five taps on Account switch the mic numbers on and off', async () => {
+  // FOUNDER KEY (22 Oct 2026, "simplify settings"): the "Founder key" link
+  // sat under the plan line on every family's phone, and a parent never needs
+  // it. It now shows only after those same five taps, for that visit; a
+  // founder still sees "Founder access ✓" with no taps at all.
+  await scenario('five taps on Account switch the mic numbers on and off, and show the Founder key', async () => {
     const { page, context, errors } = await fresh({ width: 375, height: 812 });
     try {
       await page.goto(origin + '/settings.html');
       await page.waitForFunction(() => window.Sona && document.getElementById('acctTitle'));
       const sw = () => page.evaluate(() => ({ on: localStorage.getItem('sona.micnumbers'), note: document.getElementById('micNumsNote').hidden ? '' : document.getElementById('micNumsNote').textContent }));
+      // What a parent can SEE of the founder door: the words on the Account
+      // card (innerText leaves out a hidden line) and whether the link shows.
+      const fk = () => page.evaluate(() => {
+        const a = document.getElementById('founderLink'), card = document.getElementById('acctCard').innerText;
+        return { link: !!a && !!(a.offsetWidth || a.offsetHeight) && a.textContent.trim(), key: /Founder key/.test(card), access: /Founder access/.test(card) };
+      });
       ok('the switch starts off, with no note', JSON.stringify(await sw()) === JSON.stringify({ on: null, note: '' }), await sw());
+      ok('a family\'s Settings shows no "Founder key" before the taps', JSON.stringify(await fk()) === JSON.stringify({ link: false, key: false, access: false }), await fk());
       for (let i = 0; i < 4; i++) await page.click('#acctTitle');
       ok('four taps change nothing', (await sw()).on === null, await sw());
+      ok('…and four taps show no "Founder key" either', JSON.stringify(await fk()) === JSON.stringify({ link: false, key: false, access: false }), await fk());
       await page.click('#acctTitle');
       const on = await sw();
       ok('the fifth tap turns the mic numbers on, and says where they show and how to turn them off', on.on === '1' && /Mic numbers are on\. They show at the top of the practice page\./.test(on.note) && /five times to turn them off/.test(on.note), on);
+      const shown = await fk();
+      ok('the fifth tap also shows the "Founder key" link on the Account card', shown.link === 'Founder key' && shown.key && !shown.access, shown);
       await page.reload(); await page.waitForFunction(() => window.Sona && document.getElementById('acctTitle'));
       ok('…and Settings still says so after a reload', /Mic numbers are on/.test((await sw()).note), await sw());
+      ok('…but the "Founder key" is for that visit only: a reload hides it again', JSON.stringify(await fk()) === JSON.stringify({ link: false, key: false, access: false }), await fk());
       for (let i = 0; i < 5; i++) await page.click('#acctTitle');
       const off = await sw();
       ok('five more taps turn them off', off.on === null && /Mic numbers are off/.test(off.note), off);
+      ok('…and those five taps show the "Founder key" again', (await fk()).link === 'Founder key', await fk());
+      // A founder (the server already said yes once on this phone) is told so
+      // with no taps, and is offered no key to type again.
+      await page.evaluate(() => localStorage.setItem('sona.founder', '1'));
+      await page.reload(); await page.waitForFunction(() => window.Sona && document.getElementById('acctTitle'));
+      const founder = await fk();
+      ok('a founder sees "Founder access ✓" with no taps, and no "Founder key" link', founder.access && !founder.key && founder.link === false, founder);
+      for (let i = 0; i < 5; i++) await page.click('#acctTitle');
+      ok('…and the five taps do not turn it back into a key to type', JSON.stringify(await fk()) === JSON.stringify(founder), await fk());
       ok('mic numbers switch: no page errors', errors.length === 0, errors);
     } finally { await context.close(); }
   });

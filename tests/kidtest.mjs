@@ -295,139 +295,156 @@ ok("Settings has a Kids card", ui.card);
 ok("it lists every child", ui.rows >= 1, "rows=" + ui.rows);
 ok("exactly one child is marked as practicing now", ui.active === 1, "active=" + ui.active);
 ok("it offers adding a kid", ui.addBtn);
-ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
+// The line under "Your family" no longer says "Everything below this card
+// belongs to whoever is selected" (22 Oct 2026: Settings is down to the
+// minimum). What tells a parent whose settings these are is the child card
+// itself: it is headed with the selected child's name.
+ok("it says each child keeps their own sounds and progress", /Each child keeps their own sounds and progress\./.test(ui.copy), ui.copy.slice(0, 120));
+{
+  const head = await page.evaluate(() => ({ title: (document.getElementById("aboutTitle") || {}).textContent || "", name: Sona.getProfile().childName, active: (document.querySelector('#kidList [data-active="1"]') || {}).textContent || "" }));
+  ok("the child card under it is headed with the selected child's name", !!head.name && head.title.trim() === "About " + head.name && head.active.indexOf(head.name) >= 0, JSON.stringify(head));
+}
 
 // ── Word position: every position is listed, only the start of a word can be
 // picked (Travis, 1 Oct 2026: "have the options listed but to not let them
 // select other positioning because it's not built yet ... make it clear that
-// it's just the initial position"). The switch is Sona.FAMILY_POSITIONS. ──
+// it's just the initial position"). The switch is Sona.FAMILY_POSITIONS. With
+// one position open the picker has nothing to choose, so since 22 Oct 2026
+// ("simplify settings") it stays hidden and one line under the sounds says
+// what practice uses; it is still on the page, so the day a second position
+// opens it shows by itself, the closed ones greyed as "coming soon". ──
 {
   // this child saved End of word before the others were closed
   const before = await page.evaluate(() => { const was = Sona.getProfile().practicePosition; Sona.saveProfile({ practicePosition: "f" }); return was; });
   await page.reload(); await page.waitForTimeout(700);
   const pos = await page.evaluate(() => {
-    const el = document.getElementById("practicePos"), note = document.getElementById("posNote");
+    const el = document.getElementById("practicePos"), box = document.getElementById("posBox"), note = document.getElementById("posNote");
     return {
       open: (Sona.FAMILY_POSITIONS || []).slice(), value: el.value, saved: Sona.getProfile().practicePosition,
       opts: [...el.options].map((o) => ({ v: o.value, off: o.disabled, text: o.textContent.trim() })),
+      boxHidden: !!box && box.hidden && el.getBoundingClientRect().height === 0 && box.contains(el),
       note: note && !note.hidden && note.getBoundingClientRect().height > 0 ? note.textContent.trim() : "",
+      noteUnderSounds: !!note && !!(document.getElementById("sounds").compareDocumentPosition(note) & 4),
       practice: Sona.practicePos(),
     };
   });
   const off = pos.opts.filter((o) => o.v !== "i");
-  ok("Settings lists all six word positions", pos.opts.map((o) => o.v).join() === "i,m,f,v,b,mix", JSON.stringify(pos.opts));
+  ok("Settings still holds all six word positions", pos.opts.map((o) => o.v).join() === "i,m,f,v,b,mix", JSON.stringify(pos.opts));
   ok("only Beginning of word can be picked", pos.open.join() === "i" && !pos.opts[0].off && off.every((o) => o.off), JSON.stringify(pos.opts));
   ok("each of the others says it is coming soon, and Beginning does not", off.every((o) => /coming soon$/i.test(o.text)) && !/coming soon/i.test(pos.opts[0].text), JSON.stringify(pos.opts.map((o) => o.text)));
-  ok("a line under the list says practice is at the beginning of a word for now", /beginning of a word/i.test(pos.note) && /coming soon/i.test(pos.note), pos.note);
+  ok("with only Beginning open, the picker is hidden: there is nothing to choose", pos.boxHidden, JSON.stringify(pos));
+  ok("…and one line under the sounds says practice is at the beginning of a word for now",
+    pos.note === "For now, Sona practices each sound at the beginning of a word." && pos.noteUnderSounds, JSON.stringify({ note: pos.note, under: pos.noteUnderSounds }));
   ok("a child whose saved position was End sees Beginning selected, and practice asks for the start of a word",
     pos.saved === "f" && pos.value === "i" && pos.practice === "i", JSON.stringify({ saved: pos.saved, value: pos.value, practice: pos.practice }));
   await page.evaluate((was) => Sona.saveProfile({ practicePosition: was || "i" }), before);
 }
-
-// ── What a game's say-it card asks for: one picker, per child (Travis, 1 Oct
-// 2026: "start with isolation then ree rah roh then rot. and maybe have that
-// be something to update in settings"). A ceiling for the cards between
-// rounds; it never writes the level the child has earned. Its grey line is
-// painted from the reader the games call, so it says only what will really be
-// asked, names the one game that does it so far, and says why when something
-// holds the cards to the bare sound (Sona muted, a sound not switched on, a
-// speech therapist's homework for another part of the word). ──
+// The day Sona.FAMILY_POSITIONS opens a second position, the picker comes back
+// by itself with the closed ones still greyed, and the line steps aside. Played
+// on its own phone, with the list widened as sona.js hands it to the page.
 {
-  // whoever is active here, as a seven-year-old on R with nothing picked yet
-  const was = await page.evaluate(() => { const p = Sona.getProfile(), w = { focusSounds: p.focusSounds, childAge: p.childAge, gameLevel: p.gameLevel || "" }; Sona.saveProfile({ focusSounds: ["R"], childAge: "7", gameLevel: "" }); return w; });
-  await page.reload(); await page.waitForTimeout(700);
-  const read = () => page.evaluate(() => {
-    const el = document.getElementById("gameLevel"), box = document.getElementById("gameLevelBox"), note = document.getElementById("gameLevelNote");
-    return {
-      label: (document.querySelector('label[for="gameLevel"]') || {}).textContent, value: el.value, shown: !box.hidden && box.getBoundingClientRect().height > 0,
-      opts: [...el.options].map((o) => ({ v: o.value, text: o.textContent.trim(), off: o.disabled })), note: note.textContent.trim(),
-      asks: [0, 1, 2].map((c) => Sona.gameAsk("R", c, { first: true }).text).filter((t, i, a) => a.indexOf(t) === i),
-      soundOff: !document.getElementById("soundOff").hidden, hold: Sona.gameHold(Sona.rotSounds()[0]),
-      saved: Sona.getProfile().gameLevel, stage: JSON.stringify(Sona.getProgress().stage), slot: Sona.activeKid().slot, under: !!(document.getElementById("practicePos").compareDocumentPosition(el) & 4),
-    };
+  const c3 = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const p3 = await c3.newPage();
+  const e3 = []; p3.on("pageerror", (e) => e3.push(e.message));
+  await p3.goto("http://localhost:8153/onboarding.html"); await p3.waitForTimeout(300);
+  await p3.evaluate(() => {
+    localStorage.clear();
+    ["", "2", "3", "4", "5"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+    Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, practicePosition: "m" });
+    Sona.gateVerify();
   });
-  const quoted = (a) => a.map((t) => "“" + t + "”").join(", then ");
+  await c3.addInitScript(() => {
+    let s; Object.defineProperty(window, "Sona", { configurable: true, get: () => s, set: (v) => { s = v; if (v && Array.isArray(v.FAMILY_POSITIONS)) v.FAMILY_POSITIONS = ["i", "m"]; } });
+  });
+  await p3.goto("http://localhost:8153/settings.html"); await p3.waitForTimeout(700);
+  const two = await p3.evaluate(() => {
+    const el = document.getElementById("practicePos"), box = document.getElementById("posBox"), note = document.getElementById("posNote");
+    return { open: Sona.FAMILY_POSITIONS.join(), shown: !box.hidden && el.getBoundingClientRect().height > 0, value: el.value,
+      off: [...el.options].filter((o) => o.disabled).map((o) => o.value).join(), noteHidden: note.hidden && note.getBoundingClientRect().height === 0 };
+  });
+  ok("with a second position open, the picker shows by itself, the parent's saved Middle selected and the rest still greyed",
+    two.open === "i,m" && two.shown && two.value === "m" && two.off === "f,v,b,mix", JSON.stringify(two));
+  ok("…and the one-position line steps aside", two.noteHidden, JSON.stringify(two));
+  ok("no pageerrors (two positions)", e3.length === 0, e3.join(" | "));
+  await c3.close();
+}
+
+// ── No game-card picker (Travis, 22 Oct 2026: "simplify settings. It's too
+// busy. Get rid of as much as we possibly can"). "Between rounds in a game,
+// Echo asks for" set a ceiling on Fruit Slice's say-it cards by hand. It is
+// gone, and so is any way to change a pick saved from it, so getProfile drops
+// that pick (profile.gameLevel): a child's cards follow only what they have
+// EARNED on the practice page (one step past it), never a stale pick that
+// would hold them at that step for good. gameasktest holds the reader to it;
+// this is the page and a real child's saved profile. ──
+{
+  // whoever is active here, as a seven-year-old on R who has earned the
+  // syllable step, with an old "Just the sound" pick still in their profile
+  const was = await page.evaluate(() => { const p = Sona.getProfile(), w = { focusSounds: p.focusSounds, childAge: p.childAge }; return { w, stage: localStorage.getItem(Sona.kkey("sona.progress.v1")) }; });
+  await page.evaluate(() => {
+    Sona.saveProfile({ focusSounds: ["R"], childAge: "7" });
+    Sona.recordRung("R", 0, 1);
+    const k = Sona.kkey("sona.profile.v1"), raw = JSON.parse(localStorage.getItem(k)); raw.gameLevel = "isolation"; localStorage.setItem(k, JSON.stringify(raw));
+  });
+  await page.reload(); await page.waitForTimeout(700);
+  // Settings no longer loads the syllable lists (gamecontent.js): they were
+  // there only to paint the picker's line. The cards are read the way a
+  // round game reads them, with those lists on the page.
+  const read = async () => { if (!(await page.evaluate(() => !!window.SonaContent))) await page.addScriptTag({ url: "/gamecontent.js" }); return page.evaluate(() => {
+    const raw = JSON.parse(localStorage.getItem(Sona.kkey("sona.profile.v1")) || "{}");
+    return {
+      picker: ["gameLevel", "gameLevelBox", "gameLevelNote"].filter((id) => document.getElementById(id)),
+      words: /Echo asks for|Between rounds|Sona decides|Just the sound|Sound, then syllables|Sound, syllables, word/.test(document.body.innerText),
+      read: Sona.getProfile().gameLevel, stored: raw.gameLevel, rung: Sona.rungOf("R"), hold: Sona.gameHold("R"),
+      top: Sona.gameTop("R"), asks: [0, 1, 2].map((c) => Sona.gameAsk("R", c, { first: true }).text),
+    };
+  }); };
   let g = await read();
-  ok("Settings has the picker under Word position, labelled for what it changes: between rounds in a game", g.shown && g.under && g.label === "Between rounds in a game, Echo asks for", JSON.stringify({ shown: g.shown, under: g.under, label: g.label }));
-  ok("it has four choices, all open, and starts on \"Sona decides\"",
-    g.opts.map((o) => o.v).join() === ",isolation,syllable,word" && g.opts.every((o) => !o.off) && g.value === "" && !g.saved
-    && g.opts.map((o) => o.text).join("|") === "Sona decides|Just the sound|Sound, then syllables|Sound, syllables, word", JSON.stringify(g.opts));
-  // A phone's closed picker cut the first, longer labels off ("Sona decides
-  // (starts easy, gets h…"), and two of them then read the same. Measured on
-  // the narrowest phone, with room left for the picker's own arrow.
-  await page.setViewportSize({ width: 320, height: 700 });
-  const fit = await page.evaluate(() => { const el = document.getElementById("gameLevel"), cs = getComputedStyle(el), c = document.createElement("canvas").getContext("2d");
-    c.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-    return { room: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 28, widths: [...el.options].map((o) => Math.ceil(c.measureText(o.textContent.trim()).width)) }; });
-  await page.setViewportSize({ width: 430, height: 932 });
-  ok("every choice can be read in full while the picker is closed, on a 320 px phone", fit.room > 100 && fit.widths.every((w) => w > 20 && w <= fit.room), JSON.stringify(fit));
-  ok("the grey line shows what the reader will really ask this child today, and says it is Fruit Slice only for now",
-    g.asks.length === 3 && g.hold === "" && g.note === "Sona starts easy and gets harder. For R in Fruit Slice today: " + quoted(g.asks) + ". The other games don’t have this yet.", g.note);
-  const stage0 = g.stage;
-  await page.selectOption("#gameLevel", "isolation"); await page.waitForTimeout(250);
+  ok("Settings has no game-card picker: no control, no note, none of its words", g.picker.length === 0 && !g.words, JSON.stringify({ picker: g.picker, words: g.words }));
+  ok("a saved \"Just the sound\" pick is dropped as the profile is read", g.stored === "isolation" && g.read === undefined, JSON.stringify({ stored: g.stored, read: g.read }));
+  ok("…so the cards follow what the child earned: the sound, a syllable, then the short word",
+    g.rung === 1 && g.hold === "" && g.top === 2 && g.asks[0] === "rrrr" && /^r(ee|ah|oh)$/.test(g.asks[1]) && g.asks[2] === "rot", JSON.stringify(g));
+  // a parent's next change on this page writes the profile back without it
+  await page.click('#sounds .sound[data-s="S"]'); await page.waitForTimeout(250);
   g = await read();
-  ok("picking \"Just the sound\" saves by itself, on this child's profile, and the line follows it", g.saved === "isolation" && g.note === "For R in Fruit Slice today: “rrrr”. The other games don’t have this yet.", JSON.stringify({ saved: g.saved, note: g.note }));
-  await page.selectOption("#gameLevel", "word"); await page.waitForTimeout(250);
-  g = await read();
-  ok("picking the top choice shows the sound, a syllable, then the short word", g.saved === "word" && /^For R in Fruit Slice today: “rrrr”, then “r(ee|ah|oh)”, then “rot”\. /.test(g.note), g.note);
-  ok("the pick never writes the earned level", g.stage === stage0 && (await page.evaluate(() => Sona.rungOf("R"))) === 0, g.stage);
-  // a sibling added now: their profile is their own, and the pick does not follow them
-  const sib = await page.evaluate(() => { const me = Sona.activeKid().slot, slot = Sona.addKid("Sib", "6"); Sona.switchKid(slot); const theirs = Sona.getProfile().gameLevel || ""; Sona.switchKid(me); const mine = Sona.getProfile().gameLevel; Sona.removeKid(slot); return { slot, theirs, mine, kids: Sona.kids().length }; });
-  ok("a sibling's pick stays their own", !!sib.slot && sib.theirs === "" && sib.mine === "word", JSON.stringify(sib));
-  await page.reload(); await page.waitForTimeout(700);
-  ok("the pick is still there after a reload", (await read()).value === "word");
-  // a child on a sound that is not switched on yet: the line promises only the bare sound
-  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["S"] }));
+  ok("the next change saved on Settings (a sound tapped) takes the old pick out of the stored profile", g.stored === undefined && g.read === undefined, JSON.stringify({ stored: g.stored }));
+  await page.click('#sounds .sound[data-s="S"]'); await page.waitForTimeout(250);
+  // the other way: an old "short word" pick on a child who has earned nothing does not open the word
+  await page.evaluate(() => {
+    localStorage.removeItem(Sona.kkey("sona.progress.v1"));
+    const k = Sona.kkey("sona.profile.v1"), raw = JSON.parse(localStorage.getItem(k)); raw.gameLevel = "word"; localStorage.setItem(k, JSON.stringify(raw));
+  });
   await page.reload(); await page.waitForTimeout(700);
   g = await read();
-  ok("for a child on S the line shows just the bare sound, whatever is picked, and says only R goes further so far",
-    g.note === "For S today: “sss”. So far only R has syllables and a short word, and only in Fruit Slice.", g.note);
-  // Sona muted: only Echo's voice can model a syllable, so the cards ask the
-  // bare sound, and the line must say so. It once promised syllables right
-  // under "Sound is off in Sona."
-  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R"], volume: 0 }));
+  ok("an old \"short word\" pick on a child who has earned nothing opens no word: the sound, then syllables",
+    g.stored === "word" && g.read === undefined && g.rung === 0 && g.top === 1 && g.asks[0] === "rrrr" && g.asks.slice(1).every((t) => /^r(ee|ah|oh)$/.test(t)), JSON.stringify(g));
+  ok("…and dropping it wrote no earned level", (await page.evaluate(() => JSON.stringify(Sona.getProgress().stage))) === "{}");
+  // Sona muted: only Echo's voice can model a syllable or a word, so the
+  // cards keep the bare sound whatever was earned. Settings still shows the
+  // one line that says so, and its button undoes it.
+  await page.evaluate(() => { Sona.recordRung("R", 0, 1); Sona.saveProfile({ volume: 0 }); });
   await page.reload(); await page.waitForTimeout(700);
-  g = await read();
-  ok("with Sona's sound off the line shows just the bare sound, whatever is picked, and says why",
-    g.soundOff && g.value === "word" && g.hold === "muted" && g.asks.join() === "rrrr" && g.note === "For R in Fruit Slice today: “rrrr”. Sound is off in Sona, so the cards ask just the sound.", JSON.stringify({ soundOff: g.soundOff, note: g.note }));
+  await read();   // the syllable lists on the page, so the hold below is the mute's, not theirs
+  const muted = await page.evaluate(() => ({ line: !document.getElementById("soundOff").hidden ? document.querySelector("#soundOff span").textContent.trim() : "", hold: Sona.gameHold("R"), asks: [0, 1, 2].map((c) => Sona.gameAsk("R", c, { first: true }).text).join() }));
+  ok("with Sona's sound off, Settings says so and the cards keep the bare sound, whatever was earned",
+    muted.line === "Sound is off in Sona." && muted.hold === "muted" && muted.asks === "rrrr,rrrr,rrrr", JSON.stringify(muted));
   await page.click("#soundOnBtn"); await page.waitForTimeout(250);
   g = await read();
-  ok("…and \"Turn sound on\" brings the syllable and the word back to the line at once",
-    !g.soundOff && g.hold === "" && /^For R in Fruit Slice today: “rrrr”, then “r(ee|ah|oh)”, then “rot”\. The other games don’t have this yet\.$/.test(g.note), g.note);
-  // An SLP's homework: the line describes the sound a game will really ask
-  // (the homework's, not the first focus sound), and says why the picker
-  // changes nothing when the homework is for another part of the word.
-  const hwSet = (over) => page.evaluate((over) => { if (over) localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: Object.assign({ id: "hw1", title: "t", note: "n", sounds: ["R"], pos: "i", repsPerDay: 40, words: null, start: "2000-01-01", due: "2999-01-01", by: "Rachel" }, over), at: Date.now() })); else localStorage.removeItem(Sona.kkey("sona.homework.v1")); }, over);
-  await hwSet({ sounds: ["S"] });
-  await page.reload(); await page.waitForTimeout(700);
-  g = await read();
-  ok("under homework for S, the line is about S (what the game will ask), not the child's first focus sound R",
-    (await page.evaluate(() => Sona.rotSounds().join())) === "S" && g.note === "For S today: “sss”. So far only R has syllables and a short word, and only in Fruit Slice.", g.note);
-  await hwSet({ pos: "f" });
-  await page.reload(); await page.waitForTimeout(700);
-  g = await read();
-  ok("under end-of-word homework that names no words, the line shows just the sound and says the speech therapist's homework is why",
-    g.hold === "position" && g.note === "For R in Fruit Slice today: “rrrr”. Your child’s speech therapist set a different part of the word, so the cards keep to the sound.", g.note);
-  await hwSet({ pos: "f", words: ["car", "star"] });
-  await page.reload(); await page.waitForTimeout(700);
-  g = await read();
-  ok("…and when it names words, the sound, then one of them",
-    /^For R in Fruit Slice today: “rrrr”, then “(car|star)”\. Your child’s speech therapist set a different part of the word, so the cards keep to the sound, then one of the homework’s words\.$/.test(g.note), g.note);
-  await hwSet(null);
-  // Ages 2 to 4: Home shows them Fruit Slice too, so the picker is hidden for
-  // a reason that has to be TRUE: their cards keep the bare sound, whatever a
-  // pick saved at an older age says ("word" is still saved here). Whether
+  ok("…and \"Turn sound on\" brings the earned syllable and word back to the cards at once",
+    (await page.evaluate(() => document.getElementById("soundOff").hidden)) && g.hold === "" && g.top === 2 && g.asks[2] === "rot", JSON.stringify(g));
+  // Ages 2 to 4: Home shows them Fruit Slice too, and their cards keep the
+  // bare sound, whatever was earned or left saved by the old picker. Whether
   // little ones should ever be asked a syllable is Rachel's call.
-  await page.evaluate(() => Sona.saveProfile({ focusSounds: ["R"], childAge: "4" }));
+  await page.evaluate(() => { Sona.saveProfile({ childAge: "4" }); const k = Sona.kkey("sona.profile.v1"), raw = JSON.parse(localStorage.getItem(k)); raw.gameLevel = "word"; localStorage.setItem(k, JSON.stringify(raw)); });
   await page.reload(); await page.waitForTimeout(700);
   g = await read();
-  ok("the picker is hidden for a child aged 2 to 4", !g.shown && (await page.evaluate(() => Sona.playStyle())) === "simple");
-  ok("…and that child's cards keep the bare sound, even with \"short word\" still saved from before",
-    g.saved === "word" && g.hold === "little" && (await page.evaluate(() => [0, 1, 2].map((c) => Sona.gameAsk("R", c).text).join())) === "rrrr,rrrr,rrrr" && (await page.evaluate(() => Sona.gameTop("R"))) === 0, JSON.stringify({ saved: g.saved, hold: g.hold }));
-  await page.evaluate(() => Sona.saveProfile({ childAge: "7", gameLevel: "" }));
-  await page.reload(); await page.waitForTimeout(700);
-  ok("…and back for a seven-year-old", (await read()).shown);
-  await page.evaluate((w) => Sona.saveProfile(w), was);
+  ok("a four-year-old's cards keep the bare sound, with the word earned and an old \"short word\" pick still stored",
+    g.rung === 1 && g.stored === "word" && g.hold === "little" && g.top === 0 && g.asks.join() === "rrrr,rrrr,rrrr" && (await page.evaluate(() => Sona.playStyle())) === "simple", JSON.stringify(g));
+  ok("…and no picker appears for them either", g.picker.length === 0 && !g.words);
+  await page.evaluate(({ w, stage }) => {
+    Sona.saveProfile(w);
+    const k = Sona.kkey("sona.progress.v1"); if (stage == null) localStorage.removeItem(k); else localStorage.setItem(k, stage);
+  }, was);
   await page.reload(); await page.waitForTimeout(700);
 }
 

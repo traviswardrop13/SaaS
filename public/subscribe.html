@@ -361,6 +361,11 @@
        keep the same border width, so a pick moves nothing. With one row
        neither carries aria-checked, and the row looks as it always did. */
     #iapYear:not([hidden]) + #iapPlan{margin-top:10px;}
+    /* the one payment, a third row under monthly (22 Oct 2026), the same gap */
+    #iapPlan:not([hidden]) + #iapLife:not([hidden]){margin-top:10px;}
+    /* the one line about NOTIFY1's heads-up, under the button and the small
+       print, only when this phone will show it for the picked row */
+    .oneplan-ahead{margin:8px 0 0;text-align:center;font-weight:800;font-size:12.5px;line-height:1.35;color:#0a7470;}
     .oneplan[role="radio"]{cursor:pointer;-webkit-tap-highlight-color:transparent;}
     .oneplan[role="radio"]:focus-visible{outline:3px solid #157da5;outline-offset:3px;}
     .oneplan[aria-checked="false"]{border-color:#eadcc4;background:#fffaf2;box-shadow:none;}
@@ -410,6 +415,23 @@
     body.fit8 .offer-pill{display:none;}
     body.fit8.offer .oneplan{padding:14px 10px 8px;}
     body.fit8.offer .tl.days .tli p,body.fit8.offer #iapNote{line-height:1.3;}
+    /* THREE ROWS ON THE SMALLEST PHONE (22 Oct 2026): yearly, monthly and the
+       one payment, 320 wide, not sure of the free days, with a long price.
+       After every other level the rows themselves close up: less padding,
+       less gap, a smaller name. Only ever reached when the levels above have
+       not put the button on the first screen, which with one or two rows
+       never happens, so their cards are exactly as before. */
+    body.fit9.offer .oneplan{padding:9px 10px 6px;}
+    body.fit9.offer #iapYear:not([hidden]) + #iapPlan,body.fit9.offer #iapPlan:not([hidden]) + #iapLife:not([hidden]){margin-top:6px;}
+    body.fit9.offer .oneplan-name{font-size:17px;}
+    body.fit9.offer .oneplan-check{margin-top:8px;}
+    body.fit9.offer .planbuy{margin-top:6px;}
+    /* (GitHub's newer browser set the longest of these 7 px past the fold
+       on a 568 px screen: the rows' second lines and the note close up too,
+       and the headline steps down once more) */
+    body.fit9.offer .oneplan-sub{font-size:12px;line-height:1.2;}
+    body.fit9.offer #iapNote{margin-top:4px;font-size:11.5px;line-height:1.25;}
+    body.fit9 #offerTitle{font-size:19px;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
@@ -477,7 +499,7 @@
     <div class="card" id="planCard">
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
       <!-- shown only to a family with an active plan (the last script block) -->
-      <p class="muted" id="planCancel" hidden style="margin-top:8px;font-size:12.5px;line-height:1.5;">To cancel a plan bought on speaksona.com, email <a href="mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan">hello@speaksona.com</a> and we&rsquo;ll cancel it for you. A plan bought on iPhone or iPad: open the phone&rsquo;s Settings, tap your name, then Subscriptions.</p>
+      <p class="muted" id="planCancel" hidden style="margin-top:8px;font-size:12.5px;line-height:1.5;">To cancel a plan bought on speaksona.com, email <a href="mailto:hello@speaksona.com?subject=Cancel%20my%20Sona%20plan">hello@speaksona.com</a> and we&rsquo;ll cancel it for you. A subscription bought on iPhone or iPad: open the phone&rsquo;s Settings, tap your name, then Subscriptions. A one payment has nothing to cancel.</p>
     </div>
 
     <!-- native paywall (App Store build): Apple's sheet, required restore +
@@ -517,9 +539,17 @@
            is a radio. With two, the rows are radios, and the button, the
            check line and the small print say what the picked one does. Its
            only extra word is a "Best value" tag, and only when the store's
-           own yearly price is below twelve monthly ones. iaptest and
-           pricescreentest read this markup for any figure or "free" a
-           parent could see. -->
+           own yearly price is below twelve monthly ones.
+           A THIRD ROW, THE ONE PAYMENT (Travis, 22 Oct 2026, for iOS 1.0.9;
+           "i dont wanna say lifetime"): #iapLife, under the monthly row, by
+           the yearly row's rule (plan.life: the store returned the one-payment
+           product AND RevenueCat's current offering lists it). It is never
+           picked on arrival, and one that arrives late comes in unpicked.
+           #iapAhead is the one line under the button about the phone's own
+           heads-up the day before the free days end, painted (from
+           planWords) only when this phone will really show it.
+           iaptest and pricescreentest read this markup for any figure or
+           "free" a parent could see. -->
       <div class="planrows" id="iapRows">
         <div class="oneplan" id="iapYear" data-plan="annual" hidden>
           <span class="tag" id="iapYearTag" hidden></span>
@@ -537,6 +567,14 @@
           <span class="oneplan-price" id="iapPrice"></span>
           <span class="oneplan-what" id="iapWhat"></span>
         </div>
+        <div class="oneplan" id="iapLife" data-plan="lifetime" hidden>
+          <span class="tag" id="iapLifeTag" hidden></span>
+          <span class="oneplan-dot" aria-hidden="true"></span>
+          <span class="oneplan-l"><span class="oneplan-name" id="iapLifeName"></span><span class="oneplan-sub" id="iapLifeLine"></span></span>
+          <span class="oneplan-amt" id="iapLifeAmt"></span>
+          <span class="oneplan-price" id="iapLifePrice"></span>
+          <span class="oneplan-what" id="iapLifeWhat"></span>
+        </div>
       </div>
       <p class="oneplan-check" id="iapCheck" hidden></p>
       <ol class="tl days" id="iapTL" hidden aria-label="What happens when"></ol>
@@ -545,6 +583,7 @@
       <div class="planbuy">
         <button class="btn go" id="iapBuy" type="button" data-act="wait" disabled aria-describedby="iapNote">Checking the App Store…</button>
       </div>
+      <p class="oneplan-ahead" id="iapAhead" hidden></p>
       <!-- no inline style on these two: the rules at the end of the sheet set
            their spacing, and an inline margin would beat them -->
       <p class="muted" id="iapMsg" role="status" aria-live="polite"></p>
@@ -835,10 +874,11 @@
     //            again"). Their answer is the price: only a newer one of
     //            them replaces it, never a tap (see ask())
     //   poll, pendingKind, stop   the watch for an Ask to Buy approval
-    //   pick     "annual" | "monthly": the row the parent picked. Yearly when
-    //            the screen opens (19 Oct 2026); it only counts while the
-    //            store's answer has a yearly row (plan.year), so with one row
-    //            the card is the monthly plan whatever this says
+    //   pick     "annual" | "monthly" | "lifetime": the row the parent picked.
+    //            Yearly when the screen opens (19 Oct 2026); it only counts
+    //            while the store's answer has that row (plan.year, plan.life:
+    //            the one payment, 22 Oct 2026, never picked on arrival), so
+    //            with one row the card is the monthly plan whatever this says
     var APPLE = { plan: null, busy: false, msg: "", done: "", counted: false, told: {}, shape: "", gen: 0, asks: 0, poll: 0, pendingKind: "", stop: null, pick: "annual" };
     // THE ONE SHOWING FROM HOME (Sona.homeOfferDue, 13 Oct 2026) is spent
     // only once the offer frame is up AND the store gave a definite answer:
@@ -971,7 +1011,9 @@
     // the checks (fit6) before the picture, then the sub-line (fit7) and last
     // the rows and small print close up (fit8). With two plan rows (19 Oct
     // 2026) the same levels keep the button on the first screen from 375×667
-    // and 360×740 up (and at 320×568 too). Restore, Terms and Privacy follow
+    // and 360×740 up (and at 320×568 too); with three (the one payment, 22
+    // Oct 2026) one more level closes up the rows themselves (fit9), last,
+    // for the smallest phone in the longest shape. Restore, Terms and Privacy follow
     // "Not now" and may sit one short scroll below. It never runs while a
     // purchase is open or after one: a status line may push "Not now" down,
     // away from the button, but the page must not jump under a second tap.
@@ -980,7 +1022,7 @@
         var b = document.body;
         if (!b.classList.contains("offer")) return;
         if (APPLE.busy || APPLE.done) return;
-        ["fit1", "fit2", "fit3", "fit4", "fit5", "fit6", "fit7", "fit8"].forEach(function (c) { b.classList.remove(c); });
+        ["fit1", "fit2", "fit3", "fit4", "fit5", "fit6", "fit7", "fit8", "fit9"].forEach(function (c) { b.classList.remove(c); });
         var btn = null;
         ["iapBuy", "buyLife"].forEach(function (id) {
           var el = document.getElementById(id);
@@ -990,7 +1032,7 @@
         var apple = btn.id === "iapBuy";
         var seen = function (id) { var el = document.getElementById(id); return (el && el.getBoundingClientRect().height > 0) ? el : null; };
         var tgt = apple ? (seen("iapLegal") || btn) : btn;
-        var LEVELS = apple ? ["fit1", "fit2", "fit3", "fit5", "fit7", "fit8", "fit6"] : ["fit1", "fit2", "fit3", "fit4", "fit5"];
+        var LEVELS = apple ? ["fit1", "fit2", "fit3", "fit5", "fit7", "fit8", "fit6", "fit9"] : ["fit1", "fit2", "fit3", "fit4", "fit5"];
         var inset = 0;
         try {
           var probe = document.createElement("div");
@@ -1018,11 +1060,12 @@
         // under the finger that tapped. So the other row's words are painted
         // for a moment, the fit tightened for them too, and the picked row's
         // put back, all before anything is drawn. A pick never re-fits
-        // (paintApple).
-        if (apple && APPLE.alt) {
-          var swapped = false;
-          try { swapped = APPLE.alt(true) === true; if (swapped) run(); }
-          finally { if (swapped) APPLE.alt(false); }
+        // (paintApple). With three rows (22 Oct 2026) that is each row that
+        // is not picked in turn, so a tap on any of them moves nothing.
+        if (apple && APPLE.alt && APPLE.others) {
+          var swapped = false, others = APPLE.others();
+          try { others.forEach(function (k) { if (APPLE.alt(k) === true) { swapped = true; run(); } }); }
+          finally { if (swapped) APPLE.alt(null); }
         }
       } catch (e) {}
     }
@@ -1111,7 +1154,7 @@
           return;
         }
         var g = function (id) { return document.getElementById(id); };
-        var card = g("iapCard"), elTL = g("iapTL"), elNote = g("iapNote"), elBuy = g("iapBuy"), elMsg = g("iapMsg");
+        var card = g("iapCard"), elTL = g("iapTL"), elNote = g("iapNote"), elBuy = g("iapBuy"), elMsg = g("iapMsg"), elAhead = g("iapAhead");
         var buyWrap = card.querySelector(".planbuy");
         card.style.display = "block";
         document.body.classList.add("onerow"); try { document.getElementById("declineLink").setAttribute("aria-label", "Not now"); } catch (e) {}   // the row says it all: the line under the headline steps aside
@@ -1122,9 +1165,22 @@
         // figure, and its button loads the page again, which fetches both.
         var OLD = !(Sona.planWords && Sona.planSay && Sona.buyPlan);
         function say(code) { try { return OLD ? "" : Sona.planSay(code); } catch (e) { return ""; } }
+        // THE ONE LINE UNDER THE BUTTON ABOUT THE TRIAL'S END (Travis, 22 Oct
+        // 2026: setup asks iPhone for its Allow box, so the phone itself says
+        // so the day before the free days end). Only for a free row, and only
+        // when sona.js says this phone will really show it for that row
+        // (NOTIFY1's trialReminderOn: a build that can, a parent who allowed
+        // it, an end far enough away). A sona.js without it, or one that
+        // throws: no line, as before. The words are planWords'.
+        function aheadOn(plan) {
+          // (only when the free days are certain: on a "for new subscribers"
+          // row the note above says Apple may charge today, with no trial and
+          // so no reminder, and nothing there is stated as plain fact)
+          try { return !!plan && plan.state === "free" && plan.sure === true && typeof Sona.trialReminderOn === "function" && Sona.trialReminderOn(plan) === true; } catch (e) { return false; }
+        }
         function wordsOf(plan) {
           // (the same plain card if planWords ever throws: never a blank one)
-          if (!OLD) { try { return Sona.planWords(plan, { freeVersion: FREE_VER }); } catch (e) {} }
+          if (!OLD) { try { return Sona.planWords(plan, { freeVersion: FREE_VER, headsUp: aheadOn(plan) }); } catch (e) {} }
           return { state: "none", title: "Sona Premium", tag: "", price: "", what: "", rows: [], note: "", noteFirst: false, button: "Try again", act: "reload",
             header: "We couldn't reach the App Store.", none: { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." } };
         }
@@ -1136,17 +1192,32 @@
           try { if (window.SonaAnalytics) SonaAnalytics.track("price state", { surface: "native", source: OFFER_SOURCE, plan: (picked() && picked().kind) || "", step: code }); } catch (e) {}
         }
 
-        // TWO ROWS (19 Oct 2026). Both rows only while the store's answer is
-        // priced and carries a yearly plan, and never after a sale; the
-        // picked row's plan is the one the button, the check line and the
-        // small print describe, and the one a tap buys.
-        function two() { var p = APPLE.plan; return !APPLE.done && !!p && !!p.year && (p.state === "free" || p.state === "paid"); }
-        function pickedKind() { return two() && APPLE.pick === "annual" ? "annual" : "monthly"; }
-        function pickOf(plan, kind) { return plan && kind === "annual" ? (plan.year || null) : plan; }
+        // THE ROWS (two on 19 Oct 2026, three on 22 Oct 2026). Yearly above
+        // monthly and the one payment under it, each only while the store's
+        // answer is priced and carries it (plan.year, plan.life), and never
+        // after a sale. With more than one they are radios; the picked row's
+        // plan is the one the button, the check line and the small print
+        // describe, and the one a tap buys. With one, it is the monthly plan,
+        // whatever APPLE.pick says.
+        function priced(p) { return !!p && (p.state === "free" || p.state === "paid"); }
+        function kindsOf(p) {                // the rows answer p puts on the card, top to bottom
+          if (!priced(p)) return [];
+          var out = [];
+          if (p.year) out.push("annual");
+          out.push("monthly");
+          if (p.life) out.push("lifetime");
+          return out;
+        }
+        function many() { return !APPLE.done && kindsOf(APPLE.plan).length > 1; }
+        // the row picked on answer p, for a requested pick: that row while p has it among several, else monthly
+        function kindIn(p, pick) { var ks = kindsOf(p); return ks.length > 1 && ks.indexOf(pick) > -1 ? pick : "monthly"; }
+        function pickedKind() { return APPLE.done ? "monthly" : kindIn(APPLE.plan, APPLE.pick); }
+        function pickOf(plan, kind) { return !plan ? plan : kind === "annual" ? (plan.year || null) : kind === "lifetime" ? (plan.life || null) : plan; }
         function picked() { return pickOf(APPLE.plan, pickedKind()); }
         var ROWS = {
           monthly: { row: "iapPlan", tag: "iapTag", name: "iapName", line: "iapLine", amt: "iapAmt", price: "iapPrice", what: "iapWhat" },
           annual: { row: "iapYear", tag: "iapYearTag", name: "iapYearName", line: "iapYearLine", amt: "iapYearAmt", price: "iapYearPrice", what: "iapYearWhat" },
+          lifetime: { row: "iapLife", tag: "iapLifeTag", name: "iapLifeName", line: "iapLifeLine", amt: "iapLifeAmt", price: "iapLifePrice", what: "iapLifeWhat" },
         };
         // one row's own words; `on` is null with one row (no radio at all),
         // else whether this row is the picked one
@@ -1165,10 +1236,12 @@
         // THE ONE PAINT. Text goes in with textContent and DOM nodes only: a
         // store's price string never becomes markup.
         function paintApple() {
-          var both = two(), kind = pickedKind(), done = !!APPLE.done;
-          var w = wordsOf(pickOf(APPLE.plan, kind)), wm = both ? wordsOf(APPLE.plan) : w, wy = both ? wordsOf(APPLE.plan.year) : {};
+          var both = many(), kind = pickedKind(), done = !!APPLE.done, P = APPLE.plan;
+          var hasY = both && !!P.year, hasL = both && !!P.life;
+          var w = wordsOf(pickOf(P, kind)), wm = both ? wordsOf(P) : w, wy = hasY ? wordsOf(P.year) : {}, wl = hasL ? wordsOf(P.life) : {};
           paintRow(ROWS.monthly, wm, done || wm.state === "none" || wm.state === "owned", both ? kind === "monthly" : null);
-          paintRow(ROWS.annual, wy, !both, both ? kind === "annual" : null);
+          paintRow(ROWS.annual, wy, !hasY, both ? kind === "annual" : null);
+          paintRow(ROWS.lifetime, wl, !hasL, both ? kind === "lifetime" : null);
           var rows = g("iapRows");
           if (both) { rows.setAttribute("role", "radiogroup"); rows.setAttribute("aria-label", "Choose a plan"); }
           else { rows.removeAttribute("role"); rows.removeAttribute("aria-label"); }
@@ -1199,23 +1272,28 @@
             else if (w.state === "none") tell(APPLE.plan.why === "timeout" ? "none-timeout" : APPLE.plan.why === "error" ? "none-error" : "none-noproduct");
           }
           // Re-fit ONLY when the store's answer changed shape. The fit holds
-          // either row picked (fitOffer, APPLE.alt), so a pick never re-fits:
-          // the rows stay where the finger is. A pick still holds taps for a
-          // moment, since the button may move with the lines above it. A
-          // status line coming or going never re-fits the page: it can only
-          // push "Not now" down, away from the button.
-          var fitShape = JSON.stringify(both ? [wm, wy] : [w]), shape = fitShape + "|" + kind;
+          // whichever row is picked (fitOffer, APPLE.alt), so a pick never
+          // re-fits: the rows stay where the finger is. A pick still holds
+          // taps for a moment, since the button may move with the lines above
+          // it. A status line coming or going never re-fits the page: it can
+          // only push "Not now" down, away from the button.
+          var fitShape = JSON.stringify(both ? [wm, wy, wl] : [w]), shape = fitShape + "|" + kind;
           if (fitShape !== APPLE.fitShape) { APPLE.fitShape = fitShape; fitOffer(); }
           if (shape !== APPLE.shape) { APPLE.shape = shape; settleTaps(600); }
         }
-        // For fitOffer: paint the lines under the rows as if the OTHER row
-        // were picked (on), or as the picked one again (off). Only with two
-        // rows, and never while a purchase is open or after one. Words only:
-        // nothing is counted, told or bought.
-        APPLE.alt = function (on) {
-          if (!two() || APPLE.busy || APPLE.done) return false;
+        // For fitOffer: the rows that are not picked (APPLE.others), and the
+        // lines under the rows painted as if row k were picked (APPLE.alt(k)),
+        // or as the picked one again (APPLE.alt(null)). Only with more than
+        // one row, and never while a purchase is open or after one. Words
+        // only: nothing is counted, told or bought.
+        APPLE.others = function () {
+          if (!many() || APPLE.busy || APPLE.done) return [];
           var k = pickedKind();
-          if (on) k = k === "annual" ? "monthly" : "annual";
+          return kindsOf(APPLE.plan).filter(function (x) { return x !== k; });
+        };
+        APPLE.alt = function (k) {
+          if (!many() || APPLE.busy || APPLE.done) return false;
+          if (kindsOf(APPLE.plan).indexOf(k) === -1) k = pickedKind();
           paintPick(wordsOf(pickOf(APPLE.plan, k)), false);
           return true;
         };
@@ -1240,10 +1318,17 @@
           g("iapNone").hidden = done || !w.none;
           // When the phone is not sure this buyer gets the free days, the note
           // says so directly under the tile, ABOVE the rows that name a day.
+          // Small print sits directly under the button, and the line about
+          // the trial's end under that (or under the button when the note is
+          // above it).
           var before = w.noteFirst ? elTL : w.noteLast ? buyWrap.nextElementSibling : buyWrap;
-          if (elNote.nextElementSibling !== before) card.insertBefore(elNote, before);
+          if (w.noteLast && before === elAhead) before = elAhead.nextElementSibling;
+          if (elNote.nextElementSibling !== before && elNote !== before) card.insertBefore(elNote, before);
           elNote.classList.toggle("fine", !!w.noteLast);
           elNote.textContent = w.note; elNote.hidden = done || !w.note;
+          var after = w.noteLast ? elNote : buyWrap;
+          if (after.nextElementSibling !== elAhead) card.insertBefore(elAhead, after.nextElementSibling);
+          elAhead.textContent = w.headsUp || ""; elAhead.hidden = done || !w.headsUp;
           var held = w.act === "wait" || APPLE.busy;
           elBuy.textContent = w.button; elBuy.setAttribute("data-act", w.act);
           elBuy.disabled = held;
@@ -1252,19 +1337,23 @@
         }
 
         // ── asking the store, and taking its answers ──
-        // one plan the same as another; same() for a whole answer, its yearly row included
+        // one plan the same as another; same() for a whole answer, its yearly and one-payment rows included
         function same1(a, b) { return !!a && !!b && a.state === b.state && a.kind === b.kind && a.sure === b.sure && a.price === b.price; }
-        function same(a, b) { return same1(a, b) && !a.year === !b.year && (!a.year || (same1(a.year, b.year) && a.year.best === b.year.best)); }
+        function same(a, b) {
+          return same1(a, b) && !a.year === !b.year && (!a.year || (same1(a.year, b.year) && a.year.best === b.year.best)) &&
+            !a.life === !b.life && (!a.life || same1(a.life, b.life));
+        }
         function take(plan) {
-          var was = APPLE.plan;
+          var was = APPLE.plan, wasKind = priced(was) && !APPLE.done ? kindIn(was, APPLE.pick) : "";
           APPLE.plan = plan || { state: "none", why: "error" };
-          // A yearly row that arrives on a card already showing the monthly
-          // row alone (back at the front, or after a purchase that did not
-          // go through) comes in UNPICKED: the parent was reading the monthly
-          // plan, and the same button must not start buying the yearly one
-          // without a tap. Yearly is picked when the screen opens on two
-          // rows; after that only a tap changes the pick.
-          if (was && !was.year && (was.state === "free" || was.state === "paid") && APPLE.plan.year) APPLE.pick = "monthly";
+          // A row that arrives on a card a parent is already reading (back at
+          // the front, or after a purchase that did not go through) comes in
+          // UNPICKED, and a row that goes away takes the pick to monthly: the
+          // row the parent was reading stays picked while it is still there,
+          // so the same button never starts buying another plan without a
+          // tap. Yearly is picked when the screen opens on several rows (the
+          // one payment never is); after that only a tap changes the pick.
+          if (wasKind && kindsOf(APPLE.plan).indexOf(wasKind) > -1) APPLE.pick = wasKind;
           if (APPLE.plan.state === "owned") owned(); else paintApple();
         }
         // LATE ANSWERS COUNT (Sona.storePlan's onLate). "Not eligible", "already
@@ -1412,24 +1501,28 @@
           g("planCancel").hidden = false;
         }
 
-        // ── the pick (19 Oct 2026) ──
+        // ── the pick (19 Oct 2026; three rows since 22 Oct 2026) ──
         // A tap on a row, or Space or Enter on it, picks it; the arrow keys
-        // move between the two. Only while both rows are on the card, and
-        // never while a purchase is open: the button already said what it
-        // was buying. The pick changes words, never the store's answer.
+        // move between the rows on the card, round from the last to the
+        // first. Only while more than one row is on the card, and never while
+        // a purchase is open: the button already said what it was buying.
+        // The pick changes words, never the store's answer.
         function pickRow(k, focus) {
-          if (!two() || APPLE.busy || APPLE.done) return;
-          if (APPLE.pick !== k) { APPLE.pick = k; paintApple(); }
+          if (!many() || APPLE.busy || APPLE.done || kindsOf(APPLE.plan).indexOf(k) === -1) return;
+          var was = pickedKind();
+          APPLE.pick = k;
+          if (pickedKind() !== was) paintApple();
           if (focus) { try { g(ROWS[k].row).focus(); } catch (e) {} }
         }
-        ["annual", "monthly"].forEach(function (k) {
+        ["annual", "monthly", "lifetime"].forEach(function (k) {
           var row = g(ROWS[k].row);
           row.addEventListener("click", function () { pickRow(k, false); });
           row.addEventListener("keydown", function (e) {
-            if (!two()) return;
-            var key = e.key;
+            if (!many()) return;
+            var key = e.key, ks = kindsOf(APPLE.plan), i = ks.indexOf(k);
             if (key === " " || key === "Enter" || key === "Spacebar") { e.preventDefault(); pickRow(k, false); return; }
-            if (key === "ArrowDown" || key === "ArrowRight" || key === "ArrowUp" || key === "ArrowLeft") { e.preventDefault(); pickRow(k === "annual" ? "monthly" : "annual", true); }
+            var step = (key === "ArrowDown" || key === "ArrowRight") ? 1 : (key === "ArrowUp" || key === "ArrowLeft") ? -1 : 0;
+            if (step && i > -1) { e.preventDefault(); pickRow(ks[(i + step + ks.length) % ks.length], true); }
           });
         });
 
@@ -1482,7 +1575,7 @@
           var buy = function () { try { Sona.buyPlan(plan).then(sold, failed); } catch (e) { failed(e); } };
           // THE TAP BUYS WHAT THE STORE SAYS NOW. If its answer for the picked
           // row changed since the card was painted (free days gone, Premium
-          // already there, the yearly row gone), the new answer is shown and
+          // already there, the yearly or one-payment row gone), the new answer is shown and
           // nothing is bought on this tap.
           if (plan.spare) buy();
           else latest(function (cur) {

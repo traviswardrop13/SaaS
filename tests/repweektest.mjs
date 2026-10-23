@@ -1,9 +1,12 @@
-// REPWEEKS1: the week's reps in Home's top corner, and week by week in
-// Settings (Travis, 28 Sep 2026). One count everywhere: Home's corner,
-// Progress and Settings all read the same voiced tries, never
-// the number of sound checks, and legacy days that only hold sound checks add
-// nothing. The corner only reads, sets no target, and a tap on it meets the
-// grown-ups gate before landing on the Settings card.
+// REPWEEKS1: the week's reps in Home's top corner (Travis, 28 Sep 2026). One
+// count everywhere: Home's corner and Progress read the same voiced tries,
+// never the number of sound checks, and legacy days that only hold sound
+// checks add nothing. The corner only reads, sets no target, and a tap on it
+// meets the grown-ups gate before landing on Progress, where the week, the
+// daily goal and the line saying what a rep is live. Settings' "Reps, week by
+// week" card went on 22 Oct 2026 (Travis: "simplify settings ... the minimum
+// viable features"); the count it drew, Sona.repWeeks, is still pinned here at
+// the source, edge by edge, and Settings is held to having no such card.
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -53,20 +56,31 @@ async function fresh({ at, tz = "America/Denver", width = 375 } = {}) {
 }
 async function seed(page, out) { await page.evaluate((o) => { if (o) localStorage.setItem("sona.outcomes.v1", JSON.stringify(o)); else localStorage.removeItem("sona.outcomes.v1"); }, out); }
 async function home(page) { await page.goto(origin + "/today.html"); await page.waitForFunction(() => window.Sona && document.getElementById("repPillN")); await page.waitForTimeout(150); }
-async function settings(page, hash = "") { await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); await page.goto(origin + "/settings.html" + hash); await page.waitForFunction(() => window.Sona && document.getElementById("rwThis")); await page.waitForTimeout(150); }
+// Progress and Settings sit behind the grown-ups gate; the gate is passed here
+// as it would be (passGate drives the real one below).
+async function progress(page) { await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent && document.getElementById("dailyGoalPick").options.length); await page.waitForTimeout(150); }
+async function settings(page, hash = "") { await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); await page.goto(origin + "/settings.html" + hash); await page.waitForFunction(() => window.Sona && document.getElementById("kidsCard")); await page.waitForTimeout(150); }
+// Every part of the Settings card that went on 22 Oct 2026: the card, its
+// heading, the week's number, its two lines, the chart and the days picker.
+const NO_WEEK_CARD = () => !document.querySelector("#reps, #rwHead, #rwThis, #rwThisUnit, #rwLast, #rwBest, #rwBars, #rwDays, #goalDaysPick, #dailyGoalPick");
 async function passGate(page) {
   const need = await page.evaluate(() => window.gateNeed);
   for (const d of need) await page.locator("#pad button", { hasText: new RegExp("^" + d + "$") }).click();
   await page.locator("#pad button", { hasText: "✓" }).click();
 }
 function overflow(page) { return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth); }
-function readCard(page) {
-  return page.evaluate(() => ({
-    now: document.getElementById("rwThis").textContent, unit: document.getElementById("rwThisUnit").textContent,
-    last: document.getElementById("rwLast").textContent, best: document.getElementById("rwBest").textContent,
-    bars: [...document.querySelectorAll("#rwBars li")].map((li) => ({ cls: li.className.trim(), sr: li.querySelector(".sr").textContent, val: li.querySelector(".rw-val").textContent, star: !!li.querySelector(".rw-star"), h: li.querySelector(".rw-bar").getBoundingClientRect().height })),
-  }));
+// The week-by-week count at its source (what the Settings card drew until 22
+// Oct 2026): this week, last week, the best finished week, whether this week
+// beats it, the first counted week, and each week as "start:reps" ("★" the one
+// week marked best, "*" this week).
+function readWeeks(page) {
+  return page.evaluate(() => {
+    const r = Sona.repWeeks(8);
+    return { now: r.thisWeek, last: r.lastWeek, best: r.best, newBest: r.newBest, since: r.since, bars: r.weeks.map((w) => (w.best ? "★" : "") + w.start + ":" + w.reps + (w.current ? "*" : "")).join(" ") };
+  });
 }
+// Progress's own line for the week: practice tries, and last week beside them.
+function readProgress(page) { return page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, last: document.getElementById("volLast").textContent })); }
 
 // Thursday 15 Oct 2026, 10:00 in Idaho: this week is Mon 12 – Sun 18 Oct.
 const THU = Date.UTC(2026, 9, 15, 16, 0, 0);
@@ -139,7 +153,7 @@ await scenario("Home's corner", async () => {
   });
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /rep|week/i.test(k)));
   ok("the corner shows today toward the daily goal", s.n === "14/30" && s.unit === "reps today", s);
-  ok("its name says the number and where a grown-up can see more", /^14 of 30 reps today\./.test(s.aria) && /For grown-ups/.test(s.aria), s.aria);
+  ok("its name says the number and where a grown-up can see more", /^14 of 30 reps today\. For grown-ups: see your reps\.$/.test(s.aria) && !/week by week/.test(s.aria), s.aria);
   ok("it is a real button with a full-size tap target", s.tag === "BUTTON" && s.pill.h >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l && s.pill.t >= s.gear.t - 1 && s.pill.b <= s.gear.b + 1, s);
   ok("on a phone the 'Sona' wordmark steps aside for the count and the Grown-ups button", s.label === "none", s);
@@ -185,18 +199,20 @@ await scenario("the Grown-ups button", async () => {
   // 29 Sep 2026: the pop-up stopped carrying the week (Travis) — no wins line,
   // no story, no "Reps, week by week" link. 30 Sep 2026: the pop-up itself
   // went, and the code leads straight to Settings (Travis: "go straight to
-  // settings not have them choose"). Home's daily corner is still the way to the
-  // week-by-week card (next scenario). Sona.weekWins() and soundStory() still
-  // exist, so their count is checked at the source.
+  // settings not have them choose"). Home's daily corner leads to Progress
+  // (next scenario); Settings' week-by-week card went on 22 Oct 2026.
+  // Sona.weekWins(), soundStory() and repWeeks() still exist, so their count
+  // is checked at the source.
   ok("Home has no Grown-ups pop-up and no week card", await page.evaluate(() => !document.querySelector("#sheetOvl, #goProgress, #goSettings, #goTalk, #weekCard, #wkWins, #wkMore, #planCard, #storyBits, #shareWeek")));
   await page.click("#parentBtn"); await passGate(page);
   await page.waitForURL(/\/settings\.html$/);
-  await page.waitForFunction(() => window.Sona && document.getElementById("rwThis") && document.getElementById("rwThis").textContent === "28");
-  const s = await page.evaluate(() => ({ wins: Sona.weekWins().reps, story: Sona.soundStory().join(" "), card: document.getElementById("rwThis").textContent }));
+  await page.waitForFunction(() => window.Sona && document.getElementById("kidsCard"));
+  const s = await page.evaluate(() => ({ wins: Sona.weekWins().reps, story: Sona.soundStory().join(" "), weeks: Sona.repWeeks(8).thisWeek }));
   ok("the right code lands on Settings, not a menu", /\/settings\.html$/.test(page.url()), page.url());
   ok("weekWins says the same 28 reps", s.wins === 28, s.wins);
   ok("the week's story says the same 28 reps, not the sound checks", /28 reps, each one said out loud/.test(s.story) && !/sounds out loud/.test(s.story), s.story);
-  ok("…and so does the Settings card the code lands beside", s.card === "28", s.card);
+  ok("…and so does the week-by-week count (Sona.repWeeks)", s.weeks === 28, s.weeks);
+  ok("Settings, where the code lands, has no week-by-week card any more", await page.evaluate(NO_WEEK_CARD));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -210,109 +226,117 @@ await scenario("a tap on the corner", async () => {
   await page.click("#gateClose");
   ok("Never mind leaves the child on Home", await page.evaluate(() => !document.getElementById("gateOvl").classList.contains("show") && location.pathname === "/today.html"));
   await page.click("#repPill"); await passGate(page);
-  await page.waitForURL(/\/settings\.html#reps$/);
-  await page.waitForFunction(() => window.Sona && document.getElementById("rwThis").textContent === "28");
-  ok("the right answer lands on the week-by-week card", /\/settings\.html#reps$/.test(page.url()), page.url());
+  // Since 22 Oct 2026 the corner leads to Progress: the week's tries, the
+  // days a week, the daily goal and what a rep is are all there.
+  await page.waitForURL(/\/progress\.html$/);
+  await page.waitForFunction(() => window.Sona && document.getElementById("volReps").textContent === "28" && document.getElementById("dailyGoalPick").options.length);
+  const s = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, goal: document.getElementById("dailyGoalPick").value, days: !!document.querySelector("#wkGoalPick .gbtn.on"), note: !!document.querySelector("#weekCard .rw-note") }));
+  ok("the right answer lands on Progress, not Settings", /\/progress\.html$/.test(page.url()), page.url());
+  ok("…on the week's 28 tries, beside the days a week, the daily goal and what a rep is", s.tries === "28" && s.goal === "30" && s.days && s.note, s);
   // (The parent code that could stand in for the words went on 30 Sep 2026;
   // gatecheck pins that a code saved before then is never asked for.)
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
 
-await scenario("the Settings card", async () => {
+await scenario("the week on Progress, and no card on Settings", async () => {
   const { context, page, errors } = await fresh({ at: THU });
-  await seed(page, HISTORY); await settings(page);
-  const c = await readCard(page);
+  await seed(page, HISTORY);
+  // Settings: the "Reps, week by week" card, its chart and its two goal
+  // pickers went on 22 Oct 2026. A link to it from a Home page cached before
+  // then still carries #reps, and must open Settings, never an error.
+  await settings(page, "#reps");
+  const set = await page.evaluate(() => ({ url: location.pathname + location.hash, text: document.body.innerText }));
+  ok("an old #reps link still opens Settings", set.url === "/settings.html#reps", set.url);
+  ok("Settings has no week-by-week card, chart or goal picker", await page.evaluate(NO_WEEK_CARD));
+  ok("…and none of its words: the week, the best week, what a rep is", !/Reps, week by week|reps this week|Best week|New best week|A rep is one time/.test(set.text), set.text);
+  // Progress: the line saying what a rep is moved in with the daily goal.
+  await progress(page);
   const s = await page.evaluate(() => {
-    const card = document.getElementById("reps");
+    const card = document.getElementById("weekCard"), note = card.querySelector(".rw-note"), goal = card.querySelector(".goal-daily"), kids = [...card.children];
+    const moved = [note, goal, document.getElementById("goalHelp"), document.getElementById("wkGoalMsg")];
     return {
-      afterKids: document.getElementById("kidsCard").nextElementSibling === card,
-      head: document.getElementById("rwHead").textContent, who: document.getElementById("rwWho").textContent,
-      bestNew: document.getElementById("rwBest").classList.contains("new"),
-      list: document.getElementById("rwBars").getAttribute("role"), items: [...document.querySelectorAll("#rwBars li")].every((li) => li.getAttribute("role") === "listitem" && !li.hasAttribute("aria-label") && li.lastElementChild.getAttribute("aria-hidden") === "true"),
-      days: [...document.querySelectorAll("#rwDays span")].map((d) => d.innerText.replace(/\n/g, " ")),
-      text: card.innerText, note: card.querySelector(".rw-note").innerText.trim(),
-      reds: [...card.querySelectorAll("*")].filter((el) => { const c = getComputedStyle(el).color.match(/\d+/g).map(Number); return c[0] > 180 && c[1] < 90 && c[2] < 90; }).length,
+      who: document.getElementById("rwWho").textContent, note: note.innerText.trim(),
+      order: kids.indexOf(document.getElementById("wkGoalPick")) < kids.indexOf(goal) && kids.indexOf(goal) < kids.indexOf(note),
+      text: moved.map((el) => el.innerText).join(" | "),
+      reds: moved.flatMap((el) => [el, ...el.querySelectorAll("*")]).filter((el) => { const c = getComputedStyle(el).color.match(/\d+/g).map(Number); return c[0] > 180 && c[1] < 90 && c[2] < 90; }).length,
     };
   });
-  ok("the card sits right under Kids, so it belongs to the selected child", s.afterKids);
-  ok("it names the child", s.head === "Milo’s reps, week by week" && s.who === "Milo", s);
-  ok("this week is the same 28 as Home's corner", c.now === "28" && c.unit === "reps this week", c);
-  ok("ahead of last week says by how much", c.last === "10 reps more than last week’s 18.", c.last);
-  ok("beating every finished week says so, with the week it beat", s.bestNew && c.best === "New best week! The last best was 18 reps, the week of Oct 5.", c.best);
-  ok("four weeks: from the first counted week to this one", c.bars.length === 4 && s.days.join("|") === "Sep 21|Sep 28|Oct 5|This week", { c, days: s.days });
-  ok("this week is marked as now and as the new best", /now/.test(c.bars[3].cls) && /best/.test(c.bars[3].cls) && c.bars[3].star && c.bars[3].val === "28" && c.bars[3].sr === "This week: 28 reps, best week", c.bars[3]);
-  ok("one star only: the week it beat is no longer marked best", c.bars.filter((b) => b.star || /best/.test(b.cls)).length === 1 && c.bars[2].sr === "Week of Oct 5: 18 reps", c.bars[2]);
-  ok("a week with no counted reps is a stub, never a gap in the list", c.bars[1].val === "0" && c.bars[1].h <= 3 && c.bars[1].sr === "Week of Sep 28: 0 reps", c.bars[1]);
-  ok("bars scale to the tallest week", c.bars[3].h > c.bars[2].h && c.bars[2].h > c.bars[0].h, c.bars.map((b) => b.h));
-  ok("a screen reader hears each week in words, from inside the item", s.list === "list" && s.items, s);
+  const p = await readProgress(page);
   // One short line (Travis, 30 Sep 2026): out loud, in practice or a game,
   // and never silence.
-  ok("the card says what a rep is, in one line, and that silence never counts", /^A rep is one time Milo says their sound or word out loud, in practice, a game or a book\. Silence never counts\.$/.test(s.note) && /Silence never counts/.test(s.text), s.note);
-  ok("no percentages, scores or grades on the card", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
-  ok("nothing on the card is red", s.reds === 0, s.reds);
+  ok("Progress says what a rep is, in one line, naming the child, and that silence never counts", s.who === "Milo" && /^A rep is one time Milo says their sound or word out loud, in practice, a game or a book\. Silence never counts\.$/.test(s.note), s.note);
+  ok("it sits with what it explains: the days a week, then the daily goal, then the rep line", s.order, s);
+  ok("Progress's week is the same 28, and ahead of last week it says up from it", p.tries === "28" && p.last === "Up from 18 tries last week", p);
+  ok("no percentages, scores or grades in the goal and rep lines", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
+  ok("nothing in them is red", s.reds === 0, s.reds);
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
-  await page.locator("#reps").screenshot({ path: OUT + "/repweek-settings-375.png" });
+  await page.locator("#weekCard").screenshot({ path: OUT + "/repweek-progress-375.png" });
   await page.setViewportSize({ width: 320, height: 812 }); await page.waitForTimeout(100);
   const narrow = await page.evaluate(() => {
-    const bars = document.getElementById("rwBars").getBoundingClientRect(), card = document.getElementById("reps").getBoundingClientRect();
-    const labels = [...document.querySelectorAll("#rwDays span")].every((d) => d.scrollWidth <= d.clientWidth + 1);
-    const vals = [...document.querySelectorAll("#rwBars li")].every((li) => { const v = li.querySelector(".rw-val").getBoundingClientRect(), r = li.getBoundingClientRect(); return v.left >= r.left - 1 && v.right <= r.right + 1; });
-    return { inside: bars.right <= card.right && bars.left >= card.left, labels, vals };
+    const card = document.getElementById("weekCard").getBoundingClientRect();
+    return ["#wkGoalPick", ".goal-daily", "#dailyGoalPick", "#goalHelp", "#weekCard .rw-note"].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return { q, inside: r.left >= card.left - 1 && r.right <= card.right + 1 }; });
   });
-  ok("320px: the chart, its numbers and its week labels fit the card", narrow.inside && narrow.labels && narrow.vals && (await overflow(page)) <= 1, narrow);
-  await page.locator("#reps").screenshot({ path: OUT + "/repweek-settings-320.png" });
-  // Arriving from Home's corner: the card, not the status bar, is on top.
-  await settings(page, "#reps");
-  const top = await page.evaluate(() => ({ top: document.getElementById("reps").getBoundingClientRect().top, y: scrollY }));
-  ok("#reps scrolls to the card and leaves room above it", top.y > 0 && top.top >= 11, top);
+  ok("320px: the days, the daily goal and the rep line fit the card", narrow.every((n) => n.inside) && (await overflow(page)) <= 1, narrow);
+  await page.locator("#weekCard").screenshot({ path: OUT + "/repweek-progress-320.png" });
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
 
 await scenario("behind, tied, one rep, brand new, and wrong clocks", async () => {
+  // The card that put these weeks into words left Settings on 22 Oct 2026.
+  // The count it read is Sona.repWeeks, pinned here edge by edge, with
+  // Progress's own line for the week beside it.
   const { context, page, errors } = await fresh({ at: THU });
   const lastWeek = { "2026-10-06": { a: 3, p: 2, tries: 10 }, "2026-10-10": { a: 3, p: 2, tries: 8 } };
 
-  await seed(page, only({ ...lastWeek, "2026-10-13": { a: 3, p: 2, tries: 10 } })); await settings(page);
-  let s = await readCard(page);
-  ok("behind last week says how many more reps beat it, never a drop", s.last === "9 more to beat last week’s 18." && !/down|less|fewer|behind|drop/i.test(s.last), s);
-  ok("the best week is still named", s.best === "Best week: 18 reps, the week of Oct 5.", s);
-  ok("and its bar carries the one star", s.bars.map((b) => (b.star ? "★" : "") + b.val).join(" ") === "★18 10", s.bars);
+  await seed(page, only({ ...lastWeek, "2026-10-13": { a: 3, p: 2, tries: 10 } })); await progress(page);
+  let s = await readWeeks(page), p = await readProgress(page);
+  ok("behind last week: 10 this week against last week's 18, and not a new best", s.now === 10 && s.last === 18 && !s.newBest, s);
+  ok("the best week is still named: 18 reps, the week of Oct 5", s.best && s.best.start === "2026-10-05" && s.best.reps === 18, s);
+  ok("and it is the one week marked best", s.bars === "★2026-10-05:18 2026-10-12:10*", s.bars);
+  ok("Progress names last week's number, never a drop", p.tries === "10" && p.last === "Last week: 18 tries" && !/down|less|fewer|behind|drop/i.test(p.last), p);
 
-  await seed(page, only({ ...lastWeek, "2026-10-13": { a: 3, p: 2, tries: 18 } })); await settings(page);
-  s = await readCard(page);
-  ok("a tie says one more rep beats it, and is not a new best", s.last === "Tied with last week’s 18. One more rep beats it." && /^Best week: 18 reps/.test(s.best), s);
+  await seed(page, only({ ...lastWeek, "2026-10-13": { a: 3, p: 2, tries: 18 } })); await progress(page);
+  s = await readWeeks(page); p = await readProgress(page);
+  ok("a tie with last week is not a new best", s.now === 18 && s.last === 18 && !s.newBest && s.best && s.best.reps === 18, s);
+  ok("…and Progress does not call a tie 'up'", p.tries === "18" && p.last === "Last week: 18 tries", p);
 
-  await seed(page, only({ "2026-10-13": { a: 1, p: 1, tries: 1 } })); await settings(page);
-  s = await readCard(page);
-  ok("one rep reads 'rep', and a first week says it is the first", s.now === "1" && s.unit === "rep this week" && s.last === "The first week counted." && s.best === "" && s.bars.length === 1, s);
+  await seed(page, only({ "2026-10-13": { a: 1, p: 1, tries: 1 } })); await progress(page);
+  s = await readWeeks(page);
+  ok("one rep: a first counted week, this one, with no best yet", s.now === 1 && s.last === 0 && s.best === null && !s.newBest && s.since === "2026-10-12" && s.bars === "2026-10-12:1*", s);
+  ok("…and Progress counts 1 try", (await readProgress(page)).tries === "1");
   await home(page);
   ok("Home's corner shows no reps today when the week's one was Tuesday", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30" && document.getElementById("repPillUnit").textContent === "reps today"));
 
-  await seed(page, null); await settings(page);
-  s = await readCard(page);
-  ok("a brand-new child: 0, no chart, and what adds the first rep", s.now === "0" && s.bars.length === 0 && s.best === "" && s.last === "No reps counted yet. Milo’s next practice adds the first.", s);
+  await seed(page, null); await progress(page);
+  s = await readWeeks(page);
+  ok("a brand-new child: 0, no best and no first counted week", s.now === 0 && s.last === 0 && s.best === null && s.since === null && !s.newBest, s);
+  ok("…and Progress counts 0 tries", (await readProgress(page)).tries === "0");
   await home(page);
   ok("Home's corner shows 0 for a brand-new child", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30" && document.getElementById("repPillUnit").textContent === "reps today"));
 
-  await seed(page, only({ "2026-09-15": { a: 20, p: 10 }, "2026-10-13": { a: 5, p: 3 } })); await settings(page);
-  s = await readCard(page);
-  ok("a family whose practice predates rep counting is not told the child never practiced", s.now === "0" && s.bars.length === 0 && s.best === "" && s.last === "No reps counted yet. Milo’s next practice adds the first.", s);
+  await seed(page, only({ "2026-09-15": { a: 20, p: 10 }, "2026-10-13": { a: 5, p: 3 } })); await progress(page);
+  s = await readWeeks(page);
+  ok("a family whose practice predates rep counting reads as not counted yet, never as weeks of nothing", s.now === 0 && s.best === null && s.since === null, s);
 
-  await seed(page, only({ "2026-09-28": { a: 3, p: 2, tries: 30 }, "2026-10-13": { a: 3, p: 2, tries: 4 } })); await settings(page);
-  s = await readCard(page);
-  ok("a quiet last week after older practice reads 0, not a fresh start", s.last === "Last week: 0 reps." && s.best === "Best week: 30 reps, the week of Sep 28." && s.bars.length === 3, s);
+  await seed(page, only({ "2026-09-28": { a: 3, p: 2, tries: 30 }, "2026-10-13": { a: 3, p: 2, tries: 4 } })); await progress(page);
+  s = await readWeeks(page);
+  ok("a quiet last week after older practice reads 0, not a fresh start", s.last === 0 && s.best && s.best.start === "2026-09-28" && s.best.reps === 30 && s.bars === "★2026-09-28:30 2026-10-05:0 2026-10-12:4*", s);
 
-  await seed(page, only({ "2025-10-06": { a: 1, p: 1, tries: 99 }, "2026-10-06": { a: 3, p: 2, tries: 30 }, "2026-10-13": { a: 3, p: 2, tries: 40 } })); await settings(page);
-  s = await readCard(page);
-  ok("a year-old date from a wrong clock is never the best week", /^New best week! The last best was 30 reps/.test(s.best) && s.bars.length === 2, s);
+  await seed(page, only({ "2025-10-06": { a: 1, p: 1, tries: 99 }, "2026-10-06": { a: 3, p: 2, tries: 30 }, "2026-10-13": { a: 3, p: 2, tries: 40 } })); await progress(page);
+  s = await readWeeks(page);
+  ok("a year-old date from a wrong clock is never the best week", s.newBest && s.best && s.best.start === "2026-10-05" && s.best.reps === 30 && s.bars === "★2026-10-05:30 2026-10-12:40*", s);
 
-  await seed(page, only({ "2026-10-13": { a: 3, p: 2, tries: 1234 } })); await settings(page);
-  s = await readCard(page);
-  ok("big weeks get a thousands comma, and a short label on the bar", s.now === "1,234" && s.bars[0].val === "1.2k", s);
+  await seed(page, only({ "2026-10-13": { a: 3, p: 2, tries: 1234 } })); await progress(page);
+  s = await readWeeks(page);
+  ok("a big week counts every rep", s.now === 1234, s);
   await home(page);
   ok("Home's corner keeps today separate from a large Tuesday count", await page.evaluate(() => document.getElementById("repPillN").textContent === "0/30"));
+  // The thousands comma lives on in the one place a count that big is drawn
+  // for a child's day: Home's corner, once the goal is met.
+  await seed(page, only({ "2026-10-15": { a: 3, p: 2, tries: 1234 } })); await home(page);
+  ok("a big day gets a thousands comma in Home's corner", await page.evaluate(() => document.getElementById("repPillN").textContent === "1,234" && document.getElementById("repPillUnit").textContent === "Goal met"));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
@@ -346,9 +370,9 @@ await scenario("sounds said in games are reps too", async () => {
   r = await page.evaluate(() => ({ now: Sona.weekReps(0), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1"))["2026-10-15"], outcomes: localStorage.getItem("sona.outcomes.v1") }));
   ok("Sona.gameRep adds one per heard sound, for real sounds only", r.now === 35 && r.ledger.R === 5 && r.ledger.S === 2, r);
   ok("…and never touches the practice records (pass rates, the clinician's view)", r.outcomes === before);
-  await settings(page);
-  const card = await page.evaluate(() => ({ now: document.getElementById("rwThis").textContent, note: document.querySelector(".rw-note").innerText }));
-  ok("Settings counts them, and says a game counts too", card.now === "35" && /in practice, a game or a book/.test(card.note) && !/add none/.test(card.note), card);
+  await progress(page);
+  const card = await page.evaluate(() => ({ games: document.getElementById("volGames").hidden ? null : document.getElementById("volGames").textContent, note: document.querySelector("#weekCard .rw-note").innerText }));
+  ok("Progress counts them in all, and its rep line says a game counts too", card.games === "Plus 7 sounds said out loud in games and books: 35 reps in all." && /in practice, a game or a book/.test(card.note) && !/add none/.test(card.note), card);
   await page.evaluate(() => Sona.addKid("Ana", 4));
   ok("a second child's game reps start at 0", await page.evaluate(() => Sona.weekReps(0) === 0));
   await page.evaluate(() => Sona.gameRep("R"));
@@ -383,7 +407,12 @@ await scenario("a syllable or word card in a game is one rep too", async () => {
     sessionStorage.setItem("sona.play.token", "arcade-slice.html");
   });
   await seed(page, HISTORY);
-  await page.evaluate(() => { localStorage.setItem("sona.freeera5.v1", "done"); const p = JSON.parse(localStorage.getItem("sona.profile.v1")); Object.assign(p, { childAge: "7", volume: 0.8, voiceOn: true, gameLevel: "word" }); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+  // The cards climb on what the child EARNED on the practice page: R at the
+  // syllable step (stage 1), so they may go one past it, to the word. The
+  // Settings picker that could set this by hand went on 22 Oct 2026, and a
+  // pick saved from it is dropped: the "Just the sound" one seeded here would
+  // once have held every card to the bare sound.
+  await page.evaluate(() => { localStorage.setItem("sona.freeera5.v1", "done"); localStorage.setItem("sona.progress.v1", JSON.stringify({ ladderV: 2, stage: { R: 1 } })); const p = JSON.parse(localStorage.getItem("sona.profile.v1")); Object.assign(p, { childAge: "7", volume: 0.8, voiceOn: true, gameLevel: "isolation" }); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
   await page.goto(origin + "/arcade-slice.html?from=charge");
   await page.waitForFunction(() => window.gameEntryAllowed === true && typeof startWave === "function");
   const snap = () => page.evaluate(() => ({ week: Sona.weekReps(0), practice: Sona.weekReps(0, null, true), outcomes: localStorage.getItem("sona.outcomes.v1"), attempts: localStorage.getItem("sona.attempts.v1"), stage: JSON.stringify(Sona.getProgress().stage), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1") || "{}")["2026-10-15"] || {} }));
@@ -397,7 +426,8 @@ await scenario("a syllable or word card in a game is one rep too", async () => {
     await page.waitForFunction((k) => phase === "wave" && wave === k, n);
   }
   const after = await snap();
-  ok("the two cards asked a syllable, then the short word", asked[0].rung === 1 && asked[1].rung === 2 && asked[1].text === "rot", asked);
+  ok("an old game-card pick from Settings is dropped, so nothing reads it", await page.evaluate(() => !("gameLevel" in Sona.getProfile())));
+  ok("the two cards asked a syllable, then the short word, as earned", asked[0].rung === 1 && asked[1].rung === 2 && asked[1].text === "rot", asked);
   ok("each heard card is exactly one rep on the week's count, in the game ledger", after.week === before.week + 2 && after.ledger.R === 2, { before, after });
   ok("…and touches no practice record: not the tries, the pass-rate records, the attempts or the earned level",
     after.practice === before.practice && after.outcomes === before.outcomes && after.attempts === before.attempts && after.stage === before.stage, { before, after });
@@ -441,8 +471,8 @@ await scenario("each child keeps their own week", async () => {
   await home(page);
   const second = await page.evaluate(() => ({ n: document.getElementById("repPillN").textContent, reps: Sona.weekReps(0) }));
   ok("a second child starts at 0, not the first child's 28", second.n === "0/30" && second.reps === 0, second);
-  await settings(page);
-  ok("Settings names the selected child", await page.evaluate(() => document.getElementById("rwHead").textContent === "Ana’s reps, week by week" && document.getElementById("rwThis").textContent === "0"));
+  await progress(page);
+  ok("Progress names the selected child, and her week starts at 0", await page.evaluate(() => document.getElementById("title").textContent === "Ana's progress" && document.getElementById("rwWho").textContent === "Ana" && document.getElementById("volReps").textContent === "0" && Sona.repWeeks(8).thisWeek === 0));
   await page.evaluate(() => Sona.switchKid(""));
   await home(page);
   ok("switching back shows the first child's 28 again", await page.evaluate(() => document.getElementById("repPillN").textContent === "14/30"));
@@ -475,9 +505,8 @@ await scenario("week edges", async () => {
   ({ context, page, errors } = await fresh({ at: Date.UTC(2027, 0, 1, 17, 0) })); // Fri 1 Jan 2027 10:00 MST
   await seed(page, only({ "2026-12-28": { a: 1, p: 1, tries: 3 }, "2027-01-01": { a: 1, p: 1, tries: 4 }, "2026-12-27": { a: 1, p: 1, tries: 9 } })); await home(page);
   ok("a week that crosses New Year's is still one week", await page.evaluate(() => Sona.weekReps(0) === 7 && Sona.weekReps(-1) === 9 && Sona.repWeeks(8).weeks[0].start === "2026-12-21"));
-  await settings(page);
-  const s = await readCard(page);
-  ok("a best week from last year names its year", s.best === "Best week: 9 reps, the week of Dec 21, 2026." && s.bars.length === 2, s);
+  const s = await readWeeks(page);
+  ok("a best week from last year keeps its year: the week of 21 Dec 2026, 9 reps", s.best && s.best.start === "2026-12-21" && s.best.reps === 9 && s.bars === "★2026-12-21:9 2026-12-28:7*", s);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

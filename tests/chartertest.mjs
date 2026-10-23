@@ -199,6 +199,14 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   // pricescreentest and iaptest.
   ok("the Apple card carries no typed price at all",
     /<span class="oneplan-price" id="iapPrice"><\/span>/.test(sub) && /Sona\.planWords\(/.test(sub) && !/iapPriceMo|iapPlanMo/.test(sub));
+  // the one payment (22 Oct 2026) is Apple's figure too, and no charter tier
+  ok("…nor its one-payment row (22 Oct 2026): its price and amount ship empty",
+    /<span class="oneplan-price" id="iapLifePrice"><\/span>/.test(sub) && /<span class="oneplan-amt" id="iapLifeAmt"><\/span>/.test(sub));
+  {
+    const sj = src("/public/sona.js"), a = sj.indexOf('if (plan.kind === "lifetime" || per === "once")'), once = a > -1 ? sj.slice(a, sj.indexOf("const PP = P", a)) : "";
+    ok("…and its words never name the charter, spots, a saving or a typed figure: the store's price string is the only figure",
+      once.length > 200 && !/charter|founding|spots|save|119\.88|59\.89|\$\d/i.test(once), once.slice(0, 200));
+  }
   ok("the charter line is written into the YEARLY box only", /id="planLife"[\s\S]*?id="charterLine"[\s\S]*?<\/div>\s*<!--|id="planLife"[\s\S]*?id="charterLine"/.test(readFileSync(APP + "/public/subscribe.html", "utf8")) &&
     !/id="planMonth"[^>]*>[\s\S]{0,400}charter/i.test(sub));
 

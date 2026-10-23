@@ -191,6 +191,25 @@ try {
       ok("free days started, " + (marker ? "marker" : "no marker") + ": no page errors", errors.length === 0, errors);
     } finally { await context.close(); }
   });
+  // THE ONE PAYMENT (22 Oct 2026): a third row when RevenueCat's offering
+  // lists it. Bought from setup's price, it is Premium like any purchase:
+  // the price is owed no more, every game opens, and the buyer goes back
+  // to setup for the microphone exactly as the free days do
+  await scenario("the one payment, from setup", async () => {
+    const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, marker: true, offering: "all" });
+    try {
+      await page.goto(BASE + "/subscribe.html?setup=1");
+      await priced(page); await calm(page);
+      await page.locator("#iapLife").click(); await calm(page);
+      const btn = await page.evaluate(() => document.getElementById("iapBuy").innerText.trim());
+      ok("the one payment picked: its button names the store's price, and nothing says free", btn === "Get Sona Premium — $59.99" && !/free/i.test(btn), btn);
+      await page.locator("#iapBuy").click();
+      await page.waitForURL(/\/onboarding\.html$/, { timeout: 8000 });
+      const got = await page.evaluate((keys) => ({ bought: localStorage.getItem("__bought"), sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), first: Sona.trialFirst(), open: keys.filter((k) => Sona.gameAccess(k).allowed) }), FREE4);
+      ok("…bought, it comes back to setup (the marker), owes no price, and every game opens", got.bought === "com.speaksona.app.lifetime" && got.sub.active === true && got.sub.source === "apple" && got.first === false && got.open.length === FREE4.length, got);
+      ok("the one payment, from setup: no page errors", errors.length === 0, errors);
+    } finally { await context.close(); }
+  });
   await scenario("Not now", async () => {
     const { context, page, errors } = await fresh({ app: "buy", stamp: "post", setUp: true, marker: true, intro: "free3" });
     try {

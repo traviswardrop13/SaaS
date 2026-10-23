@@ -13,35 +13,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
   <style>
-    /* REPWEEKS1 — the week-by-week card. Growth colours only, never red.
-       Home's count lands here by #reps; in the iOS app the page draws under
-       the status bar, so the jump stops below it. */
-    #reps{scroll-margin-top:calc(12px + env(safe-area-inset-top));}
     .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
-    .rw-now{display:flex;align-items:baseline;gap:8px;margin-top:10px;}
-    #rwThis{font-family:"Baloo 2";font-weight:800;font-size:40px;line-height:1;color:var(--family-teal-dark,var(--orange-d));}
-    #rwThisUnit{font-weight:800;font-size:15px;}
-    .rw-line{font-weight:800;font-size:13.5px;margin-top:6px;}
-    .rw-line:empty{display:none;}
-    #rwBest.new{color:var(--good,#3f7a12);}
-    .rw-bars{list-style:none;display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;align-items:end;height:136px;margin-top:16px;padding-bottom:2px;border-bottom:2px solid var(--line);}
-    .rw-bars:empty{display:none;}
-    .rw-bars li{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%;}
-    .rw-val{font-family:"Baloo 2";font-weight:800;font-size:12px;line-height:1.2;color:var(--muted);white-space:nowrap;}
-    .rw-star{display:block;font-size:11px;line-height:1;color:#c98a00;text-align:center;}
-    .rw-bar{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:#eadcc7;margin-top:3px;}
-    .rw-bars li.best .rw-bar{background:#ffc56b;}
-    .rw-bars li.now .rw-bar{background:var(--family-teal,var(--orange));}
-    .rw-bars li.now .rw-val{color:var(--family-teal-dark,#a8521c);}
-    .rw-days{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;margin-top:5px;}
-    .rw-days span{font-size:10px;font-weight:800;line-height:1.25;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;}
-    .rw-days span.now{color:var(--family-teal-dark,#a8521c);}
-    .goal-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:14px 0;}
-    .goal-controls label{display:grid;gap:6px;font-size:13px;font-weight:800;min-width:0;}
-    .goal-controls select{width:100%;min-height:44px;padding:8px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:800 15px "Nunito",sans-serif;}
-    #goalWeekLine{font-weight:800;margin-top:10px;}
-    #goalHelp{font-size:12px;line-height:1.45;}
-    .rw-note{font-size:12px;font-weight:700;line-height:1.5;margin-top:12px;}
   </style>
   <script>
     /* Parent gate, checked before anything paints: if sona.js is slow or
@@ -70,13 +42,16 @@
     /* ONE TITLED CARD PER JOB (29 Sep 2026). Settings was one long card with a
        Save button at the bottom and half the page folded into "More settings";
        a parent had to know where things were to find them. Now each card says
-       what it holds, and every control saves itself. */
+       what it holds, and every control saves itself.
+       THE MINIMUM (Travis, 22 Oct 2026: "simplify settings. It's too busy.
+       Let's get rid of as much as we possibly can"): the family, one card for
+       the child picked (name, age, sounds), the plan, and the backup fold.
+       The week's reps and the daily goal live on Progress; the buddy is
+       Home's. */
     .family-settings .set-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px;}
     .family-settings .set-head h2{font-size:20px;min-width:0;overflow-wrap:anywhere;}
     .family-settings .set-head+label.field,.family-settings .set-head+div.field{margin-top:12px;}
     .family-settings .set-lead{margin-top:4px;font-size:13px;font-weight:700;line-height:1.45;}
-    .family-settings .set-divider{margin:28px 4px 10px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
-    .family-settings .set-divider+.card{margin-top:0;}
     /* "Saved ✓" — one live region, moved into the card that just changed so
        the confirmation appears beside the thing the parent touched. It is
        always rendered (an element that is display:none when its text changes
@@ -97,34 +72,17 @@
     .family-settings #addKidRow .kid-new-age{flex:0 0 90px;}
     .family-settings #addKidRow .btn{width:auto;flex:0 0 auto;}
     .family-settings #addKidBtn{margin-top:10px;}
-    /* practice */
-    .family-settings #playNote{margin:8px 0 10px;padding:11px 14px;border:1px solid #f0dcbc;border-radius:14px;background:#fff3df;font-weight:800;font-size:12.5px;line-height:1.45;color:var(--muted);}
-    .family-settings #playNote b{color:var(--ink);}
-    .family-settings #playNote a{font-weight:800;}
+    /* sounds */
+    .family-settings #soundsLbl{margin-top:18px;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
-    /* the game-level picker: its four choices are short enough to read in
-       full on a 320 px phone while it is closed (kidtest measures them); the
-       grey line under it carries the rest. If one is ever longer, the cut
-       ends in "…" instead of mid-letter. */
-    .family-settings #gameLevel{text-overflow:ellipsis;}
-    /* game levels (LEVELS1): under the buddy row, with the same short-choice rule */
-    .family-settings #playLevelCap{text-overflow:ellipsis;}
+    .family-settings #posBox[hidden],.family-settings #posNote[hidden]{display:none;}
+    .family-settings #posNote{margin-top:10px;}
     /* sound: one slim line, and only while Sona itself is muted. A .card, so
        the cards on either side keep their gap whether it shows or not. */
     .family-settings .set-soundoff{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px 10px 16px;}
     .family-settings .set-soundoff[hidden]{display:none;}
     .family-settings .set-soundoff span{font-weight:800;font-size:14px;color:var(--ink);}
     .family-settings .set-soundoff .btn{width:auto;min-height:44px;padding:9px 16px;font-size:14px;}
-    /* a row that opens another page */
-    .family-settings .set-row{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;min-height:64px;border:1px solid var(--line);border-radius:16px;background:#fffdf8;color:var(--ink);text-decoration:none;box-shadow:0 3px 0 #e8d9c54d;}
-    .family-settings .set-row:active{transform:translateY(1px);box-shadow:0 1px 0 #e8d9c54d;}
-    .family-settings .set-row-art{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(#fff4c9,#f8dc9d);color:#8a5a22;box-shadow:0 2px 0 #dfcaa9;}
-    .family-settings .set-row-art img{width:40px;height:40px;object-fit:contain;}
-    .family-settings .set-row-art svg{width:22px;height:22px;}
-    .family-settings .set-row-text{flex:1;min-width:0;}
-    .family-settings .set-row-text b{display:block;font-family:"Baloo 2",sans-serif;font-size:16px;font-weight:800;line-height:1.25;}
-    .family-settings .set-row-text span{display:block;margin-top:1px;font-size:13px;font-weight:700;line-height:1.35;color:var(--muted);}
-    .family-settings .set-chev{flex:none;font-size:24px;line-height:1;color:var(--muted);}
     /* buttons and messages inside a card */
     .family-settings .set-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;}
     .family-settings .set-actions .btn{width:auto;min-height:46px;padding:11px 18px;font-size:15px;}
@@ -142,10 +100,10 @@
     .family-settings .set-details summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:800;color:var(--family-teal-dark);}
     .family-settings #restoreIn{min-height:80px;font:600 12px/1.4 ui-monospace,Menlo,monospace;}
     .family-settings #undoRow p{margin-top:6px;font-size:12px;font-weight:800;}
-    /* reset: the one control here that cannot be taken back */
-    .family-settings .set-danger{border-color:#efd2c7;}
-    .family-settings .set-danger h2{color:#9b2f22;}
-    .family-settings #reset{width:auto;margin-top:12px;min-height:46px;padding:11px 18px;font-size:15px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
+    /* reset: the one control here that cannot be taken back, last in the
+       child's card and set apart from the sounds above it */
+    .family-settings .set-reset{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);}
+    .family-settings #reset{width:auto;min-height:44px;padding:9px 16px;font-size:14px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
     /* the Practice Board (BOARD2): hidden unless the board is on, or a child
        still has an entry here to remove */
     .family-settings #boardCard[hidden],.family-settings #boardMoveNote[hidden]{display:none;}
@@ -168,7 +126,6 @@
     .family-settings #boardMsg:empty{display:none;}
     @media(max-width:350px){
       .family-settings .set-head h2{font-size:19px;}
-      .family-settings .set-row{padding:11px 12px;gap:10px;}
     }
     @media(prefers-reduced-motion:reduce){.family-settings #saved{transition:none;}}
   </style>
@@ -184,13 +141,13 @@
       <a href="/settings.html" data-tab="settings" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
       <a href="/talk.html" data-tab="talk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
     </nav>
-    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Settings</h1><p id="pageSub">Everything below is for the child you pick here.</p></div></div>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Settings</h1></div></div>
 
     <!-- KIDS1: siblings share a phone and an SLP shares one iPad. Each child
          gets their own saved progress; switching is one tap. -->
     <div class="card" id="kidsCard">
       <h2>Your family</h2>
-      <p class="muted">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
+      <p class="muted">Each child keeps their own sounds and progress.</p>
       <div id="kidList"></div>
       <div id="addKidRow" style="display:none;">
         <div class="kid-new-name">
@@ -207,31 +164,10 @@
       <button id="addKidBtn" class="btn ghost">+ Add a kid</button>
     </div>
 
-    <!-- REPWEEKS1 (Travis, 28 Sep 2026): the week's reps — the same count as
-         Home's top corner — and how it compares week to week. Below the Kids
-         card because it belongs to whoever is selected. Home's rep count opens
-         the grown-ups gate and lands here (#reps). -->
-    <div class="card" id="reps">
-      <h2 id="rwHead">Reps, week by week</h2>
-      <p id="goalWeekLine"></p>
-      <div class="goal-controls">
-        <label for="dailyGoalPick">Daily goal<select id="dailyGoalPick" aria-describedby="goalHelp"></select></label>
-        <label for="goalDaysPick">Days a week<select id="goalDaysPick"><option value="3">3 days</option><option value="4">4 days</option><option value="5">5 days</option><option value="7">Every day</option></select></label>
-      </div>
-      <p id="goalHelp" class="muted"></p>
-      <div class="rw-now"><span id="rwThis">0</span> <b id="rwThisUnit">reps this week</b></div>
-      <p id="rwLast" class="rw-line"></p>
-      <p id="rwBest" class="rw-line"></p>
-      <!-- role="list": Safari drops list semantics from a list-style:none list,
-           and VoiceOver reads the text inside an item, not a label on it. -->
-      <ol id="rwBars" class="rw-bars" role="list" aria-label="Reps each week"></ol>
-      <div id="rwDays" class="rw-days" aria-hidden="true"></div>
-      <!-- One short line (Travis, 30 Sep 2026). It stays true: practice counts
-           every voiced try, right or not yet; a game counts only when it asked
-           and heard; silence counts nowhere. Never a %, a score or a verdict. -->
-      <p class="muted rw-note">A rep is one time <span id="rwWho">your child</span> says their sound or word out loud, in practice, a game or a book. Silence never counts.</p>
-    </div>
-
+    <!-- One card for the child picked above: name, age, sounds, and the reset
+         (22 Oct 2026). It was three cards, About, Practice and a red Reset
+         card, and the Practice card also held a play-mode note, the
+         word-position picker and the game-card picker. -->
     <section class="card" id="aboutCard" aria-labelledby="aboutTitle">
       <div class="set-head"><h2 id="aboutTitle">About <span class="kid-label">your child</span></h2><span id="saved" role="status" aria-live="polite"></span></div>
       <div class="settings-identity"><div>
@@ -241,69 +177,29 @@
         <label class="field" for="childAge">Age</label>
         <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
       </div></div>
-      <!-- It said "Age helps pick developmentally-right sounds." That was the
-           ⚠ on a sound chip a child was young for, which went on 30 Sep 2026;
-           nothing picks sounds by age. What age does: suggests games (Simple
-           play or Arcade, and the first game) and holds back a book's say-it
-           moment from a child younger than its sound. -->
-      <p class="muted set-lead">Age helps suggest games that fit.</p>
-    </section>
-
-    <section class="card" id="practiceCard" aria-labelledby="practiceTitle">
-      <div class="set-head"><h2 id="practiceTitle">Practice</h2></div>
-      <div class="field" id="soundsLbl">Focus sounds</div>
+      <div class="field" id="soundsLbl">Sounds to practice</div>
       <p class="muted set-lead">Tap a sound to add or remove it.</p>
-      <!-- PLAY1: a play-mode family rotates through every sound; picking
-           specific chips below switches them to focus mode. -->
-      <div id="playNote" style="display:none;">
-        <b>Play mode</b> — Echo rotates through every sound, easiest first.
-        Picking sounds below switches to focus mode. <a href="#" id="playKeep">Stay in play mode</a>
-      </div>
       <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
       <!-- ONLY THE START OF A WORD CAN BE PICKED FOR NOW (Travis, 1 Oct 2026:
            "have the options listed but to not let them select other
-           positioning because it's not built yet"). Every position stays on
-           the list so a parent sees what is coming; the script below greys
-           out the ones Sona.FAMILY_POSITIONS does not open yet. -->
-      <label class="field" for="practicePos">Word position</label>
-      <select id="practicePos" aria-describedby="posNote">
-        <option value="i">Beginning of word</option>
-        <option value="m">Middle of word</option>
-        <option value="f">End of word</option>
-        <option value="v">Vocalic R (er, ar, or…)</option>
-        <option value="b">Blends (tr, st, bl…)</option>
-        <option value="mix">Mixed (all positions)</option>
-      </select>
-      <p class="muted set-lead" id="posNote">For now, Sona practices each sound at the beginning of a word. The other positions are coming soon.</p>
-      <!-- WHAT A GAME'S SAY-IT CARD ASKS FOR (Travis, 1 Oct 2026: "start with
-           isolation then ree rah roh then rot. and maybe have that be
-           something to update in settings"). One picker, one grey line. It is
-           a ceiling for the cards between rounds, for this child, and it never
-           writes the level the child has EARNED, so Progress never shows a
-           level nobody earned. The label says "between rounds" because that is
-           all it changes: not the "Say it 5 times" page, not Echo's power
-           button, not the picture games. The grey line is painted from the
-           reader the games call (Sona.gameAsk), so it shows only what will
-           really be asked, and says which game does it today, and why when
-           something holds the cards to the bare sound (Sona.gameHold).
-           Hidden for a child aged 2 to 4: their Home shows Fruit Slice too,
-           but their cards keep the bare sound whatever is saved here (the
-           reader holds them there), so the picker would do nothing. Whether
-           little ones should ever be asked a syllable is Rachel's call.
-           THE CHOICES ARE SHORT ON PURPOSE: a phone's closed picker cut the
-           longer ones off ("Sona decides (starts easy, gets h…"), and two of
-           them then read the same. "Starts easy, gets harder" moved to the
-           grey line, which also shows the short word itself. -->
-      <div id="gameLevelBox">
-        <label class="field" for="gameLevel">Between rounds in a game, Echo asks for</label>
-        <select id="gameLevel" aria-describedby="gameLevelNote">
-          <option value="">Sona decides</option>
-          <option value="isolation">Just the sound</option>
-          <option value="syllable">Sound, then syllables</option>
-          <option value="word">Sound, syllables, word</option>
+           positioning because it's not built yet"). With one position open
+           the picker has nothing to choose, so it stays hidden and the one
+           line under the sounds says what practice uses (22 Oct 2026). The
+           day Sona.FAMILY_POSITIONS opens a second position, the picker shows
+           by itself, with the ones still closed greyed out as "coming soon". -->
+      <div id="posBox" hidden>
+        <label class="field" for="practicePos">Word position</label>
+        <select id="practicePos">
+          <option value="i">Beginning of word</option>
+          <option value="m">Middle of word</option>
+          <option value="f">End of word</option>
+          <option value="v">Vocalic R (er, ar, or…)</option>
+          <option value="b">Blends (tr, st, bl…)</option>
+          <option value="mix">Mixed (all positions)</option>
         </select>
-        <p class="muted set-lead" id="gameLevelNote"></p>
       </div>
+      <p class="muted set-lead" id="posNote">For now, Sona practices each sound at the beginning of a word.</p>
+      <div class="set-reset"><button type="button" class="btn ghost" id="reset">Reset progress</button></div>
     </section>
 
     <!-- NO VOLUME SLIDER (Travis, 30 Sep 2026: "why can't we just use our
@@ -318,33 +214,6 @@
       <span>Sound is off in Sona.</span>
       <button type="button" class="btn" id="soundOnBtn">Turn sound on</button>
     </div>
-
-    <section class="card" id="buddyCard" aria-labelledby="buddyTitle">
-      <div class="set-head"><h2 id="buddyTitle">Buddy &amp; world</h2></div>
-      <a class="set-row" href="/customize.html?from=settings">
-        <span class="set-row-art"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span>
-        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, a hat and a place. Coins open new ones.</span></span>
-        <span class="set-chev" aria-hidden="true">›</span>
-      </a>
-      <!-- THE BUDDY SHOP (SHOP1, 11 Oct 2026): what a child earns, in one
-           line. Trophies follow reps and are never spent; coins come only
-           from the daily chest and the Trophy Road, and nothing is sold. -->
-      <p class="muted set-lead" id="economyNote">Trophies come from reps: a day at the daily goal is 30 trophies. Coins come from the daily chest and the Trophy Road. Nothing here is ever sold.</p>
-      <!-- GAME LEVELS (LEVELS1, 11 Oct 2026). Inside nine games, Level 2 opens
-           at 150 trophies and Level 3 at 750 (a day at the daily goal is 30);
-           a child picks a level from Home. A grown-up can keep this child on
-           Level 1. Parent copy says "game level", apart from Progress's
-           "Practice levels". The two choices are short, so they fit a closed
-           picker on a 320 px phone (roadtest measures them). -->
-      <div id="playLevelBox">
-        <label class="field" for="playLevelCap">Game levels</label>
-        <select id="playLevelCap" aria-describedby="playLevelNote">
-          <option value="">Open as earned</option>
-          <option value="1">Level 1 only</option>
-        </select>
-        <p class="muted set-lead" id="playLevelNote"></p>
-      </div>
-    </section>
 
     <!-- THE PRACTICE BOARD (BOARD2, 11 Oct 2026; Travis, 9 Oct 2026: "a
          board of every kid in Sona … days practiced"). BUILT DARK: hidden
@@ -366,8 +235,6 @@
          always the four number words now; it stays, because the paywall is
          on and a child must not reach a buy button with one tap. -->
 
-    <p class="set-divider">Your account &amp; this device</p>
-
     <section class="card" id="acctCard" aria-labelledby="acctTitle">
       <div class="set-head"><h2 id="acctTitle">Account</h2></div>
       <!-- Every plan link here opens the PLAN SCREEN, /subscribe.html (1 Oct
@@ -388,50 +255,23 @@
           <span id="restoreMsg" class="muted set-msg"></span>
         </div>
       </div>
-      <p class="set-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/talk.html">Help</a></p>
+      <!-- Privacy and Terms stay: for most families this is the app's one
+           lasting link to the privacy policy. "Help" went (22 Oct 2026): it
+           opened the same page as the Talk to us tab above. -->
+      <p class="set-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
       <p class="muted" id="micNumsNote" hidden></p>
     </section>
 
-    <!-- SLP corner: only for clinicians (profile.role === "slp"). Their job
-         isn't setting a goal for one child — it's getting Sona into the hands
-         of a caseload and watching who's actually practicing. -->
+    <!-- SLP corner: only for clinicians (profile.role === "slp"), in a
+         browser. Their family link, their families and their practice are all
+         on the dashboard, so this card is only the door to it (22 Oct 2026: it
+         also held the code, the family key and the message to send, which the
+         dashboard has, and keeps up to date). -->
     <div class="card" id="slpCard" style="display:none;">
-      <h2>Your caseload <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></h2>
-      <!-- WHAT THE LINK DOES, and nothing more (24 Sep 2026). It said "free
-           for them — no trial, no paywall", which was the grant a link used to
-           BE. A link now connects a family to this dashboard; the free version
-           is free for every family anyway, and every game comes with the
-           clinician's caseload plan. A promise the app then breaks is one the
-           clinician made to a family on Sona's behalf. -->
-      <p class="muted" style="margin-bottom:12px;">Hand families your link: it connects them to <b>your dashboard</b>. Daily practice and free games are <b>free for every family</b>, and with <b>Sona Premium for your caseload</b> they get every game. When they join they choose to share progress, and then they show up on your dashboard: practice days, reps, and how each sound is coming along.</p>
-
-      <!-- registered credential (server-issued at onboarding). The old
-           type-anything code box was an honor system; with pricing live the
-           credential is verified, so it can't be edited here — only shared. -->
-      <div id="slpCredWrap" style="display:none;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;">
-        <div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#46a302;">YOUR FAMILY CREDENTIAL</div>
-        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;margin-top:5px;">Code: <span id="slpCredCode"></span></div>
-        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;">Family key: <span id="slpCredKey"></span></div>
-        <div id="slpLink" style="font-weight:700;font-size:12px;color:var(--muted);word-break:break-all;margin-top:6px;"></div>
-      </div>
-      <div id="slpNoCred" style="display:none;">
-        <p class="muted" style="font-size:13px;font-weight:700;">Sign in with the email you onboarded with — your share code and family key are auto-created and waiting.</p>
-        <button class="btn" id="slpCreate" style="width:auto;padding:12px 20px;margin-top:8px;">Sign in to get your code</button>
-        <p class="muted" style="font-size:12px;margin-top:6px;">Already have one? <a href="/slp-login.html"><b>Sign in</b></a> and it's on your dashboard.</p>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <button class="btn" id="slpCopy" style="width:auto;padding:12px 20px;">Copy the message to send</button>
-        <a class="btn ghost" id="slpDash" href="/slp.html" style="width:auto;padding:12px 18px;">Open dashboard →</a>
-        <span id="slpMsg" class="muted" style="font-weight:800;"></span>
-      </div>
-      <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.5;">Families only appear here after their grown-up taps <b>Yes, share progress</b> when they open your link. Sona never sends you audio — counts and accuracy only.</p>
+      <h2>Your caseload</h2>
+      <p class="muted set-lead">Your family link and your families&rsquo; practice are on your dashboard.</p>
+      <div class="set-actions"><a class="btn" id="slpDash" href="/slp.html">Open dashboard &rarr;</a></div>
     </div>
-
-    <section class="card set-danger" id="resetCard" aria-labelledby="resetTitle">
-      <div class="set-head"><h2 id="resetTitle">Reset</h2></div>
-      <p class="muted set-lead">Clear <span class="kid-poss">your child's</span> saved progress on this device.</p>
-      <button class="btn ghost" id="reset">Reset progress</button>
-    </section>
 
     <!-- MOVING PHONES, TUCKED AWAY (Travis, 30 Sep 2026). Backup & restore was
          a big card most families never need. It is still the only way practice
@@ -446,10 +286,13 @@
         <!-- a child's Practice Board entry belongs to this phone and never
              goes in a backup (BOARD2): shown only while a child is on it -->
         <p class="set-lead" id="boardMoveNote" hidden>Turn off the Practice Board on this phone first: the board entry stays with this phone.</p>
-        <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code or file somewhere safe. It does not expire. Saved voice clips never go in a backup: they stay on this phone.</p>
+        <!-- One way out, the code (22 Oct 2026). "Download file" went: the
+             code does the same job, a copy that fails shows the code in the
+             box below, and a download inside the iPhone app was never shown
+             to save anything. -->
+        <p class="muted set-lead">Copy the code here, then paste it on the new phone under “Restore from a backup code”. Sona can't restore practice for you, so keep the code somewhere safe. It does not expire. Saved voice clips never go in a backup: they stay on this phone.</p>
         <div class="set-actions">
           <button class="btn ghost" id="backupCopy">Copy backup code</button>
-          <button class="btn ghost" id="backupDl">Download file</button>
           <span id="backupMsg" class="muted set-msg"></span>
         </div>
         <!-- Undo sits OUTSIDE the inner fold, and a saved Undo opens the outer
@@ -474,8 +317,6 @@
   </div>
 
   <script src="/sona.js"></script>
-  <!-- the syllables and short word a game's card may ask for: the picker's grey line reads them through Sona.gameAsk -->
-  <script src="/gamecontent.js"></script>
   <script src="/analytics.js"></script>
   <script>
     // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
@@ -488,7 +329,6 @@
     var childEl = document.getElementById("childName"),
         ageEl = document.getElementById("childAge"),
         posEl = document.getElementById("practicePos"),
-        levelEl = document.getElementById("gameLevel"),
         wrap = document.getElementById("sounds");
 
     // THE FORM BELONGS TO ONE CHILD. It was painted for whoever was active
@@ -512,12 +352,11 @@
       o.disabled = true; o.textContent = o.textContent + " · coming soon";
     });
     posEl.value = openPos.indexOf(p.practicePosition) >= 0 ? p.practicePosition : "i";
+    // With one position open there is nothing to pick: the picker stays
+    // hidden and the line says which one practice uses. A second position
+    // brings the picker back and the line steps aside.
+    document.getElementById("posBox").hidden = openPos.length < 2;
     document.getElementById("posNote").hidden = openPos.length > 1;
-    // What the cards between rounds ask for: "" lets Sona decide (one step
-    // past what the child has earned). A value this build does not know
-    // reads as that.
-    levelEl.value = p.gameLevel || "";
-    if (levelEl.selectedIndex < 0) levelEl.value = "";
 
     // Sound: the phone's own buttons set the level now. Sona's mute is the one
     // thing they can't undo (a volume of 0, or voice or effects off: every page
@@ -530,8 +369,6 @@
         if (activeSlot() !== loadSlot) { location.reload(); return; }
         Sona.saveProfile({ volume: 0.8, voiceOn: true, soundOn: true });
         line.hidden = true;
-        // with Echo's voice back, the cards between rounds can ask more again
-        paintGameLevel();
         // the button just vanished under the parent's finger; say what it did
         document.getElementById("soundSaid").textContent = "Sound is on.";
       };
@@ -541,11 +378,7 @@
     // name is typed by a grown-up and never parsed as markup.
     function paintName() {
       var nm = (childEl.value || "").trim();
-      document.getElementById("pageSub").textContent = nm
-        ? "Everything below is for " + nm + "."
-        : "Everything below is for the child you pick here.";
       [].forEach.call(document.querySelectorAll(".kid-label"), function (n) { n.textContent = nm || "your child"; });
-      [].forEach.call(document.querySelectorAll(".kid-poss"), function (n) { n.textContent = (nm || "your child") + "'s"; });
     }
     paintName();
 
@@ -565,33 +398,6 @@
     }
 
     var sel = new Set(p.focusSounds || []);
-    // The grey line under "Between rounds in a game, Echo asks for": the
-    // asks themselves, for the sound a game will ask this child (the
-    // homework's sound first, then the first focus sound: Sona.rotSounds),
-    // read from the one reader the games call, as on the first game of a
-    // day. So it can only say what will really be asked, and when something
-    // holds the cards to the bare sound it says what (Sona.gameHold): Sona's
-    // sound is off, the sound's syllables are not switched on yet, or a
-    // speech therapist's homework is for another part of the word. It names
-    // Fruit Slice because that is the only game whose cards do this so far;
-    // when the others do, this line changes.
-    function paintGameLevel() {
-      document.getElementById("gameLevelBox").hidden = Sona.playStyle() === "simple";
-      var label = function (x) { return Sona.soundLabel ? Sona.soundLabel(x) : x; };
-      var snd = Sona.rotSounds()[0] || "R", name = label(snd), asks = [], line;
-      for (var c = 0; c <= 2; c++) {
-        var t = Sona.gameAsk(snd, c, { first: true }).text;
-        if (asks.indexOf(t) < 0) asks.push(t);
-      }
-      var on = (window.SonaContent && SonaContent.GAME_SYL_ON) || [], hold = Sona.gameHold(snd);
-      var said = asks.map(function (t) { return "\u201C" + t + "\u201D"; }).join(", then ");
-      if (hold === "sound") line = "For " + name + " today: " + said + ". So far only " + on.map(label).join(", ") + " has syllables and a short word, and only in Fruit Slice.";
-      else if (hold === "muted") line = "For " + name + " in Fruit Slice today: " + said + ". Sound is off in Sona, so the cards ask just the sound.";
-      else if (hold === "position") line = "For " + name + " in Fruit Slice today: " + said + ". Your child\u2019s speech therapist set a different part of the word, so the cards keep to the sound" + (asks.length > 1 ? ", then one of the homework\u2019s words." : ".");
-      else line = (levelEl.value ? "" : "Sona starts easy and gets harder. ") + "For " + name + " in Fruit Slice today: " + said + ". The other games don\u2019t have this yet.";
-      document.getElementById("gameLevelNote").textContent = line;
-    }
-    paintGameLevel();
     // AUTOSAVE (29 Sep 2026). One Save button at the foot of a page of cards
     // meant a parent who changed the sounds and then tapped Back to play lost
     // the change without a word. Every control now saves on its own "change"
@@ -611,9 +417,10 @@
       var name = childEl.value.trim();
       Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
         focusArea: "articulation",
-        practicePosition: posEl.value, gameLevel: levelEl.value, focusSounds: [].concat(Array.from(sel)) });
-      paintGameLevel();
-      paintGoals();
+        practicePosition: posEl.value,
+        // a play family keeps the full rotation in its easiest-first order:
+        // a chip ticked off and on again would otherwise go to the end
+        focusSounds: pickedMode === "play" ? Sona.PLAY_ORDER.slice() : [].concat(Array.from(sel)) });
       // show what was kept, so a name typed with stray spaces reads as saved
       childEl.value = name;
       paintName();
@@ -656,23 +463,6 @@
     });
     paintHints();
 
-    // PLAY1: the note shows in play mode; changing the chips is how a family
-    // moves to focus mode (saveAll records it), and "stay in play mode"
-    // restores the full developmental rotation.
-    (function(){
-      var note=document.getElementById("playNote"); if(!note) return;
-      if(p.mode==="play") note.style.display="block";
-      var keep=document.getElementById("playKeep");
-      if(keep) keep.onclick=function(ev){ ev.preventDefault();
-        if (activeSlot() !== loadSlot) { location.reload(); return; }
-        sel=new Set(Sona.PLAY_ORDER);
-        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
-        Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
-        paintGameLevel();
-        showSaved(keep);
-      };
-    })();
-
     // Text fields save when the parent leaves them (or presses return), not on
     // every keystroke: a half-typed name should not flash across the page.
     // With no Save button, leaving mid-edit must not lose the edit: Back
@@ -694,84 +484,7 @@
     window.addEventListener("pagehide", flushText);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushText(); });
     posEl.addEventListener("change", function () { saveAll(posEl); });
-    levelEl.addEventListener("change", function () { saveAll(levelEl); });
 
-    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home and
-    // Progress read too. A week behind is said as how many
-    // more reps pass it, never as a drop, and nothing here is ever red.
-    (function () {
-      if (!Sona.repWeeks) { document.getElementById("reps").style.display = "none"; return; }
-      var r = Sona.repWeeks(8), name = (p.childName || "").trim();
-      var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      function num(n) { n = String(Math.max(0, Math.floor(Number(n) || 0))); var o = ""; while (n.length > 3) { o = "," + n.slice(-3) + o; n = n.slice(0, -3); } return n + o; }
-      function reps(n) { return num(n) + (n === 1 ? " rep" : " reps"); }
-      // "Sep 21" with a no-break space, so a sentence never strands the 21;
-      // a week from another year says which year.
-      function parts(k) { var x = String(k).split("-"); return { m: MON[(+x[1] - 1) % 12], d: String(+x[2]), y: +x[0] }; }
-      function day(k) { var q = parts(k); return q.m + "\u00a0" + q.d + (q.y !== new Date().getFullYear() ? ", " + q.y : ""); }
-      if (name) { document.getElementById("rwHead").textContent = name + "\u2019s reps, week by week"; document.getElementById("rwWho").textContent = name; }
-      document.getElementById("rwThis").textContent = num(r.thisWeek);
-      document.getElementById("rwThisUnit").textContent = (r.thisWeek === 1 ? "rep" : "reps") + " this week";
-      var last = "", t = r.thisWeek, l = r.lastWeek;
-      if (l > 0 && t > l) last = reps(t - l) + " more than last week\u2019s " + num(l) + ".";
-      else if (l > 0 && t === l) last = "Tied with last week\u2019s " + num(l) + ". One more rep beats it.";
-      else if (l > 0) last = num(l - t + 1) + " more to beat last week\u2019s " + num(l) + ".";
-      else if (r.best) last = "Last week: 0 reps.";
-      else if (t > 0) last = "The first week counted.";
-      // Also what a family sees whose practice all came before reps were
-      // counted: true for them too, where "has not practiced" would not be.
-      else last = "No reps counted yet. " + (name ? name + "\u2019s" : "Your child\u2019s") + " next practice adds the first.";
-      document.getElementById("rwLast").textContent = last;
-      var best = document.getElementById("rwBest");
-      if (r.newBest) { best.className = "rw-line new"; best.textContent = "New best week! The last best was " + reps(r.best.reps) + ", the week of " + day(r.best.start) + "."; }
-      else if (r.best) best.textContent = "Best week: " + reps(r.best.reps) + ", the week of " + day(r.best.start) + ".";
-      if (!r.since) return;
-      var max = 0; r.weeks.forEach(function (w) { if (w.reps > max) max = w.reps; });
-      var bars = document.getElementById("rwBars"), days = document.getElementById("rwDays");
-      r.weeks.forEach(function (w) {
-        // One star: once this week passes the old best, the old best stops being it.
-        var isBest = r.newBest ? w.current : w.best;
-        var li = document.createElement("li"); li.className = (w.current ? "now" : "") + (isBest ? " best" : ""); li.setAttribute("role", "listitem");
-        var sr = document.createElement("span"); sr.className = "sr"; sr.textContent = (w.current ? "This week" : "Week of " + day(w.start)) + ": " + reps(w.reps) + (isBest ? ", best week" : "");
-        var seen = document.createElement("span"); seen.setAttribute("aria-hidden", "true"); seen.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%;";
-        if (isBest) { var st = document.createElement("span"); st.className = "rw-star"; st.textContent = "\u2605"; seen.appendChild(st); }
-        var v = document.createElement("span"); v.className = "rw-val"; v.textContent = w.reps >= 1000 ? (Math.floor(w.reps / 100) / 10) + "k" : num(w.reps);
-        var b = document.createElement("span"); b.className = "rw-bar"; b.style.height = (w.reps > 0 && max > 0 ? Math.max(6, Math.round(w.reps / max * 96)) : 2) + "px";
-        seen.appendChild(v); seen.appendChild(b); li.appendChild(sr); li.appendChild(seen); bars.appendChild(li);
-        // Two short lines ("Sep" over "21") so eight weeks fit a 320px phone.
-        var q = parts(w.start), d = document.createElement("span"), dl = w.current ? ["This", "week"] : [q.m, q.d];
-        d.className = w.current ? "now" : ""; d.appendChild(document.createTextNode(dl[0])); d.appendChild(document.createElement("br")); d.appendChild(document.createTextNode(dl[1])); days.appendChild(d);
-      });
-    })();
-    // These goals belong to the selected child. Homework keeps its own target
-    // and report; a parent cannot override an active assignment here.
-    function paintGoals() {
-      var prof = Sona.getProfile(), d = Sona.dayGoal(), w = Sona.momWeek(), hw = Sona.homework();
-      var pick = document.getElementById("dailyGoalPick"), days = document.getElementById("goalDaysPick");
-      var opts = parseInt(prof.childAge, 10) >= 5 ? [30, 50, 70, 100] : [20, 30, 40, 50];
-      if (opts.indexOf(d.goal) < 0) opts.push(d.goal); opts.sort(function(a,b){return a-b;});
-      pick.innerHTML = ""; opts.forEach(function(n){var o=document.createElement("option");o.value=n;o.textContent=n+" reps";pick.appendChild(o);});
-      pick.value = d.goal; pick.disabled = !!(hw && hw.repsPerDay > 0); days.value = w.goal;
-      document.getElementById("goalWeekLine").textContent = w.goalDone + " of " + w.goal + " days at the goal this week" + (w.weekStreak ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row" : "");
-      document.getElementById("goalHelp").textContent = pick.disabled ? "Daily goal set by the speech therapist: " + d.goal + " reps. Their homework report counts sound practice only." : "A day counts when the daily goal is met. Practice, games and books all count.";
-    }
-    // Game levels: for the child this page was painted for, and saved only
-    // while that child is still the active one (the rule every picker here
-    // keeps). Hidden if sona.js has no levels (an older cached copy).
-    (function () {
-      var el = document.getElementById("playLevelCap"), box = document.getElementById("playLevelBox");
-      if (!el || !Sona.setPlayLevelCap || !Sona.playLevelInfo) { if (box) box.hidden = true; return; }
-      var nm = (p.childName || "").trim();
-      document.getElementById("playLevelNote").textContent = "Harder levels change only how fast or busy a game is, never what " + (nm || "your child") + " says.";
-      el.value = Sona.playLevelInfo("slice").cap ? "1" : "";
-      el.onchange = function () {
-        if (activeSlot() !== loadSlot) { location.reload(); return; }
-        Sona.setPlayLevelCap(this.value === "1" ? 1 : 0); showSaved(this);
-      };
-    })();
-    document.getElementById("dailyGoalPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({dailyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
-    document.getElementById("goalDaysPick").onchange = function(){if(activeSlot()!==loadSlot){location.reload();return;}Sona.saveProfile({weeklyGoal:parseInt(this.value,10)});paintGoals();showSaved(this);};
-    paintGoals();
     // Same rule as saveAll: this page belongs to the child it was painted for.
     // A switch in another tab reloads rather than resetting someone else's
     // practice under this child's name. Checked again after the dialog, which
@@ -1007,12 +720,9 @@
     // phone?" at the foot of the page.
     (function () {
       var bmsg = document.getElementById("backupMsg");
-      var copyB = document.getElementById("backupCopy"), dlB = document.getElementById("backupDl"), rBtn = document.getElementById("restoreBk");
+      var copyB = document.getElementById("backupCopy"), rBtn = document.getElementById("restoreBk");
       if (copyB) copyB.onclick = function () {
         try { var s = Sona.exportString(); (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(function () { bmsg.textContent = "Copied ✓ — paste it somewhere safe."; }, function () { var d = document.querySelector("#backupCard details"); if (d) d.open = true; document.getElementById("restoreIn").value = s; bmsg.textContent = "Copy the code shown below ↓"; }); } catch (e) { bmsg.textContent = "Couldn't create a backup."; }
-      };
-      if (dlB) dlB.onclick = function () {
-        try { var s = Sona.exportString(); var blob = new Blob([s], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sona-backup.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000); bmsg.textContent = "Downloaded ✓"; } catch (e) { bmsg.textContent = "Download failed."; }
       };
       // The snapshot lives under a key that does NOT start with "sona." on
       // purpose: exportData only collects "sona." keys and importData only
@@ -1073,52 +783,43 @@
       };
     })();
 
-    // ── SLP corner: share link + dashboard ──────────────────────────────
-    // An SLP's whole job here is distribution: one link, handed to a caseload.
-    // The code lives in the profile so the dashboard and the family link agree.
+    // ── SLP corner: the door to the dashboard ───────────────────────────
+    // Clinician tools are browser-only; the family link and the message to
+    // send are on the dashboard (slp.html), which asks a signed-out clinician
+    // to sign in first.
     (function () {
       var card = document.getElementById("slpCard");
       if (!card) return;
-      if ((p.role || "") !== "slp" || (Sona.isNativeApp && Sona.isNativeApp())) return; // clinician tools are browser-only
+      if ((p.role || "") !== "slp" || (Sona.isNativeApp && Sona.isNativeApp())) return;
       card.style.display = "block";
-      var msg = document.getElementById("slpMsg");
-      var cred = null;
-      function linkFor(c) { return location.origin + "/join.html?slp=" + encodeURIComponent(c.code) + "&k=" + encodeURIComponent(c.key); }
-      // the family's message says what is true on every branch: free, and
-      // what free means — never that the link itself grants anything
-      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned. It\u2019s free for your family: daily practice and free games. " + linkFor(c) + "  It also asks whether to share your practice progress with me between sessions \u2014 totally your call. (Or in the app: code " + c.code + ", family key " + c.key + ")"; }
-      function paint() {
-        document.getElementById("slpCredWrap").style.display = cred ? "block" : "none";
-        document.getElementById("slpNoCred").style.display = cred ? "none" : "block";
-        document.getElementById("slpCopy").style.display = cred ? "" : "none";
-        if (cred) {
-          document.getElementById("slpCredCode").textContent = cred.code;
-          document.getElementById("slpCredKey").textContent = cred.key;
-          document.getElementById("slpLink").textContent = linkFor(cred);
-        }
-      }
-      paint();
-      // Pull the credential from the SIGNED-IN account (auto-minted server-side
-      // on first authenticated read). No client-side minting exists anymore.
-      fetch("/api/slp/auth/me").then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.ok && j.code && j.familyKey) { cred = { code: j.code, key: j.familyKey }; paint(); }
-        else if (j && j.ok && !j.code) {
-          // signed in but no credential yet — hit the account route once, which mints it
-          fetch("/api/slp/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
-            .then(function (r2) { return r2.json(); })
-            .then(function (j2) { if (j2 && j2.ok && j2.code && j2.familyKey) { cred = { code: j2.code, key: j2.familyKey }; paint(); } });
-        }
-      }).catch(function () {});
-      var mk = document.getElementById("slpCreate");
-      if (mk) mk.onclick = function () { location.href = "/slp-login.html"; };
-      document.getElementById("slpCopy").onclick = function () {
-        if (!cred) return;
-        var m = shareMsg(cred);
-        function done() { msg.style.color = "var(--good)"; msg.textContent = "Copied \u2713"; setTimeout(function () { msg.textContent = ""; }, 2400); }
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m).then(done, function () { window.prompt("Copy and send this to a family:", m); });
-          else window.prompt("Copy and send this to a family:", m);
-        } catch (e) { window.prompt("Copy and send this to a family:", m); }
+    })();
+
+    // Founder unlock: owner's key, prompt-entry, server-verified. A founder
+    // sees "Founder access ✓" under the plan line. The "Founder key" link was
+    // under it on every phone; a parent never needs it, so since 22 Oct 2026
+    // it shows only after the five taps on "Account" below, for that visit.
+    var revealFounder = function () {};
+    (function () {
+      var ac = document.getElementById("acct"); if (!ac) return;
+      var host = document.createElement("p");
+      host.className = "muted"; host.style.cssText = "font-size:11.5px;margin-top:8px;";
+      ac.parentElement.appendChild(host);
+      function founded() { host.innerHTML = '<b style="color:var(--good);">Founder access ✓</b>'; host.hidden = false; }
+      if (Sona.isFounder && Sona.isFounder()) { founded(); return; }
+      host.hidden = true;
+      revealFounder = function () {
+        if (!host.hidden) return;
+        host.innerHTML = '<a href="#" id="founderLink" style="color:var(--label);">Founder key</a>';
+        host.hidden = false;
+        document.getElementById("founderLink").onclick = function (ev) {
+          ev.preventDefault();
+          var k = window.prompt("Founder key:") || "";
+          if (!k.trim()) return;
+          Sona.founderUnlock(k.trim()).then(function (r) {
+            if (r.valid) { founded(); try { Sona.confetti && Sona.confetti({ count: 120 }); } catch (e) {} }
+            else alert(r.error === "offline" ? "Couldn't reach the server." : "That key didn't check out.");
+          });
+        };
       };
     })();
 
@@ -1130,7 +831,7 @@
     // here, behind the grown-ups check, because the iPhone app keeps its own
     // storage and has no address bar for ?debug=1, and the app is where the
     // problem is. It changes nothing about what counts. The numbers stay on
-    // the screen: never saved, never sent.
+    // the screen: never saved, never sent. The same taps show the Founder key.
     (function () {
       var t = document.getElementById("acctTitle"), note = document.getElementById("micNumsNote"), taps = [];
       function on() { try { return localStorage.getItem("sona.micnumbers") === "1"; } catch (e) { return false; } }
@@ -1147,31 +848,11 @@
         taps = [];
         try { if (on()) localStorage.removeItem("sona.micnumbers"); else localStorage.setItem("sona.micnumbers", "1"); } catch (e) {}
         paint(true);
+        revealFounder();
       });
       paint(false);
     })();
     // account / subscription
-    // Founder unlock: owner's key, prompt-entry, server-verified. Shows as a
-    // quiet link under Account; once unlocked the line just says so.
-    (function () {
-      var ac = document.getElementById("acct"); if (!ac) return;
-      var host = document.createElement("p");
-      host.className = "muted"; host.style.cssText = "font-size:11.5px;margin-top:8px;";
-      host.innerHTML = (Sona.isFounder && Sona.isFounder())
-        ? '<b style="color:var(--good);">Founder access ✓</b>'
-        : '<a href="#" id="founderLink" style="color:var(--label);">Founder key</a>';
-      ac.parentElement.appendChild(host);
-      var fl = document.getElementById("founderLink");
-      if (fl) fl.onclick = function (ev) {
-        ev.preventDefault();
-        var k = window.prompt("Founder key:") || "";
-        if (!k.trim()) return;
-        Sona.founderUnlock(k.trim()).then(function (r) {
-          if (r.valid) { host.innerHTML = '<b style="color:var(--good);">Founder access ✓</b>'; try { Sona.confetti && Sona.confetti({ count: 120 }); } catch (e) {} }
-          else alert(r.error === "offline" ? "Couldn't reach the server." : "That key didn't check out.");
-        });
-      };
-    })();
     function paintAcct() {
       var ac = document.getElementById("acct");
       // The shell sells the same plans through Apple's sheet, so telling every

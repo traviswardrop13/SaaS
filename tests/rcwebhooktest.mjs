@@ -305,6 +305,35 @@ await scenario("states", async () => {
   ok("stateFor: a free trial is an INITIAL_PURCHASE in its TRIAL period", R.stateFor("INITIAL_PURCHASE", "TRIAL", "") === "trial" && R.stateFor("INITIAL_PURCHASE", "INTRO", "") === "paid" && R.stateFor("TEST", "TRIAL", "") === null);
 });
 
+// ── 3b. THE ONE PAYMENT (22 Oct 2026, iOS 1.0.9): the non-consumable
+// "com.speaksona.app.lifetime" in the "full" entitlement. RevenueCat tells of
+// it as a NON_RENEWING_PURCHASE with no end; it is a purchase like any
+// other: "paid", the series stops, and no note is ever queued for it ──
+await scenario("the one payment", async () => {
+  reset(); joinList();
+  const t0 = Date.now();
+  const once = (o = {}) => ev(Object.assign({ type: "NON_RENEWING_PURCHASE", product_id: "com.speaksona.app.lifetime", period_type: "NORMAL", expiration_at_ms: null,
+    event_timestamp_ms: t0, price: 59.99, price_in_purchased_currency: 59.99 }, o));
+  let r = await hook(once());
+  let p = plan();
+  ok("a one payment: 200, kept as \"paid\" with no end", r.status === 200 && r.json.applied === true && p && p.s === "paid" && p.exp === 0 && p.ts === t0, [r, p]);
+  ok("…the welcome series stops for good, and neither note is queued (nothing ends)", KV.K.get(N.stopKey("mom@example.com")) === "1" && zscore(R.REMIND_KEY) === undefined && zscore(R.MISS_KEY) === undefined, [zscore(R.REMIND_KEY), zscore(R.MISS_KEY)]);
+  const everything = JSON.stringify([...KV.K, ...[...KV.H].map(([k, h]) => [k, [...h]]), ...[...KV.Z].map(([k, z]) => [k, [...z]])]);
+  ok("…and neither its price nor its product is kept anywhere", !/59\.99|lifetime|USD|2000000123456789/.test(everything), everything.slice(0, 300));
+  ok("stateFor: a NON_RENEWING_PURCHASE is \"paid\" whatever period it names, or none", R.stateFor("NON_RENEWING_PURCHASE", "", "") === "paid" && R.stateFor("NON_RENEWING_PURCHASE", "NORMAL", "") === "paid" && R.stateFor("NON_RENEWING_PURCHASE", "TRIAL", "") === "paid");
+  reset(); joinList();
+  r = await hook(once({ period_type: undefined, expiration_at_ms: undefined }));
+  ok("…also when the message names no period and no end at all", r.status === 200 && plan() && plan().s === "paid" && plan().exp === 0, [r, plan()]);
+  // free days that were on, then the one payment: the reminder that was queued is never sent
+  reset(); joinList();
+  const S = Date.parse("2026-10-20T10:00:00Z"), E = S + 3 * DAY;
+  await R.apply(R.readEvent({ event: ev({ event_timestamp_ms: S, expiration_at_ms: E }) }), kv, S);
+  ok("free days on: the reminder is queued", zscore(R.REMIND_KEY) === E - 50 * HOUR, zscore(R.REMIND_KEY));
+  await R.apply(R.readEvent({ event: once({ event_timestamp_ms: S + HOUR }) }), kv, S + HOUR);
+  const res = await R.runRc(kv, fetch, Date.parse("2026-10-21T16:00:00Z"), quiet);
+  ok("…then the one payment: the address is \"paid\", and the run sends no \"Your free days end soon\"", plan().s === "paid" && res.reminded === 0 && res.skipped === 1 && SENT.length === 0, [plan(), res]);
+});
+
 // ── 4. a store that does not answer ──
 await scenario("store down", async () => {
   reset();

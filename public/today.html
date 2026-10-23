@@ -382,7 +382,7 @@
       // An older cached sona.js has no gameBest, and then nothing is drawn.
       var bestCards=[];
       // LEVELS1: the level a tap will play (1 unless Level 2 or 3 is picked
-      // and open; always 1 under a grown-up's "Level 1 only")
+      // and open)
       function levelOf(key){var lv=1;try{lv=S.playLevel?S.playLevel(key):1;}catch(e){lv=1;}return (lv===2||lv===3)?lv:1;}
       function paintBest(card){
         // the best of the level that will play: Level 2 and 3 keep their own
@@ -715,7 +715,9 @@
     $("parentBtn").onclick=function(){ sfx("tap"); openGate(); };
     // The child's daily goal keeps counting after it is met. It is read on
     // load and whenever Home returns to the front, including after midnight.
-    // The same tap still opens the grown-up check and the reps in Settings.
+    // The same tap still opens the grown-up check, then Progress, where the
+    // week's reps and the daily goal are (Settings' week-by-week card went on
+    // 22 Oct 2026).
     // Older cached sona.js keeps its weekly count until the new reader arrives.
     // repNum builds the thousands comma by hand: progtest scans this page's
     // source for a dollar sign before a digit, which a regex replace needs.
@@ -731,7 +733,7 @@
         try{n=(S&&S.weekReps)?S.weekReps(0):0;}catch(e){}
         $("repPillN").textContent=repNum(n);
         $("repPillUnit").textContent=(n===1?"rep":"reps")+" this week";
-        $("repPill").setAttribute("aria-label",repNum(n)+(n===1?" rep":" reps")+" this week. For grown-ups: see week by week.");
+        $("repPill").setAttribute("aria-label",repNum(n)+(n===1?" rep":" reps")+" this week. For grown-ups: see your reps.");
       }
     }
     paintReps();
@@ -747,8 +749,7 @@
     function roadArt(stop){
       var box=document.createElement("span"),g=null,i;box.className="road-art";
       if(stop.big){box.appendChild(roadImg("/assets/crafted/road-bigchest.webp","chest"));return box;}
-      // (under a grown-up's "Level 1 only" a level gift is not shown: it opens nothing for this child)
-      for(i=0;i<stop.gift.length;i++){if(!stop.gift[i].land&&!(roadCap&&stop.gift[i].level)){g=stop.gift[i];break;}}
+      for(i=0;i<stop.gift.length;i++){if(!stop.gift[i].land){g=stop.gift[i];break;}}
       if(!g)g=stop.gift[0]||{};
       var it=g.buddy?["characters",g.buddy]:g.hat?["outfits",g.hat]:g.place?["backdrops",g.place]:null;
       if(it&&it[0]==="characters"&&window.SonaCraftedBuddies){box.innerHTML=SonaCraftedBuddies.markup(it[1],48);return box;}
@@ -763,10 +764,8 @@
       if(g.sticker){box.className="road-art road-stk";var d=document.createElement("span");d.appendChild(roadIcon("star",30));box.appendChild(d);return box;}
       box.className="road-art road-coins";var n=g.coins|0,k=n>=40?3:n>=15?2:1;for(i=0;i<k;i++)box.appendChild(roadIcon("coin",30));return box;
     }
-    var roadCap=false;
     function paintRoad(){
       var card=$("roadCard");if(!card)return;
-      try{roadCap=!!(S&&S.playLevelInfo&&S.playLevelInfo("slice").cap);}catch(e){roadCap=false;}
       var st=null;try{if(S&&S.trophyState&&S.roadState)st=S.roadState();}catch(e){st=null;}
       if(!st){card.hidden=true;return;}
       var pic=$("roadPic"),bars=$("roadBar").children,fill=5,label="Trophy Road. "+repNum(st.trophies)+(st.trophies===1?" trophy. ":" trophies. ")+repNum(st.coins)+(st.coins===1?" coin. ":" coins. ");
@@ -782,7 +781,7 @@
         var nx=S.roadStop(st.next.n),prev=st.stop>0?S.roadStop(st.stop).at:0,lv=0;
         pic.appendChild(roadArt(nx));
         fill=Math.floor(Math.max(0,Math.min(1,(st.trophies-prev)/Math.max(1,nx.at-prev)))*5+1e-9);
-        nx.gift.forEach(function(g){if(g.level&&!roadCap)lv=g.level;});
+        nx.gift.forEach(function(g){if(g.level)lv=g.level;});
         label+=lv?"Level "+lv+" at "+repNum(nx.at)+" trophies.":"Next gift at "+repNum(nx.at)+" trophies.";
       }
       for(var i=0;i<bars.length;i++)bars[i].className=i<fill?"on":"";
@@ -798,7 +797,7 @@
     paintRoadSafe();
     $("roadCard").addEventListener("click",function(){ sfx("tap"); });
     document.addEventListener("visibilitychange",function(){ if(!document.hidden){ paintReps(); paintRoadSafe(); } });
-    $("repPill").onclick=function(){ sfx("tap"); openGate(function(){ location.href="/settings.html#reps"; }); };
+    $("repPill").onclick=function(){ sfx("tap"); openGate(function(){ location.href="/progress.html"; }); };
     (function(){
       var pad=$("pad"); var keys=[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"];
       keys.forEach(function(kk){

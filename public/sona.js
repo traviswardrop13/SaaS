@@ -557,6 +557,12 @@
     // before then opens nothing. Dropped here, so the next save of any setting
     // stops carrying it in the profile and into backups.
     delete p.parentPin;
+    // The game-card picker is gone too (Travis, 22 Oct 2026: "simplify
+    // settings ... the minimum viable features"). A pick saved from it would
+    // hold a child's cards at that step for good with nothing left to change
+    // it, so it is dropped here, the parent code's way: the cards follow what
+    // the child has earned on the practice page (_gameWant).
+    delete p.gameLevel;
     // SOUND IS ON OR OFF; THE PHONE'S SIDE BUTTONS DO THE REST (Travis, 30 Sep
     // 2026: "why can't we just use our phones to adjust volume on the side of
     // our iphone?"). The Settings slider is gone, so a level saved from it —
@@ -1591,7 +1597,7 @@
     // One default for every age (Travis, 5 Oct 2026: "we'll just set the
     // default to thirty reps per day. Right now it's set to fifty", which it
     // was for ages 5 and up). So three days a week is a 90-rep week. A number a
-    // grown-up picked in Settings is kept.
+    // grown-up picked on Progress (Settings until 22 Oct 2026) is kept.
     return g > 0 ? g : REP_GOAL_DEFAULT;
   }
   function goalState() {
@@ -1706,16 +1712,14 @@
   // The card between rounds always said the bare sound. It now climbs: the
   // sound alone ("rrrr"), then ONE syllable a card ("ree"; a different one
   // each calendar day, never three in a breath), then a short word ("rot").
-  // This is the one reader every round game calls, and the Settings picker
-  // paints its grey line from it, so neither can promise an ask the other
-  // won't make.
+  // This is the one reader every round game calls.
   //
   // gameAsk(sound, card): card 0 is the bare sound (Echo's power button, and
   // where a card steps back to); 1 and 2 are the two cards between rounds.
   // The step asked is min(top, floor + card):
-  //   top   — the grown-up's pick in Settings (profile.gameLevel), else one
-  //           step past what the child has EARNED on the practice page, the
-  //           practice page's own rule. A pick wins both ways.
+  //   top   — one step past what the child has EARNED on the practice page,
+  //           the practice page's own rule. (A grown-up's pick in Settings
+  //           set it until 22 Oct 2026; getProfile drops an old pick.)
   //   floor — the step the "Say it 5 times" page ended on this sitting
   //           (charge.html hands it over), so a card never asks below what
   //           the child was just asked; its own syllable or word is reused.
@@ -1738,15 +1742,12 @@
   // them are Rachel's calls (CLAUDE.md, "Games ask for more than the sound").
   const GAME_LEVELS = ["isolation", "syllable", "word"];
   function _gameContent() { return (typeof window !== "undefined" && window.SonaContent) || null; }
-  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned or
-  // picked. One answer, read by the cards (through _gameWant and _gameItem)
-  // and by the Settings line, which says the reason in words, so the two can
-  // never disagree:
+  // WHAT HOLDS A SOUND'S CARDS TO THE BARE SOUND, whatever was earned. One
+  // answer, read by the cards (through _gameWant and _gameItem):
   //   "little"   — a child aged 2 to 4. Their Home still shows the round
   //                games (Fruit Slice is free and open to a four-year-old),
-  //                and Settings hides the picker for that age, so their cards
-  //                ask the bare sound exactly as before, whatever a pick saved
-  //                at an older age says. Whether little ones should ever be
+  //                and their cards ask the bare sound exactly as before,
+  //                whatever was earned. Whether little ones should ever be
   //                asked a syllable is Rachel's call.
   //   "muted"    — Echo's voice is off in Sona. Only his voice can model a
   //                syllable or a word; nothing past the bare sound is recorded.
@@ -1767,9 +1768,7 @@
   function _gameWant(sound) {
     const hold = gameHold(sound);
     if (hold === "little" || hold === "muted") return 0;
-    let pick = ""; try { pick = getProfile().gameLevel || ""; } catch (e) {}
-    const i = GAME_LEVELS.indexOf(pick);
-    return i >= 0 ? i : Math.min(2, rungOf(sound) + 1);
+    return Math.min(2, rungOf(sound) + 1);
   }
   // What the practice page ended on this sitting, if it was this sound.
   function _gameHand(sound) {
@@ -1817,7 +1816,8 @@
     return _gameItem(sound, _gameWant(sound), 2, null).rung;
   }
   // opts.first: as on the first game of a day, ignoring the practice page's
-  // hand-over (Settings paints its line with it).
+  // hand-over (the tests read the day's asks with it; Settings' grey line did
+  // until its picker went on 22 Oct 2026).
   function gameAsk(sound, card, opts) {
     sound = String(sound || "").toUpperCase();
     card = Math.max(0, Math.min(2, parseInt(card, 10) || 0));
@@ -3418,7 +3418,7 @@
     // "all the other games are ... grayed out except they can replay feed echo
     // and fruit slice"). Only matters when pricing is on; free while Sona is.
     stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "premium", playDescription: "Time your tap to stack the blocks." },
-    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect stars." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     // Rise Up (Travis, 9 Oct 2026: "lets build the game rise up"): a round game like Flappy Glide, entered through its practice page; adventure: false keeps it out of the old five-game run.
     rise:  { name: "Rise Up",       sub: "Say it 5× to play",          go: "/charge.html?game=arcade-rise.html", group: "arcade", tier: "premium", adventure: false, playDescription: "Drag the shield to keep your balloon safe." },
@@ -4328,8 +4328,8 @@
     return y + "-W" + String(wk).padStart(2, "0");
   }
   // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
-  // week by week in Settings). ONE bucketing of the day ledger feeds Home,
-  // Progress and Settings, so no two surfaces can disagree about "this week" —
+  // week by week in Settings, a card that went on 22 Oct 2026). ONE bucketing
+  // of the day ledger feeds Home and Progress, so no two surfaces can disagree about "this week" —
   // Home's old Grown-ups pop-up summed sound checks while Progress summed
   // tries, and showed two different numbers for the same week.
   //
@@ -4749,7 +4749,7 @@
   // level until Rachel says, and a parked game has none. Kept per child
   // (PER_KID). A tap plays the level last picked; Home asks once per game when
   // a new level opens (playLevelAsk), and that tap and a pick are the only
-  // writes Home makes. A grown-up can hold a child at Level 1 (cap). A child's
+  // writes Home makes. A child's
   // longest row at Level 2 and 3 is kept here; Level 1's stays with Beat Your
   // Best, so a best is never measured against a level whose top it cannot
   // reach. Nothing here is sent anywhere: the game page says "level played".
@@ -4774,8 +4774,11 @@
   function _lvState() { const p = load(PLAYLEVELKEY, {}); return (p && typeof p === "object" && !Array.isArray(p)) ? p : {}; }
   function _lvOf(map, key) { return (map && typeof map === "object" && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
   // Pure: how many levels are open for this child, 1 to 3.
+  // A "Level 1 only" saved from Settings (cap: 1) is ignored: the picker went
+  // on 22 Oct 2026 ("simplify settings"), and a cap nobody can lift would keep
+  // that child on Level 1 for good. It rides in backups, so it is ignored on
+  // read rather than swept once.
   function playLevelsOpen() {
-    if ((_lvState().cap | 0) === 1) return 1;
     const t = trophies(); let n = 1;
     for (let i = 1; i < PLAY_LEVEL_AT.length; i++) if (t >= PLAY_LEVEL_AT[i]) n = i + 1;
     return n;
@@ -4802,12 +4805,10 @@
     const p = _lvState(); p.pick = (p.pick && typeof p.pick === "object") ? p.pick : {};
     p.pick[key] = n; save(PLAYLEVELKEY, p); return true;
   }
-  // Settings only: "Level 1 only" (1), or open as earned (anything else)
-  function setPlayLevelCap(n) { const p = _lvState(); if (n === 1 || n === "1") p.cap = 1; else delete p.cap; save(PLAYLEVELKEY, p); return true; }
   // Pure: what the sheet and the road show for one game.
   function playLevelInfo(key) {
     const k = _lvKey(key), open = playLevelsOpen(), t = trophies();
-    return { key: k || String(key), pick: playLevel(k), cap: (_lvState().cap | 0) === 1,
+    return { key: k || String(key), pick: playLevel(k),
       levels: (k ? PLAY_LEVEL_LINES[k] : []).map((line, i) => ({ n: i + 1, line, open: i + 1 <= open, at: PLAY_LEVEL_AT[i], have: t })) };
   }
   // A child's longest row at Level 2 or 3, by Level 1's rules: whole numbers
@@ -7598,9 +7599,20 @@
   // each id to recognise an existing subscriber on restore or reinstall, and
   // dropping one would strand them behind a paywall they are already paying
   // for.
-  const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
+  // ONE PAYMENT (Travis, 22 Oct 2026: "ok go build it all", the one-time
+  // purchase on the price screen in iOS 1.0.9; "i dont wanna say lifetime"):
+  // a NON-CONSUMABLE in the same "full" entitlement, App Store name "Sona
+  // Premium, One Payment". Its id keeps the store's own word because the id
+  // is App Store Connect's and never shown; no sentence a parent reads says
+  // it. Offered only while RevenueCat's current offering lists it (THE
+  // ONE-PAYMENT ROW, below), and kept here for restore like the other two.
+  const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly", lifetime: "com.speaksona.app.lifetime" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
+  // The one payment is not a subscription: RevenueCat's getProducts takes
+  // the category (iOS ignores it, so a phone answers either way), and an old
+  // plugin's purchaseProduct the store's purchase type ("inapp").
+  function _iapIsOnce(kind) { return kind === "lifetime"; }
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
@@ -7649,7 +7661,7 @@
     } catch (e2) { return ""; }
   }
   // fetch the live product (price string comes from the App Store, locale-
-  // correct). kind: "annual" (default) | "monthly".
+  // correct). kind: "annual" (default) | "monthly" | "lifetime".
   // THE PRODUCT ASKED FOR, OR NOTHING (1 Oct 2026). This took the first
   // product in the answer whatever it was. With two on sale that is how a
   // "Monthly" button buys the yearly plan: a store that has no monthly product
@@ -7659,7 +7671,7 @@
   function iapProduct(kind) {
     const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
-      Promise.resolve(P.getProducts({ productIdentifiers: [id], type: IAP_TYPE }))
+      Promise.resolve(P.getProducts({ productIdentifiers: [id], type: _iapIsOnce(kind) ? "NON_SUBSCRIPTION" : IAP_TYPE }))
         .catch(() => P.getProducts({ productIdentifiers: [id] }))
         .then((r) => {
           const list = (r && r.products) || [];
@@ -7687,7 +7699,7 @@
       const have = (product && product.identifier === id) ? Promise.resolve(product) : iapProduct(kind);
       return have.then((prod) => {
         if (prod && typeof P.purchaseStoreProduct === "function") return P.purchaseStoreProduct({ product: prod });   // the only attempt
-        if (typeof P.purchaseProduct === "function") return P.purchaseProduct({ productIdentifier: id, type: IAP_TYPE });   // an old plugin with no product API
+        if (typeof P.purchaseProduct === "function") return P.purchaseProduct({ productIdentifier: id, type: _iapIsOnce(kind) ? "inapp" : IAP_TYPE });   // an old plugin with no product API
         throw new Error("no-purchase-api");
       });
     }).then((res) => {
@@ -7755,7 +7767,8 @@
   // that it says three days free, then $9.99 a month". The app sold the
   // MONTHLY product alone; since 19 Oct 2026 the yearly one can be a second
   // row beside it, only when RevenueCat's offering lists it (THE YEARLY ROW,
-  // below: Plan.year). The free time is whatever the store's offer says (3
+  // below: Plan.year), and since 22 Oct 2026 the one-payment product a third
+  // row by the same rule (THE ONE-PAYMENT ROW: Plan.life). The free time is whatever the store's offer says (3
   // days on 5 Oct 2026; a week once Travis sets it in App Store Connect, as
   // approved on 19 Oct 2026, which planFree reads as "7 days"): nothing here
   // counts days. What a screen may say about a plan is decided HERE, once,
@@ -7779,19 +7792,22 @@
   //   none  — everything else: no monthly product, the yearly one answering
   //           in its place (iapProduct refuses it), an offer that costs money
   //           or cannot be read, an error, no answer in time. NOTHING is sold
-  //           instead (the yearly row included) and no figure is shown;
+  //           instead (the yearly and one-payment rows included) and no
+  //           figure is shown;
   //   owned — this Apple ID already has Premium, so it is never sold a second
   //           plan.
   // The product and the purchase go through iapProduct("monthly") and
   // iapPurchase("monthly", product), the calls real phones already use (the
-  // yearly row through iapProduct("annual") and iapPurchase("annual", ...)).
+  // yearly row through iapProduct("annual") and iapPurchase("annual", ...),
+  // the one-payment row through iapProduct("lifetime") and
+  // iapPurchase("lifetime", ...)).
   // The NEW native calls (the eligibility ask, the purchase sync, and since
   // 19 Oct 2026 RevenueCat's getOfferings) are optional by construction:
   // missing, throwing, rejecting or slow, each leaves the answer exactly as
   // if the call did not exist, and none can hold the card back beyond the
   // limits below.
   const PLAN_WAIT_MS  = 4000;  // no product by then → none/timeout. The clock starts when storePlan() is CALLED, before the store is even set up.
-  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility, "already has it" and the yearly row may hold the answer back
+  const PLAN_GRACE_MS = 1200;  // after the product: how long eligibility, "already has it", the yearly row and the one-payment row may hold the answer back
   const PLAN_OWN_MS   = 3000;  // after the product: how long "already has it" may hold back a pay-today price for a buyer Apple calls ineligible
   const WALL_WAIT_MS  = 2500;  // setupWall. Starts when setupWall() is called.
   const IAPSYNC = "sona.iapsync.v1";   // sessionStorage "1": a purchase sync has FINISHED in this app launch
@@ -7869,21 +7885,24 @@
   // row for it (see THE YEARLY ROW below), else null. A yearly Plan carries
   // `best` instead: true only when the store's yearly price is below twelve
   // of its monthly ones (the "Best value" tag; never a figure or a ratio).
+  // It also carries `life`: the one-payment Plan (THE ONE-PAYMENT ROW), else
+  // null. A one-payment Plan is always "paid" (charged today, once), its
+  // `per` is "once", and it carries neither `year`, `life` nor `best`.
   function _plan(state, why, p, free, sure, kind, extra) {
     const priced = state === "free" || state === "paid";
-    const yearly = kind === "annual";
+    const yearly = kind === "annual", once = _iapIsOnce(kind);
     const plan = {
       state,
-      kind: priced ? (yearly ? "annual" : "monthly") : "",  // handed back to buyPlan (the product bought) and analytics; the card's pick reads it
-      id: priced ? String(p.identifier || (yearly ? IAP_PRODUCTS.annual : IAP_PRODUCTS.monthly)) : "",
+      kind: priced ? (yearly ? "annual" : once ? "lifetime" : "monthly") : "",  // handed back to buyPlan (the product bought) and analytics; the card's pick reads it
+      id: priced ? String(p.identifier || (yearly ? IAP_PRODUCTS.annual : once ? IAP_PRODUCTS.lifetime : IAP_PRODUCTS.monthly)) : "",
       price: priced ? String(p.priceString) : "",          // the store's own string, verbatim: never rebuilt from a number
-      per: priced ? (yearly ? "year" : "month") : "",
+      per: priced ? (yearly ? "year" : once ? "once" : "month") : "",
       free: state === "free" ? free : null,
       sure: state === "free" && sure === true,
       why: why || "",
     };
     if (yearly) plan.best = !!(extra && extra.best);
-    else plan.year = (priced && extra && extra.year) || null;
+    else if (!once) { plan.year = (priced && extra && extra.year) || null; plan.life = (priced && extra && extra.life) || null; }
     if (priced) Object.defineProperty(plan, "_p", { value: p, enumerable: false });
     if (plan.free) Object.freeze(plan.free);
     return Object.freeze(plan);
@@ -7919,16 +7938,40 @@
   // answer never adds a row under a reading parent (a fresh ask may). The
   // monthly plan stays THE plan: no monthly product sells nothing, yearly
   // included, exactly as before.
-  function _offersYear(P) {            // → Promise<boolean>. Never rejects.
+  // ONE READ OF THE OFFERING FOR EACH ASK, for both rows it can add (the
+  // yearly one and the one payment): → Promise<{ annual, lifetime }>, each
+  // true only when the CURRENT offering lists that product by its own id,
+  // among its packages or as its own annual / lifetime package. Never
+  // rejects: missing, throwing or failing, neither row is listed.
+  function _offered(P) {
     return _soon(() => {
       if (typeof P.getOfferings !== "function") return null;
       return P.getOfferings();
     }).then((r) => {
       const cur = r && typeof r === "object" ? r.current : null;
-      if (!cur || typeof cur !== "object") return false;
-      const list = [].concat(Array.isArray(cur.availablePackages) ? cur.availablePackages : [], cur.annual ? [cur.annual] : []);
-      return list.some((pk) => !!pk && !!pk.product && pk.product.identifier === IAP_PRODUCTS.annual);
-    }, () => false);
+      if (!cur || typeof cur !== "object") return { annual: false, lifetime: false };
+      const list = [].concat(Array.isArray(cur.availablePackages) ? cur.availablePackages : [], cur.annual ? [cur.annual] : [], cur.lifetime ? [cur.lifetime] : []);
+      const has = (id) => list.some((pk) => !!pk && !!pk.product && pk.product.identifier === id);
+      return { annual: has(IAP_PRODUCTS.annual), lifetime: has(IAP_PRODUCTS.lifetime) };
+    }, () => ({ annual: false, lifetime: false }));
+  }
+  // ── THE ONE-PAYMENT ROW (Travis, 22 Oct 2026, for iOS 1.0.9: "the one-time
+  // 'lifetime' purchase on the price screen"; "i dont wanna say lifetime") ──
+  // The non-consumable comes to Apple's card as a third row, under the
+  // monthly one, by the yearly row's rules: ONLY when RevenueCat's current
+  // offering lists it (attaching it to "full" and adding it to the offering
+  // is Travis's switch, in RevenueCat's dashboard, as NATIVE.md says) AND
+  // the store returns it by its own id with a price. It is charged once,
+  // today: it has no free days and no eligibility to ask, so an answer that
+  // says it has an introductory offer is a product this page cannot
+  // describe, and no row. Decided when the card is first answered, within
+  // the same PLAN_GRACE_MS; a later answer never adds it under a reading
+  // parent (a fresh ask may). No monthly product sells nothing, this row
+  // included.
+  function _lifePlan(a) {
+    const lp = a.lf;
+    if (!lp || !a.p || planFree(lp) !== "none") return null;
+    return _plan("paid", "", lp, null, false, "lifetime");
   }
   // the yearly Plan for an ask, or null: its own free time and its own
   // eligibility, by monthly's rules (a first year that costs money, or one
@@ -7936,15 +7979,28 @@
   function _yearPlan(a) {
     const yp = a.yr;
     if (!yp || !a.p) return null;
-    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = _yearBest(yp, a.p);
+    // "Best value" compares the yearly price with twelve monthly ones. Beside
+    // a one-payment row that costs no more than the year, that tag would be a
+    // false comparison on the card ("$59.99/yr · Best value" over "One
+    // payment $59.99"), so it goes whenever that row shows and its price is
+    // at or under the year's, or the two cannot be compared.
+    const life = _lifePlan(a), lifeCheaper = !!life && (function () {
+      try {
+        const y = Math.round(Number(yp.price) * 100), l = Math.round(Number(a.lf.price) * 100);
+        if (!(y > 0 && l > 0 && isFinite(y) && isFinite(l))) return true;
+        if (!yp.currencyCode || !a.lf.currencyCode || String(yp.currencyCode) !== String(a.lf.currencyCode)) return true;
+        return l <= y;
+      } catch (e) { return true; }
+    })();
+    const intro = planFree(yp), cant = a.eligY === "no" || a.eligY === "none", best = !lifeCheaper && _yearBest(yp, a.p);
     if (typeof intro === "object" && !cant) return _plan("free", "", yp, intro, a.eligY === "yes", "annual", { best });
     if (intro === "none" || cant) return _plan("paid", "", yp, null, false, "annual", { best });
     return null;
   }
   // what a late answer must change before every onLate hears it
   function _planSig(p) {
-    const y = p && p.year;
-    return p ? [p.state, p.kind, p.sure, y ? y.state + "/" + y.sure + "/" + y.best : "-"].join("|") : "";
+    const y = p && p.year, l = p && p.life;
+    return p ? [p.state, p.kind, p.sure, y ? y.state + "/" + y.sure + "/" + y.best : "-", l ? l.state + "/" + l.price : "-"].join("|") : "";
   }
 
   // ONE ASK PER PAGE LOAD, and the latest answer is the one every caller
@@ -7952,7 +8008,8 @@
   //   opts.fresh   ask again (Try again; the app coming back to the front)
   //   opts.onLate  called with the new Plan whenever an answer that arrived
   //                AFTER the promise resolved changes { state, kind, sure }
-  //                or the yearly row's { state, sure, best } (_planSig).
+  //                or the yearly row's { state, sure, best }, or the one-
+  //                payment row's { state, price } (_planSig).
   // LATE ANSWERS COUNT. The promise resolves on the limits above, but the
   // three asks stay live: a "not eligible", an "already has it" or the
   // product itself arriving later replaces the answer and tells every
@@ -7973,17 +8030,20 @@
       // the yearly row has answered: no row, or its product and its own
       // eligibility (none needed for a product with no offer)
       const yearIn = a.yr !== undefined && (!a.yr || a.eligY !== undefined || planFree(a.yr) === "none");
-      if (!(ownIn && eligIn && yearIn)) {
+      // the one-payment row has answered: no row, or its product (it has no eligibility)
+      const lifeIn = a.lf !== undefined;
+      if (!(ownIn && eligIn && yearIn && lifeIn)) {
         if (!a.graceOver) return;
         // A buyer Apple calls ineligible has subscribed before and may be
         // paying right now: no pay-today price while the sync is in flight.
         if ((a.elig === "no" || (a.yr && a.eligY === "no")) && !ownIn && !a.ownOver) return;
       }
-      // too slow to have answered by now: no yearly row for this ask
+      // too slow to have answered by now: no yearly row, and no one-payment row, for this ask
       if (a.yr === undefined) a.yr = null;
+      if (a.lf === undefined) a.lf = null;
       const cant = a.elig === "no" || a.elig === "none";
-      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes", "monthly", { year: _yearPlan(a) });
-      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p, null, false, "monthly", { year: _yearPlan(a) });
+      if (typeof a.intro === "object" && !cant) plan = _plan("free", "", a.p, a.intro, a.elig === "yes", "monthly", { year: _yearPlan(a), life: _lifePlan(a) });
+      else if (a.intro === "none" || cant) plan = _plan("paid", "", a.p, null, false, "monthly", { year: _yearPlan(a), life: _lifePlan(a) });
       // an offer that costs money, or one that cannot be read, for a buyer
       // who may get it: the first charge is unknown, so nothing is stated
       else plan = _plan("none", "no-product");
@@ -7999,7 +8059,8 @@
     if (!iapPlugin()) return Promise.resolve(_plan("none", "no-plugin"));
     if (_planAsk && !opts.fresh) return _planAsk.plan ? Promise.resolve(_planAsk.plan) : _planAsk.promise;
     // yr: the yearly product (undefined while asking, null for no row); eligY: its own eligibility
-    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, yr: undefined, eligY: undefined, timedOut: false, graceOver: false, ownOver: false };
+    // lf: the one-payment product (undefined while asking, null for no row)
+    const a = { plan: null, got: false, failed: false, p: null, intro: "none", own: undefined, elig: undefined, yr: undefined, eligY: undefined, lf: undefined, timedOut: false, graceOver: false, ownOver: false };
     a.promise = new Promise((resolve) => { a.resolve = resolve; });
     // whoever is still waiting on the ask this one replaces gets this one's answer
     if (_planAsk && !_planAsk.plan) _planAsk.resolve(a.promise);
@@ -8032,8 +8093,11 @@
       // no such offering the asks are exactly the monthly ones above. Its
       // own eligibility is a call of its own, so monthly's never changes.
       const noYear = () => { if (a.yr === undefined) { a.yr = null; _planStep(a); } };
-      _soon(() => iapConfigure()).then((P) => _offersYear(P).then((listed) => {
-        if (!listed || a.yr !== undefined) return noYear();
+      const noLife = () => { if (a.lf === undefined) { a.lf = null; _planStep(a); } };
+      // one read of the offering for both rows (and none at all when the store cannot be set up)
+      const offer = _soon(() => iapConfigure()).then((P) => _offered(P).then((o) => ({ P: P, o: o })));
+      offer.then(({ P, o }) => {
+        if (!o.annual || a.yr !== undefined) return noYear();
         return _soon(() => iapProduct("annual")).then((yp) => {
           if (a.yr !== undefined) return;
           // its own id, by name (iapProduct also takes an unnamed lone
@@ -8050,7 +8114,21 @@
           }
           _planStep(a);
         });
-      })).catch(noYear);
+      }).catch(noYear);
+      // THE ONE-PAYMENT ROW, from the same read: only an offering that lists
+      // it leads to asking the store for it, so with none the asks are
+      // exactly those above. No eligibility: it has no free days to give.
+      offer.then(({ o }) => {
+        if (!o.lifetime || a.lf !== undefined) return noLife();
+        return _soon(() => iapProduct("lifetime")).then((lp) => {
+          if (a.lf !== undefined) return;
+          // by its own id (never an unnamed lone product taken on trust) and with a price to show
+          const good = !!lp && lp.identifier === IAP_PRODUCTS.lifetime && !!String(lp.priceString == null ? "" : lp.priceString).trim();
+          if (!good) return noLife();
+          a.lf = lp;
+          _planStep(a);
+        });
+      }).catch(noLife);
     } catch (e) {
       if (!a.plan) { a.plan = _plan("none", "error"); a.resolve(a.plan); }
     }
@@ -8315,11 +8393,19 @@
   //     names a day with no time, so "a day before" could be read as the
   //     evening before, which is too late;
   //   - the two rows are Today and the billing day, and NOTHING ELSE. No
-  //     sentence here promises a message before the charge: since 16 Oct
-  //     2026 Sona sends one, but only to a parent who gave the app an
-  //     address, so a promise here would be false for the rest. A third row
-  //     would be Travis's call, for a family it is truly armed for, and
-  //     planwordstest fails on those words until then.
+  //     sentence here promises a message before the charge, with ONE
+  //     exception (Travis, 22 Oct 2026, the step in setup that asks iPhone
+  //     for its Allow box): `headsUp`, the one line under the button, only
+  //     when the page says this phone really can and will show its own
+  //     heads-up for the picked row (o.headsUp: the page asks sona.js's
+  //     trial heads-up block) and only on a free row. Without that, nothing: the message
+  //     Sona's server sends since 16 Oct 2026 reaches only a parent who gave
+  //     the app an address, so a promise here would be false for the rest.
+  //     planwordstest holds the line to exactly those cases, word for word;
+  //   - the one-payment row (kind "lifetime") is charged once, today: its
+  //     words never say "free", never "Best value", and never the store's
+  //     word for it (Travis: "i dont wanna say lifetime"). It says "One
+  //     payment" and "No subscription", and its figure is the store's.
   const PLAN_CANCEL = "Settings\u00a0→\u00a0Subscriptions";   // no-break spaces: the arrow never starts a line
   // The day the first charge falls, for a plan with free time. Apple's free
   // days are exact 24-hour days from the purchase; months and years land on
@@ -8339,11 +8425,14 @@
     } catch (e) { return null; }
   }
   // plan: what storePlan() resolved, or null/undefined while it is asking,
-  // or that answer's yearly row (plan.year): each row's words are its own
-  // plan's, and the button, the check line and the small print are the words
-  // of whichever row is picked.
+  // or that answer's yearly row (plan.year) or one-payment row (plan.life):
+  // each row's words are its own plan's, and the button, the check line and
+  // the small print are the words of whichever row is picked.
   // o.freeVersion: this family already has daily practice (the free
   // version), so Premium is not what opens it. o.now: the clock, for tests.
+  // o.headsUp: true only when the page has been told this phone will show
+  // its own heads-up the day before this row's free days end (see above).
+  const PLAN_HEADS_UP = "We'll remind you the day before it ends.";   // Travis's and Rachel's words to change
   function planWords(plan, o) {
     o = o || {};
     const WHAT = o.freeVersion ? "Every game and every book." : "Daily practice, every game and every book.";
@@ -8353,7 +8442,7 @@
       name: "Sona Premium", sub: "", amount: "", check: "",
       button: "Checking the App Store…", act: "wait",
       header: "Sona Premium: " + WHAT.charAt(0).toLowerCase() + WHAT.slice(1),
-      none: null,
+      none: null, headsUp: "",
     };
     if (plan == null) return w;
     if (plan.state === "owned") { w.state = "owned"; w.name = ""; w.what = ""; w.button = ""; w.act = ""; w.header = ""; return w; }
@@ -8366,6 +8455,22 @@
       w.none = reach ? { title: "We couldn't reach the App Store.", text: "Check your connection, then try again." }
                      : { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." };
       w.header = w.none.title;
+      return w;
+    }
+    // THE ONE-PAYMENT ROW (22 Oct 2026; every word Travis's to change): its
+    // name, one line under it, the store's price with no period, then for the
+    // pick one check line, the button and the small print. A one payment
+    // with free days is not a plan this card can describe (storePlan never
+    // hands one out): nothing to sell.
+    if (plan.kind === "lifetime" || per === "once") {
+      if (plan.state !== "paid") { w.state = "none"; w.name = ""; w.what = ""; w.button = "Try again"; w.act = "retry"; w.none = { title: "Sona Premium can't be bought right now.", text: "Please try again in a little while." }; w.header = w.none.title; return w; }
+      w.state = "paid"; w.title = "Get Sona Premium";
+      w.name = "One payment"; w.sub = "Yours to keep. No subscription."; w.amount = P;
+      w.price = "One payment of " + P + ".";
+      w.check = "One payment \u00b7 No subscription";
+      w.note = "One payment of " + P + ". No subscription."; w.noteLast = true;   // small print, under the button
+      w.button = "Get Sona Premium — " + P; w.act = "buy";
+      w.header = "Sona Premium: one payment of " + P + ".";
       return w;
     }
     const PP = P + " a " + per;
@@ -8410,6 +8515,8 @@
       w.noteFirst = true;                                  // directly under the row, above the button
       w.header = "Sona Premium: " + FREE + " free for new subscribers, then " + PP + ".";
     }
+    // a free row only, and only when the page says this phone will show it
+    if (o.headsUp === true) w.headsUp = PLAN_HEADS_UP;
     return w;
   }
   // The card's one status line, by code (buyPlan's codes, and the page's own
@@ -8666,5 +8773,5 @@
   try { _keepBuddies(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, setPlayLevelCap, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
+  global.Sona = { questToday, questEnd, QUEST_DAYS, QUEST_LEN, STORY_DAYS, storyOpen, storyShown, storyEnding, storySeen, pcmWave, mediaPCM, voiceAsMedia, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, goalDays, dayReps, dayGoal, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, goClip, GO_WAIT_MS, WORDS, wordsFor, GAME_WORDS, gameWords, POSITIONS, FAMILY_POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, rungWin, ladderContent, GAME_LEVELS, gameTop, gameAsk, gameHold, FREE_MODE, isFree, WEB_SALES, webSales, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, homePicks, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, freeVersion, trialFirst, offerOnLock, FREE_BOOKS, bookFree, booksOpen, bookLocked, seasonPick, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, CRAFTED_CARDS, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, micNative, micOpen, micProbe, micSource, micDeaf, micRecorder, micQuiet, micStats, micFifo: nmFifo, NATIVE_MIC_GAIN, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, gameBest, gameBestOffer, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, trophyState, trophies, coinsNow, PLAY_LEVEL_AT, PLAY_LEVEL_LINES, playLevelsOpen, playLevel, playLevelAsk, setPlayLevel, playLevelInfo, playBest, playBestOffer, buddyId, buddySprite, chestState, chestOpen, ROAD_LANDS, ROAD_STOPS, MONTH_STEPS, roadStop, roadState, roadOpen, monthOpen, roadSettle, roadRolledSeen, buddiesKept, shopItem, buyItem, undoBuy, equip, BOARD_LIVE, boardLive, boardAllowed, boardState, boardStart, boardClaim, boardFlush, boardView, boardNick, boardLeave, boardAsk, boardCancel, parentEmail, reportEmail, reportSync, homeOfferDue, offerSeen, soundMark, clipsSettled, storePlan, buyPlan, planWords, planSay, planBillDate, setupWall, setupAfterMark, setupAfter, setupAfterClear, setupAsks, setupAsksSave, SETUP_THERAPY };
 })(window);

@@ -173,7 +173,11 @@
         if(inApp&&S.storePlan){try{S.storePlan().then(function(plan){
           if(!plan||(plan.state!=="free"&&plan.state!=="paid"))return;
           var y=plan.year,ft=function(p){return p&&p.state==="free"&&p.free&&p.free.text?String(p.free.text):"";},mf=ft(plan),yf=ft(y);
-          el("premiumPrice").textContent=y?(mf&&mf===yf?mf+" free, then monthly or yearly":"Monthly or yearly"):(mf?mf+" free, then month by month":"One plan, month by month");
+          var line=y?(mf&&mf===yf?mf+" free, then monthly or yearly":"Monthly or yearly"):(mf?mf+" free, then month by month":"One plan, month by month");
+          // the one payment (22 Oct 2026) is a third way to pay, when the
+          // store's answer carries it: name it, never "lifetime"
+          if(plan.life&&plan.life.state==="paid")line=(line==="One plan, month by month"?"Month by month":line)+", or one payment";
+          el("premiumPrice").textContent=line;
         });}catch(e){}}
         el("premiumTerms").textContent=(!S.freeVersion||S.freeVersion())?"Daily practice and free games stay free either way.":"Cancel anytime.";
         buy.disabled=false;buy.textContent="See the plans";

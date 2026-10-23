@@ -20,12 +20,16 @@
 //   slp        a clinician's verified link · webSells: the website selling
 //   noGate     leave the grown-ups stamp unset (it is written on every load)
 //   store      what the App Store sells: a STORES entry or your own
-//              { monthly: {...}, annual: {...} }. ABSENT MEANS
+//              { monthly: {...}, annual: {...}, lifetime: {...} }. ABSENT MEANS
 //              STORES.monthlyFree, the App Store since 5 Oct 2026. Per
 //              product: price (the priceString), free (an ISO period: "P3D",
 //              "P1W", "P1M"…), paidIntro (the offer costs money), unitsOnly
 //              (periodUnit + periodNumberOfUnits, no `period`), noPriceString,
 //              id (another identifier), noId (no identifier at all).
+//              lifetime is the one payment (22 Oct 2026): a non-consumable
+//              with a price and no period, "$59.99" in every STORES entry
+//              that sells monthly; it is only ever asked for once the
+//              offering lists it.
 //              The old name `intro` still works when no store is given:
 //              "free3" → monthlyFree, "none" → noFree, "hang" → products:"hang".
 //   wrong      true: asked for a product the store lacks, it answers with
@@ -34,8 +38,10 @@
 //              yearly row shows only when the CURRENT offering lists the
 //              yearly product). Absent: a current offering with the monthly
 //              package alone (the card is the monthly row, as before) ·
-//              "both" (yearly and monthly) · an array of kinds, e.g.
-//              ["annual"] · "none" (current: null) · "missing" (a build
+//              "both" (yearly and monthly) · "all" (yearly, monthly and the
+//              one payment, 22 Oct 2026) · an array of kinds, e.g.
+//              ["annual"] or ["monthly", "lifetime"] · "none" (current:
+//              null) · "missing" (a build
 //              without the call) · "throw" (throws before any promise) ·
 //              "fail" (rejects) · "hang"
 //   configure  "ok" | "hang"          products  "ok" | "hang" | "fail"
@@ -87,6 +93,13 @@
 //              seed carries it, as every seed carries the era stamps
 //   safeArea   { top, bottom }: px swapped in for env(safe-area-inset-*) in
 //              every served .html and .css (desktop Chromium reports zero)
+//   remind     true | false | "throw": Sona.trialReminderOn (NOTIFY1, 22 Oct
+//              2026: will this phone show its own heads-up the day before a
+//              free trial ends?) is replaced by one that answers true only
+//              for a free plan (remind: true), false always, or throws.
+//              Absent: whatever sona.js has (a phone with no notification
+//              plugin, so never true). trialReminderCalls[] keeps each plan's
+//              state as it was asked
 //
 // ── window.__phone, in the page ───────────────────────────────────────────
 //   set(patch)   merge a patch into the LIVE config (null clears a field) and
@@ -95,6 +108,7 @@
 //                moment set() changes its field, answering from the new one.
 //   bought[]     the product id of every purchase call, in order
 //   asked[]      the ids of each getProducts call on THIS page load
+//                (types[]: the `type` each of those calls passed)
 //                (askedAll[]: every load in this context)
 //   eligAsked    how many eligibility calls (eligIds[]: the ids of each)
 //   emails[]     every setEmail call's argument on THIS page load, in order
@@ -120,10 +134,10 @@ import { readFileSync, existsSync, statSync } from "fs";
 import path from "path";
 import { ROOT } from "./_env.mjs";
 
-export const IDS = { monthly: "com.speaksona.app.monthly", annual: "com.speaksona.app.annual" };
+export const IDS = { monthly: "com.speaksona.app.monthly", annual: "com.speaksona.app.annual", lifetime: "com.speaksona.app.lifetime" };
 export const STORES = {
-  monthlyFree: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D" } },   // the App Store since 5 Oct 2026
-  noFree:      { monthly: { price: "$9.99" },             annual: { price: "$59.99", free: "P3D" } },   // monthly has no free days: charged today (yearly's are ignored)
+  monthlyFree: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D" }, lifetime: { price: "$59.99" } },   // the App Store since 5 Oct 2026 (the one payment since 22 Oct 2026)
+  noFree:      { monthly: { price: "$9.99" },             annual: { price: "$59.99", free: "P3D" }, lifetime: { price: "$59.99" } },   // monthly has no free days: charged today (yearly's are ignored)
   yearOnly:    { annual: { price: "$59.99", free: "P3D" } },                                             // no monthly product: nothing is sold
   empty:       {} };
 // every dated check: this zone, this clock. This Mac is UTC-6 and CI is UTC,
@@ -138,7 +152,7 @@ export function phone(cfg) {
   cfg = cfg || {};
   // the blank first document has no storage, and nothing to fake
   try { localStorage.getItem("__phoneCfg"); sessionStorage.getItem("__phoneCfg"); } catch (e) { return; }
-  const MONTHLY = "com.speaksona.app.monthly", ANNUAL = "com.speaksona.app.annual";
+  const MONTHLY = "com.speaksona.app.monthly", ANNUAL = "com.speaksona.app.annual", LIFETIME = "com.speaksona.app.lifetime";
   const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   const merge = (into, from) => {
     for (const k in from) {
@@ -164,9 +178,9 @@ export function phone(cfg) {
   // ── recorders ──
   const kept = read("__phoneRec", {});
   const rec = {
-    bought: kept.bought || [], asked: [], askedAll: kept.askedAll || [], eligAsked: 0, eligIds: [],
+    bought: kept.bought || [], asked: [], types: [], askedAll: kept.askedAll || [], eligAsked: 0, eligIds: [],
     syncs: kept.syncs || 0, restores: kept.restores || 0, infos: 0, configured: 0, offerings: 0, unknown: [], emails: [],
-    events: kept.events || [], mic: { requests: [], tracks: [], order: [] }, sfx: {}, confetti: 0,
+    events: kept.events || [], mic: { requests: [], tracks: [], order: [] }, sfx: {}, confetti: 0, trialReminderCalls: [],
   };
   const keep = () => {
     try { localStorage.setItem("__phoneRec", JSON.stringify({ bought: rec.bought, askedAll: rec.askedAll, syncs: rec.syncs, restores: rec.restores, events: rec.events })); } catch (e) {}
@@ -186,18 +200,20 @@ export function phone(cfg) {
     const ent = () => live.entitled === true || localStorage.getItem("__ent") === "1";
     const info = () => ({ customerInfo: { entitlements: { active: ent() ? { full: { identifier: "full", isActive: true } } : {} } } });
     const store = () => live.store != null ? live.store
-      : live.intro === "none" ? { monthly: { price: "$9.99" }, annual: { price: "$59.99", free: "P3D" } }
-      : { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D" } };
-    const kindOf = (id) => id === MONTHLY ? "monthly" : id === ANNUAL ? "annual" : "";
+      : live.intro === "none" ? { monthly: { price: "$9.99" }, annual: { price: "$59.99", free: "P3D" }, lifetime: { price: "$59.99" } }
+      : { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99", free: "P3D" }, lifetime: { price: "$59.99" } };
+    const kindOf = (id) => id === MONTHLY ? "monthly" : id === ANNUAL ? "annual" : id === LIFETIME ? "lifetime" : "";
     const UNITS = { D: "DAY", W: "WEEK", M: "MONTH", Y: "YEAR" };
     const product = (kind) => {
       const e = kind ? store()[kind] : null;
       if (!e) return null;
+      const once = kind === "lifetime";
       const p = {
-        identifier: e.id || (kind === "monthly" ? MONTHLY : ANNUAL),
-        title: kind === "monthly" ? "Sona Monthly" : "Sona Yearly", description: "Sona Premium",
+        identifier: e.id || (kind === "monthly" ? MONTHLY : once ? LIFETIME : ANNUAL),
+        title: kind === "monthly" ? "Sona Monthly" : once ? "Sona Premium, One Payment" : "Sona Yearly", description: "Sona Premium",
         priceString: e.price, price: parseFloat(String(e.price).replace(/[^0-9.]/g, "")) || 0, currencyCode: "USD",
-        subscriptionPeriod: kind === "monthly" ? "P1M" : "P1Y", introPrice: null,
+        subscriptionPeriod: kind === "monthly" ? "P1M" : once ? null : "P1Y", introPrice: null,
+        productCategory: once ? "NON_SUBSCRIPTION" : "SUBSCRIPTION", productType: once ? "NON_CONSUMABLE" : "AUTO_RENEWABLE_SUBSCRIPTION",
       };
       if (e.noPriceString) delete p.priceString;
       if (e.noId) delete p.identifier;
@@ -238,7 +254,7 @@ export function phone(cfg) {
       configure: async () => { rec.configured++; await hold("configure"); },
       getProducts: async (a) => {
         const ids = ((a && a.productIdentifiers) || []).slice();
-        rec.asked.push(ids); rec.askedAll.push(ids); keep();
+        rec.asked.push(ids); rec.types.push(a && a.type); rec.askedAll.push(ids); keep();
         await hold("products");
         if (mode("products") === "fail") throw fail("There was a problem with the App Store.", "2");
         const out = [];
@@ -310,11 +326,13 @@ export function phone(cfg) {
         await hold("offering");
         if (live.offering === "fail") throw fail("Error performing request.", "10");
         if (live.offering === "none") return { all: {}, current: null };
-        const kinds = Array.isArray(live.offering) ? live.offering : live.offering === "both" ? ["annual", "monthly"] : ["monthly"];
-        const pkgs = kinds.map((k) => ({ identifier: k === "annual" ? "$rc_annual" : "$rc_monthly", packageType: k === "annual" ? "ANNUAL" : "MONTHLY",
-          product: product(k) || { identifier: k === "annual" ? ANNUAL : MONTHLY }, offeringIdentifier: "default" }));
+        const kinds = Array.isArray(live.offering) ? live.offering : live.offering === "both" ? ["annual", "monthly"] : live.offering === "all" ? ["annual", "monthly", "lifetime"] : ["monthly"];
+        const TYPE = { annual: "ANNUAL", monthly: "MONTHLY", lifetime: "LIFETIME" }, ID = { annual: ANNUAL, monthly: MONTHLY, lifetime: LIFETIME };
+        const pkgs = kinds.map((k) => ({ identifier: "$rc_" + k, packageType: TYPE[k],
+          product: product(k) || { identifier: ID[k] }, offeringIdentifier: "default" }));
         const cur = { identifier: "default", serverDescription: "Sona Premium", metadata: {}, availablePackages: pkgs,
-          monthly: pkgs.filter((p) => p.packageType === "MONTHLY")[0] || null, annual: pkgs.filter((p) => p.packageType === "ANNUAL")[0] || null };
+          monthly: pkgs.filter((p) => p.packageType === "MONTHLY")[0] || null, annual: pkgs.filter((p) => p.packageType === "ANNUAL")[0] || null,
+          lifetime: pkgs.filter((p) => p.packageType === "LIFETIME")[0] || null };
         return { all: { default: cur }, current: cur };
       })();
     };
@@ -357,6 +375,13 @@ export function phone(cfg) {
     try {
       v.speechPerm = () => { rec.mic.order.push("speech permission"); return Promise.resolve(true); };
       v.confetti = () => { rec.confetti++; };
+      if (live.remind != null) {
+        v.trialReminderOn = (plan) => {
+          rec.trialReminderCalls.push(plan === undefined ? "(none)" : plan ? plan.state : String(plan));
+          if (live.remind === "throw") throw new Error("the heads-up check is broken");
+          return live.remind === true && (plan === undefined || (!!plan && plan.state === "free"));
+        };
+      }
       Object.keys(v.sfx || {}).forEach((k) => { if (typeof v.sfx[k] === "function") v.sfx[k] = () => { rec.sfx[k] = (rec.sfx[k] || 0) + 1; }; });
     } catch (e) {}
   } });
