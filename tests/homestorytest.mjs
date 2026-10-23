@@ -145,7 +145,8 @@ await section("a locked story", async () => {
     // did before leaving can still be read
     const navs = [];
     await ctx.route(/\/(?:subscribe|premium)\.html|[?&]gate=1/, (r) => { navs.push(new URL(r.request().url())); return r.fulfill({ status: 204, body: "" }); });
-    await pg.locator("#questCard").click(); await pg.waitForTimeout(300);
+    // (noWaitAfter: Playwright 1.64 waits for the held navigation to finish)
+    await pg.locator("#questCard").click({ noWaitAfter: true }); await pg.waitForTimeout(300);
     const left = await pg.evaluate(() => ({ notice: !document.getElementById("libraryNotice").hidden, gate: document.getElementById("gateOvl").classList.contains("show") }));
     ok(w + "a tap opens the price at once, on the story", navs.length === 1 && navs[0].pathname + navs[0].search === "/subscribe.html?from=adventure", navs.map((u) => u.pathname + u.search));
     ok(w + "…with no note and no grown-ups check in between", !left.notice && !left.gate, left);
