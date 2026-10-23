@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { kvCmd } from "@/lib/slpAuth";
 import { APP_URL, DAY_MS, DUE_KEY, config, esc } from "@/lib/nurture";
-import { PACE_MS, SEND_DAYS, addressOk, confirmKey, kidLines, mailHash, mondayOf, range, resend, sentKey, suppressed, unsubUrlFor, type Kid } from "@/lib/report";
+import { PACE_MS, SEND_DAYS, addressOk, confirmKey, kidLines, mailHash, mondayOf, offKey, range, resend, sentKey, suppressed, unsubUrlFor, type Kid } from "@/lib/report";
 import { KIT_DONE, everyone, type Contact } from "@/lib/contacts";
 
 /**
@@ -18,7 +18,8 @@ import { KIT_DONE, everyone, type Contact } from "@/lib/contacts";
  *    gets the real one (lib/report.ts runReports, which runs first), and
  *    nothing from here: an address that was sent this week's report, or that
  *    has a phone confirmed for it (`report:dev:<hash>`, even in a week with
- *    no practice, which sends no report), is left alone;
+ *    no practice, which sends no report) and not turned off in Settings
+ *    (`report:offdev:<hash>`), is left alone;
  *  - everyone else gets EXAMPLE's report, the real email's own lines with
  *    made-up numbers, marked "Example", and how to turn theirs on (Grown-ups,
  *    then Settings: settings.html's weekly report switch).
@@ -166,10 +167,14 @@ export async function runWeekly(kv: Kv = kvCmd, f: Fetch = fetch, now: number = 
       if (inSeries === undefined) continue;
       if (inSeries !== null || (Number.isFinite(started) && now - started < SERIES_DAYS * DAY_MS)) { keep = true; continue; }
       if (!kitDone && !(started >= KIT_CUTOFF)) { res.waiting++; continue; }
+      // the real report is theirs: sent this week, or a phone confirmed for it
+      // that has not been turned off in Settings (a quiet week sends none)
       const got = await kv(["EXISTS", sentKey(wk, email)]);
-      const devs = await kv(["SCARD", confirmKey(mailHash(email, cfg.secret))]);
-      if (got === undefined || got === null || devs === undefined || devs === null) continue;
-      if (Number(got) > 0 || Number(devs) > 0) { keep = true; continue; } // the real report is theirs
+      const h = mailHash(email, cfg.secret);
+      const devs = await kv(["SMEMBERS", confirmKey(h)]), off = await kv(["SMEMBERS", offKey(h)]);
+      if (got === undefined || got === null || !Array.isArray(devs) || !Array.isArray(off)) continue;
+      const offSet = new Set(off.map(String));
+      if (Number(got) > 0 || devs.some((d) => !offSet.has(String(d)))) { keep = true; continue; }
       tries++;
       const unsubUrl = unsubUrlFor(email, cfg.secret);
       const m = renderExample(wk, unsubUrl, cfg.postal);

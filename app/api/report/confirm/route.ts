@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
   // an address that unsubscribed gets no report: say so, rather than "all set"
   const unsub = await suppressed(v.email, kvCmd);
   if (unsub === true) return page("This address is unsubscribed", "It unsubscribed from Sona’s emails, so no report can be sent. Reply to any Sona email if you’d like them back.");
-  if (unsub === null || !(await confirm(v.email, v.dev))) return page("Almost — one hiccup", "We couldn’t save that just now. Please tap the link in the email again in a minute.");
+  const done = unsub === null ? false : await confirm(v.email, v.dev);
+  // turned off in Settings since this link was sent: the link changes nothing
+  if (done === "off") return page("The report is off on that phone", "It was turned off in Sona. To start it, open Sona, tap Grown-ups, and turn on Weekly progress report in Settings.");
+  if (!done) return page("Almost — one hiccup", "We couldn’t save that just now. Please tap the link in the email again in a minute.");
   return page("You’re all set", "Your weekly progress report will start arriving on Mondays. Unsubscribe anytime from the email.");
 }

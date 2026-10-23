@@ -1526,7 +1526,8 @@ from Rachel.
   household that skipped setup's step, or gave it for tips, turns the report
   on there, and anyone turns it off. Skip sets neither. A brother or sister set up later on the same phone
   is in the report too (the address is the household's). Removing the child
-  whose profile holds the address stops the report.
+  whose profile holds the address stops the report (and tells the server the
+  phone has it off, WEEKLY1).
 - **Nothing is kept or sent until the address says yes** (the review, 15 Oct
   2026: a mistyped address would have sent a stranger a child's sounds every
   week, and anyone can post). The first post from a phone (setup sends one as
@@ -1667,14 +1668,22 @@ any day, still once a week).
   says `premium: true` on that lead, so the series stops for a family whose
   purchase the server never heard of (an address given after it), with no
   plan word claimed. Off clears `weeklyReport` on every profile and tells the
-  server `off` (lib/report.ts store: this phone leaves `report:dev`, its two
-  weeks' numbers are deleted), so Monday's report does not go out from them
-  and the Monday email sees a household without the report; owed until the
-  server says so (`offOwed` in sona.report.v1, sent from Settings or the next
-  practice page: "Turned off. Sona will finish this the next time it's
-  online."). Turning it on again asks the address again (the old link still
-  works). Another phone of the household keeps its own switch. Taps wait 600
-  ms after the card changes shape. Not for a clinician's own setup.
+  server `off` (lib/report.ts store): the phone is marked off for the address
+  (`report:offdev:<hash>`, device ids, 120 days; its confirmation stays, so an
+  unsubscribed address still hears "off"), every week of its numbers the
+  server could hold is deleted, Monday's report skips an off phone even if a
+  crossing post put numbers back, the Monday email sees a household without
+  the report, and a confirm link tapped later changes nothing ("The report is
+  off on that phone"). The phone's next ordinary post (turned on again) lifts
+  the mark. Each Turn off is owed until the server says so (`offs` in
+  sona.report.v1, one entry an address and phone, five at most: sent from
+  Settings as it opens or comes back, and from the next practice page, every
+  five minutes at most: "Turned off. Sona will finish this the next time it's
+  online."); one owed for the same inbox (any Gmail spelling) is dropped by
+  Turn on; a Turn off waits for a post on its way, and Turn on for a Turn off
+  on its way. Removing the child whose profile holds the address owes the
+  same. Another phone of the household keeps its own switch. Taps wait 600 ms
+  after the card changes shape. Not for a clinician's own setup.
 - **Known limits, said in the run's answer:** the audience is `everyone()`,
   whose leads ledger is capped at 10,000 rows (`full: true`: the oldest
   parents are off the list), and three runs of 250 send about 750 a week

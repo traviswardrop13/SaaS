@@ -434,10 +434,17 @@
     // game, road or Settings page, and slot "" is cleared here because the
     // PER_KID sweep below leaves the first child's keys (BOARD2)
     try { _boardDrop(slot); _boardPendForget([slot]); } catch (e) {}
+    // the weekly report's address, when it is on this child's profile, goes
+    // with them: unless a brother or sister holds the same one, the server is
+    // told this phone has it off (REPORT1, WEEKLY1), from the next Settings
+    // or practice page
+    let held = "";
+    try { const rp = _loadFor(slot, PKEY, {}); if (rp.weeklyReport === true) held = String(rp.email || "").trim().toLowerCase(); } catch (e) {}
     v.list = v.list.filter((k) => k.slot !== slot);
     if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
     try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
+    try { if (held && reportEmail() !== held) _reportOffOwe(held); } catch (e) {}
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
     if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
@@ -8238,6 +8245,9 @@
     return out;
   }
   let _reportBusy = false, _reportDirty = false, _reportAgain = false, _reportHooked = false;
+  // the post on its way, and the Turn offs on theirs (THE SWITCH IN SETTINGS, below)
+  let _reportSyncP = null, _reportOffP = null;
+  const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
   function reportSync(force) {
     const email = reportEmail();
     if (!email) return Promise.resolve(false);
@@ -8275,8 +8285,9 @@
           return !!(j && j.ok);
         });
     } catch (e) { sent = Promise.resolve(false); }
-    return sent.catch(() => false).then((ok) => {
-      _reportBusy = false;
+    // kept while on its way, so a Turn off waits for it (reportOff)
+    return (_reportSyncP = sent.catch(() => false).then((ok) => {
+      _reportBusy = false; _reportSyncP = null;
       if (!ok) {
         // offline, a 503 or a 429: these numbers still have to go; try again in five minutes
         _reportDirty = true;
@@ -8284,7 +8295,7 @@
       } else if (_reportAgain && _reportDirty) reportSync(true);
       _reportAgain = false;
       return ok;
-    });
+    }));
   }
   function _reportTouch() {
     _reportOffFlush(false);
@@ -8321,7 +8332,7 @@
     const email = reportEmail(), st = _reportState();
     return { can: _reportSlot() !== null, email: email, on: !!email,
       pending: !!email && st.pendFor === email && st.pend > 0 && st.off !== email,
-      off: !!email && st.off === email, owed: !!(st.offOwed && st.offOwed.e) };
+      off: !!email && st.off === email, owed: _reportOffs(st).length > 0 };
   }
   function reportSet(raw) {
     const e = typeof raw === "string" ? raw.trim().toLowerCase() : "", slot = _reportSlot();
@@ -8331,9 +8342,9 @@
     p.email = e; p.weeklyEmail = true; p.weeklyReport = true;
     saveFor(slot, PKEY, p);
     const st = _reportState(); ["at", "off", "offAt", "pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
-    // a Turn off for this same address that never reached the server is
-    // dropped (it is on again); one for another address still goes
-    if (st.offOwed && st.offOwed.e === e) delete st.offOwed;
+    // a Turn off for this same inbox (any spelling) that never reached the
+    // server is dropped: it is on again. One for another inbox still goes
+    st.offs = _reportOffs(st).filter((o) => _mailbox(o.e) !== _mailbox(e)); delete st.offOwed;
     _reportSave(st);
     // the email list hears it too, as from setup's email step: the grown-up
     // read "We'll also send occasional tips from Rachel" beside the box. A
@@ -8347,43 +8358,75 @@
         body: JSON.stringify(Object.assign({ email: e, role: "parent", source: "app-settings", summary: "Turned on the weekly progress report in Settings" }, has ? { premium: true } : {})) }).catch(() => {});
     } catch (e3) {}
     _reportDirty = true; // a post already on its way sends again after it, with this address
-    return reportSync(true);
+    // after any Turn off on its way, so this post (which lifts the server's
+    // off mark) lands last
+    return (_reportOffP || Promise.resolve()).then(() => reportSync(true), () => reportSync(true));
   }
   // Off: no child's numbers leave this phone again, and the server is told
-  // (`off`) to forget this phone for the address: its confirmation, and its
-  // numbers for this week and last, so Monday's report does not go out from
-  // what it already had (the empty weeks and `quiet` do the same on a server
-  // that predates `off`, and never ask for a link). Owed until the server
-  // says so (`offOwed`, kept before anything else changes): a Turn off made
-  // offline goes from Settings or the next practice page. Another phone of
-  // the household keeps its own switch; the email's Unsubscribe stops every
-  // one. Resolves true once the server has it.
-  const REPORT_OFF_RETRY_MS = 5 * 60 * 1000;
-  let _reportOffBusy = false;
+  // (`off`, lib/report.ts store) that this phone has it off for the address:
+  // Monday's report skips the phone, its numbers are deleted, the Monday
+  // email (lib/weekly.ts) sees a household without the report, and an old
+  // confirm link changes nothing. The phone's next ordinary post (turned on
+  // again) lifts it. Each Turn off is owed until the server says so
+  // (`offs`, one entry an address and device, kept before anything else
+  // changes), so one made offline goes from Settings or the next practice
+  // page, and a second never pushes out a first. It waits for a post already
+  // on its way (whose numbers would otherwise land after it). Another phone
+  // of the household keeps its own switch; the email's Unsubscribe stops
+  // every one. Resolves true once the server has every one.
+  // the server's mailbox rule (lib/report.ts mailbox): Gmail dots and +tags
+  // are one inbox, and one confirmation
+  function _mailbox(raw) {
+    const e = String(raw || "").trim().toLowerCase(), at = e.lastIndexOf("@");
+    if (at < 1) return e;
+    let l = e.slice(0, at), d = e.slice(at + 1);
+    const plus = l.indexOf("+");
+    if (plus > 0) l = l.slice(0, plus);
+    if (d === "googlemail.com") d = "gmail.com";
+    if (d === "gmail.com") l = l.replace(/\./g, "");
+    return l + "@" + d;
+  }
+  function _reportOffs(st) {
+    const list = Array.isArray(st.offs) ? st.offs.filter((o) => o && typeof o.e === "string" && o.e && /^[a-f0-9]{32}$/.test(o.d || "")) : [];
+    // the one slot an earlier build of this change kept
+    if (st.offOwed && st.offOwed.e && /^[a-f0-9]{32}$/.test(st.offOwed.d || "") && !list.some((o) => o.e === st.offOwed.e && o.d === st.offOwed.d)) list.push(st.offOwed);
+    return list.slice(-5);
+  }
+  function _reportOffOwe(email) {
+    const st = _reportState();
+    if (!email || !/^[a-f0-9]{32}$/.test(st.dev || "")) return; // a phone that never posted has nothing on the server
+    const list = _reportOffs(st).filter((o) => !(o.e === email && o.d === st.dev));
+    list.push({ e: email, d: st.dev });
+    st.offs = list; delete st.offOwed;
+    ["pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; });
+    _reportSave(st);
+  }
   function _reportOffFlush(force) {
-    const st = _reportState(), o = st.offOwed;
-    if (!o || !o.e || !/^[a-f0-9]{32}$/.test(o.d || "")) { if (o) { delete st.offOwed; _reportSave(st); } return Promise.resolve(true); }
-    const now = Date.now();
-    if (_reportOffBusy || (!force && o.at > 0 && o.at <= now && now - o.at < REPORT_OFF_RETRY_MS)) return Promise.resolve(false);
-    o.at = now; _reportSave(st); _reportOffBusy = true;
-    let sent;
-    try {
-      sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-        body: JSON.stringify({ email: o.e, dev: o.d, weeks: [-1, 0].map((w) => ({ wk: _mondayKey(w), kids: [] })), quiet: true, off: true }) })
-        .then((r) => r.json()).then((j) => !!(j && j.ok));
-    } catch (e) { sent = Promise.resolve(false); }
-    return sent.catch(() => false).then((ok) => {
-      _reportOffBusy = false;
-      if (ok) { const s2 = _reportState(); if (s2.offOwed && s2.offOwed.e === o.e && s2.offOwed.d === o.d) { delete s2.offOwed; _reportSave(s2); } }
-      return ok;
-    });
+    // one at a time: a Turn off made while another is on its way follows it
+    if (_reportOffP) return _reportOffP.then(() => _reportOffFlush(force));
+    const now = Date.now(), due = _reportOffs(_reportState()).filter((o) => force || !(o.at > 0 && o.at <= now && now - o.at < REPORT_OFF_RETRY_MS));
+    if (!due.length) return Promise.resolve(!_reportOffs(_reportState()).length);
+    const one = (o) => {
+      const st = _reportState(); st.offs = _reportOffs(st).map((x) => (x.e === o.e && x.d === o.d ? Object.assign({}, x, { at: now }) : x)); delete st.offOwed; _reportSave(st);
+      let sent;
+      try {
+        sent = fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+          body: JSON.stringify({ email: o.e, dev: o.d, weeks: [-1, 0].map((w) => ({ wk: _mondayKey(w), kids: [] })), quiet: true, off: true }) })
+          .then((r) => r.json()).then((j) => !!(j && j.ok));
+      } catch (e) { sent = Promise.resolve(false); }
+      return sent.catch(() => false).then((ok) => {
+        if (ok) { const s2 = _reportState(); s2.offs = _reportOffs(s2).filter((x) => !(x.e === o.e && x.d === o.d)); delete s2.offOwed; _reportSave(s2); }
+        return ok;
+      });
+    };
+    _reportOffP = due.reduce((p, o) => p.then((all) => one(o).then((ok) => all && ok)), Promise.resolve(true))
+      .then((ok) => { _reportOffP = null; return ok && !_reportOffs(_reportState()).length; }, () => { _reportOffP = null; return false; });
+    return _reportOffP;
   }
   function reportOff() {
-    const email = reportEmail(), st = _reportState();
-    // a phone that never posted has nothing on the server to forget
-    if (email && /^[a-f0-9]{32}$/.test(st.dev || "")) { st.offOwed = { e: email, d: st.dev }; ["pend", "pendFor", "gaveUp"].forEach((k) => { delete st[k]; }); _reportSave(st); }
+    _reportOffOwe(reportEmail());
     try { _kids().list.forEach((k) => { const q = _loadFor(k.slot, PKEY, {}); if (q.weeklyReport === true) { q.weeklyReport = false; saveFor(k.slot, PKEY, q); } }); } catch (e) {}
-    return _reportOffFlush(true);
+    return (_reportSyncP || Promise.resolve()).then(() => _reportOffFlush(true), () => _reportOffFlush(true));
   }
   function buyPlan(plan) {
     let p = null; try { p = plan && (plan.state === "free" || plan.state === "paid") && plan._p; } catch (e) {}

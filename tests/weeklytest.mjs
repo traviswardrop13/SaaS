@@ -50,6 +50,7 @@ function store(unsub = []) {
       if (op === "EXISTS") return kv.has(a[0]) ? 1 : 0;
       if (op === "SISMEMBER") return (sets.get(a[0]) || new Set()).has(a[1]) ? 1 : 0;
       if (op === "SCARD") return (sets.get(a[0]) || new Set()).size;
+      if (op === "SMEMBERS") return [...(sets.get(a[0]) || [])];
       if (op === "ZSCORE") return z.has(a[1]) ? String(z.get(a[1])) : null;
       if (op === "SADD") { const m = sets.get(a[0]) || new Set(); let n = 0; a.slice(1).forEach((x) => { if (!m.has(x)) { n++; m.add(x); } }); sets.set(a[0], m); return n; }
       if (op === "SREM") { const m = sets.get(a[0]) || new Set(); const had = m.delete(a[1]); return had ? 1 : 0; }
@@ -175,22 +176,44 @@ await scenario("what goes wrong", async () => {
 
 await scenario("a household that turns the report off", async () => {
   db = store(); joined("mom@example.com", MON - 6 * DAY);
-  const DEV = "0123456789abcdef0123456789abcdef", h = R.confirmKey(R.mailHash("mom@example.com", "s3cret"));
+  const DEV = "0123456789abcdef0123456789abcdef", DEV2 = "fedcba9876543210fedcba9876543210", h = R.confirmKey(R.mailHash("mom@example.com", "s3cret")), oh = R.offKey(R.mailHash("mom@example.com", "s3cret"));
   db.sets.set(h, new Set([DEV]));
   const kids = [{ i: "0123456789abcdef", d: 2, g: 1, r: 20, p: 10, s: ["R"] }];
   ok("(the phone, confirmed, sent its numbers)", (await R.store({ email: "mom@example.com", dev: DEV, weeks: [{ wk: WK, kids }] }, db.cmd, fakeFetch, MON - 2 * DAY)) === "ok" && db.h.get(R.weekKey(WK)).size === 1);
+  // a week two back, posted last week (the phone sends this week and last)
+  db.h.set(R.weekKey("2026-10-12"), new Map([["mom@example.com " + DEV, JSON.stringify(kids)]]));
   const snap = R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: WK, kids: [] }, { wk: "2026-10-26", kids: [] }], quiet: true, off: true }, MON);
   ok("Settings' Turn off is a report post the server takes (off, quiet)", !!snap && snap.off === true && snap.quiet === true, snap);
   const m = outbox.length;
   ok("…answered ok, with no email (never a confirm link)", (await R.store(snap, db.cmd, fakeFetch, MON)) === "ok" && outbox.length === m);
-  ok("…this phone is no longer confirmed for the address, and its numbers are gone", !db.sets.get(h).has(DEV) && db.h.get(R.weekKey(WK)).size === 0);
+  ok("…the phone is marked off for the address, and every week of its numbers the server could hold is gone (not only the two the phone named)",
+    db.sets.get(oh).has(DEV) && db.h.get(R.weekKey(WK)).size === 0 && db.h.get(R.weekKey("2026-10-12")).size === 0);
+  ok("…its confirmation stays (so an unsubscribed address still hears \"off\" when it is turned on again)", db.sets.get(h).has(DEV));
+  // a numbers post that crossed the Turn off put them back
+  db.h.get(R.weekKey(WK)).set("mom@example.com " + DEV, JSON.stringify(kids));
   const rep = await R.runReports(db.cmd, fakeFetch, MON, { sleep: noSleep });
   const wk = await run(MON, [person("mom@example.com")]);
-  ok("…so Monday sends no report from them, and the Monday example comes instead (they still hear from Sona weekly)", rep.sent === 0 && wk.sent === 1 && to(m).join() === "mom@example.com", [rep, wk, to(m)]);
-  const stranger = R.validate({ email: "mom@example.com", dev: "f".repeat(32), weeks: [{ wk: WK, kids: [] }], off: true }, MON);
-  db.sets.set(h, new Set([DEV]));
-  await R.store(stranger, db.cmd, fakeFetch, MON);
-  ok("a Turn off for another phone's id leaves this one confirmed (only the phone knows its id)", db.sets.get(h).has(DEV));
+  ok("…so Monday sends no report from that phone, even with numbers put back, and the Monday example comes instead", rep.sent === 0 && wk.sent === 1 && to(m).join() === "mom@example.com", [rep, wk, to(m)]);
+  const real = await R.confirm("mom@example.com", DEV, db.cmd);
+  ok("an old confirm link tapped after Turn off changes nothing (\"off\")", real === "off");
+  await R.store(R.validate({ email: "mom@example.com", dev: DEV2, weeks: [{ wk: WK, kids: [] }], off: true }, MON), db.cmd, fakeFetch, MON);
+  ok("…nor for a phone that was never confirmed and turned it off before tapping", (await R.confirm("mom@example.com", DEV2, db.cmd)) === "off" && !db.sets.get(h).has(DEV2));
+  const cr = read("app/api/report/confirm/route.ts");
+  ok("…and the link's page says the report is off on that phone, and where to turn it on", /done === "off"/.test(cr) && /The report is off on that phone/.test(cr) && /turn on Weekly progress report in Settings/.test(cr));
+  const back = await R.store(R.validate({ email: "mom@example.com", dev: DEV, weeks: [{ wk: "2026-10-26", kids }] }, MON), db.cmd, fakeFetch, MON);
+  ok("turned on again: the phone's next post lifts the mark, and its numbers are kept", back === "ok" && !db.sets.get(oh).has(DEV) && db.sets.get(oh).has(DEV2) && db.h.get(R.weekKey("2026-10-26")).size === 1, back);
+  const m2 = outbox.length; await run(NEXT, [person("mom@example.com")]);
+  ok("…and the Monday example stops again (the real report is theirs)", outbox.length === m2);
+  // an unsubscribed address, its phone confirmed: off, then on, still hears "off"
+  db = store(["gone@example.com"]); const gh = R.confirmKey(R.mailHash("gone@example.com", "s3cret"));
+  db.sets.set(gh, new Set([DEV]));
+  await R.store(R.validate({ email: "gone@example.com", dev: DEV, weeks: [{ wk: WK, kids: [] }], off: true }, MON), db.cmd, fakeFetch, MON);
+  ok("an unsubscribed address turned off and on again is told \"off\" (never a link that will not come)", (await R.store(R.validate({ email: "gone@example.com", dev: DEV, weeks: [{ wk: WK, kids }] }, MON), db.cmd, fakeFetch, MON)) === "off");
+  db = store(); db.sets.set(h, new Set([DEV]));
+  await R.store(R.validate({ email: "mom@example.com", dev: DEV2, weeks: [{ wk: WK, kids: [] }], off: true }, MON), db.cmd, fakeFetch, MON);
+  ok("a Turn off names one phone: another phone of the household is not marked", !(db.sets.get(oh) || new Set()).has(DEV));
+  db.down = true;
+  ok("a store that does not answer a Turn off is an error (the phone keeps it owed)", (await R.store(snap, db.cmd, fakeFetch, MON)) === "error");
 });
 
 await scenario("the run says when the list is cut short", async () => {
@@ -239,12 +262,16 @@ const leads = [], reports = [];
 const server = createServer((req, res) => {
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/__seed") { res.end("<!doctype html><title>Seed</title>"); return; }
+  if (url.pathname === "/__page") { res.writeHead(200, { "content-type": "text/html" }); res.end('<!doctype html><title>Page</title><script src="/sona.js"></script>'); return; }
   if (url.pathname === "/api/report" || url.pathname === "/api/lead") {
-    let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => {
-      (url.pathname === "/api/lead" ? leads : reports).push(JSON.parse(b));
+    let b = ""; req.on("data", (c) => (b += c)); req.on("end", async () => {
+      const body = JSON.parse(b); body.__at = Date.now();
+      (url.pathname === "/api/lead" ? leads : reports).push(body);
+      if (url.pathname === "/api/report" && answer.delay && !body.off) await new Promise((r) => setTimeout(r, answer.delay));
       const lead = url.pathname === "/api/lead";
-      res.writeHead(!lead && answer.status ? answer.status : 200, { "content-type": "application/json" });
-      res.end(JSON.stringify(lead ? { ok: true } : answer.status ? { ok: false, retry: true } : answer));
+      const reply = answer.off503 && body.off ? { status: 503 } : answer;
+      res.writeHead(!lead && reply.status ? reply.status : 200, { "content-type": "application/json" });
+      res.end(JSON.stringify(lead ? { ok: true } : reply.status ? { ok: false, retry: true } : { ok: reply.ok, pending: reply.pending, off: reply.off }));
     });
     return;
   }
@@ -312,7 +339,7 @@ await scenario("Settings turns the report on", async () => {
   c = await cardText(page);
   ok("Turn off: off on every profile, the switch back, \"Turned off.\"", /Turned off\./.test(c.text) && JSON.stringify(c.buttons) === '["Turn on"]' && await page.evaluate(() => !Sona.reportEmail() && JSON.parse(localStorage.getItem("sona.profile.v1")).weeklyReport === false), c);
   const last = reports.at(-1) || {};
-  ok("…and the server is told to forget this phone (off, quiet: no link), for this week and last", reports.length === 3 && last.off === true && last.quiet === true && last.dev === reports[0].dev && last.weeks.length === 2 && last.weeks.every((w) => w.kids.length === 0), last);
+  ok("…and the server is told this phone has it off (off, quiet: no link)", reports.length === 3 && last.off === true && last.quiet === true && last.dev === reports[0].dev && last.weeks.length === 2 && last.weeks.every((w) => w.kids.length === 0), last);
   ok("…which it took, so nothing is owed", await page.evaluate(() => !Sona.reportStatus().owed));
   ok("…the address stays on the phone for the box (and a purchase's plan post)", await page.evaluate(() => document.getElementById("reportEmail").value === "dad@example.com"));
   await page.evaluate(() => { Sona.gameRep("R"); Sona.reportSync(true); }); await page.waitForTimeout(400);
@@ -321,20 +348,102 @@ await scenario("Settings turns the report on", async () => {
   await context.close();
 });
 
-await scenario("a Turn off made offline, and Turn on again", async () => {
+const DEVP = "0123456789abcdef0123456789abcdef";
+const offPosts = () => reports.filter((r) => r.off === true).map((r) => r.email);
+const owed = (page) => page.evaluate(() => (JSON.parse(localStorage.getItem("sona.report.v1") || "{}").offs || []).map((o) => o.e));
+await scenario("a Turn off made offline", async () => {
   leads.length = 0; reports.length = 0; answer = { ok: true };
-  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: "0123456789abcdef0123456789abcdef", at: 1 } });
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1 } });
   answer = { status: 503 };
   await tap(page, "Turn off");
   let c = await cardText(page);
-  ok("the server not answering: off on the phone, and Settings says it will finish", /Turned off\. Sona will finish this the next time it's online\./.test(c.text) && await page.evaluate(() => !Sona.reportEmail() && Sona.reportStatus().owed) && reports.length === 1, [c.text, reports.length]);
+  ok("the server not answering: off on the phone, owed, and Settings says it will finish", /Turned off\. Sona will finish this the next time it's online\./.test(c.text) && await page.evaluate(() => !Sona.reportEmail() && Sona.reportStatus().owed) && JSON.stringify(offPosts()) === '["mom@example.com"]', [c.text, reports.length]);
   answer = { ok: true };
   await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
-  ok("…Settings opened again sends it, and nothing is owed", reports.length === 2 && reports[1].off === true && reports[1].email === "mom@example.com" && await page.evaluate(() => !Sona.reportStatus().owed), reports.length);
-  // turned on again with the same address: the server knows the phone (plain ok)
+  ok("…Settings opened again sends it, and nothing is owed", JSON.stringify(offPosts()) === '["mom@example.com","mom@example.com"]' && (await owed(page)).length === 0, offPosts());
+  answer = { ok: true, pending: true };
   await page.fill("#reportEmail", "mom@example.com"); await tap(page, "Turn on");
   c = await cardText(page);
-  ok("turned on again, the server already sure of the phone: \"Turned on.\", never a link that is not coming", /Turned on\./.test(c.text) && !/Check your email/.test(c.text), c.text);
+  ok("turned on again after the server took the Turn off: it asks the address again, and says so", /Check your email for the link to start it\./.test(c.text), c.text);
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("an owed Turn off, then Turn on again before it went", async () => {
+  leads.length = 0; reports.length = 0; answer = { status: 503 };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "d.ad+sona@gmail.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1 } });
+  await tap(page, "Turn off");
+  ok("(owed)", JSON.stringify(await owed(page)) === '["d.ad+sona@gmail.com"]');
+  answer = { ok: true, pending: true };
+  await page.fill("#reportEmail", "dad@gmail.com"); await tap(page, "Turn on");
+  ok("turned on for the same inbox (another spelling: Gmail dots and a +tag): the owed Turn off is dropped, never sent after", (await owed(page)).length === 0 && offPosts().length === 1, [await owed(page), offPosts()]);
+  await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
+  ok("…nor on the next visit, so the report the parent just turned on stays on", offPosts().length === 1 && await page.evaluate(() => Sona.reportEmail() === "dad@gmail.com"));
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("two Turn offs owed for two addresses", async () => {
+  leads.length = 0; reports.length = 0; answer = { status: 503 };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1 } });
+  await tap(page, "Turn off");
+  await page.fill("#reportEmail", "dad@example.com"); await tap(page, "Turn on");
+  ok("an owed Turn off for another address stays owed when a new one is turned on", JSON.stringify(await owed(page)) === '["mom@example.com"]');
+  await tap(page, "Turn off");
+  ok("…and a second Turn off is owed beside it, never in its place", JSON.stringify(await owed(page)) === '["mom@example.com","dad@example.com"]', await owed(page));
+  answer = { ok: true }; reports.length = 0;
+  await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(700);
+  ok("…back online, both go, one after the other, and nothing is owed", JSON.stringify(offPosts()) === '["mom@example.com","dad@example.com"]' && (await owed(page)).length === 0, offPosts());
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("an owed Turn off goes from a practice page, and Settings coming back", async () => {
+  leads.length = 0; reports.length = 0; answer = { ok: true, off503: true };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com" }), "sona.report.v1": { dev: DEVP, at: 1, offs: [{ e: "mom@example.com", d: DEVP }] } });
+  // Settings' own load sent it once (the server did not take it)
+  const n0 = offPosts().length;
+  await page.goto(origin + "/__page"); await page.waitForFunction(() => window.Sona);
+  await page.evaluate(() => { const st = JSON.parse(localStorage.getItem("sona.report.v1")); st.offs[0].at = 0; localStorage.setItem("sona.report.v1", JSON.stringify(st)); });
+  await page.evaluate(() => Sona.gameRep("R")); await page.waitForTimeout(400);
+  await page.evaluate(() => Sona.gameRep("R")); await page.waitForTimeout(400);
+  ok("a rep on a practice or game page sends it, and a second rep inside five minutes does not", n0 === 1 && offPosts().length === 2, [n0, offPosts().length]);
+  await page.evaluate(() => { const st = JSON.parse(localStorage.getItem("sona.report.v1")); st.offs[0].at = Date.now() - 6 * 60 * 1000; localStorage.setItem("sona.report.v1", JSON.stringify(st)); });
+  await page.evaluate(() => Sona.gameRep("R")); await page.waitForTimeout(400);
+  ok("…five minutes on, it tries again", offPosts().length === 3, offPosts().length);
+  answer = { ok: true };
+  await page.goto(origin + "/settings.html"); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
+  ok("…and Settings sends it as it opens; taken, nothing is owed", offPosts().length === 4 && (await owed(page)).length === 0, offPosts().length);
+  await page.evaluate(() => { const st = JSON.parse(localStorage.getItem("sona.report.v1")); st.offs = [{ e: "mom@example.com", d: "0123456789abcdef0123456789abcdef" }]; localStorage.setItem("sona.report.v1", JSON.stringify(st)); });
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await page.waitForTimeout(500);
+  ok("…and when Settings comes back to the front", offPosts().length === 5 && (await owed(page)).length === 0, offPosts().length);
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("a Turn off waits for a post on its way", async () => {
+  leads.length = 0; reports.length = 0; answer = { ok: true, delay: 500 };
+  const { context, page, errors } = await fresh({ "sona.profile.v1": Object.assign({}, MILO, { email: "mom@example.com", weeklyReport: true }), "sona.report.v1": { dev: DEVP, at: 1 } });
+  await page.evaluate(() => { Sona.reportSync(true); return Sona.reportOff(); });
+  await page.waitForTimeout(300);
+  const nums = reports.find((r) => !r.off), off = reports.find((r) => r.off);
+  ok("the numbers post goes first, and the Turn off only once the server has answered it (so the off lands last)", !!nums && !!off && off.__at - nums.__at >= 450, [nums && nums.__at, off && off.__at]);
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("removing the child who holds the address", async () => {
+  leads.length = 0; reports.length = 0; answer = { ok: true };
+  const { context, page, errors } = await fresh({
+    "sona.kids.v1": { active: "", hi: 3, list: [{ slot: "", name: "Milo" }, { slot: "k2", name: "Ava" }] },
+    "sona.profile.v1": MILO, "sona.profile.v1@k2": Object.assign({}, MILO, { childName: "Ava", email: "mom@example.com", weeklyReport: true }),
+    "sona.report.v1": { dev: DEVP, at: 1 },
+  });
+  await page.evaluate(() => Sona.removeKid("k2"));
+  ok("the report stops with them, and the server is owed that this phone has it off", await page.evaluate(() => !Sona.reportEmail()) && JSON.stringify(await owed(page)) === '["mom@example.com"]', await owed(page));
+  await page.reload(); await page.waitForSelector("#reportCard", { state: "attached" }); await page.waitForTimeout(500);
+  ok("…sent from Settings", JSON.stringify(offPosts()) === '["mom@example.com"]' && (await owed(page)).length === 0, offPosts());
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });
