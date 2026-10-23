@@ -8,8 +8,9 @@ import { store, validate } from "@/lib/report";
  * lib/report.ts says what they are, who confirms them and what happens to
  * them).
  *
- * Only a household that asked for the report on setup's email step sends
- * here. The body is an email address, the phone's random device id, and a
+ * Only a household that asked for the report (setup's email step, or
+ * Settings' switch since 23 Oct 2026) sends here; Settings' Turn off sends
+ * `off`, which removes that phone's confirmation and numbers. The body is an email address, the phone's random device id, and a
  * few numbers a child for this week and last: never a name, an age, a word
  * or a voice (validate() builds what is kept field by field, so anything
  * else in the body is dropped). Nothing is kept until the address has

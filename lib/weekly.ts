@@ -43,6 +43,13 @@ import { KIT_DONE, everyone, type Contact } from "@/lib/contacts";
  * and on a second 429. The order is shuffled by the week, so a run that
  * stops early leaves a different tail each week, never the same parents.
  *
+ * KNOWN LIMITS, both far off on 23 Oct 2026, and both said in the run's
+ * answer rather than hidden: the audience is everyone(), whose leads come
+ * from a ledger capped at LEDGER_CAP rows (`full`: past that, the oldest
+ * parents drop off), and three runs of WEEKLY_CAP send about 750 a week
+ * (`stopped: "cap"` on Wednesday means some waited a week; past that it
+ * needs Resend's batch send and its own list of parents).
+ *
  * Wording is Rachel's to change (renderExample); weeklytest holds it to the
  * house email rules: her byline, the hedge, no clinical words, no emoji, no
  * prices, no name.
@@ -107,7 +114,9 @@ export function renderExample(wk: string, unsubUrl: string, postal: string): { s
 /** A parent, or a lead that never said (every one of those is a parent's: lib/contacts roleOf). */
 export const isParent = (c: Contact) => c.role === "parent" || c.role === "";
 
-export type WeeklyResult = { week: string | null; people: number; sent: number; failed: number; skipped: number; waiting: number; stopped?: string };
+export type WeeklyResult = { week: string | null; people: number; sent: number; failed: number; skipped: number; waiting: number; stopped?: string; full?: boolean };
+/** The leads ledger's length cap (/api/lead LTRIM 0 9999, lib/founder readLeads). */
+export const LEDGER_CAP = 10000;
 
 /**
  * Monday's send, after the reports (Tuesday and Wednesday catch up). `force`
@@ -133,6 +142,11 @@ export async function runWeekly(kv: Kv = kvCmd, f: Fetch = fetch, now: number = 
     .map((e) => ({ e, o: createHash("sha256").update(wk + " " + e).digest("hex") }))
     .sort((a, b) => (a.o < b.o ? -1 : 1)).map((x) => x.e);
   res.people = list.length;
+  // no silent caps: once the ledger is full, the parents whose only rows were
+  // trimmed are not in everyone() and get no Monday email; the run says so
+  try {
+    if (Number(await kv(["LLEN", "leads:all"])) >= LEDGER_CAP) { res.full = true; console.error("[weekly] the leads ledger is full: the oldest parents are no longer on the Monday list"); }
+  } catch { /* only a warning */ }
   let tries = 0;
   for (const email of list) {
     if (tries >= WEEKLY_CAP) { res.stopped = "cap"; break; } // the next run picks up the rest

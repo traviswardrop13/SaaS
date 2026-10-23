@@ -234,6 +234,12 @@ ok("/api/lead enrolls every new email once the app is out, an in-app one without
   ok("…a purchase's plan post that is the first the server hears of the address, the same", JSON.stringify(fromBuy.subjects) === JSON.stringify([subj("trick")]), fromBuy);
   const fromSettings = await post({ email: "switch@example.com", source: "app-settings", role: "parent" });
   ok("…and Settings' report switch (source app-settings), the same", JSON.stringify(fromSettings.subjects) === JSON.stringify([subj("trick")]), fromSettings);
+  ok("…and the rest of its series stays on the schedule", db.z.has("switch@example.com") && !db.kv.has(N.stopKey("switch@example.com")));
+  const fromPremium = await post({ email: "premium@example.com", source: "app-settings", role: "parent", premium: true });
+  ok("…but from a phone that already has every game open (premium: true), the tip alone: the series stops, with no purchase claimed",
+    JSON.stringify(fromPremium.subjects) === JSON.stringify([subj("trick")]) && !db.z.has("premium@example.com") && db.kv.get(N.stopKey("premium@example.com")) === "1", fromPremium);
+  const notTrue = await post({ email: "premium2@example.com", source: "app-settings", role: "parent", premium: "yes" });
+  ok("…and only the value true says so", notTrue.subjects.length === 1 && db.z.has("premium2@example.com"));
   ok("…and nothing after it: a buyer's welcome emails stop (day 2 says \"Start your free trial\")",
     !db.z.has("buyer@example.com") && !db.kv.has(N.nextKey("buyer@example.com")) && db.kv.get(N.stopKey("buyer@example.com")) === "1");
   const later = await post({ email: "parent2@example.com", source: "app-setup", role: "parent" });

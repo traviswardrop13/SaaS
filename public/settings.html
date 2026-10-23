@@ -527,6 +527,10 @@
       var card = document.getElementById("reportCard"), body = document.getElementById("reportBody"), msg = document.getElementById("reportMsg");
       if (!card || !body || !Sona.reportStatus || !Sona.reportSet || !Sona.reportOff) return;
       var busy = false;
+      // the card changes shape under the finger when it turns on or off: a
+      // double tap's second tap must not land on the new button (Turn off
+      // sits where Turn on was), so taps wait a moment after each switch
+      function settle() { busy = true; setTimeout(function () { busy = false; }, 600); }
       function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
       function btn(text, cls, fn) { var b = el("button", "btn" + (cls ? " " + cls : ""), text); b.type = "button"; b.onclick = fn; return b; }
       function say(t) { msg.textContent = t || ""; }
@@ -538,10 +542,11 @@
           var on = el("p", "bd-line"); on.appendChild(document.createTextNode("On. It goes to ")); on.appendChild(el("b", "", st.email)); on.appendChild(document.createTextNode(" every Monday."));
           body.appendChild(on);
           if (st.off) body.appendChild(el("p", "muted set-lead", "This email unsubscribed from Sona's emails, so no report is sent."));
-          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email: tap the link we sent to start it."));
+          else if (st.pending) body.appendChild(el("p", "muted set-lead", "Check your email for Sona's link, and tap it to start."));
           var off = el("div", "set-actions"); off.appendChild(btn("Turn off", "ghost", function () {
             if (busy) return; busy = true;
-            Sona.reportOff().then(function () { busy = false; paint(); say("Turned off."); }, function () { busy = false; paint(); say("Turned off."); });
+            var done = function (sent) { paint(); settle(); say(sent ? "Turned off." : "Turned off. Sona will finish this the next time it's online."); };
+            Sona.reportOff().then(done, function () { done(false); });
           }));
           body.appendChild(off);
           return;
@@ -557,20 +562,25 @@
           if (!em) { say("Type the grown-up's email first."); inp.focus(); return; }
           busy = true; say("");
           Sona.reportSet(em).then(function (sent) {
-            busy = false;
-            if (!Sona.reportStatus().on) { say("That email doesn't look right."); inp.focus(); return; }
-            paint(); say(sent ? "Check your email for the link to start it." : "Saved. We'll send the link the next time Sona is online.");
+            var now = Sona.reportStatus();
+            if (!now.on) { busy = false; say("That email doesn't look right."); inp.focus(); return; }
+            paint(); settle();
+            // what the server said, not what was hoped: a link only while it waits for one
+            say(!sent ? "Saved. Sona will send the link the next time it's online." : now.pending ? "Check your email for the link to start it." : now.off ? "" : "Turned on.");
           }, function () { busy = false; paint(); });
         }));
         body.appendChild(go);
         body.appendChild(el("p", "muted", "We'll also send occasional tips from Rachel. Unsubscribe anytime."));
       }
       paint();
+      // a Turn off made offline goes as soon as Settings is open again
+      if (Sona.reportStatus().owed && Sona.reportFlush) Sona.reportFlush().then(function () {}, function () {});
       // back from Mail with the link tapped: "Check your email" goes. Only
       // while on, so a box being typed in is never wiped
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState !== "visible" || busy) return;
         var st = Sona.reportStatus();
+        if (st.owed && Sona.reportFlush) Sona.reportFlush().then(function () {}, function () {});
         if (!st.on) return;
         paint();
         // waiting on the link: ask the server again, so a tapped link shows at once

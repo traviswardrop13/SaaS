@@ -1586,7 +1586,7 @@ from Rachel.
   (`report:sent:<monday>:<email>`, released if Resend refuses), with a 550 ms
   pause before each send (the first too: the welcome series has just sent), a
   429 tried once more after a longer pause and then the run stopped, stopping
-  too 250 seconds into the run, at most 250 a run. A week
+  too 200 seconds into the run (the Monday email has the time after it), at most 250 a run. A week
   with no reps sends nothing. Two phones, one address: one email, a child
   (by its id) once with the fuller count, two quiet brothers still two, at
   most three devices. A founder's manual run with `?report=1` sends on any
@@ -1661,11 +1661,25 @@ any day, still once a week).
   posts the report at once so the confirm email goes now; on, "On. It goes to
   <email> every Monday.", "Check your email: tap the link we sent to start
   it." until the address says yes (asked again when Settings comes back to
-  the front), or "This email unsubscribed …", and Turn off. Off clears
-  `weeklyReport` on every profile and posts this phone's two weeks empty,
-  quietly (no link), so Monday's report does not go out from numbers already
-  sent; another phone of the household keeps its own switch. Not for a
-  clinician's own setup.
+  the front), or "This email unsubscribed …", and Turn off. After Turn on the
+  line says what the server answered: a link only while it waits for one
+  ("Turned on." for a phone already confirmed). A phone with every game open
+  says `premium: true` on that lead, so the series stops for a family whose
+  purchase the server never heard of (an address given after it), with no
+  plan word claimed. Off clears `weeklyReport` on every profile and tells the
+  server `off` (lib/report.ts store: this phone leaves `report:dev`, its two
+  weeks' numbers are deleted), so Monday's report does not go out from them
+  and the Monday email sees a household without the report; owed until the
+  server says so (`offOwed` in sona.report.v1, sent from Settings or the next
+  practice page: "Turned off. Sona will finish this the next time it's
+  online."). Turning it on again asks the address again (the old link still
+  works). Another phone of the household keeps its own switch. Taps wait 600
+  ms after the card changes shape. Not for a clinician's own setup.
+- **Known limits, said in the run's answer:** the audience is `everyone()`,
+  whose leads ledger is capped at 10,000 rows (`full: true`: the oldest
+  parents are off the list), and three runs of 250 send about 750 a week
+  (`stopped: "cap"` on a Wednesday). Past either, it needs Resend's batch send
+  and its own list of parents.
 - **For Travis:** the consent line beside every email box says "occasional
   tips from Rachel", and the list now hears from Sona weekly: his words to
   change if they should say so. Every parent who gave an email since 24 Sep

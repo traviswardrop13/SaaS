@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     fbclid?: string;
     welcome?: boolean;
     plan?: string;
+    premium?: boolean;
   };
   try {
     body = await req.json();
@@ -282,11 +283,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // THE WELCOME SERIES (lib/nurture.ts, 6 Oct 2026): now that the app is out,
-  // every grown-up who gives an email gets Rachel's welcome right away and the
-  // 5-minute email the next day — once per address, with a real unsubscribe.
-  // An email given inside the app (IN_APP_SOURCES in lib/nurture.ts) skips
-  // the App Store email and starts at the 5-minute one: they have the app.
+  // THE WELCOME SERIES (lib/nurture.ts, 6 Oct 2026; three emails since 23 Oct
+  // 2026): now that the app is out, every grown-up who gives an email gets
+  // Rachel's welcome right away, the recast tip the next day and the quick
+  // answers the day after — once per address, with a real unsubscribe. An
+  // email given inside the app (IN_APP_SOURCES in lib/nurture.ts) gets "The
+  // 5-minute trick" in place of the App Store email: they have the app.
   if (APP_READY && kvConfigured()) {
     try {
       welcomed = (await enroll(email, kvCmd, fetch, Date.now(), { inApp: inAppSource(lead.source) })) || welcomed;
@@ -295,9 +297,12 @@ export async function POST(req: NextRequest) {
     }
   }
   // A PARENT WHO STARTED SONA PREMIUM gets no more of the welcome series
-  // (Travis, 16 Oct 2026): days 3 and 5 sell the free days they already
+  // (Travis, 16 Oct 2026): the day-2 email sells the free days they already
   // started. The weekly progress report, if they asked for it, is separate.
-  if (safeLead.plan && kvConfigured()) {
+  // `premium`: an address given later (Settings' report switch) from a phone
+  // that already has every game open, whose purchase the server never heard
+  // of; it stops the series and claims no purchase (no plan word).
+  if ((safeLead.plan || body?.premium === true) && kvConfigured()) {
     try { await stopSeries(email, kvCmd); } catch { /* the next email says "already started? ignore the button" */ }
   }
 

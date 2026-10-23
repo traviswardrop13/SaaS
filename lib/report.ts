@@ -9,7 +9,8 @@ import { config, esc, unsubToken } from "@/lib/nurture";
  *
  * A child's practice lives on the phone, so the phone tells the server, and
  * only for a household whose grown-up asked for the report on setup's email
- * step (`profile.weeklyReport`, sona.js REPORT1). What it sends is a few
+ * step or with Settings' switch (`profile.weeklyReport`, sona.js REPORT1;
+ * the switch since 23 Oct 2026, WEEKLY1, which can also turn it off: `off`). What it sends is a few
  * numbers a child a week, and nothing else:
  *   i  a random id for the child (so the same child on two phones is one)
  *   d  days with at least one rep (0-7)
@@ -79,7 +80,7 @@ const SOUND_LABEL: Record<string, string> = { THV: "TH (v)" };
 
 export type Kid = { i?: string; d: number; g: number; gw?: number; r: number; p: number; s: string[] };
 export type Week = { wk: string; kids: Kid[] };
-export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean };
+export type Snapshot = { email: string; dev: string; weeks: Week[]; quiet?: boolean; off?: boolean };
 
 export const weekKey = (wk: string) => "report:wk:" + wk;
 export const sentKey = (wk: string, email: string) => "report:sent:" + wk + ":" + email;
@@ -169,8 +170,11 @@ export function validate(body: unknown, now: number = Date.now()): Snapshot | nu
     if (weeks.some((x) => x.wk === o.wk)) return null;
     weeks.push({ wk: o.wk, kids: (o.kids as unknown[]).map(kidOk).filter((k): k is Kid => k !== null) });
   }
-  // quiet: a phone that gave up waiting checks, with no numbers, whether the
-  // address confirmed; it never asks for a link
+  // off: the grown-up turned the report off on this phone (Settings, WEEKLY1):
+  // its confirmation and its numbers go. quiet: a phone that gave up waiting
+  // checks, with no numbers, whether the address confirmed; neither ever asks
+  // for a link
+  if (b.off === true) return { email, dev, weeks, quiet: true, off: true };
   return b.quiet === true ? { email, dev, weeks, quiet: true } : { email, dev, weeks };
 }
 
@@ -299,6 +303,20 @@ export async function store(snap: Snapshot, kv: Kv = kvCmd, f: Fetch = fetch, no
   const cfg = config();
   if (!cfg) return "error";
   const h = mailHash(snap.email, cfg.secret);
+  if (snap.off) {
+    // Turned off: this phone is no longer confirmed for the address (turning
+    // it on again asks again), and this week's and last week's numbers from
+    // it are gone, so Monday's report does not go out from them, and the
+    // Monday email (lib/weekly.ts) sees a household without the report.
+    // Only the phone knows its random id, so nobody else can do this.
+    const a = await kv(["SREM", confirmKey(h), snap.dev]);
+    if (a === undefined || a === null) return "error";
+    for (const w of snap.weeks) {
+      const b = await kv(["HDEL", weekKey(w.wk), snap.email + " " + snap.dev]);
+      if (b === undefined || b === null) return "error";
+    }
+    return "ok";
+  }
   const yes = await kv(["SISMEMBER", confirmKey(h), snap.dev]);
   if (yes === undefined || yes === null) return "error";
   const unsub = await suppressed(snap.email, kv);
