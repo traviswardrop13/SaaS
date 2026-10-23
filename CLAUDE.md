@@ -540,7 +540,7 @@ changing one. What follows from the rule:
   picked, and the one payment under it** (below, "TWO ROWS: MONTHLY ON
   TOP"); the yearly row of 19 Oct is no longer sold.
 - **"Not now" goes to Home with everything locked:** every game and book is
-  "Premium" and the Books card says "Premium"; no microphone ask and no
+  "Premium" and Home's Books door says "Premium"; no microphone ask and no
   hand-off. Settings then says "Plan: none yet", never "free version".
 - **A tap on a grey game or book opens the price at once** (Travis, 4 Oct
   2026: "I want it to open automatically if they click on a game that is
@@ -2347,8 +2347,10 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   Day 2 and a new game!" ("…for Day 2!" when tomorrow's story is shown
   locked), or "Come back tomorrow for a new adventure!"), two
   doors (`#homeDoors`: **Arcade**, `home-arcade.webp` and "All the games";
-  **Books**, `home-books.webp` and the Books card's own tag, one handler for
-  both), then "Your games" (FOUND1, below; only once a story is finished).
+  **Books**, `home-books.webp` and its tag ("Free", "Included", "1 free
+  book" or "Premium"), the one way to the bookshelf since the Arcade lost
+  its Books card), then "Your games" (FOUND1, below; only once a story is
+  finished).
   The top bar is the buddy, the gift button and Grown-ups. On a phone the doors are tiles with the
   picture as a 2:1 band on top (the Arcade picture's game things sit at its
   edges, so it is never cut to a square); on an iPad, rows with a 3:2
@@ -2356,14 +2358,42 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   `card.onclick=function(){if(done)return;launch(game);}`; on a story day
   `game` is `{ kind: "story", key: "adventure", go: "/adventure.html", tier:
   "premium" }`, so `launch()` opens it, or opens the price where Sona sells.
-- **The Arcade** (`/today.html?view=arcade`): "‹ Home", then "Pick a game!"
-  and everything Home was: Today's picks, Limited time, both shelves, the
-  Books card, the age note, Best tags, level badges, the locked note and the
-  price on a grey tap.
+- **The Arcade** (`/today.html?view=arcade`): "‹ Home", then "Pick a game!",
+  Today's picks (two games), the two shelves, the age note, Best tags, level
+  badges, the locked note and the price on a grey tap. **Games only, one row
+  on top** (Travis, 23 Oct 2026: "organize the arcade so that there are no
+  books in there ... I like how arcade shows 2 games per row. Let's also do
+  that for simple play ... depending on the age they choose, have those
+  games appear first ... I only want either today's picks or limited time
+  ... have 2 games listed there, and then go directly to either simple play
+  or arcade"; he left the row to us):
+  - **No books:** no Books card and no book in any row; the bookshelf is
+    Home's Books door. `HOME_BOOKS` (the books the top rows could show) is
+    gone from `sona.js`; the bookshelf keeps every book and its own
+    limited-time ones (`Sona.seasonPick`).
+  - **One row, Today's picks:** two games of the first shelf under it (the
+    child's own age group, `playStyle()`, or Simple play while no age is
+    set), one from each half of that shelf, new each day, stable
+    for the day, read only, the same for a child whatever their name and
+    different for a brother or sister (`activityLibrary().picks`,
+    `Sona.homePicks`). If neither opens for a family, one is swapped for an
+    open game. **What's new and Limited time are gone** (`activityLibrary()`
+    has no `featured`): Limited time only ever held the Halloween books, and
+    calling an everyday game "limited" would not be true. A real
+    limited-time game, if one is ever made, needs a row again (Travis's
+    call). The row is a two-column grid at every width, the shelves' wide
+    pictures.
+  - **The child's own age group's shelf first** (already so since 21 Sep
+    2026): ages 2-4 Simple play then Arcade, 5 and up Arcade then Simple
+    play, no age yet Simple play first; "For your child" on theirs.
+  - **Simple play is two to a row, like Arcade** (it was all full-width
+    rows): see "Coming soon games are hidden" for the count rule.
+  - **For Rachel:** nothing a child says changes; the picks no longer bring
+    up a book in the child's sound (a book word is play, never practice).
 - **Moving between them.** The Arcade door pushes `?view=arcade` and switches
   at once, and for 500 ms after the Arcade door or "‹ Home" no tap on the
   page does anything (a double tap's second tap used to open whatever the new
-  view put under the finger: a book in Today's picks, or the price); "‹ Home" goes back if it was pushed, else replaces the address;
+  view put under the finger: a card in Today's picks, or the price); "‹ Home" goes back if it was pushed, else replaces the address;
   Back and Forward read the address again. `?locked=` opens the Arcade with
   its note. `activities.html` (old links) adds `view=arcade` unless the
   address has `view=` or `locked=`, keeping the rest of it. Titles: "Sona" on
@@ -2434,7 +2464,7 @@ draws over hand-made art and refuses a book name it doesn't build;
 book-picture path any page uses.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"), and **one is
 free** (30 Sep 2026: "one book uh so like the letter r book ... to be free and
-the rest is grayed out"). Home's Books card always opens `library.html` and
+the rest is grayed out"). Home's Books door always opens `library.html` and
 says "1 free book" to a family without Premium. On the shelf each book asks
 `Sona.bookLocked(title)`: the books in `FREE_BOOKS` (Rory and the Rainbow) are
 open in every pricing state, marked "Free" while others are locked; every
@@ -2455,18 +2485,20 @@ in `STORIES` carries `opens`; the shelf's `opens` support stays, so a future
 book can still wait for a day ("Coming Oct 9"). The six-page books (painted,
 see below) sit after every twelve-page one in `STORIES`: they put the sound
 anywhere in a word and are last in line to be redone. A limited-time book
-carries `season` instead and is on the shelf, and Home's Limited time row,
-only inside its window. **Halloween (October 2026) has one for six sounds**
+carries `season` instead and is on the shelf only inside its window (Home's
+Limited time row showed it too until 23 Oct 2026, when the Arcade lost its
+books). **Halloween (October 2026) has one for six sounds**
 (Travis, 2 Oct 2026: "take a popular book like the halloween and make a
 version for other letter even just the popular ones like r s l z f"): Boo the
 Bat (B, `anySound`), Rory the Rabbit (R), Sid the Seagull (S), Leon's
 Trick-or-Treat Night (L), Zoe the Zebra (Z) and Finn the Fish (F), each
 starring that sound's own hero under the same sound rule. A child sees the
 one in their own sound; a child whose sounds have none sees Boo
-(`Sona.seasonPick`, which the shelf and Home both ask); play mode and a child
-with no sounds yet see them all. Home's card,
-the website and the Premium page say "new ones on the way", never "every
-week", "a book for every sound" or a weekday. `readtest` pins that nothing
+(`Sona.seasonPick`, which the bookshelf asks; Home's Limited time row did too
+until 23 Oct 2026); play mode and a child with no sounds yet see them all.
+The Premium page and the plan screen say "new ones on the way" (the Arcade's
+Books card did too until 23 Oct 2026; Home's Books door carries no line),
+never "every week", "a book for every sound" or a weekday. `readtest` pins that nothing
 waits; `landingtest` the website's count.
 
 **The other sounds' books wait behind "More books"** (Travis, 1 Oct 2026: "it
@@ -2486,10 +2518,8 @@ made is live"), and the free book first when their own have nothing to read.
 (`Sona.rotSound()`) sees the S books first, then the R ones. Only the order
 moves, inside "readable, then Premium", so without Premium the free book
 still leads; a homework sound that is not one of the child's own brings no
-books up. Home's What's new row
-follows the same rule: books in the child's own sounds only, that sound's
-first (`HOME_BOOKS` in sona.js names each book's sound; play mode and a child
-with no sounds yet see them all). Under the shelf sits one cream pill, "More
+books up. (Home's What's new row followed the same rule until 23 Oct 2026,
+when the Arcade lost its books.) Under the shelf sits one cream pill, "More
 books (N)", N being how many books are behind it for this child, closed on every
 load with nothing remembered; a tap opens "Books for other sounds", every
 in-season book the top shelf left off, and a second tap closes it. **The other
@@ -2753,9 +2783,10 @@ grey slot, on any shelf, in Today's picks, the daily adventure card or the
 level sheet. A parked game's card comes back by itself the day its
 `comingSoon` comes off. A typed address to one still bounces home with
 "<Game> is coming soon" (and a `comingOn` day still labels that note). The
-shelves count cards, never names (`crafted-home.css`): the little kids'
-shelf is all wide rows; on a phone the last card of an odd count is a wide
-row; on an iPad one card left over is a wide row and two share it.
+shelves count cards, never names (`crafted-home.css`), and both shelves
+follow one rule (since 23 Oct 2026; the little kids' shelf was all wide rows
+before): on a phone two to a row, the last card of an odd count a wide row;
+on an iPad three to a row, one card left over a wide row and two sharing it.
 `activitytest` and `sayplaytest` pin it. The paragraph just below is the
 history before it.
 
@@ -2825,10 +2856,9 @@ sticker is still a frame of the pitch (`public/assets/games/soccer.webp`,
 through `PLAYED`), and painted art drops in at that name. Inside the game the stadium, Bo and the ball are
 painted (4 Oct 2026, `tools/art/game-sprites.json`, cut to
 `public/assets/crafted/game/soccer-*.webp`); the pitch, goal and net stay
-drawn, because they move and carry the perspective. On Home eight of the nine
-big-kid games fill four even rows of two and Rise Up, the ninth, is a
-full-width row on a phone, so neither Flappy Glide nor Hoops is full-width any
-more. `sayplaytest` plays a
+drawn, because they move and carry the perspective. On Home the sixteen
+big-kid games fill eight even rows of two on a phone (since the eighteen
+rebuilt games opened on 22 Oct 2026), so no big-kid card is full-width there. `sayplaytest` plays a
 whole game.
 
 **Dino Dig is the third one back** (Travis, 1 Oct 2026: "go to the next game"),
@@ -3418,8 +3448,9 @@ balloon, the shield, the blocks, their pushes and pictures; it never touches
 storage, the mic or a sound) and `public/arcade-rise.html` is the round, its
 hearts, the say-it card and the sound power, the way Flappy Glide's page is.
 It is entered through its practice page (`/charge.html?game=arcade-rise.html`,
-which fills Flappy Glide's balloon), is Premium, and is the ninth card on the
-big kids' shelf (a full-width row on a phone). It is **not** in the old
+which fills Flappy Glide's balloon), is Premium, and is on the big kids'
+shelf (a full-width row on a phone while it was the ninth and last, until the
+eighteen rebuilt games opened on 22 Oct 2026). It is **not** in the old
 five-game run (`adventure: false`, which `adventureGames()` skips) and not a
 Say & Play game; it is day 11 of the daily adventure (QUEST1). What it keeps:
 - **The finger only moves the shield, by as much as it moves**, from wherever
@@ -3974,9 +4005,9 @@ seventeen rebuilt games (it had no card from 19 Oct); since 16 Oct 2026 it is
 a played game on `sayplay.js` (see "The eighteen rebuilt by Codex"), and
 `simple-play.js` remains in the repo for its tests. **Bubble Pop is back** (Travis, 30 Sep
 2026), free, the second game for ages 3-4 beside Feed Echo (rebuilt on 1 Oct
-2026; see "Bubble Pop is rebuilt to be played"): a full-width Home card like
-Feed Echo's
-(`crafted-home.css`), no release date so no New shelf, and a website tile
+2026; see "Bubble Pop is rebuilt to be played"): a Home card beside Feed
+Echo's at the head of the little kids' shelf (two to a row since 23 Oct 2026,
+`crafted-home.css`), no release date so never tagged New, and a website tile
 cut from that painted card (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.

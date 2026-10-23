@@ -11,8 +11,9 @@
 //   - a card whose child plays Level 2 or 3 carries a small numeral and pips
 //     on its picture (top right, clear of the best tag and the Free/Included
 //     label), and its label says the level;
-//   - a grey Premium card, a book and Feed Echo never open the sheet, and a
-//     Coming soon game has no card to tap (19 Oct 2026);
+//   - a grey Premium card, Home's Books door and Feed Echo never open the
+//     sheet, a Coming soon game has no card to tap (19 Oct 2026), and the
+//     Arcade has no book at all (23 Oct 2026);
 //   - Home stays the silent library: no voice, no event, nothing written on
 //     load or on coming back to the front, only the "seen" mark and the pick
 //     on a child's tap; nothing fits off the screen at 320 px;
@@ -231,8 +232,15 @@ await section("an old cap, and who never sees the sheet", async () => {
     ok("Feed Echo never opens the sheet (one level until Rachel says)", feedTo && new URL(feedTo).pathname === "/arcade-feed.html" && !(await levels(f.page)), feedTo);
     await home(f.page);
     ok("a Coming soon game has no card on Home, so no badge and no sheet", (await f.page.locator('#libraryApp [data-game="peekaboo"]').count()) === 0 && (await f.page.locator("#libraryApp .game-card:disabled").count()) === 0);
-    const bookTo = await tapAway(f.page, f.page.locator("#booksCard"));
-    ok("the books never open it", bookTo && new URL(bookTo).pathname === "/library.html" && !(await levels(f.page)), bookTo);
+    // THE ARCADE IS GAMES ONLY (Travis, 23 Oct 2026: "organize the arcade so
+    // that there are no books in there"): no Books card and no book in Today's
+    // picks, so the one way to a book is Home's Books door, and it still goes
+    // straight to the shelf, never through the sheet or the levels record
+    const arcadeBooks = await f.page.evaluate(() => document.querySelectorAll("#libraryApp #booksCard, #libraryApp #libraryBooksArt, #libraryApp #booksTag, #libraryApp .book-card").length);
+    ok("the Arcade has no book to tap: no Books card, no book card in any row", arcadeBooks === 0, arcadeBooks);
+    await homeView(f.page);
+    const bookTo = await tapAway(f.page, f.page.locator("#homeBooksBtn"));
+    ok("…and Home's Books door never opens it", bookTo && new URL(bookTo).pathname === "/library.html" && !(await levels(f.page)), bookTo);
     ok("no page errors", f.errors.length === 0, f.errors);
   } finally { await f.context.close(); }
 });

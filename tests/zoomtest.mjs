@@ -8,7 +8,7 @@
 //     touch-action:manipulation, which sona.js puts on EVERY element of every
 //     app page: touch-action is not inherited and WebKit intersects it only up
 //     to the nearest scroll container, so a rule on <html> alone misses a tap
-//     inside Home's scrolling rows.
+//     inside Home's scrolling row ("Your games").
 // What must survive: the grown-up pages keep pinch zoom (no meta lock; it is
 // a parent's way to read small print), a page's own touch-action:none on a
 // game board still wins, and the clinician dashboard keeps its own touch rules.
@@ -167,12 +167,16 @@ try {
   await scenario('Home: a game card in a scrolling row', async () => {
     const { context, page, open } = await fresh();
     try {
-      // the game cards are Home's Arcade since 22 Oct 2026 (STORY1)
-      await open('today.html?view=arcade');
-      await page.waitForSelector('.game-card');
+      // Home's scrolling row is "Your games" (FOUND1) since the Arcade's
+      // Today's picks became a plain two-column grid (23 Oct 2026): three
+      // finished stories leave three of their games in it. The Arcade's game
+      // cards (STORY1) are on the same page, built once whatever the view.
+      await page.evaluate(() => localStorage.setItem('sona.quest.v1', JSON.stringify({ i: 0, last: 13, s: 3, ls: 2, lk: 'story', got: [] })));
+      await open('today.html');
+      await page.waitForSelector('#foundRow:not([hidden]) .found-tile');
       const m = await page.evaluate(([fn]) => {
         const effective = new Function('return ' + fn)();
-        const cards = [...document.querySelectorAll('.game-card')];
+        const cards = [...document.querySelectorAll('.game-card, .found-tile')];
         const scroller = el => { for (let n = el.parentElement; n; n = n.parentElement) { const cs = getComputedStyle(n); if (/^(auto|scroll)$/.test(cs.overflowX) || /^(auto|scroll)$/.test(cs.overflowY)) return n; } return null; };
         const inRow = cards.find(c => { const s = scroller(c); return s && s !== document.documentElement && s !== document.body; }) || null;
         const card = cards[0];

@@ -441,16 +441,31 @@ async function waitSpoke(pg, ms) {
   // HALLOWEEN IN YOUR OWN SOUND (Travis, 2 Oct 2026: "take a popular book
   // like the halloween and make a version for other letter"): a child gets
   // the Halloween book in their sound, and Boo only when their sounds have
-  // none (Sona.seasonPick); Home's Limited time row asks the same rule.
+  // none (Sona.seasonPick). Home's Limited time row asked the same rule until
+  // 23 Oct 2026, when the Arcade lost its books (Travis: "organize the arcade
+  // so that there are no books in there ... I only want either today's picks
+  // or limited time ... have 2 games listed there"). The bookshelf is now the
+  // only place a Halloween book shows, so Home's half of this check is that
+  // no row of Home's holds a book at all: no featured rows, and two games in
+  // Today's picks.
+  const homeRows = (pg) => pg.evaluate(() => {
+    const lib = Sona.activityLibrary();
+    return { featured: Object.prototype.hasOwnProperty.call(lib, "featured"), keys: Object.keys(lib).sort().join(),
+      picks: lib.picks.games.map((g) => ({ key: g.key, name: g.name, kind: g.kind || "", game: !!Sona.GAME_ACTS[g.key] })) };
+  });
+  const noBooks = (h) => !h.featured && h.keys === "groups,picks,recommended" && h.picks.length === 2 &&
+    h.picks.every((g) => g.game && !g.kind && !/^book:/.test(g.key) && !/Halloween|Trick-or-Treat/.test(g.name));
   r = await shelfAt("2026-10-02T09:00:00-06:00", ["S"]);
-  const sHome = await r.pg.evaluate(() => { const row = (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games; return row.map((g) => g.name); });
-  ok("an S child gets Sid's Halloween book, not Boo, on the shelf and on Home",
-    r.shelf.some((b) => b.t === "Sid the Seagull on Halloween") && !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t) && b.t !== "Sid the Seagull on Halloween") &&
-    JSON.stringify(sHome) === JSON.stringify(["Sid the Seagull on Halloween"]), JSON.stringify({ shelf: r.shelf.map((b) => b.t), home: sHome })); await r.ctx.close();
+  const sHome = await homeRows(r.pg);
+  ok("an S child gets Sid's Halloween book, not Boo, on the shelf",
+    r.shelf.some((b) => b.t === "Sid the Seagull on Halloween") && !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t) && b.t !== "Sid the Seagull on Halloween"),
+    JSON.stringify({ shelf: r.shelf.map((b) => b.t) }));
+  ok("…and no Limited time row on Home holds it: activityLibrary() has no featured rows, and Today's picks are two games, never a book",
+    noBooks(sHome), JSON.stringify(sHome)); await r.ctx.close();
   r = await shelfAt("2026-10-02T09:00:00-06:00", ["K"]);
-  const kHome = await r.pg.evaluate(() => (Sona.activityLibrary().featured.find((f) => f.id === "seasonal") || { games: [] }).games.map((g) => g.name));
-  ok("…a K child, whose sound has none, gets Boo the Bat on both",
-    r.shelf.filter((b) => /Halloween|Trick-or-Treat/.test(b.t)).map((b) => b.t).join() === "Boo the Bat on Halloween" && JSON.stringify(kHome) === JSON.stringify(["Boo the Bat on Halloween"]), JSON.stringify({ home: kHome })); await r.ctx.close();
+  const kHome = await homeRows(r.pg);
+  ok("…a K child, whose sound has none, gets Boo the Bat on the shelf, and none on Home",
+    r.shelf.filter((b) => /Halloween|Trick-or-Treat/.test(b.t)).map((b) => b.t).join() === "Boo the Bat on Halloween" && noBooks(kHome), JSON.stringify({ home: kHome })); await r.ctx.close();
   r = await shelfAt("2026-11-01T09:00:00-06:00", ["S"]);
   ok("…and after October no child has one", !r.shelf.some((b) => /Halloween|Trick-or-Treat/.test(b.t))); await r.ctx.close();
 
@@ -644,7 +659,21 @@ async function waitSpoke(pg, ms) {
   const runs = (list) => list.filter((x, i, a) => i === 0 || a[i - 1] !== x).join(">");
   ok("a child on R and S, practice on R: every R book, then every S book", runs(m.topSounds) === "R>S" && rsTop[0] === "Rory and the Rainbow", JSON.stringify(m.topSounds)); await r.ctx.close();
   r = await shelfAt("2026-10-01T10:00:00-06:00", ["R", "S"], true, "", null, 1);
-  const nowS = await r.pg.evaluate(() => ({ now: Sona.rotSound(), fresh: ((Sona.activityLibrary().featured.find((f) => f.id === "new") || { games: [] }).games).filter((g) => g.kind === "book").map((g) => g.name) }));
+  // Home's What's new row followed the same rotation, its S books first,
+  // until 23 Oct 2026 (Travis: "organize the arcade so that there are no
+  // books in there"). Now the rotation moves the bookshelf and nothing on
+  // Home: its one row, Today's picks, is two games and reads no sound. So
+  // read today's picks with practice on S, then again with it put back on R
+  // (and back on S, so the shelf below is untouched): the same two games.
+  const nowS = await r.pg.evaluate(() => {
+    const now = Sona.rotSound(), day = Sona.activityLibrary().picks.day;
+    const onS = Sona.homePicks(day).map((g) => g.key);
+    localStorage.setItem("sona.rotation.v1", JSON.stringify({ i: 0, r: 0 }));
+    const back = Sona.rotSound(), onR = Sona.homePicks(day).map((g) => g.key);
+    localStorage.setItem("sona.rotation.v1", JSON.stringify({ i: 1, r: 0 }));
+    return { now, back, again: Sona.rotSound(), onS, onR };
+  });
+  const rsHome = await homeRows(r.pg);
   tapped = await tap(r.pg, "#moreBtn"); await r.pg.waitForTimeout(150);
   m = await more(r.pg);
   ok("…practice on S: every S book first, then every R book, the same 14 on top and the same 34 behind one More books",
@@ -657,8 +686,9 @@ async function waitSpoke(pg, ms) {
     says: [...document.querySelectorAll("button, summary, a")].filter((e) => /^More books/.test(e.textContent.trim())).length }));
   ok("…and the shelf has exactly one More books control: one button, one shelf behind it, no second drop-down in the page or its source",
     one.shelves === 1 && one.boxes === 1 && one.details === 0 && one.says === 1 && !/<details|<summary|createElement\("details"\)|\.moreBooks\b/.test(lib), JSON.stringify(one));
-  ok("…and Home's What's new shows only that child's books, the S ones first",
-    JSON.stringify(nowS.fresh) === JSON.stringify(["Sam's Sailboat", "Sophie's Silly Soup", "Rosie and the Red Wagon", "Ray and the Lost Ring"]), JSON.stringify(nowS.fresh));
+  ok("…and Home shows none of these books: no What's new row, and Today's picks are the same two games whichever sound practice is on",
+    noBooks(rsHome) && nowS.now === "S" && nowS.back === "R" && nowS.again === "S" && nowS.onS.length === 2 && JSON.stringify(nowS.onS) === JSON.stringify(nowS.onR)
+      && JSON.stringify(rsHome.picks.map((g) => g.key)) === JSON.stringify(nowS.onS), JSON.stringify({ nowS, rsHome }));
   ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   // readable still comes before Premium: without Premium the free book is an
   // R book, and it leads even on a day practice is on S

@@ -1471,7 +1471,7 @@ const coverLine = (b) => b.title + bookCover.m[1] + S.soundLabel(b.sound).replac
 P();
 P(`### C9 — Books (\`library.html\`): ${STORIES.length} books, ${bookPages} pages`);
 P();
-P("Live: Home's Books card opens the shelf. Echo reads everything in a book aloud.");
+P("Live: Home's Books door opens the shelf. Echo reads everything in a book aloud.");
 P("**Best left to TTS** — it is a lot of text, and it changes when a book does. Listed so");
 P("nothing is hidden. Four templates, and two fixed lines (B6):");
 P();
