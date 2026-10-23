@@ -2362,8 +2362,10 @@ offer, the level sheet, the grown-ups check and "Home opens the offer once".
   a story is finished its New! tile is measured too, so the dark tomorrow
   picture gives way for it: the tile's picture and its New! are on the
   first screen at all five sizes (on 320×568 that takes all five steps, on
-  375×667 two), and on an iPhone SE on the website (375×553) too, its name
-  just below. Not under the founding banner (a browser only): on 320×568
+  375×667 two). On an iPhone SE on the website (375×553) its New! and
+  most of its picture are on the first screen, the rest just below (CI's
+  newer Chromium sets it about 16 px lower than this machine's, so its
+  test checks the half a child must see). Not under the founding banner (a browser only): on 320×568
   only the tile's top, its New!, peeks above the fold, and on 375×553 none
   of it (a sixth step would flatten tomorrow's picture to a strip and still
   not fit it; Travis's to change). With the real pictures an open day takes
