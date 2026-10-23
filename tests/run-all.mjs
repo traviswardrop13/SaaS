@@ -38,7 +38,7 @@ const SUITES = [
   "boardapitest.mjs", // BOARDAPI1: the Practice Board server, built dark: fails closed, the phone never confirms itself, a day counts once and never early, deletion always works, nothing about a child kept
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "dailygoaltest.mjs", // daily rep goals, quiet once-a-day celebration, and weekly goal-day streaks
-  "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner and on Progress — one count everywhere
+  "repweektest.mjs", // REPWEEKS1: the reps in Home's gift button and on Progress — one count everywhere
   "besttest.mjs", // BESTS1: each child's own best in a game — per child, only ever up, never practice data or shared; Home's "Best 17" tag
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
@@ -67,9 +67,29 @@ const SUITES = [
   "shoptest.mjs", // SHOP1/OWN1: the Buddy Shop; a kept household owns everything, a new family gets the rest with coins (hold "Get it", give it back), road items show their trophies
   "roadtest.mjs", // ROAD1/LEVELS1 on Home and the road: one tap still plays, "Pick a level" once per game when a level opens, the level badge, an old "Level 1 only" ignored; Home only reads
   "questtest.mjs", // QUEST1: the 14-day daily adventure; Home only reads, a round of today's game finishes the day once, a sticker never coins, a missed day waits, ages 3-4 get their own
-  "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the three stories come before the game of the day for every child, Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
-  "homestorytest.mjs", // STORY1 on Home: one big story card (open, locked, done, a game day after Day 3), the Arcade and Books doors, Back and Forward, Home only reads, the play button and both doors on the first screen at five sizes
-  "adventuretest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot, nothing written but seen
+  "storycoretest.mjs", // STORY1: the daily story's rules in sona.js: the fourteen stories come before the game of the day for every child, Premium by the books' rule (never the demonstration window, never a locked card on a phone that cannot buy), one sticker a finished day, the offer a locked card opens, a story's game hands back to its story
+  "homestorytest.mjs", // STORY1 on Home: one big story card (open, locked, done, Day 4 after Day 3, a game day after Day 14), the Arcade and Books doors, Back and Forward, Home only reads, the play button and both doors on the first screen at five sizes
+  // adventuretest is run in two parts (its wrappers set ADVENTURE_PART): whole,
+  // with fourteen stories, it took about 290 s of the 300 a suite gets.
+  "adventureplaytest.mjs", // STORY1: the story's player: entitlement before any sound, the website waits for a tap, the app plays as media, ages 3-4's scenes, sound off, Skip, "Let's go!", the ending and its sticker, the buddy on its painted spot at a phone, nothing written but seen
+  "adventurespotstest.mjs", // STORY1: the buddy on every story's painted pages at an iPad, on its spot, in its pose, clear of the card, Echo and every button
+  "storygametest.mjs", // STORY1 Days 4-14: the page that plays Codex's eleven games inside the story: the games' test host's shell and words, entitlement before any file, mic or sound, both ages for every game, and Day 4 played from "Let's go!" to its sticker
+  "daily-contenttest.mjs", // All eleven new days require real controllers, both age paths, short story acts and actual setting/earned-ending art
+  "daily-waterwheeltest.mjs", // Day 4: real water routes, gates and split flow; speech widens joins, with honest progress and safe interruptions
+  "daily-postboattest.mjs", // Day 5: steer, dock, transfer parcels and tow a separate raft; speech calms water without delivering for the child
+  "daily-bakerytest.mjs", // Day 6: catch ingredients, stir, shape, bake and sort real batches; speech steadies pours and widens useful heat
+  "daily-bridgetest.mjs", // Day 7: winch, rotate and lower supported bridge pieces, then steer both carts to the real door; speech steadies loads
+  "daily-lanterntest.mjs", // Day 8: true supply/bulb/return circuits, manual switches and short repair; speech traces live paths and widens real catches
+  "daily-trainlinetest.mjs", // Day 9: join rail ends, route and stop a real train, transfer pictured passengers and return the crew; speech widens joins and slows travel
+  "daily-kitetest.mjs", // Day 10: fit pictures, continuously sew, thread front/back, swap real tail weights and steer balanced flight; speech steadies cloth and calms gusts
+  "daily-nestlifttest.mjs", // Day 11: choose real counterweight sums, wind and brake the loaded lift, hand over each bundle and slide the quilt into its room; speech damps actual sway
+  "daily-concerttest.mjs", // Day 12: strike and pluck real owned instruments, play timed phrases, arrange and conduct an earned concert; speech slows beats and widens the actual window
+  "daily-rooftopstest.mjs", // Day 13: load, aim and launch real seeds, bank off the awning and grow every planter; speech calms actual drift without planting for the child
+  "daily-observatorytest.mjs", // Day 14: true gear meshes transmit signed ratios to the sun, moon and stars; real motor work, idler correction and speech-assisted valid catches
+  "daily-narrationtest.mjs", // Three spoken story acts and an ending earned through actual play, using the existing quiet audio owner
+  "daily-directionstest.mjs", // Real rapid tool/rail/cart transitions retain essential owned directions; paused or finished tasks cannot leak stale cues
+  "daily-storyendingtest.mjs", // A real narrated railway finish waits for the owned home cue before every ending sentence and the child's Continue
+  "daily-previewtest.mjs", // Local review serves the real speech/story game, returns safely, stays loopback-only and leaves production access untouched
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "websalestest.mjs", // WEBSALES1: families no longer pay on the website — the trial page and Settings in both states of the switch, and never a price flash
@@ -133,11 +153,12 @@ const SUITES = [
   // Puzzle Bridge about 400 s on a busy machine (22 Oct 2026).
   "lighthouseplaytest.mjs", // LIGHTHOUSE1: Light the Way (Day 1) played through: the word lights the lamp, the finger holds the light on each lost boat, the town's windows last, the end card hands to the story; a locked phone goes Home before any mic
   "lighthousehelptest.mjs", // LIGHTHOUSE1: Light the Way's help ladder for both ages: seconds searching or decoys lit, never waiting; every boat comes home with no more speaking
-  "lighthousefittest.mjs", // LIGHTHOUSE1: Light the Way at four sizes: no scroll, the light above the finger, every boat and window on the visible sea
+  "lighthousefittest.mjs", // LIGHTHOUSE1: Light the Way at four sizes: no scroll, the light above the finger, every boat and window on the visible sea; played again from Home's row, Play again starts a clean round (FOUND1)
   "winduptest.mjs", // WINDUP1: Wind-Up Toys (Day 2): the word pops the key, the finger winds and lets go at the star (ages 3-4: wind until it rings), every toy wakes, the end hands to the story
+  "windupreplaytest.mjs", // WINDUP1 / FOUND1: Wind-Up Toys played again from Home's row: Play again starts a clean round (no toy awake, no parade, the cuckoo shut) played to its own end card, Back home goes Home, the story record untouched
   "bridgeplaytest.mjs", // BRIDGE1: Puzzle Bridge (Day 3) for ages 5-8: the word calls a stone, a tap turns it, a drag slides it, the river rises, every stone fits, the end hands to the story
   "bridgelittletest.mjs", // BRIDGE1: Puzzle Bridge for ages 3-4 (the same shape, a bounce back from the wrong hole), Calm river, Reduce Motion (nothing slides)
-  "bridgefittest.mjs", // BRIDGE1: Puzzle Bridge's buddy, the fit from 320 px to an iPad, the drawn stand-ins and keyboard play
+  "bridgefittest.mjs", // BRIDGE1: Puzzle Bridge's buddy, the fit from 320 px to an iPad, the drawn stand-ins and keyboard play; played again from Home's row, Play again starts a clean round (FOUND1)
   "buddyplaytest.mjs", // BUDDY2: the child plays as their own buddy in eight games; a fox child keeps today's Fruit Slice and Block Stacker pictures; the engines cheer the buddy's own pictures, never Echo's
   "levelstest.mjs", // LEVELS1 in the five round games: Level 1 is today's game, a level changes only the finger's part, every help reads Level 1's numbers, each level keeps its own best
   "levelsplaytest.mjs", // LEVELS1 in Bubble Pop, Hoops, Soccer Goal and Dino Dig: the page hands the level to the engine, the help is Level 1's, the start card names it; Feed Echo keeps one

@@ -25,7 +25,12 @@ function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log
 async function section(label, run) { try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
 
 const SONA = readFileSync(ROOT + "/sona.js", "utf8");
-const STORY_IDS = ["lighthouse", "windup", "bridge"];
+// Days 1-3 have their own game pages; Days 4-14 (22 Oct 2026) are Codex's
+// games on one shared page, story-game.html (storygametest's). Day 7 is
+// "frontdoor": Day 3 already owns "bridge".
+const FIRST_IDS = ["lighthouse", "windup", "bridge"];
+const LATER_IDS = ["waterwheel", "postboat", "bakery", "frontdoor", "lantern", "trainline", "kite", "nestlift", "concert", "rooftops", "observatory"];
+const STORY_IDS = FIRST_IDS.concat(LATER_IDS);
 
 // ── a plain server: public/, /api/* recorded (the voice service is down),
 // and stubs for the pages a test only needs to land on ──
@@ -115,12 +120,14 @@ await section("the day list", async () => {
   const r = await pg.evaluate(() => ({
     days: Sona.STORY_DAYS.map((d) => ({ id: d.id, game: d.game, page: d.page, hero: d.hero, title: d.title, line: d.line })),
     fns: ["storyOpen", "storyShown", "storyEnding", "storySeen"].every((f) => typeof Sona[f] === "function"),
-    notCatalog: ["adventure", "lighthouse", "windup", "bridge"].every((k) => Sona.gameKey(k) === "" && !Sona.GAME_ACTS[k]),
+    notCatalog: ["adventure"].concat(Sona.STORY_DAYS.map((d) => d.id)).every((k) => Sona.gameKey(k) === "" && !Sona.GAME_ACTS[k]),
     words: { lighthouse: Sona.gameWords("lighthouse", "R").map((w) => w.w), windup: Sona.gameWords("windup", "K").map((w) => w.w), bridge: Sona.gameWords("bridge", "CH").map((w) => w.w) },
   }));
-  ok("STORY_DAYS is the three days in order, each with its game, page and Home picture",
-    r.days.map((d) => d.id).join() === STORY_IDS.join() && r.days.every((d) => d.game === d.id && d.page === "/arcade-" + d.id + ".html" && d.hero === d.id), r.days);
-  ok("…titled as the spec names them", r.days.map((d) => d.title).join("|") === "The Lighthouse Sneeze|Grandpa Bear's Sleepy Toys|The Puzzle Bridge", r.days.map((d) => d.title));
+  ok("STORY_DAYS is the fourteen days in order, each with its game, page and Home picture",
+    r.days.map((d) => d.id).join() === STORY_IDS.join() && r.days.every((d) => d.game === d.id && d.hero === d.id && d.page === (FIRST_IDS.includes(d.id) ? "/arcade-" + d.id + ".html" : "/story-game.html?story=" + d.id)), r.days);
+  ok("…Days 1-3 titled as the spec names them, and every later day a short title of its own",
+    r.days.slice(0, 3).map((d) => d.title).join("|") === "The Lighthouse Sneeze|Grandpa Bear's Sleepy Toys|The Puzzle Bridge" &&
+    r.days.slice(3).every((d) => d.title.length > 5 && d.title.length <= 36) && new Set(r.days.map((d) => d.title)).size === 14, r.days.map((d) => d.title));
   ok("…each hook a line a parent reads: 120 characters at most, nothing about how to talk, no banned word",
     r.days.every((d) => d.line.length > 20 && d.line.length <= 120 && !/louder|slowly|strong|stretch|say it|score|points|correct|wrong|miss|fail|charge/i.test(d.line)), r.days.map((d) => d.line));
   ok("the four story readers are on Sona", r.fns);
@@ -181,8 +188,8 @@ await section("a little one", async () => {
   await ctx.close();
 });
 
-// ── 3. day by day: three stories, then back to the 14 days where they were ──
-await section("three stories, then day 8", async () => {
+// ── 3. day by day: fourteen stories, then back to the 14 days where they were ──
+await section("fourteen stories, then day 8", async () => {
   const { ctx, pg, errors } = await open({ premium: true, quest: { i: 7, last: 6, done: "2026-01-01" } });
   const seen = [];
   for (const id of STORY_IDS) {
@@ -193,25 +200,76 @@ await section("three stories, then day 8", async () => {
     if (rec.i !== 7 || rec.last !== 6) seen.push("moved i: " + JSON.stringify(rec));
     await nextDay(pg);
   }
-  ok("a child at day 8 of the 14 meets the stories first: Day 1, Day 2, Day 3, a day each",
-    seen.join(" ") === "story:open:1:lighthouse story:open:2:windup story:open:3:bridge", seen);
+  ok("a child at day 8 of the 14 meets the stories first: Day 1 to Day 14, a day each",
+    seen.join(" ") === STORY_IDS.map((id, n) => "story:open:" + (n + 1) + ":" + id).join(" "), seen);
   await nextDay(pg, -1);
   const doneLast = await pg.evaluate(() => Sona.questToday());
   const arcade = await pg.evaluate(() => Sona.QUEST_DAYS.arcade.map((d) => d.game));
-  ok("the day Day 3 is finished, tomorrow is the game of the day, back on day 8",
-    doneLast.kind === "story" && doneLast.state === "done" && doneLast.day === 3 && doneLast.next && doneLast.next.kind === "game" && doneLast.next.day === 8 && doneLast.next.game === arcade[7], doneLast);
+  ok("the day Day 14 is finished, tomorrow is the game of the day, back on day 8",
+    doneLast.kind === "story" && doneLast.state === "done" && doneLast.day === 14 && doneLast.next && doneLast.next.kind === "game" && doneLast.next.day === 8 && doneLast.next.game === arcade[7], doneLast);
   await nextDay(pg);
   const back = await pg.evaluate(() => Sona.questToday());
   ok("…and the next day it is day 8, with its own game and line", back.kind === "game" && back.state === "open" && back.day === 8 && back.game === arcade[7] && back.total === 14 && back.line.length > 0, back);
   const end = await pg.evaluate((g) => Sona.questEnd(g), back.game);
   const rec = await record(pg);
   ok("a game day finished after the stories moves on to day 9 and keeps the stories finished",
-    end && end.day === 8 && rec.i === 8 && rec.last === 7 && rec.s === 3 && rec.lk === "game", { end, rec });
+    end && end.day === 8 && rec.i === 8 && rec.last === 7 && rec.s === 14 && rec.lk === "game", { end, rec });
   await nextDay(pg);
   const nine = await pg.evaluate(() => Sona.questToday());
   ok("…then day 9", nine.kind === "game" && nine.day === 9, nine);
   ok("no page errors", errors.length === 0, errors);
   await ctx.close();
+});
+
+// ── 3b. FOUND1 (23 Oct 2026): every story leaves its game behind ──
+await section("the games the stories leave behind", async () => {
+  {
+    const { ctx, pg, errors } = await open({ premium: true });
+    const none = await pg.evaluate(() => ({ f: Sona.storyFound(), r: Sona.storyReplay("lighthouse") }));
+    ok("a child who has finished no story has found nothing, and no replay opens", Array.isArray(none.f) && none.f.length === 0 && none.r === false, none);
+    await pg.evaluate(() => Sona.questEnd("lighthouse"));
+    const before = await record(pg);
+    const one = await pg.evaluate(() => ({ f: Sona.storyFound(), r: [Sona.storyReplay("lighthouse"), Sona.storyReplay("windup"), Sona.storyReplay("nope"), Sona.storyReplay("")] }));
+    const d = one.f[0] || {};
+    ok("Day 1 finished: Light the Way is found, with its name, its Home picture and the address that plays it again",
+      one.f.length === 1 && d.id === "lighthouse" && d.game === "lighthouse" && d.name === "Light the Way" && d.pic === "/assets/crafted/home-lighthouse.webp" && d.again === "/arcade-lighthouse.html?again=1" && d.day === 1, one.f);
+    ok("…its replay opens; an unfinished story's, an unknown id and an empty one do not", one.r.join() === "true,false,false,false", one.r);
+    ok("…and reading it wrote nothing", JSON.stringify(await record(pg)) === JSON.stringify(before));
+    await pg.evaluate(() => { const f = Sona.storyFound(); f[0].again = "/evil.html"; f.push({ id: "x" }); });
+    ok("…it hands out copies: changing what it gave changes nothing", (await pg.evaluate(() => Sona.storyFound().map((x) => x.again).join())) === "/arcade-lighthouse.html?again=1");
+    await nextDay(pg);
+    const replay = await pg.evaluate(() => ({ end: Sona.questEnd("lighthouse"), q: Sona.questToday() }));
+    ok("a found game's round on another day finishes nothing (today's story is Day 2)", replay.end === null && replay.q.kind === "story" && replay.q.state === "open" && replay.q.day === 2, replay);
+    ok("no page errors", errors.length === 0, errors);
+    await ctx.close();
+  }
+  {
+    const { ctx, pg } = await open({ premium: true, quest: { i: 0, last: 13, s: 7, ls: 6, lk: "story", done: "2026-01-01" } });
+    const f = await pg.evaluate(() => Sona.storyFound());
+    ok("seven stories finished: their seven games, in story order", f.map((x) => x.id).join() === STORY_IDS.slice(0, 7).join(), f.map((x) => x.id));
+    ok("…a Days 4-14 game plays again on the shared page, and Day 7 is frontdoor's, never Codex's bridge",
+      f[3].again === "/story-game.html?story=waterwheel&again=1" && f[6].id === "frontdoor" && f[6].again === "/story-game.html?story=frontdoor&again=1", [f[3].again, f[6].again]);
+    await ctx.close();
+  }
+  {
+    // the story's rule decides, as it does for the story itself
+    const { ctx, pg } = await open({ sell: true, stamp: "post", quest: { i: 0, last: 13, s: 3, ls: 2, lk: "story", done: "2026-01-01" } });
+    const r = await pg.evaluate(() => ({ n: Sona.storyFound().length, r: Sona.storyFound().map((d) => Sona.storyReplay(d.id)) }));
+    ok("without Premium (the story shown locked), three found but none plays again", r.n === 3 && r.r.every((x) => x === false), r);
+    await ctx.close();
+  }
+  {
+    const { ctx, pg } = await open({ premium: true, quest: { s: "x", ls: 99 } });
+    const f = await pg.evaluate(() => Sona.storyFound());
+    ok("a broken record has found nothing", f.length === 0, f);
+    await pg.evaluate(() => localStorage.setItem("sona.quest.v1", JSON.stringify({ s: 2, ls: 1, lk: "story", done: "2026-01-01" })));
+    await pg.evaluate(() => Sona.addKid("Ana", 4));
+    const kid = await pg.evaluate(() => ({ f: Sona.storyFound().length }));
+    ok("a brother or sister starts with nothing found (it is the child's own record)", kid.f === 0, kid);
+    await ctx.close();
+  }
+  const names = await (async () => { const { ctx, pg } = await open({ premium: true }); const n = await pg.evaluate(() => Sona.STORY_DAYS.map((d) => d.name)); await ctx.close(); return n; })();
+  ok("every story day names its game, short enough for a tile (16 characters at most)", names.length === STORY_IDS.length && names.every((n) => typeof n === "string" && n.length >= 4 && n.length <= 16), names);
 });
 
 // ── 4. once a calendar day, and a missed day loses nothing ──
@@ -283,7 +341,7 @@ await section("locked where the price can open it", async () => {
     const sent = posted.length;
     const r = await pg.evaluate(() => ({
       open: Sona.storyOpen(), shown: Sona.storyShown(), offer: Sona.offerOnLock(), q: Sona.questToday(),
-      game: Sona.gameAccess("lighthouse"), card: Sona.gameAccess("adventure"), all: ["windup", "bridge"].map((k) => Sona.gameAccess(k).allowed),
+      game: Sona.gameAccess("lighthouse"), card: Sona.gameAccess("adventure"), all: Sona.STORY_DAYS.slice(1).map((d) => Sona.gameAccess(d.game).allowed),
       end: Sona.questEnd("lighthouse"), stk: Object.keys(Sona.stickersEarned()).length,
     }));
     const label = stamp === "post" ? "a family who owes the price" : "a family who keeps the free version";
@@ -352,7 +410,7 @@ await section("the story's offer", async () => {
   try {
     for (const finished of [false, true]) {
       const cfg = { app: "buy", stamp: "post", setUp: true, noGate: true, store: STORES.monthlyFree };
-      if (finished) cfg.local = { "sona.quest.v1": { i: 0, last: 13, done: "2026-01-01", s: 3, ls: 2, lk: "story" } };
+      if (finished) cfg.local = { "sona.quest.v1": { i: 0, last: 13, done: "2026-01-01", s: 14, ls: 13, lk: "story" } };
       const { context, page, errors, requests } = await phoneOpen(browser, base, cfg);
       try {
         // REPLAY1: watch every call to SonaAnalytics.replay, whichever copy

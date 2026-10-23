@@ -39,14 +39,26 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 let fails = 0, count = 0;
 function ok(label, pass, detail = "") { count++; if (!pass) fails++; console.log((pass ? "PASS " : "FAIL ") + label + (pass ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); }
-const ONLY = process.env.ADVENTURE_PART || "";
-async function section(label, run) { if (ONLY && !label.startsWith(ONLY)) return; try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
+// ADVENTURE_PART: a comma list of section names, as they are written below;
+// "!name" leaves one out and runs the rest (run-all runs this file in two
+// parts, tests/adventureplaytest.mjs, "!buddy spots ipad", and
+// tests/adventurespotstest.mjs, "buddy spots ipad": the buddy on every
+// painted page, at a phone and at an iPad, took 220 of its 290 s, near the
+// 300 s a suite gets). Every name given must be a section here.
+const PARTS = process.env.ADVENTURE_PART ? process.env.ADVENTURE_PART.split(",") : null;
+const NOT = (PARTS || []).filter((p) => p[0] === "!").map((p) => p.slice(1)), YES = (PARTS || []).filter((p) => p[0] !== "!");
+const declared = new Set();
+async function section(label, run) { declared.add(label); if (PARTS && (NOT.includes(label) || (YES.length && !YES.includes(label)))) return; try { await run(); } catch (e) { ok(label + " completes", false, e.stack); } }
 
 // ── the scenes, read the way the page reads them ──
 const ADV_SRC = readFileSync(ROOT + "/adventures.js", "utf8");
 const NOTES = existsSync(ROOT + "/../design/adventure/art-notes.md") ? readFileSync(ROOT + "/../design/adventure/art-notes.md", "utf8") : "";
 const sandbox = { window: {} }; vm.runInNewContext(ADV_SRC, sandbox);
 const A = sandbox.window.SonaAdventures;
+// every story id in its day order (sona.js STORY_DAYS): Days 1-3, then Days
+// 4-14 around Codex's games (22 Oct 2026)
+const IDS = [...((readFileSync(ROOT + "/sona.js", "utf8").match(/const STORY_DAYS = \[([\s\S]*?)\n  \];/) || ["", ""])[1]).matchAll(/\{ id: "([a-z]+)"/g)].map((m) => m[1]);
+const LAST = IDS.length;
 function runOf(id, part, little) {
   return A[id][part].filter((sc) => !(little && sc.ages === "big"))
     .map((sc) => ({ art: sc.art, text: typeof sc.line === "string" ? sc.line : ((little && sc.line.little) || sc.line.big) }));
@@ -209,7 +221,7 @@ await section("source", async () => {
   const noComments = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   const code = noComments(page), advCode = noComments(ADV_SRC);
   const lines = allLines();
-  ok("every story is in adventures.js, with its wash and its \"Let's go!\"", ["lighthouse", "windup", "bridge"].every((id) => A[id] && /^#[0-9a-f]{6}$/i.test(A[id].wash) && A[id].go === "Let's go!"), Object.keys(A));
+  ok("every story is in adventures.js, with its wash and its \"Let's go!\"", IDS.length === 14 && Object.keys(A).join() === IDS.join() && IDS.every((id) => A[id] && /^#[0-9a-f]{6}$/i.test(A[id].wash) && A[id].go === "Let's go!"), Object.keys(A));
   ok("each story: 8 intro scenes and 4 ending scenes for ages 5-8, 6 and 3 for ages 3-4",
     Object.keys(A).every((id) => runOf(id, "intro", false).length === 8 && runOf(id, "ending", false).length === 4 && runOf(id, "intro", true).length === 6 && runOf(id, "ending", true).length === 3));
   const LITTLE = { lighthouse: ["s01 s02 s03 s05 s06 s08", "e01 e03 e04"], windup: ["s01 s02 s03 s04 s06 s08", "e01 e02 e04"], bridge: ["s01 s02 s04 s06 s07 s08", "e01 e03 e04"] };
@@ -235,7 +247,7 @@ await section("source", async () => {
   for (const id of Object.keys(A)) notesBox[id] = {};
   let story = "";
   for (const line of (NOTES.split("## 2.")[1] || "").split("## 3.")[0].split("\n")) {
-    const day = line.match(/^\/\/ Day \d: ([a-z]+)/); if (day) { story = day[1]; continue; }
+    const day = line.match(/^\/\/ Day \d+: ([a-z]+)/); if (day) { story = day[1]; continue; }
     for (const m of line.matchAll(/\b([se]\d\d): (null|\{[^}]*\})/g)) {
       if (!notesBox[story]) continue;
       if (m[2] === "null") { notesBox[story][m[1]] = null; continue; }
@@ -249,7 +261,8 @@ await section("source", async () => {
     if (JSON.stringify(sc.buddy) !== JSON.stringify(notesBox[id][sc.art])) off.push(id + " " + sc.art + ": " + JSON.stringify(sc.buddy) + " vs " + JSON.stringify(notesBox[id][sc.art]));
   }
   const boxed = Object.keys(A).reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
-  ok("every scene's buddy box is the art notes' (design/adventure/art-notes.md), 24 boxed and 12 with no spot", off.length === 0 && boxed === 24, off.length ? off : boxed);
+  const boxed13 = ["lighthouse", "windup", "bridge"].reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
+  ok("every scene's buddy box is the art notes' (design/adventure/art-notes.md); Days 1-3 keep their 24 boxed and 12 with no spot", off.length === 0 && boxed13 === 24, off.length ? off : [boxed13, boxed]);
   const WRITES = ["gameRep", "logAttempt", "bumpReps", "addCoins", "mintCoins", "awardSticker", "awardNextSticker", "awardRandomSticker", "questEnd", "recordSession", "recordRung", "rotAdvance", "localStorage", "sessionStorage", "indexedDB", "saveProfile", "chargeAdd", "claimChest", "Math.random"];
   ok("the page writes only `seen` (storySeen): no rep, coin, sticker, quest end or storage of its own", WRITES.every((w) => !code.includes(w)) && /S\.storySeen\(day\.id\)/.test(code), WRITES.filter((w) => code.includes(w)));
   ok("…and adventures.js is data alone: no call, no storage, no request", !/fetch\(|localStorage|sessionStorage|Sona\.|XMLHttpRequest|sendBeacon/.test(advCode));
@@ -282,9 +295,9 @@ await section("locked", async () => {
     ["the three-day demonstration window", { premium: false, sell: true, stamp: "post", demo: true }, "/adventure.html"],
     ["…and a locked family's ending address", { premium: false, sell: true, stamp: "post", quest: { s: 1, ls: 0, lk: "story", done: "2026-01-01" } }, "/adventure.html?part=end&story=lighthouse"],
     ["a Premium child, the ending of a story not finished yet", {}, "/adventure.html?part=end&story=lighthouse"],
-    ["a Premium child, the ending of a story that does not exist", { quest: { s: 3, ls: 2, lk: "story", done: "2026-01-01" } }, "/adventure.html?part=end&story=nope"],
+    ["a Premium child, the ending of a story that does not exist", { quest: { s: LAST, ls: LAST - 1, lk: "story", done: "2026-01-01" } }, "/adventure.html?part=end&story=nope"],
     ["a Premium child, an unknown part", {}, "/adventure.html?part=middle"],
-    ["a Premium child whose stories are all finished (a game day)", { quest: { s: 3, ls: 2, lk: "story", done: "2026-01-01", i: 4, last: 3 } }, "/adventure.html"],
+    ["a Premium child whose stories are all finished (a game day)", { quest: { s: LAST, ls: LAST - 1, lk: "story", done: "2026-01-01", i: 4, last: 3 } }, "/adventure.html"],
   ];
   for (const [label, opts, url] of cases) {
     const { ctx, pg, from } = await open(opts, { url, wait: false });
@@ -478,6 +491,10 @@ await section("ending", async () => {
   const card = await pg.evaluate(() => ({ lines: [...document.querySelectorAll("#gotList .advgot")].map((p) => p.textContent), cap: !document.getElementById("cap").hidden, skip: !document.getElementById("skipBtn").hidden, chimes: window.__chimes, view: __adventure.view }));
   ok("the sticker card shows the sticker today's round gave, read from the record", r && r.stickers.length === 1 && got.length === 1 && JSON.stringify(card.lines) === JSON.stringify(["You got " + got[0].e + " " + got[0].name + "!"]), { card, got });
   ok("…with one reward chime, no caption and no Skip", stickerSfx && JSON.stringify(card.chimes) === '["reward"]' && !card.cap && !card.skip && card.view === "stickers", card);
+  // FOUND1 (23 Oct 2026): the story leaves its game behind, on Home's row
+  const fl = await pg.evaluate(() => { const l = document.getElementById("foundLine"), im = document.getElementById("foundPic"); return { shown: !l.hidden && l.getBoundingClientRect().height > 0, text: document.getElementById("foundText").textContent, img: new URL(im.getAttribute("src") || "", location.href).pathname, inBox: !!l.closest(".advbox"), desc: document.getElementById("homeBtn").getAttribute("aria-describedby"), focus: document.activeElement && document.activeElement.id }; });
+  ok("…and the card says the game is on Home now, with its Home picture", fl.shown && fl.inBox && fl.text === "New game on Home: Light the Way!" && fl.img === "/assets/crafted/home-lighthouse.webp", fl);
+  ok("…and a screen reader hears it with \"Back home\", where focus lands (the line describes the button)", fl.desc === "foundText" && fl.focus === "homeBtn", fl);
   await nap(pg, 650);
   await pg.click("#homeBtn");
   ok("\"Back home\" goes Home", await landed(pg, "/today.html"), pg.url());
@@ -675,12 +692,13 @@ await section("buddy", async () => {
 // but for a few px held off the screen's edge), in its own pose, and meets
 // nothing: not the card, not Echo's face on its edge, not a button. Motion
 // on: the slow drift is part of what must stay clear. ──
-await section("buddy spots", async () => {
+// (one section a screen, so the two can run as separate suites)
+const spots = ([w, hgt]) => async () => {
   art = "real";
   const bad = []; let placed = 0;
-  for (const [w, hgt] of [[390, 844], [768, 1024]]) for (const [n, id] of ["lighthouse", "windup", "bridge"].entries()) for (const part of ["intro", "ending"]) {
+  for (const [n, id] of IDS.entries()) for (const part of ["intro", "ending"]) {
     const scenes = A[id][part];
-    const q = part === "intro" ? { s: n, done: "2026-01-01" } : { s: 3, ls: 2, lk: "story", done: "2026-01-01" };
+    const q = part === "intro" ? { s: n, done: "2026-01-01" } : { s: LAST, ls: LAST - 1, lk: "story", done: "2026-01-01" };
     const { ctx, pg, errors } = await open({ voice: false, character: "dragon", quest: q }, { size: { width: w, height: hgt }, url: "/adventure.html" + (part === "ending" ? "?part=end&story=" + id : "") });
     await pg.click("#startBtn");
     for (let i = 0; i < scenes.length; i++) {
@@ -705,9 +723,12 @@ await section("buddy spots", async () => {
     if (errors.length) bad.push(`${w}x${hgt} ${id} ${part}: ` + errors.join("; "));
     await ctx.close();
   }
-  ok("on the real pictures at 390x844 and 768x1024, every boxed scene (48) shows the buddy on its spot, in its pose, clear of the card, Echo and every button", placed === 48 && bad.length === 0, bad.length ? bad : placed);
+  const boxes = IDS.reduce((n, id) => n + A[id].intro.concat(A[id].ending).filter((sc) => sc.buddy).length, 0);
+  ok("on the real pictures at " + w + "x" + hgt + ", every boxed scene (" + boxes + ") shows the buddy on its spot, in its pose, clear of the card, Echo and every button", boxes >= 24 && placed === boxes && bad.length === 0, bad.length ? bad : placed);
   art = false;
-});
+};
+await section("buddy spots phone", spots([390, 844]));
+await section("buddy spots ipad", spots([768, 1024]));
 
 // ── 11. Reduce Motion ──
 await section("reduce motion", async () => {
@@ -799,6 +820,7 @@ await section("writes", async () => {
   await ctx.close();
 });
 
+if (PARTS) { const unknown = YES.concat(NOT).filter((n) => !declared.has(n)); ok("every part ADVENTURE_PART names is a section of this file", unknown.length === 0, unknown); }
 await browser.close();
 server.close();
 console.log(fails ? `\n${fails} FAILED of ${count}` : `\nALL GREEN — ${count} assertions`);

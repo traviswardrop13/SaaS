@@ -180,6 +180,16 @@
       : "Say each word two times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.";
     try { document.getElementById("startLine").textContent = line; } catch (e) {}
     try { document.getElementById("dots").setAttribute("aria-label", "0 of " + (little ? 6 : 8)); } catch (e) {}
+    // FOUND1: Home's row plays a found game once more (?again=1): Play again
+    // and Back home, no hand-back (its story is over), and its round
+    // finishes nothing (questEnd answers only today's open story). A replay
+    // address of a story not finished yet goes Home: that game is still the
+    // story's surprise.
+    var replay = location.search === "?again=1";
+    // a page brought back from the browser's cache asks again who may be
+    // here (another child may be on the phone now, and Play again ends a day)
+    window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
+    if (replay && !(window.Sona && Sona.storyReplay && Sona.storyReplay("lighthouse"))) { document.body.hidden = true; location.replace("/today.html"); return; }
     SayPlay.start({
       key: "lighthouse", title: "Light the Way",
       intro: little ? "Say each word two times to light the lamp. Then touch the glowing boat with the light." : "Say each word two times to light the lamp. Then move the light to find a lost boat. Tap Bright beam for extra help.",
@@ -187,14 +197,14 @@
       done: { title: "Every boat is home!", sub: "You lit the way through the fog." },
       // STORY1: the end card's one button opens the story's ending; there is
       // no Play again (the day is finished when this round ends)
-      exit: { href: "/adventure.html?part=end&story=lighthouse", label: "See what happens!" },
-      again: false,
+      exit: replay ? undefined : { href: "/adventure.html?part=end&story=lighthouse", label: "See what happens!" },
+      again: replay ? undefined : false,
       play: window.Lighthouse,
       sounds: { whoosh: sound("whoosh"), toot: sound("toot"), spout: sound("spout"), ding: sound("ding"), plip: sound("plip") },
       soundMs: { whoosh: 620, toot: 540, spout: 520, ding: 400, plip: 180 }
     });
     // "game opened": the game key only, never the child (a bounced page is hidden)
-    if (!document.body.hidden) { try { Sona.track("game opened", { game: "lighthouse" }); } catch (e) {} }
+    if (!document.body.hidden) { try { Sona.track(replay ? "story game replayed" : "game opened", { game: "lighthouse" }); } catch (e) {} }
   })();
   </script>
 </body>

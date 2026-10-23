@@ -1,0 +1,22 @@
+/* The daily-adventure game page's shell (Days 4-14): the full-screen stage,
+   the top bar, the banner, the help pill and the word panel around Codex's
+   physical games. ONE copy for the page families get (story-game.html) and
+   the test host its games were verified on (tests/fixtures/daily-adventure.html),
+   so a fit the game suites measured is the fit the app ships. */
+/* The real story player will supply this shared full-screen shell. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--cream);}
+#app{position:fixed;inset:0;width:100%;height:100%;max-width:620px;min-height:0;margin:auto;padding:0;overflow:hidden;display:block;isolation:isolate;}
+#dailyCanvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;}
+#top{position:absolute;z-index:5;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;gap:8px;pointer-events:none;}
+#top button{pointer-events:auto;}#close{display:grid;place-items:center;background:var(--cream-card);color:var(--cream-ink);box-shadow:0 4px 0 var(--cream-line);}#close svg{width:22px;height:22px;}
+.hudpill{background:var(--cream-card);box-shadow:0 4px 0 var(--cream-line);color:var(--cream-ink);}#ttl{font-size:16px;}#dots{gap:6px;padding:13px 12px;}#dots i{width:8px;height:8px;}#dots i.on{background:var(--act);}
+#dailyBanner{position:absolute;z-index:3;top:calc(74px + env(safe-area-inset-top));left:16px;right:16px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:8px 14px 7px;background:var(--cream-card);border-radius:20px;box-shadow:0 3px 0 var(--cream-line);color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-size:clamp(17px,4.6vw,21px);font-weight:800;line-height:1.15;text-align:center;pointer-events:none;}
+#dailyControls{position:absolute;z-index:4;inset:0;pointer-events:none;}#dailyHelp{position:absolute;z-index:5;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);min-height:54px;min-width:145px;max-width:calc(100% - 28px);padding:8px 18px;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:auto;}#dailyHelp img{width:34px;height:39px;object-fit:contain;flex:none;}
+#turnPanel{position:absolute;z-index:8;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));margin:0;background:var(--cream-card);box-shadow:0 5px 0 var(--cream-line),0 10px 45px rgba(48,35,21,.25);}#turnPanel.yay{box-shadow:0 5px 0 var(--cream-line);}
+#hear{background:var(--cream);color:var(--act-d);box-shadow:0 3px 0 var(--cream-line);min-width:44px;min-height:44px;}#hear svg{width:24px;height:24px;}
+body[data-phase=play] #turnPanel,body[data-phase=finale] #turnPanel,body[data-phase=end] #turnPanel,body[data-phase=ready] #turnPanel,body[data-phase=boot] #turnPanel{visibility:hidden;pointer-events:none;}
+body:not([data-phase=play]) #dailyControls{visibility:hidden;pointer-events:none;}
+.ovl{padding:20px;}.ovlCard{max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;}button:focus-visible{outline:4px solid var(--act-d);outline-offset:4px;}
+@media(max-width:359px){#ttl{font-size:14px;padding:9px 10px;}#top{gap:7px;}#dots{gap:5px;padding:13px 10px;}#dots i{width:7px;height:7px;}#dailyBanner{font-size:17px;padding:7px 12px;}}
+@media(max-height:640px){#dailyBanner{top:calc(69px + env(safe-area-inset-top));}#dailyHelp{bottom:calc(14px + env(safe-area-inset-bottom));min-height:48px;}#startOvl .ovlCard{gap:7px;padding:16px;}#startTitle{font-size:27px;}#startBtn{min-height:50px;font-size:21px;margin:2px 0 6px;}}
+@media(orientation:landscape) and (max-height:500px){#app{max-width:900px;}#top{padding-top:calc(8px + env(safe-area-inset-top));}#dailyBanner{top:calc(61px + env(safe-area-inset-top));font-size:16px;padding:5px 11px;}#dailyHelp{bottom:calc(9px + env(safe-area-inset-bottom));min-height:44px;}#turnPanel{left:auto;right:12px;width:calc(100% - 120px);max-width:370px;bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;}#picBox{width:44px;height:44px;}#word{font-size:26px;}#listenRow{min-height:36px;}#echoWrap,#echoFace{height:34px;width:34px;}#micState{font-size:16px;}#startOvl .ovlCard{max-width:450px;gap:5px;}#startOvl .ovlEcho{display:none;}#startBtn{min-height:45px;font-size:20px;padding:8px 23px;}}

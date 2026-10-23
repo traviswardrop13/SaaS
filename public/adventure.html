@@ -70,6 +70,7 @@
       <div class="advbox" role="dialog" aria-label="The end of the story">
         <img class="advcheer" id="endEcho" alt="" />
         <div class="advgots" id="gotList" role="status"></div>
+        <p class="advfound" id="foundLine" hidden><img id="foundPic" alt="" /><span id="foundText"></span></p>
         <button class="act-pill advbig" id="homeBtn" type="button">Back home</button>
       </div>
     </div>
@@ -145,6 +146,7 @@
     var hearBtn = $("hearBtn"), nextBtn = $("nextBtn"), goBtn = $("goBtn"), skipBtn = $("skipBtn"), closeBtn = $("closeBtn");
     var startOvl = $("startOvl"), startPic = $("startPic"), startBtn = $("startBtn"), againBtn = $("againBtn");
     var endOvl = $("endOvl"), endEcho = $("endEcho"), gotList = $("gotList"), homeBtn = $("homeBtn");
+    var foundLine = $("foundLine"), foundPic = $("foundPic"), foundText = $("foundText");
     document.documentElement.style.setProperty("--adv-wash", data.wash || "");
     try { var tc = document.querySelector('meta[name="theme-color"]'); if (tc && data.wash) tc.setAttribute("content", data.wash); } catch (e) {}
     goBtn.textContent = data.go || "Let's go!";
@@ -589,6 +591,19 @@
       gotList.innerHTML = "";
       got.forEach(function (g) { var p = document.createElement("p"); p.className = "advgot"; p.textContent = "You got " + g.e + " " + g.name + "!"; gotList.appendChild(p); });
       gotList.hidden = !got.length;
+      // FOUND1: the story leaves its game behind, on Home's row (read only:
+      // storyFound is the stories finished, and the row shows only where
+      // the story's rule opens them)
+      var found = null;
+      try { if (S.storyReplay && S.storyReplay(day.id)) S.storyFound().forEach(function (d) { if (d.id === day.id) found = d; }); } catch (e) { found = null; }
+      foundLine.hidden = !found;
+      if (found) {
+        foundPic.onerror = function () { foundPic.onerror = null; foundPic.hidden = true; };
+        foundPic.src = found.pic; foundText.textContent = "New game on Home: " + found.name + "!";
+      }
+      // read with "Back home" when focus lands there (the sticker's line is
+      // the status region's; this one is not, so it rides on the button)
+      if (found) homeBtn.setAttribute("aria-describedby", "foundText"); else homeBtn.removeAttribute("aria-describedby");
       endEcho.src = "/assets/crafted/echo-cheer.webp";
       if (!celebrated) {
         celebrated = true;

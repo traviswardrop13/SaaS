@@ -966,11 +966,14 @@ sec("18c where CHEST1 and ROAD1 live in sona.js, and what they touch", () => {
   ok("Home never opens, settles or sends: no chestOpen, roadOpen, monthOpen, roadSettle, roadRolledSeen or track( in today.html", !/chestOpen|roadOpen|monthOpen|roadSettle|roadRolledSeen|\btrack\(/.test(codeOf("today.html")));
   ok("the road and sticker pages fire no event themselves (sona.js says them)", ["road.html", "stickers.html"].every((f) => existsSync(path.join(ROOT, f)) && !/\btrack\(/.test(codeOf(f))));
 });
-sec("18d the words a child can see on the road, the sticker book and Home's road card", () => {
+sec("18d the words a child can see on the road, the sticker book and Home's gift button and games row", () => {
   const strip = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/<[^>]+>/g, " ");
   const home = readFileSync(path.join(ROOT, "today.html"), "utf8");
-  const card = (home.match(/<a id="roadCard"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintRoad\(\)\{[\s\S]*?\n {4}\}/) || [""])[0];
-  ok("(Home's road card and its painter are found)", card.length > 400, card.length);
+  // FOUND1 (23 Oct 2026): the road card became the gift button in the top
+  // bar, and the found games' row ("Your games") took its place
+  const card = (home.match(/<a id="giftBtn"[\s\S]*?<\/a>/) || [""])[0] + (home.match(/function paintGift\(\)\{[\s\S]*?\n {4}\}/) || [""])[0]
+    + (home.match(/<section id="foundRow"[\s\S]*?<\/section>/) || [""])[0] + (home.match(/function paintFound\(\)\{[\s\S]*?\n {6}\}/) || [""])[0];
+  ok("(Home's gift button, its games row and their painters are found)", card.length > 1500, card.length);
   const text = ["road.html", "stickers.html"].map((f) => strip(readFileSync(path.join(ROOT, f), "utf8"))).join(" ") + strip(card) + JSON.stringify((SRC.match(/const ROAD_LANDS = \[[\s\S]*?const _ROAD_KINDS/) || [""])[0].replace(/\/\/[^\n]*/g, ""));
   const bad = text.match(/\b(score|points?|high score|rare|epic|legendary|mystery|you're back|missed|lost|behind|hurry|ends in|last chance|streak|days left|countdown)\b|\$\d/gi);
   ok("no word a child must never see (score, points, rare, mystery, missed, hurry, ends in, streak…) and no price", !bad, bad);

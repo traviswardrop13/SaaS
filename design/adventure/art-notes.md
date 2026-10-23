@@ -4,7 +4,8 @@ Everything here was drawn by the image model (`chatgpt-image-latest`, high
 quality) through `tools/art/gen-adventure.mjs` (story pages, lineups, Home
 cards) and `tools/art/gen-sprites.mjs` (the games' pieces, the `lighthouse-*`,
 `windup-*` and `bridge-*` entries of `tools/art/game-sprites.json`), and cut by
-`tools/art/cut-adventure.py` (ImageMagick; this container has no PIL). Every
+`tools/art/cut-adventure.py` (ImageMagick; Days 4-14's `TOUCH` and `STARS`
+also need Python's PIL and numpy). Every
 picture was checked by eye; what was redrawn, and why, is in
 `tools/art/out/adventure/checks.json` (git-ignored, beside the raw drawings)
 and summed up at the end. `review.html` beside this file shows every page with
@@ -23,6 +24,8 @@ striped pajamas with one slipper) and the seven toys (Day 2); Grandma
 Tortoise (Day 3). Each character was drawn alone and the lineup composed
 (a whole lineup in one picture merged Pelly into the walrus). Pelly's cap is
 a light-blue postal cap with an envelope badge; Wally's has a gold anchor.
+Days 4-14 have one lineup each, `cast-<id>.webp` (this folder), drawn the
+same way: each day's new characters beside Echo.
 
 ## 2. Story pages: buddy boxes (for `adventures.js`)
 
@@ -65,6 +68,125 @@ s08: { x: 0.17, y: 0.52,  h: 0.16, pose: "cheer" },  // on the bridge's first st
 e01: null, e03: null,
 e02: { x: 0.76, y: 0.76,  h: 0.20, pose: "rest" },   // in the line on the bridge, behind Echo
 e04: { x: 0.74, y: 0.71,  h: 0.27, pose: "cheer" },  // on the rug, right of Echo (the hug)
+// Day 4: waterwheel
+s01: { x: 0.515, y: 0.705, h: 0.145, pose: "rest" }, // on the top doorstep between Pelly and Echo, under the sock's toe (Echo is near the right edge, so there is no room right of him, as on Day 1)
+s02: { x: 0.38, y: 0.615, h: 0.13, pose: "peek" },   // peeking over the porch railing, left of Echo, under the letter (as Day 1's s02; the railing right of Echo is too short)
+s03: { x: 0.71, y: 0.755, h: 0.19, pose: "rest" },   // on the sandy path just right of Echo, feet on his foot line, clear of the droopy bed on the right
+s05: { x: 0.858, y: 0.825, h: 0.18, pose: "rest" },  // on the sandy path just right of Gardener Mouse and a little in front of her, below her tail
+s08: { x: 0.585, y: 0.81, h: 0.16, pose: "rest" },   // on the path at the foot of the flat stone, below the trough, between Echo and Gardener Mouse (left of Echo, Echo's wing reaches the stone's edge: no room)
+e02: { x: 0.6, y: 0.78, h: 0.19, pose: "cheer" },    // on the pond's flat stone edge, right of Echo, below the splashing ducks
+e03: { x: 0.875, y: 0.855, h: 0.18, pose: "cheer" }, // on the sandy path in front of and right of Echo (Echo is at the right edge, so not beside him)
+e04: { x: 0.655, y: 0.685, h: 0.19, pose: "cheer" }, // on the right half of the bench, between Echo and the lamp
+s04: null, s06: null, s07: null, e01: null,
+// Day 5: postboat
+s01: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },    // on the doorstep between Pelly and Echo, LEFT of Echo (Echo took the right of the step; the strip right of him is too narrow and cuts the octopus at the edge), as Day 1's s01
+s02: { x: 0.79, y: 0.765, h: 0.21, pose: "rest" },   // on the garden path just right of Echo, below the letter
+s03: { x: 0.42, y: 0.83, h: 0.19, pose: "rest" },    // on the jetty's plank deck LEFT of Echo, in front of the parcel pile (Echo stands on the right of the deck, and the strip right of him is too narrow)
+s04: { x: 0.48, y: 0.795, h: 0.2, pose: "rest" },    // on the flat mossy rock just right of Echo, in front of the red boat's bow
+s05: { x: 0.7, y: 0.84, h: 0.2, pose: "cheer" },     // on the jetty's plank deck, lower right, in front of the postboat's hull
+s07: { x: 0.44, y: 0.745, h: 0.185, pose: "rest" },  // on the floating jetty's planks just right of Echo, in front of the raft's edge, clear of Beaver
+s08: { x: 0.8, y: 0.855, h: 0.2, pose: "cheer" },    // on the near plank deck, lower right, in front of the postboat's hull (Otter is upper left)
+e03: { x: 0.6, y: 0.78, h: 0.19, pose: "rest" },     // on the jetty planks just right of Echo, in front of the tea table, clear of Beaver and his tail
+e04: { x: 0.7, y: 0.665, h: 0.19, pose: "cheer" },   // on the right half of the bench, right of Echo, cheering, its feet on the bench top level with his
+s06: null, e01: null, e02: null,
+// Day 6: bakery
+s01: { x: 0.45, y: 0.685, h: 0.19, pose: "rest" },   // on the top doorstep between Pelly's fence and Echo, LEFT of Echo (Echo took the right of the step; the strip right of him is too narrow), as Day 1's s01
+s02: { x: 0.372, y: 0.597, h: 0.12, pose: "peek" },  // peeking over the porch railing LEFT of Echo, under the letter (as Day 1's s02: Echo again stands right of the middle and the post is right of him)
+s03: { x: 0.5, y: 0.755, h: 0.19, pose: "rest" },    // on the plain cobbles RIGHT of Echo, between him and Grandpa Bear, feet level with his (Echo stands at about a fifth of the width, so the daisies left of him leave no room on that side)
+s04: { x: 0.865, y: 0.775, h: 0.165, pose: "rest" }, // on the counter top in front of and right of Echo, by the counter's front edge (right of Echo is too narrow for the octopus)
+s07: { x: 0.872, y: 0.8, h: 0.17, pose: "rest" },    // on the counter top just right of Echo, at the right edge beside his wing
+s08: { x: 0.88, y: 0.718, h: 0.155, pose: "rest" },  // on the front of the counter top right of the mixing bowl, in front of the blueberries (the jug and the flour cup stay in view)
+e02: { x: 0.625, y: 0.66, h: 0.15, pose: "cheer" },  // on the bare counter top just right of Echo, cheering, in front of the bottom of Grandpa Bear's sweater (no bun, mouse or face covered)
+e03: { x: 0.555, y: 0.765, h: 0.19, pose: "cheer" }, // on the wooden floor RIGHT of Echo, below Pelly's feet (Echo is at the left edge, nothing left of him)
+e04: { x: 0.82, y: 0.666, h: 0.19, pose: "cheer" },  // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's lower edge below the bakery, covering no star or place
+s05: null, s06: null, e01: null,
+// Day 7: frontdoor
+s01: { x: 0.445, y: 0.685, h: 0.18, pose: "rest" },  // on the top doorstep between Pelly's fence and Echo, LEFT of Echo (Echo took the right of the step; the strip right of him is too narrow), as Day 1's s01
+s02: { x: 0.405, y: 0.625, h: 0.14, pose: "peek" },  // peeking over the porch railing's top edge LEFT of Echo, between the left post and Echo's raised wing, under the letter (Echo now stands right of the middle and fills the stretch to the right-hand post; Day 1's s02 peek is also left of Echo)
+s03: { x: 0.43, y: 0.6, h: 0.16, pose: "rest" },     // on the plain sandy path just RIGHT of Echo, in the gap between Echo and Tortoise (Echo stands at the left edge, so there is no path left of him)
+s04: { x: 0.565, y: 0.785, h: 0.165, pose: "rest" }, // on the plain grass just right of Echo and the dandelion leaf, a little in front of him, below Tortoise's front feet and in front of the cart
+s06: { x: 0.415, y: 0.8, h: 0.18, pose: "rest" },    // on the plain grass just right of Echo, well below and left of the spinning plank
+s08: { x: 0.672, y: 0.69, h: 0.15, pose: "rest" },   // on the landing's planks just right of Echo, left of the right-hand post, feet on the plank top
+e01: { x: 0.2, y: 0.79, h: 0.19, pose: "cheer" },    // on the near end of the bridge's planks, in front of and left of Echo, toward the near bank
+e02: { x: 0.853, y: 0.76, h: 0.19, pose: "rest" },   // on the round rug just right of Echo, in front of the chair's legs (Echo took the right of the rug)
+e03: { x: 0.665, y: 0.815, h: 0.16, pose: "rest" },  // on the stone path in front, between Tortoise and Echo and a little nearer the viewer (Echo stands near the right edge, so there is no path right of him)
+e04: { x: 0.64, y: 0.626, h: 0.2, pose: "cheer" },   // on the empty right half of the bench, right of Echo, feet on the bench top
+s05: null, s07: null,
+// Day 8: lantern
+s01: { x: 0.465, y: 0.665, h: 0.19, pose: "rest" },  // on the stone landing LEFT of Echo, between the fence and Echo (Echo's right wing reaches almost to the edge, so there is no room right of him)
+s02: { x: 0.42, y: 0.62, h: 0.1, pose: "peek" },     // peeking over the porch railing LEFT of Echo, under the letter (no room right of him: the post)
+s03: { x: 0.69, y: 0.72, h: 0.18, pose: "rest" },    // on the plain near path right of Echo, feet level with his, clear of the dark lamp at the right edge
+s04: { x: 0.195, y: 0.84, h: 0.17, pose: "rest" },   // on the near path's left edge just left of Hedgehog, feet level with hers (no room right of Echo: his wing reaches the right edge); lamp light switched off by the s04 unlight list
+s05: { x: 0.695, y: 0.68, h: 0.165, pose: "rest" },  // on the near path right of Echo, feet level with his, clear of Hedgehog
+s06: { x: 0.52, y: 0.79, h: 0.19, pose: "rest" },    // on the plain path right of Echo, in front of the cord heap, clear of the plugs
+s08: { x: 0.385, y: 0.8, h: 0.17, pose: "rest" },    // on the plain path in front of Echo, left of him, under the cords (no room right of him)
+e02: { x: 0.862, y: 0.612, h: 0.17, pose: "sit" },   // sitting on the cushion of the empty stump right of Echo (the fox, with no sit pose, stands on it)
+e04: { x: 0.75, y: 0.648, h: 0.22, pose: "cheer" },  // on the empty right half of the bench, right of Echo, feet on the bench top
+s07: null, e01: null, e03: null,
+// Day 9: trainline
+s01: { x: 0.505, y: 0.679, h: 0.18, pose: "rest" },  // on the top doorstep between Pelly's fence and Echo, LEFT of Echo (Echo's right wing nearly reaches the right edge, so there is no room right of him), as on Day 1
+s02: { x: 0.365, y: 0.585, h: 0.125, pose: "peek" }, // peeking over the porch railing LEFT of Echo, between the ball-topped post and his raised wing (Echo is right of the middle and a post fills the rail right of him), as on Day 1
+s03: { x: 0.185, y: 0.805, h: 0.15, pose: "rest" },  // on the open snow just left of Echo, feet level with his, well below the coach and Frog
+s05: { x: 0.495, y: 0.655, h: 0.16, pose: "rest" },  // on the platform's front boards just right of Echo, inside the front edge, below the ducks
+s06: { x: 0.44, y: 0.74, h: 0.19, pose: "rest" },    // on the plain snow just right of Echo, in front of and below the snowdrift
+s08: { x: 0.77, y: 0.755, h: 0.19, pose: "rest" },   // on the plain snow just right of Echo and the end of his track piece
+e03: { x: 0.5, y: 0.735, h: 0.175, pose: "rest" },   // use e03.keep.png (the new e03.png gives Echo four wings, two spread and two holding the cup, and still draws the bobble beanie); the buddy stands on the plain platform boards just right of Echo and his cocoa, feet level with his, in front of the round table's legs, below the cups
+e04: { x: 0.72, y: 0.7, h: 0.21, pose: "cheer" },    // on the empty right half of the bench, right of Echo, feet on the bench top
+s04: null, s07: null, e01: null, e02: null,
+// Day 10: kite
+s01: { x: 0.45, y: 0.72, h: 0.19, pose: "rest" },    // on the doorstep between Pelly's umbrella and Echo, LEFT of Echo (the step right of him is too narrow and cuts the octopus and fox at the edge), as on Day 1
+s02: { x: 0.385, y: 0.6, h: 0.14, pose: "peek" },    // peeking over the porch railing's top rail LEFT of Echo, its head just under the letter's bottom edge (right of Echo is only the corner post at the picture's edge), as on Day 1's s02
+s03: { x: 0.56, y: 0.825, h: 0.2, pose: "rest" },    // on the grass right of Echo, in front of the basket of cloth pictures and nearer the front than Goat (any higher and it covers the basket)
+s04: { x: 0.79, y: 0.715, h: 0.18, pose: "rest" },   // on the plain grass right of Beetle (who stands just right of Echo), a step nearer the front than Echo, under the beetle and moon pictures without touching them
+s06: { x: 0.47, y: 0.85, h: 0.2, pose: "rest" },     // on the grass right of Echo, in front of and below the flower cloth picture, apart from tangled Goat (any higher and it covers the picture)
+s08: { x: 0.61, y: 0.855, h: 0.19, pose: "rest" },   // on the grass right of the front basket of cloth pictures, below the small ribbon basket, apart from Goat
+e01: { x: 0.87, y: 0.815, h: 0.19, pose: "cheer" },  // on the grass just right of Echo, cheering with him (a small gap to his wing)
+e02: { x: 0.75, y: 0.75, h: 0.17, pose: "cheer" },   // on the wide plain grass right of Echo, cheering up at the kite, feet on Echo's line
+e03: { x: 0.775, y: 0.79, h: 0.18, pose: "cheer" },  // on the grass just right of Echo, cheering with him, far below Pelly and the kite
+e04: { x: 0.765, y: 0.71, h: 0.19, pose: "cheer" },  // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's lower-right corner, covering no star, the kite or Echo's wing
+s05: null, s07: null,
+// Day 11: nestlift
+s01: { x: 0.43, y: 0.7, h: 0.18, pose: "rest" },     // on the stone step between Pelly's fence and Echo, LEFT of him (right of Echo the step runs out at the picture's edge and the octopus touched it)
+s02: { x: 0.375, y: 0.643, h: 0.105, pose: "peek" }, // peeking over the porch rail LEFT of Echo, between the left post and his wing, chin just under the letter (Echo stands right of the middle, so the stretch right of him ends at a post)
+s03: { x: 0.578, y: 0.775, h: 0.165, pose: "rest" }, // on the sand between the chicks and Echo, LEFT of him (Echo stands near the right edge with no sand to his right)
+s05: { x: 0.575, y: 0.78, h: 0.19, pose: "rest" },   // on the plain sand just right of Echo, feet on his line, the quilt and chicks well above
+s07: { x: 0.665, y: 0.855, h: 0.15, pose: "rest" },  // on the open sand just right of the post's foot, between the winch and the hanging lift basket
+s08: { x: 0.405, y: 0.85, h: 0.185, pose: "rest" },  // on the sand between the flat rock with the stones and Echo, left of him, under the hanging lift basket
+e02: { x: 0.57, y: 0.825, h: 0.16, pose: "rest" },   // on the plain cream patch of the picnic cloth, in front of the pot, between the chicks and Echo
+e04: { x: 0.7, y: 0.725, h: 0.17, pose: "cheer" },   // on the plain right half of the bench, right of Echo and left of the lamp table, arms up, feet on Echo's line
+s04: null, s06: null, e01: null, e03: null,
+// Day 12: concert
+s01: { x: 0.485, y: 0.708, h: 0.18, pose: "rest" },  // on the top flagstone between Pelly's fence and Echo, left of him (Echo is near the right edge with no room right of him, as on Day 1)
+s02: { x: 0.385, y: 0.59, h: 0.12, pose: "peek" },   // peeking over the railing's top rail LEFT of Echo, under the letter (right of him is the corner post), as Day 1's s02
+s03: { x: 0.69, y: 0.68, h: 0.17, pose: "rest" },    // on the mossy grass of the near bank just right of Echo
+s04: { x: 0.46, y: 0.58, h: 0.165, pose: "rest" },   // on the wide flat stone just right of Echo
+s05: { x: 0.46, y: 0.8, h: 0.17, pose: "rest" },     // on the near bank's grass just right of Echo, in front of the waterside stones
+s06: { x: 0.45, y: 0.65, h: 0.16, pose: "rest" },    // on the lily pad in front, between Echo and the harp
+s08: { x: 0.735, y: 0.675, h: 0.17, pose: "cheer" }, // on the front of the lily pad, right of Echo, below Duck and clear of her bell stand
+e03: { x: 0.6, y: 0.755, h: 0.17, pose: "rest" },    // on the mossy bank just right of Echo, in front of the picnic row, below Duck and Newt
+e04: { x: 0.668, y: 0.705, h: 0.19, pose: "cheer" }, // on the bench top right of Echo, between him and the lamp, arms up; feet on the bench like Echo's
+s07: null, e01: null, e02: null,
+// Day 13: rooftops
+s01: { x: 0.44, y: 0.715, h: 0.18, pose: "rest" },   // on the doorstep LEFT of Echo, between Pelly's fence and Echo (Echo took the right of the step; the strip right of him is too narrow and cuts the octopus at the edge), as Day 1's s01
+s02: { x: 0.365, y: 0.655, h: 0.115, pose: "peek" }, // peeking over the porch railing LEFT of Echo, under the letter (Echo leans on the right of the railing, as Day 1's s02); kept small so it clears the post knob, Echo's wing and the letter
+s03: { x: 0.65, y: 0.805, h: 0.21, pose: "rest" },   // on the cobbled lane just right of Echo
+s04: { x: 0.565, y: 0.75, h: 0.16, pose: "rest" },   // on the cobbles in front, between Gardener Bird and Echo, below the cart
+s05: { x: 0.535, y: 0.86, h: 0.14, pose: "rest" },   // on the cobbles in front, between Gardener Bird and Echo, just under the watering can (Echo stands at the right edge, so the prompt's spot right of him has no room); feet a little in front of the two birds'
+s06: { x: 0.625, y: 0.845, h: 0.15, pose: "rest" },  // on the cobbles in front, between the springboard's end and Echo's feet (no room right of Echo, who is at the right edge)
+s08: { x: 0.665, y: 0.85, h: 0.15, pose: "rest" },   // on the cobbles in front, between the springboard's end and Echo's feet (no room right of Echo, who is at the right edge)
+e02: { x: 0.645, y: 0.82, h: 0.19, pose: "cheer" },  // on the terrace just right of Echo, under the flowery arch
+e03: { x: 0.53, y: 0.845, h: 0.17, pose: "cheer" },  // on the terrace just right of Echo, in front of the table, feet level with Echo's
+e04: { x: 0.74, y: 0.7, h: 0.2, pose: "cheer" },     // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head and arms reach the map's lower edge and cover no star or place (only cobbles)
+s07: null, e01: null,
+// Day 14: observatory
+s01: { x: 0.4, y: 0.7, h: 0.17, pose: "rest" },      // on the doorstep LEFT of Echo, between Pelly and Echo (right of Echo is only a sliver of step at the picture's edge)
+s02: { x: 0.365, y: 0.585, h: 0.12, pose: "peek" },  // peeking over the railing's top rail LEFT of Echo, between the left post and Echo (Echo sits on the railing, and right of him are the slipper and the end post); its head just under the letter
+s03: { x: 0.575, y: 0.8, h: 0.17, pose: "rest" },    // on the stone path just right of Echo and the slipper he holds up
+s05: { x: 0.53, y: 0.865, h: 0.155, pose: "rest" },  // on the floor between Owl and Echo, LEFT of Echo (right of Echo is only a sliver of floor at the picture's edge)
+s06: { x: 0.455, y: 0.795, h: 0.17, pose: "rest" },  // on the floor just right of Echo, in front of the platform's left end, below the drive wheel
+e03: { x: 0.865, y: 0.78, h: 0.145, pose: "cheer" }, // on the floor just right of Owl, clear of her raised slipper, cheering
+e04: { x: 0.63, y: 0.688, h: 0.19, pose: "cheer" },  // on the empty right half of the bench, right of Echo, cheering, feet on the bench top level with his; its head reaches the map's bottom frame and covers no star or place
+s04: null, s07: null, s08: null, e01: null, e02: null,
 ```
 
 The bottom eighth of every page is calm (ground, floor or water) for the
@@ -100,6 +222,36 @@ fix, so a `--redo` of one of these pages loses it):
   letter, though the storm broke it the night before. Painted out (a masked
   edit, only that strip kept): the river runs on with no bridge, as in s05.
 
+Days 4-14 (22 Oct 2026). Every page was checked against its line by a
+reviewer looking at the picture (writing, Echo off-model, a character
+missing, doubled or wrong, extra limbs, the fix drawn before the game, a face
+under the caption card) and redrawn with the reason until it passed, up to
+five times; from the third round only those hard faults sent a page back.
+What a later round still noticed but let pass is in the PR. Fixed after
+drawing by `cut-adventure.py` (`TOUCH`, the same way every time it runs; the
+raws in `tools/art/out/adventure/` stay as the model drew them):
+- **the helper maps (Days 5-14's e04)**: drawn with the one star Echo presses; the
+  stars of the days before are the game's own glossy star, laid on the map's
+  places with a soft shadow (`STARS`, placed with `--stars` and counted on
+  the proof). Day 4's map was drawn with its four. The map pages draw from
+  `refs/ref-map.webp` (this folder), Day 3's map cut out of its page with
+  its stars filled in: the whole page brought back its stars, and its Echo's
+  two-lobed pink feather, as extra stars and a third feather.
+- **lantern/s02, s04-s08, home**: the mushroom lamps glowed on every page
+  before the game (three drawings each); inside each lamp's circle only warm,
+  bright pixels are turned to dull dusk glass. Echo's own porch lamp stays
+  lit, and so does the chart's drawing of a lit lamp (s07).
+- **lantern/s05**: a wing on Glowworm, who has none, filled in from the sky.
+- **postboat/e01**: Beaver's two front teeth, the day's joke, drawn on.
+- **kite/e04**: Echo's back feather drawn coral, turned to his yellow.
+- **observatory/e04**: four tiny cream crayon sparkles by the moons, which a
+  child counting fourteen stars could count too, filled in.
+Pages drawn against an earlier page of their own story: postboat e01 and e03
+(Beaver as on s07), kite s04 and e02 (Lamb's and Beetle's own model sheets),
+trainline e03 (Pelly and the mitten as on s01). Those references are in
+`refs/` too, so a `--redo` from a fresh checkout has them (the raw drawings
+in `tools/art/out/` are git-ignored).
+
 ## 3. Home's pictures
 
 768x432, cut from the centre 16:9 band of a 1536x1024 drawing.
@@ -114,6 +266,10 @@ fix, so a `--redo` of one of these pages loses it):
 - `home-arcade`: Echo in the middle (x 0.32-0.68, y 0.25-0.95) with a
   watermelon slice, basketball, piano keys, soccer ball and a bone around him:
   the square centre crop keeps Echo whole.
+- `home-<id>` for Days 4-14: each shows the day's problem (never the fix)
+  with Echo, checked whole at 16:9 and 2:1. Where Echo stands low (frontdoor,
+  trainline, rooftops) the 5:2 and 3:1 crops of the smallest phones trim his
+  feet, as Day 1's 3:1 does.
 
 ## 4. Light the Way (`lighthouse-*`, for P4)
 

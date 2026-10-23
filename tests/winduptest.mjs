@@ -3,8 +3,10 @@
 // on the brass dial and lets go at the star (ages 5-8), or winds until it
 // rings (ages 3-4). Plays the real page on a paused fake clock, so every wait
 // is on published state (window.__windup, window.__sayplay), never on real
-// time. WINDUP_PART=locked|main|struggle|little|help|buddy|fit|standins|keyboard|motion
-// runs one part (also app, source).
+// time. WINDUP_PART=locked|main|replay|struggle|little|help|buddy|fit|standins|keyboard|motion
+// runs one part (also app, source). Every part but replay runs without it;
+// replay runs only when named (its own suite, tests/windupreplaytest.mjs),
+// because the rest of the file already takes about 170 s of run-all's 300.
 import path from 'node:path';
 import {OUT} from './_env.mjs';
 import {gameHarness,advance,until,sayWord} from './_sayplay-realgame.mjs';
@@ -170,6 +172,41 @@ try{
   const nav=page.waitForRequest(r=>r.isNavigationRequest(),{timeout:4000}).catch(()=>null);await page.locator('#goHome').click();const req=await nav;
   ok('"See what happens!" opens the story\'s ending',!!req&&new URL(req.url()).pathname==='/adventure.html'&&new URL(req.url()).search==='?part=end&story=windup',req&&req.url());
   ok('no runtime errors',errors.length===0,errors);await context.close();
+ }
+
+ // ── replay (FOUND1): a found game played again from Home's row (?again=1),
+ // for a child whose stories are all finished. Its end card has Play again
+ // and Back home, and Play again is sayplay's again() calling Windup.reset(),
+ // which no story round ever reaches (they all pass again:false): a toy left
+ // awake, the cuckoo left open or the parade left standing would start the
+ // second round broken, so it is played through to its own end card.
+ // Only when named: see the top of the file ──
+ if(part==='replay'){
+  const FOUND=JSON.stringify({s:14,ls:13,lk:'story',done:'2026-01-01'});
+  const {page,context,errors}=await fresh({raw:true,device:{seed:{'sona.quest.v1':FOUND}}});
+  await page.goto('http://127.0.0.1:'+PORT+'/arcade-windup.html?again=1');{const now=await page.evaluate(()=>Date.now());await page.clock.pauseAt(now+1000);}
+  ok('replay: a child whose stories are all finished may play Wind-Up Toys again from Home',await page.evaluate(()=>location.search==='?again=1'&&!document.body.hidden&&Sona.storyReplay('windup')));
+  const quest=()=>page.evaluate(()=>localStorage.getItem('sona.quest.v1'));
+  const endCard=()=>page.evaluate(()=>{const a=document.getElementById('again'),g=document.getElementById('goHome');return{again:a.textContent,againShown:!a.hidden&&a.offsetParent!==null,go:g.textContent,goShown:g.offsetParent!==null};});
+  await begin(page);
+  ok('replay: a whole round of eight toys ends on the end card',await finishRound(page,0));let s=await st(page);
+  ok('replay: …with seven toys in the parade, the cuckoo open and the music box\'s doors open (what Play again must clear)',s.speech.step===8&&s.w.dones===8&&s.w.won&&s.w.line.length===7&&s.w.cuckoo&&s.w.doors>0,s.w);
+  let end=await endCard();
+  ok('replay: the end card has Play again and Back home, and no hand-back to the story',end.again==='Play again'&&end.againShown&&end.go==='Back home'&&end.goShown,end);
+  ok('replay: the round finished nothing: the story record is as it was',await quest()===FOUND,await quest());
+  await page.locator('#again').click();await advance(page,100);s=await st(page);
+  ok('replay: Play again starts a clean round: no toy awake, the parade gone, the cuckoo and the doors shut, word 1 of 8',s.speech.phase==='turn'&&s.speech.step===0&&!s.w.won&&s.w.dones===0&&s.w.line.length===0&&!s.w.cuckoo&&s.w.doors===0&&s.w.stage===0&&s.w.toy==='bunny'&&s.w.scene==='bench'&&s.w.pan===1&&!s.w.keyOut&&!s.w.active&&s.w.turns===0&&s.w.react===null&&s.w.power===0&&!s.w.beat&&s.w.banner==='Say the word to find the key!',s);
+  ok('replay: …and the end card is gone',await page.evaluate(()=>!document.getElementById('endOvl').classList.contains('show')));
+  ok('replay: the first word of the new round pops a key',await sayWord(page));s=await st(page);
+  ok('replay: …the bunny\'s, on the bench, with its own star and no help climbed, as in a first round',s.w.toy==='bunny'&&s.w.keyOut&&s.w.active&&s.w.scene==='bench'&&s.w.mode==='wind'&&Math.abs(s.w.star.half-0.3)<1e-9&&s.w.ladder.misses===0&&s.w.turns===0&&s.w.line.length===0,s.w);
+  await windToStar(page);ok('replay: …and it wakes and counts as step 1',await stepped(page,0)&&(await st(page)).speech.step===1);
+  ok('replay: the second round plays through to its own end card',await finishRound(page,1));s=await st(page);
+  ok('replay: …eight new steps, each counted once, and seven toys in the parade again',s.speech.step===8&&s.w.dones===8&&s.w.line.length===7&&s.w.won,s.w);
+  ok('replay: the second round finished nothing either',await quest()===FOUND,await quest());
+  end=await endCard();ok('replay: …and its end card has Play again and Back home again',end.againShown&&end.go==='Back home'&&end.goShown,end);
+  const nav=page.waitForRequest(r=>r.isNavigationRequest(),{timeout:4000}).catch(()=>null);await page.locator('#goHome').click();const req=await nav;
+  ok('replay: Back home goes Home (/today.html)',!!req&&new URL(req.url()).pathname==='/today.html',req&&req.url());
+  ok('no runtime errors (replay)',errors.length===0,errors);await context.close();
  }
 
  // ── struggle (ages 5-8): both ladders climb, and every step finishes with no more speaking ──
@@ -420,9 +457,11 @@ try{
   ok('…nor does the page\'s own script',!/localStorage|sessionStorage|logAttempt|bumpReps|gameRep|addCoins|awardSticker|questEnd/.test(page));
   ok('Echo\'s directions come from the STEP_LINES tables through api.instruct',/api\.instruct\(stepLine\(\)\)/.test(js)&&/var STEP_LINES = \[/.test(js)&&/var LITTLE_LINES = \[/.test(js));
   ok('the help pill calls api.practice()',/api\.practice\(\)/.test(js));
-  ok('the page sets the age and the steps, hands the story its exit and no Play again',/setLittle\(little\)/.test(html)&&/steps: little \? STEPS6 : STEPS8/.test(html)&&/exit: \{ href: "\/adventure\.html\?part=end&story=windup", label: "See what happens!" \}/.test(html)&&/again: false/.test(html));
+  ok('the page sets the age and the steps, hands the story its exit and no Play again',/setLittle\(little\)/.test(html)&&/steps: little \? STEPS6 : STEPS8/.test(html)&&/exit: replay \? undefined : \{ href: "\/adventure\.html\?part=end&story=windup", label: "See what happens!" \}/.test(html)&&/again: replay \? undefined : false/.test(html));
+  ok('FOUND1: only ?again=1, and only once this story is finished (Sona.storyReplay), makes it a replay from Home\'s row (Play again and Back home, its own event); any other replay address goes Home',/var replay = location\.search === "\?again=1";/.test(html)&&/if \(replay && !\(window\.Sona && Sona\.storyReplay && Sona\.storyReplay\("windup"\)\)\) \{ document\.body\.hidden = true; location\.replace\("\/today\.html"\); return; \}/.test(html)&&/track\(replay \? "story game replayed" : "game opened", \{ game: "windup" \}\)/.test(html));
+  ok('FOUND1: a page brought back from the browser\'s cache reloads, so the replay and access checks run again for whichever child is on the phone now (its Play again could otherwise end another child\'s story day)',/window\.addEventListener\("pageshow", function \(e\) \{ if \(e\.persisted\) location\.reload\(\); \}\);/.test(html));
   ok('a kid page: the zoom lock, sona.js, and exactly one play script after sayplay.js',/maximum-scale=1, user-scalable=no/.test(html)&&/<script src="\/sayplay\.js"><\/script><script src="\/windup\.js"><\/script>\s*<script>/.test(html)&&!/src="https?:/.test(html));
-  ok('"game opened" carries the game key only',/S\.track\("game opened", \{ game: "windup" \}\)/.test(html));
+  ok('"game opened" (and a replay\'s "story game replayed") carries the game key only',/S\.track\(replay \? "story game replayed" : "game opened", \{ game: "windup" \}\)/.test(html));
   const vm=await import('node:vm'),box={window:{},document:{}};vm.runInNewContext(readFileSync(new URL('../public/windup.js',import.meta.url),'utf8'),box);
   const L=box.window.Windup.LINES,lines=[...L.big,...L.little,...L.toys,...Object.values(box.window.Windup.SAY)];
   ok('eight step lines for ages 5-8 and six for ages 3-4, each at most 120 characters',L.big.length===8&&L.little.length===6&&lines.every(l=>l.length<=120),L);

@@ -146,12 +146,14 @@ try {
         });
         ok("320px mixed picks use matching square art without sideways overflow", shape.count === 2 && shape.book && !shape.overflow && shape.arts.every((r) => Math.abs(r.w - r.h) < 2), shape);
         ok("free book badge and spoken label are useful, with no undefined text", shape.free === "Free" && !/undefined/.test(shape.label) && shape.title === "Today's picks", shape);
-        ok("the daily rep pill keeps its grown-up tap target", await page.locator("#repPill").evaluate((e) => e.getBoundingClientRect().height >= 44));
+        ok("the gift button keeps a full tap target", await page.locator("#giftBtn").evaluate((e) => e.getBoundingClientRect().height >= 44 && e.getBoundingClientRect().width >= 44));
         if (process.env.HOME_PICK_SHOT) await page.screenshot({ path: process.env.HOME_PICK_SHOT });
         ok("mixed Home has no page errors", !errors.length, errors);
       } finally { await ctx.close(); }
     });
-    await scenario("daily rep pill", async () => {
+    // FOUND1 (23 Oct 2026): the daily count is the gift button's ring and
+    // its spoken label (the pill that drew the number is gone)
+    await scenario("daily rep ring", async () => {
       const { ctx, page, errors } = await fixture({ age: 4 });
       try {
         await page.evaluate(() => {
@@ -159,17 +161,16 @@ try {
           localStorage.setItem("sona.gamereps.v1", JSON.stringify({ [Sona.localDay()]: { R: 12 } }));
           document.dispatchEvent(new Event("visibilitychange"));
         });
-        const read = () => page.evaluate(() => ({ count: document.getElementById("repPillN").textContent, unit: document.getElementById("repPillUnit").textContent, aria: document.getElementById("repPill").getAttribute("aria-label"), overflow: document.documentElement.scrollWidth > innerWidth + 1 }));
+        const read = () => page.evaluate(() => ({ fill: document.getElementById("giftRing").style.getPropertyValue("--fill"), full: document.getElementById("giftBtn").classList.contains("full"), aria: document.getElementById("giftBtn").getAttribute("aria-label"), overflow: document.documentElement.scrollWidth > innerWidth + 1 }));
         let got = await read();
-        ok("Home shows 12/30 reps today before the goal", got.count === "12/30" && got.unit === "reps today" && /12 of 30 reps today/.test(got.aria) && !got.overflow, got);
+        ok("Home's ring is 12 of 30 before the goal", got.fill === "40" && !got.full && /12 of 30 reps today\.$/.test(got.aria) && !got.overflow, got);
         await page.evaluate(() => { for (let i = 0; i < 22; i++) Sona.gameRep("R"); document.dispatchEvent(new Event("visibilitychange")); });
         got = await read();
-        ok("Home keeps counting to 34 and says Goal met", got.count === "34" && got.unit === "Goal met" && /34 of 30 reps today/.test(got.aria) && !got.overflow, got);
+        ok("Home keeps counting to 34, a full ring, and says Goal met", got.fill === "100" && got.full && /34 of 30 reps today\. Goal met\./.test(got.aria) && !got.overflow, got);
         await page.evaluate(() => { Sona.saveProfile({ dailyGoal: 50 }); document.dispatchEvent(new Event("visibilitychange")); });
         got = await read();
-        ok("raising the target keeps the earned Goal met display", got.count === "34" && got.unit === "Goal met" && /34 of 50 reps today.*Goal met/.test(got.aria), got);
-        await page.locator("#repPill").click();
-        ok("the daily rep pill still opens the grown-up check", await page.locator("#gateOvl").evaluate((e) => e.classList.contains("show")));
+        ok("raising the target keeps the earned full ring and Goal met", got.fill === "100" && got.full && /34 of 50 reps today.*Goal met/.test(got.aria), got);
+        ok("the gift button opens the Trophy Road", (await page.locator("#giftBtn").getAttribute("href")) === "/road.html");
         ok("daily Home has no page errors", !errors.length, errors);
       } finally { await ctx.close(); }
     });

@@ -8,9 +8,12 @@ tools/art/out/game/. This cuts them:
 
     python3 tools/art/cut-adventure.py               # everything drawn
     python3 tools/art/cut-adventure.py lighthouse    # names starting with this
+    python3 tools/art/cut-adventure.py --stars page.png '[[0.5, 0.3, 0.06]]' out.png
+                                                     # a proof of STARS on one page
 
-The recipes are cut-rise.py's three, done with ImageMagick (`convert`),
-because this container's Python has no PIL:
+The recipes are cut-rise.py's three, done with ImageMagick (`convert`);
+only TOUCH and STARS (Days 4-14's hand fixes and helper-map stars, below)
+need Python's PIL and numpy:
 
   * card: a 1536x1024 picture's centre 16:9 band (rows 80..944), 768x432,
     public/assets/crafted/home-<name>.webp. Home crops it again from the
@@ -39,6 +42,7 @@ And three that are this feature's own:
 
 Every number the games and the player fit to is in design/adventure/art-notes.md.
 """
+import json
 import os
 import subprocess
 import sys
@@ -53,7 +57,9 @@ GAME = os.path.join(CARDS, "game")
 ADV = os.path.join(ROOT, "public", "assets", "adventure")
 DESIGN = os.path.join(ROOT, "design", "adventure")
 PAGES = ["s%02d" % n for n in range(1, 9)] + ["e%02d" % n for n in range(1, 5)]
-STORIES = ["lighthouse", "windup", "bridge"]
+# every story adventure-prompts.json draws (Days 1-3, and since 22 Oct 2026
+# the Days 4-14 stories around Codex's games), in its order
+STORIES = [s["id"] for s in json.load(open(os.path.join(HERE, "adventure-prompts.json")))["stories"]]
 
 # THE TOWN. The model never painted twelve windows into the sea (it drew 6,
 # then 9), so lighthouse-sea is composed here: the sea and its empty hill
@@ -94,6 +100,10 @@ def raw_game(name):
 
 def card(src, dst):
     out = os.path.join(CARDS, dst + ".webp")
+    fix = TOUCH.get(dst[len("home-"):] + "/home") if dst.startswith("home-") else None
+    if fix:
+        os.makedirs(EDIT, exist_ok=True)
+        src = touch(src, fix, os.path.join(EDIT, dst + "-touched.png"))
     im(src, "-alpha", "off", "-crop", "1536x864+0+80", "+repage", "-filter", "Lanczos", "-resize", "768x432!", *webp(82), out)
     return out
 
@@ -294,6 +304,193 @@ COMPOSE = {"lighthouse/e01": [
     ("lighthouse-boat-row", 0.25, 0.81, 0.22), ("lighthouse-boat-teacup", 0.50, 0.815, 0.17), ("lighthouse-boat-bathtub", 0.75, 0.815, 0.21),
 ]}
 
+# The helper map's earlier gold stars (Days 4-14's e04), laid on the map's
+# little places: (centre x, centre y, width), fractions of the page. Asked to
+# draw a close-up with only the new star, or the whole map with N stars, the
+# model drew the whole map with one star on Days 5-14 (Day 4's, drawn with its
+# four, needs none); so it draws the map with
+# the one star Echo presses, and the stars of the days before are the game's
+# own star (public/assets/crafted/game/star.webp, the same glossy star as
+# Days 1-3's maps), each with a soft shadow, as Days 1-3's were put on.
+# Placed with `--stars` (below) and looked at; design/adventure/art-notes.md
+# lists them.
+# Pages fixed by hand after drawing, where a redraw kept bringing the fault
+# back (each listed in design/adventure/art-notes.md):
+#   ("unlight", [(x, y, r), ...]): lamp light the model kept drawing on a page
+#     whose line says the lamps are dark. Inside each circle (centre x, y and
+#     radius r, fractions of the page width; a soft edge out to 1.35 r) only
+#     bright warm pixels are turned to dull dusk-grey glass, by how warm and
+#     bright they are, so the lamp's shape and the shade around it stay.
+#   ("fill", (x, y, rx, ry)): a small thing that must not be there (a wing on
+#     the wingless glowworm), filled in from the sky around it: the ellipse is
+#     smoothed in from its edge, then given the grain of the ring around it.
+#   ("teeth", (x, top, w, h)): a beaver's two front teeth the model left out.
+#   ("recolor", (box, ellipse, rgb)): one of Echo's feathers drawn the wrong
+#     colour, turned to the right one (see "kite/e04").
+TOUCH = {
+    # Day 5: drawn five times, Beaver came out once with a tail on Echo and
+    # once with no teeth, the day's joke (he nibbled his own door)
+    "postboat/e01": [("teeth", (0.397, 0.290, 0.017, 0.010))],
+    # Day 14: four tiny cream crayon sparkles by the map's two moons, which a
+    # child counting the fourteen gold stars could count too
+    "observatory/e04": [("fill", (0.785, 0.125, 0.009, 0.007)), ("fill", (0.875, 0.123, 0.009, 0.007)),
+                        ("fill", (0.844, 0.426, 0.009, 0.007)), ("fill", (0.890, 0.440, 0.009, 0.007))],
+    # Day 10: drawn five times, Echo came out with three feathers, then with
+    # both coral; the back one is his yellow
+    "kite/e04": [("recolor", ((0.369, 0.470, 0.451, 0.525), (0.377, 0.521, 0.045, 0.027, 15), (252, 192, 42)))],
+    # Day 8: the mushroom lamps glowed on every "before" page in three drawings
+    # each, though the lines say they will not light until the game. Echo's own
+    # porch lamp (s01, s02) is his cottage's and stays lit.
+    "lantern/s02": [("unlight", [(0.928, 0.345, 0.045), (0.975, 0.360, 0.040)])],
+    "lantern/home": [("unlight", [(0.827, 0.352, 0.018)])],   # the big lantern's candle, before the game
+    "lantern/s04": [("unlight", [(0.192, 0.519, 0.045), (0.335, 0.452, 0.028), (0.413, 0.410, 0.022), (0.460, 0.385, 0.020),
+                                 (0.515, 0.374, 0.016), (0.553, 0.346, 0.016), (0.592, 0.347, 0.016), (0.646, 0.356, 0.016),
+                                 (0.690, 0.410, 0.022), (0.884, 0.486, 0.040), (0.800, 0.293, 0.050)])],
+    "lantern/s05": [("unlight", [(0.095, 0.655, 0.050), (0.472, 0.409, 0.020), (0.746, 0.390, 0.020), (0.105, 0.488, 0.025)]),
+                    ("fill", (0.437, 0.121, 0.021, 0.023))],    # a wing on Glowworm, who has none
+    "lantern/s06": [("unlight", [(0.210, 0.413, 0.040), (0.390, 0.349, 0.025), (0.531, 0.326, 0.018), (0.461, 0.307, 0.012),
+                                 (0.605, 0.303, 0.012), (0.691, 0.308, 0.014), (0.752, 0.303, 0.015), (0.828, 0.317, 0.020)])],
+    "lantern/s07": [("unlight", [(0.861, 0.758, 0.045), (0.044, 0.494, 0.020), (0.083, 0.438, 0.020), (0.107, 0.428, 0.020),
+                                 (0.947, 0.442, 0.020)])],    # the chart's lit lamp is the drawing of the fix: it stays
+    "lantern/s08": [("unlight", [(0.100, 0.490, 0.035), (0.483, 0.380, 0.018), (0.905, 0.396, 0.020), (0.705, 0.338, 0.012),
+                                 (0.661, 0.322, 0.010), (0.822, 0.282, 0.040)])],
+}
+
+
+def touch(src, ops, out):
+    # numpy and PIL here only, like add_stars
+    import numpy as np
+    from PIL import Image, ImageFilter
+    im = np.asarray(Image.open(src).convert("RGB")).astype(np.float32)
+    H, W, _ = im.shape
+    yy, xx = np.mgrid[0:H, 0:W]
+    for kind, arg in ops:
+        if kind == "unlight":
+            r, g, b = im[..., 0], im[..., 1], im[..., 2]
+            L = 0.299 * r + 0.587 * g + 0.114 * b
+            warm = np.clip((r - b) / 120.0, 0, 1) * np.clip((L - 90) / 110.0, 0, 1)
+            dusk = np.stack([L * 0.30 + 30, L * 0.32 + 34, L * 0.38 + 46], -1)
+            w = np.zeros((H, W), np.float32)
+            for cx, cy, cr in arg:
+                d = np.hypot(xx - cx * W, yy - cy * H) / (cr * W * 1.35)
+                w = np.maximum(w, np.clip(1.25 - d * 1.25, 0, 1))
+            a = (w * warm)[..., None]
+            im = im * (1 - a) + dusk * a
+        elif kind == "fill":
+            cx, cy, rx, ry = arg
+            hole = (((xx - cx * W) / (rx * W)) ** 2 + ((yy - cy * H) / (ry * H)) ** 2) <= 1.0
+            x0, x1 = max(0, int((cx - rx) * W) - 30), min(W, int((cx + rx) * W) + 30)
+            y0, y1 = max(0, int((cy - ry) * H) - 30), min(H, int((cy + ry) * H) + 30)
+            sub = im[y0:y1, x0:x1].copy()
+            h = hole[y0:y1, x0:x1]
+            f = sub.copy()
+            f[h] = sub[~h].mean(0)
+            for _ in range(1500):
+                pd = np.pad(f, ((1, 1), (1, 1), (0, 0)), mode="edge")
+                f[h] = ((pd[:-2, 1:-1] + pd[2:, 1:-1] + pd[1:-1, :-2] + pd[1:-1, 2:]) / 4)[h]
+            blur = np.asarray(Image.fromarray(sub.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2))).astype(np.float32)
+            ring = np.argwhere(~h)
+            pick = ring[np.random.default_rng(1).integers(0, len(ring), int(h.sum()))]
+            f[h] += (sub - blur)[pick[:, 0], pick[:, 1]]
+            m = Image.fromarray((h * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.5))
+            a = (np.asarray(m).astype(np.float32) / 255)[..., None]
+            im[y0:y1, x0:x1] = sub * (1 - a) + f * a
+        elif kind == "recolor":
+            # one of Echo's head feathers drawn coral twice over: the coral
+            # pixels in a box, minus the front feather's ellipse (cx, cy, a, b
+            # as fractions of the width, its tilt in degrees), turned to his
+            # yellow with their own light and shade kept
+            import math
+            (bx0, by0, bx1, by1), (cx, cy, ea, eb, ang), to = arg
+            r, g, b = im[..., 0], im[..., 1], im[..., 2]
+            coral = (r > 150) & (r - g > 60) & (r - b > 70)
+            t = math.radians(ang)
+            dx, dy = xx - cx * W, yy - cy * H
+            u = dx * math.cos(t) + dy * math.sin(t)
+            v = -dx * math.sin(t) + dy * math.cos(t)
+            front = (u / (ea * W)) ** 2 + (v / (eb * W)) ** 2 <= 1.0
+            m = coral & ~front & (xx >= bx0 * W) & (xx < bx1 * W) & (yy >= by0 * H) & (yy < by1 * H)
+            L = 0.299 * r + 0.587 * g + 0.114 * b
+            k = np.clip(L / np.median(L[m]), 0.55, 1.35)[..., None]
+            new = np.clip(np.array(to, np.float32) * k, 0, 255)
+            soft = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))).astype(np.float32)[..., None] / 255
+            im = im * (1 - soft) + new * soft
+        elif kind == "teeth":
+            # Beaver's two front teeth under his lip (cx, top, width of both,
+            # height), drawn 8x large and shrunk, with a soft shadow on the mouth
+            from PIL import ImageDraw
+            cx, top, tw, th = arg
+            w, h, S = tw * W, th * H, 8
+            layer = Image.new("RGBA", (int(w * S) + 4 * S, int(h * S) + 4 * S), (0, 0, 0, 0))
+            dr = ImageDraw.Draw(layer)
+            gap = max(1, int(0.06 * w * S)); one = (w * S - gap) / 2; inset = max(1, int(one * 0.08))
+            for i in range(2):
+                x0 = 2 * S + i * (one + gap); x1 = x0 + one; y0 = 2 * S; y1 = y0 + h * S; r = int(one * 0.35)
+                dr.rounded_rectangle([x0, y0 - r, x1, y1], radius=r, fill=(120, 84, 60, 255))
+                dr.rounded_rectangle([x0 + inset, y0 - r, x1 - inset, y1 - inset], radius=max(1, r - inset), fill=(247, 241, 228, 255))
+                dr.rectangle([x0 + inset, y0 + (y1 - y0) * 0.62, x1 - inset, y1 - inset * 1.6], fill=(232, 222, 203, 255))
+            layer = layer.resize((layer.width // S, layer.height // S), Image.LANCZOS)
+            pic = Image.fromarray(np.clip(im, 0, 255).astype(np.uint8))
+            x, y = round(cx * W - layer.width / 2), round(top * H - 2)
+            sh = Image.new("RGBA", layer.size, (60, 20, 20, 0))
+            sh.putalpha(layer.split()[3].filter(ImageFilter.GaussianBlur(1.2)).point(lambda v: int(v * 0.35)))
+            pic.paste(sh, (x + 1, y + 2), sh)
+            pic.paste(layer, (x, y), layer)
+            im = np.asarray(pic).astype(np.float32)
+        else:
+            raise ValueError("unknown touch " + kind)
+    Image.fromarray(np.clip(im, 0, 255).astype(np.uint8)).save(out)
+    return out
+
+
+STAR = os.path.join(ROOT, "public", "assets", "crafted", "game", "star.webp")
+STARS = {
+    # Day 5: 1 drawn, 4 laid on (the red-and-white lighthouse (Day 1), at its top-left; the red-roofed house beside the lighthouse (Day 2), above its roof; the stone steps and curved causeway below them (Day 3's bridge stand-in), at the top of the steps; the grassy tip of the coast, top left of the map (Day 4: no garden or waterwheel is drawn))
+    "postboat/e04": [(0.723, 0.098, 0.050), (0.848, 0.098, 0.050), (0.815, 0.174, 0.050), (0.586, 0.091, 0.050)],
+    # Day 6: 1 drawn, 5 laid on (the big red-and-white lighthouse on the rock, top left, on its striped tower (Day 1's place); the blue-roofed house right of the middle, on its roof (Day 2's place: no toy shop is drawn); the stone bridge over the river, on its arch (Day 3's place); the pink blossom tree by the river, on its crown (Day 4: no garden or waterwheel is drawn); the red-roofed farmhouse under the pine trees, top right (Day 5: no harbour or postboat is drawn))
+    "bakery/e04": [(0.401, 0.150, 0.050), (0.793, 0.300, 0.050), (0.532, 0.393, 0.050), (0.425, 0.355, 0.050), (0.776, 0.178, 0.050)],
+    # Day 7: 1 drawn, 6 laid on (the little pine-tree island left of the river; the twin red-roofed house, on its roof (the house shows under the star); the top of the stone tower; the small red-roofed house right of the tower, on its roof; the green point with a pine tree, in the bend of the river; the pine trees on the rocky point below the town)
+    "frontdoor/e04": [(0.561, 0.166, 0.045), (0.754, 0.120, 0.045), (0.816, 0.099, 0.045), (0.871, 0.129, 0.045), (0.731, 0.174, 0.045), (0.810, 0.190, 0.045)],
+    # Day 8: 1 drawn, 7 laid on (the striped toy shop's roof (Day 2's place); the stone bridge's arch (Day 3's place); the pine forest left of the toy shop; the little brown hills on the sandy shore, top left of the map; the small red-roofed house right of the toy shop, at the map's right edge; the autumn tree clump on the map's right edge; the pink blossom trees on the map's right edge)
+    "lantern/e04": [(0.812, 0.103, 0.045), (0.793, 0.172, 0.045), (0.721, 0.120, 0.045), (0.640, 0.088, 0.045), (0.876, 0.139, 0.045), (0.874, 0.255, 0.045), (0.867, 0.306, 0.045)],
+    # Day 9: 1 drawn, 8 laid on (the red-and-white lighthouse, on its striped tower (Day 1's place); the toy shop with the striped awning, on its gable (Day 2's place; also hides a tiny number-like mark there); the stone bridge over the river, on its arch (Day 3's place); the little red-roofed house by the river, on its roof; the snowy mountain peaks at the top of the map; the rocky point with pine trees across the sea, right of the mountains; the pine forest left of the toy shop; the small pine trees by the stream, left of the clouds)
+    "trainline/e04": [(0.241, 0.140, 0.050), (0.857, 0.118, 0.050), (0.356, 0.368, 0.050), (0.210, 0.352, 0.050), (0.400, 0.140, 0.050), (0.508, 0.185, 0.050), (0.674, 0.124, 0.050), (0.356, 0.293, 0.050)],
+    # Day 10: 1 drawn, 9 laid on (the red-and-white lighthouse's tower, below its lamp (Day 1's place); the stone bridge's left end, beside its arch (Day 3's place); the roof of the big red-roofed farmhouse, upper left (Day 2's place: no striped toy shop is drawn); the roof of the red-roofed cottage at the left; the little brown house right of the river, by the bridge (its neighbour stays bare); the pink blossom bush on the green island, lower left; the pine forest on the hill between the farmhouse and the lighthouse; the trees and grass on the green island's right end; the bush clump on the left shore, below the cottage)
+    "kite/e04": [(0.578, 0.207, 0.050), (0.479, 0.329, 0.050), (0.361, 0.255, 0.050), (0.249, 0.294, 0.050), (0.617, 0.306, 0.050), (0.322, 0.423, 0.050), (0.467, 0.194, 0.050), (0.422, 0.402, 0.050), (0.190, 0.333, 0.050)],
+    # Day 11: 1 drawn, 10 laid on (the red-and-white lighthouse, on its striped tower below the lamp (Day 1's place); the red-roofed house with arched doors, top left, on its roof (Day 2's place: no toy shop with a striped awning is drawn); the stone bridge over the river, on its arch (Day 3's place); the brown cottage with the round window, middle left, on its roof; the little red-roofed house on the green hill right of the river; the snowy mountain's peak at the top of the map; the house with the domed tower, lower left; the pink blossom tree by the river, lower left; the vegetable garden rows in the lower left corner; the little red-roofed house among the pine trees in the middle of the map)
+    "nestlift/e04": [(0.803, 0.164, 0.050), (0.422, 0.212, 0.050), (0.566, 0.255, 0.050), (0.314, 0.236, 0.050), (0.691, 0.212, 0.050), (0.535, 0.148, 0.050), (0.325, 0.376, 0.050), (0.422, 0.415, 0.050), (0.311, 0.435, 0.050), (0.564, 0.358, 0.050)],
+    # Day 12: 1 drawn, 11 laid on (the red-and-white lighthouse's tower, below its lamp (Day 1's place); the little house on the lighthouse's rocky island; the red-roofed shop with the red awning, top middle (Day 2's toy shop); the stone bridge's right end, over the river (Day 3's place); the farmhouse at the top right; the pine trees at the map's right edge, right of the farmhouse; the red-roofed cottage on the path, middle left; the cottage roof at the lower left (it also hides a tiny pale weathervane speck there); the vegetable garden and fence beside that cottage; the little footbridge over the stream, lower middle (left of Echo's wing); the pine forest in the middle of the map, between the clouds)
+    "concert/e04": [(0.320, 0.156, 0.045), (0.266, 0.203, 0.045), (0.649, 0.205, 0.045), (0.781, 0.234, 0.045), (0.767, 0.182, 0.045), (0.867, 0.195, 0.045), (0.363, 0.326, 0.045), (0.305, 0.398, 0.045), (0.405, 0.417, 0.045), (0.498, 0.417, 0.045), (0.566, 0.283, 0.045)],
+    # Day 13: 1 drawn, 12 laid on (the red-and-white lighthouse, on its striped tower below the lamp (Day 1's place); the toy shop with the striped awning, lower left, on its little tower beside the awning (Day 2's place); the stone bridge over the river, on its arch (Day 3's place); the big cottage with the lit windows, middle left, on its roof; the two little cottages above the big one, on the taller one's roof; the tiny hamlet with a tower at the top of the winding path, on its tower; the green wooded hilltop at the top of the map, beside the clouds; the little tower on the hill above the right-hand village; the right-hand village, on its red-roofed house at the left end; the rocky river bank just right of Echo's raised wing; the clump of trees on the green meadow, lower right; the woods just left of the big cottage)
+    "rooftops/e04": [(0.690, 0.218, 0.045), (0.237, 0.423, 0.045), (0.386, 0.357, 0.045), (0.281, 0.320, 0.045), (0.356, 0.298, 0.045), (0.400, 0.249, 0.045), (0.469, 0.210, 0.045), (0.823, 0.383, 0.045), (0.768, 0.421, 0.045), (0.689, 0.449, 0.045), (0.815, 0.471, 0.045), (0.192, 0.328, 0.045)],
+    # Day 14: 1 drawn, 13 laid on (the red-and-white lighthouse, on its striped tower below the lamp (Day 1's place); the two-storey shop with the red awning, lower left, on its roof (Day 2's toy shop: no striped awning is drawn); the stone bridge over the river, on its arch (Day 3's place); the red-roofed house on the little island at the top of the map; the red-roofed house in the village right of the middle (beside the blue-roofed one); the cottage with the pink blossom tree, middle left; the red-roofed house with the smoking chimney, right edge; the blossom island in the middle of the lower river; the red-roofed cottage at the bottom, above Echo's star; the little green islet right of the lighthouse; the long causeway from the lighthouse's rocks, on its path; the pine forest on the bottom-right island, left of the small domed tower; the pine trees on the green hill below the observatory, left of the tower)
+    "observatory/e04": [(0.430, 0.184, 0.045), (0.275, 0.392, 0.045), (0.527, 0.320, 0.045), (0.625, 0.134, 0.045), (0.674, 0.240, 0.045), (0.317, 0.303, 0.045), (0.854, 0.324, 0.045), (0.610, 0.383, 0.045), (0.503, 0.461, 0.045), (0.547, 0.193, 0.045), (0.483, 0.254, 0.045), (0.747, 0.477, 0.045), (0.750, 0.207, 0.045)],
+}
+
+
+def add_stars(src, stars, out):
+    # PIL here only: the rest of this file runs on ImageMagick alone
+    from PIL import Image, ImageFilter
+    page = Image.open(src).convert("RGB")
+    W, H = page.size
+    star = Image.open(STAR).convert("RGBA")
+    star = star.crop(star.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox())
+    for cx, cy, fw in stars:
+        dw = max(8, round(fw * W)); dh = round(star.height * dw / float(star.width))
+        s = star.resize((dw, dh), Image.LANCZOS)
+        x, y = round(cx * W - dw / 2.0), round(cy * H - dh / 2.0)
+        pad = max(4, dw // 5)
+        # a soft brown shadow a little down and right, as a sticker casts
+        a = Image.new("L", (dw + 2 * pad, dh + 2 * pad), 0)
+        a.paste(s.getchannel("A").point(lambda v: int(v * 0.45)), (pad, pad))
+        a = a.filter(ImageFilter.GaussianBlur(max(1.5, dw * 0.05)))
+        shadow = Image.new("RGBA", a.size, (58, 34, 14, 255))
+        shadow.putalpha(a)
+        page.paste(shadow, (x - pad + round(dw * 0.03), y - pad + round(dw * 0.06)), shadow)
+        page.paste(s, (x, y), s)
+    page.save(out)
+    return out
+
 
 def page(story, part):
     src = os.path.join(RAW_ADV, story, part + ".png")
@@ -305,6 +502,10 @@ def page(story, part):
         x, y, w, h = crop
         im(src, "-crop", "%dx%d+%d+%d" % (w, h, x, y), "+repage", made)
         src = made
+    fix = TOUCH.get(story + "/" + part)
+    if fix:
+        os.makedirs(EDIT, exist_ok=True)
+        src = touch(src, fix, os.path.join(EDIT, "%s-%s-touched.png" % (story, part)))
     lay = COMPOSE.get(story + "/" + part)
     if lay:
         made = os.path.join(EDIT, "%s-%s-composed.png" % (story, part))
@@ -318,6 +519,10 @@ def page(story, part):
                      ")", "-geometry", "+%d+%d" % (round(cx * W - dw / 2.0), round(by * H - dh)), "-compose", "over", "-composite"]
         im(*args, made)
         src = made
+    stars = STARS.get(story + "/" + part)
+    if stars:
+        os.makedirs(EDIT, exist_ok=True)
+        src = add_stars(src, stars, os.path.join(EDIT, "%s-%s-stars.png" % (story, part)))
     return bg(src, os.path.join(ADV, story, part + ".webp"), q=84)
 
 
@@ -364,6 +569,14 @@ JOBS.append(("lighthouse-rocks-front", rocks, os.path.join(EDIT, "lighthouse-sea
 
 def main():
     args = sys.argv[1:]
+    if args[:1] == ["--touch"]:
+        # a proof: python3 tools/art/cut-adventure.py --touch <page.png> '[["unlight", [[x, y, r]]], ["fill", [x, y, rx, ry]]]' <out.png>
+        print(touch(args[1], json.loads(args[2]), args[3]))
+        return
+    if args[:1] == ["--stars"]:
+        # a proof: python3 tools/art/cut-adventure.py --stars <page.png> '[[cx, cy, w], ...]' <out.png>
+        print(add_stars(args[1], json.loads(args[2]), args[3]))
+        return
     for name, job, src in JOBS:
         if args and not any(name.startswith(a) for a in args):
             continue
