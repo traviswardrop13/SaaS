@@ -174,34 +174,25 @@
     </div>
 
     <!-- SEE IT PLAY (Travis, 22 Oct 2026: "Do like a little clip of a few
-         games so that parents can see it, and even have like the voice say
-         your R sound"; redone 23 Oct 2026: "I want it to take up the whole
-         screen. And I want it to rotate through fruit slice, piano tiles, and
-         Flappy Glide, and make it clear that in the demo they're saying ...
-         the letter R ... And then the game slows down ... It's too busy").
-         Three clips of real play, filmed frame by frame from the games
-         themselves (tools/setupreel/record.mjs: public/assets/setup/reel/
-         <key>.mp4, and a poster <key>.webp), each about 3.5 s, muted, with
-         no audio track at all, filling the screen behind the heading and
-         Continue. In each, Echo asks for the R sound, the child says it,
-         and the game slows down: the caption over the clip follows the clip
-         (REEL_TIMES), "Say rrrr!", then the child's "rrrr!", then "The game
-         slows down." A browser that cannot play them (or a phone in Low
-         Power Mode that refuses) sees the posters, with the same captions on
-         a clock. Echo's voice plays only on a grown-up's tap of "Hear Echo"
-         (setup is otherwise silent), and R is a stated example: the child's
-         sound is not picked yet. -->
+         games so that parents can see it"; redone 23 Oct 2026: "I want it to
+         take up the whole screen ... rotate through fruit slice, piano tiles,
+         and Flappy Glide ... they're saying ... the letter R ... And then the
+         game slows down"; then, of the first cut: "i dont want a darkened
+         screen up there just have it say practice by playing like somewhere
+         and show it for 2 seconds and then fade it away. other than that they
+         just watch the game being played"). Three clips of real play, filmed
+         frame by frame from the games themselves (tools/setupreel/record.mjs:
+         public/assets/setup/reel/<key>.mp4, and a poster <key>.webp), 4 s
+         each, muted, with no audio track at all, filling the screen (a layer
+         outside .ob, #reelBox, as the hello's is: a step slides in with a
+         transform, which boxes a fixed layer into it). In each, the game's
+         own top bar shows Echo asking for the R sound, the child heard, and
+         the game slowing down. The heading, "Practice through play." (Travis: just
+         "practice through play"), shows for two seconds and fades away; then there is only the game, Back and Continue. A browser that
+         cannot play the clips (or a phone in Low Power Mode that refuses)
+         sees the posters. Nothing here makes a sound. -->
     <div class="step sell" data-step="reel">
-      <h1 class="qh" id="reelTitle" tabindex="-1">They practice by playing.</h1>
-      <p class="reel-sub">Say the sound, and the game slows down. <span class="reel-note">(Example: the R sound)</span></p>
-      <!-- the clips themselves are a layer outside .ob (#reelBox, by the
-           hello's): a step slides in with a transform, and a fixed layer
-           inside it is boxed into the step. Decoration to a screen reader;
-           the caption under them is read, then "Hear Echo". -->
-      <div class="reel-under">
-        <p class="reel-say" id="reelCap" data-beat="ask"><img src="/assets/crafted/echo-talk.webp" alt="" aria-hidden="true" /><span id="reelSay">Say your rrrr sound!</span></p>
-        <button type="button" class="reel-hear" id="reelHear"><span class="reel-wave" aria-hidden="true"><i></i><i></i><i></i></span>Hear Echo</button>
-      </div>
+      <h1 class="qh reel-title" id="reelTitle" tabindex="-1">Practice through play.</h1>
     </div>
 
     <!-- RACHEL, ON HER OWN (Travis, 22 Oct 2026: "a bigger slide of Rachel
@@ -218,27 +209,6 @@
       <h1 class="qh" id="rachelTitle" tabindex="-1">Built with Rachel, <span class="nobr">MS, CF-SLP,</span></h1>
       <p class="rachel-line" id="rachelLine"><span class="vh" aria-hidden="true">Built with Rachel, MS, CF-SLP, </span>a pediatric speech-language pathologist in her clinical fellowship.</p>
       <p class="rachel-pill">Sona co-founder</p>
-    </div>
-
-    <!-- A LITTLE EVERY DAY (Travis, 23 Oct 2026: "add another slide ... a
-         speech therapist basically saying it's more important to practice
-         three or five, 10 minutes a day ... than a 1-hour"). Searched for
-         one: speech therapists' advice to families says so again and again,
-         but no study found makes the claim outright (one larger trial of
-         older children with apraxia found the opposite), so no figure or
-         study is quoted here. The line is given as Rachel's, on the screen
-         right after hers: HER words to approve or change before it ships.
-         Seven days of a short practice each, filled once, left to right
-         (under Reduce Motion, drawn full). A statement: nothing to tap. -->
-    <div class="step sell" data-step="daily">
-      <h1 class="qh" id="dailyTitle" tabindex="-1">A few minutes every day.</h1>
-      <ol class="week" aria-hidden="true">
-        <li><b>M</b><i></i></li><li><b>T</b><i></i></li><li><b>W</b><i></i></li><li><b>T</b><i></i></li><li><b>F</b><i></i></li><li><b>S</b><i></i></li><li><b>S</b><i></i></li>
-      </ol>
-      <blockquote class="daily-quote" id="dailyQuote">
-        <p>“Short practice every day helps more than one long session a week.”</p>
-        <footer><img src="/assets/rachel-wardrop-profile.jpg" width="44" height="44" alt="" aria-hidden="true" /><span>Rachel, MS, CF-SLP</span></footer>
-      </blockquote>
     </div>
 
     <!-- name -->
@@ -492,9 +462,6 @@
   </div>
 
   <script src="/sona.js"></script>
-  <!-- Echo's line on "Hear Echo" (the reel): SayIt.line fetches it once and
-       keeps it in the phone's own voice cache, the one the games share. -->
-  <script src="/arcade-sayit.js"></script>
   <script>
     // THE NAME STEP IS SIZED BY THE PHONE, NEVER BY THE KEYBOARD (15 Oct
     // 2026: "the onboard feels jumpy especially on the page where i put the
@@ -707,17 +674,17 @@
     // ONE array, rewritten in place: four suites hold ORDER===ORDER_PARENT.
     var SECOND=false; try{ SECOND=Sona.kids().length>1; }catch(e){}
     var ASKED=false;  try{ ASKED=!!(Sona.setupAsks&&Sona.setupAsks().asked); }catch(e){}
-    // SETUP'S BUTTONS MAKE NO SOUND (Travis, 23 Oct 2026: "turn the sound
-    // off when they press the buttons in the onboarding"): no tap chime on
-    // any button, chip, tile or answer. The one sound setup makes is still
-    // "Hear Echo", on a grown-up's tap of it.
+    // SETUP MAKES NO SOUND (Travis, 23 Oct 2026: "turn the sound off when
+    // they press the buttons in the onboarding", and "Hear Echo" went with
+    // the reel's caption the same day): no tap chime on any button, chip,
+    // tile or answer, and no voice.
     var ORDER_PARENT=[];
     // THE SCREENS THAT SELL (19 Oct 2026; rebuilt 22 Oct): the problem, the
     // games playing, Rachel, then (once the name is in) what the child loves
     // and the games they will love. Only for a family not set up yet: a child
     // already set up walking setup again (Back from the first game) is not
     // sold to again.
-    var SELL_FIRST=["problem","reel","rachel","daily"],SELL_AFTER=["interests","games"];
+    var SELL_FIRST=["problem","reel","rachel"],SELL_AFTER=["interests","games"];
     // THE REMINDER SCREEN (22 Oct 2026) follows the ready screen only where
     // the iPhone can set a reminder, iOS has never been asked, and the price
     // follows (remindMay: what the page knows at once, and what the order is
@@ -1072,7 +1039,7 @@
     // One anonymous count per screen REACHED, once per page load. The key
     // comes from this fixed list and nothing else is passed: there is no
     // parameter an answer, a name or an age could ride in.
-    var STEP_KEYS={welcome:1,problem:1,reel:1,rachel:1,daily:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
+    var STEP_KEYS={welcome:1,problem:1,reel:1,rachel:1,name:1,interests:1,games:1,therapy:1,sounds:1,minutes:1,updates:1,ready:1,remind:1,mic:1,handoff:1,slp:1,email:1};
     function stepSeen(key){if(!STEP_KEYS[key]||seenSteps[key])return;seenSteps[key]=1;try{if(window.SonaAnalytics)SonaAnalytics.track("setup step",{step:key});}catch(e){}}
     // The two one-tap questions. An answer (or Skip, which holds "") goes on
     // at once and writes the draft, nothing else: never the mode, the path
@@ -1124,7 +1091,7 @@
     // with no purchase plugin) only the games this phone opens are, since
     // nothing there can open the rest. Premium, a trial or a covered caseload
     // open every game either way (Sona.gameAccess).
-    var SELL={problem:1,reel:1,rachel:1,daily:1,games:1},sellPainted=null;
+    var SELL={problem:1,reel:1,rachel:1,games:1},sellPainted=null;
     function SELL_CAP(both,id){return both?(id==="simple"?3:6):9;}
     function sellStyle(){var age=Number(draft.childAge);return age>=2&&age<5&&Math.floor(age)===age?"simple":age>=5?"arcade":"";}
     function sellsAll(){try{return !!(draft.role!=="slp"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
@@ -1198,11 +1165,8 @@
     // Three games since 23 Oct 2026 (Travis: "rotate through fruit slice,
     // piano tiles, and Flappy Glide ... just do a 3-second of those three"),
     // each clip showing the sound power: Echo asks, the child says the
-    // sound, the game slows down. REEL_TIMES says when, in each clip's own
-    // seconds (record.mjs's report): `say` the child is heard, `slow` the
-    // game has slowed. The caption under the picture follows it.
+    // sound, the game slows down, all in the game's own top bar.
     var REEL_ORDER=["slice","tiles","glide"],REEL_DIR="/assets/setup/reel/",REEL_STILL_MS=4000,REEL_FADE_MS=650;
-    var REEL_TIMES={slice:{say:1.0,slow:2.33},tiles:{say:1.0,slow:2.27},glide:{say:1.0,slow:2.27}};
     var reel=(function(){
       var frame=document.getElementById("reelFrame"),vids=frame.querySelectorAll(".reel-clip"),stills=frame.querySelectorAll(".reel-still");
       var list=null,at=0,mode="",live=false,cur=0,timer=0,fadeT=0;
@@ -1223,19 +1187,7 @@
         };
         img.dataset.key=key;img.src=REEL_DIR+key+".webp";
       }
-      function show(el){Array.prototype.forEach.call(frame.querySelectorAll(".reel-still,.reel-clip"),function(n){n.classList.toggle("on",n===el);});capFrom(el);}
-      // THE CAPTION FOLLOWS THE CLIP: "Say rrrr!" (Echo asks), then the
-      // child's "rrrr!", then "The game slows down." A video reads its own
-      // time; a still reads the seconds since it came up; under Reduce
-      // Motion it stays on Echo's ask, as the picture stays still.
-      var capT=0,capAt=0,capEl=null;
-      function capFrom(el){capEl=el;capAt=Date.now();clearInterval(capT);beat(0);if(live&&!calmOnly())capT=setInterval(capTick,120);}
-      function capTick(){
-        if(!live||!capEl){clearInterval(capT);return;}
-        var key=capEl.dataset.key,t=capEl.tagName==="VIDEO"?(capEl.currentTime||0):(Date.now()-capAt)/1000;
-        beat(t,REEL_TIMES[key]);
-      }
-      function beat(t,tm){var b=!tm||t<tm.say?"ask":t<tm.slow?"said":"slow";reelCap(b);}
+      function show(el){Array.prototype.forEach.call(frame.querySelectorAll(".reel-still,.reel-clip"),function(n){n.classList.toggle("on",n===el);});}
       // The one that just stepped aside is still fading out (0.6 s,
       // onboarding-crafted.css): loading the game after next into it then
       // flashed a third game mid-fade (the 22 Oct 2026 review). So it is
@@ -1278,66 +1230,14 @@
           var still0=calmOnly();
           if(!list){list=clips();if(!list.length){frame.classList.add("empty");return;}mode=!still0&&canPlay()?"video":"";if(!mode){stillsMode();return;}load(vids[0],list[0]);if(list.length>1)load(vids[1],list[1]);show(vids[0]);}
           if(mode==="video"){if(still0){stillsMode();return;}play(vids[cur]);}else tickStills();
-          capFrom(mode==="video"?vids[cur]:stills[cur]);
         },
         stop:function(){
-          if(!live)return;live=false;clearTimeout(timer);clearTimeout(fadeT);clearInterval(capT);reelCap("ask");
+          if(!live)return;live=false;clearTimeout(timer);clearTimeout(fadeT);
           Array.prototype.forEach.call(vids,function(v){try{v.pause();}catch(e){}});
         }
       };
     })();
-    // the caption's three beats: only the sound's letters orange (Sona.soundMark)
-    var reelCap=(function(){
-      var cap=document.getElementById("reelCap"),say=document.getElementById("reelSay"),img=cap.querySelector("img");
-      var s="rrrr",m=s;try{s=Sona.soundSay?Sona.soundSay("R"):"rrrr";m=(window.Sona&&Sona.soundMark)?Sona.soundMark(s,"R"):s.replace(/[&<>"]/g,"");}catch(e){}
-      var BEATS={ask:["/assets/crafted/echo-talk.webp","Say your "+m+" sound!"],said:["/assets/crafted/echo-listen.webp","\u201c"+m+"!\u201d"],slow:["/assets/crafted/echo-cheer.webp","The game slows down!"]};
-      var now="";
-      function set(b){if(b===now||!BEATS[b])return;now=b;cap.dataset.beat=b;img.src=BEATS[b][0];say.innerHTML=BEATS[b][1];}
-      set("ask");return set;
-    })();
-
-    // "HEAR ECHO" (Travis, 22 Oct 2026: "even have like the voice say your R
-    // sound"; setup was silent by his 24 Sep rule, and this one tap is the
-    // exception). Echo's own line, a breath, then Rachel's one take of the R
-    // sound (/coach/say-echo/R-sound.wav, her voice, never a voice guessing
-    // at it), joined into ONE recording and started by ONE Sona.mediaPCM
-    // call inside the grown-up's tap, so it plays in the iPhone app and on
-    // the website alike. Both pieces are fetched as the selling screens
-    // start, and the line is kept in the phone's voice cache. A line not in
-    // yet: her take alone. Sona's sound off (or its volume at 0): nothing.
-    // Never the browser's robot voice, never "Go!", and no microphone opens
-    // on this screen. Leaving the screen stops it. How the sound is cued is
-    // Rachel's to rule on.
-    var reelVoice=(function(){
-      var LINE="Say your sound with me!",TAKE="/coach/say-echo/R-sound.wav",GAP_MS=200,RATE=24000;
-      var lineBytes=null,takeBytes=null,lineAsked=false,takeAsked=false,now=null;
-      var hear=document.getElementById("reelHear");
-      function volume(){var pr={};try{pr=Sona.getProfile()||{};}catch(e){}if(pr.voiceOn===false)return 0;var v=Number(pr.volume);return pr.volume==null||!isFinite(v)?0.8:Math.max(0,Math.min(1,v));}
-      // the PCM inside her WAV (its "data" chunk: 24 kHz, 16-bit, mono, as Echo's lines are)
-      function pcmOf(buf){
-        try{var dv=new DataView(buf),i=12;while(i+8<=buf.byteLength){var id=String.fromCharCode(dv.getUint8(i),dv.getUint8(i+1),dv.getUint8(i+2),dv.getUint8(i+3)),n=dv.getUint32(i+4,true);if(id==="data")return new Uint8Array(buf,i+8,Math.min(n,buf.byteLength-i-8)&~1);i+=8+n+(n&1);}}catch(e){}
-        return null;
-      }
-      function warm(){
-        if(!volume())return;
-        if(!lineAsked&&window.SayIt&&SayIt.line){lineAsked=true;SayIt.line(LINE).then(function(b){if(b&&b.byteLength)lineBytes=new Uint8Array(b,0,b.byteLength&~1);else lineAsked=false;},function(){lineAsked=false;});}
-        if(!takeAsked){takeAsked=true;fetch(TAKE).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){takeBytes=b&&pcmOf(b);if(!takeBytes)takeAsked=false;},function(){takeAsked=false;});}
-      }
-      function stop(){if(now){var h=now;now=null;try{h.stop();}catch(e){}}hear.classList.remove("playing");}
-      function play(){
-        var vol=volume();stop();
-        if(!vol||!Sona.mediaPCM||!takeBytes){warm();return;}
-        var gap=new Uint8Array(Math.round(RATE*GAP_MS/1000)*2),parts=lineBytes?[lineBytes,gap,takeBytes]:[takeBytes],size=0,off=0;
-        parts.forEach(function(x){size+=x.byteLength;});
-        var buf=new Uint8Array(size);parts.forEach(function(x){buf.set(x,off);off+=x.byteLength;});
-        var h;try{h=Sona.mediaPCM(buf,{volume:vol});}catch(e){h=null;}
-        if(!h)return;now=h;hear.classList.add("playing");
-        Promise.resolve(h.done).then(function(){if(now===h){now=null;hear.classList.remove("playing");}});
-      }
-      hear.onclick=function(){if(ORDER[idx]!=="reel"||settling())return;play();};
-      return {warm:warm,stop:stop};
-    })();
-    document.addEventListener("visibilitychange",function(){if(document.hidden){reel.stop();reelVoice.stop();}else if(ORDER[idx]==="reel"&&!finished)reel.start();});
+    document.addEventListener("visibilitychange",function(){if(document.hidden)reel.stop();else if(ORDER[idx]==="reel"&&!finished)reel.start();});
 
     // "Does this Apple ID already have Premium?", asked of the store ONCE,
     // from the moment the ready screen shows, so a paying family who
@@ -1421,8 +1321,7 @@
       // the games are painted with the screens that sell, so their pictures
       // are on their way before the screen that shows them
       if(SELL[key]||key==="interests")paintSell();
-      if(key==="problem"||key==="reel")reelVoice.warm();
-      if(key==="reel")reel.start();else{reel.stop();reelVoice.stop();}
+      if(key==="reel")reel.start();else reel.stop();
       if(key==="interests")paintInterests();
       // Nothing to type on these, so a screen reader is taken to the heading.
       // the question names the child once a name is typed (a heading, never a button's words)

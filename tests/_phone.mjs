@@ -589,7 +589,7 @@ export async function setupWalk(page, to, a = {}) {
     if (!s) return seen;
     if (seen[seen.length - 1] !== s) seen.push(s);
     if (s === to) return seen;
-    if (["welcome", "problem", "reel", "rachel", "daily", "games", "ready"].includes(s)) await tap("#nextBtn");
+    if (["welcome", "problem", "reel", "rachel", "games", "ready"].includes(s)) await tap("#nextBtn");
     else if (s === "name") {
       await page.locator("#obName").fill(a.name == null ? "Mia" : a.name);
       const age = a.age == null ? "8" : a.age;

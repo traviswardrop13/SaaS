@@ -1,10 +1,11 @@
 // SETUPNEW1: setup's new screens, one rule at a time (Travis, 22 Oct 2026: "I
 // want to do a completely new onboarding ... make it live, animated. We want
 // to sell the product in the onboarding. Do like a little clip of a few games
-// so that parents can see it, and even have like the voice say your R sound
-// ... a bigger slide of Rachel that's just like all by itself ... more so like
-// how many minutes per day ... push notifications ... a step in the
-// onboarding"). onboardingtest walks the whole flow; this holds:
+// so that parents can see it ... a bigger slide of Rachel that's just like all
+// by itself ... more so like how many minutes per day ... push notifications
+// ... a step in the onboarding"; then, 23 Oct 2026, the reel full screen with
+// "Practice through play." shown for two seconds and faded away, and setup
+// with no sound at all). onboardingtest walks the whole flow; this holds:
 //   - the hello: the orchard without Echo painted in, one live Echo, its
 //     loops outside every step (a step's own motion always ends), nothing of
 //     it on any other screen, still under Reduce Motion, hidden while the
@@ -12,10 +13,11 @@
 //   - the reel: the games this phone may show, in the demo order, real clips
 //     where the phone plays H.264 (two videos taking turns), the posters where
 //     it cannot or refuses, a game's Home card where its clip or poster is
-//     missing: never a dead frame; nothing plays off the screen;
-//   - "Hear Echo": Echo's line, a breath and Rachel's R take as ONE
-//     Sona.mediaPCM call, only on a grown-up's tap, nothing with Sona's sound
-//     off or its volume at 0, stopped when the screen is left, no microphone;
+//     missing: never a dead frame; nothing plays off the screen; the clips
+//     fill the screen, the heading shows for two seconds and fades away (it
+//     stays under Reduce Motion), Back on a cream pill, nothing else to tap;
+//   - setup makes no sound: no tap chime, no voice, no recording, nothing
+//     fetched to play;
 //   - Rachel on her own: her photo and Travis's line word for word, shown
 //     once, naming nobody else, no CCC, certified, licensed or plan;
 //   - "How long each day?": 5/10/15 minutes saved as the daily goal in reps
@@ -48,9 +50,6 @@ const browser=await chromium.launch(launchOpts());let checks=0,failures=0;
 function ok(name,pass,detail=''){checks++;if(!pass)failures++;console.log((pass?'PASS ':'FAIL ')+name+(pass?'':' → '+JSON.stringify(detail)));}
 async function scenario(name,fn){try{await fn();}catch(e){ok(name+' completes without a page/harness error',false,e.stack);}}
 const RACHEL='Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship.';
-// Rachel's one take of R, as the page reads it: the PCM of the WAV's data chunk
-const TAKE=(()=>{const b=readFileSync(root+'/coach/say-echo/R-sound.wav');let i=12;while(i+8<=b.length){const id=b.toString('latin1',i,i+4),n=b.readUInt32LE(i+4);if(id==='data')return Math.min(n,b.length-i-8)&~1;i+=8+n+(n&1);}return 0;})();
-const GAP=Math.round(24000*0.2)*2;   // 200 ms of silence, 24 kHz 16-bit mono
 // a 1x1 WebP: the one poster this suite serves (the reel's own files are tools/setupreel's)
 const WEBP=Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=','base64');
 
@@ -100,11 +99,13 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 const isTeal=s=>[...String(s).matchAll(/rgba?\((\d+),\s*(\d+),\s*(\d+)/g)].map(m=>m.slice(1,4).map(Number)).some(([r,g,b])=>{const mx=Math.max(r,g,b),mn=Math.min(r,g,b),c=mx-mn;if(c<=80)return false;const h=mx===r?((g-b)/c)%6:mx===g?(b-r)/c+2:(r-g)/c+4;const d=(h*60+360)%360;return d>=172&&d<=195;});
 
 // ── THE HELLO ──
-// SETUP'S BUTTONS MAKE NO SOUND (Travis, 23 Oct 2026: "turn the sound off
-// when they press the buttons in the onboarding"): no tap chime anywhere in
-// setup's script; "Hear Echo" (Sona.mediaPCM on a grown-up's tap) is the one sound
-{const src=readFileSync(root+'/onboarding.html','utf8').replace(/<!--[\s\S]*?-->/g,'').replace(/\/\/[^\n]*/g,'');
- ok('setup\'s buttons make no sound: no Sona.sfx call anywhere in setup\'s script',!/sfx\s*\.|sfx\s*\(/.test(src),(src.match(/[^\n]*sfx[^\n]*/)||[''])[0].slice(0,160));}
+// SETUP MAKES NO SOUND (Travis, 23 Oct 2026: "turn the sound off when they
+// press the buttons in the onboarding"; "Hear Echo" went with the reel's redo
+// the same day): no tap chime, no recording, no voice anywhere in setup's
+// script, and the shared voice cache (arcade-sayit.js) not even loaded
+{const raw=readFileSync(root+'/onboarding.html','utf8'),src=raw.replace(/<!--[\s\S]*?-->/g,'').replace(/\/\/[^\n]*/g,''),hit=re=>(src.match(new RegExp('[^\\n]*'+re.source+'[^\\n]*'))||[''])[0].slice(0,160);
+ ok('setup\'s buttons make no sound: no Sona.sfx call anywhere in setup\'s script',!/sfx\s*\.|sfx\s*\(/.test(src),hit(/sfx/));
+ ok('…and setup plays nothing at all: no Sona.mediaPCM, no SayIt, no speechSynthesis, no speak(), no <audio>, and arcade-sayit.js is not loaded',!/mediaPCM|SayIt|speechSynthesis|\.speak(Now)?\s*\(|<audio|new\s+Audio\s*\(/.test(src)&&!/arcade-sayit\.js/.test(raw),[hit(/mediaPCM|SayIt|speechSynthesis|speak|audio|Audio/),/arcade-sayit/.test(raw)]);}
 await scenario('the hello: the orchard without Echo painted in, and one live Echo',async()=>{
  {const {context,page,errors}=await fresh({motion:true});try{
   const h=await page.evaluate(()=>{const hello=document.querySelector('.hello'),bg=getComputedStyle(document.querySelector('.hello-bg')).backgroundImage,styles=[...document.querySelectorAll('*')].map(e=>getComputedStyle(e).backgroundImage).join(' ');return {shown:getComputedStyle(hello).display!=='none',bg,welcomeOrchard:/welcome-orchard/.test(styles+document.documentElement.outerHTML),echoes:document.querySelectorAll('.hello-echo').length,poses:[...document.querySelectorAll('.hello-echo img')].map(i=>i.getAttribute('src')),hidden:hello.getAttribute('aria-hidden'),taps:getComputedStyle(hello).pointerEvents,mascot:getComputedStyle(document.querySelector('.ob .mascot')).display,label:document.querySelector('.welcome-brand').getAttribute('aria-label'),cta:document.getElementById('nextBtn').textContent.trim(),body:getComputedStyle(document.body).backgroundColor};});
@@ -134,7 +135,7 @@ await scenario('the hello: the orchard without Echo painted in, and one live Ech
   await page.evaluate(()=>document.documentElement.classList.remove('ob-leaving'));
   // nothing of the hello on any other screen
   const seen=[];
-  for(const to of ['problem','reel','rachel','daily','name','interests','games','therapy','sounds','minutes','updates','ready','mic']){await setupWalk(page,to);seen.push([to,await page.evaluate(()=>getComputedStyle(document.querySelector('.hello')).display)]);}
+  for(const to of ['problem','reel','rachel','name','interests','games','therapy','sounds','minutes','updates','ready','mic']){await setupWalk(page,to);seen.push([to,await page.evaluate(()=>getComputedStyle(document.querySelector('.hello')).display)]);}
   ok('the hello layer is drawn on no other screen',seen.every(x=>x[1]==='none'),seen);
   clean('hello, motion on',errors);
  }finally{await context.close();}}
@@ -245,33 +246,59 @@ await scenario('the reel: real clips where the phone plays them, posters where i
   ok('under Reduce Motion the reel is the first game\'s poster, still: no clip asked for or played, and 4 s on the same picture (no slideshow)',s0.stills&&!s0.clipShown&&JSON.stringify(s0.on)==='["IMG:/assets/setup/reel/slice.webp"]'&&JSON.stringify(s1.on)===JSON.stringify(s0.on)&&!s1.broken&&!requests.some(r=>/\.mp4/.test(r.url))&&await page.evaluate(()=>!(window.__played||[]).length),{s0,s1});
   clean('reel, Reduce Motion',errors);
  }finally{await context.close();}}
- // a screen reader hears Echo's ask over the games; the pictures are decoration
+ // a screen reader hears the heading; the clips and stills are decoration
  {const {context,page,errors}=await fresh({webSales:true});try{
   await toReel(page);
-  const a=await page.evaluate(()=>{const say=document.querySelector('.reel-say'),hiddenUp=el=>{for(let n=el;n;n=n.parentElement)if(n.getAttribute&&n.getAttribute('aria-hidden')==='true')return true;return false;};return {say:hiddenUp(document.getElementById('reelSay')),text:say.textContent.trim(),pics:[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip,.reel-say img')].every(hiddenUp)};});
-  ok('the reel\'s "Say your rrrr sound!" is read by a screen reader (no aria-hidden over it); its videos, stills and Echo are hidden as decoration',!a.say&&a.text==='Say your rrrr sound!'&&a.pics,a);
+  const a=await page.evaluate(()=>{const hiddenUp=el=>{for(let n=el;n;n=n.parentElement)if(n.getAttribute&&n.getAttribute('aria-hidden')==='true')return true;return false;};return {head:hiddenUp(document.getElementById('reelTitle')),text:document.getElementById('reelTitle').textContent,pics:[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip')].every(hiddenUp)};});
+  ok('the reel\'s heading, "Practice through play.", is read by a screen reader (no aria-hidden over it); its videos and stills are hidden as decoration',!a.head&&a.text==='Practice through play.'&&a.pics,a);
   clean('reel, screen reader',errors);
  }finally{await context.close();}}
 });
 
-// ── THE REEL FILLS THE SCREEN, AND ITS CAPTION FOLLOWS THE CLIP (Travis, 23
-// Oct 2026: "I want it to take up the whole screen ... make it clear that in
-// the demo they're saying ... the letter R ... And then the game slows down
-// ... It's too busy") ──
-const capOf=page=>page.evaluate(()=>{const c=document.getElementById('reelCap');return {beat:c.dataset.beat,text:document.getElementById('reelSay').textContent,img:c.querySelector('img').getAttribute('src'),snd:[...c.querySelectorAll('b.snd')].map(b=>b.textContent)};});
-await scenario('the reel fills the screen behind its words, and the caption follows the clip',async()=>{
+// ── THE REEL FILLS THE SCREEN, AND ITS HEADING FADES AWAY (Travis, 23 Oct
+// 2026: "I want it to take up the whole screen", then "i dont want a darkened
+// screen up there just have it say practice by playing like somewhere and
+// show it for 2 seconds and then fade it away. other than that they just watch
+// the game being played", and the words: just "practice through play") ──
+const titleOf=page=>page.evaluate(()=>{const t=document.getElementById('reelTitle'),cs=getComputedStyle(t);return {o:+cs.opacity,vis:cs.visibility,text:t.textContent};});
+await scenario('the reel fills the screen, "Practice through play." shows for two seconds and fades away',async()=>{
  for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}]){
   const {context,page,errors}=await fresh({viewport:vp,webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
    await toReel(page);await page.waitForTimeout(700);
-   const f=await page.evaluate(()=>{const r=e=>{const b=(typeof e==='string'?document.querySelector(e):e).getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom};},box=document.getElementById('reelBox'),st=getComputedStyle(box);
-    return {w:innerWidth,h:innerHeight,box:r(box),frame:r('#reelFrame'),still:r('#reelFrame .reel-still.on'),pos:st.position,z:+st.zIndex,inOb:!!box.closest('.ob'),parts:{head:r('#reelTitle'),sub:r('.reel-sub'),cap:r('#reelCap'),hear:r('#reelHear'),btn:r('#nextBtn')},sideways:document.documentElement.scrollWidth-innerWidth};});
+   const f=await page.evaluate(()=>{const r=e=>{const b=(typeof e==='string'?document.querySelector(e):e).getBoundingClientRect();return {l:b.left,t:b.top,r:b.right,b:b.bottom};},box=document.getElementById('reelBox'),st=getComputedStyle(box),frame=document.getElementById('reelFrame'),step=document.querySelector('[data-step="reel"]');
+    return {w:innerWidth,h:innerHeight,box:r(box),frame:r(frame),still:r('#reelFrame .reel-still.on'),pos:st.position,inOb:!!box.closest('.ob'),pe:st.pointerEvents,bands:['::before','::after'].map(p=>getComputedStyle(frame,p).content),
+     parts:{head:r('#reelTitle'),back:r('#backBtn'),btn:r('#nextBtn')},backBg:getComputedStyle(document.getElementById('backBtn')).backgroundColor,backShown:getComputedStyle(document.getElementById('backBtn')).display!=='none',
+     taps:step.querySelectorAll('button,a,input,select,textarea,[tabindex]:not(#reelTitle)').length,kids:[...step.children].map(c=>c.id),sideways:document.documentElement.scrollWidth-innerWidth};});
    const covers=b=>b.l<=0&&b.t<=0&&b.r>=f.w&&b.b>=f.h,on=b=>b.t>=0&&b.l>=0&&b.r<=f.w&&b.b<=f.h,apart=(a,b)=>a.b<=b.t||b.b<=a.t||a.r<=b.l||b.r<=a.l;
    const P=f.parts,ks=Object.keys(P),clash=[];for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++)if(!apart(P[ks[i]],P[ks[j]]))clash.push(ks[i]+'/'+ks[j]);
-   ok('at '+vp.width+'×'+vp.height+' the clips fill the whole screen, a fixed layer outside the step (a step slides in with a transform that would box it in)',f.pos==='fixed'&&!f.inOb&&covers(f.box)&&covers(f.frame)&&covers(f.still),f);
-   ok('…and the heading, its line, the caption, "Hear Echo" and Continue are all on the screen over it, none on another, nothing sideways',ks.every(k=>on(P[k]))&&!clash.length&&f.sideways<=0,{clash,P});
+   ok('at '+vp.width+'×'+vp.height+' the clips fill the whole screen, a fixed layer outside the step (a step slides in with a transform that would box it in) that takes no tap, with no darkened band over it',f.pos==='fixed'&&!f.inOb&&covers(f.box)&&covers(f.frame)&&covers(f.still)&&f.pe==='none'&&f.bands.every(c=>c==='none'||c==='normal'),f);
+   ok('…the heading is the step\'s only words and nothing on it takes a tap but Back and Continue; the heading, Back and Continue on the screen, none on another, nothing sideways',JSON.stringify(f.kids)==='["reelTitle"]'&&f.taps===0&&f.backShown&&ks.every(k=>on(P[k]))&&!clash.length&&f.sideways<=0,{clash,P,kids:f.kids,taps:f.taps});
+   ok('…and Back reads over the game: a cream pill under it',/^rgba?\(255, 253, 248/.test(f.backBg),f.backBg);
    clean('reel full screen '+vp.width,errors);
   }finally{await context.close();}
  }
+ // the heading: there at half a second, gone (no longer drawn) by three; Back's pill is the reel's alone
+ {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
+  await toReel(page);const t0=Date.now();
+  await page.waitForTimeout(Math.max(0,550-(Date.now()-t0)));const a=await titleOf(page);
+  await page.waitForTimeout(Math.max(0,3100-(Date.now()-t0)));const b=await titleOf(page);
+  ok('with motion on, "Practice through play." is on the screen half a second in',a.text==='Practice through play.'&&a.o===1&&a.vis==='visible',a);
+  ok('…and gone by three seconds: faded out and no longer drawn, only the game left',b.o===0&&b.vis==='hidden',b);
+  await page.waitForTimeout(1500);
+  ok('…and it stays gone while the games go round',(await titleOf(page)).vis==='hidden');
+  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
+  ok('off the reel, Back has no pill (it is the reel\'s alone)',await page.evaluate(()=>{const c=getComputedStyle(document.getElementById('backBtn')).backgroundColor;return c==='rgba(0, 0, 0, 0)'||c==='transparent';}));
+  await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(550);
+  ok('back on the reel, the heading shows again',(await titleOf(page)).o===1);
+  clean('reel heading, motion',errors);
+ }finally{await context.close();}}
+ // under Reduce Motion nothing changes: the heading stays, over the still poster
+ {const {context,page,errors}=await fresh({webSales:true});try{
+  await toReel(page);await page.waitForTimeout(3200);
+  const t=await titleOf(page);
+  ok('under Reduce Motion the heading stays, still, after three seconds',t.text==='Practice through play.'&&t.o===1&&t.vis==='visible'&&await page.evaluate(()=>document.getElementById('reelTitle').getAnimations().length===0),t);
+  clean('reel heading, Reduce Motion',errors);
+ }finally{await context.close();}}
  // off its screen, and while the page is held blank, the layer is not drawn
  {const {context,page,errors}=await fresh({webSales:true});try{
   const shown=()=>page.evaluate(()=>getComputedStyle(document.getElementById('reelBox')).display!=='none');
@@ -283,43 +310,6 @@ await scenario('the reel fills the screen behind its words, and the caption foll
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();
   ok('the clips\' layer is drawn on the reel alone: not on the hello or the problem, not while the page is held blank, not once the reel is left',!off.some(Boolean)&&at&&!resume&&!leaving&&!(await shown()),{off,at,resume,leaving});
   clean('reel layer, off its screen',errors);
- }finally{await context.close();}}
- // the caption's three beats, by the clock on a still (a browser that plays no H.264)
- {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
-  await toReel(page);
-  const T=await page.evaluate(()=>REEL_TIMES.slice);
-  const c0=await capOf(page);
-  ok('the caption opens on Echo\'s ask: "Say your rrrr sound!", Echo talking, only the sound\'s letters orange',c0.beat==='ask'&&c0.text==='Say your rrrr sound!'&&/echo-talk\.webp$/.test(c0.img)&&JSON.stringify(c0.snd)==='["rrrr"]',c0);
-  await page.waitForFunction(()=>document.getElementById('reelCap').dataset.beat!=='ask',null,{timeout:(T.say+1.5)*1000});
-  const c1=await capOf(page);
-  ok('…then, when the child says it ('+T.say+' s into the clip), the child\'s "\u201crrrr!\u201d", Echo listening',c1.beat==='said'&&c1.text==='\u201crrrr!\u201d'&&/echo-listen\.webp$/.test(c1.img)&&JSON.stringify(c1.snd)==='["rrrr"]',c1);
-  await page.waitForFunction(()=>document.getElementById('reelCap').dataset.beat==='slow',null,{timeout:(T.slow-T.say+1.5)*1000});
-  const c2=await capOf(page);
-  ok('…then, as the game slows ('+T.slow+' s), "The game slows down!", Echo cheering',c2.text==='The game slows down!'&&/echo-cheer\.webp$/.test(c2.img),c2);
-  await page.waitForFunction(()=>/home-piano|tiles\.webp/.test((document.querySelector('#reelFrame .reel-still.on')||{}).getAttribute?.('src')||''),null,{timeout:5000});
-  ok('…and the next game\'s still starts again on Echo\'s ask',(await capOf(page)).beat==='ask');
-  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
-  ok('leaving the reel puts the caption back on the ask',(await capOf(page)).beat==='ask');
-  clean('reel caption, stills',errors);
- }finally{await context.close();}}
- // …and by the clip's own time where one plays
- {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(t){return /mp4/.test(t)?'probably':'';};HTMLMediaElement.prototype.play=function(){return Promise.resolve();};},routes:[['**/assets/setup/reel/*.mp4',()=>{}]]});try{
-  await toReel(page);await page.waitForTimeout(300);
-  const at=t=>page.evaluate(t=>{Object.defineProperty(document.querySelector('.reel-clip.on'),'currentTime',{configurable:true,get:()=>t});},t);
-  const T=await page.evaluate(()=>REEL_TIMES.slice);
-  await at(T.say-0.2);await page.waitForTimeout(300);const b0=(await capOf(page)).beat;
-  await at(T.say+0.05);await page.waitForTimeout(300);const b1=(await capOf(page)).beat;
-  await at(T.slow+0.05);await page.waitForTimeout(300);const b2=(await capOf(page)).beat;
-  ok('a playing clip moves the caption by its own time: ask before the child is heard, the child\'s word, then the slow-down',b0==='ask'&&b1==='said'&&b2==='slow',[b0,b1,b2]);
-  ok('every clip on the reel has its two moments, the child heard before the game slows',await page.evaluate(()=>REEL_ORDER.every(k=>{const t=REEL_TIMES[k];return t&&t.say>0&&t.slow>t.say;})));
-  clean('reel caption, clips',errors);
- }finally{await context.close();}}
- // under Reduce Motion the picture is still, and so is the caption
- {const {context,page,errors}=await fresh({webSales:true});try{
-  await toReel(page);const T=await page.evaluate(()=>REEL_TIMES.slice);
-  await page.waitForTimeout((T.slow+1)*1000);
-  ok('under Reduce Motion the caption stays on Echo\'s ask',(await capOf(page)).beat==='ask');
-  clean('reel caption, Reduce Motion',errors);
  }finally{await context.close();}}
 });
 
@@ -345,65 +335,16 @@ await scenario('the problem: the flashcards first, then the game a clear beat la
  }finally{await context.close();}}
 });
 
-// ── A FEW MINUTES EVERY DAY (23 Oct 2026, the line given as Rachel's) ──
-await scenario('a few minutes every day: a week of short practice, and the line signed by Rachel',async()=>{
- for(const vp of [{width:390,height:844},{width:320,height:568}]){
-  const {context,page,errors}=await fresh({viewport:vp,motion:true});try{
-   await setupWalk(page,'daily');await page.locator('[data-step="daily"].on').waitFor();await page.waitForTimeout(1900);
-   const d=await page.evaluate(async()=>{const st=document.querySelector('[data-step="daily"]'),img=st.querySelector('#dailyQuote img'),r=e=>e.getBoundingClientRect();const f=r(document.querySelector('.obfoot .inner'));
-    return {title:document.getElementById('dailyTitle').textContent,quote:st.querySelector('#dailyQuote p').textContent,by:st.querySelector('#dailyQuote footer').textContent.trim(),photo:await img.decode().then(()=>img.naturalWidth,()=>0),dots:[...st.querySelectorAll('.week i')].map(i=>getComputedStyle(i).opacity),days:[...st.querySelectorAll('.week b')].map(b=>b.textContent).join(''),asks:st.querySelectorAll('input,select,textarea,button,a').length,bottom:Math.max(r(st.querySelector('.week')).bottom,r(st.querySelector('#dailyQuote')).bottom),foot:f.top,sideways:document.documentElement.scrollWidth-innerWidth};});
-   ok('at '+vp.width+'×'+vp.height+': "A few minutes every day.", seven days (M to S) all filled, and the line word for word',d.title==='A few minutes every day.'&&d.days==='MTWTFSS'&&d.dots.length===7&&d.dots.every(o=>o==='1')&&d.quote==='\u201cShort practice every day helps more than one long session a week.\u201d',d);
-   ok('…signed "Rachel, MS, CF-SLP" with her photo, nothing to tap, all of it above Continue',d.by==='Rachel, MS, CF-SLP'&&d.photo>0&&d.asks===0&&d.bottom<=d.foot&&d.sideways<=0,d);
-   clean('daily '+vp.width,errors);
-  }finally{await context.close();}
- }
- {const {context,page,errors}=await fresh();try{
-  await setupWalk(page,'daily');await page.locator('[data-step="daily"].on').waitFor();
-  const r=await page.evaluate(()=>[...document.querySelectorAll('.week i')].map(i=>[i.getAnimations().length,getComputedStyle(i).opacity]));
-  ok('under Reduce Motion the week is drawn full from the first frame',r.length===7&&r.every(x=>x[0]===0&&x[1]==='1'),r);
-  clean('daily, Reduce Motion',errors);
- }finally{await context.close();}}
-});
-
-// ── "HEAR ECHO" ──
-await scenario('"Hear Echo": one recording, only on a tap, never with Sona\'s sound off',async()=>{
- const tts=(status)=>['**/api/tts',r=>status===200?r.fulfill({status:200,contentType:'application/octet-stream',headers:{'X-Sona-Voice-Keep':'0'},body:Buffer.alloc(4800,7)}):r.fulfill({status:503,body:'{}'})];
- {const {context,page,errors,requests}=await fresh({routes:[tts(200)]});try{
-  await toReel(page);await page.waitForTimeout(900);
-  ok('Echo\'s line and Rachel\'s take are fetched as the screens that sell start, and nothing plays by itself',await page.evaluate(()=>__s.media.length===0)&&requests.some(r=>/\/api\/tts$/.test(r.url))&&requests.some(r=>/\/coach\/say-echo\/R-sound\.wav$/.test(r.url)),requests.filter(r=>/tts|wav/.test(r.url)).map(r=>r.url));
-  ok('"Hear Echo" is a real button with its name, on this screen only',await page.evaluate(()=>{const b=document.getElementById('reelHear');return b.tagName==='BUTTON'&&b.type==='button'&&/Hear Echo/.test(b.textContent)&&b.closest('[data-step="reel"]')!==null;}));
-  await calm(page);await page.locator('#reelHear').click();
-  let m=await page.evaluate(()=>__s.media);
-  ok('a tap plays ONE recording: Echo\'s line, 200 ms of quiet, then Rachel\'s take of R, at Sona\'s volume',m.length===1&&m[0].len===4800+GAP+TAKE&&m[0].volume===0.8&&JSON.stringify(m[0].head)===JSON.stringify([7,7,7,7,7,7,7,7]),{m,want:4800+GAP+TAKE});
-  ok('…with the wave moving while it plays',await page.evaluate(()=>document.getElementById('reelHear').classList.contains('playing')));
-  await calm(page);await page.locator('#reelHear').click();
-  ok('a second tap stops the first and plays it again (one at a time)',await page.evaluate(()=>__s.media.length===2&&__s.stops===1));
-  await next(page);await page.locator('[data-step="rachel"].on').waitFor();
-  ok('leaving the screen stops it',await page.evaluate(()=>__s.stops===2&&!document.getElementById('reelHear').classList.contains('playing')));
-  ok('no microphone is asked for, no line is spoken by any other voice',await page.evaluate(()=>__s.mics===0&&!__s.spoke&&!window.speechSynthesis.speaking));
-  clean('hear echo',errors);
- }finally{await context.close();}}
- {const {context,page,errors}=await fresh({routes:[tts(503)]});try{
-  await toReel(page);await page.waitForTimeout(900);
-  await calm(page);await page.locator('#reelHear').click();
-  const m=await page.evaluate(()=>__s.media);
-  ok('Echo\'s line not to be had: Rachel\'s take alone, still one recording, never the browser\'s robot voice',m.length===1&&m[0].len===TAKE&&await page.evaluate(()=>!__s.spoke&&!window.speechSynthesis.speaking),m);
-  clean('hear echo, no line',errors);
- }finally{await context.close();}}
- // Sona's sound off is its volume at 0 (Settings' "Sound is off in Sona.").
- // (The page also honours voiceOn:false, but sona.js heals that flag back on
- // while the volume is audible, so the volume is the one switch a family has.)
- {const {context,page,errors,requests}=await fresh({profile:{volume:0},routes:[tts(200)]});try{
-  await toReel(page);await page.waitForTimeout(600);
-  await calm(page);await page.locator('#reelHear').click();await page.waitForTimeout(300);
-  ok('Sona\'s sound off (volume 0): a tap plays nothing, and nothing was fetched for it',await page.evaluate(()=>__s.media.length===0)&&!requests.some(r=>/\/api\/tts$|R-sound\.wav$/.test(r.url)),requests.filter(r=>/tts|\.wav$/.test(r.url)).map(r=>r.url));
-  // …and turned off while the screen is up (a grown-up in Settings, another tab)
-  await page.evaluate(()=>Sona.saveProfile({volume:0.8}));await calm(page);await page.locator('#reelHear').click();await page.waitForTimeout(700);
-  await calm(page);await page.locator('#reelHear').click();
-  ok('turned back on, the first tap fetches what it needs and a tap after plays',await page.evaluate(()=>__s.media.length===1));
-  await page.evaluate(()=>Sona.saveProfile({volume:0}));await calm(page);await page.locator('#reelHear').click();
-  ok('…and a tap once it is off again stops what was playing and plays nothing new',await page.evaluate(()=>__s.media.length===1&&__s.stops===1),await page.evaluate(()=>__s));
-  clean('hear echo: sound off',errors);
+// ── SETUP MAKES NO SOUND (23 Oct 2026: no tap chime, and "Hear Echo" gone) ──
+await scenario('setup makes no sound: a whole walk, voice on, plays and fetches nothing to play',async()=>{
+ const tts=['**/api/tts',r=>r.fulfill({status:200,contentType:'application/octet-stream',headers:{'X-Sona-Voice-Keep':'0'},body:Buffer.alloc(4800,7)})];
+ {const {context,page,errors,requests}=await fresh({webSales:true,motion:true,routes:[tts]});try{
+  for(const to of ['problem','reel','rachel','name','interests','games','therapy','sounds','minutes','updates','ready']){await setupWalk(page,to);if(to==='reel'||to==='problem')await page.waitForTimeout(700);}
+  const h=await page.evaluate(()=>({media:__s.media.length,spoke:!!__s.spoke,synth:!!window.speechSynthesis&&window.speechSynthesis.speaking,mics:__s.mics}));
+  ok('from the hello to the ready screen nothing plays: no recording, no spoken line, no browser voice, no microphone',h.media===0&&!h.spoke&&!h.synth&&h.mics===0,h);
+  ok('…and nothing is fetched to play: no voice line, no take of a sound',!requests.some(r=>/\/api\/tts$|\/coach\/|\.wav$|\.mp3$/.test(r.url)),requests.filter(r=>/tts|coach|\.wav|\.mp3/.test(r.url)).map(r=>r.url));
+  ok('…and there is no "Hear Echo" to tap on the reel, nor anywhere in setup',await page.evaluate(()=>!document.getElementById('reelHear')&&![...document.querySelectorAll('button')].some(b=>/Hear Echo/.test(b.textContent))));
+  clean('no sound',errors);
  }finally{await context.close();}}
 });
 
@@ -461,7 +402,7 @@ const at=page=>page.evaluate(()=>({path:location.pathname,saved:!!(JSON.parse(lo
 const COUNT=()=>{addEventListener('pagehide',()=>{try{if(window.__s&&location.pathname==='/onboarding.html'){localStorage.setItem('__asks',String(window.__s.notifyAsks));localStorage.setItem('__remindSeen',window.seenSteps&&window.seenSteps.remind?'1':'0');localStorage.setItem('__plans',String(window.__s.plans));}}catch(e){}});};
 await scenario('the reminder ask: only where a reminder can be set and the price follows',async()=>{
  {const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,init:COUNT});try{
-  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,rachel,daily,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
+  ok('an iPhone that can set a reminder, never asked, the price to follow: the reminder screen sits between ready and the microphone',await page.evaluate(()=>ORDER.join())==='welcome,problem,reel,rachel,name,interests,games,therapy,sounds,minutes,updates,ready,remind,mic');
   await setupWalk(page,'ready',{name:'Mia'});await next(page);await page.locator('[data-step="remind"].on').waitFor();
   const r=await page.evaluate(()=>{const st=document.querySelector('[data-step="remind"]'),painted=el=>getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().height>0;return {title:document.getElementById('remindTitle').textContent,line:st.querySelector('.remind-line').textContent,yes:document.getElementById('remindYes').textContent,no:document.getElementById('remindNo').textContent,next:painted(document.getElementById('nextBtn')),back:painted(document.getElementById('backBtn')),bubble:document.getElementById('bubble').textContent,seg:document.getElementById('seg').hidden,focus:document.activeElement&&document.activeElement.id,saved:!!Sona.getProfile().onboarded,asks:__s.notifyAsks,name:/Mia/.test(st.textContent)};});
   ok('it asks, in a few words: "Want a reminder before your free trial ends?", "One notification, the day before.", "Turn on reminders" or "Not now"',r.title==='Want a reminder before your free trial ends?'&&r.line==='One notification, the day before.'&&r.yes==='Turn on reminders'&&r.no==='Not now'&&r.bubble==='I\'ll give you a heads-up!'&&!r.name,r);

@@ -22,10 +22,11 @@
 //     back to setup when the tab carries setup's marker;
 //   - the fit at six screen sizes, and that nothing moves under a finger;
 //   - TWO ROWS, AS THE CARD SHIPS (23 Oct 2026, Travis: "get rid of the
-//     yearly option. I just want two payment options, and I want one payment
-//     to be the one on the top that's auto-selected"; scenario 1b and the
-//     fit in 15b): when RevenueCat's offering lists the one payment, it sits
-//     above monthly, picked on arrival, each in its own words ("One
+//     yearly option. I just want two payment options", then "can we just
+//     have the ... a month as the top default option and then below it is
+//     the pay one time?"; scenario 1b and the fit in 15b): monthly on top,
+//     picked on arrival (its free trial); when RevenueCat's offering lists
+//     the one payment, it sits under monthly, each in its own words ("One
 //     payment", never "lifetime", "free" or "Best value"); the pick moves the
 //     button and every line under the rows, and the button buys the picked
 //     product; a one-payment row arriving late comes in unpicked; an
@@ -35,7 +36,8 @@
 //   - THE YEARLY ROW SWITCHED BACK ON (scenario 1c and the fit in 15c, on a
 //     sona.js served with IAP_SELL_YEARLY on): yearly above the others, in
 //     its own words, "Best value" only below twelve monthly prices and never
-//     beside a one payment that costs no more, never picked on arrival;
+//     beside a one payment that costs no more, never picked on arrival
+//     (monthly is);
 //   - THE HEADS-UP LINE (22 Oct 2026, scenario 1d): "We'll remind you the
 //     day before it ends." under the button only when sona.js says this
 //     phone will show it AND the picked row is a free trial; never otherwise;
@@ -251,98 +253,101 @@ try {
   });
 
   // ── 1b. TWO ROWS, THE CARD AS IT SHIPS (23 Oct 2026, Travis: "get rid of
-  // the yearly option. I just want two payment options, and I want one
-  // payment to be the one on the top that's auto-selected"): the one payment
-  // above monthly, picked on arrival, only when RevenueCat's offering lists
-  // it. An offering that also lists the yearly product sells no yearly row:
-  // the store is never even asked for it (IAP_SELL_YEARLY in sona.js) ──
+  // the yearly option. I just want two payment options"; then, the same day,
+  // "can we just have the ... a month as the top default option and then
+  // below it is the pay one time?"): monthly on top, picked on arrival (its
+  // free trial), the one payment under it, only when RevenueCat's offering
+  // lists it. An offering that also lists the yearly product sells no yearly
+  // row: the store is never even asked for it (IAP_SELL_YEARLY in sona.js) ──
   await scenario("two rows", async () => {
     const two = (extra) => Object.assign({ store: STORES.monthlyFree, offering: "all" }, extra || {});
     const BAD_LIFE = /lifetime|free|best value|trial|auto-renew|\/mo|\/yr/i;
     for (const door of DOORS) {
-      await load(...at(door, two())); await until("paid");
+      await load(...at(door, two())); await until("free");
       const s = await snap(), r = await rows(), w = await words2(), kept = door[2].stamp === "kept", tag = "two rows, from " + door[0] + ": ";
-      ok(tag + "the one payment above monthly, each painted in its own plan's words, and no yearly row although the offering lists the yearly product",
-        !r.year && !!r.life && !!r.month && r.life.bottom <= r.month.top && w.y === null &&
+      ok(tag + "monthly above the one payment, each painted in its own plan's words, and no yearly row although the offering lists the yearly product",
+        !r.year && !!r.life && !!r.month && r.month.bottom <= r.life.top && w.y === null &&
         same([r.life.name, r.life.sub, r.life.amt, r.life.tag, r.life.price], [w.l.name, w.l.sub, w.l.amount, w.l.tag, w.l.price]) &&
         same([r.month.name, r.month.sub, r.month.amt, r.month.tag, r.month.price], [w.m.name, w.m.sub, w.m.amount, w.m.tag, w.m.price]), [r, w.l, w.y]);
       ok(tag + "the one-payment row says \"One payment\", \"Yours to keep. No subscription.\" and the store's price with no period, and never lifetime, free, Best value or a trial",
         r.life.name === "One payment" && r.life.sub === "Yours to keep. No subscription." && r.life.amt === "$59.99" && r.life.tag === "" && !BAD_LIFE.test(r.life.name + " " + r.life.sub + " " + r.life.amt + " " + r.life.tag), r.life);
-      ok(tag + "a radio group with the one payment picked when the screen opens",
-        r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.life.checked === "true" && r.month.checked === "false" && r.life.tab === 0 && r.month.tab === -1, r);
-      ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the one payment's",
-        s.state === "paid" && s.title === flat(w.l.title) && s.check === "One payment · No subscription" && s.check === flat(w.l.check) && s.note === flat(w.l.note) &&
-        s.button === "Get Sona Premium — $59.99" && s.button === w.l.button && s.act === "buy" && s.buttons === 1 && s.line === (kept ? "Today: the free version. " : "") + w.l.header, [s.state, s.title, s.check, s.note, s.button, s.line]);
+      ok(tag + "a radio group with Monthly picked when the screen opens, the one payment not",
+        r.group === "radiogroup" && r.label === "Choose a plan" && r.life.role === "radio" && r.month.role === "radio" && r.month.checked === "true" && r.life.checked === "false" && r.month.tab === 0 && r.life.tab === -1, r);
+      ok(tag + "the card state, the title, the check line, the small print, the button and the header line are the monthly plan's free trial (\"No payment today\")",
+        s.state === "free" && s.title === flat(w.m.title) && /^No payment today/.test(s.check) && s.check === flat(w.m.check) && s.note === flat(w.m.note) &&
+        s.button === w.m.button && s.act === "buy" && s.buttons === 1 && s.line === (kept ? "Today: the free version. " : "") + w.m.header &&
+        !/one payment|no subscription/i.test(s.note + " " + s.button + " " + s.check + " " + s.title + " " + s.line), [s.state, s.title, s.check, s.note, s.button, s.line]);
       ok(tag + "nothing on the screen is about a year or says lifetime, every figure is the store's, and no saving or ratio is claimed",
         !/lifetime|yearly|annual|a year|\/yr|best value/i.test(s.body) && (s.body.match(/\$[\d,]+(?:\.\d+)?/g) || []).every((x) => x === "$9.99" || x === "$59.99") && !/sav(e|ing)|%|half|cheaper|119\.88|59\.89|× ?12|12 ?×/i.test(s.body),
         [s.body.match(/\$[\d.,]+/g), (s.body.match(/[^\n]*(lifetime|yearly|annual|a year|\/yr|best value|sav|%|half|cheaper|×)[^\n]*/i) || [""])[0]]);
       ok(tag + "the store was never asked for the yearly product", !s.asked.some((ids) => ids.indexOf(IDS.annual) > -1), s.asked);
-      ok(tag + "the offer is counted once, as the one payment picked", viewed(s) === 1 && s.events.filter((e) => e[0] === "paywall viewed")[0][1].plan === "lifetime", s.events.filter((e) => e[0] === "paywall viewed"));
+      ok(tag + "the offer is counted once, as monthly picked", viewed(s) === 1 && s.events.filter((e) => e[0] === "paywall viewed")[0][1].plan === "monthly", s.events.filter((e) => e[0] === "paywall viewed"));
     }
 
     // an offering with the one payment and monthly alone: the same card
-    await load(...at(DOORS[1], { store: STORES.monthlyFree, offering: ["monthly", "lifetime"] })); await until("paid");
+    await load(...at(DOORS[1], { store: STORES.monthlyFree, offering: ["monthly", "lifetime"] })); await until("free");
     let r = await rows(), s = await snap(), w = await words2();
-    ok("an offering with monthly and the one payment: the same two rows, the one payment on top and picked", !r.year && r.life.bottom <= r.month.top && r.life.checked === "true" && s.button === w.l.button, [r, s.button]);
-    // the default pick buys the one payment
+    ok("an offering with monthly and the one payment: the same two rows, Monthly on top and picked", !r.year && r.month.bottom <= r.life.top && r.month.checked === "true" && s.button === w.m.button, [r, s.button]);
+    // the default pick buys monthly
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap(); r = await rows();
-    ok("the button with the one payment picked (as the screen opens) buys the one-payment product, once, counted as the one payment",
-      same(s.bought, [IDS.lifetime]) && s.events.some((e) => e[0] === "purchase completed" && e[1].plan === "lifetime") && s.sub.active === true && s.sub.source === "apple", [s.bought, s.sub]);
+    ok("the button with Monthly picked (as the screen opens) buys the monthly product, once, counted as monthly",
+      same(s.bought, [IDS.monthly]) && s.events.some((e) => e[0] === "purchase completed" && e[1].plan === "monthly") && s.sub.active === true && s.sub.source === "apple", [s.bought, s.sub]);
     ok("…after the sale both rows leave with the price", !r.life && !r.month && s.msg === "Sona Premium is on. Welcome to Sona!", [r, s.msg]);
     await tick(1300); await page.waitForURL(/\/today\.html$/);
 
-    // a tap on Monthly: everything true of only one plan follows the pick
-    await load(...at(SETUP, two())); await until("paid");
+    // a tap on One payment: everything true of only one plan follows the pick
+    await load(...at(SETUP, two())); await until("free");
     w = await words2();
-    await page.locator("#iapPlan").click();
+    await page.locator("#iapLife").click();
     s = await snap(); r = await rows();
-    ok("a tap on Monthly picks it: Monthly is checked, the one payment is not", r.month.checked === "true" && r.life.checked === "false" && r.month.tab === 0 && r.life.tab === -1, r);
-    ok("…and the card state, the title, the check line, the small print, the button and the header line are now the monthly plan's, with no word of the one payment outside its row",
-      s.state === "free" && s.title === flat(w.m.title) && s.check === flat(w.m.check) && s.note === flat(w.m.note) && s.button === w.m.button && s.line === w.m.header &&
-      !/one payment|no subscription/i.test(s.note + " " + s.button + " " + s.check + " " + s.title + " " + s.line), [s.title, s.check, s.note, s.button, s.line]);
+    ok("a tap on One payment picks it: it is checked, Monthly is not", r.life.checked === "true" && r.month.checked === "false" && r.life.tab === 0 && r.month.tab === -1, r);
+    ok("…and the card state, the title, the check line, the small print, the button and the header line are now the one payment's, from the store's price",
+      s.state === "paid" && s.title === flat(w.l.title) && s.check === "One payment · No subscription" && s.check === flat(w.l.check) && s.note === flat(w.l.note) &&
+      s.note === "One payment of $59.99. No subscription." && s.button === "Get Sona Premium — $59.99" && s.button === w.l.button && s.line === w.l.header && s.noteAbove === false, [s.title, s.check, s.note, s.button, s.line]);
+    ok("…and nothing under the rows says free, a trial, auto-renews, Best value or lifetime",
+      !BAD_LIFE.test([s.title, s.check, s.note, s.button, s.line, s.msg].join(" ")), [s.title, s.check, s.note, s.button]);
     await calm(page); await page.locator("#iapBuy").click(); await until("done");
     s = await snap();
-    ok("…and the button buys the monthly product, once, counted as monthly", same(s.bought, [IDS.monthly]) && s.events.some((e) => e[0] === "purchase completed" && e[1].plan === "monthly"), [s.bought, s.events.filter((e) => e[0] === "purchase completed")]);
+    ok("…and the button buys the one-payment product, once, counted as the one payment",
+      same(s.bought, [IDS.lifetime]) && s.events.some((e) => e[0] === "purchase completed" && e[1].plan === "lifetime") && s.sub.active === true && s.sub.source === "apple", [s.bought, s.sub]);
     await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
 
     // keyboard: the arrow keys move between the two, round from the last; Space and Enter pick
-    await load(...at(SETUP, two())); await until("paid");
-    await page.locator("#iapLife").focus(); await page.keyboard.press("ArrowDown");
-    let k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapPlan").getAttribute("aria-checked")]);
-    ok("the arrow key on the one payment moves the pick, and the focus, to Monthly", k[0] === "iapPlan" && k[1] === "true", k);
+    await load(...at(SETUP, two())); await until("free");
+    await page.locator("#iapPlan").focus(); await page.keyboard.press("ArrowDown");
+    let k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapLife").getAttribute("aria-checked")]);
+    ok("the arrow key on Monthly moves the pick, and the focus, to the one payment", k[0] === "iapLife" && k[1] === "true", k);
     await page.keyboard.press("ArrowDown");
-    k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapLife").getAttribute("aria-checked")]);
-    ok("…and from the last row round to the one payment", k[0] === "iapLife" && k[1] === "true", k);
-    await page.locator("#iapPlan").focus(); await page.keyboard.press(" ");
-    ok("…Space on Monthly picks it", await page.evaluate(() => document.getElementById("iapPlan").getAttribute("aria-checked")) === "true");
-    await page.locator("#iapLife").focus(); await page.keyboard.press("Enter");
-    ok("…and Enter on the one payment picks it", await page.evaluate(() => document.getElementById("iapLife").getAttribute("aria-checked")) === "true");
+    k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapPlan").getAttribute("aria-checked")]);
+    ok("…and from the last row round to Monthly", k[0] === "iapPlan" && k[1] === "true", k);
+    await page.locator("#iapLife").focus(); await page.keyboard.press(" ");
+    ok("…Space on the one payment picks it", await page.evaluate(() => document.getElementById("iapLife").getAttribute("aria-checked")) === "true");
+    await page.locator("#iapPlan").focus(); await page.keyboard.press("Enter");
+    ok("…and Enter on Monthly picks it", await page.evaluate(() => document.getElementById("iapPlan").getAttribute("aria-checked")) === "true");
 
     // no pick while a purchase is open
-    await load(...at(SETUP, two({ buy: "hang" }))); await until("paid"); await calm(page);
+    await load(...at(SETUP, two({ buy: "hang" }))); await until("free"); await calm(page);
     await page.locator("#iapBuy").click();
     await page.waitForFunction(() => window.__phone.bought.length === 1);
-    await page.locator("#iapPlan").click({ force: true });
+    await page.locator("#iapLife").click({ force: true });
     r = await rows(); s = await snap();
-    ok("while Apple's sheet is open a tap on the other row picks nothing: it is buying the one payment", r.life.checked === "true" && r.month.checked === "false" && same(s.bought, [IDS.lifetime]) && s.disabled, [r, s.bought]);
+    ok("while Apple's sheet is open a tap on the other row picks nothing: it is buying the monthly plan", r.month.checked === "true" && r.life.checked === "false" && same(s.bought, [IDS.monthly]) && s.disabled, [r, s.bought]);
 
-    // not sure of the free days: the one payment (picked) needs no note; Monthly picked, its note sits between the rows and the button
-    await load(...at(DOORS[1], two({ elig: "missing" }))); await until("paid");
+    // not sure of the free days: Monthly (picked) carries its note between the rows and the button; the one payment needs none
+    await load(...at(DOORS[1], two({ elig: "missing" }))); await until("free");
     s = await snap(); r = await rows(); w = await words2();
-    ok("not sure of the free days: the monthly row says \"for new subscribers\", and with the one payment picked no note says Apple may charge",
-      /for new subscribers/.test(r.month.sub) && !/Otherwise Apple charges/.test(s.body) && s.note === flat(w.l.note), [r.month.sub, s.note]);
-    await page.locator("#iapPlan").click();
+    ok("not sure of the free days, Monthly picked: its row says \"for new subscribers\", and its note sits under the rows, above the button",
+      /for new subscribers/.test(r.month.sub) && /Otherwise Apple charges \$9\.99 today/.test(s.note) && s.note === flat(w.m.note) &&
+      await page.evaluate(() => { const n = document.getElementById("iapNote").getBoundingClientRect(); return n.top >= document.getElementById("iapLife").getBoundingClientRect().bottom && n.bottom <= document.getElementById("iapBuy").getBoundingClientRect().top; }), [r.month.sub, s.note]);
+    await page.locator("#iapLife").click();
     s = await snap();
-    ok("…picking Monthly puts the monthly plan's note under the rows, above the button",
-      /Otherwise Apple charges \$9\.99 today/.test(s.note) && s.note === flat(w.m.note) &&
-      await page.evaluate(() => { const n = document.getElementById("iapNote").getBoundingClientRect(); return n.top >= document.getElementById("iapPlan").getBoundingClientRect().bottom && n.bottom <= document.getElementById("iapBuy").getBoundingClientRect().top; }), s.note);
+    ok("…picking the one payment: no note says Apple may charge, only its own small print", !/Otherwise Apple charges/.test(s.body) && s.note === flat(w.l.note), s.note);
 
     // a week free (Travis's App Store Connect change): the monthly row says 7 days
-    await load(...at(SETUP, two({ store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W" }, lifetime: { price: "$59.99" } } }))); await until("paid");
-    r = await rows();
-    await page.locator("#iapPlan").click(); s = await snap();
-    ok("a week free in the store: \"7-day free trial\" on the monthly row and, Monthly picked, \"7 days free, then $9.99 a month.\" under the button, with no 3 anywhere",
+    await load(...at(SETUP, two({ store: { monthly: { price: "$9.99", free: "P1W" }, annual: { price: "$59.99", free: "P1W" }, lifetime: { price: "$59.99" } } }))); await until("free");
+    r = await rows(); s = await snap();
+    ok("a week free in the store: \"7-day free trial\" on the monthly row and, Monthly picked as the screen opens, \"7 days free, then $9.99 a month.\" under the button, with no 3 anywhere",
       r.month.sub === "7-day free trial" && s.note === "7 days free, then $9.99 a month. Cancel anytime." && !/3.day|3 days|three/i.test(s.body), [r.month.sub, s.note]);
 
     // late: a parent reading the monthly row alone comes back to the app and
@@ -370,7 +375,8 @@ try {
 
     // late: the one payment gone from a fresh answer while it is picked: the
     // pick falls to monthly, one row and no radio, never a plan nobody picked
-    await load(...at(SETUP, two())); await until("paid");
+    await load(...at(SETUP, two())); await until("free");
+    await page.locator("#iapLife").click(); await until("paid");
     await page.evaluate(() => { window.__phone.set({ offering: "none" }); document.dispatchEvent(new Event("visibilitychange")); });
     await page.waitForFunction(() => document.getElementById("iapLife").hidden);
     s = await snap(); r = await rows();
@@ -395,15 +401,15 @@ try {
     }
 
     // colours: the row not picked is cream with an empty ring, never orange or green; picked, it and its dot are teal
-    await load(...at(SETUP, two())); await until("paid");
+    await load(...at(SETUP, two())); await until("free");
     const paint = () => page.evaluate(() => { const p = (el) => { const cs = getComputedStyle(el); return [cs.backgroundImage, cs.backgroundColor, cs.borderTopColor, cs.boxShadow].join(" "); }; return { life: p(document.getElementById("iapLife")), lifeDot: p(document.querySelector("#iapLife .oneplan-dot")), month: p(document.getElementById("iapPlan")), monthDot: p(document.querySelector("#iapPlan .oneplan-dot")) }; });
     const c = await paint();
     const GREEN = ["58cc02", "46a302", "6edd18", "6fd60e", "5fd216", "3c8c02", "7ee23a"].map((h) => "rgb(" + [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(", ") + ")");
     for (const [what, css] of Object.entries(c)) ok("two rows, " + what + " is painted in no orange and no green", !isOrange(css) && !GREEN.some((g) => css.indexOf(g) > -1), css);
-    ok("…the picked one payment and its dot are teal; Monthly and its empty ring are not", isTeal(c.life) && isTeal(c.lifeDot) && !isTeal(c.month) && !isTeal(c.monthDot), c);
-    await page.locator("#iapPlan").click();
+    ok("…picked Monthly and its dot are teal; the one payment and its empty ring are not", isTeal(c.month) && isTeal(c.monthDot) && !isTeal(c.life) && !isTeal(c.lifeDot), c);
+    await page.locator("#iapLife").click();
     const c2 = await paint();
-    ok("…and a tap on Monthly turns the two round", isTeal(c2.month) && isTeal(c2.monthDot) && !isTeal(c2.life) && !isTeal(c2.lifeDot) && !isOrange(c2.life), c2);
+    ok("…and a tap on the one payment turns the two round", isTeal(c2.life) && isTeal(c2.lifeDot) && !isTeal(c2.month) && !isTeal(c2.monthDot) && !isOrange(c2.month), c2);
 
     // the source: no "wants to play" line is built anywhere on the page
     const src = readFileSync(ROOT + "/subscribe.html", "utf8");
@@ -414,7 +420,7 @@ try {
   // 23 Oct 2026, its code kept for the day IAP_SELL_YEARLY comes back): with
   // the switch on (sellYearly serves that sona.js), the yearly row shows
   // where the offering lists it, above the others, in its own words, but is
-  // no longer picked on arrival: the one payment is, else monthly ──
+  // no longer picked on arrival: monthly is (23 Oct 2026) ──
   await scenario("three rows", async () => {
     const yr = (extra) => Object.assign({ sellYearly: true, store: STORES.monthlyFree, offering: "both" }, extra || {});
     for (const door of [SETUP, DOORS[1], DOORS[3]]) {
@@ -440,23 +446,24 @@ try {
     ok("…and the button buys the yearly product, once, counted as yearly", same(s.bought, [IDS.annual]) && s.events.some((e) => e[0] === "purchase completed" && e[1].plan === "annual"), s.bought);
     await tick(1300); await page.waitForURL(/\/onboarding\.html$/);
 
-    // all three: yearly, the one payment, then monthly, the one payment picked; the arrows go round all three
-    await load(...at(SETUP, yr({ offering: "all" }))); await until("paid");
+    // all three: yearly, monthly, then the one payment, Monthly picked; the arrows go round all three
+    await load(...at(SETUP, yr({ offering: "all" }))); await until("free");
     r = await rows(); s = await snap(); w = await words2();
-    ok("the yearly row switched on, all three listed: yearly, the one payment, then monthly, with the one payment picked when the screen opens",
-      !!r.year && !!r.life && !!r.month && r.year.bottom <= r.life.top && r.life.bottom <= r.month.top && r.life.checked === "true" && r.year.checked === "false" && r.month.checked === "false" && s.button === w.l.button, [r, s.button]);
+    ok("the yearly row switched on, all three listed: yearly, monthly, then the one payment, with Monthly picked when the screen opens",
+      !!r.year && !!r.life && !!r.month && r.year.bottom <= r.month.top && r.month.bottom <= r.life.top && r.month.checked === "true" && r.year.checked === "false" && r.life.checked === "false" && s.button === w.m.button, [r, s.button]);
     ok("…and \"Best value\" leaves the yearly row beside a one payment that costs no more than the year", r.year.tag === "", r.year);
-    await page.locator("#iapLife").focus(); await page.keyboard.press("ArrowDown");
-    let k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapPlan").getAttribute("aria-checked")]);
-    ok("the arrow key on the one payment moves the pick to Monthly", k[0] === "iapPlan" && k[1] === "true", k);
+    await page.locator("#iapPlan").focus(); await page.keyboard.press("ArrowDown");
+    let k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapLife").getAttribute("aria-checked")]);
+    ok("the arrow key on Monthly moves the pick to the one payment", k[0] === "iapLife" && k[1] === "true", k);
     await page.keyboard.press("ArrowDown");
     k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapYear").getAttribute("aria-checked")]);
     ok("…and from the last row round to Yearly", k[0] === "iapYear" && k[1] === "true", k);
     await page.keyboard.press("ArrowUp");
-    k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapPlan").getAttribute("aria-checked")]);
-    ok("…and up from Yearly round to Monthly", k[0] === "iapPlan" && k[1] === "true", k);
+    k = await page.evaluate(() => [document.activeElement.id, document.getElementById("iapLife").getAttribute("aria-checked")]);
+    ok("…and up from Yearly round to the one payment", k[0] === "iapLife" && k[1] === "true", k);
     // a yearly row arriving late while the one payment is picked never takes the pick
-    await load(...at(SETUP, yr({ offering: ["monthly", "lifetime"] }))); await until("paid");
+    await load(...at(SETUP, yr({ offering: ["monthly", "lifetime"] }))); await until("free");
+    await page.locator("#iapLife").click(); await until("paid");
     await page.evaluate(() => { window.__phone.set({ offering: "all" }); document.dispatchEvent(new Event("visibilitychange")); });
     await page.waitForFunction(() => !document.getElementById("iapYear").hidden);
     r = await rows(); s = await snap();
@@ -542,17 +549,17 @@ try {
       s = await snap();
       ok(label + ": no line, and nothing on the screen says remind, notify or email", s.ahead === "" && !/remind|notif|e-?mail/i.test(s.body) && errors.length === before, [s.ahead, errors.slice(before)]);
     }
-    // the line follows the pick: the one payment (charged once, picked on
-    // arrival since 23 Oct 2026) never, the free Monthly row yes
-    await load(...at(SETUP, { store: STORES.monthlyFree, offering: "all", remind: true })); await until("paid");
+    // the line follows the pick: the free Monthly row (on top and picked on
+    // arrival since 23 Oct 2026) yes, the one payment (charged once) never
+    await load(...at(SETUP, { store: STORES.monthlyFree, offering: "all", remind: true })); await until("free");
     s = await snap();
     const asked = await page.evaluate(() => window.__phone.trialReminderCalls.slice());
-    ok("two rows, the one payment picked on arrival: no line, nothing says remind", s.ahead === "" && !/remind/i.test(s.body), s.ahead);
+    ok("two rows, Monthly (free) picked on arrival: the line, under the button", s.ahead === LINE && s.aheadUnder === true && (s.body.match(/remind/gi) || []).length === 1, s.ahead);
     ok("…sona.js is asked about each plan the card paints, the free ones included", asked.indexOf("free") > -1, asked);
-    await page.locator("#iapPlan").click(); s = await snap();
-    ok("…Monthly (free) picked: the line", s.ahead === LINE && s.aheadUnder === true, s.ahead);
     await page.locator("#iapLife").click(); s = await snap();
-    ok("…the one payment picked again: the line goes", s.ahead === "" && !/remind/i.test(s.body), s.ahead);
+    ok("…the one payment picked: the line goes, nothing says remind", s.ahead === "" && !/remind/i.test(s.body), s.ahead);
+    await page.locator("#iapPlan").click(); s = await snap();
+    ok("…Monthly picked again: the line comes back", s.ahead === LINE && s.aheadUnder === true, s.ahead);
     // the yearly row switched back on (sellYearly): charged today, the line leaves with it
     await load(...at(SETUP, { sellYearly: true, store: { monthly: { price: "$9.99", free: "P3D" }, annual: { price: "$59.99" } }, offering: "both", remind: true })); await until("free");
     s = await snap();
@@ -1115,18 +1122,19 @@ try {
     }
   }
 
-  // ── 15b. the fit with TWO ROWS, as the card ships (23 Oct 2026): the one
-  // payment above monthly, picked on arrival, from 360×740 and 375×667 up,
-  // and at 320×568 too; a tap on Monthly moves neither row, and the heads-up
-  // line (when this phone will show it, Monthly picked) fits too ──
+  // ── 15b. the fit with TWO ROWS, as the card ships (23 Oct 2026): monthly
+  // on top, picked on arrival, the one payment under it, from 360×740 and
+  // 375×667 up, and at 320×568 too; the heads-up line (when this phone will
+  // show it, Monthly picked) fits, and a tap on the one payment moves
+  // neither row ──
   {
     const SIZES = [[360, 740, 20, 0], [375, 667, 20, 0], [390, 844, 47, 34], [393, 852, 59, 34], [768, 1024, 20, 0], [1024, 768, 20, 0], [320, 568, 20, 0]];
     const SHAPES = (m, y) => [
-      ["free days, sure", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } } }],
-      ["free days, not sure", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, elig: "missing" }],
-      ["free days, sure, with the heads-up line", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, remind: true }],
-      ["free days, not sure, the phone could remind", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, elig: "missing", remind: true }],
-      ["charged today", { store: { monthly: { price: m }, lifetime: { price: y } } }],
+      ["free days, sure", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } } }, "free"],
+      ["free days, not sure", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, elig: "missing" }, "free"],
+      ["free days, sure, with the heads-up line", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, remind: true }, "free"],
+      ["free days, not sure, the phone could remind", { store: { monthly: { price: m, free: "P1W" }, lifetime: { price: y } }, elig: "missing", remind: true }, "free"],
+      ["charged today", { store: { monthly: { price: m }, lifetime: { price: y } } }, "paid"],
     ];
     const MEASURE2 = (sb) => {
       const g = (id) => document.getElementById(id);
@@ -1142,19 +1150,19 @@ try {
       try {
         await pg.clock.install({ time: new Date(NOON) });
         await pg.goto(base + "/__blank.html");
-        for (const door of DOORS.slice(0, 4)) for (const [m, y] of [["$9.99", "$59.99"], ["US$1,299.00", "US$1,299.00"]]) for (const [shape, storeCfg] of SHAPES(m, y)) {
+        for (const door of DOORS.slice(0, 4)) for (const [m, y] of [["$9.99", "$59.99"], ["US$1,299.00", "US$1,299.00"]]) for (const [shape, storeCfg, state] of SHAPES(m, y)) {
           await pg.evaluate((c) => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem("__phoneCfg", JSON.stringify(c)); }, Object.assign({ offering: "all" }, door[2], storeCfg));
           await pg.goto(base + door[1]);
-          // the one payment is picked on arrival, so the card is "paid" in every shape
-          await until("paid", pg);
+          // Monthly is picked on arrival, so the card is the monthly plan's state
+          await until(state, pg);
           await pg.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => r()))));
           const first = await pg.evaluate(MEASURE2, sb), x = await pg.evaluate(X_WORDS);
           // A PICK NEVER RE-FITS: the fit already holds either row picked, so
-          // a tap on Monthly moves neither row, and the button and the X stay
-          // on the first screen with the other plan's lines under the rows
-          await pg.evaluate(() => document.getElementById("iapPlan").click());
-          const picked = await pg.evaluate(MEASURE2, sb), monthOn = await pg.evaluate(() => document.getElementById("iapPlan").getAttribute("aria-checked") === "true");
-          out.push({ door: door[0], price: m, shape, m: first, x, p: picked, monthOn });
+          // a tap on the one payment moves neither row, and the button and the
+          // X stay on the first screen with the other plan's lines under the rows
+          await pg.evaluate(() => document.getElementById("iapLife").click());
+          const picked = await pg.evaluate(MEASURE2, sb), lifeOn = await pg.evaluate(() => document.getElementById("iapLife").getAttribute("aria-checked") === "true");
+          out.push({ door: door[0], price: m, shape, m: first, x, p: picked, lifeOn });
         }
       } catch (e) { out.push({ harness: String(e && e.stack || e) }); }
       await context.close();
@@ -1165,27 +1173,28 @@ try {
       ok(size + ", two rows: the fit was measured in every shape, with no page errors", out.length === 40 && !out.some((o) => o.harness) && errs.length === 0, [out.filter((o) => o.harness), errs]);
       for (const door of DOORS.slice(0, 4)) {
         const mine = out.filter((o) => o.door === door[0]), bad = [];
-        for (const { price, shape, m, x, p, monthOn } of mine) {
-          const say = (what) => bad.push(shape + ", " + price + ": " + what + " " + JSON.stringify({ fit: m.fit, fold: m.fold, life: m.life, month: m.month, buy: m.buy }));
+        for (const { price, shape, m, x, p, lifeOn } of mine) {
+          const say = (what) => bad.push(shape + ", " + price + ": " + what + " " + JSON.stringify({ fit: m.fit, fold: m.fold, month: m.month, life: m.life, buy: m.buy }));
           if (!m.buy || !m.life || !m.month || !m.head || !m.decline) { say("something is not painted"); continue; }
           if (x.length) say("the X sits on the words of " + x.join(", "));
-          if (m.ahead) say("the heads-up line shows with the one payment picked");
-          if (!monthOn || !p.buy || !p.life || !p.month) say("a tap on Monthly did not pick it");
+          // Monthly picked on arrival: the heads-up line only on a sure free trial, the not-sure note between the rows and the button
+          if (shape === "free days, sure, with the heads-up line" && !m.ahead) say("with Monthly picked the heads-up line is missing");
+          if (shape !== "free days, sure, with the heads-up line" && m.ahead) say("the heads-up line shows where it may not");
+          if (/^free days, not sure/.test(shape) && !(m.note && m.note.top >= m.life.bottom && m.note.bottom <= m.buy.top)) say("with Monthly picked the not-sure note is not between the rows and the button");
+          if (!lifeOn || !p.buy || !p.life || !p.month) say("a tap on the one payment did not pick it");
           else {
-            if (p.fit !== m.fit || Math.abs(p.life.top - m.life.top) > 0.5 || Math.abs(p.month.top - m.month.top) > 0.5) say("a tap on Monthly re-fitted the page and moved the rows " + JSON.stringify({ fit: p.fit, life: p.life, month: p.month }));
-            if (p.buy.bottom > p.fold || p.decline.bottom > p.fold || p.scrollY !== 0) say("with Monthly picked the button or the X is off the first screen " + JSON.stringify({ buy: p.buy, decline: p.decline }));
-            if (shape === "free days, sure, with the heads-up line" && !p.ahead) say("with Monthly picked the heads-up line is missing");
-            if (/not sure/.test(shape) && p.ahead) say("with Monthly picked the heads-up line shows on a not-sure row");
-            if (/^free days, not sure/.test(shape) && !(p.note && p.note.top >= p.month.bottom && p.note.bottom <= p.buy.top)) say("with Monthly picked the not-sure note is not between the rows and the button");
+            if (p.fit !== m.fit || Math.abs(p.life.top - m.life.top) > 0.5 || Math.abs(p.month.top - m.month.top) > 0.5) say("a tap on the one payment re-fitted the page and moved the rows " + JSON.stringify({ fit: p.fit, life: p.life, month: p.month }));
+            if (p.buy.bottom > p.fold || p.decline.bottom > p.fold || p.scrollY !== 0) say("with the one payment picked the button or the X is off the first screen " + JSON.stringify({ buy: p.buy, decline: p.decline }));
+            if (p.ahead) say("the heads-up line shows with the one payment picked");
           }
-          if (m.scrollY !== 0 || m.head.top < 0 || m.life.top < 0) say("the top is cut off");
-          if (!(m.life.bottom <= m.month.top)) say("the one payment is not above the monthly row");
+          if (m.scrollY !== 0 || m.head.top < 0 || m.month.top < 0) say("the top is cut off");
+          if (!(m.month.bottom <= m.life.top)) say("the monthly row is not above the one payment");
           if (m.buy.bottom > m.fold) say("the button ends below the first screen");
           if (m.decline.bottom > m.fold) say("the X that means \"Not now\" is off the first screen");
           if (m.overX > 0) say("the page scrolls sideways by " + m.overX);
           if (Math.abs(m.life.width - m.inner) > 2 || Math.abs(m.month.width - m.inner) > 2) say("a row does not fill the card");
         }
-        ok(size + ", " + door[0] + ", two rows: in all five shapes, with short and long prices, both rows, the button and every line above it are on the first screen, with the X on no words; no sideways scroll; the rows fill the card; and a tap on Monthly moves neither row and keeps the button and the X on the first screen",
+        ok(size + ", " + door[0] + ", two rows: in all five shapes, with short and long prices, both rows, the button and every line above it are on the first screen, with the X on no words; no sideways scroll; the rows fill the card; and a tap on the one payment moves neither row and keeps the button and the X on the first screen",
           mine.length === 10 && bad.length === 0, bad);
       }
     }
@@ -1193,8 +1202,8 @@ try {
 
 
   // ── 15c. the fit with THREE ROWS (22 Oct 2026), the yearly row switched
-  // back on (sellYearly; off the card since 23 Oct 2026): yearly, the one
-  // payment (picked on arrival) and monthly, at the sizes 15b measures; a
+  // back on (sellYearly; off the card since 23 Oct 2026): yearly, monthly
+  // (picked on arrival) and the one payment, at the sizes 15b measures; a
   // tap on any row moves no row, and the heads-up line fits too ──
   {
     const SIZES = [[360, 740, 20, 0], [375, 667, 20, 0], [390, 844, 47, 34], [768, 1024, 20, 0], [1024, 768, 20, 0], [320, 568, 20, 0]];
@@ -1219,14 +1228,14 @@ try {
       try {
         await pg.clock.install({ time: new Date(NOON) });
         await pg.goto(base + "/__blank.html");
-        for (const door of [SETUP, DOORS[1]]) for (const [m, y] of [["$9.99", "$59.99"], ["US$1,299.00", "US$9,999.00"]]) for (const [shape, storeCfg] of SHAPES(m, y)) {
+        for (const door of [SETUP, DOORS[1]]) for (const [m, y] of [["$9.99", "$59.99"], ["US$1,299.00", "US$9,999.00"]]) for (const [shape, storeCfg, state] of SHAPES(m, y)) {
           await pg.evaluate((c) => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem("__phoneCfg", JSON.stringify(c)); }, Object.assign({ offering: "all" }, door[2], storeCfg));
           await pg.goto(base + door[1]);
-          await until("paid", pg);   // the one payment, picked on arrival
+          await until(state, pg);   // Monthly, picked on arrival
           await pg.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => r()))));
           const first = await pg.evaluate(MEASURE3, sb), x = await pg.evaluate(X_WORDS);
           const picks = [];
-          for (const id of ["iapPlan", "iapYear", "iapLife"]) {
+          for (const id of ["iapLife", "iapYear", "iapPlan"]) {
             await pg.evaluate((id) => document.getElementById(id).click(), id);
             picks.push({ id, on: await pg.evaluate((id) => document.getElementById(id).getAttribute("aria-checked") === "true", id), m: await pg.evaluate(MEASURE3, sb) });
           }
@@ -1255,7 +1264,7 @@ try {
             if (/not sure, the phone could remind/.test(shape) && q.ahead) say("with " + p.id + " picked the heads-up line shows on a not-sure row");
           }
           if (m.scrollY !== 0 || m.head.top < 0 || m.year.top < 0) say("the top is cut off");
-          if (!(m.year.bottom <= m.life.top && m.life.bottom <= m.month.top)) say("the rows are not yearly, the one payment, then monthly");
+          if (!(m.year.bottom <= m.month.top && m.month.bottom <= m.life.top)) say("the rows are not yearly, monthly, then the one payment");
           if (m.buy.bottom > m.fold) say("the button ends below the first screen");
           if (m.decline.bottom > m.fold) say("the X that means \"Not now\" is off the first screen");
           if (m.overX > 0) say("the page scrolls sideways by " + m.overX);

@@ -24,8 +24,8 @@
 // sky, a dead stretch, a miss the finger should not have made, the ask or
 // the slowdown off the frame). Each run prints each clip's moments ("times":
 // say, the child's sound heard; slow, the slowdown on; len, the clip), in
-// seconds from its first frame: setup's captions read them (REEL_TIMES in
-// onboarding.html), so a clip filmed again means copying them there.
+// seconds from its first frame (setup shows no caption since 23 Oct 2026:
+// the game's own top bar says each moment, so nothing needs copying).
 // tests/setupreeltest.mjs checks the files (size, codec, length, colour
 // tags, no audio, faststart, poster) and that KEYS and setup's REEL_ORDER
 // are its list; it never runs this. A new game on the reel is a scene here,
@@ -366,8 +366,8 @@ function speaker(page) {
 // read every frame: the child's voice on, the slowdown on, Echo's turn on
 const POWER_PROBE = () => ({ v: !!(window.__dev && __dev.voice), slow: slowMs > 0, ask: !!slowTurn });
 // The clip keeps SAY_AT s before the sound is heard and the rest after it,
-// so its middle is the slowed game; the moments are kept for setup's
-// captions (REEL_TIMES in onboarding.html), counted from the clip's first frame.
+// so its middle is the slowed game; the moments are reported, counted from
+// the clip's first frame.
 function powerEnd(h, n) {
   const say = h.findIndex((x) => x.v), slow = h.findIndex((x) => x.slow);
   if (say < 0 || slow < 0) return false;

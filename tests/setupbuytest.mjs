@@ -45,7 +45,7 @@ async function toReady(page, name, email = "") {
   await page.goto(base + "/onboarding.html");
   await page.waitForFunction(() => window.Sona && document.getElementById("nextBtn"));
   await tap(page, "#nextBtn");                                           // the hello
-  for (const key of ["problem", "reel", "rachel", "daily"]) {
+  for (const key of ["problem", "reel", "rachel"]) {
     await step(page, key); sold.push(await text(page, '[data-step="' + key + '"] h1'));
     if (key === "rachel") rachelLine = await page.evaluate(() => document.getElementById("rachelLine").textContent);
     await tap(page, "#nextBtn");
@@ -68,8 +68,8 @@ await scenario("a family that can buy", async () => {
   try {
     await toReady(page, "Mia", "mia.mom@example.com");
     ok("nothing is sent from the email step itself", leads(requests).length === 0, leads(requests));
-    ok("before the price, setup sells Sona: the problem, the games playing, Rachel, a few minutes every day, what the child loves, the games they will love",
-      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "They practice by playing.", "Built with Rachel, MS, CF-SLP,", "A few minutes every day.", "What does Mia love?", "Games Mia will love"]), sold);
+    ok("before the price, setup sells Sona: the problem, the games playing, Rachel, what the child loves, the games they will love",
+      JSON.stringify(sold) === JSON.stringify(["Speech homework is hard at home.", "Practice through play.", "Built with Rachel, MS, CF-SLP,", "What does Mia love?", "Games Mia will love"]), sold);
     ok("Rachel's own screen carries her line word for word, and setup ends on the ready screen with the child's name",
       rachelLine === "Built with Rachel, MS, CF-SLP, a pediatric speech-language pathologist in her clinical fellowship." &&
       (await text(page, "#readyTitle")) === "Mia's practice is ready!",
@@ -126,23 +126,28 @@ await scenario("a family that can buy", async () => {
 });
 
 // THE ONE PAYMENT (22 Oct 2026): RevenueCat's offering lists it, and since
-// 23 Oct 2026 it is the top row, picked when the price opens (Travis: "I
-// just want two payment options, and I want one payment to be the one on the
-// top that's auto-selected"); the yearly product the offering also lists is
-// not sold. A parent who taps the button as it opens is charged once, comes
-// back to setup for the microphone and the hand-off, and the list hears "paid".
+// 23 Oct 2026 it is the row under monthly (Travis: "I just want two payment
+// options", then "can we just have the ... a month as the top default option
+// and then below it is the pay one time?"); the yearly product the offering
+// also lists is not sold. The price opens on Monthly's free trial; a parent
+// who taps One payment, then the button, is charged once, comes back to
+// setup for the microphone and the hand-off, and the list hears "paid".
 await scenario("a family that buys the one payment", async () => {
   const { context, page, errors, requests } = await open(browser, base, { app: "buy", mic: "grant", offering: "all" });
   try {
     await toReady(page, "Ava", "ava.mom@example.com");
     await tap(page, "#nextBtn");
     await page.waitForURL(/\/subscribe\.html\?setup=1$/, { timeout: 12000 });
-    await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 12000 });
-    const rows = await page.evaluate(() => ["iapYear", "iapLife", "iapPlan"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
-    ok("the price has two rows, the one payment on top and picked, Monthly under it, no yearly row, and it never says lifetime",
-      rows[0] === null && !!rows[1] && !!rows[2] && rows[1][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[1][2]) &&
-      await page.evaluate(() => document.getElementById("iapLife").getBoundingClientRect().bottom <= document.getElementById("iapPlan").getBoundingClientRect().top) && !/lifetime/i.test(await text(page, "body")), rows);
-    ok("…as it opens: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
+    await page.locator('#iapCard[data-state="free"]').waitFor({ timeout: 12000 });
+    const rows = await page.evaluate(() => ["iapYear", "iapPlan", "iapLife"].map((id) => { const e = document.getElementById(id); return e && !e.hidden ? [id, e.getAttribute("aria-checked"), e.innerText.replace(/\s+/g, " ").trim()] : null; }));
+    ok("the price has two rows, Monthly on top and picked, the one payment under it, no yearly row, and it never says lifetime",
+      rows[0] === null && !!rows[1] && !!rows[2] && rows[1][1] === "true" && rows[2][1] === "false" && /^One payment Yours to keep\. No subscription\. \$59\.99/.test(rows[2][2]) &&
+      await page.evaluate(() => document.getElementById("iapPlan").getBoundingClientRect().bottom <= document.getElementById("iapLife").getBoundingClientRect().top) && !/lifetime/i.test(await text(page, "body")), rows);
+    ok("…as it opens, Monthly's free trial: \"No payment today\" over the button",
+      /No payment today/.test(await text(page, "#iapCard")) && (await text(page, "#iapBuy")) !== "Get Sona Premium — $59.99", await text(page, "#iapCard"));
+    await tap(page, "#iapLife");
+    await page.locator('#iapCard[data-state="paid"]').waitFor({ timeout: 4000 });
+    ok("…a tap on One payment: \"Get Sona Premium — $59.99\", and the small print says one payment, no subscription",
       (await text(page, "#iapBuy")) === "Get Sona Premium — $59.99" && /One payment of \$59\.99\. No subscription\./.test(await text(page, "#iapCard")), await text(page, "#iapCard"));
     await tap(page, "#iapBuy");
     await page.waitForURL(/\/onboarding\.html$/, { timeout: 12000 });

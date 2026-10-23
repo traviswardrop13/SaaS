@@ -79,7 +79,7 @@ function phoneInit(cfg){
   if(!cfg.web)window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>'ios',Plugins:{Keyboard:{setAccessoryBarVisible(){return Promise.resolve();},addListener(n,cb){S.kb[n]=cb;return Promise.resolve({remove(){}});}}}};
   const SEL={card:'[data-step="name"]',heading:'[data-step="name"] .qh',label:'label[for="obName"]',field:'#obName',ageLabel:'#ageLabel',age4:'#obAge [data-age="4"]',age6:'#obAge [data-age="6"]',age8:'#obAge [data-age="8"]',echo:'.ob .mascot',seg:'#seg',
     tCard:'[data-step="interests"]',tHead:'#interestsTitle',tYes:'#obInterests [data-val="sports"]',btn:'#nextBtn',
-    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sLine:'.step.sell.on .reel-sub',sPic:'.step.sell.on .ba-game, .step.sell.on .rachel-photo, .step.sell.on .reel-say, .step.sell.on .daily-quote',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
+    sCard:'.step.sell.on',sHead:'.step.sell.on h1',sPic:'.step.sell.on .ba-game, .step.sell.on .rachel-photo',sGrid:'.step.sell.on #gamesGrid',sLast:'.step.sell.on #gamesGrid li:last-child',
     rCard:'[data-step="ready"].on',rHead:'[data-step="ready"].on #readyTitle',rChips:'[data-step="ready"].on #readyChips'};
   // AS PAINTED (22 Oct 2026): where a screen's own motion draws a picture
   // and how see-through it is, transforms and opacity included, for the
@@ -88,8 +88,9 @@ function phoneInit(cfg){
   // first frame (a delayed animation used to hold its first keyframe). A
   // selector matching several (the sparkles) reads as the one most drawn.
   // (since 23 Oct 2026 the problem screen is a before and an after, each row
-  // fading up in place, and "A few minutes every day." fills a week of dots)
-  const VIS={pGame:'.step.on .ba-after',pCards:'.step.on .ba-before',dDot:'.step.on .week li:last-child i',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
+  // fading up in place, and the reel's heading shows for two seconds and
+  // fades away)
+  const VIS={pGame:'.step.on .ba-after',pCards:'.step.on .ba-before',rTitle:'.step.on .reel-title',rEcho:'.step.on .ready-echo img',rSpark:'.step.on .spark'};
   function seen(sel){let best=null;for(const el of document.querySelectorAll(sel)){const cs=getComputedStyle(el),r=el.getBoundingClientRect(),o=+cs.opacity;const v=cs.display==='none'||r.width<2||r.height<2||cs.visibility==='hidden'?null:{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),o:Math.round(o*100)/100};if(v&&(!best||v.o>best.o))best=v;}return best&&best.o>0?best:null;}
   // Where the LAYOUT puts an element: offsets, not the painted box, so a
   // screen's slide-in (a transform) is not a jump, and a box laid out again
@@ -163,11 +164,10 @@ async function ipadWindow(page,sw=820,sh=1180){
 // an iPhone closes the keyboard whenever the box loses focus
 async function followFocus(page,D){if(await page.evaluate(()=>document.activeElement&&document.activeElement.id)!=='obName'&&await page.evaluate(()=>__steady.kbState)!=='down')await kbHide(page,D);}
 const calm=page=>page.evaluate(()=>document.body.classList.remove('ob-settling'));
-// THE NAME COMES FIFTH (22 Oct 2026; 23 Oct): the hello, the problem, the
-// games playing, Rachel and "A few minutes every day." come first. To that
-// last one, the screen right before the name, by the footer's button (touch,
-// as a phone), settling between taps.
-async function toBeforeName(page){for(let i=0;i<5;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);if(s==='daily')return;await calm(page);await page.tap('#nextBtn');await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}}
+// THE NAME COMES FOURTH (22 Oct 2026): the hello, the problem, the games
+// playing and Rachel come first. To Rachel's screen, the one right before the
+// name, by the footer's button (touch, as a phone), settling between taps.
+async function toBeforeName(page){for(let i=0;i<4;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);if(s==='rachel')return;await calm(page);await page.tap('#nextBtn');await page.waitForFunction(k=>document.body.dataset.setupScreen!==k,s);}}
 const center=(page,sel)=>page.evaluate(s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},sel);
 async function tapAt(page,sel){const c=await center(page,sel);await page.touchscreen.tap(c.x,c.y);}
 // a dark band where the keyboard is, for the screenshots taken before the web view shrinks
@@ -503,12 +503,14 @@ for(const kbh of [0,60]){const D={name:'1024x1366',w:1024,h:1366,kb:kbh,top:24,b
 // on the ready screen), so the games are the full grid, every playable
 // big-kid game.
 // …and "<Name>'s practice is ready!" after them, Echo cheering. Each screen's
-// own motion (the flashcards, then a beat later the game, fading up in place;
-// the week of dots filling on "A few minutes every day."; from 0.3 s
-// to 1.85 s; Echo's pop and the sparkles, to 1.5 s) is watched for 2.3 s:
-// under Reduce Motion the first frame is already the last (both rows in place,
-// the week full, Echo there, no sparkle), and it is the very place
-// the motion-on run ended on, on the same phone.
+// own motion (the flashcards, then a beat later the game, fading up in place,
+// from 0.3 s to 2.2 s; Echo's pop and the sparkles, to 1.5 s) is watched for
+// 2.3 s: under Reduce Motion the first frame is already the last (both rows in
+// place, Echo there, no sparkle), and it is the very place the motion-on run
+// ended on, on the same phone. The reel's heading is the one exception, on
+// purpose: with motion on it shows and is gone by 2.6 s (Travis, 23 Oct 2026:
+// "show it for 2 seconds and then fade it away"); under Reduce Motion it
+// stays, since nothing there changes (watched for 3 s).
 const ENDS={};
 const ownMotion=(fr,ks)=>{const out={};for(const k of ks){const vs=fr.map(f=>f.v[k]),a=vs[0];out[k]={first:a,last:vs[vs.length-1],changed:vs.filter(v=>JSON.stringify(v)!==JSON.stringify(a)).length,ever:vs.some(v=>!!v)};}return out;};
 for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
@@ -518,7 +520,7 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
   await page.reload();await page.waitForFunction(()=>window.Sona&&document.getElementById('nextBtn'));await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
   ok('(the app can sell'+at+': the price follows setup)',await page.evaluate(()=>Sona.iapAvailable()&&Sona.trialFirst()===true));
   await context.route(/\/assets\/(crafted\/home-[a-z]+\.webp|rachel-wardrop-profile\.jpg)$/,async route=>{await new Promise(r=>setTimeout(r,500));route.continue();});
-  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame','pCards'],2300],['reel',['sCard','sHead','sLine','sPic','btn'],'sCard',[],1100],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['daily',['sCard','sHead','sPic','btn'],'sCard',['dDot'],2300],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
+  for(const [key,keys,card,own,wait] of [['problem',['sCard','sHead','sPic','btn'],'sCard',['pGame','pCards'],2300],['reel',['sCard','sHead','btn'],'sCard',['rTitle'],3000],['rachel',['sCard','sHead','sPic','btn'],'sCard',[],1100],['games',['sCard','sHead','sGrid','sLast','btn'],'sCard',[],1100],['ready',['rCard','rHead','rChips','btn'],'rCard',['rEcho','rSpark'],2300]]){
    if(key==='games'){
     // the name and what the child loves come between Rachel and the games
     await calm(page);await page.tap('#nextBtn');await page.locator('[data-step="name"].on').waitFor();
@@ -538,7 +540,8 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
    await calm(page);await page.tap('#nextBtn');
    await page.locator('[data-step="'+key+'"].on').waitFor();await page.waitForTimeout(wait);
    const fr=(await page.evaluate(()=>__steady.take())).filter(f=>f.screen===key&&f.r[card]);
-   const d=drift(fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
+   // (the reel's heading leaves on purpose, so its layout is read while it shows)
+   const d=drift(key==='reel'?fr.filter(f=>f.r.sHead):fr,keys),loaded=await page.evaluate(()=>[...document.querySelectorAll('.step.on img[src]')].every(i=>i.complete&&(i.naturalWidth>0||i.classList.contains('gone'))));
    if(key==='games')ok('…the games peek is the full nine here ('+(await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length))+' games)'+at,await page.evaluate(()=>document.querySelectorAll('#gamesGrid li').length===Math.min(9,Sona.activityLibrary().groups.filter(g=>g.id==='arcade')[0].games.filter(x=>!x.comingSoon).length)));
    ok('"'+key+'" is drawn once, at its own size, and nothing in it moves as its pictures arrive'+at+' (worst: '+worst(d)+')',fr.length>5&&still(d)&&loaded,{frames:fr.length,d,loaded});
    if(own.length){
@@ -547,15 +550,18 @@ for(const reduced of [false,true])for(const D of [DEVICES[0],DEVICES[2]]){
      // motion on: the two rows fade up in place and end whole; Reduce Motion starts there
      if(!reduced)ok('with motion on, the problem screen\'s two rows fade up and end within 2.3 s: the flashcards, then the game, both fully drawn'+at,span>=2000&&m.pCards.changed>0&&m.pGame.changed>0&&m.pCards.last&&m.pCards.last.o===1&&m.pGame.last&&m.pGame.last.o===1,{span,m});
      else ok('under Reduce Motion the problem screen\'s first frame is its last, for '+span+' ms: both rows in place from the first frame, unchanged'+at,span>=2000&&m.pGame.first&&m.pGame.first.o===1&&m.pGame.changed===0&&m.pCards.first&&m.pCards.first.o===1&&m.pCards.changed===0,{span,m});
-    }else if(key==='daily'){
-     if(!reduced)ok('with motion on, the week\'s dots fill and end within 2.3 s, the last one fully drawn'+at,span>=2000&&m.dDot.changed>0&&m.dDot.last&&m.dDot.last.o===1,{span,m});
-     else ok('under Reduce Motion the week is full from the first frame, unchanged, for '+span+' ms'+at,span>=2000&&m.dDot.first&&m.dDot.first.o===1&&m.dDot.changed===0,{span,m});
+    }else if(key==='reel'){
+     // the heading shows, then is gone (opacity 0 and hidden: no longer drawn) by 3 s; Reduce Motion keeps it, still
+     const shown=fr.filter(f=>f.v.rTitle&&f.v.rTitle.o===1);
+     if(!reduced)ok('with motion on, the reel\'s heading shows ("Practice through play.") and is gone within 3 s, nothing left over the game'+at,span>=2700&&shown.length>0&&shown[0].t-fr[0].t<1200&&!m.rTitle.last,{span,m,shownAt:shown.length?shown[0].t-fr[0].t:null});
+     else ok('under Reduce Motion the reel\'s heading is there from the first frame and stays, unchanged, for '+span+' ms'+at,span>=2700&&m.rTitle.first&&m.rTitle.first.o===1&&m.rTitle.changed===0,{span,m});
     }else{
      if(!reduced)ok('with motion on, Echo pops onto the ready screen and the sparkles play and end within 2.3 s'+at,span>=2000&&m.rEcho.changed>0&&m.rEcho.last&&m.rEcho.last.o===1&&m.rSpark.ever&&!m.rSpark.last,{span,m});
      else ok('under Reduce Motion the ready screen\'s first frame is its last, for '+span+' ms: Echo there from the first frame, unchanged, no sparkle ever drawn'+at,span>=2000&&m.rEcho.first&&m.rEcho.first.o===1&&m.rEcho.changed===0&&!m.rSpark.ever,{span,m});
     }
     // the same phone, the same screen: Reduce Motion's first frame is where the motion ended
-    const tag=D.name+'|'+key;
+    // (not the reel's heading: it leaves on purpose, and stays under Reduce Motion)
+    const tag=D.name+'|'+key;if(key==='reel')continue;
     if(!reduced)ENDS[tag]=Object.fromEntries(own.map(k=>[k,m[k].last]));
     else if(ENDS[tag])ok('…and it is exactly where the motion-on run ended ('+key+')'+at,own.every(k=>JSON.stringify(m[k].first)===JSON.stringify(ENDS[tag][k])),{reduce:Object.fromEntries(own.map(k=>[k,m[k].first])),motion:ENDS[tag]});
    }

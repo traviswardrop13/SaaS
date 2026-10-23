@@ -227,20 +227,16 @@ try {
     await recording(page);
     await mark(page, 101);                          // the hello: recorded
     // THE SCREENS THAT SELL (22 Oct 2026) come first: the problem, the games
-    // playing, Rachel and (23 Oct 2026) a few minutes every day, all
-    // recorded, none showing the name
+    // playing and Rachel, all recorded, none showing the name
     await next(page);
     await page.locator('[data-step="problem"].on').waitFor(); await rest();
     await mark(page, 111);                          // "Speech homework is hard at home.": recorded
     await next(page);
     await page.locator('[data-step="reel"].on').waitFor(); await rest();
-    await mark(page, 121);                          // "They practice by playing.": recorded
+    await mark(page, 121);                          // "Practice through play.": recorded
     await next(page);
     await page.locator('[data-step="rachel"].on').waitFor(); await rest();
     await mark(page, 131);                          // Rachel, on her own: recorded
-    await next(page);
-    await page.locator('[data-step="daily"].on').waitFor(); await rest();
-    await mark(page, 136);                          // "A few minutes every day." (23 Oct 2026): recorded
     await next(page);
     await page.locator('[data-step="name"].on').waitFor();
     await page.locator("#obName").fill("Zephyrine");
@@ -305,7 +301,7 @@ try {
     const rr = w.rr(), text = w.text();
     ok("setup: a recording was sent (full snapshots of the page)", rr.filter((e) => e.type === FULL).length >= 2, rr.length);
     ok("setup: the hello's pointer was recorded (the control)", marked(rr, 101));
-    ok("setup: the problem, the games playing, Rachel's screen and \"A few minutes every day.\" were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131) && marked(rr, 136), [marked(rr, 111), marked(rr, 121), marked(rr, 131), marked(rr, 136)]);
+    ok("setup: the problem, the games playing and Rachel's screen were recorded (the controls)", marked(rr, 111) && marked(rr, 121) && marked(rr, 131), [marked(rr, 111), marked(rr, 121), marked(rr, 131)]);
     ok("setup: the minutes screen's pointer was recorded (the control)", marked(rr, 351));
     ok("setup: nothing on the screen a therapy answer lands on (the sounds)", !marked(rr, 301));
     ok("setup: \"What does <Name> love?\" and \"Games <Name> will love\" were recorded (the controls)", marked(rr, 141) && marked(rr, 151), [marked(rr, 141), marked(rr, 151)]);
@@ -314,7 +310,7 @@ try {
     const allNodes = nodes(rr), byId = (id) => allNodes.filter((n) => n.attributes && n.attributes.id === id);
     const said = (n) => (n.childNodes || []).map((c) => c.textContent || "").join("");
     ok("setup: the name on the screens that sell is recorded as [child], every time (intName, gamesName)", ["intName", "gamesName"].every((id) => byId(id).length > 0 && byId(id).every((n) => said(n) === "[child]")), ["intName", "gamesName"].map((id) => byId(id).map(said)));
-    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /They practice by playing/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
+    ok("setup: the screens that sell were recorded with their words (the problem, the reel, Rachel, what they love, the games)", /Speech homework is hard at home/.test(text) && /Practice through play/.test(text) && /pediatric speech-language pathologist in her clinical fellowship/.test(text) && /What does/.test(text) && /will love/.test(text) && /Fruit Slice/.test(text));
     // every incremental event, each pointer position at its own time
     const when = (e) => (e.type === INCR && Array.isArray(e.data.positions)) ? e.data.positions.map((q) => e.timestamp + (q.timeOffset || 0)) : [e.timestamp];
     const between = rr.filter((e) => e.type === INCR && when(e).some((t) => t >= t1 && t <= t2));
