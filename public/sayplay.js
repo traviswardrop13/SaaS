@@ -497,8 +497,8 @@
     var h = ""; for (var i = 0; i < G.steps.length; i++) h += '<i class="' + (i < step ? "on" : "") + '"></i>';
     try { $("dots").innerHTML = h; $("dots").setAttribute("aria-label", step + " of " + G.steps.length); } catch (e) {}
   }
-  // "Say it 2 times" and its dots (one a saying), under the word. The engine puts them on
-  // the page itself: twenty pages can't drift, and a page the phone saved
+  // "Say it 2 times" and its dots (one a saying), under the word. The engine
+  // puts them on the page itself: twenty pages can't drift, and a page the phone saved
   // before today still gets them with this file. The word and the line share
   // one box, so the word keeps its place in the panel's grid.
   // A game that asks once gets none of it: no line, no dots, and never "1 more
@@ -532,8 +532,8 @@
   // ── a turn: show the word, Echo says it, the child says it, the game moves ──
   function nextTurn(same) {
     micStop(); stopAudio(); audioPaused=!!document.hidden; heardThisTurn = false; clearTimeout(nextTurn._t);
-    // a new word starts at none of its sayings; the same word again ("Hear it", or
-    // back from a pause) keeps a saying Echo has already heard
+    // a new word starts at none of its sayings; the same word again ("Hear
+    // it", or back from a pause) keeps a saying Echo has already heard
     if (!same || !word) { word = pickWord(); said = 0; }
     paintSaid();
     try {
