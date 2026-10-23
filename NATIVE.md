@@ -446,6 +446,20 @@ before the price at the end of setup are skipped). A store that has no
 monthly product, or answers with the yearly one, sells nothing in its place.
 The card never states a saving: the price is Apple's.
 
+## Two rows: monthly on top, the one payment under it (23 Oct 2026)
+
+Travis, 23 Oct 2026: "get rid of the yearly option. I just want two payment
+options", then "can we just have the ... a month as the top default option and
+then below it is the pay one time?". The Apple card shows no yearly row,
+whatever RevenueCat's offering lists (`IAP_SELL_YEARLY = false` in
+`public/sona.js`; the yearly product stays in App Store Connect and in
+`IAP_PRODUCTS` so a yearly buyer still restores). Monthly is on top and picked
+when the screen opens (its free trial), the one payment under it. A web
+deploy only: no app build, no store change. Taking the yearly package out of
+the current offering in RevenueCat is tidy but not needed. **Phone check:**
+the price screen shows two rows, Monthly (picked) then One payment, and no
+"/yr" anywhere.
+
 ## Two plans again, and the store's free days (19 Oct 2026)
 
 Travis, 19 Oct 2026, "yes" to a funnel review: the price screen offers yearly
@@ -481,8 +495,8 @@ Travis, 22 Oct 2026: "ok go build it all", the one-time purchase on the price
 screen; "i dont wanna say lifetime". The card can show a third row under
 monthly: **"One payment"**, "Yours to keep. No subscription.", the App
 Store's price with no period; picked, the button says "Get Sona Premium —
-$59.99" (the store's price). It is never picked when the screen opens (yearly
-is, or monthly without a yearly row), never says "lifetime", "free" or "Best
+$59.99" (the store's price). It is never picked when the screen opens
+(monthly is), never says "lifetime", "free" or "Best
 value", and has no free days. The web card is unchanged: the website sells
 subscriptions only. Nothing here needs code: the row appears by itself once
 these are true, in this order (the same order as the yearly row, for the

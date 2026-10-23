@@ -205,9 +205,10 @@ changing one. What follows from the rule:
     frame is its last** (the review of 22 Oct 2026: `sona.css` cuts an
     animation to 0.001 ms but keeps its delay, so a delayed one showed its
     first keyframe: the problem screen's game card was invisible for 1.15 s,
-    then jumped): Echo stands on the path and says hi, the tossed flashcard
-    and the ready screen's sparkles are not drawn, the game card and Echo
-    cheering are in place, the reel is one still poster, and "Get started"
+    then jumped): Echo stands on the path and says hi, the problem screen's
+    before and after are both in place, the ready screen's sparkles are not
+    drawn and Echo cheers there, the reel is one still poster under its
+    heading (which stays), and "Get started"
     takes a tap at once. `setupsteadytest` watches the problem and ready
     screens for 2.3 s and holds Reduce Motion's first frame to where the
     motion-on run ended.
@@ -234,9 +235,15 @@ changing one. What follows from the rule:
     for the R sound ("Say rrrr when Echo asks"), the child heard ("Got
     it!") and the game slowing down (Super Slice, slow keys, the slow help).
     The heading, "Practice through play.", is a cream card in the middle of
-    the screen that shows for two seconds and fades away (opacity only);
-    then only the game, Back (on a cream pill) and Continue. No caption, no
-    darkening, no sound. Filmed frame by frame by `tools/setupreel/record.mjs`
+    the screen that shows for two seconds and fades away (opacity only, so
+    it keeps its focus and a screen reader still reads it); then only the
+    game, Back (on a cream pill) and Continue. No caption, no darkening, no
+    sound. In the iPhone app the layer starts under the status bar (the
+    clip's own top bar never sits under the clock or the Dynamic Island,
+    where its ✕ would look like a way to close); on a screen wider than a
+    phone (an iPad, a laptop window, aspect 3:5 or wider) the whole 1:2 clip
+    shows, centred on the dark backdrop, since filling the screen there cut
+    off its top bar and Echo's ask (the review of 23 Oct 2026). Filmed frame by frame by `tools/setupreel/record.mjs`
     into `public/assets/setup/reel/<key>.mp4` and a poster `<key>.webp` (see
     SETUPREEL1 below; `setupreeltest` holds the files), two muted inline
     videos taking turns. A phone that cannot play them or refuses to start
@@ -2613,7 +2620,7 @@ clips of the sound power since 23 Oct 2026)** (Travis: "Do like a little clip
 of a few games so that parents can see it"; then "rotate through fruit slice,
 piano tiles, and Flappy Glide ... they're saying ... the letter R ... And then
 the game slows down ... a 3-second of those three games"). The clips on
-setup's "They practice by playing." screen are
+setup's "Practice through play." screen are
 `public/assets/setup/reel/<key>.mp4`, each with a poster `<key>.webp` (its
 first frame): slice, tiles, glide. Nothing in them is drawn or edited:
 `tools/setupreel/record.mjs` (run by hand, never in the battery; its header
@@ -2641,8 +2648,8 @@ playable, never a Coming soon one. **A new game on the reel** is a scene in
 `REEL_ORDER`; run the tool alone (it is CPU heavy, port
 9303) and look at every contact sheet in `tools/setupreel/out/sheets/` before
 committing a clip. **Travis's calls:** the three games, the moments, the 4 s,
-the crops. **Rachel's:** every clip is on R (setup says "Example: the R
-sound"), so a parent of a 2–4 year old sees R asked and earned, a sound not
+the crops. **Rachel's:** every clip is on R (since 23 Oct 2026 nothing on
+setup says R is only an example), so a parent of a 2–4 year old sees R asked and earned, a sound not
 asked of that age, and the clips show the reward a child earns by saying the
 sound.
 

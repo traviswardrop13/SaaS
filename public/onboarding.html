@@ -702,8 +702,8 @@
     function remindMay(){try{return draft.role!=="slp"&&!!(Sona.notifyAvailable&&Sona.notifyAvailable()&&Sona.notifyState&&Sona.notifyState()==="prompt"&&Sona.trialFirst&&Sona.trialFirst());}catch(e){return false;}}
     // the store's Plan (Sona.storePlan), once it has answered; null until then
     var remindPlan=null,remindP=null,REMIND_WAIT_MS=2500;
-    // A free trial for THIS buyer, on the row the price screen picks as it
-    // opens (the yearly row when the store offers it, else the monthly one):
+    // A free trial for THIS buyer, on the monthly row, the one the price
+    // screen picks as it opens (23 Oct 2026), whatever other rows it shows:
     // storePlan's "free" is a product with free days AND a buyer Apple has not
     // called ineligible (a definite "not eligible" is "paid": charged today).
     // And only a row the store is SURE of (plan.sure, the test the price
@@ -711,7 +711,7 @@
     // may be free ("Only new subscribers get 3 days free. Otherwise Apple
     // charges $9.99 today.") may charge today, and that screen then promises
     // no reminder, so setup asks none either.
-    function remindFree(plan){try{var pick=plan&&(plan.year||plan);return !!(pick&&pick.state==="free"&&pick.free&&pick.sure===true);}catch(e){return false;}}
+    function remindFree(plan){try{return !!(plan&&plan.state==="free"&&plan.free&&plan.sure===true);}catch(e){return false;}}
     function remindDue(){return remindMay()&&remindFree(remindPlan);}
     // Asked ONCE, as the ready screen shows (beside wallAsk): the store's plan
     // and, where sona.js has it (NOTIFY1), iOS's own answer about
@@ -1639,8 +1639,8 @@
           location.href=first;
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
-        // Setup and menus stay quiet; spoken coaching belongs inside games
-        // (the reel's "Hear Echo", on a grown-up's tap, is the one exception).
+        // Setup makes no sound at all (23 Oct 2026); spoken coaching
+        // belongs inside games.
     }
 
     // finish() means "save if not yet saved, then show the hand-off". A parent

@@ -260,7 +260,7 @@ await scenario('the reel: real clips where the phone plays them, posters where i
 // screen up there just have it say practice by playing like somewhere and
 // show it for 2 seconds and then fade it away. other than that they just watch
 // the game being played", and the words: just "practice through play") ──
-const titleOf=page=>page.evaluate(()=>{const t=document.getElementById('reelTitle'),cs=getComputedStyle(t);return {o:+cs.opacity,vis:cs.visibility,text:t.textContent};});
+const titleOf=page=>page.evaluate(()=>{const t=document.getElementById('reelTitle'),cs=getComputedStyle(t);return {o:+cs.opacity,vis:cs.visibility,text:t.textContent,focus:document.activeElement===t};});
 await scenario('the reel fills the screen, "Practice through play." shows for two seconds and fades away',async()=>{
  for(const vp of [{width:390,height:844},{width:375,height:667},{width:320,height:568}]){
   const {context,page,errors}=await fresh({viewport:vp,webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
@@ -277,15 +277,29 @@ await scenario('the reel fills the screen, "Practice through play." shows for tw
    clean('reel full screen '+vp.width,errors);
   }finally{await context.close();}
  }
+ // wider than a phone (an iPad, a laptop window): the whole 1:2 clip shows,
+ // never cropped to its middle (cover cut off its top bar, Echo's ask, the
+ // review of 23 Oct 2026); a phone keeps it filling the screen
+ for(const [vp,want] of [[{width:820,height:1180},'contain'],[{width:1280,height:800},'contain'],[{width:390,height:844},'cover'],[{width:375,height:667},'cover']]){
+  const {context,page,errors}=await fresh({viewport:vp,webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
+   await toReel(page);await page.waitForTimeout(500);
+   const fit=await page.evaluate(()=>[...document.querySelectorAll('#reelFrame .reel-still,#reelFrame .reel-clip')].map(e=>getComputedStyle(e).objectFit));
+   ok('at '+vp.width+'×'+vp.height+' the clips are '+(want==='contain'?'shown whole (contain), Echo\'s ask in the frame':'filling the screen (cover)'),fit.length===4&&fit.every(x=>x===want),fit);
+   clean('reel fit '+vp.width,errors);
+  }finally{await context.close();}
+ }
  // the heading: there at half a second, gone (no longer drawn) by three; Back's pill is the reel's alone
  {const {context,page,errors}=await fresh({webSales:true,motion:true,init:()=>{HTMLMediaElement.prototype.canPlayType=function(){return '';};}});try{
   await toReel(page);const t0=Date.now();
   await page.waitForTimeout(Math.max(0,550-(Date.now()-t0)));const a=await titleOf(page);
   await page.waitForTimeout(Math.max(0,3100-(Date.now()-t0)));const b=await titleOf(page);
   ok('with motion on, "Practice through play." is on the screen half a second in',a.text==='Practice through play.'&&a.o===1&&a.vis==='visible',a);
-  ok('…and gone by three seconds: faded out and no longer drawn, only the game left',b.o===0&&b.vis==='hidden',b);
+  // opacity only (the review of 23 Oct 2026): a heading faded with
+  // visibility:hidden lost the focus render() gave it and left the
+  // accessibility tree, so a screen reader found nothing on the screen
+  ok('…and gone by three seconds: faded out (opacity 0), only the game left, but still the focused heading a screen reader reads',b.o===0&&b.vis==='visible'&&b.focus,b);
   await page.waitForTimeout(1500);
-  ok('…and it stays gone while the games go round',(await titleOf(page)).vis==='hidden');
+  ok('…and it stays gone while the games go round',(await titleOf(page)).o===0);
   await next(page);await page.locator('[data-step="rachel"].on').waitFor();
   ok('off the reel, Back has no pill (it is the reel\'s alone)',await page.evaluate(()=>{const c=getComputedStyle(document.getElementById('backBtn')).backgroundColor;return c==='rgba(0, 0, 0, 0)'||c==='transparent';}));
   await calm(page);await page.locator('#backBtn').click();await page.locator('[data-step="reel"].on').waitFor();await page.waitForTimeout(550);
@@ -495,7 +509,10 @@ await scenario('the reminder ask: only where a reminder can be set and the price
  for(const [label,plan,refresh,tapAtOnce] of [
    ['the store says this Apple ID already had its free days (charged today)',PAID,null,false],
    ['the store has nothing to sell (no product, or it timed out)',{state:'none',kind:'',price:'',per:'',free:null,sure:false,why:'timeout',year:null},null,false],
-   ['the yearly row, picked as the price opens, has no free days (only monthly does)',Object.assign({},FREE3,{year:{state:'paid',kind:'annual',price:'$59.99',per:'year',free:null,sure:false,why:'',best:true}}),null,false],
+   // the reminder follows the MONTHLY row, the one the price screen picks as
+   // it opens (23 Oct 2026), whatever a yearly row (off the card while
+   // IAP_SELL_YEARLY is false) would offer: free days on the year alone ask none
+   ['the monthly row, picked as the price opens, is charged today, and only a yearly row has free days',Object.assign({},PAID,{year:{state:'free',kind:'annual',price:'$59.99',per:'year',free:{n:3,unit:'day',text:'3 days'},sure:true,why:'',best:true}}),null,false],
    // a row that only MAY be free (eligibility unknown: "Only new subscribers
    // get 3 days free. Otherwise Apple charges $9.99 today."): the price
    // screen promises no reminder for it, so setup asks none (review, 22 Oct)
@@ -521,7 +538,10 @@ await scenario('the reminder ask: only where a reminder can be set and the price
  // a store answer on its way as Continue is tapped: the wait ends with it, and
  // a free trial for this buyer brings the reminder screen; a slow iOS answer
  // is waited for only 2.5 s, and its last word (never asked) counts
- for(const [label,plan,refresh] of [['the store answers 1 s after the ready screen showed',{late:1000,plan:FREE3},null],['iOS, asked afresh, never answers (its last word, never asked, stands)',FREE3,'hang']]){
+ for(const [label,plan,refresh] of [['the store answers 1 s after the ready screen showed',{late:1000,plan:FREE3},null],['iOS, asked afresh, never answers (its last word, never asked, stands)',FREE3,'hang'],
+   // the monthly row (the one the price opens on) is a sure free trial: the
+   // reminder screen shows, whatever a yearly row would charge (23 Oct 2026)
+   ['the monthly row is a sure free trial, and a yearly row is charged today',Object.assign({},FREE3,{year:{state:'paid',kind:'annual',price:'$59.99',per:'year',free:null,sure:false,why:'',best:true}}),null]]){
   const {context,page,errors}=await fresh({webSales:true,notify:NOTIFY,plan,refresh,init:COUNT});try{
    await setupWalk(page,'ready',{name:'Mia'});
    const t0=Date.now();await calm(page);await page.locator('#nextBtn').click();

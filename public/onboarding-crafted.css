@@ -209,7 +209,11 @@ body[data-setup-screen="achieve"] .ob .mascot { display: none; }
    then only the game, Back and Continue. Under Reduce Motion nothing
    changes: the card stays, over the first game's still poster. */
 .ob .step[data-step="reel"].on { justify-content: center; padding-bottom: 8vh; }
-.reel-box { display: none; position: fixed; inset: 0; z-index: 0; background: #2c1d10; pointer-events: none; }
+/* below the status bar and the Dynamic Island in the iPhone app (the page
+   runs under them, viewport-fit=cover): the clip's own top bar is drawn
+   where the game draws it, never under the clock, and the cream page shows
+   behind the status bar as on every other setup screen */
+.reel-box { display: none; position: fixed; inset: env(safe-area-inset-top) 0 0 0; z-index: 0; background: #2c1d10; pointer-events: none; }
 body[data-setup-screen="reel"] .reel-box { display: block; }
 html.ob-resume .reel-box, html.ob-leaving .reel-box { display: none !important; }
 .reel { position: absolute; inset: 0; overflow: hidden; background: #2c1d10; }
@@ -218,11 +222,17 @@ html.ob-resume .reel-box, html.ob-leaving .reel-box { display: none !important; 
 .reel-still.card { object-fit: contain; }
 .reel-still.gone { display: none; }
 .reel.stills .reel-clip { display: none; }
+/* a clip fills a phone (cover); on a screen wider than a phone's (an iPad,
+   a laptop window) cover would cut off the clip's top bar, Echo's ask, so
+   the whole 1:2 frame shows there, centred on the dark backdrop */
+@media (min-aspect-ratio: 3/5) { .reel-still, .reel-clip { object-fit: contain; } }
 body[data-setup-screen="reel"] .obfoot { background: none; }
 /* Back stays readable over the game: a cream pill under it */
 body[data-setup-screen="reel"] .obfoot #backBtn { padding: 0 14px; border-radius: 999px; background: #fffdf8e6; box-shadow: 0 3px 10px #24170c33; }
 .ob .reel-title { align-self: center; margin: 0; padding: 12px 22px; border-radius: 22px; background: #fffdf8f2; box-shadow: 0 6px 22px #24170c40; animation: reel-title 2.6s ease both; }
-@keyframes reel-title { 0% { opacity: 0; } 12%, 77% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+/* opacity only: the heading keeps the focus render() gave it and stays in
+   the accessibility tree, so a screen reader can still read the screen */
+@keyframes reel-title { 0% { opacity: 0; } 12%, 77% { opacity: 1; } 100% { opacity: 0; } }
 
 /* Rachel, on her own: her photo big, her line, nothing else */
 .ob .step[data-step="rachel"].on { justify-content: center; }
@@ -382,12 +392,12 @@ body[data-setup-screen="remind"] #nextBtn { display: none; }
    22 Oct 2026). sona.css cuts every animation to 0.001 ms but keeps its
    delay, and a delayed animation that fills "both" shows its FIRST keyframe
    until the delay is over: the game card on the problem screen stayed
-   invisible for 1.15 s and then jumped 80 px into place, the tossed card
-   vanished half a second in, Echo popped onto the ready screen. So nothing
-   in setup animates here, and what each animation would end on is drawn
-   from the first frame: the tossed card is gone, the game card is in place,
-   Echo stands cheering, and the sparkles (which end invisible) are not
-   drawn. (The hello's own layers are above; the steps, the footer and the
+   invisible for 1.15 s and then jumped 80 px into place, Echo popped onto
+   the ready screen. So nothing in setup animates here, and what each
+   animation would end on is drawn from the first frame: the problem
+   screen's before and after are both in place, Echo stands cheering, the
+   sparkles (which end invisible) are not drawn, and the reel's heading
+   stays (its fade is its only change). (The hello's own layers are above; the steps, the footer and the
    bubble in onboarding.html's own rules.) */
 @media (prefers-reduced-motion: reduce) {
   .ob *, .ob *::before, .ob *::after, .obfoot * { animation: none !important; }

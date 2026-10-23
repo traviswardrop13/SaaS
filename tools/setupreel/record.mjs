@@ -1,5 +1,5 @@
-// Setup's game reel: short clips of the REAL games, for the "They practice by
-// playing." screen (Travis, 22 Oct 2026: "Do like a little clip of a few
+// Setup's game reel: short clips of the REAL games, for the "Practice through
+// play." screen (Travis, 22 Oct 2026: "Do like a little clip of a few
 // games so that parents can see it"; 23 Oct 2026: "I want it to take up the
 // whole screen ... rotate through fruit slice, piano tiles, and Flappy Glide,
 // and make it clear that in the demo they're saying ... the letter R ... And
@@ -77,7 +77,8 @@
 // What is staged, and why it is honest:
 //   - capture.mjs's household (an onboarded child on R, Premium through the
 //     free-era promise, every era stamp set), as the iPhone app. R is the
-//     sound because setup's reel says it is the example; the child's name is
+//     sound every clip is filmed on (the one example: no sound is picked yet
+//     when setup shows them, and nothing on setup names it); the child's name is
 //     on no game page, and each clip is checked for it anyway;
 //   - Echo's ask is his own: capture.mjs holds his clock (holdAsk) so he
 //     never asks at a random moment, and a scene sets that clock to "now" a

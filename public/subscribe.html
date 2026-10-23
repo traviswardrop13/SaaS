@@ -531,8 +531,9 @@
            who bought it is still recognised and can restore.
            TWO ROWS, WHEN THE STORE CAN SELL BOTH (Travis, 19 Oct 2026: "go,
            yes to 1 2 3", to showing monthly and yearly so parents compare).
-           The yearly row (#iapYear) sits above the monthly one and is picked
-           when the screen opens, but it is shown ONLY when Sona.storePlan
+           The yearly row (#iapYear) sits above the monthly one (picked when
+           the screen opened until 23 Oct 2026; off the card since, while
+           IAP_SELL_YEARLY is false), but it is shown ONLY when Sona.storePlan
            hands back a yearly plan (plan.year): the store returned the yearly
            product AND RevenueCat's current offering lists it. Otherwise the
            card is the monthly row alone, exactly as before, and neither row
@@ -882,7 +883,8 @@
     //            them replaces it, never a tap (see ask())
     //   poll, pendingKind, stop   the watch for an Ask to Buy approval
     //   pick     "annual" | "monthly" | "lifetime": the row the parent picked.
-    //            Yearly when the screen opens (19 Oct 2026); it only counts
+    //            Monthly when the screen opens (23 Oct 2026; yearly from 19 to
+    //            23 Oct); it only counts
     //            while the store's answer has that row (plan.year, plan.life:
     //            the one payment, 22 Oct 2026, never picked on arrival), so
     //            with one row the card is the monthly plan whatever this says
@@ -1123,7 +1125,8 @@
     // ONE PAINT FUNCTION (5 Oct 2026). Travis: "get rid of the annual option
     // and update the copy so that it says three days free, then $9.99 a
     // month". The app sold the monthly product alone; since 19 Oct 2026 the
-    // yearly one can be a second row, picked on arrival, when the store's
+    // yearly one can be a second row (never picked on arrival since 23 Oct
+    // 2026, and off the card while IAP_SELL_YEARLY is false), when the store's
     // answer carries it (plan.year: the store has it AND RevenueCat's
     // offering lists it). What the card may say about either is not decided
     // here: Sona.storePlan() asks the store (the products, whether THIS buyer
